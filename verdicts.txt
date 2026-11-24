@@ -4355,3 +4355,4 @@
 9131 d6d15c94bc96d64c93debe84f7fddcedea095fe4 REVERIFY or-fix-2: merged main (component-map.csv union); phpstan clean; Architecture, Kernel, SaveObject, AuthenticationService, TwigSandbox tests green; review needed
 9131 d6d15c94bc96d64c93debe84f7fddcedea095fe4 NOTE or-fix-2: push refused, never on the branch; or-fix-1 already merged main at 79d8b7e1, ignore the d6d15c94 row
 10456 3865e3987af76c1ea44ad5631b2d139193be0492 REVERIFY or-fix-6: merged main 6fbf58fb (component-map.csv conflict, kept both rows; yaml regenerated), no code change; phpstan clean, Architecture, Db/MagicMapper, Repair, Sharing, Contract green; review needed
+9940 2ddfc87ab314361222192c3c57d3b739a51f3a43 REVERIFY or-fix-0: merged main 6fbf58fb (component-map.csv rows unioned, yaml regenerated); phpstan clean; Architecture 2385, Repair 387, Command 415 green; review needed
