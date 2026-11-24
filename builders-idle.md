@@ -284,3 +284,4 @@
 2026-11-24T19:16Z help-filinq-1 skipped document-editing-tools 3.3: needs a Euro-Office instance
 2026-11-24T19:18Z help-filinq-1 skipped shillinq abstract-order-primitive (compliance re-point): PurchaseOrder/Subsidie/DBAOpdracht stay the live write targets in 15+ services and Order is a folded copy until RetireSubsidieSchema (deletes data, Ruben) runs; re-pointing now reads the copy, not the source
 2026-11-24T19:19Z help-portaliq-3 helped portaliq: mail-templates-admin-screen #2687 (T07 e2e written, runs in nightly; T08 live left)
+2026-11-24T19:20Z help-dossiq-2 helped dossiq: case-session-with-parties-and-minutes 2.1 #6880 (dependency built per UNBLOCK 1 as decidiq#2436 MeetingRequestedEvent, merged; session opens as a decidiq meeting, fails open; local green: PHPUnit failing set subset of development, diff-check tools 0 new, gates inherited + gate-120 left to the Release bump). 2.2 waits on R1's installer, 2.3 on the package journey; not archived
