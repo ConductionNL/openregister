@@ -759,3 +759,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: merging main gives CONFLICTs in many files outside the PR's change (ObjectsController, ObjectService, UserService tests...); `git merge-base --all origin/main pr` prints 2 or more bases.
 - Cause: an earlier main merge into the PR plus main's own history give several merge bases; the virtual base made from them conflicts. For each such file one side still equals a merge base.
 - Fix: per conflicted file, if the PR blob equals any merge base blob take main (--theirs); if main equals a base take the PR (--ours); resolve the rest by hand. Then check `git diff origin/main` on the merge equals `git diff <newest base> pr`. (#10358 81cf4d5c, #10398 06df77ae, #10188 6714145c)
+
+## Cloud composer install fails: 'Could not authenticate against github.com' (or-fix-0)
+- Symptom: composer install stops on a 403 from api.github.com zipball for phpstan/phpstan; a source clone times out (the repo carries phar history).
+- Cause: phpstan/phpstan is the only dist-only package in composer.lock; unauthenticated GitHub API is refused here.
+- Fix: composer config -g use-github-api false; install --prefer-source --no-scripts --ignore-platform-reqs; for phpstan, git fetch --depth 1 the locked commit, git archive it to a zip, point that package's lock dist at the local zip (type zip, drop source), install, then restore composer.lock.
