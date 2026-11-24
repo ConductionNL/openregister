@@ -127,7 +127,7 @@ use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
-use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
+use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
@@ -3654,7 +3654,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		$this->noteClientCauseAttempt(call: $call, object: $savedEntity);
-		$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity, action: $action);
+		$log = $this->auditTrailMapper->recordChange(change: new AuditedChange(old: null, new: $savedEntity, action: $action));
 
 		$savedEntity->setLastLog($log->jsonSerialize());
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
@@ -5166,10 +5166,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
 	private function auditUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): AuditTrail {
-		if ($run->origin === null && $run->marks === []) {
-			return $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
-		}
-
 		return $this->auditTrailMapper->recordChange(
 			change: new AuditedChange(old: $run->oldObject, new: $updatedEntity, action: $run->origin, marks: $run->marks)
 		);
@@ -5315,7 +5311,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrail(old: $change->old, new: $change->new, action: $change->action);
+			$this->auditTrailMapper->recordChange(change: new AuditedChange(old: $change->old, new: $change->new, action: $change->action));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[SaveObject] audit trail for external ' . $change->action . ' on uuid ' . ((string)$change->new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),

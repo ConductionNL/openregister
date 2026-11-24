@@ -18,7 +18,6 @@ final class IntegrationsControllerFactory {
 	/**
 	 * The constructor arguments of IntegrationsController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param IntegrationCatalogueInterface $registry Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
@@ -28,7 +27,6 @@ final class IntegrationsControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface $registry,
 		\OCP\IUserSession $userSession,
@@ -36,7 +34,6 @@ final class IntegrationsControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\IntegrationsControllerServices(
 				registry: $registry,
