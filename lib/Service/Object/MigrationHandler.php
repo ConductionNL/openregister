@@ -152,7 +152,7 @@ class MigrationHandler {
 	private function loadSides(MigrationRun $run): void {
 		foreach ([$run->source, $run->target] as $side) {
 			$side->registerEntity = $this->mapping->utilityHandler->normalizeEntity(entity: $side->register, type: 'register');
-			$side->schemaEntity = $this->mapping->utilityHandler->normalizeEntity(entity: $side->schema, type: 'schema');
+			$side->schemaEntity = $this->mapping->utilityHandler->normalizeEntity(entity: $side->schema, type: 'schema', register: $side->registerEntity);
 		}
 	}//end loadSides()
 

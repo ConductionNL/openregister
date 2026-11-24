@@ -21,6 +21,7 @@ use OCA\OpenRegister\Repair\ImportDismissedPairRegister;
 use OCA\OpenRegister\Repair\ImportDsarRegisters;
 use OCA\OpenRegister\Repair\ImportDestructionListRegister;
 use OCA\OpenRegister\Repair\ImportEdepotTransferRegister;
+use OCA\OpenRegister\Repair\ImportExternalRegisterRegister;
 use OCA\OpenRegister\Repair\ImportMergeOperationRegister;
 use OCA\OpenRegister\Repair\ImportRedactionPolicyRegister;
 use OCA\OpenRegister\Repair\ImportTranslationGlossaryRegister;
@@ -41,7 +42,7 @@ use ReflectionClassConstant;
 class DescriptorConfigIdsTest extends TestCase {
 
 	/**
-	 * The eleven descriptors with their id and the repair step that imports each.
+	 * The twelve descriptors with their id and the repair step that imports each.
 	 *
 	 * @return array<string, array{0: string, 1: string, 2: class-string}>
 	 */
@@ -50,6 +51,7 @@ class DescriptorConfigIdsTest extends TestCase {
 			'decision tables' => ['decision_table_register.json', 'openregister.decision-tables', ImportDecisionTableRegister::class],
 			'dismissed pair' => ['dismissed_pair_register.json', 'openregister.dismissed-pair', ImportDismissedPairRegister::class],
 			'edepot transfers' => ['edepot_transfer_register.json', 'openregister.edepot-transfers', ImportEdepotTransferRegister::class],
+			'external registers' => ['external_register_register.json', 'openregister.external-registers', ImportExternalRegisterRegister::class],
 			'destruction lists' => ['destruction_list_register.json', 'openregister.destruction-lists', ImportDestructionListRegister::class],
 			'merge operation' => ['merge_operation_register.json', 'openregister.merge-operation', ImportMergeOperationRegister::class],
 			'trust configuration' => ['trust_configuration_register.json', 'openregister.trust-configuration', ImportTrustConfigurationRegister::class],
@@ -78,14 +80,14 @@ class DescriptorConfigIdsTest extends TestCase {
 	}//end testTheFileMapsToItsOwnId()
 
 	/**
-	 * The map holds exactly these eleven, so a twelfth descriptor cannot be added without a test row.
+	 * The map holds exactly these twelve, so a thirteenth descriptor cannot be added without a test row.
 	 *
 	 * @return void
 	 */
 	public function testTheMapHoldsExactlyTheTenDescriptors(): void {
 		$files = array_map(static fn (array $row): string => $row[0], array_values(self::descriptors()));
 		$this->assertEqualsCanonicalizing($files, array_keys(DescriptorConfigIds::BY_FILE));
-		$this->assertCount(11, array_unique(DescriptorConfigIds::BY_FILE), 'no two descriptors share an id');
+		$this->assertCount(12, array_unique(DescriptorConfigIds::BY_FILE), 'no two descriptors share an id');
 		$this->assertSame('openregister', DescriptorConfigIds::forFile(appId: 'openregister', file: 'flow_register.json'));
 	}//end testTheMapHoldsExactlyTheTenDescriptors()
 
