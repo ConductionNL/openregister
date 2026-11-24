@@ -478,6 +478,18 @@ interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
 	public function clearLogs(): bool;
 
 	/**
+	 * Tombstone every audit-trail entry whose expiry has passed and count them.
+	 *
+	 * Rows retained indefinitely (`expires IS NULL`), rows whose expiry lies in
+	 * the future and rows already tombstoned are left alone.
+	 *
+	 * @return int The number of entries this run tombstoned.
+	 *
+	 * @spec openspec/changes/audit-trail-purge-by-age/specs/retention-management/spec.md#requirement-the-hourly-log-cleanup-job-deletes-audit-trail-entries-past-the-configured-retention
+	 */
+	public function purgeExpiredLogs(): int;
+
+	/**
 	 * Count the audit rows that belong to one object, excluding the evidence
 	 * of its own destruction.
 	 *

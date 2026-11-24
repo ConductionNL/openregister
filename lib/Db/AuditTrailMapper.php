@@ -2516,8 +2516,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * that anything was ever there.
 	 *
 	 * @return bool True when the tombstone write succeeded.
+	 *
+	 * @spec openspec/changes/audit-trail-purge-by-age/specs/retention-management/spec.md#requirement-the-hourly-log-cleanup-job-deletes-audit-trail-entries-past-the-configured-retention
 	 */
 	public function clearLogs(): bool {
+		return $this->purgeExpiredLogs() > 0;
+	}//end clearLogs()
+
+	/**
+	 * Tombstone every audit-trail entry whose expiry has passed and count them.
+	 *
+	 * The write behind {@see clearLogs()}: only rows with a finite `expires`
+	 * in the past and no `purged_at` yet are touched, so a row retained
+	 * indefinitely (`expires IS NULL`) or younger than its expiry stays as it
+	 * is, and a repeated run counts zero.
+	 *
+	 * @return int The number of entries this run tombstoned.
+	 *
+	 * @throws \Exception Database operation exceptions
+	 *
+	 * @spec openspec/changes/audit-trail-purge-by-age/specs/retention-management/spec.md#requirement-the-hourly-log-cleanup-job-deletes-audit-trail-entries-past-the-configured-retention
+	 */
+	public function purgeExpiredLogs(): int {
 		try {
 			// Get the query builder for database operations.
 			$qb = $this->db->getQueryBuilder();
@@ -2549,15 +2569,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')))
 				->andWhere($qb->expr()->isNull('purged_at'));
 
-			// Execute the query and get the number of affected rows.
-			$result = $qb->executeStatement();
-
-			// Return true if any rows were affected (i.e., any logs were tombstoned).
-			return $result > 0;
+			// The number of affected rows is the number of entries tombstoned.
+			return $qb->executeStatement();
 		} catch (\Exception $e) {
 			$this->rethrowLogged(failure: 'clear expired ' . self::TRAIL_NOUN . ' logs', exception: $e);
 		}//end try
-	}//end clearLogs()
+	}//end purgeExpiredLogs()
 
 	/**
 	 * Count the live rows of one object's trail within an action scope.

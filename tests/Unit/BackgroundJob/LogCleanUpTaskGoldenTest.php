@@ -113,7 +113,7 @@ class LogCleanUpTaskGoldenTest extends TestCase {
 	 * Cleared trails are reported at info level, with the search trail's retention and stamp count.
 	 */
 	public function testClearedTrails(): void {
-		$this->audit->method('clearLogs')->willReturn(true);
+		$this->audit->method('purgeExpiredLogs')->willReturn(3);
 		$this->audit->method('findPurgedHorizons')->willReturn([]);
 		$this->retention->method('getRetentionSettingsOnly')->willReturn(['searchTrailRetention' => 1000]);
 		$this->search->expects($this->once())->method('setExpiryDate')->with(1000)->willReturn(4);
@@ -124,7 +124,7 @@ class LogCleanUpTaskGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[
-				['info', '[LogCleanUpTask] Tombstoned expired audit trail rows (payload purged, chain preserved)', ['app' => 'openregister']],
+				['info', '[LogCleanUpTask] Tombstoned 3 expired audit trail rows (payload purged, chain preserved)', ['app' => 'openregister', 'purged' => 3]],
 				[
 					'info',
 					'[LogCleanUpTask] Deleted search trail rows past the configured retention',
@@ -181,7 +181,7 @@ class LogCleanUpTaskGoldenTest extends TestCase {
 	public function testEachFailureIsContained(): void {
 		$audit  = new RuntimeException('audit down');
 		$search = new RuntimeException('search down');
-		$this->audit->method('clearLogs')->willThrowException($audit);
+		$this->audit->method('purgeExpiredLogs')->willThrowException($audit);
 		$this->audit->method('findPurgedHorizons')->willThrowException(new RuntimeException('history down'));
 		$this->retention->method('getRetentionSettingsOnly')->willThrowException($search);
 		$this->metrics->method('cleanOldMetrics')->willThrowException(new RuntimeException('metrics down'));
@@ -226,7 +226,7 @@ class LogCleanUpTaskGoldenTest extends TestCase {
 				return $result;
 			};
 		};
-		$this->audit->method('clearLogs')->willReturnCallback($note('audit', false));
+		$this->audit->method('purgeExpiredLogs')->willReturnCallback($note('audit', 0));
 		$this->retention->method('getRetentionSettingsOnly')->willReturn(['searchTrailRetention' => 1000]);
 		$this->search->method('clearLogs')->willReturnCallback($note('search', false));
 		$this->audit->method('findPurgedHorizons')->willReturnCallback($note('prune', []));

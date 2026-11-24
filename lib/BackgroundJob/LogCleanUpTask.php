@@ -244,13 +244,18 @@ class LogCleanUpTask extends TimedJob {
 	 *
 	 * @return void
 	 *
+	 * The run records how many entries it removed, in the message and as
+	 * `purged` in the log context.
+	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-hourly-log-cleanup-job-must-enforce-the-configured-search-trail-retention
+	 * @spec openspec/changes/audit-trail-purge-by-age/specs/retention-management/spec.md#requirement-the-hourly-log-cleanup-job-deletes-audit-trail-entries-past-the-configured-retention
 	 */
 	private function clearAuditTrails(): void {
 		try {
-			if ($this->auditTrailMapper->clearLogs() === true) {
-				$message = '[LogCleanUpTask] Tombstoned expired audit trail rows (payload purged, chain preserved)';
-				$this->logger->info(message: $message, context: $this->logContext());
+			$purged = $this->auditTrailMapper->purgeExpiredLogs();
+			if ($purged > 0) {
+				$message = '[LogCleanUpTask] Tombstoned ' . $purged . ' expired audit trail rows (payload purged, chain preserved)';
+				$this->logger->info(message: $message, context: $this->logContext(extra: ['purged' => $purged]));
 				return;
 			}
 
