@@ -83,6 +83,8 @@ use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Service\FileServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
+use OCA\OpenRegister\Kernel\Contracts\TextEntityDetectorInterface;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 
 /**
  * Binds the Files component's interfaces and builds its services.
@@ -101,6 +103,7 @@ final class FilesRegistrar
         ChunkStoreInterface::class                => ChunkMapper::class,
         DetectionPatternsVersionInterface::class  => PatternSetVersion::class,
         DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
+        TextEntityDetectorInterface::class        => EntityRecognitionHandler::class,
         FileAccountInterface::class               => FileOwnershipHandler::class,
         FileAuditHandlerInterface::class          => FileAuditHandler::class,
         FileMapperInterface::class                => FileMapper::class,

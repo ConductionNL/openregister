@@ -50,6 +50,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Credential\CredentialPrincipals
  * @uses \OCA\OpenRegister\Service\Credential\CredentialSources
  * @uses \OCA\OpenRegister\Service\Credential\InjectableSecretRequest
+ * @uses \OCA\OpenRegister\Service\Credential\OutsideCustody
  */
 class CredentialBrokerServiceTest extends TestCase {
 	/** @var array<string, mixed>|null Captured client->request() options. */
