@@ -257,6 +257,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'bsn',
 		// Dutch licence plate in one of the fourteen sidecodes. See LicensePlateNlFormat.
 		'license-plate-nl',
+		// IANA time zone name, as DateTimeZone lists it. See TimeZoneFormat.
+		'time-zone',
 		// International Bank Account Number, checked with mod-97. See IbanFormat.
 		'iban',
 		// Nextcloud user id, checked against the user backend. The referenced
