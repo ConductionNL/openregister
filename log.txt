@@ -4337,3 +4337,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T19:28:21Z session-20261124T191954-a67799b5 cloud builder larpinq: opened #1177 (RCT 2.3 shillinq refund/credit handoff), local green, merge refused by session permission check; queued for coordinator
 2026-11-24T19:28:33Z integrator-20261124T184854-1c90b6ab PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-24T19:29:39Z precheck-20261124T190656-018eb955 RED tree 3635c4714b prs 1 front=red: Tests: 64380, Assertions: 227767, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Depreca; first failures: FAIL src/services/initial-data.golden.spec.js
