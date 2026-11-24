@@ -4214,3 +4214,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T17:40:15Z precheck-20261124T172502-2ed5f179 NORESULT tree e00cde58b9: deps failed
 2026-11-24T17:41:52Z precheck-20261124T172502-2ed5f179 CONFLICT-DEV #10494 7acff4e7
 2026-11-24T17:42:16Z precheck-20261124T173105-a7ce1273 CONFLICT-DEV #10494 7acff4e7
+2026-11-24T17:43:06Z builder opencatalogi: merged #2957 (OpenRegister main SearchOptions drift: deleted:false dropped at 16 searchObjectsPaginated call sites, ids via SearchSelection::byIds, doubles take both signatures; 142 failing tests fixed, 0 new; remaining OR-main drift e.g. OOAPI getResource/find left)
