@@ -33,14 +33,16 @@ final class PendingSchemaBaseline
 	/**
 	 * Constructor.
 	 *
-	 * @param array<string, mixed>      $data     The definition to write.
-	 * @param array<string, mixed>|null $baseline The baseline to record after the write, null for none.
-	 * @param string                    $slug     The schema slug.
+	 * @param array<string, mixed>      $data      The definition to write.
+	 * @param array<string, mixed>|null $baseline  The baseline to record after the write, null for none.
+	 * @param string                    $slug      The schema slug.
+	 * @param array<int, array>|null    $conflicts The parts kept local, `{path, shipped, live}` each; null when the import was not guarded.
 	 */
 	public function __construct(
 		public readonly array $data,
 		public readonly ?array $baseline,
 		public readonly string $slug,
+		public readonly ?array $conflicts = null,
 	) {
 	}//end __construct()
 }//end class

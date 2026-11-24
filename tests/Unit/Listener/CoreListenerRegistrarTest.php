@@ -36,6 +36,7 @@ use OCA\OpenRegister\Listener\IdentityGuardListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ObjectStateDeleteGuardListener;
 use OCA\OpenRegister\Listener\PlatformShareRoutingListener;
+use OCA\OpenRegister\Listener\ServiceAccountLoginListener;
 use OCA\OpenRegister\Listener\StateHistoryProjectionListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\TeamResourcesDeclarationCheckListener;
@@ -44,6 +45,7 @@ use OCA\OpenRegister\Reference\ObjectTeamResourceProvider;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Share\Events\BeforeShareCreatedEvent;
+use OCP\User\Events\PostLoginEvent;
 use OCP\User\Events\UserLoggedInEvent;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -61,6 +63,7 @@ final class CoreListenerRegistrarTest extends TestCase {
 	public static function slots(): array {
 		return [
 			'identityClaims' => ['identityClaims', [[UserLoggedInEvent::class, IdentityClaimsLoginListener::class]]],
+			'serviceAccountLogin' => ['serviceAccountLogin', [[PostLoginEvent::class, ServiceAccountLoginListener::class]]],
 			'platformShareRouting' => ['platformShareRouting', [[BeforeShareCreatedEvent::class, PlatformShareRoutingListener::class]]],
 			'generatedIdentifier' => ['generatedIdentifier', [[ObjectCreatingEvent::class, GeneratedIdentifierListener::class], [ObjectUpdatingEvent::class, GeneratedIdentifierListener::class]]],
 			'survivorship' => ['survivorship', [[ObjectCreatingEvent::class, SurvivorshipRecomputeListener::class], [ObjectUpdatingEvent::class, SurvivorshipRecomputeListener::class]]],
