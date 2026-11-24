@@ -768,3 +768,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: merging main conflicts in ObjectsController, LockHandler, EntityRelationMapperInterface, DeleteObjectDeleteGoldenTest, UserServicePreferencesCharacterisationTest etc., none of them the PR's feature files; git merge-base --all shows two bases.
 - Cause: the PR's side holds an older main (e.g. 6e870ca5 with the Files-ports merge main later reverted, or UserService's pre-bundle constructor); not PR intent.
 - Fix: own=$(git diff --name-only <last main merged into the PR> HEAD); for each conflicted file not in own: git checkout --theirs; then git diff --cached --name-only origin/main must be a subset of own (#10154, #10244, #10514).
+
+## A component-map row the PR remapped, that main later moved (or-fix-8)
+- Symptom: after a main merge, CoreServiceBindingsTest::testEveryClassCountsToCore lists '<class> counts to Kernel' (or another area), and/or ComponentDependencyRulesTest names a new edge from the PR's file.
+- Cause: an earlier main merge on the PR changed a csv row's area (e.g. the RegisterScopedSchemaResolver trio to Kernel) to silence an edge; main later moved and bound that class in Core, and the union kept the PR's row.
+- Fix: diff scripts/component-map.csv vs origin/main for rows that are not the PR's own files and restore main's; rerun component-patterns.py. If the PR's file then crosses areas, reach it through a Kernel contract (here ObjectOperationsInterface setRegister/setSchema + getCurrent*Entity, as ObjectExportController does), never the baseline (see #10498 6b20d3ad).
