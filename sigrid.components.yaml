@@ -609,6 +609,7 @@ components:
       - ".*/lib/Service/Object/ObjectStateRequest[.]php"
       - ".*/lib/Service/Object/ObjectStateTransition[.]php"
       - ".*/lib/Service/Object/ObjectUpdateOptions[.]php"
+      - ".*/lib/Service/Object/ObjectUpdateRights[.]php"
       - ".*/lib/Service/Object/ObjectValidatorInterface[.]php"
       - ".*/lib/Service/Object/ObjectVersionHandler[.]php"
       - ".*/lib/Service/Object/OrphanDeletionGuard[.]php"
