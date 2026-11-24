@@ -58,6 +58,9 @@ use ReflectionProperty;
  * @uses   \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  * @uses \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIdentityIndex
+ * @uses   \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
+ * @uses   \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class MagicNumericPropertyKeyTest extends TestCase {
 	private const PROPERTIES = ['7' => ['type' => 'string', 'facetable' => true], 'title' => ['type' => 'string']];
