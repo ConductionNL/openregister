@@ -53,6 +53,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -484,7 +485,7 @@ final class ObjectAccessContractTest extends TestCase {
 		$handler  = $this->findPath($uid);
 		$admitted = [];
 		foreach (array_keys(self::CASES) as $uuid) {
-			if ($handler->hasPermission(schema: $schema, action: $action, userId: $uid, objectOwner: 'importer', object: self::object($uuid)) === true) {
+			if ($handler->hasPermission(ask: self::ask($schema, $action, $uid, $uuid)) === true) {
 				$admitted[] = $uuid;
 			}
 		}
@@ -492,6 +493,22 @@ final class ObjectAccessContractTest extends TestCase {
 		sort($admitted);
 		return $admitted;
 	}//end found()
+
+	/**
+	 * The find-path question: a caller asking for a verb on one case.
+	 *
+	 * @param Schema $schema The case schema.
+	 * @param string $action The verb.
+	 * @param string $uid    The caller.
+	 * @param string $uuid   The case.
+	 *
+	 * @return PermissionAsk
+	 */
+	private static function ask(Schema $schema, string $action, string $uid, string $uuid): PermissionAsk {
+		return (new PermissionAsk(schema: $schema, action: $action))
+			->askedBy(userId: $uid, objectOwner: 'importer')
+			->about(object: self::object($uuid), register: null);
+	}//end ask()
 
 	private static function object(string $uuid): ObjectEntity {
 		[$assignee, $assignees] = self::CASES[$uuid];
@@ -545,7 +562,7 @@ final class ObjectAccessContractTest extends TestCase {
 		$this->assertSame(['c-1'], $this->listed('anna', $schema));
 		$this->assertSame(['c-1'], $this->found('anna', $schema));
 		$this->assertFalse(
-			$this->findPath('anna')->hasPermission(schema: $schema, action: 'read', userId: 'anna', objectOwner: 'importer', object: self::object('c-2')),
+			$this->findPath('anna')->hasPermission(ask: self::ask($schema, 'read', 'anna', 'c-2')),
 			'a find on another case is refused'
 		);
 	}//end testAnAssigneeListsAndFindsTheirCaseAndNoOther()
@@ -575,11 +592,7 @@ final class ObjectAccessContractTest extends TestCase {
 
 		$this->infos = [];
 		$verdict = $this->findPath('carl')->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: 'carl',
-			objectOwner: 'importer',
-			object: self::object('c-2')
+			ask: self::ask($schema, 'read', 'carl', 'c-2')
 		);
 		$this->assertFalse($verdict);
 
@@ -615,7 +628,7 @@ final class ObjectAccessContractTest extends TestCase {
 			$this->assertSame($expected, $answered, $uid.' on c-2');
 
 			foreach (['read', 'update'] as $verb) {
-				$enforced = $handler->hasPermission(schema: $schema, action: $verb, userId: $uid, objectOwner: 'importer', object: self::object('c-2'));
+				$enforced = $handler->hasPermission(ask: self::ask($schema, $verb, $uid, 'c-2'));
 				$this->assertSame(in_array($verb, $answered, true), $enforced, $uid.' '.$verb.': the answer is the enforcement');
 			}
 		}
