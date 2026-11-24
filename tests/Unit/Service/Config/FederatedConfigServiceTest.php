@@ -287,6 +287,8 @@ class FederatedConfigServiceTest extends TestCase {
 	/**
 	 * The signer sees the bundle as published; the type gets it with the install target stamped.
 	 *
+	 * @return void
+	 *
 	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
 	public function testAStampIsAppliedAfterTheSignatureCheck(): void {
@@ -300,28 +302,14 @@ class FederatedConfigServiceTest extends TestCase {
 				return ['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k'];
 			}
 		);
-		$this->registry->method('get')->willReturn(
-			value: new class($received) implements IShareableConfigType {
-				public function __construct(private array &$received) {
-				}
-				public function getId(): string {
-					return 'demo.type';
-				}
-				public function getDisplayName(): string {
-					return 'Demo';
-				}
-				public function getTopic(): string {
-					return 'demo-topic';
-				}
-				public function serialise(array $selection): array {
-					return [];
-				}
-				public function deserialise(array $bundle): array {
-					$this->received = $bundle;
-					return ['installed' => ['x']];
-				}
+		$type = $this->createMock(originalClassName: IShareableConfigType::class);
+		$type->method('deserialise')->willReturnCallback(
+			callback: static function (array $bundle) use (&$received): array {
+				$received = $bundle;
+				return ['installed' => ['x']];
 			}
 		);
+		$this->registry->method('get')->willReturn(value: $type);
 		$service = new FederatedConfigService(
 			new FederatedConfigTransport(
 				$this->createMock(originalClassName: CredentialBrokerService::class),
