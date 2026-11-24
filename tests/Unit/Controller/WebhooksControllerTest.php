@@ -50,7 +50,6 @@ class WebhooksControllerTest extends TestCase {
 		$this->setupAdminUser();
 
 		$this->controller = WebhooksControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->webhookMapper,
 			$this->webhookLogMapper,
@@ -1543,7 +1542,6 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminWebhookService = $webhookService;
 
 		return WebhooksControllerFactory::create(
-			'openregister',
 			$request,
 			$webhookMapper,
 			$webhookLogMapper,
@@ -1573,7 +1571,6 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminWebhookService = $webhookService;
 
 		return WebhooksControllerFactory::create(
-			'openregister',
 			$request,
 			$webhookMapper,
 			$webhookLogMapper,

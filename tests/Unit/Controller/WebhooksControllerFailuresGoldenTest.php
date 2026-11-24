@@ -110,7 +110,6 @@ final class WebhooksControllerFailuresGoldenTest extends TestCase {
 		);
 
 		return WebhooksControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->webhookMapper,
 			$this->webhookLogMapper,

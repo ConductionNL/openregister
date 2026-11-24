@@ -122,7 +122,6 @@ class RetentionControllerLegalHoldTest extends TestCase {
 		};
 
 		return RetentionControllerFactory::create(
-			'openregister',
 			$request,
 			$this->retentionService,
 			$this->createMock(ObjectRetentionHandler::class),

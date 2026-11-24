@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
 use OCA\OpenRegister\Controller\Support\DestructionListApproval;
@@ -144,16 +145,14 @@ class RetentionController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name
 	 * @param IRequest $request Request
 	 * @param RetentionControllerServices $services The retention controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		RetentionControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->retentionService = $services->domain->retentionService;
 		$this->settingsHandler = $services->domain->settingsHandler;
 		$this->saveObject = $services->domain->saveObject;

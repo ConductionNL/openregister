@@ -18,7 +18,6 @@ final class DeletedControllerFactory {
 	/**
 	 * The constructor arguments of DeletedController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param MagicMapper $objectEntityMapper Constructor argument.
 	 * @param RegisterMapper $registerMapper Constructor argument.
@@ -32,7 +31,6 @@ final class DeletedControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Db\MagicMapper $objectEntityMapper,
 		\OCA\OpenRegister\Db\RegisterMapper $registerMapper,
@@ -44,7 +42,6 @@ final class DeletedControllerFactory {
 		?\Psr\Log\LoggerInterface $logger = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\DeletedControllerServices(
 				store: new \OCA\OpenRegister\Controller\Support\DeletedStore(
