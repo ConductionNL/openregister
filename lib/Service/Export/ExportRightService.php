@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Export;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Kernel\Contracts\Configuration\ExportRightInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\IGroupManager;
@@ -270,12 +271,10 @@ class ExportRightService implements ExportRightInterface {
 
 		try {
 			$held = $this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: $action,
-				userId: $userId,
-				objectOwner: null,
-				_rbac: true,
-				object: null
+				ask: (new PermissionAsk(schema: $schema, action: $action))
+					->askedBy(userId: $userId, objectOwner: null)
+					->about(object: null, register: null),
+				_rbac: true
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

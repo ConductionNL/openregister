@@ -219,7 +219,7 @@ namespace {
 	class_alias('OCA\\OpenRegister\\Search\\Service\\Aggregation\\ThresholdEvaluationService', 'OCA\\OpenRegister\\Service\\Aggregation\\ThresholdEvaluationService');
 	class_alias('OCA\\OpenRegister\\Search\\Service\\Aggregation\\TimeseriesDateBucketValidator', 'OCA\\OpenRegister\\Service\\Aggregation\\TimeseriesDateBucketValidator');
 	class_alias('OCA\\OpenRegister\\Search\\Service\\Aggregation\\TimeseriesRequestValidator', 'OCA\\OpenRegister\\Service\\Aggregation\\TimeseriesRequestValidator');
-	class_alias('OCA\\OpenRegister\\Mcp\\Service\\ChatMessageRequest', 'OCA\\OpenRegister\\Service\\ChatMessageRequest');
+	class_alias('OCA\\OpenRegister\\Kernel\\Contracts\\Value\\ChatMessageRequest', 'OCA\\OpenRegister\\Service\\ChatMessageRequest');
 	class_alias('OCA\\OpenRegister\\Mcp\\Service\\ChatService', 'OCA\\OpenRegister\\Service\\ChatService');
 	class_alias('OCA\\OpenRegister\\Mcp\\Service\\Chat\\ContextRetrievalHandler', 'OCA\\OpenRegister\\Service\\Chat\\ContextRetrievalHandler');
 	class_alias('OCA\\OpenRegister\\Mcp\\Service\\Chat\\ConversationManagementHandler', 'OCA\\OpenRegister\\Service\\Chat\\ConversationManagementHandler');
