@@ -4639,6 +4639,7 @@ Service/Search/TextSearchConfiguration.php,,Service,,,,,Kernel
 Controller/Settings/SearchSettingsController.php,,Controller,,,,,Configuration
 Migration/Version1Date20261121150000.php,,Migration,,,,,Platform
 Service/Search/SearchSnippetAttacher.php,,Service,,,,,Core
+Notifications/Controller/Support/GroupAdministration.php,,Notifications,,,,,Notifications
 Service/MappingRun.php,,Service,,,,,Integrations
 Service/RegisterSearch.php,,Service,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
