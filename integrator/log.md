@@ -99,3 +99,4 @@
 2026-11-24T22:45:36Z GREEN prs=10587,10643 main=037f95a841 integrator-cloud
 2026-11-24T23:35:28Z NORESULT prs=10553,10983,11003,11013,11033,11058,11043 main=037f95a841 integrator-cloud (deps race; retried)
 2026-11-24T23:35:28Z GREEN prs=10553,10983,11003,11013,11033,11058,11043 main=037f95a841 integrator-cloud (merged; main now 7bf08ec0b9)
+2026-11-24T23:46:42Z GREEN prs=11063,11073,11078,11098 main=7bf08ec0b9 integrator-cloud (merged; main now 06bd93550e)
