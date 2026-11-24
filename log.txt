@@ -4385,3 +4385,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T20:04:43Z precheck-20261124T190315-cdf396fd GREEN tree 283b5a44fb on dev 5037a3463f prs 1 front=skip: Tests: 64557, Assertions: 228130, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T20:04:55Z precheck-20261124T175747-122d94ac CONFLICT-DEV #10530 d7dea440
 2026-11-24T20:05:01Z session-20261124T192511-9ad2994c or-fix-4: share checked at main dfcbe075: 10494 10504 10514 10524 10534 10554 10614 10964 10984 11004 11014 11034 merge clean, not parked; 11044 conflict already resolved by another session (44e481ea); 10624 BLOCK waits on stylelint 18 upstream; 10634 false sbom park (SBOM current) queued for coordinator; 11054 precheck NORESULT: gitleaks install refused by sandbox permission check, so precheck cannot measure secretscanning
+2026-11-24T20:05:01Z precheck-20261124T195255-0c04d56e CONFLICT-DEV #10363 3c27ea8a
