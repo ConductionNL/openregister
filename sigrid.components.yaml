@@ -1115,6 +1115,7 @@ components:
       - ".*/lib/Service/Schemas/GeneratedIdentifierDeclarationInterface[.]php"
       - ".*/lib/Service/Schemas/GeneratedIdentifierDeclarationReader[.]php"
       - ".*/lib/Service/Schemas/GeneratedIdentifierException[.]php"
+      - ".*/lib/Service/Schemas/IdentityBreachCounter[.]php"
       - ".*/lib/Service/Schemas/IdentityRewriteScope[.]php"
       - ".*/lib/Service/Schemas/PropertySourceDeclaration[.]php"
       - ".*/lib/Service/Schemas/PropertySourceException[.]php"
