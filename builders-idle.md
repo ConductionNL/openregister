@@ -387,3 +387,4 @@
 21:06Z help-pipelinq-1 skipped notify-the-followers-of-tickets-and-leads: 5.1 grants per-object read/write to followers, an access-control decision
 21:06Z help-pipelinq-1 skipped the-billing-time-entry-is-a-satellite: 5.1/5.2 move fields to humaniq and migrate existing billing rows (data migration across repos; branch feat/billing-time-entry-satellite exists)
 21:06Z help-pipelinq-1 skipped a-contact-question-is-required-and-dated, contact-moments-keep-draft, contract-contact-ref, only-the-drawn-pipelines, segment-last-contact-signal: only live checks or a DQ-DATA item left
+2026-11-24T21:11Z hermiq building (not idle): merged #1986 (session-entity-links archive) and closed duplicate #1985; built dependency nextcloud-vue#2333 (companion turn scope chip + answer sources, merged to main c45e5ad1) for chat-about-a-document-cites-its-sources task 4; next: bump hermiq lock once released
