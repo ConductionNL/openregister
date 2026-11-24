@@ -26,7 +26,7 @@
 export function blocksOf(schema) {
 	const declared = schema?.configuration?.mailBlocks
 	if (!Array.isArray(declared) || declared.length === 0) {
-		return [{ ...schema, blockKey: String(schema.id), blockFilter: {}, appDialog: true }]
+		return [{ ...schema, blockKey: String(schema.id), blockFilter: {}, appDialog: true, fileLink: null }]
 	}
 
 	return declared
@@ -43,5 +43,6 @@ export function blocksOf(schema) {
 			blockKey: schema.id + ':' + (entry.key || index),
 			blockFilter: entry.filter && typeof entry.filter === 'object' ? entry.filter : {},
 			appDialog: entry.appDialog !== false,
+			fileLink: entry.type === 'fileLink' ? { ...entry, key: schema.id + ':' + (entry.key || index) } : null,
 		}))
 }

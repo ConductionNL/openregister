@@ -9,7 +9,7 @@
 			<NcLoadingIcon :size="20" />
 			<span>{{ t('openregister', 'Loading connections...') }}</span>
 		</div>
-		<p v-else-if="objects.length === 0" class="or-mail-object-empty">
+		<p v-else-if="objects.length === 0 && externalLinks.items.length === 0" class="or-mail-object-empty">
 			{{ t('openregister', 'Not connected to anything yet.') }}
 		</p>
 		<div v-else class="or-mail-object-list">
@@ -58,6 +58,47 @@
 					{{ t('openregister', 'Drop an attachment here to add it') }}
 				</p>
 			</div>
+			<div
+				v-for="link in externalLinks.items"
+				:key="externalKey(link)"
+				class="or-mail-object-card or-mail-object-card--external"
+				:class="{ 'or-mail-object-card--drop-target': dropTarget === externalKey(link) }"
+				@dragover.prevent="dropTarget = externalKey(link)"
+				@dragleave="dropTarget === externalKey(link) && (dropTarget = null)"
+				@drop.prevent="onExternalDrop($event, link)">
+				<div class="or-mail-object-card__header">
+					<span class="or-mail-object-card__kind">
+						<span class="or-mail-object-card__schema">{{ link.kind }}</span>
+						<span v-if="link.identifier" class="or-mail-object-card__id">{{ link.identifier }}</span>
+					</span>
+					<NcButton
+						variant="tertiary"
+						:aria-label="t('openregister', 'Remove connection to {name}', { name: link.title })"
+						@click="disconnectExternal(link)">
+						<template #icon>
+							<Close :size="20" />
+						</template>
+					</NcButton>
+				</div>
+				<a
+					class="or-mail-object-card__title"
+					:href="link.url || undefined"
+					target="_blank"
+					:title="t('openregister', 'Open connected item')">
+					{{ link.title }}
+				</a>
+				<p v-if="link.context" class="or-mail-object-card__sub">
+					{{ link.context }}
+				</p>
+				<ObjectStatus
+					class="or-mail-object-card__status"
+					:status="link.status"
+					:handler="link.handler" />
+				<p v-if="dropTarget === externalKey(link)" class="or-mail-object-card__drop">
+					<Paperclip :size="16" />
+					{{ t('openregister', 'Drop an attachment here to add it') }}
+				</p>
+			</div>
 		</div>
 
 		<RemoveConnectionDialog
@@ -90,6 +131,7 @@ import ObjectStatus from './ObjectStatus.vue'
 import { mailMessageTab } from '../composables/mailMessageTab.js'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
 import { displayNameOf } from '../displayNames.js'
+import { addAttachment, disconnect, externalLinks, fileLinkBlocks, loadConnections } from '../fileLinks.js'
 import { objectHandler, objectIdentifier, objectStatus, objectSubline } from '../objectRow.js'
 
 /**
@@ -133,6 +175,7 @@ export default {
 
 	data() {
 		return {
+			externalLinks,
 			objects: [],
 			loading: false,
 			uploadingObjectUuid: null,
@@ -149,6 +192,52 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * The key of a file-link connection's card.
+		 *
+		 * @param {object} link The connection.
+		 * @return {string}
+		 */
+		externalKey(link) {
+			return 'x:' + link.block + ':' + link.id
+		},
+
+		/**
+		 * Add a dropped attachment to a file-link connection.
+		 *
+		 * @param {DragEvent} event The drop.
+		 * @param {object} link The connection.
+		 * @return {Promise<void>}
+		 */
+		async onExternalDrop(event, link) {
+			this.dropTarget = null
+			const raw = event.dataTransfer?.getData(ATTACHMENT_MIME)
+			const block = fileLinkBlocks[link.block]
+			if (!raw || !block) return
+			try {
+				await addAttachment(block, link, { accountId: this.accountId, messageId: this.messageId }, JSON.parse(raw))
+				showSuccess(addedToText(link.title))
+			} catch (err) {
+				showError(t('openregister', 'Failed to add attachment'))
+				console.error('[ObjectsTab] Attachment drop on a file link failed:', err)
+			}
+		},
+
+		/**
+		 * Remove a file-link connection: its file links, its files and its record.
+		 *
+		 * @param {object} link The connection.
+		 * @return {Promise<void>}
+		 */
+		async disconnectExternal(link) {
+			try {
+				await disconnect(fileLinkBlocks[link.block] || null, link, { accountId: this.accountId, messageId: this.messageId })
+			} catch (err) {
+				showError(t('openregister', 'Could not remove the connection'))
+				console.error('[ObjectsTab] File link removal failed:', err)
+			}
+		},
+
 		t,
 		objectIdentifier,
 		objectSubline,
@@ -248,6 +337,9 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async loadObjects() {
+			if (this.accountId && this.messageId) {
+				loadConnections(this.accountId, this.messageId)
+			}
 			if (!this.accountId || !this.messageId) {
 				this.objects = []
 				this.$emit('count', 0)
