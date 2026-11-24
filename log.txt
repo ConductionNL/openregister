@@ -3919,3 +3919,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T01:09:28Z integrator-20261123T232305-69d0e3c5 MERGED-TREE a2d8657218: 1 PRs, main now 751c2764d2 = tested tree
 2026-11-24T01:27:37Z session-20261124T012737-e8405b30 or-fix-0 start
+2026-11-24T01:51:14Z or-fix-4: share N%10==4 vs main 85629dd4: pushed 10314 49c0c03b (csv conflict), 10494 c10b41a3, 10504 d68dcaf7, 10554 39b6229a (FilesRegistrar conflicts after #11024 revert), 10244 fbccec66 (appName dropped by 5ceb54df), 10514 5b824b49 (PermissionAsk + appName in tests); 10154 10214 10234 10524 10534 10614 11004 11014 merge clean and green beyond inherited reds; 10624 BLOCK stands (stylelint 18 peers); 10634 10964 10984 no PHP change; 10464 skipped
