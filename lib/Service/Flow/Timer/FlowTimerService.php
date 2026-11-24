@@ -161,7 +161,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		}
 
 		$timer = $this->factory()->build(config: $config, act: $act);
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 
 		// Arm-time validation is AUTHORITATIVE: resolve the ladder and check
 		// every preBreach rung on the timeline before anything is written.
@@ -230,7 +230,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$priorFireAt = $timer->getFireAt();
 		$consumed = $this->arithmetic->calculator->measure(
 			span: new CalendarSpan(from: $timer->getRunningSince(), to: $act->now, calendar: $calendar),
@@ -289,7 +289,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 
 		return $this->transactional(
 			mutation: function () use ($timer, $calendar, $decision, $act, $now): FlowTimer {
@@ -415,7 +415,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $prior->getCalendarSlug(), organisation: $prior->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $prior)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$successor = $this->factory()->successor(
 			scope: new FlowTimerScope(timer: $prior, calendar: $calendar),
 			act: $act
@@ -691,7 +691,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			return 0;
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$ladder = $this->arithmetic->ladder->resolveLadder(timer: $timer);
 		$firedKeys = $this->firedKeys(timerUuid: (string)$timer->getUuid());
 		$subject = $this->projection()->subjectTask(timer: $timer);
@@ -791,7 +791,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$act = $grant->act;
 		$extension->assertValid();
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$added = $this->arithmetic->calculator->convert(
 			conversion: new UnitConversion(
 				value: (float)$extension->amount,
@@ -1107,7 +1107,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return FlowTimerScope The scope.
 	 */
 	private function scope(FlowTimer $timer): FlowTimerScope {
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		return new FlowTimerScope(timer: $timer, calendar: $calendar);
 	}//end scope()
 

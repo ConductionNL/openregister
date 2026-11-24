@@ -43,6 +43,8 @@ use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Kernel\Contracts\TextEntityDetectorInterface;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 
 /**
  * @covers \OCA\OpenRegister\Files\FilesRegistrar
@@ -88,6 +90,7 @@ class FilesRegistrarTest extends TestCase
         $this->assertSame(ObjectFilesArchive::class, FilesRegistrar::BINDINGS[ObjectFilesArchiveInterface::class]);
         $this->assertSame(\OCA\OpenRegister\Service\Object\CopyFiles::class, FilesRegistrar::BINDINGS[\OCA\OpenRegister\Kernel\Contracts\ObjectFileCopierInterface::class]);
         $this->assertTrue(is_subclass_of(FileOwnershipHandlerInterface::class, FileAccountInterface::class));
+        $this->assertSame(EntityRecognitionHandler::class, FilesRegistrar::BINDINGS[TextEntityDetectorInterface::class]);
         $this->assertTrue(is_subclass_of(FileRestrictionGuardInterface::class, FileReadRestrictionInterface::class));
         $this->assertTrue(is_subclass_of(ShareUrlBuilderInterface::class, ShareLinkUrlInterface::class));
         $this->assertTrue(is_subclass_of(PreviewSize::class, PreviewDimensionsInterface::class));
