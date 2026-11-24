@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
@@ -43,6 +44,24 @@ class FlowRegistrarTest extends TestCase {
 			actual: $context->services
 		);
 	}//end testRegistersTheServicesInOrder()
+
+	/**
+	 * register() also aliases every Processes service contract to its class, after the flow wiring's own aliases.
+	 *
+	 * @return void
+	 */
+	public function testBindsEveryProcessesServiceContract(): void {
+		$context = new RecordingRegistrationContext();
+		FlowRegistrar::register(context: $context);
+
+		$expected = [];
+		foreach (ProcessesServiceBindings::BINDINGS as $contract => $class) {
+			$expected[] = ['alias' => $contract, 'target' => $class];
+		}
+
+		$this->assertNotSame([], $expected);
+		$this->assertSame($expected, array_slice($context->aliases, -count($expected)));
+	}//end testBindsEveryProcessesServiceContract()
 
 	/**
 	 * Every factory builds an instance of the name it is registered under.
