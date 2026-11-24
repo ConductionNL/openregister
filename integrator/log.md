@@ -93,3 +93,6 @@
 2026-11-24T21:43:46Z GREEN prs=10363,10458,10494 main=0bdacec631 integrator-cloud
 2026-11-24T21:56:24Z GREEN prs=11017,11049 main=58d3af3f40 integrator-cloud
 2026-11-24T22:08:59Z GREEN prs=10283,10506,10539 main=85883fab13 integrator-cloud
+2026-11-24T22:22:30Z GREEN prs=10552,10623,10625,10633 main=b8bc4718b4 integrator-cloud
+2026-11-24T22:28:38Z AUTOPARK prs=10587,10635,10640,10643 main=b8bc4718b4 integrator-cloud (parked 10635: sbom)
+2026-11-24T22:33:45Z AUTOPARK prs=10587,10640,10643 main=b8bc4718b4 integrator-cloud (parked 10640: sbom)
