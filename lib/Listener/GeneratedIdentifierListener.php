@@ -68,6 +68,13 @@ class GeneratedIdentifierListener implements IEventListener {
 	public const ERROR_CODE = 'generated-identifier-frozen';
 
 	/**
+	 * The width of the openregister_sequences.scope_key column.
+	 *
+	 * @var int
+	 */
+	private const SCOPE_KEY_LENGTH = 64;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
@@ -432,7 +439,8 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * A partitioned counter adds the partition value, encoded so that no value
 	 * can read as another sequence's name or period. An empty partition value
 	 * draws from the unpartitioned counter, the one the sequence had before it
-	 * was partitioned.
+	 * was partitioned. A key that would not fit the scope_key column
+	 * (SCOPE_KEY_LENGTH) carries a hash of the sequence and partition instead.
 	 *
 	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string $period The period keying the counter.
@@ -448,7 +456,16 @@ class GeneratedIdentifierListener implements IEventListener {
 			return 'gen:'.$declaration->sequence().'|'.$period;
 		}
 
-		return 'gen:'.$declaration->sequence().'@'.rawurlencode($partition).'|'.$period;
+		$key = 'gen:'.$declaration->sequence().'@'.rawurlencode($partition).'|'.$period;
+		if (strlen($key) <= self::SCOPE_KEY_LENGTH) {
+			return $key;
+		}
+
+		// Too long for the scope_key column: the sequence and partition are
+		// hashed together, so a long value (a uuid, a full name) still gets a
+		// counter of its own, the same one on every write, and the period
+		// still ends the key.
+		return 'gen:#'.sha1($declaration->sequence().'@'.$partition).'|'.$period;
 
 	}//end scopeKey()
 

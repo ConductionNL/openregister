@@ -114,15 +114,16 @@ class GeneratedIdentifierPartitionTest extends TestCase {
 	/**
 	 * A registration number counted per unit and reset each year.
 	 *
-	 * @param mixed $partitionBy The partitionBy value to declare.
+	 * @param mixed  $partitionBy The partitionBy value to declare.
+	 * @param string $sequence    The sequence name to declare.
 	 *
 	 * @return array<string, mixed> The property definition.
 	 */
-	private static function partitionedProperty(mixed $partitionBy='unit'): array {
+	private static function partitionedProperty(mixed $partitionBy='unit', string $sequence='post'): array {
 		return [
 			'type' => 'string',
 			GeneratedIdentifierDeclaration::ANNOTATION => [
-				'sequence' => 'post',
+				'sequence' => $sequence,
 				'format' => '{year}-{seq:5}',
 				'resetOn' => 'year',
 				'partitionBy' => $partitionBy,
@@ -202,6 +203,44 @@ class GeneratedIdentifierPartitionTest extends TestCase {
 		$this->assertSame(expected: 'gen:post@A%7C2020|'.date('Y'), actual: $this->asked[0]);
 
 	}//end testAUnitValueIsEncodedInTheKey()
+
+	/**
+	 * A key that would overflow the 64-character scope_key column is hashed, and
+	 * each long unit still keeps a counter of its own.
+	 *
+	 * @return void
+	 */
+	public function testALongUnitValueStillFitsTheScopeKeyColumn(): void {
+		$schema = $this->createMock(originalClassName: Schema::class);
+		$schema->method('getProperties')->willReturn(
+			['registrationNumber' => self::partitionedProperty(sequence: 'filinq-post-register')]
+		);
+		$this->schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->listener = new GeneratedIdentifierListener(
+			$this->schemaMapper,
+			new RunningNumbers($this->sequences),
+			$this->createMock(originalClassName: LoggerInterface::class),
+			new ObjectEventGate($this->createMock(originalClassName: IEventDispatcher::class))
+		);
+		$year = date('Y');
+		$finance = '6f1c0d3e-2b4a-4c5d-9e8f-0a1b2c3d4e5f';
+		$housing = '7a2d1e4f-3c5b-4d6e-8f9a-1b2c3d4e5f60';
+
+		$this->assertSame(expected: $year.'-00001', actual: $this->create(body: ['unit' => $finance]));
+		$this->assertSame(expected: $year.'-00001', actual: $this->create(body: ['unit' => $housing]));
+		$this->assertSame(expected: $year.'-00002', actual: $this->create(body: ['unit' => $finance]));
+
+		foreach ($this->asked as $key) {
+			$this->assertLessThanOrEqual(expected: 64, actual: strlen($key), message: $key);
+			$this->assertStringEndsWith(suffix: '|'.$year, string: $key);
+		}
+
+		$this->assertNotSame(expected: $this->asked[0], actual: $this->asked[1], message: 'two units must not share a counter');
+		$this->assertSame(expected: $this->asked[0], actual: $this->asked[2]);
+		$this->assertSame(expected: 'gen:#'.sha1('filinq-post-register@'.$finance).'|'.$year, actual: $this->asked[0]);
+
+	}//end testALongUnitValueStillFitsTheScopeKeyColumn()
 
 	/**
 	 * A supplied number pushes on the counter of its own unit, not the shared one.
