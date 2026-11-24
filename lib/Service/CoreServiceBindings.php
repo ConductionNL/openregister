@@ -26,6 +26,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\TranslationCompletenessInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaWriteRightsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
@@ -212,6 +213,7 @@ use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifier;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantLapseNotifierInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
+use OCA\OpenRegister\Service\Rbac\MandateEvidence;
 use OCA\OpenRegister\Service\Rbac\MatrixRowKeys;
 use OCA\OpenRegister\Service\Rbac\MatrixRowWhere;
 use OCA\OpenRegister\Service\Rbac\ObjectAccessReport;
@@ -247,6 +249,8 @@ use OCA\OpenRegister\Service\Rbac\ScopeAuditInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolverInterface;
+use OCA\OpenRegister\Service\Retention\ExpiredObjectStore;
+use OCA\OpenRegister\Service\Retention\ExpiredObjectStoreInterface;
 use OCA\OpenRegister\Service\Registers\EntityEventPublisher;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandlerInterface;
@@ -359,6 +363,7 @@ final class CoreServiceBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		ExpiredObjectStoreInterface::class => ExpiredObjectStore::class,
 		DerivedTranslationsInterface::class => TranslationStatusService::class,
 		RequestLanguagesInterface::class => LanguageService::class,
 		TranslationCompletenessInterface::class => TranslationStatusService::class,
@@ -366,6 +371,7 @@ final class CoreServiceBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		MandateEvidenceInterface::class => MandateEvidence::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
 		WidgetAnnotationValidatorInterface::class => WidgetAnnotationValidator::class,
 		ApiCapabilitiesServiceInterface::class => ApiCapabilitiesService::class,

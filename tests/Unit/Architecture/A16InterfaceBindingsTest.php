@@ -26,7 +26,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilderInterface;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogueInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistry;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleGuardRegistryInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver;
@@ -58,12 +58,12 @@ final class A16InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AdministeredValidationEnforcer::class => [AdministeredValidationEnforcerInterface::class, ContractBindings::class],
-		CalculationPayloadBuilder::class => [CalculationPayloadBuilderInterface::class, ContractBindings::class],
-		DependentValueTable::class => [DependentValueTableInterface::class, ContractBindings::class],
-		LifecycleGuardRegistry::class => [LifecycleGuardRegistryInterface::class, ContractBindings::class],
-		LifecycleTransitionResolver::class => [LifecycleTransitionResolverInterface::class, ContractBindings::class],
-		OperatorCatalogue::class => [OperatorCatalogueInterface::class, ContractBindings::class],
+		AdministeredValidationEnforcer::class => [AdministeredValidationEnforcerInterface::class, ProcessesServiceBindings::class],
+		CalculationPayloadBuilder::class => [CalculationPayloadBuilderInterface::class, ProcessesServiceBindings::class],
+		DependentValueTable::class => [DependentValueTableInterface::class, ProcessesServiceBindings::class],
+		LifecycleGuardRegistry::class => [LifecycleGuardRegistryInterface::class, ProcessesServiceBindings::class],
+		LifecycleTransitionResolver::class => [LifecycleTransitionResolverInterface::class, ProcessesServiceBindings::class],
+		OperatorCatalogue::class => [OperatorCatalogueInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**
