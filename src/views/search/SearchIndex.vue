@@ -19,6 +19,7 @@ import Merge from 'vue-material-design-icons/Merge.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import EditableCell from '../../components/tables/EditableCell.vue'
+import RecordsTreeView from './RecordsTreeView.vue'
 import {
 	cardSize,
 	galleryCardFields,
@@ -105,6 +106,7 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		EditableCell,
+		RecordsTreeView,
 	},
 
 	data() {
@@ -291,6 +293,27 @@ export default {
 		 */
 		calendarConfig() {
 			return this.activeView?.presentation?.calendar || {}
+		},
+
+		/**
+		 * The active view's tree config (`labelField`/`fields`).
+		 *
+		 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+		 * @return {object}
+		 */
+		treeConfig() {
+			return this.activeView?.presentation?.tree || {}
+		},
+
+		/**
+		 * The register the tree lists from.
+		 *
+		 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-saved-view-can-present-hierarchical-records-as-a-tree
+		 * @return {string|number}
+		 */
+		treeRegister() {
+			const register = objectStore.searchRegister
+			return register?.id ?? register?.slug ?? register ?? ''
 		},
 
 		/**
@@ -965,6 +988,15 @@ export default {
 			rowKey="id"
 			@rangeChange="handleCalendarRangeChange"
 			@objectClick="handleRowClick" />
+
+		<RecordsTreeView
+			v-else-if="presentationType === 'tree'"
+			:key="`tree-${activeViewId}`"
+			:register="treeRegister"
+			:schema="normalizedSchema"
+			:config="treeConfig"
+			:viewKey="String(activeViewId || '')"
+			@open="handleRowClick" />
 
 		<div
 			v-else-if="presentationType === 'gallery'"
