@@ -4987,3 +4987,4 @@
 10568 2e920d60ef786a272b959ca4d563271bf1317734 REVERIFY or-fix-8: merged main 037f95a8 (csv union, yaml regenerated), info.xml dev.8 (main took dev.7); Architecture green, Db green bar inherited AreaMapperRegistrarsTest; review needed
 11078 ce17085f66e9aeedbc3cf003b1cc6720a56190e5 REVERIFY or-fix-8: merged main 037f95a8 (sbom conflict; regenerated from merged lockfiles, --check current); review needed
 10526 bbe9e922266f47c67d342022b86f9ca1dd9b4f70 REVERIFY or-fix-6: merged main 7bf08ec0 (second merge: only the components yaml conflicted, regenerated; ComponentDefinition/DependencyRules green); PR tests OK (83 tests, 365 assertions), phpstan clean; review needed
+10498 97dea9a46220d5051371f519379b7d5ddd66081b APPROVE cloud-or-reviewer-2: fast path; since approved ecb399a3 only a main merge; PR-side diff same 24 files, +/- lines identical; merges clean with main 7bf08ec0, listener golden green
