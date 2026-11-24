@@ -26,8 +26,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Db\RegisterMapperInterface;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -36,7 +34,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Export\ExportGateInterface;
 use OCA\OpenRegister\Service\ExportService;
-use OCA\OpenRegister\Service\RegisterScopedSchemaResolvers;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -74,8 +71,6 @@ class RecordPdfController extends Controller {
 	 *
 	 * @param IRequest                  $request        The request.
 	 * @param IUserSession              $userSession    The signed-in user.
-	 * @param RegisterMapperInterface   $registerMapper Finds the register.
-	 * @param SchemaMapperInterface     $schemaMapper   Finds the schema within it.
 	 * @param ObjectOperationsInterface $objectService  Reads the record with the user's rights.
 	 * @param ExportService             $exportService  Renders the PDF.
 	 * @param ExportGateInterface       $exportGate     Checks the export right.
@@ -84,8 +79,6 @@ class RecordPdfController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly RegisterMapperInterface $registerMapper,
-		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly ExportService $exportService,
 		private readonly ExportGateInterface $exportGate,
@@ -117,8 +110,17 @@ class RecordPdfController extends Controller {
 		}
 
 		try {
-			$pair = RegisterScopedSchemaResolvers::over(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper)
-				->resolvePair(registerRef: $register, schemaRef: $schema);
+			// The schema is resolved inside the register, never instance-wide: the
+			// same register-scoped resolution the list export uses.
+			$this->objectService->setRegister(register: $register);
+			$this->objectService->setSchema(schema: $schema);
+			$pair = [
+				'register' => $this->objectService->getCurrentRegisterEntity(),
+				'schema'   => $this->objectService->getCurrentSchemaEntity(),
+			];
+			if ($pair['register'] === null || $pair['schema'] === null) {
+				return self::notFound();
+			}
 
 			$refusal = $this->exportGate->refusalFor(schema: $pair['schema'], profile: self::PROFILE, registerId: $pair['register']->getId());
 			if ($refusal !== null) {

@@ -23,9 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\RecordPdfController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -85,11 +83,11 @@ final class RecordPdfControllerTest extends TestCase {
 	private ExportGateInterface&MockObject $gate;
 
 	/**
-	 * The register mapper double.
+	 * The register reference no register answers to.
 	 *
-	 * @var RegisterMapperInterface&MockObject
+	 * @var string|null
 	 */
-	private RegisterMapperInterface&MockObject $registers;
+	private ?string $missingRegister = null;
 
 	/**
 	 * The logger double.
@@ -120,10 +118,17 @@ final class RecordPdfControllerTest extends TestCase {
 		$this->schema = new Schema();
 		$this->schema->setId(2);
 
-		$this->registers = $this->createMock(RegisterMapperInterface::class);
-		$this->registers->method('find')->willReturn($register);
-
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
+		$this->objects->method('setRegister')->willReturnCallback(function (Register|string|int $ref): ObjectOperationsInterface {
+			if ($ref === $this->missingRegister) {
+				throw new DoesNotExistException('no register');
+			}
+
+			return $this->objects;
+		});
+		$this->objects->method('setSchema')->willReturnSelf();
+		$this->objects->method('getCurrentRegisterEntity')->willReturn($register);
+		$this->objects->method('getCurrentSchemaEntity')->willReturnCallback(fn (): Schema => $this->schema);
 		$this->export = $this->createMock(ExportService::class);
 		$this->gate = $this->createMock(ExportGateInterface::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
@@ -138,14 +143,9 @@ final class RecordPdfControllerTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturnCallback(fn (): ?IUser => $this->user);
 
-		$schemas = $this->createMock(SchemaMapperInterface::class);
-		$schemas->method('findInIds')->willReturn($this->schema);
-
 		return new RecordPdfController(
 			request: $this->createMock(IRequest::class),
 			userSession: $session,
-			registerMapper: $this->registers,
-			schemaMapper: $schemas,
 			objectService: $this->objects,
 			exportService: $this->export,
 			exportGate: $this->gate,
@@ -198,7 +198,7 @@ final class RecordPdfControllerTest extends TestCase {
 	 */
 	public function testWithoutAUserTheAnswerIs401(): void {
 		$this->user = null;
-		$this->registers->expects($this->never())->method('find');
+		$this->objects->expects($this->never())->method('setRegister');
 		$this->objects->expects($this->never())->method('find');
 
 		$response = $this->controller()->show(register: 'zaken', schema: 'zaak', id: 'uuid-42');
@@ -239,11 +239,38 @@ final class RecordPdfControllerTest extends TestCase {
 		$this->assertSame(404, $this->controller()->show(register: 'zaken', schema: 'zaak', id: 'hidden')->getStatus());
 		$this->assertSame(404, $this->controller()->show(register: 'zaken', schema: 'zaak', id: 'gone')->getStatus());
 
-		$registers = $this->createMock(RegisterMapperInterface::class);
-		$registers->method('find')->willThrowException(new DoesNotExistException('no register'));
-		$this->registers = $registers;
+		$this->missingRegister = 'elders';
 		$this->assertSame(404, $this->controller()->show(register: 'elders', schema: 'zaak', id: 'uuid-42')->getStatus());
 	}//end testARecordOutOfReachIs404()
+
+	/**
+	 * The register is set before the schema, so the schema resolves inside it; a
+	 * schema the register does not carry answers 404 without reading the record.
+	 *
+	 * @return void
+	 */
+	public function testTheSchemaIsResolvedInsideTheRegister(): void {
+		$calls = [];
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->method('setRegister')->willReturnCallback(static function (Register|string|int $ref) use (&$calls, &$objects): ObjectOperationsInterface {
+			$calls[] = 'register:' . $ref;
+			return $objects;
+		});
+		$objects->method('setSchema')->willReturnCallback(static function (Schema|string|int $ref) use (&$calls, &$objects): ObjectOperationsInterface {
+			$calls[] = 'schema:' . $ref;
+			return $objects;
+		});
+		$objects->method('getCurrentRegisterEntity')->willReturn(new Register());
+		$objects->method('getCurrentSchemaEntity')->willReturn(null);
+		$objects->expects($this->never())->method('find');
+		$this->objects = $objects;
+		$this->gate->expects($this->never())->method('refusalFor');
+
+		$response = $this->controller()->show(register: 'zaken', schema: 'zaak', id: 'uuid-42');
+
+		$this->assertSame(['register:zaken', 'schema:zaak'], $calls);
+		$this->assertSame(404, $response->getStatus());
+	}//end testTheSchemaIsResolvedInsideTheRegister()
 
 	/**
 	 * Without an office server the answer names it; any other failure is logged and answers 500.
