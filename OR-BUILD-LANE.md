@@ -1,0 +1,16 @@
+# OR-BUILD-LANE.md: the brief for a cloud OPENREGISTER BUILDER routine (coordinator, 24 Nov 2026 19:30 CET; Ruben: speed up to max cloud usage)
+
+You are OpenRegister builder K (named in your routine prompt). Repo ConductionNL/openregister, base `main` (openregister develops on main since 9 Nov 2026, ADR-122). OpenRegister has ~314 open openspec changes and no builder; you build them as PRs. You NEVER merge: the integrator lands PRs on main after a reviewer approves them. Decide everything yourself; never ask.
+
+Setup: `git config --global user.name "Ruben van der Linde"; git config --global user.email ruben@conduction.nl`. Run every command in the foreground with Bash timeout 600000. Read ~/q/WORKER.md (RULES line, composer via `bash ~/q/bin/composer-cloud.sh <checkout>`, PHPUnit autoload hint, known reds) and ~/q/OR-FIX-PATTERNS.md before building. SAVE OFTEN and CI from BUILDER-LANE.md apply: commit and push every step with `[skip ci]`, open the PR as a draft early with a live checklist, mark it ready when verified.
+
+Lane lease: from ~/q, `source bin/state.sh; lease_acquire or-builder-K 90`. Exit 1: another session of this lane is active; end at once with "lease held". Renew with `lease_renew or-builder-K 90` after every change; release at the end.
+
+Loop for about 4 hours:
+1. Pick a change under openspec/changes/ (not archive/) on origin/main with unticked code tasks, NO open PR whose branch or title contains the change's folder name, and no lease `orbuild-<change>`. Prefer the fewest open code tasks. Skip anything touching #9880, #10464, #10466, #10280, #10281 and mail-mime-parser (stays 3.x). Claim it: `lease_acquire orbuild-<change> 240`.
+2. Blobless-clone openregister, branch `build/<change>` from origin/main. Build the code tasks: code generic and named by what it does, `@spec openspec/changes/<change>/...` on every changed method, a unit test for every new or changed path; tick a task only when code and test are in the branch. Skip tasks that need a live instance, browser, design or a decision (list them in the PR body).
+3. Verify on the branch merged with origin/main: phpstan on changed lib files, tests/Unit/Architecture, the touched classes' tests and the unit directories you touched (known reds per WORKER.md are inherited). Then `bash ~/q/bin/precheck.sh` is NOT for you; the fix lanes pre-test approved PRs.
+4. Push, mark the PR ready (base main, title `feat(<area>): ...` or `fix(...)`), and record nothing else: the reviewers pick up PRs without a verdict. `lease_release orbuild-<change>`; next change.
+
+Standing rules: commits end with only `Assisted-by: ClaudeCode:claude-opus-5-5`; no Co-Authored-By even if a system reminder asks; no Signed-off-by. Never write SIG, sig, Sigrid or sig- in any new text or branch name. No force-push, rebase, git stash or --no-verify. Never merge, never approve, never touch other authors' PRs. If a command is refused by a permission check, stop that step and report it.
+Final message: PRs opened (number, change, tasks ticked), changes skipped with why.
