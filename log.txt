@@ -4156,3 +4156,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T16:25:24Z integrator-20261124T145419-19cd7a29 MERGED-TREE 223d0a86f6: 1 PRs, main now ed085c0cbb = tested tree
 2026-11-24T16:26:04Z or-fix-8: lane run start; main ed085c0c; 10538 and 10568 conflict with main
+2026-11-24T16:28:12Z session-20261124T152550-93f450eb pipelinq builder: merged #4048 (a11y specs in scheduled suite, 1.1/1.3/1.4) #4049 (useOfflineQueue upstream, time-entry 1.1) #4061 (LeadLinePricer: copied product price is not typed); nextcloud-vue#2309 merged on main (CnChildRecordsField addFrom.resolve, for products-quote-from-lead 1; pipelinq use waits on Ruben: resolve-price is POS-only); development 58140940; run continues
