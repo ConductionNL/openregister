@@ -61,6 +61,11 @@ class TimelineEntryService {
 	use OptionalPayloadString;
 
 	/**
+	 * The audit action of a withdrawal.
+	 */
+	public const WITHDRAW_AUDIT_ACTION = 'timeline.entry.withdrawn';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TimelineEntryRecords      $records     The record store, kind registry and language detector.
@@ -227,9 +232,92 @@ class TimelineEntryService {
 			objectUuid: (string)$object->getUuid(),
 			visibility: ($query->filters['visibility'] ?? null),
 			limit: $query->limit,
-			offset: ($query->offset ?? 0)
+			offset: ($query->offset ?? 0),
+			includeWithdrawn: (($query->filters['withdrawn'] ?? false) === true)
 		);
 	}//end listForObject()
+
+	/**
+	 * Refuse a withdrawal before anything is written: the caller must manage the
+	 * object and give a reason. A request that changes more than the withdrawal
+	 * checks this first, so a refused withdrawal leaves the entry untouched.
+	 *
+	 * @param ObjectEntity $object The object the entry hangs on.
+	 * @param string       $reason Why it is withdrawn.
+	 *
+	 * @return string The reason, trimmed.
+	 *
+	 * @throws TimelinePermissionException When the caller may not manage the object.
+	 * @throws TimelineValidationException When no reason is given.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 */
+	public function assertMayWithdraw(ObjectEntity $object, string $reason): string {
+		if ($this->visibility->mayManage(object: $object) === false) {
+			throw new TimelinePermissionException('You do not have permission to withdraw entries on this object');
+		}
+
+		$reason = trim($reason);
+		if ($reason === '') {
+			throw new TimelineValidationException(['withdrawn.reason' => 'A withdrawal needs a reason']);
+		}
+
+		return $reason;
+	}//end assertMayWithdraw()
+
+	/**
+	 * Withdraw an entry: it leaves the working timeline and stays in the record,
+	 * with who withdrew it, when and why (D-C29-4).
+	 *
+	 * A withdrawal is a fact about the record, so it is not undone and a second
+	 * withdrawal answers the entry unchanged. It is written on the object's audit
+	 * trail.
+	 *
+	 * @param ObjectEntity  $object The object the entry hangs on.
+	 * @param TimelineEntry $entry  The entry.
+	 * @param string        $reason Why it is withdrawn.
+	 *
+	 * @return TimelineEntry The written record.
+	 *
+	 * @throws TimelinePermissionException When the caller may not manage the object.
+	 * @throws TimelineValidationException When no reason is given.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 */
+	public function withdraw(ObjectEntity $object, TimelineEntry $entry, string $reason): TimelineEntry {
+		$reason = $this->assertMayWithdraw(object: $object, reason: $reason);
+
+		if ($entry->getWithdrawnAt() !== null) {
+			return $entry;
+		}
+
+		$entry->setWithdrawnBy($this->callerUid());
+		$entry->setWithdrawnAt(new DateTime());
+		$entry->setWithdrawnReason($reason);
+		$entry->setUpdated(new DateTime());
+		$written = $this->records->entryMapper->update($entry);
+		$this->auditWithdrawal(object: $object, entry: $written);
+
+		return $written;
+	}//end withdraw()
+
+	/**
+	 * Write the withdrawal on the object's audit trail; a failure is logged, never thrown.
+	 *
+	 * @param ObjectEntity  $object The object.
+	 * @param TimelineEntry $entry  The withdrawn entry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 */
+	private function auditWithdrawal(ObjectEntity $object, TimelineEntry $entry): void {
+		$this->visibility->auditTimelineEvent(
+			object: $object,
+			action: self::WITHDRAW_AUDIT_ACTION,
+			context: ['entry' => $entry->getUuid()] + ($entry->withdrawal() ?? [])
+		);
+	}//end auditWithdrawal()
 
 	/**
 	 * One entry by its stable id, scoped to the object it must hang on.

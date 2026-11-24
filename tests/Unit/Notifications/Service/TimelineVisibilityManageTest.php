@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -81,7 +82,7 @@ class TimelineVisibilityManageTest extends TestCase {
 		$this->session->method('getUser')->willReturn($user);
 		$this->schemaMapper->method('find')->with('3', [], false, false)->willReturn($schema);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'manage', 'handler', 'author', true, $object)
+			->with(...PermissionAskArgs::with($schema, 'manage', 'handler', 'author', true, $object))
 			->willReturn($holds);
 
 		$this->assertSame($holds, $this->service->mayManageObject($object));

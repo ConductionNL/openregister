@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
@@ -92,11 +93,13 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				groupBy: ['field' => 'status'],
-				metrics: [
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'status'],
+					metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -133,10 +136,12 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				metrics: [
+				layout: new AggregationLayout(
+					metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -158,11 +163,13 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				metrics: [
+				layout: new AggregationLayout(
+					metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
 					['metric' => 'avg', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -193,7 +200,8 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'sum',
 				field: 'amount',
-				metrics: [
+				layout: new AggregationLayout(
+					metrics: [
 					[
 						'metric' => 'sum',
 						'field' => 'amount',
@@ -208,6 +216,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 					],
 					['metric' => 'sum', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -234,8 +243,9 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'sum',
 				field: 'amount',
-				groupBy: ['status'],
-				metrics: [
+				layout: new AggregationLayout(
+					groupBy: ['status'],
+					metrics: [
 					[
 						'metric' => 'sum',
 						'field' => 'amount',
@@ -244,6 +254,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 					],
 					['metric' => 'count'],
 				]
+				)
 			)
 		);
 
@@ -263,11 +274,13 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				groupBy: ['field' => 'status'],
-				metrics: [
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'status'],
+					metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -307,7 +320,9 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				metrics: [['metric' => 'count']]
+				layout: new AggregationLayout(
+					metrics: [['metric' => 'count']]
+				)
 			)
 		);
 

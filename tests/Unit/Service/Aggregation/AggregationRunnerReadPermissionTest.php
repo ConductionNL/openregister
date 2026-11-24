@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
@@ -65,6 +66,7 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\DB\IPreparedStatement;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -244,7 +246,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$result = $runner->runAdhoc(
 			register: $this->register(),
 			schema: $this->schema(),
-			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'level']),
+			query: AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'level'])),
 			bypassRbac: true
 		);
 
@@ -265,7 +267,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$runner->runAdhoc(
 			register: $this->register(),
 			schema: $this->schema(),
-			query: AggregationQuery::create(metric: 'count', groupBy: ['field' => 'level'])
+			query: AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'level']))
 		);
 	}//end testAdhocWithoutBypassStillUsesTheCache()
 
@@ -359,7 +361,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * @return AggregationQuery The query.
 	 */
 	private function countByLevel(): AggregationQuery {
-		return AggregationQuery::create(metric: 'count', groupBy: ['field' => 'level']);
+		return AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'level']));
 	}//end countByLevel()
 
 	/**
@@ -491,9 +493,9 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		);
 
 		$permissionHandler = $this->createMock(PermissionHandler::class);
-		$permissionHandler->method('hasPermission')->willReturnCallback(
+		$permissionHandler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static fn (Schema $schema, string $action): bool => in_array($action, $grants, true)
-		);
+		));
 
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getDatabasePlatform')->willReturn($this->createMock(SqlitePlatform::class));

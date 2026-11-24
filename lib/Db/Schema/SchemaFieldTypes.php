@@ -63,6 +63,8 @@ final class SchemaFieldTypes {
 		'owner' => 'string',
 		'application' => 'string',
 		'organisation' => 'string',
+		'classification' => 'string',
+		'catalogue' => 'json',
 		'authorization' => 'json',
 		'sharedWith' => 'json',
 		'deleted' => 'datetime',
@@ -77,5 +79,6 @@ final class SchemaFieldTypes {
 		'talk' => 'json',
 		'deck' => 'json',
 		'draft' => 'json',
+		'formerSlugs' => 'json',
 	];
 }//end class

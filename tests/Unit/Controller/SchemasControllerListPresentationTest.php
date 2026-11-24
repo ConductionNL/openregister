@@ -68,7 +68,6 @@ final class SchemasControllerListPresentationTest extends TestCase {
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 
 		$this->controller = SchemasControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(IAppConfig::class),
 			$this->schemaMapper,

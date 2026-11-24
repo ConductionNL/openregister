@@ -40,6 +40,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Pins allowed and refused outcomes of a permission check made as a named user inside a system scope.
@@ -139,7 +140,7 @@ class ObjectServiceRunAsInsideSystemScopeGoldenTest extends TestCase {
 	 * @return bool The answer.
 	 */
 	private function mayCreate(): bool {
-		return $this->handler->hasPermission(schema: $this->editorsOnly(), action: 'create');
+		return $this->handler->hasPermission(ask: new PermissionAsk(schema: $this->editorsOnly(), action: 'create'));
 	}//end mayCreate()
 
 	/**

@@ -70,6 +70,10 @@ use stdClass;
  * @method void setApplication(?string $application)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ * @method string|null getClassification()
+ * @method void setClassification(?string $classification)
+ * @method array|null getCatalogue()
+ * @method void setCatalogue(?array $catalogue)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
  * @method array|null getSharedWith()
@@ -94,6 +98,8 @@ use stdClass;
  * @method void setDeck(?array $deck)
  * @method array|null getDraft()
  * @method void setDraft(?array $draft)
+ * @method array|null getFormerSlugs()
+ * @method void setFormerSlugs(?array $formerSlugs)
  */
 interface SchemaInterface extends JsonSerializable {
 

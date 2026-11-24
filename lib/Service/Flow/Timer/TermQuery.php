@@ -43,17 +43,36 @@ final class TermQuery {
 	 * @param DateTimeInterface    $anchor   The anchor moment.
 	 * @param array<string, mixed> $sla      `{value, unit, rollToWorkingDay?}`.
 	 * @param array<int, mixed>    $ladder   Optional rungs, each `{value, unit}`.
+	 * @param ResolvedWorkingCalendar|null $resolution How the calendar was resolved, when it was; null for a definition given as is.
 	 *
 	 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-working-calendar-resolves-per-record-type-unit-and-instance-req-wca-005
 	 */
 	public function __construct(
 		public readonly WorkingCalendar $calendar,
 		public readonly DateTimeInterface $anchor,
 		public readonly array $sla,
 		public readonly array $ladder = [],
+		public readonly ?ResolvedWorkingCalendar $resolution = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * A query on a resolved calendar, so the diagnostic names how it was resolved.
+	 *
+	 * @param ResolvedWorkingCalendar $resolution The resolved calendar and its provenance.
+	 * @param DateTimeInterface       $anchor     The anchor moment.
+	 * @param array<string, mixed>    $sla        `{value, unit, rollToWorkingDay?}`.
+	 * @param array<int, mixed>       $ladder     Optional rungs.
+	 *
+	 * @return self The query.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-working-calendar-resolves-per-record-type-unit-and-instance-req-wca-005
+	 */
+	public static function resolved(ResolvedWorkingCalendar $resolution, DateTimeInterface $anchor, array $sla, array $ladder = []): self {
+		return new self(calendar: $resolution->calendar, anchor: $anchor, sla: $sla, ladder: $ladder, resolution: $resolution);
+	}//end resolved()
 
 	/**
 	 * The anchor as an immutable instant, which every measurement starts from.

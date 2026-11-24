@@ -80,6 +80,8 @@ interface FederatedConfigServiceInterface {
 	 * @param array $selection What to share.
 	 * @param ConfigPublishTarget $target Where to publish: repo, path, branch and visibility of a created repo.
 	 * @param string $credentialId The broker credential id custodying the GitHub token.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array `{published: true, path, status}`.
 	 *
@@ -87,7 +89,14 @@ interface FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function publish(string $typeId, array $selection, ConfigPublishTarget $target, string $credentialId): array;
+	public function publish(
+		string $typeId,
+		array $selection,
+		ConfigPublishTarget $target,
+		string $credentialId,
+		?string $appId = null,
+		?string $actingUserId = null
+	): array;
 
 	/**
 	 * Discover published bundles across GitHub by their type's discovery topic.
@@ -99,13 +108,35 @@ interface FederatedConfigServiceInterface {
 	 *
 	 * @param string $topic The discovery topic to search for.
 	 * @param string|null $credentialId Optional broker credential for an authenticated search.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array<int, array<string, mixed>> The discovered repositories as
 	 *                                          `{repo, name, description, url, stars, updated, topics}` cards.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function discover(string $topic, ?string $credentialId = null): array;
+	public function discover(string $topic, ?string $credentialId = null, ?string $appId = null, ?string $actingUserId = null): array;
+
+	/**
+	 * Discover published bundles and say how the search went.
+	 *
+	 * Like discover(), with a free-text term searched together with the topic,
+	 * and the outcome instead of an empty list on failure: `ok`, `rate_limited`
+	 * (GitHub answered 403 or 429) or `unreachable` (any other failure). A read
+	 * the broker refuses is retried anonymously; `brokerUsed` says which one
+	 * GitHub answered.
+	 *
+	 * @param string              $topic        The discovery topic to search for.
+	 * @param string              $term         A free-text term searched together with the topic; '' for none.
+	 * @param string|null         $credentialId Optional broker credential for an authenticated search.
+	 * @param BrokerIdentity|null $identity     The app and acting user the broker call is made for; OpenRegister when null.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>, brokerUsed: bool, rateLimited: bool, status: int}
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function discoverOutcome(string $topic, string $term = '', ?string $credentialId = null, ?BrokerIdentity $identity = null): array;
 
 	/**
 	 * Fetch a published bundle file from a GitHub repository.
@@ -118,6 +149,8 @@ interface FederatedConfigServiceInterface {
 	 * @param string $repo The `owner/repo`.
 	 * @param string $path The bundle file path within the repo.
 	 * @param string|null $credentialId Optional broker credential for an authenticated read.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array The decoded bundle.
 	 *
@@ -125,7 +158,49 @@ interface FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function fetchBundle(string $repo, string $path, ?string $credentialId = null): array;
+	public function fetchBundle(
+		string $repo,
+		string $path,
+		?string $credentialId = null,
+		?string $appId = null,
+		?string $actingUserId = null
+	): array;
+
+	/**
+	 * Read a package's files out of a GitHub repository at a ref: one tarball
+	 * download where possible, else the tree and one read per file; a brokered
+	 * read the broker refuses is retried anonymously.
+	 *
+	 * @param string              $repo         The `owner/repo`.
+	 * @param string|null         $ref          A branch, tag or commit; the default branch when null.
+	 * @param array<int, string>  $paths        Exact paths, and prefixes ending in `/`; [] reads every file.
+	 * @param string|null         $credentialId Optional broker credential.
+	 * @param BrokerIdentity|null $identity     The app and acting user a brokered read names.
+	 *
+	 * @return array{files: array<string, string>, truncated: bool, source: string}
+	 *
+	 * @throws RuntimeException When the repository or the ref is not a safe GitHub coordinate.
+	 */
+	public function fetchPackage(
+		string $repo,
+		?string $ref = null,
+		array $paths = [],
+		?string $credentialId = null,
+		?BrokerIdentity $identity = null
+	): array;
+
+	/**
+	 * Publish many files into a GitHub repository as one Git Data commit on the
+	 * branch tip's tree, creating the repository when absent, and return the
+	 * commit sha. A request made only-into-a-new-repository refuses one that exists.
+	 *
+	 * @param RepoFilesPublish $request The files, the message, the target and the broker credential.
+	 *
+	 * @return array{published: true, repo: string, branch: string, commit: string, files: int}
+	 *
+	 * @throws RuntimeException When the publish cannot be made.
+	 */
+	public function publishFiles(RepoFilesPublish $request): array;
 
 	/**
 	 * This instance's signing public key (base64) for others to trust.
@@ -174,8 +249,7 @@ interface FederatedConfigServiceInterface {
 	/**
 	 * Whether a source may be installed from.
 	 *
-	 * An empty allowlist is "not yet enforced" — an org opts into enforcement by
-	 * populating it — so this is safe to ship before every org curates sources.
+	 * An empty allowlist allows nothing, and an empty source is never allowed.
 	 *
 	 * @param string $source The source id (a repo, an org).
 	 *

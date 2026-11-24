@@ -18,6 +18,7 @@
                     "expiresAt": null,
                     "onTimeout": null,
                     "onReject": null,
+                    "requiredMandate": null,
                     "metadata": {
                         "flowNodeType": "openregister.user-task",
                         "flowNode": "ask",
@@ -123,6 +124,7 @@
                     "expiresAt": null,
                     "onTimeout": null,
                     "onReject": null,
+                    "requiredMandate": null,
                     "metadata": {
                         "flowNodeType": "openregister.user-task",
                         "flowNode": "ask",
@@ -245,6 +247,7 @@
                     "expiresAt": null,
                     "onTimeout": null,
                     "onReject": null,
+                    "requiredMandate": null,
                     "metadata": {
                         "flowNodeType": "openregister.user-task",
                         "flowNode": "ask",
@@ -378,6 +381,7 @@
                     "expiresAt": null,
                     "onTimeout": null,
                     "onReject": null,
+                    "requiredMandate": null,
                     "metadata": {
                         "flowNodeType": "openregister.user-task",
                         "flowNode": "ask",
@@ -483,6 +487,7 @@
                     "expiresAt": null,
                     "onTimeout": null,
                     "onReject": null,
+                    "requiredMandate": null,
                     "metadata": {
                         "flowNodeType": "openregister.user-task",
                         "flowNode": "ask",

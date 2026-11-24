@@ -39,6 +39,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
@@ -138,7 +139,7 @@ class ObjectsControllerValidateSampleTest extends TestCase {
 	}
 
 	public function testAValidSampleIsAnswered200Valid(): void {
-		$this->permissions->method('hasPermission')->willReturnCallback(static fn ($schema, string $action): bool => $action === 'create');
+		$this->permissions->method('hasPermission')->willReturnCallback(static fn (PermissionAsk $ask): bool => $ask->action === 'create');
 		$asked = null;
 
 		$response = $this->controller(['gemeente' => 'Utrecht', '_route' => 'x'])->validateSample('reg', 'sch', $this->service(new ObjectValidationVerdict(), $asked));
@@ -173,7 +174,15 @@ class ObjectsControllerValidateSampleTest extends TestCase {
 		$stored->setUuid('u-1');
 		$stored->setOwner('alice');
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($this->schema, 'update', null, 'alice', true, $stored)
+			->with(
+				$this->callback(
+					fn (PermissionAsk $ask): bool => $ask->schema === $this->schema
+						&& $ask->action === 'update'
+						&& $ask->userId === null
+						&& $ask->objectOwner === 'alice'
+						&& $ask->object === $stored
+				)
+			)
 			->willReturn(true);
 		$asked = null;
 

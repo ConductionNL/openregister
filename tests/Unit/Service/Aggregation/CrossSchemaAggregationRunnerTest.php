@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
@@ -55,6 +56,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -276,6 +278,51 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		$this->assertSame('count', $result['metric']);
 
 	}//end testAtSelfFieldReferenceResolvedFromParentRow()
+
+	/**
+	 * @test
+	 * A cross-schema `from:` slug two registers share resolves to the run's own
+	 * register's schema, and the aggregate runs on that register's table.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	public function testCrossSchemaFromSlugResolvesInsideTheRunsRegisterFirst(): void {
+		$parentSchema = $this->makeSchema('regulation', 10, [
+			'enrolledCount' => ['from' => 'enrolment', 'select' => 'count'],
+		]);
+		$ownTarget      = $this->makeSchema('enrolment', 20);
+		$otherAppTarget = $this->makeSchema('enrolment', 99);
+		$parentRegister = $this->makeRegister('scholiq', [10, 20]);
+		$otherRegister  = $this->makeRegister('other-app', [99]);
+
+		$this->registerMapper->method('find')->with('scholiq')->willReturn($parentRegister);
+		$this->schemaMapper->method('find')->willReturnMap([
+			['regulation', [], true, false, $parentSchema],
+			['enrolment', [], true, false, $otherAppTarget],
+		]);
+		$this->schemaMapper->method('findBySlugInIds')->willReturnCallback(
+			static fn (string $slug, array $ids): ?Schema => ($slug === 'enrolment' && $ids === [10, 20]) ? $ownTarget : null
+		);
+		$this->registerMapper->method('findAll')->willReturn([$otherRegister, $parentRegister]);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->usePhpFallback();
+
+		$read = [];
+		$this->magicMapper->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			function (RegisterSchema $table) use (&$read): array {
+				$read[] = $table->register->getSlug() . '/' . $table->schema->getId();
+				return [$this->makeEntityStub([]), $this->makeEntityStub([])];
+			}
+		);
+
+		$result = $this->runner->run(
+			ref: new NamedAggregationRef(register: 'scholiq', schema: 'regulation', name: 'enrolledCount'),
+			options: new NamedAggregationOptions(bypassRbac: true, parentRow: [])
+		);
+
+		$this->assertSame(2, $result['value']);
+		$this->assertSame(['scholiq/20'], $read);
+	}//end testCrossSchemaFromSlugResolvesInsideTheRunsRegisterFirst()
 
 	/**
 	 * @test
@@ -548,13 +595,13 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		// Parent schema: permitted. Target schema: forbidden.
 		$callCount = 0;
 		$this->permissionHandler->method('hasPermission')
-			->willReturnCallback(
+			->willReturnCallback(PermissionAskArgs::spread(
 				function () use (&$callCount): bool {
 					$callCount++;
 					// First call = parent schema (allowed), second = target schema (denied).
 					return $callCount === 1;
 				}
-			);
+			));
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Forbidden');

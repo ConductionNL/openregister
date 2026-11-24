@@ -37,6 +37,7 @@
                 "routingStrategy",
                 "routingFallback",
                 "performerType",
+                "requiredMandate",
                 "priority",
                 "dueAt",
                 "expiresAt",
@@ -137,6 +138,12 @@
                     "label": "Fallback performer",
                     "type": "principal",
                     "help": "Who gets the task when the strategy finds nobody."
+                },
+                {
+                    "key": "requiredMandate",
+                    "label": "Required mandate",
+                    "type": "text",
+                    "help": "A catalogue permission a delegate or stand-in must hold on the subject. Empty: read access."
                 },
                 {
                     "key": "priority",

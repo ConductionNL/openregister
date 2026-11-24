@@ -165,6 +165,7 @@ use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Service\Object\BulkCacheInvalidator;
 use OCA\OpenRegister\Service\Object\DraftSubject;
 use OCA\OpenRegister\Service\Object\ObjectCacheInvalidator;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\SavedObjectScope;
 use OCA\OpenRegister\Service\Object\SavedScopeIds;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -1228,6 +1229,8 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         // already provides request-scoped caching (findCache) and supports
         // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
         try {
+            // Stays global: reached only when no register is set; with one, resolveSchemaRef() scopes the slug
+            // first.
             return $this->schemaMapper->find(
                 id: $schemaRef,
                 _rbac: false,
@@ -6391,7 +6394,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function saveObjectsStreaming(StreamingSave $save): BatchOperationStatus
     {
         $target = new ObjectFindTarget(register: $save->register, schema: $save->schema);
-        return $this->preservingScope(operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $save->rows, target: $target));
+        return $this->preservingScope(
+            operation: fn (): BatchOperationStatus => $this->streamIntoTarget(objects: $save->rows, target: $target, dryRun: $save->dryRun)
+        );
     }//end saveObjectsStreaming()
 
     /**
@@ -6402,34 +6407,42 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @param iterable         $objects The rows to stream.
      * @param ObjectFindTarget $target  The register and schema the caller named.
+     * @param bool             $dryRun  Whether the rows are only checked and classified, not written.
      *
      * @return BatchOperationStatus The status of the streamed batch.
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Carries the streaming save's dry-run mode through.
+     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/widget-record-import/tasks.md
      */
-    private function streamIntoTarget(iterable $objects, ObjectFindTarget $target): BatchOperationStatus
+    private function streamIntoTarget(iterable $objects, ObjectFindTarget $target, bool $dryRun=false): BatchOperationStatus
     {
         $this->applyScope(register: $target->register, schema: $target->schema);
-        return $this->streamIntoContext(objects: $objects);
+        return $this->streamIntoContext(objects: $objects, dryRun: $dryRun);
     }//end streamIntoTarget()
 
     /**
      * Stream rows into the current register and schema.
      *
      * @param iterable $objects The rows to save.
+     * @param bool     $dryRun  Whether the rows are only checked and classified, not written.
      *
      * @return BatchOperationStatus The status of the run.
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Carries the streaming save's dry-run mode through.
+     *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/widget-record-import/tasks.md
      */
-    private function streamIntoContext(iterable $objects): BatchOperationStatus
+    private function streamIntoContext(iterable $objects, bool $dryRun=false): BatchOperationStatus
     {
         // The reference cache is request-scoped and this call is a logical
         // boundary: verdicts from an earlier batch must not decide this one.
         $this->saveHandler->clearReferenceValidationCache();
 
         return $this->saveHandler->saveObjectsStreaming(
-            save: new StreamingSave(register: $this->currentRegister, schema: $this->currentSchema, rows: $objects)
+            save: new StreamingSave(register: $this->currentRegister, schema: $this->currentSchema, rows: $objects, dryRun: $dryRun)
         );
     }//end streamIntoContext()
 
@@ -6667,7 +6680,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     public function migrate(ObjectMigration $migration): array
     {
         $source       = $this->migrationSource(ref: $migration->source);
-        $targetSchema = $this->utilityHandler->normalizeEntity(entity: $migration->target->schema, type: 'schema');
+        $targetSchema = $this->utilityHandler->normalizeEntity(
+            entity: $migration->target->schema,
+            type: 'schema',
+            register: $migration->target->register
+        );
         if ($source === null || ($targetSchema instanceof Schema) === false) {
             throw new OcpDoesNotExistException('One or more registers/schemas not found');
         }
@@ -6712,7 +6729,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     private function migrationSource(RegisterSchemaRef $ref): ?RegisterSchema
     {
         $register = $this->utilityHandler->normalizeEntity(entity: $ref->register, type: 'register');
-        $schema   = $this->utilityHandler->normalizeEntity(entity: $ref->schema, type: 'schema');
+        $schema   = $this->utilityHandler->normalizeEntity(entity: $ref->schema, type: 'schema', register: $register);
         if (($register instanceof Register) === false || ($schema instanceof Schema) === false) {
             return null;
         }
@@ -6739,10 +6756,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $permitted = [];
         foreach ($this->objectMapper->findMultiple($readable) as $object) {
             $mayUpdate = $this->permissionHandler->hasPermission(
-                schema: $table->schema,
-                action: 'update',
-                objectOwner: $object->getOwner(),
-                object: $object
+                ask: (new PermissionAsk(schema: $table->schema, action: 'update'))
+                    ->askedBy(userId: null, objectOwner: $object->getOwner())
+                    ->about(object: $object, register: null)
             );
             if ($mayUpdate === true) {
                 $permitted[] = (string) $object->getUuid();

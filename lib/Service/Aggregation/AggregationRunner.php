@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Support\NullFilter;
@@ -74,6 +75,7 @@ use RuntimeException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget;
 
 /**
@@ -964,10 +966,7 @@ class AggregationRunner implements AggregationRunnerInterface {
 			metric: $query->metric,
 			field: $query->field,
 			filter: $this->placeholders->resolveArray($query->filter),
-			groupBy: $query->groupBy,
-			dateBucket: $query->dateBucket,
-			metrics: $query->metrics,
-			cumulative: $query->cumulative
+			layout: $query->layout()
 		);
 	}//end resolveAdhocQuery()
 
@@ -5044,8 +5043,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 			throw new RuntimeException('Cross-schema aggregation spec is missing a non-empty `from` key.');
 		}
 
-		// Load the target schema.
-		$targetSchema = $this->loadSchema(schemaRef: $fromRef);
+		// Load the target schema. A slug is unique within a register, not
+		// across the instance: the run's own register answers first, and only a
+		// `from:` it does not carry resolves globally (it may legitimately name
+		// another register's schema).
+		$scoped       = (new SchemaRefInRegister(schemas: $this->schemaMapper))->findInRegister(schemaRef: $fromRef, register: $run->register);
+		$targetSchema = ($scoped ?? $this->loadSchema(schemaRef: $fromRef));
 
 		// SECURITY: gate on read permission for the *target* schema so a
 		// cross-schema aggregation cannot leak counts from a schema the
@@ -5069,8 +5072,12 @@ class AggregationRunner implements AggregationRunnerInterface {
 			);
 		}
 
-		// Find the register that owns the target schema.
-		$targetRegister = $this->findRegisterForSchema(schema: $targetSchema);
+		// Find the register that owns the target schema: the run's own when it
+		// answered the slug, else the first register that lists it.
+		$targetRegister = $run->register;
+		if ($scoped === null) {
+			$targetRegister = $this->findRegisterForSchema(schema: $targetSchema);
+		}
 		if ($targetRegister === null) {
 			throw new RuntimeException(
 				sprintf('No register found that contains schema "%s".', $fromRef)
@@ -5489,9 +5496,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 	 *
 	 * GLOBAL resolution, deliberately retained for the two callers that hold no
 	 * register boundary: {@see findSchema()} when invoked without a register ref,
-	 * and the cross-schema `from:` target in {@see runCrossSchemaAggregation()},
-	 * whose ref is written by the schema author and may legitimately point at
-	 * another register (the runner then locates that schema's own register via
+	 * and the cross-schema `from:` target in {@see runCrossSchemaAggregation()}
+	 * when the run's own register does not carry that slug: the ref is written by
+	 * the schema author and may legitimately point at another register (the
+	 * runner then locates that schema's own register via
 	 * {@see findRegisterForSchema()}). Every path that DOES carry a `{register}`
 	 * uses {@see loadSchemaInRegister()} instead.
 	 *
@@ -5560,12 +5568,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private function mayAggregate(Schema $schema, ?string $userId): bool {
 		foreach (['read', 'list'] as $action) {
 			if ($this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: $action,
-				userId: $userId,
-				objectOwner: null,
-				_rbac: true,
-				object: null
+				ask: (new PermissionAsk(schema: $schema, action: $action))
+					->askedBy(userId: $userId, objectOwner: null)
+					->about(object: null, register: null),
+				_rbac: true
 			) === true
 			) {
 				return true;
