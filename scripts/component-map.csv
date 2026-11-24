@@ -4636,6 +4636,7 @@ Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notificatio
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Migration/Version1Date20261121170000.php,36,Migration,,,,,Platform
+Notifications/Controller/Support/GroupAdministration.php,,Notifications,,,,,Notifications
 Service/MappingRun.php,,Service,,,,,Integrations
 Service/RegisterSearch.php,,Service,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
