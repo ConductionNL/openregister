@@ -70,7 +70,8 @@ with a credential they did not choose.
 > is refused. While `installGroups` or `publishGroups` is empty, only administrators
 > may install or publish.
 
-An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
+An administrator manages trust under **Administration settings → Open Register →
+Shared configuration trust**, or through the API at `GET`/`PUT /api/federated-config/trust`:
 
 - **`sourceAllowlist`** — comma-separated GitHub sources you install from. An
   install from a source not on the list is refused, and an empty list refuses
@@ -87,7 +88,11 @@ An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
   / install. Admins are always allowed; with an empty list nobody else is.
 
 Share this instance's public key (`GET /api/federated-config/public-key`) with
-organisations that want to trust the configuration you publish.
+organisations that want to trust the configuration you publish. The settings section
+shows it with a copy button.
+
+For a step-by-step walkthrough for users, see
+[Share a configuration](tutorials/user/09-share-a-configuration.md).
 
 ## Configuration sets and installable apps
 
