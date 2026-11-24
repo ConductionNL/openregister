@@ -113,6 +113,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicLockClaim;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectUnlock;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
+use OCA\OpenRegister\Db\MagicMapper\MagicRelationsTable;
 use OCA\OpenRegister\Db\MagicMapper\SlugBackfillCursor;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionPage;
@@ -4791,6 +4792,26 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return (new MagicSlugTable(db: $this->db, tableName: $tableName))->fillEmpty(uuid: $uuid, slug: $slug);
 	}//end updateSlugColumn()
+
+	/**
+	 * Add a UUID to one object's `_relations`, touching only that column and `_updated`.
+	 *
+	 * The inverse side of a relation: no version bump, audit-trail entry or
+	 * object event, because no property of the object changes.
+	 *
+	 * @param RegisterSchema $table       The register and schema whose table to use.
+	 * @param string         $uuid        The object pointed at.
+	 * @param string         $relatedUuid The object that points at it.
+	 *
+	 * @return int Rows updated: 0 when the object is missing, deleted or already holds the UUID.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function appendRelation(RegisterSchema $table, string $uuid, string $relatedUuid): int {
+		$tableName = $this->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
+
+		return (new MagicRelationsTable(db: $this->db, tableName: $tableName))->append(uuid: $uuid, relatedUuid: $relatedUuid);
+	}//end appendRelation()
 
 	/**
 	 * Find objects by a list of uuids within ONE register+schema table.
