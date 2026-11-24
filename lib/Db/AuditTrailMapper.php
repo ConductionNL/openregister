@@ -59,6 +59,8 @@ use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\IntegrityAuditEntry;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
@@ -1030,6 +1032,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditAggregationServiceInterface|null The service, or null.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AuditTrailCollaborators is the factory that builds the service from the app config.
+	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function windowAggregation(): AuditAggregationServiceInterface|null {
@@ -1112,6 +1116,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setObjectUuid($objectEntity->getUuid());
 		$auditTrail->setAction($action);
 		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
+		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $change->cascadeContext));
 
 		$this->stampActorAndObject(auditTrail: $auditTrail, objectEntity: $objectEntity);
 		$this->stampAttributions(auditTrail: $auditTrail, objectEntity: $objectEntity);
@@ -1264,6 +1269,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end removedFields()
 
 	/**
+	 * The uuid of the object a cascade acted for, as the indexed `trigger_object` column holds it.
+	 *
+	 * A projection of the cascade context that {@see self::foldCascadeContext()}
+	 * writes into the sealed `changed` payload, so the column adds no fact the
+	 * chain does not already cover.
+	 *
+	 * @param array|null $cascadeContext The cascade context, if any.
+	 *
+	 * @return string|null The triggering object's uuid, or null when the entry is not part of a cascade.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	public static function triggerObjectOf(?array $cascadeContext): ?string {
+		$trigger = ($cascadeContext['triggerObject'] ?? null);
+		if (is_string($trigger) === false || trim($trigger) === '') {
+			return null;
+		}
+
+		return $trigger;
+	}//end triggerObjectOf()
+
+	/**
 	 * Fold a referential-integrity cascade context into the change set.
 	 *
 	 * It is part of the initial INSERT, in the key shape the post-insert UPDATE
@@ -1341,6 +1368,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @param ObjectEntity $objectEntity The entity the row describes.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is the request-scoped frame a system operation opens.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -1529,6 +1558,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	public function recordIntegrityAction(IntegrityAuditEntry $entry): AuditTrail {
 		$auditTrail = self::integrityRow(entry: $entry);
 		$this->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $entry->object);
+		self::keepUntil(auditTrail: $auditTrail, until: $entry->expiresNoEarlierThan);
 		$this->insert(entity: $auditTrail);
 
 		return $auditTrail;
@@ -1549,6 +1579,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setObjectUuid($entry->objectUuid);
 		$auditTrail->setAction($entry->action);
 		$auditTrail->setChanged($entry->changed);
+		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $entry->changed));
 		$auditTrail->setUser($entry->userId);
 		$auditTrail->setCreated(new DateTime());
 		if ($entry->schemaId !== null) {
@@ -1561,6 +1592,32 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $auditTrail;
 	}//end integrityRow()
+
+	/**
+	 * Push a finite expiry out to the given moment, so the evidence of a cleared
+	 * reference outlives the recovery window of the delete that cleared it.
+	 *
+	 * An entry retained indefinitely (null expiry) stays so, and an expiry
+	 * already later than the floor is left as it is: the floor only lengthens.
+	 * Set before the row is sealed, as every expiry is.
+	 *
+	 * @param AuditTrail              $auditTrail The entry being written.
+	 * @param \DateTimeImmutable|null $until      The earliest expiry, or null for no floor.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	public static function keepUntil(AuditTrail $auditTrail, ?\DateTimeImmutable $until): void {
+		$expires = $auditTrail->getExpires();
+		if ($until === null || $expires === null) {
+			return;
+		}
+
+		if ($expires->getTimestamp() < $until->getTimestamp()) {
+			$auditTrail->setExpires(DateTime::createFromImmutable($until));
+		}
+	}//end keepUntil()
 
 	/**
 	 * Resolve the audit row's expiry from the object's retention policy.
@@ -2556,6 +2613,118 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $this->findEntities(query: $qb);
 	}//end findObjectActions()
+
+	/**
+	 * Destruction entries created since a moment, oldest first, one page.
+	 *
+	 * Ordered on `created` and then `id`, so consecutive pages neither repeat
+	 * nor skip an entry written in the same second.
+	 *
+	 * @param DestructionQuery $query The moment, register, schema, actor and page.
+	 *
+	 * @return array<int, AuditTrail> The matching destruction entries, oldest first.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function findDestructions(DestructionQuery $query): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->orderBy('created', 'ASC')
+			->addOrderBy('id', 'ASC')
+			->setFirstResult(max(0, $query->offset));
+
+		if ($query->limit !== null) {
+			$qb->setMaxResults(max(0, $query->limit));
+		}
+
+		$this->whereDestruction(qb: $qb, query: $query);
+
+		return $this->findEntities(query: $qb);
+	}//end findDestructions()
+
+	/**
+	 * How many destruction entries a query matches, ignoring its page.
+	 *
+	 * @param DestructionQuery $query The moment, register, schema and actor.
+	 *
+	 * @return int The number of matching destruction entries.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function countDestructions(DestructionQuery $query): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*)'))
+			->from($this->getTableName());
+
+		$this->whereDestruction(qb: $qb, query: $query);
+
+		$result = $qb->executeQuery();
+		$count  = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countDestructions()
+
+	/**
+	 * When the oldest destruction entry still held was written, or null when none is held.
+	 *
+	 * @return DateTimeImmutable|null The oldest destruction entry's `created`.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function oldestDestruction(): ?DateTimeImmutable {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('MIN(created)'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('action', $qb->createNamedParameter(DestructionQuery::DESTRUCTION_ACTION)));
+
+		$result = $qb->executeQuery();
+		$oldest = $result->fetchOne();
+		$result->closeCursor();
+
+		if (is_string($oldest) === false || $oldest === '') {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable($oldest, new DateTimeZone('UTC'));
+		} catch (Exception $e) {
+			return null;
+		}
+	}//end oldestDestruction()
+
+	/**
+	 * Restrict a query to the destruction entries a destruction query names.
+	 *
+	 * `created` is written in the server's UTC clock, so the moment is
+	 * compared in UTC whatever offset the caller gave it.
+	 *
+	 * @param IQueryBuilder    $qb    The query being built.
+	 * @param DestructionQuery $query The moment, register, schema and actor.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	private function whereDestruction(IQueryBuilder $qb, DestructionQuery $query): void {
+		$since = DateTime::createFromImmutable($query->since)->setTimezone(new DateTimeZone('UTC'));
+
+		$qb->where($qb->expr()->eq('action', $qb->createNamedParameter(DestructionQuery::DESTRUCTION_ACTION)))
+			->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+
+		if ($query->registerId !== null) {
+			$qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($query->registerId, IQueryBuilder::PARAM_INT)));
+		}
+
+		if ($query->schemaId !== null) {
+			$qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($query->schemaId, IQueryBuilder::PARAM_INT)));
+		}
+
+		if ($query->actor !== null) {
+			$qb->andWhere($qb->expr()->eq('user', $qb->createNamedParameter($query->actor)));
+		}
+	}//end whereDestruction()
 
 	/**
 	 * Tombstone the rows of one object's trail within an action scope.
