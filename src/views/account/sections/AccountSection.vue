@@ -49,6 +49,18 @@ import { NcButton } from '@nextcloud/vue'
 import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
 import { sectionStatus } from '../../../composables/sectionStatus.js'
+import { fetchSignedInUser } from './signedInUser.js'
+
+/**
+ * Ask the API whether the signed-in user has a deactivation pending.
+ *
+ * @return {Promise<object>} The response; its data holds the status
+ */
+function fetchDeactivationStatus() {
+	return axios.get(
+		generateUrl('/apps/openregister/api/user/me/deactivation-status'),
+	)
+}
 
 export default {
 	name: 'AccountSection',
@@ -76,12 +88,8 @@ export default {
 	async mounted() {
 		try {
 			const [userRes, statusRes] = await Promise.all([
-				axios.get(generateUrl('/apps/openregister/api/user/me')),
-				axios.get(
-					generateUrl(
-						'/apps/openregister/api/user/me/deactivation-status',
-					),
-				),
+				fetchSignedInUser(),
+				fetchDeactivationStatus(),
 			])
 			this.username = userRes.data?.uid || ''
 			this.status = statusRes.data?.status || 'active'
@@ -107,16 +115,27 @@ export default {
 					generateUrl('/apps/openregister/api/user/me/deactivate'),
 					{ reason: this.reason },
 				)
-				this.status = 'pending'
-				this.requestedAt = new Date().toISOString()
-				this.showConfirmModal = false
-				this.setStatus(t('openregister', 'Deactivation request submitted'))
+				this.showRequestPending()
 			} catch (e) {
 				this.setStatusError(
 					e,
 					t('openregister', 'Failed to request deactivation'),
 				)
 			}
+		},
+
+		/**
+		 * Show the request just submitted as pending since now, and close
+		 * the confirmation.
+		 *
+		 * @spec openspec/specs/account-self-service/spec.md
+		 * @return {void}
+		 */
+		showRequestPending() {
+			this.status = 'pending'
+			this.requestedAt = new Date().toISOString()
+			this.showConfirmModal = false
+			this.setStatus(t('openregister', 'Deactivation request submitted'))
 		},
 
 		/**
