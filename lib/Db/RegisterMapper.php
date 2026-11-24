@@ -169,9 +169,12 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * Prevents redundant DB queries when the same register is looked up
 	 * multiple times within one request.
 	 *
-	 * @var array<string, Register>
+	 * Keyed on identifier and the multi-tenancy flag only; the same map
+	 * SchemaMapper uses, see RequestIdentityMap.
+	 *
+	 * @var RequestIdentityMap
 	 */
-	private array $findCache = [];
+	private RequestIdentityMap $findCache;
 
 	/**
 	 * Constructor
@@ -219,6 +222,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		$this->userSession = $tenancy->userSession;
 		$this->groupManager = $tenancy->groupManager;
 		$this->appConfig = $appConfig;
+		$this->findCache = new RequestIdentityMap();
 	}//end __construct()
 
 	/**
@@ -243,19 +247,23 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): Register {
-		// Request-scoped cache, keyed by identifier and both flags.
-		$cacheSuffix = $this->findCacheSuffix(_rbac: $_rbac, _multitenancy: $_multitenancy);
-		$cacheKey = strtolower((string)$id) . $cacheSuffix;
-		if (isset($this->findCache[$cacheKey]) === true) {
-			return $this->findCache[$cacheKey];
+		// Request-scoped cache, keyed by identifier and the multi-tenancy flag.
+		// The RBAC flag is not part of the key: it does not change the row loaded.
+		$cached = $this->findCache->get(identifier: $id, multitenancy: $_multitenancy);
+		if ($cached instanceof Register) {
+			return $cached;
 		}
 
 		$register = $this->findFiltered(
 			lookup: new RegisterLookup(id: $id, rbac: $_rbac, multitenancy: $_multitenancy)
 		);
 
-		$this->findCache[$cacheKey] = $register;
-		$this->cacheRegisterByIdentifiers(register: $register, cacheSuffix: $cacheSuffix);
+		// BUG-DB-10: a null uuid or slug is skipped by the map.
+		$this->findCache->remember(
+			entity: $register,
+			multitenancy: $_multitenancy,
+			identifiers: [$id, $register->getId(), $register->getUuid(), $register->getSlug()]
+		);
 
 		return $register;
 	}//end find()
@@ -288,53 +296,67 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			]
 		);
 
-		$qb = $this->buildFindByIdentifierQuery(id: $lookup->id);
-		$existsBeforeFilter = $this->probeRegisterBeforeFilters(qb: $qb, id: $lookup->id);
+		// One column per query, so an index can serve each; the next arm is
+		// asked only when this one finds nothing (IdentifierArms).
+		$arms = IdentifierArms::of(id: $lookup->id);
+		$miss = null;
+		foreach ($arms as $arm) {
+			$qb = $this->buildFindByIdentifierQuery(id: $lookup->id, arm: $arm);
+			$this->applyOrganisationFilter(
+				qb: $qb,
+				columnName: 'organisation',
+				allowNullOrg: true,
+				multiTenancyEnabled: $lookup->multitenancy
+			);
 
-		$this->applyOrganisationFilter(
-			qb: $qb,
-			columnName: 'organisation',
-			allowNullOrg: true,
-			multiTenancyEnabled: $lookup->multitenancy
-		);
+			// Deterministic slug/uuid resolution: env churn can leave several rows
+			// sharing a slug, which would make findEntity() raise
+			// MultipleObjectsReturnedException (a 500 fleet-wide). The oldest
+			// (lowest-id) register wins; `openregister:registers:dedupe` merges
+			// the duplicates.
+			$qb->orderBy('id', 'ASC');
+			$qb->setMaxResults(1);
 
-		// Deterministic slug/uuid resolution: env churn can leave several rows
-		// sharing a slug, which would make findEntity() raise
-		// MultipleObjectsReturnedException (a 500 fleet-wide). The oldest
-		// (lowest-id) register wins; `openregister:registers:dedupe` merges
-		// the duplicates.
-		$qb->orderBy('id', 'ASC');
-		$qb->setMaxResults(1);
-
-		try {
-			return $this->findEntity(query: $qb);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			// `existsBeforeFilter` separates "no such row" from "the row matched
-			// and then a filter removed it": a bad identifier versus a scoping bug.
-			// Only the scoping bug is an error. A register that does not exist is an
-			// ordinary miss: callers such as ExternalIntegrationRouter probe several
-			// spellings of a register slug and catch this exception, and the probe
-			// above has already logged the absence at warning level, so this line is
-			// debug to avoid reporting the same miss twice.
-			if ($existsBeforeFilter === false) {
-				$this->logger->debug(
-					message: '[RegisterMapper] Register does not exist',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'identifier' => $lookup->id,
-						'existsBeforeFilter' => $existsBeforeFilter,
-						'multiEnabled' => $lookup->multitenancy,
-						'rbacEnabled' => $lookup->rbac,
-						'error' => $e->getMessage(),
-					]
-				);
-
-				throw $e;
+			try {
+				return $this->findEntity(query: $qb);
+			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+				$miss = $e;
 			}
+		}//end foreach
 
-			$this->logger->error(
-				message: '[RegisterMapper] Register not found after filters',
+		$this->reportMiss(lookup: $lookup, arms: $arms, e: $miss);
+	}//end findFiltered()
+
+	/**
+	 * Log a register lookup that every arm missed, and rethrow the miss.
+	 *
+	 * The probe runs only here, on a miss: a hit needs no diagnostics, and asking
+	 * it on every lookup doubled the queries of each uncached register read.
+	 *
+	 * @param RegisterLookup                              $lookup The identifier and filter flags.
+	 * @param array<int, string>                          $arms   The arms that were asked.
+	 * @param \OCP\AppFramework\Db\DoesNotExistException|null $e      The last arm's miss.
+	 *
+	 * @return never
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException Always.
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md#requirement-schema-and-register-resolution-is-read-once-per-request
+	 */
+	private function reportMiss(RegisterLookup $lookup, array $arms, ?\OCP\AppFramework\Db\DoesNotExistException $e): never {
+		$e ??= new \OCP\AppFramework\Db\DoesNotExistException('Register not found: ' . $lookup->id);
+		$existsBeforeFilter = $this->probeRegisterBeforeFilters(id: $lookup->id, arms: $arms);
+
+		// `existsBeforeFilter` separates "no such row" from "the row matched
+		// and then a filter removed it": a bad identifier versus a scoping bug.
+		// Only the scoping bug is an error. A register that does not exist is an
+		// ordinary miss: callers such as ExternalIntegrationRouter probe several
+		// spellings of a register slug and catch this exception, and the probe
+		// above has already logged the absence at warning level, so this line is
+		// debug to avoid reporting the same miss twice.
+		if ($existsBeforeFilter === false) {
+			$this->logger->debug(
+				message: '[RegisterMapper] Register does not exist',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
@@ -347,127 +369,94 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			);
 
 			throw $e;
-		}//end try
-	}//end findFiltered()
-
-	/**
-	 * The find-cache key suffix for a pair of filter flags, such as `:1:0`.
-	 *
-	 * @param bool $_rbac         Whether RBAC applies.
-	 * @param bool $_multitenancy Whether multitenancy applies.
-	 *
-	 * @return string The suffix.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the cache key.
-	 *
-	 * @spec openspec/specs/register-slug-resolution/spec.md
-	 */
-	private function findCacheSuffix(bool $_rbac, bool $_multitenancy): string {
-		return ':' . (int)$_rbac . ':' . (int)$_multitenancy;
-	}//end findCacheSuffix()
-
-	/**
-	 * Cache a found register under its id, uuid and slug, so a later lookup by
-	 * any of them is answered without a query.
-	 *
-	 * @param Register $register    The found register.
-	 * @param string   $cacheSuffix The flag suffix of the lookup.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/register-slug-resolution/spec.md
-	 */
-	private function cacheRegisterByIdentifiers(Register $register, string $cacheSuffix): void {
-		$this->findCache[(string)$register->getId() . $cacheSuffix] = $register;
-
-		// BUG-DB-10: guard against a null uuid before strtolower().
-		$registerUuid = $register->getUuid();
-		if ($registerUuid !== null) {
-			$this->findCache[strtolower($registerUuid) . $cacheSuffix] = $register;
 		}
 
-		if ($register->getSlug() !== null) {
-			$this->findCache[strtolower($register->getSlug()) . $cacheSuffix] = $register;
-		}
-	}//end cacheRegisterByIdentifiers()
+		$this->logger->error(
+			message: '[RegisterMapper] Register not found after filters',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'identifier' => $lookup->id,
+				'existsBeforeFilter' => $existsBeforeFilter,
+				'multiEnabled' => $lookup->multitenancy,
+				'rbacEnabled' => $lookup->rbac,
+				'error' => $e->getMessage(),
+			]
+		);
+
+		throw $e;
+	}//end reportMiss()
 
 	/**
-	 * A query for the register whose uuid, slug (case-insensitive) or, for a
-	 * numeric identifier, id matches. The id comparison is left out for a
-	 * non-numeric identifier because PostgreSQL types it strictly.
+	 * A query for the register one arm of an identifier matches.
 	 *
-	 * @param int|string $id The identifier.
+	 * @param int|string $id  The identifier.
+	 * @param string     $arm The column to match, one of the IdentifierArms constants.
 	 *
 	 * @return IQueryBuilder The query, without filters.
 	 *
 	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md#requirement-schema-and-register-resolution-is-read-once-per-request
 	 */
-	private function buildFindByIdentifierQuery(string|int $id): IQueryBuilder {
+	private function buildFindByIdentifierQuery(string|int $id, string $arm): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
-			->from('openregister_registers');
-
-		$orConditions = $qb->expr()->orX(
-			$qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR)),
-			$qb->expr()->eq(
-				$qb->func()->lower('slug'),
-				$qb->createNamedParameter(strtolower((string)$id), IQueryBuilder::PARAM_STR)
-			)
-		);
-
-		if (is_numeric($id) === true) {
-			$orConditions->add($qb->expr()->eq('id', $qb->createNamedParameter((int)$id, IQueryBuilder::PARAM_INT)));
-		}
-
-		$qb->where($orConditions);
+			->from('openregister_registers')
+			->where(IdentifierArms::condition(qb: $qb, arm: $arm, id: $id));
 
 		return $qb;
 	}//end buildFindByIdentifierQuery()
 
 	/**
 	 * Whether the register exists before the organisation filter, for the
-	 * not-found diagnostics. The probe is capped to one row in id order, so
-	 * duplicate slugs cannot raise MultipleObjectsReturnedException out of it.
+	 * not-found diagnostics. Each arm's probe is capped to one row in id order,
+	 * so duplicate slugs cannot raise MultipleObjectsReturnedException out of it.
 	 *
-	 * @param IQueryBuilder $qb The unfiltered lookup query; it is cloned, not changed.
-	 * @param int|string    $id The identifier, for the log.
+	 * @param int|string         $id   The identifier.
+	 * @param array<int, string> $arms The arms the lookup asked, in order.
 	 *
 	 * @return bool Whether a row matched.
 	 *
 	 * @spec openspec/specs/register-slug-resolution/spec.md
 	 */
-	private function probeRegisterBeforeFilters(IQueryBuilder $qb, string|int $id): bool {
-		$qbBeforeFilter = clone $qb;
-		$qbBeforeFilter->orderBy('id', 'ASC');
-		$qbBeforeFilter->setMaxResults(1);
-		try {
-			$testResult = $this->findEntity(query: $qbBeforeFilter);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-			// The exception class is recorded in `cause` rather than hedged in
-			// prose: absence and duplication have different fixes (learniq#620).
-			$this->logger->warning(
-				message: '[RegisterMapper] Register not resolvable before filters',
+	private function probeRegisterBeforeFilters(string|int $id, array $arms): bool {
+		$cause = \OCP\AppFramework\Db\DoesNotExistException::class;
+		foreach ($arms as $arm) {
+			$qbBeforeFilter = $this->buildFindByIdentifierQuery(id: $id, arm: $arm);
+			$qbBeforeFilter->orderBy('id', 'ASC');
+			$qbBeforeFilter->setMaxResults(1);
+			try {
+				$testResult = $this->findEntity(query: $qbBeforeFilter);
+			} catch (\OCP\AppFramework\Db\DoesNotExistException|\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+				$cause = $e::class;
+				continue;
+			}
+
+			$this->logger->debug(
+				message: '[RegisterMapper] Register exists before filters',
 				context: [
 					'file' => __FILE__,
 					'line' => __LINE__,
 					'identifier' => $id,
-					'cause' => $e::class,
+					'registerId' => $testResult->getId(),
+					'organisation' => $testResult->getOrganisation(),
 				]
 			);
-			return false;
-		}//end try
+			return true;
+		}//end foreach
 
-		$this->logger->debug(
-			message: '[RegisterMapper] Register exists before filters',
+		// The exception class is recorded in `cause` rather than hedged in
+		// prose: absence and duplication have different fixes (learniq#620).
+		$this->logger->warning(
+			message: '[RegisterMapper] Register not resolvable before filters',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
 				'identifier' => $id,
-				'registerId' => $testResult->getId(),
-				'organisation' => $testResult->getOrganisation(),
+				'cause' => $cause,
 			]
 		);
-		return true;
+		return false;
 	}//end probeRegisterBeforeFilters()
 
 	/**
@@ -484,13 +473,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * @return void
 	 */
 	public function clearFindCache(int $registerId): void {
-		// Find every cache key whose value points at this register ID and unset.
-		foreach (array_keys($this->findCache) as $key) {
-			$cached = $this->findCache[$key];
-			if ($cached instanceof Register && $cached->getId() === $registerId) {
-				unset($this->findCache[$key]);
-			}
-		}
+		// Drop every key that points at this register.
+		$this->findCache->forget(entityId: $registerId);
 	}//end clearFindCache()
 
 	/**

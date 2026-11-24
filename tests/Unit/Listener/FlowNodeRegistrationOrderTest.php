@@ -129,6 +129,7 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'RouterNodeInterface',
 				$ns . 'ObjectWriteNodeInterface',
 				$ns . 'TransitionNodeInterface',
+				$ns . 'TagObjectNodeInterface',
 				$ns . 'LinkObjectNodeInterface',
 				$ns . 'ObjectReadNodeInterface',
 				$ns . 'AuditTrailNodeInterface',
@@ -149,6 +150,8 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'TriggerScheduleNodeInterface',
 				$ns . 'TriggerManualNodeInterface',
 				$ns . 'HarvestSourceNodeInterface',
+				// The code step registers last; it hides itself while its runner is absent.
+				$ns . 'CodeNodeInterface',
 			],
 			$registered
 		);
