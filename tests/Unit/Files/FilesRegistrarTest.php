@@ -46,6 +46,8 @@ use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Kernel\Contracts\FileOwnerLookupInterface;
 use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\TextEntityDetectorInterface;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 
 /**
  * @covers \OCA\OpenRegister\Files\FilesRegistrar
@@ -63,7 +65,7 @@ class FilesRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(33, $expected);
+        $this->assertCount(34, $expected);
         $this->assertSame(ObjectFileAccess::class, FilesRegistrar::BINDINGS[ObjectFileRightsInterface::class]);
         $this->assertSame(expected: $expected, actual: $context->aliases);
     }//end testEveryInterfaceIsBoundToItsImplementation()
@@ -92,6 +94,7 @@ class FilesRegistrarTest extends TestCase
         $this->assertTrue(is_subclass_of(FileOwnershipHandlerInterface::class, FileAccountInterface::class));
         $this->assertSame(FileMapper::class, FilesRegistrar::BINDINGS[FileOwnerLookupInterface::class]);
         $this->assertTrue(is_subclass_of(FileMapperInterface::class, FileOwnerLookupInterface::class));
+        $this->assertSame(EntityRecognitionHandler::class, FilesRegistrar::BINDINGS[TextEntityDetectorInterface::class]);
         $this->assertTrue(is_subclass_of(FileRestrictionGuardInterface::class, FileReadRestrictionInterface::class));
         $this->assertTrue(is_subclass_of(ShareUrlBuilderInterface::class, ShareLinkUrlInterface::class));
         $this->assertTrue(is_subclass_of(PreviewSize::class, PreviewDimensionsInterface::class));
