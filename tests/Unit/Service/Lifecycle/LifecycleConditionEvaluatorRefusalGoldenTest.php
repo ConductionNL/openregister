@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Golden outcomes of LifecycleConditionEvaluator::refusal(): when a
+ * Golden outcomes of LifecycleConditionEvaluator::refusalOf(): when a
  * transition condition refuses, what the refusal says, and what is logged.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -69,15 +69,12 @@ class LifecycleConditionEvaluatorRefusalGoldenTest extends TestCase {
 	 * @return array<string, string>|null
 	 */
 	private function refusal(array $spec, array $object = []): ?array {
-		return $this->evaluator()->refusal(
+		return $this->evaluator()->refusalOf(
 			spec: $spec,
-			newData: $object,
-			oldData: [],
-			action: 'decide',
-			from: 'open',
-			to: 'closed',
-			schemaSlug: 'case',
-			field: 'status'
+			attempt: new \OCA\OpenRegister\Service\Lifecycle\TransitionAttempt(
+				write: new \OCA\OpenRegister\Service\Lifecycle\LifecycleWrite(newData: $object, oldData: [], schemaSlug: 'case', field: 'status'),
+				move: new \OCA\OpenRegister\Service\Lifecycle\TransitionMove(action: 'decide', from: 'open', to: 'closed')
+			)
 		);
 	}//end refusal()
 

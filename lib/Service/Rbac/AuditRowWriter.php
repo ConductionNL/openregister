@@ -26,9 +26,10 @@ use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
- * The one write both RevealFlusher and SettingsChangeAuditor make.
+ * The write for callers that build their own audit trail rows.
  *
- * Both record a fact after the thing it describes has already happened, so a
+ * Callers that hand over audit entries instead use AuditEntryRecorder, which
+ * writes through the audit trail's port. Both record a fact after the thing it describes has already happened, so a
  * failed write is logged at ERROR and reported as zero rows written, never
  * thrown: throwing would turn a missing audit row into a failed request.
  *

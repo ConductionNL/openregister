@@ -31,10 +31,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+
 /**
  * Abstraction over the backing store that holds a credential's raw secret.
+ *
+ * Reading a secret (get()) is the Core-owned CredentialSecretReaderInterface,
+ * which this store extends; writing and deleting stay here.
  */
-interface CredentialStore {
+interface CredentialStore extends CredentialSecretReaderInterface {
 	/**
 	 * Store (or overwrite) the secret for a credential.
 	 *
@@ -52,18 +57,6 @@ interface CredentialStore {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	public function put(string $uuid, #[\SensitiveParameter] string $secret, string $scope = 'personal'): void;
-
-	/**
-	 * Retrieve the secret for a credential, or null when none is stored.
-	 *
-	 * @param string $uuid The owning `credential` object's UUID (the vault key).
-	 * @param string $scope The credential scope (`personal`|`organisation`); selects the vault owner.
-	 *
-	 * @return string|null The raw secret, or null when absent. Never logged.
-	 *
-	 * @spec openspec/specs/credential-broker/spec.md
-	 */
-	public function get(string $uuid, string $scope = 'personal'): ?string;
 
 	/**
 	 * Delete the secret for a credential (idempotent — a no-op when absent).

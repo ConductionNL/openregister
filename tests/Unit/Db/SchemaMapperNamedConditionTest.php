@@ -30,7 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -56,7 +56,7 @@ class SchemaMapperNamedConditionTest extends TestCase {
 			),
 			appConfig: $this->createMock(IAppConfig::class),
 			services: new SchemaMapperServices(
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				eventDispatcher: new ProcessDeclarationChecksDispatcher(),
 				validator: $this->createMock(PropertyValidatorHandler::class),
 				logger: $this->createMock(LoggerInterface::class)
 			)

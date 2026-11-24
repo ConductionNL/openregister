@@ -25,7 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Db;
 
-use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationMembershipInterface;
 
 /**
  * Pure helpers behind View's serialised presentation and configuration link.
@@ -58,7 +59,7 @@ final class ViewFormatting {
 	/**
 	 * The id, uuid and title of the managing configuration, or null.
 	 *
-	 * @param Configuration|null $configuration The managing configuration.
+	 * @param ConfigurationInterface|null $configuration The managing configuration.
 	 *
 	 * @return (int|null|string)[]|null
 	 *
@@ -66,7 +67,7 @@ final class ViewFormatting {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	public static function managedBy(?Configuration $configuration): ?array {
+	public static function managedBy(?ConfigurationInterface $configuration): ?array {
 		if ($configuration !== null) {
 			return [
 				'id' => $configuration->getId(),
@@ -81,14 +82,16 @@ final class ViewFormatting {
 	/**
 	 * The first configuration whose views list the id, compared strictly.
 	 *
-	 * @param mixed               $viewId         The view's id.
-	 * @param array<Configuration> $configurations The configurations to check.
+	 * @param mixed    $viewId         The view's id.
+	 * @param array<T> $configurations The configurations to check.
 	 *
-	 * @return Configuration|null The managing configuration, or null.
+	 * @return T|null The managing configuration, or null.
+	 *
+	 * @template T of ConfigurationMembershipInterface
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	public static function managing(mixed $viewId, array $configurations): ?Configuration {
+	public static function managing(mixed $viewId, array $configurations): ?ConfigurationMembershipInterface {
 		if (empty($configurations) === true || $viewId === null) {
 			return null;
 		}
@@ -99,15 +102,16 @@ final class ViewFormatting {
 	/**
 	 * The first configuration whose views list the id, compared strictly.
 	 *
-	 * @param mixed                $viewId         The view's id, not null.
-	 * @param array<Configuration> $configurations The configurations to check.
+	 * @param int|string $viewId         The view's id, not null.
+	 * @param array<T>   $configurations The configurations to check.
 	 *
-	 * @return Configuration|null The first listing configuration, or null.
+	 * @return T|null The first listing configuration, or null.
+	 *
+	 * @template T of ConfigurationMembershipInterface
 	 */
-	private static function firstListing(mixed $viewId, array $configurations): ?Configuration {
+	private static function firstListing(int|string $viewId, array $configurations): ?ConfigurationMembershipInterface {
 		foreach ($configurations as $configuration) {
-			$views = $configuration->getViews();
-			if (in_array($viewId, $views, true) === true) {
+			if ($configuration->listsMember(kind: 'views', id: $viewId) === true) {
 				return $configuration;
 			}
 		}

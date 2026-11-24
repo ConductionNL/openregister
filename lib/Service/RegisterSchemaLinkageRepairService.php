@@ -23,6 +23,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCP\DB\IPreparedStatement;
@@ -78,13 +79,6 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 	 * @var string
 	 */
 	private const TABLE_MARKER = 'openregister_table_';
-
-	/**
-	 * Lists the shard tables; `information_schema` is honoured by PostgreSQL and MySQL.
-	 *
-	 * @var string
-	 */
-	private const SHARD_TABLES_QUERY = 'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern';
 
 	/**
 	 * Constructor.
@@ -311,7 +305,10 @@ class RegisterSchemaLinkageRepairService implements RegisterSchemaLinkageRepairS
 	 */
 	private function shardTableNames(): array {
 		try {
-			$stmt = $this->db->prepare(self::SHARD_TABLES_QUERY);
+			// `information_schema` is honoured by PostgreSQL and MySQL; it lists every database, so the scope.
+			$stmt = $this->db->prepare(
+				'SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND ' . (new CatalogueScope(db: $this->db))->condition()
+			);
 			$stmt->bindValue('pattern', '%openregister\_table\_%');
 			$stmt->execute();
 		} catch (Throwable $e) {

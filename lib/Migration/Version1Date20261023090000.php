@@ -29,14 +29,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the user and object quota columns to the organisations table.
  *
  * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
  */
-class Version1Date20261023090000 extends SimpleMigrationStep {
+class Version1Date20261023090000 extends TargetedMigrationStep {
 
 	/**
 	 * The organisations table.
@@ -56,7 +55,7 @@ class Version1Date20261023090000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -78,5 +77,5 @@ class Version1Date20261023090000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

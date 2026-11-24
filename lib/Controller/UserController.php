@@ -27,9 +27,9 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\UserControllerServices;
 use OCA\OpenRegister\Controller\Support\UserResponses;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\FailedAttempt;
 use OCA\OpenRegister\Service\LoginSecurityInterface;
 use OCA\OpenRegister\Service\User\ActivityPeriod;
@@ -148,7 +148,7 @@ class UserController extends Controller {
 		IRequest $request,
 		UserControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->userService = $services->domain->userService;
 		$this->securityService = $services->domain->securityService;
 		$this->userManager = $services->domain->userManager;

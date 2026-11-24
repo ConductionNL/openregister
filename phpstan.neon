@@ -74,6 +74,18 @@ parameters:
         # that type is reported with a different spelling, `has invalid type`,
         # which the base does not cover. Same class of finding, same reason.
         - '#has invalid type OCA\\DAV\\#'
+        # The targeted migration path stands in for Nextcloud's own
+        # MigrationService and Migrator on an upgrade (#10612), so it works on
+        # their classes: `OC\DB\Connection`, which the schema wrapper is built
+        # on, and `OC\DB\SchemaWrapper`, the wrapper every migration step is
+        # written against. Neither is in nextcloud/ocp; both are in every
+        # Nextcloud the app supports, and tests/Db/TargetedMigrationIntegrationTest
+        # runs against the real ones.
+        -
+            message: '#OC\\DB\\(Connection|SchemaWrapper)#'
+            paths:
+                - lib/Migration/TargetedMigrationStep.php
+                - lib/Migration/TargetedSchemaChange.php
         # FilesSidebarListener guards on an OPTIONAL app's event class.
         #
         # The listener is registered for 'OCA\Files\Event\LoadAdditionalScriptsEvent'

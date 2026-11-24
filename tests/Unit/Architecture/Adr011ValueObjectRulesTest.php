@@ -37,6 +37,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	private const VALUE_OBJECTS = [
 		'Kernel/Contracts/ListQuery.php',
 		'Db/RegisterSchema.php',
+		'Kernel/Contracts/ExampleSetInstallInput.php',
 		'Kernel/Contracts/ObjectMigration.php',
 		'Kernel/Contracts/DeckPlacement.php',
 		'Kernel/Contracts/MassValidationRequest.php',
@@ -45,6 +46,9 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/LinkedTaskDraft.php',
 		'Kernel/Contracts/MergeInstruction.php',
 		'Kernel/Contracts/ObjectRef.php',
+		'Contract/ObjectSelection.php',
+		'Contract/RegisterSchemaSlugs.php',
+		'Contract/SearchOptions.php',
 		'Kernel/Contracts/PreferenceAddress.php',
 		'Kernel/Contracts/PreferenceWrite.php',
 		'Kernel/Contracts/RegisterSchemaRef.php',
@@ -54,6 +58,11 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/TemplateRendering.php',
 		'Kernel/Contracts/TaskLocation.php',
 		'Kernel/Contracts/TimerSubjectRef.php',
+		'Kernel/Contracts/Core/AuditEntry.php',
+		'Kernel/Contracts/Notifications/NotificationRun.php',
+		'Kernel/Contracts/Core/BundleImport.php',
+		'Kernel/Contracts/Core/ObjectAuditEntry.php',
+		'Kernel/Contracts/Core/PlacedAuditEntry.php',
 	];
 
 	/**
@@ -62,6 +71,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private const KERNEL_LEAVES = [
+		'Kernel/Contracts/ExampleSetInstallInput.php',
 		'Kernel/Contracts/ListQuery.php',
 		'Kernel/Contracts/ObjectMigration.php',
 		'Kernel/Contracts/DeckPlacement.php',
@@ -83,6 +93,9 @@ class Adr011ValueObjectRulesTest extends TestCase {
 		'Kernel/Contracts/TimerAnchorMove.php',
 		'Kernel/Contracts/TimerChange.php',
 		'Kernel/Contracts/TimerSubjectRef.php',
+		'Kernel/Contracts/Core/AuditEntry.php',
+		'Kernel/Contracts/Core/BundleImport.php',
+		'Kernel/Contracts/Core/PlacedAuditEntry.php',
 	];
 
 	/**
@@ -218,7 +231,7 @@ class Adr011ValueObjectRulesTest extends TestCase {
 	}//end testTheChecksAcceptAWellFormedClass()
 
 	/**
-	 * The offenders of one source check across the five classes.
+	 * The offenders of one source check across the listed classes.
 	 *
 	 * @param string $check The name of the check method.
 	 *

@@ -5,7 +5,7 @@ namespace Unit\Tool;
 use BadMethodCallException;
 use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
-use OCA\OpenRegister\Db\ApplicationMapper;
+use OCA\OpenRegister\Db\ApplicationMapperInterface;
 use OCA\OpenRegister\Mcp\Tool\ApplicationTool;
 use OCA\OpenRegister\Mcp\Tool\UpdateApplicationCommand;
 use OCA\OpenRegister\Mcp\Tool\CreateApplicationCommand;
@@ -20,13 +20,13 @@ use Psr\Log\LoggerInterface;
 class ApplicationToolTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 	private LoggerInterface&MockObject $logger;
-	private ApplicationMapper&MockObject $applicationMapper;
+	private ApplicationMapperInterface&MockObject $applicationMapper;
 	private ApplicationTool $tool;
 
 	protected function setUp(): void {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
-		$this->applicationMapper = $this->createMock(ApplicationMapper::class);
+		$this->applicationMapper = $this->createMock(ApplicationMapperInterface::class);
 
 		$this->tool = new ApplicationTool(
 			new ToolCallTrail($this->userSession, $this->logger),
@@ -189,7 +189,8 @@ class ApplicationToolTest extends TestCase {
 		$app = $this->createApplicationEntity('new-uuid', 'NewApp', 'Desc');
 
 		$this->applicationMapper->expects($this->once())
-			->method('insert')
+			->method('createFromArray')
+			->with(['name' => 'NewApp', 'description' => 'Desc'])
 			->willReturn($app);
 
 		$result = $this->tool->createApplication(new CreateApplicationCommand('NewApp', 'Desc', 'example.com'));
@@ -200,7 +201,10 @@ class ApplicationToolTest extends TestCase {
 
 	public function testCreateApplicationMinimalParams(): void {
 		$app = $this->createApplicationEntity('uuid', 'SimpleApp');
-		$this->applicationMapper->method('insert')->willReturn($app);
+		$this->applicationMapper->expects($this->once())
+			->method('createFromArray')
+			->with(['name' => 'SimpleApp'])
+			->willReturn($app);
 
 		$result = $this->tool->createApplication(new CreateApplicationCommand('SimpleApp'));
 		$this->assertTrue($result['success']);
@@ -208,14 +212,17 @@ class ApplicationToolTest extends TestCase {
 
 	public function testCreateApplicationWithEmptyDescription(): void {
 		$app = $this->createApplicationEntity('uuid', 'App');
-		$this->applicationMapper->method('insert')->willReturn($app);
+		$this->applicationMapper->expects($this->once())
+			->method('createFromArray')
+			->with(['name' => 'App'])
+			->willReturn($app);
 
 		$result = $this->tool->createApplication(new CreateApplicationCommand('App', ''));
 		$this->assertTrue($result['success']);
 	}
 
 	public function testCreateApplicationException(): void {
-		$this->applicationMapper->method('insert')
+		$this->applicationMapper->method('createFromArray')
 			->willThrowException(new \Exception('Duplicate name'));
 
 		$result = $this->tool->createApplication(new CreateApplicationCommand('Dup'));
@@ -317,7 +324,7 @@ class ApplicationToolTest extends TestCase {
 
 	public function testExecuteFunctionCreateApplication(): void {
 		$app = $this->createApplicationEntity('uuid', 'NewApp');
-		$this->applicationMapper->method('insert')->willReturn($app);
+		$this->applicationMapper->method('createFromArray')->willReturn($app);
 
 		$result = $this->tool->executeFunction('create_application', ['NewApp']);
 		$this->assertTrue($result['success']);

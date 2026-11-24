@@ -22,10 +22,6 @@ namespace OCA\OpenRegister\Service\Bindings;
 
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHostInterface;
-use OCA\OpenRegister\Service\Party\PartySearchInterface;
-use OCA\OpenRegister\Service\Party\PartySearchService;
-use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
-use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 
 /**
  * Contract => service map for access control.
@@ -45,8 +41,6 @@ final class AccessBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
-		DenyEnforcementModeInterface::class => DenyEnforcementMode::class,
-		PartySearchInterface::class => PartySearchService::class,
 		OAuth2InstanceHostInterface::class => OAuth2InstanceHost::class,
 	];
 }//end class

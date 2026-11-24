@@ -11,7 +11,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
+use OCA\OpenRegister\Listener\Registrar\ConfigurationListenerRegistrar;
+use OCA\OpenRegister\Kernel\Contracts\Search\SearchBackendSettingsInterface;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
+use OCA\OpenRegister\Listener\ReferenceCardDeclarationCheckListener;
 use OCA\OpenRegister\Service\Configuration\ConfigurationServiceRegistrar;
+use OCA\OpenRegister\Service\Settings\SearchBackendHandler;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use OCP\AppFramework\IAppContainer;
@@ -38,6 +43,7 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Configuration\ImportHandler',
 				'OCA\OpenRegister\Service\Configuration\ExportHandler',
 				'OCA\OpenRegister\Service\ConfigurationService',
+				'OCA\OpenRegister\Service\Translation\TranslationProviderInterface',
 				'OCA\OpenRegister\Service\Settings\ValidationOperationsHandler',
 				'OCA\OpenRegister\Service\SettingsService',
 				'OCA\OpenRegister\Service\TenantKeyService',
@@ -83,14 +89,46 @@ class ConfigurationServiceRegistrarTest extends TestCase {
 	}//end testEveryFactoryBuildsItsService()
 
 	/**
-	 * The registrar registers services only; listeners stay with ListenerRegistrar.
+	 * The registrar subscribes Configuration's own listeners: its schema declaration check, then ConfigurationListenerRegistrar's.
+	 * Search's settings port resolves to the search backend handler, which implements it; it is the only alias.
 	 *
 	 * @return void
 	 */
-	public function testRegistersNoListeners(): void {
+	public function testTheSearchBackendSettingsAreAnsweredByTheHandler(): void {
 		$context = new RecordingRegistrationContext();
 		ConfigurationServiceRegistrar::register(context: $context);
 
-		$this->assertCount(expectedCount: 0, haystack: $context->listeners);
-	}//end testRegistersNoListeners()
+		$this->assertSame(
+			expected: [['alias' => SearchBackendSettingsInterface::class, 'target' => SearchBackendHandler::class]],
+			actual: $context->aliases
+		);
+		$this->assertInstanceOf(expected: SearchBackendSettingsInterface::class, actual: new SearchBackendHandler());
+	}//end testTheSearchBackendSettingsAreAnsweredByTheHandler()
+
+	/**
+	 * The only listener the registrar registers is Configuration's own schema declaration check.
+	 *
+	 * Every other listener stays with ListenerRegistrar.
+	 *
+	 * @return void
+	 */
+	public function testRegistersOnlyTheConfigurationListeners(): void {
+		$context = new RecordingRegistrationContext();
+		ConfigurationServiceRegistrar::register(context: $context);
+
+		$own = new RecordingRegistrationContext();
+		ConfigurationListenerRegistrar::register(context: $own);
+
+		$this->assertSame(
+			expected: [
+				['event' => SchemaDeclarationChecksEvent::class, 'listener' => ReferenceCardDeclarationCheckListener::class],
+				[
+					'event' => 'OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent',
+					'listener' => 'OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener',
+				],
+			],
+			actual: $context->listeners
+		);
+		$this->assertSame(expected: $own->listeners, actual: array_slice($context->listeners, 1));
+	}//end testRegistersOnlyTheConfigurationListeners()
 }//end class

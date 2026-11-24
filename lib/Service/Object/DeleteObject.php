@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -47,7 +48,7 @@ use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Dto\DeletionEffects;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
-use OCA\OpenRegister\Service\FileFolderServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderLookupInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -134,7 +135,7 @@ class DeleteObject {
 	 * @param SettingsServiceInterface $settingsService Settings service for trail settings
 	 * @param DeletionIntegrity $integrity The onDelete analysis, refusal and actions, in one transaction
 	 * @param DeletionAttribution $attribution The deleting user and organisation, and the deleted metadata
-	 * @param FileFolderServiceInterface|null $fileService File service for object folder cleanup
+	 * @param ObjectFolderLookupInterface|null $fileService File service for object folder cleanup
 	 * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
 	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface|null $registerMapper Register mapper for register lookups
 	 * @param DeleteRowRules|null $rowRules Checks each `cascade: true` child; without it a root with children is refused
@@ -151,7 +152,7 @@ class DeleteObject {
 		SettingsServiceInterface $settingsService,
 		private readonly DeletionIntegrity $integrity,
 		private readonly DeletionAttribution $attribution,
-		private readonly ?FileFolderServiceInterface $fileService = null,
+		private readonly ?ObjectFolderLookupInterface $fileService = null,
 		private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry = null,
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
 		private readonly ?DeleteRowRules $rowRules = null,
@@ -395,11 +396,13 @@ class DeleteObject {
 			}
 
 			// The cascade context is folded into the audit trail's initial INSERT by the mapper.
-			$this->auditTrailMapper->createAuditTrail(
-				old: $objectEntity,
-				new: null,
-				action: $auditAction,
-				cascadeContext: $cascadeContext
+			$this->auditTrailMapper->recordChange(
+				change: new AuditedChange(
+					old: $objectEntity,
+					new: null,
+					action: $auditAction,
+					cascadeContext: $cascadeContext
+				)
 			);
 		}
 
@@ -450,12 +453,12 @@ class DeleteObject {
 	/**
 	 * Delete the object's Nextcloud folder, when it resolves, and log the removal.
 	 *
-	 * @param FileFolderServiceInterface $fileService  The file service.
+	 * @param ObjectFolderLookupInterface $fileService  The file service.
 	 * @param ObjectEntity               $objectEntity The object.
 	 *
 	 * @return void
 	 */
-	private function removeObjectFolder(FileFolderServiceInterface $fileService, ObjectEntity $objectEntity): void {
+	private function removeObjectFolder(ObjectFolderLookupInterface $fileService, ObjectEntity $objectEntity): void {
 		$folder = $fileService->getObjectFolder(objectEntity: $objectEntity);
 		if ($folder === null) {
 			return;

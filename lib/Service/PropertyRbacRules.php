@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
+use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 
 /**
  * The rule collaborators of PropertyRbacHandler, wired by DI autowiring.
@@ -34,12 +34,12 @@ final class PropertyRbacRules {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ConditionMatcher       $conditionMatcher Condition matcher for match expressions.
-	 * @param StateFieldRuleResolver $stateFieldRules  Resolver for the lifecycle state's field rules.
+	 * @param ConditionMatcher          $conditionMatcher Condition matcher for match expressions.
+	 * @param FieldRulesSourceInterface $stateFieldRules  Resolver for the lifecycle state's field rules.
 	 */
 	public function __construct(
 		public readonly ConditionMatcher $conditionMatcher,
-		public readonly StateFieldRuleResolver $stateFieldRules,
+		public readonly FieldRulesSourceInterface $stateFieldRules,
 	) {
 	}//end __construct()
 }//end class

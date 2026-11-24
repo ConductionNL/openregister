@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\Archival\ReviewOutcomeServiceInterface;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationService;
 use OCA\OpenRegister\Service\Case\CasePlanAuthorizationServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentService;
 use OCA\OpenRegister\Service\Delegation\DelegationConsentServiceInterface;
 use OCA\OpenRegister\Service\Delegation\DelegationNotifier;
@@ -74,10 +76,10 @@ final class C01ArchivalDelegationInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		AnonymisationBackendService::class => [AnonymisationBackendServiceInterface::class, ContractBindings::class],
 		ArchivalNominationService::class => [ArchivalNominationServiceInterface::class, ContractBindings::class],
-		CasePlanAuthorizationService::class => [CasePlanAuthorizationServiceInterface::class, ContractBindings::class],
-		DelegationConsentService::class => [DelegationConsentServiceInterface::class, ContractBindings::class],
+		CasePlanAuthorizationService::class => [CasePlanAuthorizationServiceInterface::class, ProcessesServiceBindings::class],
+		DelegationConsentService::class => [DelegationConsentServiceInterface::class, CoreServiceBindings::class],
 		DelegationGrantMapper::class => [DelegationGrantMapperInterface::class, DbRegistrar::class],
-		DelegationNotifier::class => [DelegationNotifierInterface::class, ContractBindings::class],
+		DelegationNotifier::class => [DelegationNotifierInterface::class, CoreServiceBindings::class],
 		DestructionListCreator::class => [DestructionListCreatorInterface::class, ContractBindings::class],
 		DestructionListRepository::class => [DestructionListRepositoryInterface::class, ContractBindings::class],
 		DestructionReviewService::class => [DestructionReviewServiceInterface::class, ContractBindings::class],

@@ -264,16 +264,4 @@ interface EntityEventsInterface {
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
 	 */
 	public function flowRunTerminal(string $runUuid, string $status): void;
-
-	/**
-	 * A task reached a terminal state.
-	 *
-	 * @param Entity $task The task as persisted.
-	 * @param bool $committed Whether the write that made it terminal is already committed.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-all-entity-mutations-must-dispatch-typed-php-events-via-ieventdispatcher
-	 */
-	public function taskTerminal(Entity $task, bool $committed): void;
 }//end interface

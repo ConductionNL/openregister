@@ -20,7 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
+use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Party\PartySearchInterface;
 use OCA\OpenRegister\Service\Party\PartySearchService;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -40,14 +41,14 @@ use Psr\Log\NullLogger;
 final class H01InterfaceBindingsTest extends TestCase {
 
 	/**
-	 * Interface => the class it must resolve to.
+	 * Interface => the class it must resolve to, and the map that binds it.
 	 *
-	 * @return array<string, array{0: class-string, 1: class-string}>
+	 * @return array<string, array{0: class-string, 1: class-string, 2: class-string}>
 	 */
 	public static function bindings(): array {
 		return [
-			'deny enforcement' => [DenyEnforcementModeInterface::class, DenyEnforcementMode::class],
-			'party search' => [PartySearchInterface::class, PartySearchService::class],
+			'deny enforcement' => [DenyEnforcementModeInterface::class, DenyEnforcementMode::class, CoreServiceBindings::class],
+			'party search' => [PartySearchInterface::class, PartySearchService::class, FlowWiring::class],
 		];
 	}//end bindings()
 
@@ -56,12 +57,13 @@ final class H01InterfaceBindingsTest extends TestCase {
 	 *
 	 * @param class-string $interface The interface.
 	 * @param class-string $class     The class it resolves to.
+	 * @param class-string $map       The binding map that binds it.
 	 *
 	 * @return void
 	 */
 	#[DataProvider('bindings')]
-	public function testTheBindingIsPresentAndImplemented(string $interface, string $class): void {
-		$this->assertSame($class, (ContractBindings::BINDINGS[$interface] ?? null));
+	public function testTheBindingIsPresentAndImplemented(string $interface, string $class, string $map): void {
+		$this->assertSame($class, (constant($map . '::BINDINGS')[$interface] ?? null));
 		$this->assertTrue(is_subclass_of($class, $interface));
 	}//end testTheBindingIsPresentAndImplemented()
 
@@ -72,7 +74,7 @@ final class H01InterfaceBindingsTest extends TestCase {
 	 */
 	public function testTheFallbacksBuildTheBoundClasses(): void {
 		$this->assertSame(
-			ContractBindings::BINDINGS[ObjectScopeResolverInterface::class],
+			CoreServiceBindings::BINDINGS[ObjectScopeResolverInterface::class],
 			get_class(RbacFallbacks::objectScope())
 		);
 		$this->assertInstanceOf(

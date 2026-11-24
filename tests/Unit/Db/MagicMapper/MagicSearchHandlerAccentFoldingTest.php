@@ -46,6 +46,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use ReflectionProperty;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Where folding is available a search compares folded text on the UNION path,
@@ -323,7 +324,8 @@ class MagicSearchHandlerAccentFoldingTest extends TestCase {
 			new SchemaTypeConverter(),
 			$this->createMock(DateTimeNormalizer::class),
 			relatedRows: $this->createMock(RelatedRowQueryApplier::class),
-			appConfig: $appConfig
+			appConfig: $appConfig,
+			searchProfile: new PropertySearchProfile()
 		);
 
 		$trgm = new MagicPgTrgmProbe($this->createMock(IDBConnection::class), $this->createMock(LoggerInterface::class));

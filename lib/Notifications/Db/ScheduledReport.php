@@ -98,6 +98,16 @@ use OCP\AppFramework\Db\Entity;
 class ScheduledReport extends Entity implements JsonSerializable, ScheduledReportInterface {
 
 	/**
+	 * The kind of an object export, the default.
+	 */
+	public const KIND_EXPORT = 'export';
+
+	/**
+	 * The kind of the daily connection report.
+	 */
+	public const KIND_CONNECTION_HEALTH = 'connection-health';
+
+	/**
 	 * The owning Nextcloud user id.
 	 *
 	 * @var string|null
@@ -344,7 +354,7 @@ class ScheduledReport extends Entity implements JsonSerializable, ScheduledRepor
 	 */
 	public function getKindOrDefault(): string {
 		if ($this->kind === null || $this->kind === '') {
-			return 'export';
+			return self::KIND_EXPORT;
 		}
 
 		return $this->kind;

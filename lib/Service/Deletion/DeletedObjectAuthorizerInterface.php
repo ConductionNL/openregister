@@ -24,10 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 
 /**
  * The authorization and schema-resolution questions the trash surface asks of a soft-deleted object.
@@ -61,9 +61,9 @@ interface DeletedObjectAuthorizerInterface {
 	/**
 	 * The destruction records of one object the caller may read.
 	 *
-	 * @param array<int, AuditTrail> $records The destruction records of one object.
+	 * @param array<int, AuditRecordInterface> $records The destruction records of one object.
 	 *
-	 * @return array<int, AuditTrail> The readable ones.
+	 * @return array<int, AuditRecordInterface> The readable ones.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */

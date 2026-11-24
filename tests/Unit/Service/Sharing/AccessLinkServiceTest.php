@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IURLGenerator;
@@ -95,7 +96,7 @@ class AccessLinkServiceTest extends TestCase {
 
 		$this->service = new AccessLinkService(
 			mapper: $this->mapper,
-			useLog: new AccessLinkUseLog(auditTrail: $this->auditTrail, logger: $this->logger),
+			useLog: new AccessLinkUseLog(recorder: new AccessLinkUseRecorder(auditTrail: $this->auditTrail), logger: $this->logger),
 			secrets: new AccessLinkSecrets(secureRandom: $this->secureRandom, hasher: $this->hasher),
 			urlGenerator: $this->urlGenerator
 		);

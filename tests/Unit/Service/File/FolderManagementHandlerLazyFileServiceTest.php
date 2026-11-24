@@ -31,7 +31,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\Files\Config\IUserMountCache;
@@ -64,7 +64,7 @@ class FolderManagementHandlerLazyFileServiceTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
 			mountCache: $this->createMock(IUserMountCache::class),
-			folderRecorder: $this->createMock(RegisterFolderRecorder::class),
+			folderRecorder: $this->createMock(RegisterFolderRecordsInterface::class),
 			fileService: null,
 			container: $container
 		);

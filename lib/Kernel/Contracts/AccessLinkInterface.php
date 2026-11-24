@@ -28,6 +28,27 @@ namespace OCA\OpenRegister\Kernel\Contracts;
 interface AccessLinkInterface {
 
 	/**
+	 * A link over one object.
+	 *
+	 * @var string
+	 */
+	public const SUBJECT_OBJECT = 'object';
+
+	/**
+	 * A link over one saved view.
+	 *
+	 * @var string
+	 */
+	public const SUBJECT_VIEW = 'view';
+
+	/**
+	 * A link over one file the object carries.
+	 *
+	 * @var string
+	 */
+	public const SUBJECT_FILE = 'file';
+
+	/**
 	 * The kind of subject the link opens.
 	 *
 	 * @return string|null The subject type.
@@ -44,4 +65,13 @@ interface AccessLinkInterface {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
 	public function getSubjectId(): ?string;
+
+	/**
+	 * The account that minted the link: a view link reads as that account.
+	 *
+	 * @return string|null The user id, or null when unknown.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+	 */
+	public function getCreatedBy(): ?string;
 }//end interface

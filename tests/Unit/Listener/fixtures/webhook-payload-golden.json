@@ -69,7 +69,7 @@
                 "objectType": "application",
                 "action": "created",
                 "application": {
-                    "entity": "Application",
+                    "entity": "ApplicationInterface",
                     "from": "getApplication"
                 }
             }
@@ -88,7 +88,7 @@
                 "objectType": "application",
                 "action": "deleted",
                 "application": {
-                    "entity": "Application",
+                    "entity": "ApplicationInterface",
                     "from": "getApplication"
                 }
             }
@@ -107,7 +107,7 @@
                 "objectType": "application",
                 "action": "updated",
                 "application": {
-                    "entity": "Application",
+                    "entity": "ApplicationInterface",
                     "from": "getNewApplication"
                 }
             }
@@ -126,7 +126,7 @@
                 "objectType": "configuration",
                 "action": "created",
                 "configuration": {
-                    "entity": "Configuration",
+                    "entity": "ConfigurationInterface",
                     "from": "getConfiguration"
                 }
             }
@@ -145,7 +145,7 @@
                 "objectType": "configuration",
                 "action": "deleted",
                 "configuration": {
-                    "entity": "Configuration",
+                    "entity": "ConfigurationInterface",
                     "from": "getConfiguration"
                 }
             }
@@ -164,7 +164,7 @@
                 "objectType": "configuration",
                 "action": "updated",
                 "configuration": {
-                    "entity": "Configuration",
+                    "entity": "ConfigurationInterface",
                     "from": "getConfiguration"
                 }
             }
@@ -951,7 +951,7 @@
                 "objectType": "organisation",
                 "action": "created",
                 "organisation": {
-                    "entity": "Organisation",
+                    "entity": "OrganisationInterface",
                     "from": "getOrganisation"
                 }
             }
@@ -970,7 +970,7 @@
                 "objectType": "organisation",
                 "action": "deleted",
                 "organisation": {
-                    "entity": "Organisation",
+                    "entity": "OrganisationInterface",
                     "from": "getOrganisation"
                 }
             }
@@ -989,7 +989,7 @@
                 "objectType": "organisation",
                 "action": "updated",
                 "organisation": {
-                    "entity": "Organisation",
+                    "entity": "OrganisationInterface",
                     "from": "getOrganisation"
                 }
             }
@@ -1122,7 +1122,7 @@
                 "objectType": "source",
                 "action": "created",
                 "source": {
-                    "entity": "Source",
+                    "entity": "SourceInterface",
                     "from": "getSource"
                 }
             }
@@ -1141,7 +1141,7 @@
                 "objectType": "source",
                 "action": "deleted",
                 "source": {
-                    "entity": "Source",
+                    "entity": "SourceInterface",
                     "from": "getSource"
                 }
             }
@@ -1160,7 +1160,7 @@
                 "objectType": "source",
                 "action": "updated",
                 "source": {
-                    "entity": "Source",
+                    "entity": "SourceInterface",
                     "from": "getSource"
                 }
             }

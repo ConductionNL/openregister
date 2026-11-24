@@ -3,8 +3,9 @@
 /**
  * C12 cases: the annotation validators the schema save path builds.
  *
- * The Db layer reaches them through SchemaDeclarationValidators, typed against
- * their interfaces. ExpressionDefaultResolver and MdtoElementCatalogue have no
+ * The Db layer reaches them through SchemaDeclarationValidators (the archival
+ * ones through ArchivalDeclarationValidators, the hand-off ones through
+ * HandoffDeclarationValidators), typed against their interfaces. ExpressionDefaultResolver and MdtoElementCatalogue have no
  * interface: the Db layer needs neither type, only what the builder returns.
  *
  * SPDX-License-Identifier: EUPL-1.2

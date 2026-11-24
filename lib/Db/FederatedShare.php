@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\FederatedShare\FederatedShareFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -71,7 +72,7 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getExpiresAt()
  * @method void setExpiresAt(?DateTime $expiresAt)
  */
-class FederatedShare extends Entity implements JsonSerializable {
+class FederatedShare extends Entity implements JsonSerializable, FederatedShareInterface {
 	use JsonFieldsTrait;
 	use OrganisationFieldTrait;
 	use HydrateEmptyJsonAsNullTrait;

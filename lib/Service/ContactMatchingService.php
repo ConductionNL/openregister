@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Kernel\Contracts\ContactDetails;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -42,7 +43,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class ContactMatchingService implements ContactMatcherInterface {
+class ContactMatchingService implements ContactMatcherInterface, ContactMatchCacheInterface {
 
 	/**
 	 * Cache TTL in seconds.
@@ -430,7 +431,7 @@ class ContactMatchingService implements ContactMatcherInterface {
 	/**
 	 * Invalidate cache for all email-like property values in an object.
 	 *
-	 * @param array $object The object data array
+	 * @param array<string, mixed> $object The object data array
 	 *
 	 * @return void
 	 *

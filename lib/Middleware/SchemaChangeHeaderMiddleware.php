@@ -23,10 +23,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use DateTime;
-use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaChangeReportingControllerInterface;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Middleware;
 use OCP\IRequest;
@@ -98,7 +98,7 @@ class SchemaChangeHeaderMiddleware extends Middleware {
 	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md#requirement-clients-see-a-breaking-change-on-the-schemas-responses
 	 */
 	public function afterController($controller, $methodName, Response $response): Response {
-		if (($controller instanceof ObjectsController) === false
+		if (($controller instanceof SchemaChangeReportingControllerInterface) === false
 			|| in_array($methodName, self::METHODS, true) === false
 			|| $response->getStatus() >= 300
 		) {

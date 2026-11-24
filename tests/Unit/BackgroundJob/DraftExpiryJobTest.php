@@ -189,7 +189,7 @@ class DraftExpiryJobTest extends TestCase {
 				$deleted[] = $uuid;
 				// What the real delete path does for a draft: ask the removal record to write its entry.
 				$audit = $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class);
-				$audit->method('recordObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
+				$audit->method('writeObjectEvent')->willReturnCallback(AuditTrailEvents::positional(
 					static function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null) use (&$actors): \OCA\OpenRegister\Db\AuditTrail {
 						$actors[] = $actorId;
 

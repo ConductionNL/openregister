@@ -42,7 +42,7 @@ use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
-use OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators;
+use OCA\OpenRegister\Service\Schemas\ProcessDeclarationValidators;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -453,7 +453,7 @@ class CalculationOnSaveListener implements IEventListener {
 		}
 
 		$config = ($schema->getConfiguration() ?? []);
-		$merged = SchemaDeclarationValidators::propertyCalculations()->merge(
+		$merged = ProcessDeclarationValidators::propertyCalculations()->merge(
 			annotation: $this->arrayOrEmpty(value: ($config['x-openregister-calculations'] ?? [])),
 			properties: $this->arrayOrEmpty(value: ($schema->getProperties() ?? []))
 		);

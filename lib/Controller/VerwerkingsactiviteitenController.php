@@ -37,7 +37,6 @@ namespace OCA\OpenRegister\Controller;
 
 use Closure;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\GdprRegisterAccess;
 use OCA\OpenRegister\Controller\Support\GdprRegisterReplies;
 use OCA\OpenRegister\Controller\Support\GdprRequestParams;
@@ -48,6 +47,7 @@ use OCA\OpenRegister\Controller\Support\ProcessingActivityVisibility;
 use OCA\OpenRegister\Controller\Support\VerwerkingsactiviteitenControllerServices;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -112,7 +112,7 @@ class VerwerkingsactiviteitenController extends Controller {
 		IRequest $request,
 		VerwerkingsactiviteitenControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->visibility = new ProcessingActivityVisibility(organisationService: $services->organisationService);
 		$this->auditCounts = new ProcessingActivityAuditCounts(db: $services->db);

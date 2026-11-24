@@ -36,6 +36,7 @@ use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Quality\QualityScorerInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
+use OCA\OpenRegister\Service\RunningNumbers;
 use OCA\OpenRegister\Service\SequenceScope;
 use OCA\OpenRegister\Service\SequenceServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -195,7 +196,7 @@ class SaveScoringGoldenTest extends TestCase {
 		$gate = $this->createMock(ObjectEventGateInterface::class);
 		$gate->method('holdsCreation')->willReturn(false);
 		$gate->method('leavesDraft')->willReturn(false);
-		return new GeneratedIdentifierListener($this->schemas([], $properties), $sequences, $this->logger(), $gate);
+		return new GeneratedIdentifierListener($this->schemas([], $properties), new RunningNumbers($sequences), $this->logger(), $gate);
 	}//end numbering()
 
 	/**

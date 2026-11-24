@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use DateTime;
+use OCA\OpenRegister\Service\Audit\ObjectTrailReader;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
@@ -124,7 +125,7 @@ class ObjectAccessReportTest extends TestCase {
 		$catalog->method('schemas')->willReturn($this->schemas);
 
 		$this->report = new ObjectAccessReport(
-			sources: new ObjectAccessReportSources(catalog: $catalog, auditTrailMapper: $this->trail),
+			sources: new ObjectAccessReportSources(catalog: $catalog, auditTrail: new ObjectTrailReader(mapper: $this->trail)),
 			holders: new ObjectPermissionsResolver(),
 			history: new ObjectAccessHistory(),
 			enforcement: new DenyEnforcementMode($this->appConfig, new NullLogger())

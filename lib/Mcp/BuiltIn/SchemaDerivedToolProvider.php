@@ -55,6 +55,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Capability\ToolReachLevels;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -223,7 +224,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 *
 	 * @return list<array{id: string, name: string, description: string, inputSchema: array,
 	 *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
-	 *         idempotentHint?: bool, scope?: string}>
+	 *         idempotentHint?: bool, scope?: string, reach?: string}>
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
@@ -741,7 +742,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @return array{id: string, name: string, description: string, inputSchema: array,
 	 *         app: string, subject: string, action: string,
 	 *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
-	 *         idempotentHint?: bool, scope?: string}
+	 *         idempotentHint?: bool, scope?: string, reach?: string}
 	 */
 	private function buildDescriptor(DerivedToolDefinition $tool): array {
 		$slug = $tool->slug;
@@ -791,6 +792,14 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 		// (REQ-DERIVED-005), and nothing in this class reads `scope` back.
 		if (isset($verbConfig['scope']) === true) {
 			$descriptor['scope'] = $verbConfig['scope'];
+		}
+
+		// The verb's declared `reach` (validated against ToolReachLevels::ORDER
+		// at save time), carried under the key ToolReachResolver reads, so a
+		// declared reach replaces the one inferred from the verb. Omitted when
+		// not declared, like `scope`: advisory, never an invoke-time gate.
+		if (isset($verbConfig[ToolReachLevels::REACH_KEY]) === true) {
+			$descriptor[ToolReachLevels::REACH_KEY] = $verbConfig[ToolReachLevels::REACH_KEY];
 		}
 
 		return $descriptor;

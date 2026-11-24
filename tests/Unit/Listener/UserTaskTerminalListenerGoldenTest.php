@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Listener\UserTaskTerminalListener;
 use OCA\OpenRegister\Service\Flow\FlowTaskBridge;
 use OCP\EventDispatcher\Event;
@@ -138,6 +139,15 @@ class UserTaskTerminalListenerGoldenTest extends TestCase {
 		$this->assertSame([], $this->dispatch(new TaskTerminalEvent(self::task('  '))));
 		$this->assertSame([], $this->dispatch(new TaskTerminalEvent(self::task(null))));
 	}//end testTaskWithoutRunIsIgnored()
+
+	/**
+	 * Only a task row belongs to a flow run; the event now carries the Kernel contract.
+	 *
+	 * @return void
+	 */
+	public function testTaskContractThatIsNoTaskRowIsIgnored(): void {
+		$this->assertSame([], $this->dispatch(new TaskTerminalEvent($this->createMock(TaskInterface::class))));
+	}//end testTaskContractThatIsNoTaskRowIsIgnored()
 
 	/**
 	 * @return void

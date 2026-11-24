@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schemas;
 
-use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\AcceptLanguageHeader;
 
 /**
  * The `titles` modifier: `{ "<language tag>": "<name>" }` beside `title`.
@@ -97,7 +97,7 @@ final class PropertyTitles {
 			return null;
 		}
 
-		return (LanguageService::parseAcceptLanguageHeader($acceptLanguage)[0] ?? null);
+		return (AcceptLanguageHeader::ranked(headerValue: $acceptLanguage)[0] ?? null);
 	}//end requestedLanguage()
 
 	/**

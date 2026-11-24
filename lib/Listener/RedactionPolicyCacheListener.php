@@ -26,9 +26,9 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
 use OCA\OpenRegister\Service\RedactionPolicy\PolicyIndexCache;
 use OCP\EventDispatcher\Event;
-use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -42,11 +42,13 @@ use Throwable;
  * that cannot be resolved counts as a policy schema: dropping the index too
  * often costs one read, keeping a stale one could miss an always term.
  *
- * @template-implements IEventListener<Event>
+ * Registered through ObjectWriteCacheFollowerInterface, which ContractBindings aliases to this class.
+ *
+ * @template-implements ObjectWriteCacheFollowerInterface<Event>
  *
  * @spec openspec/changes/redaction-policy-as-data/specs/redaction-policy/spec.md#REQ-RPD-001
  */
-final class RedactionPolicyCacheListener implements IEventListener {
+final class RedactionPolicyCacheListener implements ObjectWriteCacheFollowerInterface {
 	use WrittenObjectOfEvent;
 
 	/**

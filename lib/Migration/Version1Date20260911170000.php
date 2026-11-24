@@ -39,14 +39,13 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates the registry subscription state table.
  *
  * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
  */
-class Version1Date20260911170000 extends SimpleMigrationStep {
+class Version1Date20260911170000 extends TargetedMigrationStep {
 
 	/**
 	 * The registry subscription state table.
@@ -66,7 +65,7 @@ class Version1Date20260911170000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::TABLE) === true) {
@@ -98,5 +97,5 @@ class Version1Date20260911170000 extends SimpleMigrationStep {
 		$table->addIndex(['state', 'last_update_at'], 'or_registry_sub_state_updated');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

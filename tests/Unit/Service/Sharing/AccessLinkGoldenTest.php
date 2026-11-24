@@ -54,6 +54,7 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Audit\AccessLinkUseRecorder;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUseLog;
 use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
@@ -125,7 +126,7 @@ class AccessLinkGoldenTest extends TestCase {
 	private function service(): AccessLinkService {
 		return new AccessLinkService(
 			mapper: $this->mapper,
-			useLog: new AccessLinkUseLog(auditTrail: $this->auditTrail, logger: $this->logger),
+			useLog: new AccessLinkUseLog(recorder: new AccessLinkUseRecorder(auditTrail: $this->auditTrail), logger: $this->logger),
 			secrets: new AccessLinkSecrets(secureRandom: $this->secureRandom, hasher: $this->hasher),
 			urlGenerator: $this->urlGenerator
 		);
