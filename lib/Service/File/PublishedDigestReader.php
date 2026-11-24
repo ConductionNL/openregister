@@ -26,11 +26,7 @@ namespace OCA\OpenRegister\Service\File;
 
 use DateTimeInterface;
 use Exception;
-use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\FileDigest;
 use OCA\OpenRegister\Db\FileDigestMapper;
-use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\Files\File;
 use Throwable;
 
@@ -49,16 +45,14 @@ class PublishedDigestReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileDigestMapper          $digests     The digest records.
-	 * @param PublishedDigestService    $service     Compares a file with its record.
-	 * @param AuditTrailMapperInterface $auditTrails The audit row that sealed the publication.
+	 * @param FileDigestMapper       $digests The digest records.
+	 * @param PublishedDigestService $service Compares a file with its record, and reads the row that sealed it.
 	 *
 	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
 	 */
 	public function __construct(
 		private readonly FileDigestMapper $digests,
 		private readonly PublishedDigestService $service,
-		private readonly AuditTrailMapperInterface $auditTrails,
 	) {
 	}//end __construct()
 
@@ -86,7 +80,7 @@ class PublishedDigestReader {
 			'recorded' => $result['recorded'],
 			'current' => $result['current'],
 			'verdict' => $result['verdict'],
-			'auditRow' => $this->sealOf(record: $record),
+			'auditRow' => $this->service->sealOf(record: $record),
 		];
 	}//end verify()
 
@@ -112,7 +106,7 @@ class PublishedDigestReader {
 			return null;
 		}
 
-		$seal = $this->sealOf(record: $record);
+		$seal = $this->service->sealOf(record: $record);
 
 		return [
 			'sha256' => $record->getSha256(),
@@ -121,32 +115,4 @@ class PublishedDigestReader {
 			'sealedBy' => ['uuid' => $seal['uuid'], 'hash' => $seal['hash']],
 		];
 	}//end publishedOf()
-
-	/**
-	 * The uuid and the chain hashes of the audit row that sealed a publication.
-	 *
-	 * @param FileDigest $record The record.
-	 *
-	 * @return array{uuid: string|null, hash: string|null, previousHash: string|null} The seal; the hashes null when the row cannot be read.
-	 */
-	private function sealOf(FileDigest $record): array {
-		$uuid = $record->getAuditTrailUuid();
-		$seal = ['uuid' => $uuid, 'hash' => null, 'previousHash' => null];
-		if ($uuid === null || $uuid === '') {
-			return $seal;
-		}
-
-		try {
-			$rows = $this->auditTrails->findTrail(query: new ListQuery(limit: 1, filters: ['uuid' => $uuid]));
-		} catch (Throwable $e) {
-			return $seal;
-		}
-
-		$row = ($rows[0] ?? null);
-		if ($row instanceof AuditTrail === false) {
-			return $seal;
-		}
-
-		return ['uuid' => $uuid, 'hash' => $row->getHash(), 'previousHash' => $row->getPreviousHash()];
-	}//end sealOf()
 }//end class

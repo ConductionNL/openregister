@@ -165,7 +165,7 @@ class PublishedDigestReaderTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		return new PublishedDigestReader(digests: $digests, service: $service, auditTrails: $auditTrails);
+		return new PublishedDigestReader(digests: $digests, service: $service);
 	}//end reader()
 
 	/**
