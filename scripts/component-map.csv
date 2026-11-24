@@ -229,6 +229,7 @@ Controller/ApiCallersController.php,174,Controller,Integrations,Integrations/Con
 Controller/ApiSurfaceController.php,98,Controller,Service,Service/Controller/ApiSurfaceController.php,0,,Core
 Controller/ApplicationsController.php,198,Controller,Configuration,Configuration/Controller/ApplicationsController.php,0,,Configuration
 Controller/ArchivalController.php,698,Controller,Compliance,Compliance/Controller/ArchivalController.php,0,,Compliance
+Controller/ArchivalHeldBackController.php,,Controller,,,,,Compliance
 Controller/ArchivalOverviewController.php,,Controller,,,,,Compliance
 Controller/AuditQueryController.php,109,Controller,Compliance,Compliance/Controller/AuditQueryController.php,0,,Compliance
 Controller/AuditSinkController.php,70,Controller,Compliance,Compliance/Controller/AuditSinkController.php,0,,Compliance
@@ -332,6 +333,7 @@ Controller/OpenProjectLinksController.php,111,Controller,Integrations,Integratio
 Controller/Support/OpenProjectLinksControllerServices.php,,Controller,,,,,Integrations
 Controller/OperationsConsistencyController.php,78,Controller,Configuration,Configuration/Controller/OperationsConsistencyController.php,0,,Configuration
 Controller/OperationsConsoleController.php,155,Controller,Configuration,Configuration/Controller/OperationsConsoleController.php,0,,Configuration
+Controller/OperationsDependenciesController.php,40,Controller,Configuration,Configuration/Controller/OperationsDependenciesController.php,0,,Configuration
 Controller/OperationsMaintenanceController.php,52,Controller,Configuration,Configuration/Controller/OperationsMaintenanceController.php,0,,Configuration
 Controller/OrganisationController.php,844,Controller,Access,Access/Controller/OrganisationController.php,0,,Core
 Controller/OrganisationHaltController.php,35,Controller,Flows,Flows/Controller/OrganisationHaltController.php,0,,Processes
@@ -367,6 +369,7 @@ Controller/SelectielijstController.php,166,Controller,Compliance,Compliance/Cont
 Controller/SelectielijstReferenceController.php,29,Controller,Compliance,Compliance/Controller/SelectielijstReferenceController.php,0,,Compliance
 Controller/Settings/ApiTokenSettingsController.php,219,Controller,Configuration,Configuration/Controller/Settings/ApiTokenSettingsController.php,0,,Configuration
 Controller/Settings/AuditSettingsController.php,52,Controller,Compliance,Compliance/Controller/Settings/AuditSettingsController.php,0,,Configuration
+Controller/Settings/LoadSheddingSettingsController.php,96,Controller,Configuration,Configuration/Controller/Settings/LoadSheddingSettingsController.php,0,,Platform
 Controller/Settings/CacheSettingsController.php,194,Controller,Configuration,Configuration/Controller/Settings/CacheSettingsController.php,0,,Configuration
 Controller/Settings/ConfigurationSettingsController.php,150,Controller,Configuration,Configuration/Controller/Settings/ConfigurationSettingsController.php,0,,Configuration
 Controller/Settings/EdepotSettingsController.php,167,Controller,Compliance,Compliance/Controller/Settings/EdepotSettingsController.php,0,,Configuration
@@ -1792,6 +1795,7 @@ Search/Service/Search/PropertySearchProfile.php,111,Search,Search,Search/Service
 Search/Service/Search/SearchIndexMaintenance.php,344,Search,Search,Search/Service/Search/SearchIndexMaintenance.php,0,,Search
 Search/Service/Search/SearchIndexRowCounts.php,23,Search,Search,Search/Service/Search/SearchIndexRowCounts.php,0,,Search
 Search/Service/SizeTally.php,16,Search,Search,Search/Service/SizeTally.php,0,,Search
+Search/Service/Vectorization/Handlers/BreakerGuardedEmbeddingGenerator.php,40,Search,Search,Search/Service/Vectorization/Handlers/BreakerGuardedEmbeddingGenerator.php,0,,Search
 Search/Service/Vectorization/Handlers/EmbeddingGeneratorHandler.php,170,Search,Search,Search/Service/Vectorization/Handlers/EmbeddingGeneratorHandler.php,0,,Search
 Search/Service/Vectorization/Handlers/PgVectorPlatform.php,57,Search,Search,Search/Service/Vectorization/Handlers/PgVectorPlatform.php,0,,Search
 Search/Service/Vectorization/Handlers/VectorSearchHandler.php,439,Search,Search,Search/Service/Vectorization/Handlers/VectorSearchHandler.php,0,,Search
@@ -3136,7 +3140,11 @@ Service/Relation/RelationTypeResolver.php,221,Service,Service,Service/Relation/R
 Service/Resilience/BreakerRegistry.php,237,Service,Platform,Platform/Service/Resilience/BreakerRegistry.php,0,,Platform
 Service/Resilience/BreakerThresholds.php,55,Service,Platform,Platform/Service/Resilience/BreakerThresholds.php,0,,Platform
 Service/Resilience/CircuitBreaker.php,399,Service,Platform,Platform/Service/Resilience/CircuitBreaker.php,0,,Platform
+Service/Resilience/DatabasePressureMeter.php,330,Service,Platform,Platform/Service/Resilience/DatabasePressureMeter.php,0,,Platform
+Service/Resilience/DependencyConsole.php,150,Service,Platform,Platform/Service/Resilience/DependencyConsole.php,0,,Platform
 Service/Resilience/DependencyUnavailableException.php,87,Service,Platform,Platform/Service/Resilience/DependencyUnavailableException.php,0,,Platform
+Service/Resilience/LoadSheddingSettings.php,181,Service,Platform,Platform/Service/Resilience/LoadSheddingSettings.php,0,,Platform
+Service/Resilience/Sheddable.php,15,Service,Platform,Platform/Service/Resilience/Sheddable.php,0,,Kernel
 Service/Resolver/Exception/MissingConfigException.php,27,Service,Service,Service/Resolver/Exception/MissingConfigException.php,20,,Core
 Service/Resolver/Exception/PropertyNotFoundException.php,45,Service,Service,Service/Resolver/Exception/PropertyNotFoundException.php,0,,Core
 Service/Resolver/Exception/RegisterNotFoundException.php,33,Service,Service,Service/Resolver/Exception/RegisterNotFoundException.php,0,,Core
@@ -3417,6 +3425,7 @@ Controller/Support/OrganisationScopeFilter.php,18,Controller,Flows,Flows/Control
 Controller/Support/PartyObjectAccess.php,69,Controller,Work,Work/Controller/Support/PartyObjectAccess.php,0,,Processes
 Controller/Support/RuleReplayRequest.php,12,Controller,Flows,Flows/Controller/Support/RuleReplayRequest.php,0,,Processes
 Controller/Support/SchemaRule.php,11,Controller,Flows,Flows/Controller/Support/SchemaRule.php,0,,Processes
+Controller/Support/SyncWatermark.php,38,Controller,Service,Service/Controller/Support/SyncWatermark.php,0,,Core
 Controller/Support/TaskCompletionCommand.php,12,Controller,Work,Work/Controller/Support/TaskCompletionCommand.php,0,,Processes
 Controller/Support/TaskInboxRequest.php,36,Controller,Work,Work/Controller/Support/TaskInboxRequest.php,0,,Processes
 Controller/Support/TaskLeafGuard.php,43,Controller,Work,Work/Controller/Support/TaskLeafGuard.php,0,,Processes
@@ -4201,6 +4210,7 @@ Command/FederationSharesExpiringCommand.php,,Command,,,,,Integrations
 Repair/GiveFederationSharesALifetime.php,,Repair,,,,,Platform
 BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
 Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
+Listener/PlatformShareRoutingListener.php,,Listener,,,,,Core
 Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
 Service/AuditChainKey.php,,Service,,,,,Compliance
 Db/HydrationKey.php,,Db,,,,,Kernel
@@ -4398,6 +4408,8 @@ BackgroundJob/PublishedDigestVerifyJob.php,,BackgroundJob,,,,,Files
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Controller/Support/DestroyedTombstones.php,66,Controller,Service,Service/Controller/Support/DestroyedTombstones.php,0,,Core
+Kernel/Contracts/Value/DestructionQuery.php,25,Kernel,,,,,Kernel
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
 Db/SchemaMapper/NotificationAnnotationCheck.php,,Db,,,0,,Notifications
 Service/Import/RecordImport/ColumnMapper.php,,Service,,,,,Core
@@ -4726,6 +4738,13 @@ Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
 Service/ProcessesServiceBindings.php,,Service,,,,,Processes
 Service/ProcessesServiceRegistrar.php,,Service,,,,,Processes
 Service/Object/PermissionAsk.php,,Service,,,,,Kernel
+Kernel/Contracts/DependencyBreakerInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/DependencyRefusalInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/ConnectionStatusReportInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/OperatorActionAuditInterface.php,,Kernel,,,,,Kernel
+Service/Resilience/DependencyBreaker.php,,Service,,,,,Platform
+Service/Audit/OperatorActionAudit.php,,Service,,,,,Core
+Kernel/Contracts/DependencyConsoleInterface.php,,Kernel,,,,,Kernel
 Search/Service/Search/PlaceholderResolverInterface.php,,Search,,,,,Core
 Search/Service/Search/PlaceholderResolvers.php,,Search,,,,,Core
 Kernel/Contracts/CreateGuardInterface.php,,Kernel,,,,,Kernel
