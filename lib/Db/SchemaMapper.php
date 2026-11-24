@@ -757,6 +757,10 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @param string|int $id        The identifier — numeric id, uuid, or slug (slug matched case-insensitively).
 	 * @param array      $schemaIds The candidate schema ids (a register's schemas list).
 	 *
+	 * A schema found is kept in the request's find cache, so the next lookup of
+	 * the same identifier within the same ids is not read and composed again;
+	 * {@see clearFindCache()} drops it with the schema's other entries.
+	 *
 	 * @return Schema|null The matching schema within the id set, or null when none matches.
 	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
@@ -767,6 +771,11 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return null;
 		}
 
+		$key = 'in:'.implode(',', $ids).'|'.strtolower((string)$id);
+		if (isset($this->findCache[$key]) === true) {
+			return $this->findCache[$key];
+		}
+
 		$this->readTrace()->record(method: 'findInIds');
 
 		// Same identifier forms and tie-breaks as find(), narrowed to the id set.
@@ -774,7 +783,12 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$qb->andWhere($this->idIn(qb: $qb, ids: $ids));
 		$qb->setMaxResults(1);
 
-		return $this->firstResolved(qb: $qb);
+		$schema = $this->firstResolved(qb: $qb);
+		if ($schema !== null) {
+			$this->findCache[$key] = $schema;
+		}
+
+		return $schema;
 	}//end findInIds()
 
 	/**

@@ -126,6 +126,30 @@ class SchemaMapperScopedSlugTest extends TestCase {
 		$this->assertNull($this->mapper()->findBySlugInIds('agent', self::HERMIQ_SCHEMAS));
 	}//end testASlugTheRegisterDoesNotCarryIsNullSoTheCallerFallsThrough()
 
+	public function testAScopedIdentifierIsReadOnceUntilTheSchemaIsCleared(): void {
+		$this->queuedRows = [[self::HERMIQ], [self::OPENBUILD, self::HERMIQ], [self::HERMIQ]];
+		$mapper = $this->mapper();
+
+		$this->assertSame(11, $mapper->findInIds('agent', self::HERMIQ_SCHEMAS)?->getId());
+		$this->assertSame(11, $mapper->findInIds('Agent', self::HERMIQ_SCHEMAS)?->getId());
+		$this->assertCount(1, $this->executedQueries());
+
+		$this->assertSame(22, $mapper->find('agent', [], false, false)->getId(), 'the scoped answer reached a global lookup');
+		$this->assertCount(2, $this->executedQueries());
+
+		$mapper->clearFindCache(schemaId: 11);
+		$this->assertSame(11, $mapper->findInIds('agent', self::HERMIQ_SCHEMAS)?->getId());
+		$this->assertCount(3, $this->executedQueries());
+	}//end testAScopedIdentifierIsReadOnceUntilTheSchemaIsCleared()
+
+	public function testAScopedMissIsNotKept(): void {
+		$this->queuedRows = [[], [self::HERMIQ]];
+		$mapper = $this->mapper();
+
+		$this->assertNull($mapper->findInIds('agent', self::HERMIQ_SCHEMAS));
+		$this->assertSame(11, $mapper->findInIds('agent', self::HERMIQ_SCHEMAS)?->getId());
+	}//end testAScopedMissIsNotKept()
+
 	public function testARegisterWithoutSchemasNeverQueries(): void {
 		$this->assertNull($this->mapper()->findBySlugInIds('agent', []));
 		$this->assertNull($this->mapper()->findBySlugInIds('agent', ['x', 0, -3]));
