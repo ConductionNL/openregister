@@ -814,6 +814,8 @@ model. Flows still on it are the ones to re-author.
   the same task inbox
 - [Workflow Automation](workflow-automation.md): handing work to external tools
   (n8n, Windmill), schema hooks and declarative lifecycles
+- [Object Actions](object-actions.md): verbs a schema declares that run a
+  transition, a stored flow or inline flow steps, listed per object
 - [Webhooks & Notifications](webhooks-and-notifications.md): notification rules,
   the "whenever X, tell Y" side of the boundary
 - [Event-Driven Architecture](event-driven-architecture.md): the events the
