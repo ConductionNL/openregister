@@ -698,3 +698,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after merging main, the PR's own tests fail with 'You may not change/read ...' refusals or empty lists; no 'Unknown named parameter' visible because the caller's try/catch(Throwable) returns false (fail closed). phpstan argument.unknown on the call.
 - Cause: PermissionCheckInterface/PermissionHandlerInterface::hasPermission(schema:, action:, userId:, objectOwner:, object:, register:) became hasPermission(PermissionAsk $ask, bool $_rbac=true).
 - Fix: grep the PR's diff for hasPermission; call with ask: (new PermissionAsk(schema: $s, action: 'update'))->askedBy(userId: $u, objectOwner: $owner)->about(object: $obj, register: null) (use OCA\OpenRegister\Service\Object\PermissionAsk); test closures take (PermissionAsk $ask) and read $ask->objectOwner etc.; ->with($schema, 'create') becomes $this->callback(fn (PermissionAsk $a) => $a->action === 'create'). Remember the use line in the test (#10156).
+
+## Dependabot composer.lock bump without sbom.cdx.json (or-fix-9)
+- Symptom: bin/regen-sbom.sh --check on the PR merged with main lists removed/added pkg:composer purls (e.g. #10639 mail-mime-parser).
+- Cause: dependabot changes composer.lock only; the committed root sbom.cdx.json still names the old versions.
+- Fix: merge main, bash ~/q/bin/regen-sbom.sh ., commit sbom.cdx.json alone, --check must say current (#10639 153e1019).
