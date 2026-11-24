@@ -84,6 +84,8 @@ use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
@@ -431,6 +433,7 @@ final class FlowWiringTest extends TestCase {
 				LockObjectNodeInterface::class             => LockObjectNode::class,
 				CodeNodeInterface::class                   => CodeNode::class,
 				CodeRunnerClientInterface::class           => CodeRunnerClient::class,
+				AuditTrailNodeInterface::class             => AuditTrailNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
 				TermDiagnosticInterface::class             => TermDiagnostic::class,

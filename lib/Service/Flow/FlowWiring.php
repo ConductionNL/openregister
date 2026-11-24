@@ -81,6 +81,8 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Flow\Nodes\CodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
@@ -175,6 +177,7 @@ final class FlowWiring {
 		LockObjectNodeInterface::class => LockObjectNode::class,
 		CodeNodeInterface::class => CodeNode::class,
 		CodeRunnerClientInterface::class => CodeRunnerClient::class,
+		AuditTrailNodeInterface::class => AuditTrailNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
 		CalendarRecomputeInterface::class => CalendarRecompute::class,
 		TermDiagnosticInterface::class => TermDiagnostic::class,
@@ -446,7 +449,10 @@ final class FlowWiring {
 				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
 				// The per-row `can` list (record-tasks-tab D-4), asked of the
 				// same authorization service every verb's endpoint asks.
-				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
+				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class),
+				// Marks rows whose user assignee is away (assigneeAbsent,
+				// absentUntil), tasks-delegation-and-substitution task 3.4.
+				substitution: $container->get(\OCA\OpenRegister\Service\Task\TaskSubstitution::class)
 			);
 	}//end buildTaskInboxService()
 
