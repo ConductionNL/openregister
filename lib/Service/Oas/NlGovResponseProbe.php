@@ -253,7 +253,8 @@ class NlGovResponseProbe {
 		$findings = [];
 		$type     = strtolower($response->getHeader('Content-Type'));
 		if ($response->getStatusCode() >= 400 && str_starts_with($type, 'application/problem+json') === false) {
-			$findings[] = ['path' => $path, 'message' => sprintf('A %d error is served as "%s", not application/problem+json.', $response->getStatusCode(), $type)];
+			$message    = sprintf('A %d error is served as "%s", not application/problem+json.', $response->getStatusCode(), $type);
+			$findings[] = ['path' => $path, 'message' => $message];
 		}
 
 		return ['/core/error-handling/problem-details' => self::verdict(findings: $findings)];
@@ -384,6 +385,11 @@ class NlGovResponseProbe {
 	 * @return array{result: string, findings: list<array{path: string, message: string}>}
 	 */
 	private static function verdict(array $findings): array {
-		return ['result' => ($findings === []) ? 'pass' : 'fail', 'findings' => $findings];
+		$result = 'fail';
+		if ($findings === []) {
+			$result = 'pass';
+		}
+
+		return ['result' => $result, 'findings' => $findings];
 	}//end verdict()
 }//end class

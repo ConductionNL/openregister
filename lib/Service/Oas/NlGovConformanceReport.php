@@ -76,10 +76,15 @@ final class NlGovConformanceReport {
 			$rules[] = $entry;
 		}
 
+		$probedAt = null;
+		if (is_string($probe['probedAt'] ?? null) === true) {
+			$probedAt = $probe['probedAt'];
+		}
+
 		return [
 			'ruleset' => NlGovRuleCatalogue::RULESET_VERSION,
 			'generatedAt' => $generatedAt,
-			'probedAt' => (is_string($probe['probedAt'] ?? null) === true) ? $probe['probedAt'] : null,
+			'probedAt' => $probedAt,
 			'rules' => $rules,
 			'counts' => $counts,
 		];
