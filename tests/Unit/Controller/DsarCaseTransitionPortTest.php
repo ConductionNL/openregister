@@ -114,7 +114,6 @@ final class DsarCaseTransitionPortTest extends TestCase {
 		$access->method('mayAct')->willReturn(true);
 
 		return DsarCaseControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(ObjectService::class),
 			$accessor,
