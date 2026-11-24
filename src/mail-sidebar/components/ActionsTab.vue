@@ -17,12 +17,8 @@
 				:key="schema.id"
 				class="or-action-block"
 				:class="{ 'or-action-block--busy': isBusy(schema) }">
-				<label class="or-action-label">
-					{{
-						t('openregister', 'Connect to {name}', {
-							name: schema.title,
-						})
-					}}
+				<label class="or-action-label" :for="'or-action-search-' + schema.id">
+					{{ schema.title }}
 				</label>
 				<div v-if="isBusy(schema)" class="or-action-connecting">
 					<NcLoadingIcon :size="20" />
@@ -36,20 +32,13 @@
 				</div>
 				<template v-else>
 					<div class="or-action-search">
+						<Magnify :size="20" class="or-action-search__icon" />
 						<input
+							:id="'or-action-search-' + schema.id"
 							v-model="searchTerms[schema.id]"
-							type="text"
+							type="search"
 							class="or-action-input"
-							:aria-label="
-								t('openregister', 'Search {name}...', {
-									name: schema.title,
-								})
-							"
-							:placeholder="
-								t('openregister', 'Search {name}...', {
-									name: schema.title,
-								})
-							"
+							:placeholder="t('openregister', 'Number or words')"
 							@input="debounceSearch(schema)"
 							@focus="showResults(schema)" />
 						<ul
@@ -84,8 +73,9 @@
 						type="button"
 						class="or-action-create"
 						@click="openCreate(schema)">
+						<Plus :size="20" />
 						{{
-							t('openregister', 'New {name} from this email', {
+							t('openregister', 'New {name} from this mail', {
 								name: schema.title,
 							})
 						}}
@@ -114,6 +104,8 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcLoadingIcon } from '@nextcloud/vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
 
 /**
@@ -148,6 +140,8 @@ export default {
 	components: {
 		NcLoadingIcon,
 		CreateConnectedObjectDialog,
+		Magnify,
+		Plus,
 	},
 
 	props: {
