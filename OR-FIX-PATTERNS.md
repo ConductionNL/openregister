@@ -853,3 +853,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ResponseGenerationBreakerTest (2) and ResponseGenerationGoldenTest (5 ollama sets) red: 'Undefined property LLPhant\Chat\OllamaChat::$lastUsage' / 'Cannot assign null to ...::$lastUsage'.
 - Cause: NOT main. A vendor built by bin/composer-cloud.sh for main's lock (llphant 1.10.12, #10981) came out without the composer.json patches (patches/llphant-*.patch, phpspreadsheet-zipstream3-prefer.patch); they still apply cleanly to 1.10.12.
 - Fix: in vendor/theodo-group/llphant and vendor/phpoffice/phpspreadsheet run patch -p1 < patches/<file> (also in ~/w/vendor-openregister-<hash>); Chat goes 93/93 green. Unpark any PR parked on it at its head.
+
+## PR builds what a sibling change already landed on main (or-fix-8)
+- Symptom: a dozen conflicts in lib/Db/SchemaMapper.php, RegisterMapper.php, SchemaLookup.php and their goldens on a build PR (e.g. #10568 object-write-sub-500ms vs main's #10520 object-write-at-instance-floor, both splitting the id/uuid/slug lookup into arms).
+- Cause: two openspec changes implemented the same step; main's landed first.
+- Fix: take main's side for the duplicated part (git checkout --theirs on those files and goldens), re-apply only the PR's own additions onto main's structure, adapt the PR's tests to main's behaviour (e.g. IdentifierArms order: slug before uuid for a non-uuid id), re-record goldens and check the fixture diff is only the PR's addition, note it in the change's tasks.md, and rerun check-migration-version-bump.php.
