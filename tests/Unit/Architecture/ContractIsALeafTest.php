@@ -60,6 +60,7 @@ class ContractIsALeafTest extends TestCase {
 		'SaveActor.php',
 		'SavePolicy.php',
 		'SearchOptions.php',
+		'ToolInvocationRecorderInterface.php',
 		'UnlockRequest.php',
 	];
 
