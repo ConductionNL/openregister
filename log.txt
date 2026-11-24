@@ -4207,3 +4207,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T17:37:33Z integrator-20261124T145419-19cd7a29 GREEN tree bf652bacd5 on dev 807c5e84cb prs 1 front=ok: Tests: 64124, Assertions: 226359, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T17:37:42Z integrator-20261124T145419-19cd7a29 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-24T17:37:53Z or-fix-9: lane 9 share 10499 10509 10519 10529 10539 10549 10569 10629 10639 10869 10979; fixed 10509 (27e0f059) and 10539 (406fad11): components yaml conflicts with main; rest APPROVE at head and clean with main (no churn). Note: with ~/q cloned --depth 1, st_sync's plain 'git fetch origin <branch>' hangs; wrap _g fetch with --depth=200.
