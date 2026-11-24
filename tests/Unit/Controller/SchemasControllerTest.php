@@ -34,6 +34,7 @@ use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /*
  * Unit tests for SchemasController
@@ -144,7 +145,7 @@ class SchemasControllerTest extends TestCase {
 
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			fn (Schema $schema, string $action): bool => in_array($action, $this->heldActions, true)
+			fn (PermissionAsk $ask): bool => in_array($ask->action, $this->heldActions, true)
 		);
 		$grantCeiling = new \OCA\OpenRegister\Service\Authorization\GrantCeiling(groups: $groupManager, permissions: $permissions);
 

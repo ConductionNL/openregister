@@ -39,6 +39,8 @@ components:
       - ".*/lib/Service/Lifecycle/TransitionActor[.]php"
       - ".*/lib/Service/Lifecycle/TransitionMove[.]php"
       - ".*/lib/Service/Object/BatchOperationStatusInterface[.]php"
+      - ".*/lib/Service/Object/PermissionAsk[.]php"
+      - ".*/lib/Service/Object/PermissionCheck[.]php"
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
       - ".*/lib/Support/.*"
     exclude:
@@ -608,9 +610,7 @@ components:
       - ".*/lib/Service/Object/PaginationLinks[.]php"
       - ".*/lib/Service/Object/PatchDataMerge[.]php"
       - ".*/lib/Service/Object/PerformanceOptimizationHandler[.]php"
-      - ".*/lib/Service/Object/PermissionAsk[.]php"
       - ".*/lib/Service/Object/PermissionCacheInterface[.]php"
-      - ".*/lib/Service/Object/PermissionCheck[.]php"
       - ".*/lib/Service/Object/PermissionCheckInterface[.]php"
       - ".*/lib/Service/Object/PermissionCheckOptions[.]php"
       - ".*/lib/Service/Object/PermissionEnforcementInterface[.]php"

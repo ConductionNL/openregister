@@ -74,6 +74,7 @@ use RuntimeException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCacheInterface;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget;
 
 /**
@@ -5557,12 +5558,10 @@ class AggregationRunner implements AggregationRunnerInterface {
 	private function mayAggregate(Schema $schema, ?string $userId): bool {
 		foreach (['read', 'list'] as $action) {
 			if ($this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: $action,
-				userId: $userId,
-				objectOwner: null,
-				_rbac: true,
-				object: null
+				ask: (new PermissionAsk(schema: $schema, action: $action))
+					->askedBy(userId: $userId, objectOwner: null)
+					->about(object: null, register: null),
+				_rbac: true
 			) === true
 			) {
 				return true;
