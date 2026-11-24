@@ -24,6 +24,8 @@ namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ReadRuleMatch;
+use OCA\OpenRegister\Kernel\Contracts\ReadRuleResolverInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\GroupRuleEntries;
 use OCA\OpenRegister\Service\Object\GroupRuleRequest;
@@ -44,7 +46,7 @@ use Throwable;
  *
  * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
  */
-final class ReadRuleResolver {
+final class ReadRuleResolver implements ReadRuleResolverInterface {
 
 	/**
 	 * The verb whose rules are read.

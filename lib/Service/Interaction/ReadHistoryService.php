@@ -48,12 +48,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Interaction;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
-use OCA\OpenRegister\Service\Audit\ReadRuleResolver;
+use OCA\OpenRegister\Kernel\Contracts\ReadRuleResolverInterface;
 use OCA\OpenRegister\Service\ProcessingLogService;
 use OCA\OpenRegister\Service\ProcessingRead;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
@@ -112,14 +111,14 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 	 * @param SettingsServiceInterface    $settings    Reads `retention.auditTrailsEnabled`.
 	 * @param ContainerInterface $container   Resolves the processing log lazily.
 	 * @param LoggerInterface    $logger      Logger.
-	 * @param ReadRuleResolver|null $readRules Names the read rule that granted a read; null names none.
+	 * @param ReadRuleResolverInterface|null $readRules Names the read rule that granted a read; null names none.
 	 */
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrails,
 		private readonly SettingsServiceInterface $settings,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
-		private readonly ?ReadRuleResolver $readRules = null,
+		private readonly ?ReadRuleResolverInterface $readRules = null,
 	) {
 	}//end __construct()
 
@@ -171,14 +170,7 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 		// read path shares; null when no rule mediated the read.
 		$rule = $this->readRules?->resolve(object: $object);
 
-		return $this->auditTrails->recordChange(
-			change: new AuditedChange(
-				new: $object,
-				action: self::READ_ACTION,
-				ruleDigest: $rule?->digest,
-				ruleVersion: $rule?->version
-			)
-		);
+		return $this->auditTrails->recordRead(object: $object, ruleDigest: $rule?->digest, ruleVersion: $rule?->version);
 
 	}//end registerAuditRead()
 
