@@ -202,6 +202,23 @@ final class MailTableQueries {
 	}//end messageQuery()
 
 	/**
+	 * Build the query for the RFC `Message-ID` of Mail messages, by their database ids.
+	 *
+	 * @param int[] $messageIds Mail message ids.
+	 *
+	 * @return IQueryBuilder The query, selecting `id` and `message_id`.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public function rfcMessageIdsQuery(array $messageIds): IQueryBuilder {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id', 'message_id')
+			->from('mail_messages')
+			->where($qb->expr()->in('id', $qb->createNamedParameter(array_values($messageIds), IQueryBuilder::PARAM_INT_ARRAY)));
+		return $qb;
+	}//end rfcMessageIdsQuery()
+
+	/**
 	 * Join the mailbox of a message, restricted to one account.
 	 *
 	 * @param IQueryBuilder $qb        The messages query.

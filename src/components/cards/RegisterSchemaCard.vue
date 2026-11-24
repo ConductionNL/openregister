@@ -512,7 +512,7 @@ function apiUrl(path) {
  * @return {string} The message
  */
 function errorText(error) {
-	return error.response?.data?.message || error.message || 'Unknown error'
+	return error.response?.data?.message || error.response?.data?.error || error.message || 'Unknown error'
 }
 
 /**
