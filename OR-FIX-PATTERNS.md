@@ -821,3 +821,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: parked.txt says precheck-red alone on main: FAIL src/views/object/ObjectsList.spec.js ('a new page size refetches page 1 once': expected 1 refreshObjectList call, got 3) on a PR that does not touch src/views/object.
 - Cause: load-dependent flake in the full jest run; the spec passes alone on the same tree. Not a PR defect.
 - Fix: rerun the spec alone (npx jest src/views/object/ObjectsList.spec.js) to confirm; merge main for a new head, diff check, push, REVERIFY (see #10499 59f3959f).
+
+## l10n/en.json + nl.json (backend) conflict on a main merge (or-fix-2)
+- Symptom: CONFLICT in l10n/en.json and l10n/nl.json only; both sides appended keys at the end of "translations" (missing comma / adjacent blocks).
+- Cause: the backend catalogues are hand-maintained JSON; PRs and main append at the same spot. l10n-merge.js handles the .js bundles only.
+- Fix: three-way per key from index stages (git show :1:/:2:/:3:), main wins a key both changed, ours-added keys appended, json.dumps(indent=4, ensure_ascii=False)+newline (assert it round-trips main's stage first); git diff origin/main --numstat -- l10n/*.json must show only the PR's additions (#11012 16f0ecf6, #11022 f2304a9e). Then diff node tests/l10n/check-l10n.js and test:l10n:parity against a main worktree: a new t() key absent from en.js that no locale ever translated (e.g. IBAN) gets unwrapped (+ l10n-ai.js rm), an English-identical genuine cognate gets a scripts/l10n/locales/<loc>.json cognates entry (#11022 0a0239b9).
