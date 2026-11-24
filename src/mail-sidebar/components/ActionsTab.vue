@@ -17,39 +17,28 @@
 				:key="schema.id"
 				class="or-action-block"
 				:class="{ 'or-action-block--busy': isBusy(schema) }">
-				<label class="or-action-label">
-					{{
-						t('openregister', 'Connect to {name}', {
-							name: schema.title,
-						})
-					}}
+				<label class="or-action-label" :for="'or-action-search-' + schema.id">
+					{{ schema.title }}
 				</label>
 				<div v-if="isBusy(schema)" class="or-action-connecting">
 					<NcLoadingIcon :size="20" />
 					<span>{{
 						creating[schema.id]
 							? t('openregister', 'Creating {name}…', {
-									name: schema.title,
+									name: sentenceName(schema.title),
 								})
 							: t('openregister', 'Connecting…')
 					}}</span>
 				</div>
 				<template v-else>
 					<div class="or-action-search">
+						<Magnify :size="20" class="or-action-search__icon" />
 						<input
+							:id="'or-action-search-' + schema.id"
 							v-model="searchTerms[schema.id]"
-							type="text"
+							type="search"
 							class="or-action-input"
-							:aria-label="
-								t('openregister', 'Search {name}...', {
-									name: schema.title,
-								})
-							"
-							:placeholder="
-								t('openregister', 'Search {name}...', {
-									name: schema.title,
-								})
-							"
+							:placeholder="t('openregister', 'Number or words')"
 							@input="debounceSearch(schema)"
 							@focus="showResults(schema)" />
 						<ul
@@ -84,9 +73,10 @@
 						type="button"
 						class="or-action-create"
 						@click="openCreate(schema)">
+						<Plus :size="20" />
 						{{
-							t('openregister', 'New {name} from this email', {
-								name: schema.title,
+							t('openregister', 'New {name} from this mail', {
+								name: sentenceName(schema.title),
 							})
 						}}
 					</button>
@@ -98,6 +88,7 @@
 			:show="createDialog.show"
 			:schema="createDialog.schema"
 			:initialData="createDialog.data"
+			:register="createDialog.schema ? registerCache[createDialog.schema.id] : null"
 			:saving="createSaving"
 			@cancel="closeCreate"
 			@confirm="submitCreate" />
@@ -113,7 +104,10 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcLoadingIcon } from '@nextcloud/vue'
+import Magnify from 'vue-material-design-icons/Magnify.vue'
+import Plus from 'vue-material-design-icons/Plus.vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
+import { sentenceName } from '../sentenceName.js'
 
 /**
  * Fetch the registers, to find the register of each schema.
@@ -147,6 +141,8 @@ export default {
 	components: {
 		NcLoadingIcon,
 		CreateConnectedObjectDialog,
+		Magnify,
+		Plus,
 	},
 
 	props: {
@@ -175,6 +171,7 @@ export default {
 
 	methods: {
 		t,
+		sentenceName,
 		/**
 		 * A schema block is busy while it is creating a new record or
 		 * connecting an existing one — used to swap the search UI for a
@@ -527,13 +524,35 @@ export default {
 				const detail = err.response?.data?.error || err.response?.data || ''
 				showError(
 					t('openregister', 'Failed to create {name} from email', {
-						name: schema.title,
+						name: sentenceName(schema.title),
 					}),
 				)
 				console.error('[ActionsTab] Create from email failed:', detail, err)
 			} finally {
 				this.createSaving = false
 			}
+		},
+
+		/**
+		 * Record the connection in the email link table as well, which the
+		 * object's own Email tab (the `email` integration) lists.
+		 *
+		 * @param {object} schema The schema of the object
+		 * @param {string} objectUuid The object's uuid
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-link-and-unlink-actions-from-the-sidebar
+		 */
+		async recordEmailLink(schema, objectUuid) {
+			const register = this.registerCache[schema.id]
+			if (!register) return
+
+			await axios.post(
+				generateUrl(
+					'/apps/openregister/api/objects/{register}/{schema}/{uuid}/emails',
+					{ register: register.id, schema: schema.id, uuid: objectUuid },
+				),
+				{ mailAccountId: this.accountId, messageId: String(this.messageId) },
+			)
 		},
 
 		/**
@@ -555,6 +574,7 @@ export default {
 					},
 				)
 				await axios.post(url, { id: mailRef })
+				await this.recordEmailLink(schema, objectUuid)
 				showSuccess(
 					t('openregister', 'Connected to {name}', {
 						name: this.objectName(obj),

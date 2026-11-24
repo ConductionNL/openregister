@@ -59,6 +59,18 @@ interface AccessLinkMapperInterface {
 	public function findByCreator(string $userId): array;
 
 	/**
+	 * Every link over one subject, whoever minted it, newest first.
+	 *
+	 * @param string $subjectType The subject kind.
+	 * @param string $subjectId   The subject identifier.
+	 *
+	 * @return array<int, AccessLink> The link rows.
+	 *
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
+	 */
+	public function findBySubject(string $subjectType, string $subjectId): array;
+
+	/**
 	 * Find a link by its row id.
 	 *
 	 * @param int $id The link row id.
