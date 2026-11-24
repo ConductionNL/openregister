@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
@@ -112,37 +113,37 @@ final class D7InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: class-string}>
 	 */
 	private const HIDDEN = [
-		AggregateReferenceResolver::class => [AggregateReferenceResolverInterface::class, ContractBindings::class],
-		AutoTransitionSelector::class => [AutoTransitionSelectorInterface::class, ContractBindings::class],
-		BulkJobReversal::class => [BulkJobReversalInterface::class, ContractBindings::class],
-		BulkJobService::class => [BulkJobServiceInterface::class, ContractBindings::class],
-		CalculationTrialService::class => [CalculationTrialServiceInterface::class, ContractBindings::class],
+		AggregateReferenceResolver::class => [AggregateReferenceResolverInterface::class, ProcessesServiceBindings::class],
+		AutoTransitionSelector::class => [AutoTransitionSelectorInterface::class, ProcessesServiceBindings::class],
+		BulkJobReversal::class => [BulkJobReversalInterface::class, ProcessesServiceBindings::class],
+		BulkJobService::class => [BulkJobServiceInterface::class, ProcessesServiceBindings::class],
+		CalculationTrialService::class => [CalculationTrialServiceInterface::class, ProcessesServiceBindings::class],
 		DatabaseIntrospectionService::class => [DatabaseIntrospectionServiceInterface::class, CoreServiceBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
 		FavouriteService::class => [FavouriteServiceInterface::class, ContractBindings::class],
 		FederatedConfigService::class => [FederatedConfigServiceInterface::class, ContractBindings::class],
-		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ContractBindings::class],
-		FormDestinationValidator::class => [FormDestinationValidatorInterface::class, ContractBindings::class],
-		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ContractBindings::class],
-		FormSubmitService::class => [FormSubmitServiceInterface::class, ContractBindings::class],
-		FormUploadStore::class => [FormUploadStoreInterface::class, ContractBindings::class],
+		FormDefinitionResolver::class => [FormDefinitionResolverInterface::class, ProcessesServiceBindings::class],
+		FormDestinationValidator::class => [FormDestinationValidatorInterface::class, ProcessesServiceBindings::class],
+		FormIdempotencyStore::class => [FormIdempotencyStoreInterface::class, ProcessesServiceBindings::class],
+		FormSubmitService::class => [FormSubmitServiceInterface::class, ProcessesServiceBindings::class],
+		FormUploadStore::class => [FormUploadStoreInterface::class, ProcessesServiceBindings::class],
 		GitLabHandler::class => [GitLabHandlerInterface::class, ContractBindings::class],
 		HandoffService::class => [HandoffServiceInterface::class, ContractBindings::class],
 		ImportPreviewService::class => [ImportPreviewServiceInterface::class, ContractBindings::class],
 		JsonLdContextService::class => [JsonLdContextServiceInterface::class, CoreServiceBindings::class],
 		JsonLdSerializer::class => [JsonLdSerializerInterface::class, CoreServiceBindings::class],
-		LifecycleActionExecutor::class => [LifecycleActionExecutorInterface::class, ContractBindings::class],
-		LifecycleConditionEvaluator::class => [LifecycleConditionEvaluatorInterface::class, ContractBindings::class],
-		ReferencedCalculationRefresher::class => [ReferencedCalculationRefresherInterface::class, ContractBindings::class],
-		ReferenceResolver::class => [ReferenceResolverInterface::class, ContractBindings::class],
+		LifecycleActionExecutor::class => [LifecycleActionExecutorInterface::class, ProcessesServiceBindings::class],
+		LifecycleConditionEvaluator::class => [LifecycleConditionEvaluatorInterface::class, ProcessesServiceBindings::class],
+		ReferencedCalculationRefresher::class => [ReferencedCalculationRefresherInterface::class, ProcessesServiceBindings::class],
+		ReferenceResolver::class => [ReferenceResolverInterface::class, ProcessesServiceBindings::class],
 		SchemaShareableConfigScanner::class => [SchemaShareableConfigScannerInterface::class, ContractBindings::class],
 		ShareableConfigTypeRegistry::class => [ShareableConfigTypeRegistryInterface::class, ContractBindings::class],
 		SourceRowReader::class => [SourceRowReaderInterface::class, ContractBindings::class],
-		StateConditionEvaluator::class => [StateConditionEvaluatorInterface::class, ContractBindings::class],
-		StateFieldRuleResolver::class => [StateFieldRuleResolverInterface::class, ContractBindings::class],
-		SubstantiveChangeEvaluator::class => [SubstantiveChangeEvaluatorInterface::class, ContractBindings::class],
-		TemporalCalculationSweepService::class => [TemporalCalculationSweepServiceInterface::class, ContractBindings::class],
+		StateConditionEvaluator::class => [StateConditionEvaluatorInterface::class, ProcessesServiceBindings::class],
+		StateFieldRuleResolver::class => [StateFieldRuleResolverInterface::class, ProcessesServiceBindings::class],
+		SubstantiveChangeEvaluator::class => [SubstantiveChangeEvaluatorInterface::class, ProcessesServiceBindings::class],
+		TemporalCalculationSweepService::class => [TemporalCalculationSweepServiceInterface::class, ProcessesServiceBindings::class],
 		WatcherService::class => [WatcherServiceInterface::class, ContractBindings::class],
 	];
 
