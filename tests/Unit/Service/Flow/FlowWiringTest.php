@@ -89,6 +89,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
@@ -438,6 +440,7 @@ final class FlowWiringTest extends TestCase {
 				LockObjectNodeInterface::class             => LockObjectNode::class,
 				TriggerCalendarNodeInterface::class        => TriggerCalendarNode::class,
 				TriggerWebhookNodeInterface::class         => TriggerWebhookNode::class,
+				TagObjectNodeInterface::class              => TagObjectNode::class,
 				AuditTrailNodeInterface::class             => AuditTrailNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,

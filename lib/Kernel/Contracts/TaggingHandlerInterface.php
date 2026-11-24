@@ -90,14 +90,27 @@ interface TaggingHandlerInterface {
 	/**
 	 * Add a tag to an OpenRegister object.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param string $tagName The tag name to add.
+	 * @param string      $objectUuid The object UUID.
+	 * @param string      $tagName    The tag name to add.
+	 * @param string|null $color      A colour for the tag when it has none, as six hex digits.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function addObjectTag(string $objectUuid, string $tagName): void;
+	public function addObjectTag(string $objectUuid, string $tagName, ?string $color = null): void;
+
+	/**
+	 * Whether an object carries a tag of this name.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $tagName    The tag name.
+	 *
+	 * @return bool True when the tag is on the object.
+	 *
+	 * @spec openspec/changes/flow-tag-object-step/specs/flow-engine/spec.md
+	 */
+	public function hasObjectTag(string $objectUuid, string $tagName): bool;
 
 	/**
 	 * Remove a tag from an OpenRegister object.
