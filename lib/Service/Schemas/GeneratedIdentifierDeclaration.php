@@ -67,7 +67,14 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 *
 	 * @var array<int, string>
 	 */
-	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn', 'reserved', 'kind', 'length', 'alphabet'];
+	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn', 'reserved', 'kind', 'length', 'alphabet', 'partitionBy'];
+
+	/**
+	 * What a `partitionBy` value must look like: one plain property name.
+	 *
+	 * @var string
+	 */
+	private const PARTITION_PROPERTY = '/^[A-Za-z_][A-Za-z0-9_]*$/';
 
 	/**
 	 * A counter shown as its number: the default kind.
@@ -106,6 +113,7 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 * @param string $resetOn When the counter restarts.
 	 * @param array<int, string> $reserved The reserved values and patterns.
 	 * @param array{alphabet: string, length: int}|null $random The code shape of a random sequence, null for a counter.
+	 * @param string|null $partitionBy The property whose value splits the counter, null for one counter.
 	 */
 	private function __construct(
 		private readonly string $sequence,
@@ -113,6 +121,7 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 		private readonly string $resetOn,
 		private readonly array $reserved = [],
 		private readonly ?array $random = null,
+		private readonly ?string $partitionBy = null,
 	) {
 	}//end __construct()
 
@@ -169,7 +178,8 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 			format: $format,
 			resetOn: $resetOn,
 			reserved: self::reservedOf(raw: $raw, path: $path),
-			random: self::randomOf(raw: $raw, path: $path)
+			random: self::randomOf(raw: $raw, path: $path),
+			partitionBy: self::partitionOf(raw: $raw, path: $path)
 		);
 		self::assertRenderable(declaration: $declaration, path: $path);
 		return $declaration;
@@ -217,6 +227,46 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 
 		return ['alphabet' => $alphabet, 'length' => $length];
 	}//end randomOf()
+
+	/**
+	 * The property whose value splits the counter, or null when it has none.
+	 *
+	 * Only a plain property name is accepted: a path or an expression would make
+	 * the counter depend on how a nested value happens to be shaped.
+	 *
+	 * @param array<string, mixed> $raw  The annotation block.
+	 * @param string               $path The property's path, for the error message.
+	 *
+	 * @return string|null The property name, or null.
+	 *
+	 * @throws GeneratedIdentifierException When `partitionBy` is not a plain property name.
+	 *
+	 * @spec openspec/changes/generated-identifier-partition/specs/computed-fields/spec.md#requirement-a-sequence-may-count-separately-per-value-of-a-property
+	 */
+	private static function partitionOf(array $raw, string $path): ?string {
+		if (array_key_exists('partitionBy', $raw) === false) {
+			return null;
+		}
+
+		$partitionBy = $raw['partitionBy'];
+		if (is_string($partitionBy) === false || preg_match(self::PARTITION_PROPERTY, $partitionBy) !== 1) {
+			$message = '%s.partitionBy at \'%s\' must be the name of one property of the object.';
+			throw self::refusal(message: sprintf($message, self::ANNOTATION, $path), path: $path);
+		}
+
+		return $partitionBy;
+	}//end partitionOf()
+
+	/**
+	 * The property whose value splits the counter, or null for one counter.
+	 *
+	 * @return string|null The property name.
+	 *
+	 * @spec openspec/changes/generated-identifier-partition/specs/computed-fields/spec.md#requirement-a-sequence-may-count-separately-per-value-of-a-property
+	 */
+	public function partitionBy(): ?string {
+		return $this->partitionBy;
+	}//end partitionBy()
 
 	/**
 	 * Whether this identifier is drawn from a random sequence.
