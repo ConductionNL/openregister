@@ -81,6 +81,7 @@ final class DbRegistrar {
 		MagicStatisticsInterface::class => MagicMapper::class,
 		MagicTableHandlerInterface::class => MagicTableHandler::class,
 		MagicTableLocatorInterface::class => MagicMapper::class,
+		\OCA\OpenRegister\Kernel\Contracts\RegisterSchemaPairsInterface::class => MagicMapper::class,
 		MagicTableMaintenanceInterface::class => MagicMapper::class,
 		MagicTableRowReaderInterface::class => MagicMapper::class,
 		ObjectReadStateMapperInterface::class => ObjectReadStateMapper::class,
