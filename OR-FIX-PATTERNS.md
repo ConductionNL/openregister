@@ -834,3 +834,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: precheck front.log FAIL src/services/initial-data.golden.spec.js, '+ "<newField>": ...' in one component's recorded state; the PR's own specs are green.
 - Cause: main records every settings/view component's initial data() in one golden; a PR adding a field there predates it.
 - Fix: npx jest src/services/initial-data.golden.spec.js -u; the snapshot diff must be only the PR's own field(s) (#10451 914835d2). Run the whole jest suite (not just the PR's dirs) before calling a frontend PR green.
+
+## Exact-array createShare expectation misses main's 'crosses' param (or-fix-7)
+- Symptom: FederationController*Test create test 'Failed asserting that 500 is identical to 201' (the controller catches the mock's ExpectationFailedException as Throwable and answers 500).
+- Cause: main's FederationController::createShare now passes 'crosses' => getParam('crosses') to createOutgoingShare.
+- Fix: add 'crosses' => null (or the request's value) to the test's ->with([...]) array (see #10587 3b25f4b6).
