@@ -33,3 +33,4 @@
 2026-11-24T02:23:02Z GREEN prs=11000 main=6fbf58fb9e integrator-cloud
 2026-11-24T03:20:32Z GREEN prs=9131 main=677fdcdc51 integrator-cloud
 2026-11-24T04:16:32Z GREEN prs=11001 main=f1c351debe integrator-cloud
+2026-11-24T09:12:37Z GREEN prs=3847,9909,9915,9921,9940,10075,10129,10132 main=cac830e00f integrator-cloud (first verdict NORESULT: apt gitleaks 8.16 / go-built 8.30 too slow, secretscanning hit the 120s timeout; release binary 8.30.0 fixed it)
