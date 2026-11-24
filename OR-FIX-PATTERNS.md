@@ -807,3 +807,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: a golden or test reproduces main's (or another PR's) result exactly after a merge, as if the PR's code were missing.
 - Cause: composer's autoload_psr4 resolves OCA\\OpenRegister\\ relative to the real vendor dir, so a git worktree with vendor symlinked to another checkout loads that checkout's lib/.
 - Fix: cp -r the vendor into each worktree (or run composer-cloud.sh there), never symlink it.
+
+## Built-in flow node count after a main merge (or-fix-3)
+- Symptom: FlowNodeBuiltInRegistrationTest::testRegistersEveryBuiltInOnceInCoreActionBoundaryOrder / FlowNodeRegistrationListenerTest::testEveryBuiltInReachesTheRegistryPortalTaskIncluded: 'actual size N+1 matches expected size N'.
+- Cause: main added a built-in (AuditTrailNode, 33) while the PR added its own node against the older count.
+- Fix: assertCount(main's count + the PR's new nodes) in both tests (message text too); also run tests/Unit/Docs (FlowsDocumentationTest) for the node's flows.md paragraph (#10363).
