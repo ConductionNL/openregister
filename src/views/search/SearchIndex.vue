@@ -36,6 +36,7 @@ import {
 	viewsStore,
 } from '../../store/store.js'
 import { inheritedProperties } from './inheritedProperties.js'
+import { lensSearchParams, TABLE_LENSES } from './personalLensQuery.js'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
@@ -114,6 +115,8 @@ export default {
 			objectStore,
 			navigationStore,
 			viewsStore,
+			// Following, Recent and Unread quick filters (record-star-follow-and-unread-on-screen).
+			personalLenses: TABLE_LENSES,
 			isAddingNewObject: false,
 			// Kanban board state (REQ-VIEW-KANBAN-02): the pre-built `columns`
 			// shape from GET /api/views/{id}/kanban, refetched wholesale on
@@ -530,6 +533,19 @@ export default {
 		},
 
 		/**
+		 * Apply a personal lens (Following, Recent, Unread) from the quick
+		 * filters and re-run the search from the first page.
+		 *
+		 * @param {number} index The quick-filter tab CnIndexPage reports
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {void}
+		 */
+		handleLensChange(index) {
+			objectStore.updateSearchParams(lensSearchParams(index, this.personalLenses))
+			objectStore.refetchSearchCollection()
+		},
+
+		/**
 		 * Apply a page change and re-run the search.
 		 *
 		 * @param {number} page The new page number.
@@ -883,7 +899,10 @@ export default {
 			showMassDelete
 			massActionNameField="title"
 			emptyText="No objects found. Select registers and schemas in the sidebar, then search."
+			:personalLenses="personalLenses"
+			showUnreadRows
 			@add="handleAddObject"
+			@quickFilterChange="handleLensChange"
 			@refresh="handleRefresh"
 			@massDelete="handleMassDelete"
 			@massCopy="handleMassCopy"

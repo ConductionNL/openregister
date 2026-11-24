@@ -193,6 +193,8 @@ function emptyPropertyDisplay() {
 		visible: true,
 		hideOnCollection: false,
 		facetable: true,
+		indexed: false,
+		searchable: false,
 		order: 0,
 	}
 }
