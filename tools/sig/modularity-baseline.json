@@ -1188,6 +1188,7 @@
   "lib/Service/Object/OwnDraftSearch.php",
   "lib/Service/Object/PermissionAsk.php",
   "lib/Service/Object/PermissionCacheInterface.php",
+  "lib/Service/Object/PermissionCheck.php",
   "lib/Service/Object/PermissionCheckInterface.php",
   "lib/Service/Object/PermissionCheckOptions.php",
   "lib/Service/Object/PermissionEnforcementInterface.php",
@@ -1447,14 +1448,14 @@
  "exposed_loc": {
   "Compliance": 4805,
   "Configuration": 870,
-  "Core": 35005,
+  "Core": 34960,
   "Files": 1255,
   "Integrations": 17657,
-  "Kernel": 6085,
+  "Kernel": 6145,
   "Notifications": 1760,
   "Platform": 0,
   "Processes": 5032,
-  "Search": 1317
+  "Search": 1325
  },
  "kernel_files": [
   "lib/BulkAction/BulkActionInterface.php",
@@ -1769,6 +1770,8 @@
   "lib/Service/Lifecycle/TransitionActor.php",
   "lib/Service/Lifecycle/TransitionMove.php",
   "lib/Service/Object/BatchOperationStatusInterface.php",
+  "lib/Service/Object/PermissionAsk.php",
+  "lib/Service/Object/PermissionCheck.php",
   "lib/Service/Schemas/PropertyValidatorHandlerInterface.php",
   "lib/Support/AggregationFilterRequest.php",
   "lib/Support/AppConfigValue.php",
@@ -1787,7 +1790,7 @@
   "lib/Support/RegisterSlugAliasesInterface.php",
   "lib/Support/UnknownFilterKeys.php"
  ],
- "kernel_loc": 7689,
- "total_loc": 462716,
+ "kernel_loc": 7749,
+ "total_loc": 462788,
  "violation_degree": 0.0064
 }
