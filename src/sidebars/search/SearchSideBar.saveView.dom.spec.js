@@ -12,6 +12,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import SearchSideBar from './SearchSideBar.vue'
 
 jest.mock('@conduction/nextcloud-vue', () => ({
+	CnViewPresentationPicker: mockStub('CnViewPresentationPicker'),
 	CnIndexSidebar: {
 		name: 'CnIndexSidebar',
 		emits: ['update:open', 'search', 'filterChange', 'columnsChange'],
@@ -250,12 +251,48 @@ describe('search sidebar save-view section', () => {
 			isPublic: false,
 			isDefault: false,
 			configuration: expect.objectContaining({ registers: [1], schemas: [2] }),
+			presentation: { viewType: 'table' },
 		})
 		expect(wrapper.vm.viewsStore.fetchViews).toHaveBeenCalled()
 		expect(OC.Notification.showTemporary).toHaveBeenCalledWith('View saved successfully!')
 		expect(wrapper.find('.saveViewForm').exists()).toBe(false)
 		expect(wrapper.find('.activeViewActions').exists()).toBe(true)
 		expect(nameField(wrapper).attributes('modelvalue')).toBe('Black cats')
+	})
+
+	it('saves the presentation chosen in the form and resets it afterwards', async () => {
+		const board = { viewType: 'kanban', kanban: { groupByField: 'status' } }
+		const wrapper = await sidebar({ state: { ...SCOPE, showSaveForm: true, viewName: 'Board' } })
+		wrapper.vm.viewsStore.createView.mockResolvedValue({ id: 10, name: 'Board' })
+
+		wrapper.findComponent({ name: 'CnViewPresentationPicker' }).vm.$emit('input', board)
+		await flushPromises()
+		await saveButton(wrapper, 'Save').trigger('click')
+		await flushPromises()
+
+		expect(wrapper.vm.viewsStore.createView).toHaveBeenCalledWith(expect.objectContaining({ name: 'Board', presentation: board }))
+		expect(wrapper.vm.viewPresentation).toEqual({ viewType: 'table' })
+		expect(wrapper.vm.viewPresentationErrors).toEqual({})
+	})
+
+	it('keeps a refused presentation in the form, under the field it names', async () => {
+		const wrapper = await sidebar({ state: { ...SCOPE, showSaveForm: true, viewName: 'Board' } })
+		const refusal = 'presentation.kanban.groupByField: "notes" is not a choice field'
+		wrapper.vm.viewsStore.createView.mockRejectedValue(Object.assign(new Error('Bad request'), { body: { error: refusal } }))
+
+		wrapper.findComponent({ name: 'CnViewPresentationPicker' }).vm.$emit('input', { viewType: 'kanban', kanban: { groupByField: 'notes' } })
+		await flushPromises()
+		await saveButton(wrapper, 'Save').trigger('click')
+		await flushPromises()
+
+		expect(wrapper.find('.saveViewForm').exists()).toBe(true)
+		expect(wrapper.vm.viewPresentationErrors).toEqual({ 'kanban.groupByField': refusal })
+		expect(wrapper.findComponent({ name: 'CnViewPresentationPicker' }).vm.$attrs.errors).toEqual({ 'kanban.groupByField': refusal })
+
+		// Choosing again clears the refusal.
+		wrapper.findComponent({ name: 'CnViewPresentationPicker' }).vm.$emit('input', { viewType: 'table' })
+		await flushPromises()
+		expect(wrapper.vm.viewPresentationErrors).toEqual({})
 	})
 
 	it('renames and saves the active view', async () => {

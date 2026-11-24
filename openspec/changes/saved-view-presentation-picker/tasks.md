@@ -9,7 +9,8 @@
 ## 2. Wiring (REQ-VIEW-PRES-06, REQ-VIEW-PRES-07)
 
 - [x] 2.1 `src/modals/view/EditView.vue`: place `CnViewPresentationPicker` with the view's schema; send `presentation` on save; show a 400 under the named picker (D-4). Verify: `src/modals/view/EditView.spec.js` saves a kanban presentation and renders a refusal.
-- [ ] 2.2 `src/sidebars/search/SearchSideBar.vue`: the same picker in the save form; `src/store/modules/views.js` sends `presentation` in create and update. Verify: `src/store/modules/views.spec.js` asserts the payload.
+- [x] 2.2 `src/sidebars/search/SearchSideBar.vue`: the same picker in the save form; `src/store/modules/views.js` sends `presentation` in create and update. Verify: `src/store/modules/views.spec.js` asserts the payload.
+      > Built: the search sidebar's save form carries `CnViewPresentationPicker` over the searched schema and sends the chosen `presentation` with the new view (a table by default); a refusal that names a picker path stays in the form under that field and clears on the next choice. The refusal mapping moved to `src/modals/view/presentationErrors.js`, shared with `EditView.vue`. The store already sends `presentation` in create and update; `views.spec.js` asserts both payloads. Tests: `SearchSideBar.saveView.dom.spec.js` (+2: the chosen presentation is saved and reset, a refusal lands under its field).
 - [ ] 2.3 `src/views/search/SearchIndex.vue`: the header control for the open view (D-3): save on switch for an editor, session-only switch plus "Save as new view" for a reader. Verify: unit test on the switch handler for both cases.
 
 ## 3. Tests and docs
