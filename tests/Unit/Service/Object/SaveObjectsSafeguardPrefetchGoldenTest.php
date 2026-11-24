@@ -287,12 +287,12 @@ class SaveObjectsSafeguardPrefetchGoldenTest extends TestCase {
 	 */
 	private function permissionHandler(): PermissionHandler {
 		$handler = $this->createMock(PermissionHandler::class);
-		$handler->method('hasPermission')->willReturnCallback(
+		$handler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args): bool {
 				$this->calls[] = 'hasPermission '.json_encode([$args[1], ($args[2] ?? null), ($args[3] ?? null), ($args[5] ?? null)?->getUuid()]);
 				return true;
 			}
-		);
+		));
 
 		return $handler;
 	}//end permissionHandler()
