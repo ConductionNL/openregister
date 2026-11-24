@@ -721,3 +721,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: TypeError in a test: <X>ControllerFactory::args(): Argument #1 ($request) must be of type OCP\IRequest, string given.
 - Cause: main dropped the $appName constructor argument from controllers (cloud/wr-wr5-controller-app-id); tests/Unit/Controller/Support/*Factory::create() now starts at the request.
 - Fix: delete the leading 'openregister' argument from the PR's create()/new <X>Controller(...) calls; nothing else changes (#10587 cc99fda0).
+
+## PR code or tests call hasPermission() with the old named arguments (or-fix-5)
+- Symptom: after merging main, 'Unknown named parameter $schema' in the PR's tests, or a PR adapter's verdict silently false (its try/catch swallows the Error, e.g. AttachTargetSearch offered no schemas); phpstan argument.unknown on the PR file.
+- Cause: main (#9053) moved PermissionHandler/PermissionCheckInterface::hasPermission() to one PermissionAsk value object; older PRs added callers of the old form (#10395 SchemaWriteRights, #10535 slot/break-glass tests).
+- Fix: `hasPermission(ask: (new PermissionAsk(schema: $s, action: $a))->askedBy(userId: $u, objectOwner: $o)->about(object: $obj, register: $r))` (about() needs both args, null where absent); willReturnCallback closures take PermissionAsk and read ->schema/->action/->register; ->with(positional) becomes one $this->callback() over those fields; add #[UsesClass(PermissionAsk::class)].
