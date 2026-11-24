@@ -4403,3 +4403,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T20:20:11Z precheck-20261124T190656-018eb955 GREEN tree e04bead45b on dev dfcbe075ef prs 1 front=skip: Tests: 64730, Assertions: 228643, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T20:23:48Z precheck-20261124T190656-018eb955 RED tree 0aef4ca117 prs 1 front=skip: Tests: 65017, Assertions: 229453, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline
 2026-11-24T20:25:45Z session-20261124T202545-61cc30ff or-fix-2: session start
+2026-11-24T20:26:40Z precheck-20261124T175747-122d94ac GREEN tree 851967dc44 on dev 110034ca45 prs 1 front=ok: Tests: 65008, Assertions: 229424, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
