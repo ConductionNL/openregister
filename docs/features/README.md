@@ -59,7 +59,9 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Webhooks & Notifications | [webhooks-and-notifications.md](webhooks-and-notifications.md) | Integration | Implemented | CloudEvents, HMAC, VNG Notificaties |
 | Object Read State | [object-read-state.md](object-read-state.md) | Collaboration | Implemented | Per-user unread, tab badges, bell cleared by the work |
 | Favourites & Recently Opened | [favourites-and-recent.md](favourites-and-recent.md) | Collaboration | Implemented | Per-user star, view history, two index lenses |
+| BAG Address Lookup | [bag-address-lookup.md](bag-address-lookup.md) | Integration | Implemented | National BAG load, postcode + number lookup, public throttled endpoint |
 | Access Links | [access-links.md](access-links.md) | Collaboration | Implemented | Scoped, expiring link that opens one record without an account |
+| Expired Object Sweep | [expired-object-sweep.md](expired-object-sweep.md) | Data Modelling | Implemented | A schema opts in to `x-openregister.expiry`; a daily job deletes or anonymises expired objects, `occ openregister:expiry:sweep --dry-run` |
 | Collections Across Apps | [collaboration-resources.md](collaboration-resources.md) | Collaboration | Implemented | A record joins a Nextcloud collection beside its folder, conversation and board |
 | Generated Identifiers | [generated-identifier.md](generated-identifier.md) | Data Modelling | Implemented | Case numbers from a named sequence and a format, frozen after issue |
 | Object Slugs | [object-slugs.md](object-slugs.md) | Data Modelling | Implemented | Slug per object from a configured field, unique per register and schema, frozen once set, `occ openregister:backfill-slugs` |
@@ -111,7 +113,9 @@ Connecting OpenRegister to external systems and workflows.
 - [Webhooks & Notifications](webhooks-and-notifications.md) — CloudEvents delivery, HMAC signing, VNG Notificaties, retry
 - [Object Read State](object-read-state.md) — Per-user unread state, the unread filter, tab badges, snooze and archive
 - [Favourites & Recently Opened](favourites-and-recent.md) — Per-user star, view history, the `_favourite` and `_recent` lenses
+- [BAG Address Lookup](bag-address-lookup.md): load the national BAG address set and find an address by postcode and house number
 - [Access Links](access-links.md): share one record with somebody who has no account, revocably and on the audit trail
+- [Expired Object Sweep](expired-object-sweep.md): delete or anonymise objects whose expiry has passed, skipping legal holds, with a dry run
 - [Collections Across Apps](collaboration-resources.md): put a record in a Nextcloud collection beside the folder and the conversation that belong to it
 - [Generated Identifiers](generated-identifier.md) — `x-openregister-generated`, a named counter, a format, and a value that cannot be edited
 - [Record Templates](record-templates.md) — Named starting values per schema, shared like saved views, offered only to users who may create there
