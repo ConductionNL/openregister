@@ -14,7 +14,7 @@ const BLOCK = {
 	show: {
 		id: 'id',
 		title: 'subject',
-		identifier: '#{id}',
+		identifier: '{id}',
 		context: '_links.project.title',
 		status: '_links.status.title',
 		handler: '_links.assignee.title',
@@ -39,7 +39,7 @@ describe('fileLinks', () => {
 		expect(itemOf(BLOCK, RESULT)).toEqual({
 			id: 38,
 			title: 'Replace street lights Lindelaan',
-			identifier: '#38',
+			identifier: '38',
 			context: 'Lindelaan street lighting',
 			status: 'New',
 			handler: 'Pieter Jansen',

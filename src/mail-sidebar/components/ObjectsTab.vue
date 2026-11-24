@@ -69,7 +69,7 @@
 				<div class="or-mail-object-card__header">
 					<span class="or-mail-object-card__kind">
 						<span class="or-mail-object-card__schema">{{ link.kind }}</span>
-						<span v-if="link.identifier" class="or-mail-object-card__id">{{ link.identifier }}</span>
+						<span v-if="link.identifier" class="or-mail-object-card__id">#{{ link.identifier }}</span>
 					</span>
 					<NcButton
 						variant="tertiary"
