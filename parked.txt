@@ -213,9 +213,7 @@ openregister#10395 c88dcef291ec2629ddff8d87422cf6426e427995 note or-fix-5: merge
 openregister#10300 038b55a7449adfd6074e24871cf58d4099bec404 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\Interaction\RecentLensLookupCallSitesTest::testEveryInternalFindHasADecisi
 openregister#10363 50aacc0c1423c305ec0025575ac52e38de5d7a3d precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Listener\FlowNodeBuiltInRegistrationTest::testRegistersEveryBuiltInOnceInCoreActio;OCA\OpenRegister\Tests\Unit\Listener\FlowNodeRegistrationListenerTest::testEveryBuiltInReachesTheRegi
 openregister#10540 44e953278a1bd64e8db93128dd6951f3d029bedc precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDefinitionTest::testEveryFileHasACsvRowAndTheYamlAgrees;OCA\OpenRegister\Tests\Unit\Architecture\ComponentDefinitionTest::testEveryFileMatchesExactlyOneComponent;
-openregister#10634 5ccd2ee2905010c54e80e42aa911d11f44fa0c43 auto-park: sbom: composer.lock changed without sbom.cdx.json
 openregister#10451 baeb84ac3aadb8cb7a9070b5964b0dd7adfda5b1 precheck-red alone on main: FAIL src/services/initial-data.golden.spec.js
-openregister#10640 ed7f06cd31dc3b2afe144000c02847936a365d95 auto-park: sbom: composer.lock changed without sbom.cdx.json
 openregister#10587 cc99fda0ca8c1d84b3031140c790e0bbca9be8b7 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Controller\FederationControllerShareManagementTest::testACreatePassesTheParameters
 openregister#11061 e6bcba7b9b8633679eb65a45d71d918628c6d435 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline
 openregister#10627 b3283ac8d894e33cde61dc0e7bf261d11566a691 auto-park: sbom: package-lock.json changed without sbom.cdx.json
