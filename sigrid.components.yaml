@@ -19,6 +19,7 @@ components:
       - ".*/lib/Db/Register/[^/]*"
       - ".*/lib/Db/Schema/AnnotationVocabulary[.]php"
       - ".*/lib/Db/Schema/FacetBlockStamp[.]php"
+      - ".*/lib/Db/Schema/FormerSlugs[.]php"
       - ".*/lib/Db/Schema/InversedByNormaliser[.]php"
       - ".*/lib/Db/Schema/NotSuppliedReasons[.]php"
       - ".*/lib/Db/Schema/ObjectSourceDeclaration[.]php"

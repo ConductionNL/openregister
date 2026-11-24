@@ -24,7 +24,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Service\Schema\FormerSlugs;
+use OCA\OpenRegister\Db\Schema\FormerSlugs;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Db\DoesNotExistException;
 

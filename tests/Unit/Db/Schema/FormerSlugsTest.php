@@ -4,7 +4,7 @@
  * Unit tests for FormerSlugs.
  *
  * @category Test
- * @package  OCA\OpenRegister\Tests\Unit\Service\Schema
+ * @package  OCA\OpenRegister\Tests\Unit\Db\Schema
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,14 +18,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Tests\Unit\Service\Schema;
+namespace OCA\OpenRegister\Tests\Unit\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Schema\FormerSlugs;
+use OCA\OpenRegister\Db\Schema\FormerSlugs;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @covers \OCA\OpenRegister\Service\Schema\FormerSlugs
+ * @covers \OCA\OpenRegister\Db\Schema\FormerSlugs
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  *

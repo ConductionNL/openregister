@@ -34,7 +34,7 @@ use PHPUnit\Framework\TestCase;
  * `signaal` answers as `signaal`, with `Deprecation` and a `Link` to the new path.
  *
  * @covers \OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait
- * @uses \OCA\OpenRegister\Service\Schema\FormerSlugs
+ * @uses \OCA\OpenRegister\Db\Schema\FormerSlugs
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema

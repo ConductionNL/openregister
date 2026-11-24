@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Schema\FormerSlugs;
+use OCA\OpenRegister\Db\Schema\FormerSlugs;
 use Throwable;
 
 /**

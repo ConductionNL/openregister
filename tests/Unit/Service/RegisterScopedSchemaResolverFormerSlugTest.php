@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
- * @uses \OCA\OpenRegister\Service\Schema\FormerSlugs
+ * @uses \OCA\OpenRegister\Db\Schema\FormerSlugs
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema

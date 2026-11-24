@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\Schema
+ * @category Db
+ * @package  OCA\OpenRegister\Db\Schema
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Schema;
+namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Formats\UuidFormat;
