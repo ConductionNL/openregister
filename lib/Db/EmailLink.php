@@ -57,6 +57,8 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime getLinkedAt()
  * @method string|null getRfcMessageId()
  * @method void setRfcMessageId(?string $rfcMessageId)
+ * @method string|null getDirection()
+ * @method void setDirection(?string $direction)
  * @method void setLinkedAt(DateTime $linkedAt)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
@@ -175,6 +177,23 @@ class EmailLink extends Entity implements JsonSerializable {
 	protected ?string $rfcMessageId = null;
 
 	/**
+	 * A mail that arrived and was linked.
+	 */
+	public const DIRECTION_INBOUND = 'inbound';
+
+	/**
+	 * A mail the app sent bound to the object.
+	 */
+	public const DIRECTION_OUTBOUND = 'outbound';
+
+	/**
+	 * Whether the mail came in or went out: `inbound`, `outbound`, or null on a row from before the column.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $direction = null;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
@@ -207,9 +226,13 @@ class EmailLink extends Entity implements JsonSerializable {
 	/**
 	 * The link details from the metadata, one entry per DETAIL_KEYS key, null when absent.
 	 *
+	 * `direction` is the metadata's when it names one (a mail linked from a
+	 * Sent folder says `outbound`), else the column's.
+	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/email-link-sender-name-and-details/spec.md#requirement-an-email-link-carries-the-details-the-row-shows
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
 	public function details(): array {
 		$metadata = json_decode((string) $this->metadata, true);
@@ -221,6 +244,8 @@ class EmailLink extends Entity implements JsonSerializable {
 		foreach (self::DETAIL_KEYS as $key) {
 			$details[$key] = ($metadata[$key] ?? null);
 		}
+
+		$details['direction'] ??= $this->direction;
 
 		return $details;
 	}//end details()
@@ -234,7 +259,7 @@ class EmailLink extends Entity implements JsonSerializable {
 	 */
 	public function jsonSerialize(): array {
 		$typed = new TypedFieldsJson();
-		$json = $typed->pick(values: get_object_vars($this), names: array_diff(array_keys($this->getFieldTypes()), ['rfcMessageId']));
+		$json = $typed->pick(values: get_object_vars($this), names: array_diff(array_keys($this->getFieldTypes()), ['rfcMessageId', 'direction']));
 
 		return $typed->inserted(json: $json, entriesAfter: ['metadata' => ['details' => $this->details()]]);
 	}//end jsonSerialize()
