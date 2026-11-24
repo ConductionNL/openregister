@@ -167,15 +167,24 @@ class DestructionCheckJob extends TimedJob {
 	}//end isListTargetMissing()
 
 	/**
-	 * The objects eligible for destruction that are not on a pending list yet.
+	 * The objects due for destruction or anonymising that are not on a pending list yet.
+	 *
+	 * One list carries both: each entry says its action, so the reviewer sees
+	 * the records to anonymise beside the records to destroy, and an approval
+	 * never destroys an entry whose action is anonymise.
 	 *
 	 * @param DestructionCheckRun $check The run.
 	 *
 	 * @return array The eligible objects; empty when there are none.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-is-an-archival-action-a-result-type-can-choose-req-aao-001
 	 */
 	private function eligibleForDestruction(DestructionCheckRun $check): array {
 		$excludeUuids = $check->retention->getObjectsOnPendingDestructionLists();
-		$eligible     = $check->retention->findEligibleForDestruction($excludeUuids);
+		$eligible     = array_merge(
+			$check->retention->findEligibleForDestruction($excludeUuids),
+			$check->retention->findEligibleForAnonymisation($excludeUuids)
+		);
 
 		if (empty($eligible) === true) {
 			$check->logger->info('[DestructionCheckJob] No objects eligible for destruction');
