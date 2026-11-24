@@ -4119,3 +4119,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T15:49:13Z integrator-20261124T145419-19cd7a29 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T15:49:29Z session-20261124T153206-11b3d487 humaniq builder: merged #1250 (time-entry-approval-state e2e + archived), #1252 (payroll live-check specs, payroll-period-edge-cases archived; special-regimes/reservation-payouts 5.2 open: nl-2026 tables unverified); #1248 draft waits for nc-vue 2.204 on npm
+2026-11-24T15:49:29Z integrator-20261124T145419-19cd7a29 MERGED-TREE 4b9bf4c390: 1 PRs, main now 322d1734d6 = tested tree
