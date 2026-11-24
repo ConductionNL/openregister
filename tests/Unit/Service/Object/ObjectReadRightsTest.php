@@ -20,6 +20,7 @@ use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\ObjectReadRights;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -27,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ObjectReadRights::class)]
 #[UsesClass(ObjectEntity::class)]
+#[UsesClass(PermissionAsk::class)]
 #[UsesClass(Schema::class)]
 class ObjectReadRightsTest extends TestCase {
 
@@ -37,7 +39,16 @@ class ObjectReadRightsTest extends TestCase {
 
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'read', 'alice', 'owner', true, $object)
+			->with(
+				$this->callback(
+					fn (PermissionAsk $ask): bool => $ask->schema === $schema
+						&& $ask->action === 'read'
+						&& $ask->userId === 'alice'
+						&& $ask->objectOwner === 'owner'
+						&& $ask->object === $object
+				),
+				true
+			)
 			->willReturn(true);
 
 		$this->assertTrue((new ObjectReadRights($permissions))->mayRead('alice', $object, $schema));

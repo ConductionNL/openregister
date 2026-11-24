@@ -30,23 +30,24 @@ use OCA\OpenRegister\Notifications\Service\Notification\DispatchGates;
 use OCA\OpenRegister\Notifications\Service\Notification\DispatchThrottle;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\MessageRendering;
+use OCA\OpenRegister\Notifications\Service\Notification\MessageTarget;
 use OCA\OpenRegister\Notifications\Service\Notification\NcNotificationSender;
 use OCA\OpenRegister\Notifications\Service\Notification\NoteTriggerContext;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationRunTally;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationTriggerMatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\ReadableRecipients;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientDelivery;
+use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleAudience;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleFiring;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleMessageRenderer;
-use OCA\OpenRegister\Notifications\Service\Notification\MessageTarget;
-use OCA\OpenRegister\Notifications\Service\Notification\NotificationRunTally;
-use OCA\OpenRegister\Notifications\Service\Notification\RecipientDelivery;
-use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadRights;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\Comments\IComment;
 use OCP\Comments\ICommentsManager;
@@ -90,6 +91,7 @@ use Psr\Log\NullLogger;
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(Schema::class)]
 #[UsesClass(ObjectReadRights::class)]
+#[UsesClass(PermissionAsk::class)]
 class AnnotationNotificationDispatcherNoteAddedTest extends TestCase {
 
 	/**
@@ -152,7 +154,7 @@ class AnnotationNotificationDispatcherNoteAddedTest extends TestCase {
 		if ($readers !== null) {
 			$permissions = $this->createMock(PermissionHandlerInterface::class);
 			$permissions->method('hasPermission')->willReturnCallback(
-				static fn (Schema $schema, string $action, ?string $userId = null): bool => $action === 'read' && ($readers[$userId] ?? false) === true
+				static fn (PermissionAsk $ask): bool => $ask->action === 'read' && ($readers[$ask->userId] ?? false) === true
 			);
 			$readable = new ReadableRecipients(logger: new NullLogger(), permissions: new ObjectReadRights($permissions));
 		}

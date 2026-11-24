@@ -19,8 +19,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Notification;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Notifications\Service\Notification\ReadableRecipients;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadRights;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -31,6 +32,7 @@ use RuntimeException;
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(Schema::class)]
 #[UsesClass(ObjectReadRights::class)]
+#[UsesClass(PermissionAsk::class)]
 class ReadableRecipientsTest extends TestCase {
 
 	private function object(): ObjectEntity {
@@ -47,16 +49,9 @@ class ReadableRecipientsTest extends TestCase {
 		$asked = [];
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			static function (
-				Schema $s,
-				string $action,
-				?string $userId = null,
-				?string $objectOwner = null,
-				bool $_rbac = true,
-				?ObjectEntity $object = null
-			) use (&$asked): bool {
-				$asked[] = [$action, $userId, $objectOwner, $_rbac, $object?->getUuid()];
-				return $userId !== 'lost';
+			static function (PermissionAsk $ask, bool $_rbac = true) use (&$asked): bool {
+				$asked[] = [$ask->action, $ask->userId, $ask->objectOwner, $_rbac, $ask->object?->getUuid()];
+				return $ask->userId !== 'lost';
 			}
 		);
 
@@ -71,8 +66,8 @@ class ReadableRecipientsTest extends TestCase {
 	public function testACheckThatThrowsDropsThatUser(): void {
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			static function (Schema $s, string $action, ?string $userId = null): bool {
-				if ($userId === 'boom') {
+			static function (PermissionAsk $ask): bool {
+				if ($ask->userId === 'boom') {
 					throw new RuntimeException('no schema');
 				}
 

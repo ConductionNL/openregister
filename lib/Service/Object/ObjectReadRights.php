@@ -58,13 +58,10 @@ class ObjectReadRights implements ObjectReadRightsInterface {
 			return false;
 		}
 
-		return $this->permissions->hasPermission(
-			schema: $schema,
-			action: 'read',
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
-		) === true;
+		$ask = (new PermissionAsk(schema: $schema, action: 'read'))
+			->askedBy(userId: $userId, objectOwner: $object->getOwner())
+			->about(object: $object, register: null);
+
+		return $this->permissions->hasPermission(ask: $ask, _rbac: true) === true;
 	}//end mayRead()
 }//end class

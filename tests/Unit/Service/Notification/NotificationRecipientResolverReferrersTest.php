@@ -28,8 +28,9 @@ use OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientRes
 use OCA\OpenRegister\Notifications\Service\Notification\ReadableRecipients;
 use OCA\OpenRegister\Notifications\Service\Notification\RecipientSource;
 use OCA\OpenRegister\Notifications\Service\Notification\ReferrerRecipients;
-use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadRights;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
+use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ReferringObjects;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
@@ -48,6 +49,7 @@ use RuntimeException;
 #[UsesClass(Schema::class)]
 #[UsesClass(Register::class)]
 #[UsesClass(ObjectReadRights::class)]
+#[UsesClass(PermissionAsk::class)]
 #[UsesClass(ReferringObjects::class)]
 class NotificationRecipientResolverReferrersTest extends TestCase {
 
@@ -109,9 +111,9 @@ class NotificationRecipientResolverReferrersTest extends TestCase {
 
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action, ?string $userId = null): bool => $action === 'read'
-				&& (int)$schema->getId() === 5
-				&& in_array($userId, $nonReaders, true) === false
+			static fn (PermissionAsk $ask): bool => $ask->action === 'read'
+				&& (int)$ask->schema->getId() === 5
+				&& in_array($ask->userId, $nonReaders, true) === false
 		);
 
 		$referrers = new ReferrerRecipients(
