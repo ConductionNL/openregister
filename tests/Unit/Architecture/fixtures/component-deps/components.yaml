@@ -1,0 +1,13 @@
+# Three components over three sample files, for the reader pin of ComponentDependencyRulesTest
+# and scripts/component-deps.py --check-fixture. Service and Policy share a directory and a
+# namespace but sit in different components, as flat layer files do under ADR-012.
+components:
+  - name: Kernel
+    include:
+      - ".*/lib/Kernel/.*"
+  - name: Alpha
+    include:
+      - ".*/lib/Alpha/Service[.]php"
+  - name: Beta
+    include:
+      - ".*/lib/Alpha/Policy[.]php"
