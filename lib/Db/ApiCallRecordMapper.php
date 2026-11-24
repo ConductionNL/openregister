@@ -72,7 +72,7 @@ class ApiCallRecordMapper extends QBMapper implements ApiCallRecordMapperInterfa
 	}//end __construct()
 
 	/**
-	 * Count one call against a caller, route, method and version.
+	 * Count calls against a caller, route, method and version.
 	 *
 	 * Tries the increment first and inserts only when nothing was updated, so
 	 * the common path (a caller that has called before) is one statement. A
@@ -81,46 +81,49 @@ class ApiCallRecordMapper extends QBMapper implements ApiCallRecordMapperInterfa
 	 * swallowed.
 	 *
 	 * @param ApiCallKey $key    The caller, route, method and version.
-	 * @param DateTime   $moment When the call happened.
+	 * @param DateTime   $moment When the last of the calls happened.
+	 * @param int        $calls  How many calls to add, at least one.
 	 *
-	 * @return bool True when the call was counted.
+	 * @return bool True when the calls were counted.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public function count(ApiCallKey $key, DateTime $moment): bool {
-		if ($this->increment(key: $key, moment: $moment) > 0) {
+	public function count(ApiCallKey $key, DateTime $moment, int $calls=1): bool {
+		$calls = max(1, $calls);
+		if ($this->increment(key: $key, moment: $moment, calls: $calls) > 0) {
 			return true;
 		}
 
 		try {
-			$this->insert(entity: $this->newRecord(key: $key, moment: $moment));
+			$this->insert(entity: $this->newRecord(key: $key, moment: $moment, calls: $calls));
 
 			return true;
 		} catch (Throwable) {
 			// Another request inserted the same combination between our update
 			// and our insert. The row exists now, so the increment that failed
 			// to find it a moment ago will find it.
-			return ($this->increment(key: $key, moment: $moment) > 0);
+			return ($this->increment(key: $key, moment: $moment, calls: $calls) > 0);
 		}//end try
 
 	}//end count()
 
 	/**
-	 * A first record for a combination, counting its first call.
+	 * A first record for a combination, counting its first calls.
 	 *
 	 * @param ApiCallKey $key    The caller, route, method and version.
 	 * @param DateTime   $moment When the call happened.
+	 * @param int        $calls  How many calls it counts.
 	 *
 	 * @return ApiCallRecord The record, not yet inserted.
 	 */
-	private function newRecord(ApiCallKey $key, DateTime $moment): ApiCallRecord {
+	private function newRecord(ApiCallKey $key, DateTime $moment, int $calls): ApiCallRecord {
 		$record = new ApiCallRecord();
 		$record->setPrincipal($key->principal);
 		$record->setRoute($key->route);
 		$record->setMethod($key->method);
 		$record->setApiVersion($key->apiVersion);
 		$record->setClient($key->client);
-		$record->setCallCount(1);
+		$record->setCallCount($calls);
 		$record->setFirstSeen($moment);
 		$record->setLastSeen($moment);
 
@@ -295,15 +298,16 @@ class ApiCallRecordMapper extends QBMapper implements ApiCallRecordMapperInterfa
 	 *
 	 * @param ApiCallKey $key    The caller, route, method and version.
 	 * @param DateTime   $moment When the call happened.
+	 * @param int        $calls  How many calls to add.
 	 *
 	 * @return int The number of rows updated: one, or none.
 	 *
 	 * @phpstan-impure
 	 */
-	private function increment(ApiCallKey $key, DateTime $moment): int {
+	private function increment(ApiCallKey $key, DateTime $moment, int $calls): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update(self::TABLE)
-			->set('call_count', $qb->createFunction($qb->getColumnName('call_count') . ' + 1'))
+			->set('call_count', $qb->createFunction($qb->getColumnName('call_count') . ' + ' . $qb->createNamedParameter($calls, IQueryBuilder::PARAM_INT)))
 			->set('last_seen', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('principal', $qb->createNamedParameter($key->principal)))
 			->andWhere($qb->expr()->eq('route', $qb->createNamedParameter($key->route)))

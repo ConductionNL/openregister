@@ -44,6 +44,8 @@ use OCA\OpenRegister\Db\ApiCallKey;
 use OCA\OpenRegister\Db\ApiCallKeys;
 use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
 use OCP\IAppConfig;
+use OCP\ICacheFactory;
+use OCP\IMemcache;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -68,7 +70,8 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 	 *
 	 * On by default, because a record nobody enabled is a record nobody has
 	 * when the deprecation conversation arrives. The switch exists because the
-	 * record costs one indexed write per API call, and an instance under load
+	 * record costs an indexed write per caller and route (one per API call
+	 * without a memory cache), and an instance under load
 	 * that does not need the record should be able to stop paying for it.
 	 *
 	 * @var string
@@ -83,12 +86,32 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 	private const IDENTIFIER_PATTERN = '/^(?:[0-9]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{24,})$/i';
 
 	/**
+	 * Seconds a key's calls are counted in the cache before they are written.
+	 *
+	 * The first call of a key writes at once; the calls after it in the window
+	 * are added by the first call after the window. The record answers "who
+	 * called this in the last month", so a last call up to this late is the
+	 * same answer.
+	 *
+	 * @var int
+	 */
+	public const FLUSH_SECONDS = 30;
+
+	/**
+	 * Counts calls between writes, or null when no memory cache is available.
+	 *
+	 * @var IMemcache|null
+	 */
+	private readonly ?IMemcache $buffer;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ApiCallRecordMapperInterface $mapper Writes the record.
 	 * @param IUserSession $userSession Names the caller.
 	 * @param IAppConfig $appConfig Reads the switch.
 	 * @param LoggerInterface $logger Records a write that did not happen.
+	 * @param ICacheFactory|null $cacheFactory Gives the cache that counts calls between writes.
 	 *
 	 * @return void
 	 */
@@ -97,7 +120,9 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 		private readonly IUserSession $userSession,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		?ICacheFactory $cacheFactory=null,
 	) {
+		$this->buffer = self::resolveBuffer(cacheFactory: $cacheFactory);
 
 	}//end __construct()
 
@@ -141,7 +166,10 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 	/**
 	 * Count one observed call against the caller making the current request.
 	 *
-	 * A failure to count is logged and never fails the call itself.
+	 * With a memory cache the call is counted there and written with the
+	 * other calls of its key at most once per FLUSH_SECONDS, so a busy page
+	 * does not pay a database write per API call. A failure to count is
+	 * logged and never fails the call itself.
 	 *
 	 * @param ApiCallObservation $call The path, method, API version and moment.
 	 *
@@ -155,12 +183,87 @@ class ApiCallRecorder implements ApiCallRecorderInterface {
 		}
 
 		try {
-			$this->mapper->count(key: $this->callKey(call: $call), moment: ($call->moment ?? new DateTime()));
+			$key   = $this->callKey(call: $call);
+			$calls = $this->callsToWrite(key: $key);
+			if ($calls > 0) {
+				$this->mapper->count(key: $key, moment: ($call->moment ?? new DateTime()), calls: $calls);
+			}
 		} catch (Throwable $e) {
 			$this->logger->debug('OpenRegister: could not record an API call.', ['exception' => $e]);
 		}
 
 	}//end recordCall()
+
+	/**
+	 * How many calls of a key to write now, the current one included.
+	 *
+	 * One without a buffer. With one, the call is counted in the buffer and
+	 * the first call of each FLUSH_SECONDS window takes everything counted so
+	 * far; the other calls of the window write nothing. Only what was taken
+	 * is subtracted, so a call counted meanwhile waits for the next window.
+	 *
+	 * @param ApiCallKey $key The counter key.
+	 *
+	 * @return int The calls to write, zero while the window is open.
+	 */
+	private function callsToWrite(ApiCallKey $key): int {
+		if ($this->buffer === null) {
+			return 1;
+		}
+
+		$id = hash('sha256', implode("\0", [$key->principal, $key->route, $key->method, $key->apiVersion, $key->client]));
+		try {
+			$pending = $this->buffer->inc('pending_' . $id);
+		} catch (Throwable) {
+			return 1;
+		}
+
+		if (is_int($pending) === false) {
+			return 1;
+		}
+
+		try {
+			if ($this->buffer->add('window_' . $id, 1, self::FLUSH_SECONDS) === false) {
+				return 0;
+			}
+
+			$this->buffer->dec('pending_' . $id, $pending);
+		} catch (Throwable) {
+			return 0;
+		}
+
+		return $pending;
+
+	}//end callsToWrite()
+
+	/**
+	 * The distributed memory cache that counts calls, or null when there is none.
+	 *
+	 * @param ICacheFactory|null $cacheFactory The cache factory.
+	 *
+	 * @return IMemcache|null The cache.
+	 */
+	private static function resolveBuffer(?ICacheFactory $cacheFactory): ?IMemcache {
+		if ($cacheFactory === null) {
+			return null;
+		}
+
+		try {
+			if ($cacheFactory->isAvailable() === false) {
+				return null;
+			}
+
+			$cache = $cacheFactory->createDistributed('openregister_api_calls');
+			if (($cache instanceof IMemcache) === false) {
+				return null;
+			}
+
+			return $cache;
+		} catch (Throwable) {
+			return null;
+		}
+
+	}//end resolveBuffer()
 
 	/**
 	 * The counter key of a call: who, which route, which method, which API version.
