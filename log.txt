@@ -4288,3 +4288,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T18:36:41Z cloud-or-reviewer-0: overlap guard, ended without reviewing; lane-0 verdicts appended 18:09Z (10504, 10568, 10456, 5968) after a 17:36Z start with no closing log line, so that session is still active
 2026-11-24T18:37:03Z integrator-20261124T145419-19cd7a29 MERGED-TREE cfc981128c: 1 PRs, main now d202825e7b = tested tree
 2026-11-24T18:39:31Z precheck-20261124T170427-3ddd1c90 GREEN tree e36d4d8cc9 on dev 2503e6c023 prs 1 front=ok: Tests: 64286, Assertions: 227143, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T18:39:49Z precheck-20261124T180213-e521365f GREEN tree 306e539016 on dev 2503e6c023 prs 1 front=ok: Tests: 64286, Assertions: 227143, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
