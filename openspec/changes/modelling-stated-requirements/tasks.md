@@ -12,7 +12,7 @@ The behaviour is built; these tasks tie the code to the requirements and add the
 
 - [x] 2.1 `tests/Unit/Service/Object/ValidateObjectTest.php`: one case per rule in REQ-MSR-001 (required, type, format, enum, length, item count, pattern), each asserting the message names the property path, including a nested path (REQ-MSR-001).
 - [x] 2.2 Same test: an object property with a nested schema refuses a value missing a nested required key; one without a nested schema accepts any object (REQ-MSR-002).
-- [ ] 2.3 `tests/Unit/Listener/CodedValueValidationListenerTest.php`: a value in the scheme passes, a value outside is refused naming property and scheme, a concept added after the schema was saved passes (REQ-MSR-003).
+- [x] 2.3 `tests/Unit/Listener/CodedValueValidationListenerTest.php`: a value in the scheme passes, a value outside is refused naming property and scheme, a concept added after the schema was saved passes (REQ-MSR-003).
   - Open (2026-11-13): `CodedValueGuard` skips a value that does not resolve to a concept of the scheme ("scheme membership is refused by `property-code-list-from-concept-scheme`"), and no other save path refuses it, so the "value outside is refused" case has no code to assert yet. Build that membership refusal first, then this test.
 
 ## 3. End-to-end
