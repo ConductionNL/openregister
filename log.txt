@@ -4010,3 +4010,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T10:04:30Z integrator-20261124T082919-e26a4372 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T10:04:49Z integrator-20261124T082919-e26a4372 MERGED-TREE 90f32fa929: 1 PRs, main now 1c8383c69a = tested tree
+2026-11-24T10:09:52Z or-fix-8: no work; lane PRs 5968 10188 10358 10398 10458 10498 10508 10518 10528 10538 10568 10608 10638 10978 11008 11028 all APPROVE at head, none parked, merge clean with main f1c351de; PHP ones Architecture + touched tests green merged (no churn); 10638/10978/11008 npm/CI/webpack only; nothing pushed
