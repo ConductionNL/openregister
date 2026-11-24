@@ -764,3 +764,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: composer install stops on a 403 from api.github.com zipball for phpstan/phpstan; a source clone times out (the repo carries phar history).
 - Cause: phpstan/phpstan is the only dist-only package in composer.lock; unauthenticated GitHub API is refused here.
 - Fix: composer config -g use-github-api false; install --prefer-source --no-scripts --ignore-platform-reqs; for phpstan, git fetch --depth 1 the locked commit, git archive it to a zip, point that package's lock dist at the local zip (type zip, drop source), install, then restore composer.lock.
+## Conflicts only in files the PR never touched (main's 5f24d440 revert, criss-cross bases) (or-fix-4)
+- Symptom: merging main conflicts in ObjectsController, LockHandler, EntityRelationMapperInterface, DeleteObjectDeleteGoldenTest, UserServicePreferencesCharacterisationTest etc., none of them the PR's feature files; git merge-base --all shows two bases.
+- Cause: the PR's side holds an older main (e.g. 6e870ca5 with the Files-ports merge main later reverted, or UserService's pre-bundle constructor); not PR intent.
+- Fix: own=$(git diff --name-only <last main merged into the PR> HEAD); for each conflicted file not in own: git checkout --theirs; then git diff --cached --name-only origin/main must be a subset of own (#10154, #10244, #10514).
