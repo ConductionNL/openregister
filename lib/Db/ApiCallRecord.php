@@ -48,6 +48,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setMethod(?string $method)
  * @method string|null getApiVersion()
  * @method void setApiVersion(?string $apiVersion)
+ * @method string|null getClient()
+ * @method void setClient(?string $client)
  * @method int|null getCallCount()
  * @method void setCallCount(?int $callCount)
  * @method DateTime|null getFirstSeen()
@@ -90,6 +92,13 @@ class ApiCallRecord extends Entity implements JsonSerializable {
 	protected $apiVersion = '1';
 
 	/**
+	 * The official client library and its version, or the empty string.
+	 *
+	 * @var string|null
+	 */
+	protected $client = '';
+
+	/**
 	 * How many calls this caller made to this route on this version.
 	 *
 	 * @var integer|null
@@ -120,6 +129,7 @@ class ApiCallRecord extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'route', type: 'string');
 		$this->addType(fieldName: 'method', type: 'string');
 		$this->addType(fieldName: 'apiVersion', type: 'string');
+		$this->addType(fieldName: 'client', type: 'string');
 		$this->addType(fieldName: 'callCount', type: 'integer');
 		$this->addType(fieldName: 'firstSeen', type: 'datetime');
 		$this->addType(fieldName: 'lastSeen', type: 'datetime');
@@ -139,6 +149,7 @@ class ApiCallRecord extends Entity implements JsonSerializable {
 			'route' => (string)$this->route,
 			'method' => (string)$this->method,
 			'apiVersion' => (string)$this->apiVersion,
+			'client' => (string)$this->client,
 			'callCount' => (int)$this->callCount,
 		];
 	}//end jsonOverrides()

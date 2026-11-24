@@ -948,6 +948,45 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
+		 * Read the load shedding thresholds in force, with their defaults and bounds.
+		 * Nothing is kept in the store: the section holds its own copy.
+		 *
+		 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+		 * @return {Promise<{values: object, defaults: object, bounds: object}|undefined>} The form.
+		 */
+		async loadLoadSheddingSettings() {
+			return readSettings(this, {
+				send: () => axios.get(api('settings/load-shedding')),
+				apply: (data) => ({
+					values: data.values || {},
+					defaults: data.defaults || {},
+					bounds: data.bounds || {},
+				}),
+				log: 'Failed to load the load shedding settings:',
+			})
+		},
+
+		/**
+		 * Store the load shedding thresholds and the database-pressure switch.
+		 *
+		 * @param {object} values The form values by field name.
+		 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+		 * @return {Promise<object>} The stored form.
+		 */
+		async updateLoadSheddingSettings(values) {
+			return writeSettings(this, {
+				flag: 'saving',
+				send: () => axios.put(api('settings/load-shedding'), values),
+				done: t('openregister', 'Load shedding settings updated'),
+				log: 'Failed to update the load shedding settings:',
+				failed: (error) =>
+					t('openregister', 'Failed to update the load shedding settings: {error}', {
+						error: error.response?.data?.error || error.message,
+					}),
+			})
+		},
+
+		/**
 		 * Update Retention settings
 		 *
 		 * @param {object} retentionData - The retention settings to save
