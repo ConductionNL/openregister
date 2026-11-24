@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuardInterface;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
@@ -50,8 +50,8 @@ final class C08GuardListenerInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		ObjectQuotaService::class => [ObjectQuotaServiceInterface::class, ContractBindings::class],
-		WorkingCalendarWriteGuard::class => [WorkingCalendarWriteGuardInterface::class, ContractBindings::class],
+		ObjectQuotaService::class => [ObjectQuotaServiceInterface::class, ProcessesServiceBindings::class],
+		WorkingCalendarWriteGuard::class => [WorkingCalendarWriteGuardInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**
