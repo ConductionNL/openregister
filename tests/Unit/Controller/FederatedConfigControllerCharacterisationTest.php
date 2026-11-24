@@ -163,13 +163,24 @@ class FederatedConfigControllerCharacterisationTest extends TestCase {
 	}//end testInstallWithoutAType()
 
 	/**
-	 * A successful install passes the trimmed type, the bundle and the trimmed source.
+	 * Install fetches the bundle from the requested repo and judges that repo
+	 * as the source; a bundle or source in the request body is ignored.
 	 *
 	 * @return void
 	 */
-	public function testInstallPassesTheRequestThrough(): void {
+	public function testInstallFetchesTheBundleAndUsesTheRepoAsSource(): void {
 		$this->access->method('canInstall')->willReturn(true);
-		$this->params = ['type' => ' flows ', 'bundle' => ['a' => 1], 'source' => ' org/repo '];
+		$this->params = [
+			'type'   => ' flows ',
+			'repo'   => ' org/repo ',
+			'path'   => ' set.json ',
+			'bundle' => ['sent' => 1],
+			'source' => 'trusted/elsewhere',
+		];
+		$this->service->expects($this->once())
+			->method('fetchBundle')
+			->with('org/repo', 'set.json', null)
+			->willReturn(['a' => 1]);
 		$this->service->expects($this->once())
 			->method('install')
 			->with('flows', ['a' => 1], 'org/repo')
@@ -179,7 +190,105 @@ class FederatedConfigControllerCharacterisationTest extends TestCase {
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame(['installed' => 2], $response->getData());
-	}//end testInstallPassesTheRequestThrough()
+	}//end testInstallFetchesTheBundleAndUsesTheRepoAsSource()
+
+	/**
+	 * Install without a repo or a path is a 400 and installs nothing.
+	 *
+	 * @return void
+	 */
+	public function testInstallWithoutARepoAndPathIsRefused(): void {
+		$this->access->method('canInstall')->willReturn(true);
+		$this->params = ['type' => 'flows', 'bundle' => ['a' => 1], 'source' => 'org/repo'];
+		$this->service->expects($this->never())->method('fetchBundle');
+		$this->service->expects($this->never())->method('install');
+
+		$response = $this->controller()->install();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['error' => 'An install needs a repo and a path.'], $response->getData());
+	}//end testInstallWithoutARepoAndPathIsRefused()
+
+	/**
+	 * A repo that is not one owner/name pair, or a path that leaves the repo, is a 400 before any fetch.
+	 *
+	 * @param string $repo The requested repo.
+	 * @param string $path The requested path.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider unsafeInstallSources
+	 */
+	public function testInstallOfAnUnsafeRepoOrPathIsRefusedBeforeTheFetch(string $repo, string $path): void {
+		$this->access->method('canInstall')->willReturn(true);
+		$this->params = ['type' => 'flows', 'repo' => $repo, 'path' => $path];
+		$this->service->expects($this->never())->method('fetchBundle');
+		$this->service->expects($this->never())->method('install');
+
+		$response = $this->controller()->install();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(
+			['error' => 'An install needs one owner/name repo and a path without empty, "." or ".." segments.'],
+			$response->getData()
+		);
+	}//end testInstallOfAnUnsafeRepoOrPathIsRefusedBeforeTheFetch()
+
+	/**
+	 * Repos and paths an install refuses.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function unsafeInstallSources(): array {
+		return [
+			'repo without a name'      => ['org', 'set.json'],
+			'repo with three parts'    => ['org/repo/contents', 'set.json'],
+			'repo climbing out'        => ['org/..', 'set.json'],
+			'repo of dots'             => ['./repo', 'set.json'],
+			'repo with a query'        => ['org/repo?ref=x', 'set.json'],
+			'path climbing out'        => ['org/repo', '../other/set.json'],
+			'path with a dot segment'  => ['org/repo', 'dir/./set.json'],
+			'path with an empty piece' => ['org/repo', 'dir//set.json'],
+			'absolute path'            => ['org/repo', '/set.json'],
+			'path ending in a slash'   => ['org/repo', 'dir/'],
+		];
+	}//end unsafeInstallSources()
+
+	/**
+	 * A nested path in one owner/name repo is fetched as asked.
+	 *
+	 * @return void
+	 */
+	public function testInstallOfANestedPathInOneRepoIsFetched(): void {
+		$this->access->method('canInstall')->willReturn(true);
+		$this->params = ['type' => 'flows', 'repo' => 'my-org/config.repo', 'path' => 'bundles/v1/set.json'];
+		$this->service->expects($this->once())->method('fetchBundle')
+			->with('my-org/config.repo', 'bundles/v1/set.json', null)
+			->willReturn(['a' => 1]);
+		$this->service->expects($this->once())->method('install')
+			->with('flows', ['a' => 1], 'my-org/config.repo')
+			->willReturn(['installed' => 1]);
+
+		$response = $this->controller()->install();
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testInstallOfANestedPathInOneRepoIsFetched()
+
+	/**
+	 * A bundle that cannot be fetched is a 404 and installs nothing.
+	 *
+	 * @return void
+	 */
+	public function testInstallOfAnUnreadableBundleIsNotFound(): void {
+		$this->access->method('canInstall')->willReturn(true);
+		$this->params = ['type' => 'flows', 'repo' => 'o/r', 'path' => 'b.json'];
+		$this->service->method('fetchBundle')->willThrowException(new RuntimeException('No bundle there.'));
+		$this->service->expects($this->never())->method('install');
+
+		$response = $this->controller()->install();
+
+		$this->assertSame(404, $response->getStatus());
+	}//end testInstallOfAnUnreadableBundleIsNotFound()
 
 	/**
 	 * An unknown type is a 404 with the service's message.
@@ -188,7 +297,7 @@ class FederatedConfigControllerCharacterisationTest extends TestCase {
 	 */
 	public function testInstallOfAnUnknownTypeIsNotFound(): void {
 		$this->access->method('canInstall')->willReturn(true);
-		$this->params = ['type' => 'nope'];
+		$this->params = ['type' => 'nope', 'repo' => 'o/r', 'path' => 'b.json'];
 		$this->service->method('install')->willThrowException(new UnexpectedValueException('Unknown type nope.'));
 
 		$response = $this->controller()->install();
@@ -222,7 +331,7 @@ class FederatedConfigControllerCharacterisationTest extends TestCase {
 	 */
 	public function testInstallTrustFailuresAreForbidden(string $message): void {
 		$this->access->method('canInstall')->willReturn(true);
-		$this->params = ['type' => 'flows'];
+		$this->params = ['type' => 'flows', 'repo' => 'o/r', 'path' => 'b.json'];
 		$this->service->method('install')->willThrowException(new RuntimeException($message));
 
 		$response = $this->controller()->install();
@@ -238,7 +347,7 @@ class FederatedConfigControllerCharacterisationTest extends TestCase {
 	 */
 	public function testInstallOtherFailuresAreServerErrors(): void {
 		$this->access->method('canInstall')->willReturn(true);
-		$this->params = ['type' => 'flows'];
+		$this->params = ['type' => 'flows', 'repo' => 'o/r', 'path' => 'b.json'];
 		$this->service->method('install')->willThrowException(new RuntimeException('Disk full.'));
 
 		$response = $this->controller()->install();

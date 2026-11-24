@@ -1827,6 +1827,7 @@ Service/AppRegisterImportRunner.php,134,Service,Configuration,Configuration/Serv
 Service/ApplicationService.php,91,Service,Configuration,Configuration/Service/ApplicationService.php,0,,Configuration
 Service/ApprovalChainAnnotationInstaller.php,128,Service,Flows,Flows/Service/ApprovalChainAnnotationInstaller.php,9,,Processes
 Service/Archival/ActionDateFollower.php,56,Service,Compliance,Compliance/Service/Archival/ActionDateFollower.php,0,,Compliance
+Service/Archival/AnonymisationCandidates.php,70,Service,Compliance,Compliance/Service/Archival/AnonymisationCandidates.php,0,,Compliance
 Service/Archival/AnonymisationPlan.php,18,Service,Compliance,Compliance/Service/Archival/AnonymisationPlan.php,0,,Compliance
 Service/Archival/AnonymisationPlanner.php,101,Service,Compliance,Compliance/Service/Archival/AnonymisationPlanner.php,0,,Compliance
 Service/Archival/AnonymisationProfile.php,24,Service,Compliance,Compliance/Service/Archival/AnonymisationProfile.php,0,,Compliance
@@ -4381,6 +4382,15 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Service/Archival/AnonymisationDerivedCopies.php,22,Service,Compliance,Compliance/Service/Archival/AnonymisationDerivedCopies.php,0,,Compliance
+Service/Archival/ContentIndexAnonymisationTarget.php,21,Service,Compliance,Compliance/Service/Archival/ContentIndexAnonymisationTarget.php,0,,Compliance
+Service/Archival/StateHistoryAnonymisationTarget.php,19,Service,Compliance,Compliance/Service/Archival/StateHistoryAnonymisationTarget.php,0,,Compliance
+Service/Archival/VectorAnonymisationTarget.php,38,Service,Compliance,Compliance/Service/Archival/VectorAnonymisationTarget.php,0,,Compliance
+Db/AuditTrail/AuditDiffStore.php,51,Db,Compliance,Compliance/Db/AuditTrail/AuditDiffStore.php,0,,Compliance
+Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTrail/AuditDiffStoreInterface.php,0,,Compliance
+Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
+Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
+Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform
@@ -4636,6 +4646,9 @@ Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notificatio
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Migration/Version1Date20261121170000.php,36,Migration,,,,,Platform
+Command/UniqueUuidIndexCommand.php,,Command,,,,,Core
+Repair/AddUniqueUuidIndex.php,,Repair,,,,,Core
+Service/Object/UniqueUuidIndex.php,,Service,,,,,Core
 Kernel/Contracts/TwigSandboxFilters.php,,Kernel,,,,,Kernel
 Service/User/UserAccountStores.php,,Service,,,,,Core
 Service/User/UserPlatform.php,,Service,,,,,Core
