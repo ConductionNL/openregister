@@ -4817,3 +4817,7 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Service/RedactionPolicy/DetectionPatternValidator.php,,Service,,,,,Configuration
+Service/RedactionPolicy/DetectionPatternRunner.php,,Service,,,,,Configuration
+Listener/DetectionPatternValidationListener.php,,Listener,,,,,Configuration
+Kernel/Contracts/Processes/ObjectWriteValidatorInterface.php,,Kernel,,,,,Kernel

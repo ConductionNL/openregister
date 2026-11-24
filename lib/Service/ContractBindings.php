@@ -142,6 +142,7 @@ use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteValidatorInterface;
 use OCA\OpenRegister\Listener\RedactionPolicyCacheListener;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
@@ -184,6 +185,7 @@ final class ContractBindings {
 		OdtWriterInterface::class => OdtWriter::class,
 		HtmlPdfConverterInterface::class => OfficeHtmlPdfConverter::class,
 		ObjectWriteCacheFollowerInterface::class => RedactionPolicyCacheListener::class,
+		ObjectWriteValidatorInterface::class => \OCA\OpenRegister\Listener\DetectionPatternValidationListener::class,
 		DeclaredWebhookInstallerInterface::class => NotificationsAnnotationInstaller::class,
 		TranslationProjectionInterface::class => TranslationProjectionService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface::class => TranslationProjectionService::class,

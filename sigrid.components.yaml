@@ -1749,7 +1749,7 @@ components:
       - ".*/lib/Db/ExportProfile/[^/]*"
       - ".*/lib/Db/JobRun/[^/]*"
       - ".*/lib/Exception/(BuiltinPackSlugLockedException|ConsistencyCheckWouldWriteException|InvalidPackDefinitionException|JobRunRefusedException|MigrationPackRefusedException|MigrationPackRequestException|PackChangedException|PackSlugExistsException|RecordTemplateRefused|RepairRefusedException)[.]php"
-      - ".*/lib/Listener/(RedactionPolicyCacheListener|ReferenceCardDeclarationCheckListener|ShareableConfigTypeRegistrationListener)[.]php"
+      - ".*/lib/Listener/(DetectionPatternValidationListener|RedactionPolicyCacheListener|ReferenceCardDeclarationCheckListener|ShareableConfigTypeRegistrationListener)[.]php"
       - ".*/lib/Listener/Registrar/ConfigurationListenerRegistrar[.]php"
       - ".*/lib/Notifications/Service/ExampleSet/[^/]*"
       - ".*/lib/Search/Service/ExampleSet/[^/]*"
