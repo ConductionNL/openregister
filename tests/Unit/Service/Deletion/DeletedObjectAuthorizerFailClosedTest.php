@@ -32,6 +32,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Acting on a deleted object refuses for an anonymous caller, an unresolvable
@@ -131,7 +132,17 @@ final class DeletedObjectAuthorizerFailClosedTest extends TestCase {
 		$object = $this->object();
 		$this->schemas->expects($this->once())->method('find')->with(12)->willReturn($schema);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'restore', 'alice', 'alice', true, $object, null)
+			->with(
+				$this->callback(
+					static fn (PermissionAsk $ask): bool => $ask->schema === $schema
+						&& $ask->action === 'restore'
+						&& $ask->userId === 'alice'
+						&& $ask->objectOwner === 'alice'
+						&& $ask->object === $object
+						&& $ask->register === null
+				),
+				true
+			)
 			->willReturn(true);
 
 		$this->assertTrue($this->authorizer()->userMayActOnDeletedObject($object, 'restore'));

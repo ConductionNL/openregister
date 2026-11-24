@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use Exception;
 use JsonSerializable;
+use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -395,11 +396,13 @@ class DeleteObject {
 			}
 
 			// The cascade context is folded into the audit trail's initial INSERT by the mapper.
-			$this->auditTrailMapper->createAuditTrail(
-				old: $objectEntity,
-				new: null,
-				action: $auditAction,
-				cascadeContext: $cascadeContext
+			$this->auditTrailMapper->recordChange(
+				change: new AuditedChange(
+					old: $objectEntity,
+					new: null,
+					action: $auditAction,
+					cascadeContext: $cascadeContext
+				)
 			);
 		}
 
