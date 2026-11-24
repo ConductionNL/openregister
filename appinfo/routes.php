@@ -1579,6 +1579,12 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'deleted#restore', 'url' => '/api/deleted/{id}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#restoreMultiple', 'url' => '/api/deleted/restore', 'verb' => 'POST'],
         [
+            'name' => 'deleted#restorePreview',
+            'url' => '/api/deleted/{id}/restore-preview',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
             'name' => 'deleted#destructionPreview',
             'url' => '/api/deleted/{id}/destruction-preview',
             'verb' => 'GET',

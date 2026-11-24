@@ -2154,6 +2154,11 @@ Service/Delegation/DelegationRefused.php,32,Service,Access,Access/Service/Delega
 Service/Delegation/DelegationResolver.php,127,Service,Access,Access/Service/Delegation/DelegationResolver.php,0,,Core
 Service/Delegation/DelegationService.php,92,Service,Access,Access/Service/Delegation/DelegationService.php,0,290,Core
 Service/Delegation/DelegationVerdict.php,50,Service,Access,Access/Service/Delegation/DelegationVerdict.php,0,387,Core
+Service/Deletion/CascadeRestoreItem.php,30,Service,Service,Service/Deletion/CascadeRestoreItem.php,0,,Core
+Service/Deletion/CascadeRestorePlan.php,45,Service,Service,Service/Deletion/CascadeRestorePlan.php,0,,Core
+Service/Deletion/CascadeRestoreRefusedException.php,30,Service,Service,Service/Deletion/CascadeRestoreRefusedException.php,0,,Core
+Service/Deletion/CascadeRestoreResult.php,25,Service,Service,Service/Deletion/CascadeRestoreResult.php,0,,Core
+Service/Deletion/CascadeRestoreService.php,200,Service,Service,Service/Deletion/CascadeRestoreService.php,0,,Core
 Service/Deletion/DeletedObjectAuthorizer.php,103,Service,Service,Service/Deletion/DeletedObjectAuthorizer.php,0,,Core
 Service/Deletion/DeletionServiceBundle.php,13,Service,Service,Service/Deletion/DeletionServiceBundle.php,0,,Core
 Service/Deletion/DeletionWindow.php,42,Service,Service,Service/Deletion/DeletionWindow.php,0,,Core
