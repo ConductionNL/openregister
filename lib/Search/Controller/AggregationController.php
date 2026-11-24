@@ -54,6 +54,7 @@ use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
 use OCA\OpenRegister\Search\Controller\Support\AggregationRun;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
 use OCA\OpenRegister\Support\AggregationFilterRequest;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Support\UnknownFilterKeys;
@@ -171,6 +172,7 @@ class AggregationController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 */
+	#[Sheddable]
 	public function aggregate(string $register, string $schema, string $name): JSONResponse {
 		return $this->runNamed(run: new AggregationRun(register: $register, schema: $schema), name: $name);
 	}//end aggregate()
@@ -238,6 +240,7 @@ class AggregationController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
+	#[Sheddable]
 	public function value(string $register, string $schema): JSONResponse {
 		$run = new AggregationRun(register: $register, schema: $schema);
 		try {
@@ -351,6 +354,7 @@ class AggregationController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
+	#[Sheddable]
 	public function grouped(string $register, string $schema): JSONResponse {
 		$groupFields = $this->parseGroupByParam();
 		if (count($groupFields) === 0) {
@@ -554,6 +558,7 @@ class AggregationController extends Controller {
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-15
 	 * @spec openspec/specs/aggregation-api/spec.md
 	 */
+	#[Sheddable]
 	public function timeseries(string $register, string $schema): JSONResponse {
 		// Resolve schema first so the validator can consult the
 		// declared property list. A missing schema is a 404; a bad

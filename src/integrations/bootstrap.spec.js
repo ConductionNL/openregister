@@ -20,6 +20,9 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 jest.mock('./builtin/bookmarks.js', () => ({
 	registerBookmarksIntegration: (r) => mockCalls.push(['bookmarks', r]),
 }))
+jest.mock('./builtin/externalRegister.js', () => ({
+	registerExternalRegisterIntegration: (r) => mockCalls.push(['external-register', r]),
+}))
 
 describe('ensureIntegrationRegistry', () => {
 	it('fills the window registry in order, and only the first time', () => {
@@ -33,6 +36,7 @@ describe('ensureIntegrationRegistry', () => {
 			['builtin', mockRegistry],
 			['leaf', mockRegistry],
 			['bookmarks', mockRegistry],
+			['external-register', mockRegistry],
 		])
 	})
 })

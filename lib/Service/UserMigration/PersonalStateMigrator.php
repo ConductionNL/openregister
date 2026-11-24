@@ -33,10 +33,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\UserMigration;
 
+use DateTimeInterface;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\UserMigration\IExportDestination;
@@ -85,6 +87,50 @@ class PersonalStateMigrator implements IMigrator {
 	public const WATCHES = self::PATH . 'watches.json';
 
 	/**
+	 * The calendar feed tokens' metadata in an export; never their values.
+	 *
+	 * @var string
+	 */
+	public const FEED_TOKENS = self::PATH . 'feed-tokens.json';
+
+	/**
+	 * The user's own notes, as a readable archive.
+	 *
+	 * @var string
+	 */
+	public const NOTES = self::PATH . 'notes.json';
+
+	/**
+	 * The user's own timeline entries, as a readable archive.
+	 *
+	 * @var string
+	 */
+	public const TIMELINE = self::PATH . 'timeline.json';
+
+	/**
+	 * The objects the user opened most recently, as a list to read.
+	 *
+	 * @var string
+	 */
+	public const RECENTS = self::PATH . 'recents.json';
+
+	/**
+	 * The user's own notification preferences, global and scoped.
+	 *
+	 * @var string
+	 */
+	public const NOTIFICATION_PREFERENCES = self::PATH . 'notification-preferences.json';
+
+	/**
+	 * The scope type of a feed token that shows one schema, whose id travels as a portable reference.
+	 * The calendar feed's own value (CalendarFeedToken::SCOPE_SCHEMA), restated so this Platform
+	 * class names no Processes entity; a test pins the two equal.
+	 *
+	 * @var string
+	 */
+	public const FEED_SCOPE_SCHEMA = 'schema';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param PersonalStateReader    $reader     Reads what the user holds.
@@ -92,6 +138,7 @@ class PersonalStateMigrator implements IMigrator {
 	 * @param ViewMapperInterface    $views      Stores a restored view.
 	 * @param WatcherMapperInterface $watchers   Stores a restored watch.
 	 * @param IL10N                  $l10n       The display name and description.
+	 * @param IConfig|null           $config     Stores a restored notification preference.
 	 */
 	public function __construct(
 		private readonly PersonalStateReader $reader,
@@ -99,6 +146,7 @@ class PersonalStateMigrator implements IMigrator {
 		private readonly ViewMapperInterface $views,
 		private readonly WatcherMapperInterface $watchers,
 		private readonly IL10N $l10n,
+		private readonly ?IConfig $config = null,
 	) {
 	}//end __construct()
 
@@ -117,15 +165,38 @@ class PersonalStateMigrator implements IMigrator {
 	 * @spec openspec/changes/platform-user-migrator/specs/platform-user-migration/spec.md#requirement-objects-are-not-exported-and-both-ends-say-so-req-pum-002
 	 */
 	public function export(IUser $user, IExportDestination $exportDestination, OutputInterface $output): void {
-		$output->writeln('Exporting OpenRegister saved views and watches…');
+		$output->writeln(
+			'Exporting OpenRegister saved views, watches, recently opened objects, notification preferences, '
+			. 'feed token details, notes and timeline entries…'
+		);
+		$uid = $user->getUID();
 
 		$views = array_map(fn (View $view): array => $this->portableView(view: $view), $this->reader->ownedViews(userId: $user->getUID()));
 		$watches = array_map(fn (Watcher $watch): array => $this->portableWatch(watch: $watch), $this->reader->watches(userId: $user->getUID()));
+		$tokens = array_map(fn (array $token): array => $this->portableFeedToken(token: $token), $this->reader->feedTokens(userId: $uid));
+		$notes = $this->reader->notes(userId: $uid);
+		$timeline = array_map(fn (array $entry): array => $this->archivedEntry(entry: $entry), $this->reader->timelineEntries(userId: $uid));
+		$recents = $this->reader->recents(userId: $uid);
+		$preferences = $this->reader->notificationPreferences(userId: $uid);
 
 		try {
 			$exportDestination->addFileContents(self::VIEWS, self::json(data: $views));
 			$exportDestination->addFileContents(self::WATCHES, self::json(data: $watches));
-			$exportDestination->addFileContents(self::MANIFEST, self::json(data: self::manifest(views: count($views), watches: count($watches))));
+			$exportDestination->addFileContents(self::FEED_TOKENS, self::json(data: $tokens));
+			$exportDestination->addFileContents(self::NOTES, self::json(data: $notes));
+			$exportDestination->addFileContents(self::TIMELINE, self::json(data: $timeline));
+			$exportDestination->addFileContents(self::RECENTS, self::json(data: $recents));
+			$exportDestination->addFileContents(self::NOTIFICATION_PREFERENCES, self::json(data: $preferences));
+			$manifest = self::manifest(
+				views: count($views),
+				watches: count($watches),
+				feedTokens: count($tokens),
+				notes: count($notes),
+				timelineEntries: count($timeline),
+				recents: count($recents),
+				notificationPreferences: count($preferences)
+			);
+			$exportDestination->addFileContents(self::MANIFEST, self::json(data: $manifest));
 		} catch (Throwable $e) {
 			throw new UserMigrationException('Could not export the OpenRegister personal state', 0, $e);
 		}
@@ -157,6 +228,33 @@ class PersonalStateMigrator implements IMigrator {
 
 		foreach (self::listIn(source: $importSource, path: self::WATCHES) as $watch) {
 			$this->restoreWatch(data: $watch, userId: $user->getUID(), report: $report);
+		}
+
+		foreach (self::listIn(source: $importSource, path: self::NOTIFICATION_PREFERENCES) as $preference) {
+			$this->restorePreference(data: $preference, userId: $user->getUID(), report: $report);
+		}
+
+		$recents = count(self::listIn(source: $importSource, path: self::RECENTS));
+		if ($recents > 0) {
+			$report->skipped(
+				what: $recents . ' recently opened objects',
+				reason: 'recently opened is read from this instance\'s audit trail and starts afresh here; the list stays in the export'
+			);
+		}
+
+		foreach (self::listIn(source: $importSource, path: self::FEED_TOKENS) as $token) {
+			$report->skipped(
+				what: 'calendar feed token "' . self::reference(value: ($token['label'] ?? '')) . '"',
+				reason: 'a token is not migrated; create a new one on this instance'
+			);
+		}
+
+		$archived = (count(self::listIn(source: $importSource, path: self::NOTES)) + count(self::listIn(source: $importSource, path: self::TIMELINE)));
+		if ($archived > 0) {
+			$report->skipped(
+				what: $archived . ' notes and timeline entries',
+				reason: 'they are kept in the export as an archive; the objects they were written on are not in it'
+			);
 		}
 
 		foreach ($report->lines() as $line) {
@@ -200,18 +298,37 @@ class PersonalStateMigrator implements IMigrator {
 	/**
 	 * The manifest of an export.
 	 *
-	 * @param int $views   The number of views exported.
-	 * @param int $watches The number of watches exported.
+	 * @param int $views           The number of views exported.
+	 * @param int $watches         The number of watches exported.
+	 * @param int $feedTokens      The number of calendar feed tokens whose details were exported.
+	 * @param int $notes           The number of the user's notes in the archive.
+	 * @param int $timelineEntries The number of the user's timeline entries in the archive.
+	 * @param int $recents         The number of recently opened objects listed.
+	 * @param int $notificationPreferences The number of the user's own notification preferences exported.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/platform-user-migrator/specs/platform-user-migration/spec.md#requirement-objects-are-not-exported-and-both-ends-say-so-req-pum-002
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.2
 	 */
-	public static function manifest(int $views, int $watches): array {
+	public static function manifest(
+		int $views,
+		int $watches,
+		int $feedTokens=0,
+		int $notes=0,
+		int $timelineEntries=0,
+		int $recents=0,
+		int $notificationPreferences=0,
+	): array {
 		return [
 			'contains' => [
 				'views' => $views,
 				'watches' => $watches,
+				'feedTokens' => $feedTokens,
+				'notes' => $notes,
+				'timelineEntries' => $timelineEntries,
+				'recents' => $recents,
+				'notificationPreferences' => $notificationPreferences,
 			],
 			'objectsIncluded' => false,
 			'secretsIncluded' => false,
@@ -220,6 +337,11 @@ class PersonalStateMigrator implements IMigrator {
 				'A watch names an object by its uuid; the object itself is not in this export.',
 				'Register and schema references are slugs; an import resolves them on the target and creates none.',
 				'Views are restored private.',
+				'Calendar feed tokens are listed by label, scope and dates; their values are not exported and an import creates none.',
+				'Your own notes and timeline entries are an archive to read; an import does not restore them.',
+				'Recently opened objects are listed by uuid and moment; an import does not restore them, the target reads its own audit trail.',
+				'Your own notification preferences are exported by key; an import restores each one this account has not set itself. '
+					. 'Group defaults are not exported.',
 			],
 		];
 	}//end manifest()
@@ -266,6 +388,65 @@ class PersonalStateMigrator implements IMigrator {
 			'notify' => $watch->getNotify(),
 		];
 	}//end portableWatch()
+
+	/**
+	 * A calendar feed token's details, without its value (D-4): what it was
+	 * called, what it showed and when it was made, used, expires or was revoked.
+	 *
+	 * @param array{label: string|null, scopeType: string|null, scopeId: string|null, createdAt: DateTimeInterface|null, expiresAt: DateTimeInterface|null, revokedAt: DateTimeInterface|null, lastReadAt: DateTimeInterface|null} $token The token's details, as the reader gives them.
+	 *
+	 * @return array<string, string|null>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.3
+	 */
+	private function portableFeedToken(array $token): array {
+		$scopeId = $token['scopeId'];
+		if ($token['scopeType'] === self::FEED_SCOPE_SCHEMA && $scopeId !== null) {
+			$scopeId = $this->references->portable(kind: RegisterReferences::SCHEMA, reference: $scopeId);
+		}
+
+		return [
+			'label' => $token['label'],
+			'scopeType' => $token['scopeType'],
+			'scopeId' => $scopeId,
+			'createdAt' => self::moment(value: $token['createdAt']),
+			'expiresAt' => self::moment(value: $token['expiresAt']),
+			'revokedAt' => self::moment(value: $token['revokedAt']),
+			'lastReadAt' => self::moment(value: $token['lastReadAt']),
+		];
+	}//end portableFeedToken()
+
+	/**
+	 * A timeline entry the user wrote, as an archive line: what, where and when.
+	 *
+	 * @param array{objectUuid: string|null, register: string|null, schema: string|null, kind: string|null, visibility: string, message: string|null, created: DateTimeInterface|null} $entry The entry, as the reader gives it.
+	 *
+	 * @return array<string, string|null>
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.4
+	 */
+	private function archivedEntry(array $entry): array {
+		return [
+			'objectUuid' => $entry['objectUuid'],
+			'register' => $this->references->portable(kind: RegisterReferences::REGISTER, reference: (string)$entry['register']),
+			'schema' => $this->references->portable(kind: RegisterReferences::SCHEMA, reference: (string)$entry['schema']),
+			'kind' => $entry['kind'],
+			'visibility' => $entry['visibility'],
+			'message' => $entry['message'],
+			'createdAt' => self::moment(value: $entry['created']),
+		];
+	}//end archivedEntry()
+
+	/**
+	 * A moment as an ISO 8601 string, or null.
+	 *
+	 * @param DateTimeInterface|null $value The moment.
+	 *
+	 * @return string|null
+	 */
+	private static function moment(?DateTimeInterface $value): ?string {
+		return $value?->format(DateTimeInterface::ATOM);
+	}//end moment()
 
 	/**
 	 * Restore one view, or report why not.
@@ -354,6 +535,70 @@ class PersonalStateMigrator implements IMigrator {
 			$report->skipped(what: $what, reason: 'it could not be stored: ' . $e->getMessage());
 		}
 	}//end restoreWatch()
+
+	/**
+	 * Restore one of the user's own notification preferences, or report why not.
+	 *
+	 * Only a key of a user's own preference is written, and never over a value
+	 * this account already holds: a setting made here is the user's newer choice.
+	 *
+	 * @param array<string, mixed> $data   The preference from the export.
+	 * @param string               $userId The user on this instance.
+	 * @param ImportReport         $report The report.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-user-migrator/tasks.md#task-1.2
+	 */
+	private function restorePreference(array $data, string $userId, ImportReport $report): void {
+		$key = self::reference(value: ($data['key'] ?? ''));
+		$value = self::arrayOrNull(value: ($data['value'] ?? null));
+		$what = 'notification preference "' . $key . '"';
+		if (PersonalStateReader::isPreferenceKey(key: $key) === false || $value === null) {
+			$report->skipped(what: $what, reason: 'it is not a notification preference this instance reads');
+			return;
+		}
+
+		if ($this->config === null) {
+			$report->skipped(what: $what, reason: 'preferences cannot be stored on this instance');
+			return;
+		}
+
+		try {
+			if ($this->config->getUserValue($userId, PersonalStateReader::PREFERENCES_APP, $key, '') !== '') {
+				$report->skipped(what: $what, reason: 'this account already has its own setting for it, which is kept');
+				return;
+			}
+
+			$this->config->setUserValue(
+				$userId,
+				PersonalStateReader::PREFERENCES_APP,
+				$key,
+				json_encode(self::cleanPreference(value: $value), JSON_THROW_ON_ERROR)
+			);
+			$report->restored(what: $what);
+		} catch (Throwable $e) {
+			$report->skipped(what: $what, reason: 'it could not be stored: ' . $e->getMessage());
+		}
+	}//end restorePreference()
+
+	/**
+	 * A preference as the notification engine stores it: on or off, and the channels named.
+	 *
+	 * @param array<mixed> $value The preference from the export.
+	 *
+	 * @return array{enabled: bool, channels?: list<string>}
+	 */
+	private static function cleanPreference(array $value): array {
+		$clean = ['enabled' => (bool)($value['enabled'] ?? true)];
+		if (is_array($value['channels'] ?? null) === true) {
+			$clean['channels'] = array_values(
+				array_filter($value['channels'], static fn (mixed $channel): bool => is_string($channel) === true && $channel !== '')
+			);
+		}
+
+		return $clean;
+	}//end cleanPreference()
 
 	/**
 	 * The list a JSON file of the export holds; an absent or unreadable file holds none.

@@ -54,6 +54,7 @@ use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\RecentLensInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
@@ -83,6 +84,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
@@ -157,6 +160,7 @@ final class FlowWiring {
 		TaskGaugeInterface::class => TaskMetricsProvider::class,
 		LifecycleFinalStatesInterface::class => LifecycleFinalStateResolver::class,
 		ReadHistoryInterface::class       => ReadHistoryService::class,
+		RecentLensInterface::class        => ReadHistoryService::class,
 		TransitionInFlightInterface::class => LifecycleActionContext::class,
 		WriteElevationInterface::class    => ObjectActionWriteElevation::class,
 		ObjectDateEventsSourceInterface::class => ObjectCalendarFeedService::class,
@@ -173,6 +177,7 @@ final class FlowWiring {
 		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
 		FlowRunSignalInterface::class => FlowRunSignalService::class,
 		LockObjectNodeInterface::class => LockObjectNode::class,
+		TagObjectNodeInterface::class => TagObjectNode::class,
 		AuditTrailNodeInterface::class => AuditTrailNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
 		CalendarRecomputeInterface::class => CalendarRecompute::class,
