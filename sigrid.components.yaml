@@ -45,6 +45,7 @@ components:
       - ".*/lib/Service/Retention/ExpiredObjectStoreInterface[.]php"
       - ".*/lib/Service/Retention/ExpiryDeclaration[.]php"
       - ".*/lib/Service/Schemas/PropertyValidatorHandlerInterface[.]php"
+      - ".*/lib/Service/Schemas/SchemaRefInRegister[.]php"
       - ".*/lib/Support/.*"
     exclude:
       - ".*/lib/Kernel/Contracts/(Compliance|Configuration|Core|Files|Integrations|Notifications|Processes|Search)/.*"
@@ -1135,6 +1136,7 @@ components:
       - ".*/lib/Service/Schemas/RepeatingGroupDeclarationValidator[.]php"
       - ".*/lib/Service/Schemas/RequiredWhenDeclaration[.]php"
       - ".*/lib/Service/Schemas/RetentionAnnotationValidator[.]php"
+      - ".*/lib/Service/Schemas/RowSchemaRefsInRegister[.]php"
       - ".*/lib/Service/Schemas/SchemaAnnotationValidators[.]php"
       - ".*/lib/Service/Schemas/SchemaCacheHandler[.]php"
       - ".*/lib/Service/Schemas/SchemaCacheHandlerInterface[.]php"

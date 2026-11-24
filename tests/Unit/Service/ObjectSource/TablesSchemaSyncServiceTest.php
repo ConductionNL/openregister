@@ -247,4 +247,21 @@ class TablesSchemaSyncServiceTest extends TestCase {
 		$this->assertTrue($this->service->hasManagedSchemaForTableId(tableId: 12));
 		$this->assertFalse($this->service->hasManagedSchemaForTableId(tableId: 99));
 	}//end testHasManagedSchemaForTableId()
+	/**
+	 * A table's schema slug is looked up among the `tables` register's schemas first.
+	 *
+	 * @return void
+	 */
+	public function testTheTableSlugIsLookedUpInsideTheTablesRegister(): void {
+		$register = new Register();
+		$register->setSchemas([36]);
+		$own = new Schema();
+		$own->setId(36);
+		$this->schemaMapper->expects($this->once())->method('findBySlugInIds')->with('tables-orders', [36])->willReturn($own);
+		$this->schemaMapper->expects($this->never())->method('find');
+
+		$method = new \ReflectionMethod(TablesSchemaSyncService::class, 'findSchemaBySlug');
+
+		$this->assertSame($own, $method->invoke($this->service, 'tables-orders', $register));
+	}//end testTheTableSlugIsLookedUpInsideTheTablesRegister()
 }//end class
