@@ -4369,6 +4369,7 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T19:53:17Z precheck-20261124T175747-122d94ac AUTOPARK openregister#10640 ed7f06cd sbom: composer.lock changed without sbom.cdx.json (tree 415f7ed6fe)
 2026-11-24T19:53:49Z precheck-20261124T194252-4396a66f CONFLICT-DEV #11044 e0362e93
 2026-11-24T19:55:12Z precheck-20261124T190656-018eb955 GREEN tree 0fff76f0bb on dev 5037a3463f prs 1 front=skip: Tests: 64559, Assertions: 228148, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T19:55:18Z precheck-20261124T195255-0c04d56e CONFLICT-DEV #10283 efb77fe1
 2026-11-24T19:56:46Z precheck-20261124T173105-a7ce1273 GREEN tree 9cc16b529b on dev 5037a3463f prs 1 front=skip: Tests: 64561, Assertions: 228137, Errors: 9, Failures: 2, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T19:57:07Z precheck-20261124T190315-cdf396fd GREEN tree ed63979300 on dev 5037a3463f prs 1 front=skip: Tests: 64597, Assertions: 228267, Errors: 9, Failures: 2, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T19:58:26Z integrator-20261124T184854-1c90b6ab GREEN tree 8d55b0c4f1 on dev 5037a3463f prs 7 front=ok: Tests: 64715, Assertions: 228599, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
@@ -4381,3 +4382,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T20:03:18Z precheck-20261124T190656-018eb955 GREEN tree 37b44ecf53 on dev 5037a3463f prs 1 front=ok: Tests: 64553, Assertions: 228115, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T20:03:44Z precheck-20261124T194252-4396a66f NORESULT tree 43d64ddcaa: checker floor not measured (exit 2)
 2026-11-24T20:04:22Z precheck-20261124T175747-122d94ac GREEN tree 20093ed0a4 on dev 5037a3463f prs 1 front=skip: Tests: 64553, Assertions: 228114, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T20:04:43Z precheck-20261124T190315-cdf396fd GREEN tree 283b5a44fb on dev 5037a3463f prs 1 front=skip: Tests: 64557, Assertions: 228130, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-24T20:04:55Z precheck-20261124T175747-122d94ac CONFLICT-DEV #10530 d7dea440
