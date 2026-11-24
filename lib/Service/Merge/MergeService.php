@@ -1029,7 +1029,7 @@ class MergeService implements ObjectMergerInterface {
 		}
 
 		$filters = [
-			'schema' => $this->sourceRecordResolver->schemaQueryFilter(ref: $descriptor['sourceSchema']),
+			'schema' => $this->sourceRecordResolver->schemaQueryFilter(ref: $descriptor['sourceSchema'], register: $sourceRegister),
 			$referenceField => $fromUuid,
 		];
 		if ($sourceRegister !== '') {

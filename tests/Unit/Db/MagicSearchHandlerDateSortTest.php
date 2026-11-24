@@ -178,7 +178,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 		);
 
 		// Text sorts lower-cased since 9 October 2026; a number keeps its column.
-		$this->assertSame([['LOWER("t"."title")', 'DESC'], ['"t"."title"', 'DESC'], ['t.priority', 'ASC'], ['t._id', 'ASC']], $result);
+		$this->assertSame([['LOWER("t"."title")', 'DESC'], ['t.title', 'DESC'], ['t.priority', 'ASC'], ['t._id', 'ASC']], $result);
 	}//end testNonDatePropertyKeepsBareColumn()
 
 	/**
@@ -211,7 +211,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 	public function testAPropertyEncryptedOnlyByFalseStillSorts(): void {
 		$result = $this->sort(order: ['title' => 'asc'], properties: ['title' => ['type' => 'string', 'x-openregister-encrypted' => false]]);
 
-		$this->assertSame([['LOWER("t"."title")', 'ASC'], ['"t"."title"', 'ASC'], ['t._id', 'ASC']], $result);
+		$this->assertSame([['LOWER("t"."title")', 'ASC'], ['t.title', 'ASC'], ['t._id', 'ASC']], $result);
 	}//end testAPropertyEncryptedOnlyByFalseStillSorts()
 
 	public function testMetadataSortsAreUnchanged(): void {
@@ -254,7 +254,7 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 		);
 
 		// Not a date by the schema, so it sorts as text: lower-cased since 9 October 2026.
-		$this->assertSame([['LOWER("t"."occurred_at")', 'DESC'], ['"t"."occurred_at"', 'DESC'], ['t._id', 'ASC']], $result);
+		$this->assertSame([['LOWER("t"."occurred_at")', 'DESC'], ['t.occurred_at', 'DESC'], ['t._id', 'ASC']], $result);
 	}//end testNonDatePropertyOnDateColumnKeepsBareColumn()
 
 	public function testInvalidDirectionFallsBackToAscending(): void {

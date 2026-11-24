@@ -33,6 +33,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'federation#createShare', 'url' => '/api/federation/shares',      'verb' => 'POST'],
         ['name' => 'federation#revokeShare', 'url' => '/api/federation/shares/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
         ['name' => 'federation#renewShare',  'url' => '/api/federation/shares/{id}/renew', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'federation#acceptShare',  'url' => '/api/federation/shares/{id}/accept',  'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'federation#declineShare', 'url' => '/api/federation/shares/{id}/decline', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
         // Credential broker (credential-broker-service) — owner-scoped credential
         // metadata CRUD + per-app signing-secret registration + the guarded broker
@@ -418,6 +420,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'Settings\AuditSettings#getAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'GET'],
         ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PATCH'],
         ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PUT', 'postfix' => 'put'],
+        // The load shedding thresholds and the database-pressure switch (administrator only).
+        ['name' => 'Settings\LoadSheddingSettings#index', 'url' => '/api/settings/load-shedding', 'verb' => 'GET'],
+        ['name' => 'Settings\LoadSheddingSettings#update', 'url' => '/api/settings/load-shedding', 'verb' => 'PUT'],
 
         // Settings — additional endpoints.
         ['name' => 'settings#load',                     'url' => '/api/settings/load',                            'verb' => 'GET'],
@@ -1025,6 +1030,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // @spec openspec/specs/integration-message-dispatch/spec.md#requirement-outbound-messaging-send-endpoints
         ['name' => 'messageDispatch#smsSend',            'url' => '/api/integrations/sms/send',               'verb' => 'POST'],
         ['name' => 'messageDispatch#whatsappSend',       'url' => '/api/integrations/whatsapp/send',          'verb' => 'POST'],
+        ['name' => 'messageDispatch#emailSend',          'url' => '/api/integrations/email/send',             'verb' => 'POST'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no
         // admin gate). The specific `/cospend/new` (create + link) route
         // MUST precede the wildcard `/cospend/{entryId}` unlink route, and
@@ -1275,6 +1281,15 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // A form open to visitors without an account (`access: anonymous`), on a page that needs no account.
         ['name' => 'publicFormPage#show', 'url' => '/forms/{formId}', 'verb' => 'GET'],
         ['name' => 'objectExport#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // The reporting aggregation (rapportage-bi-export): literal, so before objects#show.
+        ['name' => 'aggregation#report', 'url' => '/api/objects/{register}/{schema}/aggregate', 'verb' => 'GET'],
+        // Chart labels and series over the same report (rapportage-bi-export): literal, so before objects#show.
+        ['name' => 'aggregation#chart', 'url' => '/api/objects/{register}/{schema}/chart', 'verb' => 'GET'],
+        // Period-over-period comparison of one metric (rapportage-bi-export).
+        ['name' => 'aggregation#compare', 'url' => '/api/reports/compare', 'verb' => 'GET'],
+        // rapportage-bi-export: one aggregation across registers (total and
+        // per register, or a count series per register); RBAC per pair.
+        ['name' => 'crossRegisterReport#aggregate', 'url' => '/api/reports/aggregate', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
         // Address an object by its schema's declared identity. BEFORE objects#show for the same reason.
@@ -1399,6 +1414,12 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // The connector's inbound update, one route per registry id.
         ['name' => 'registryUpdates#update', 'url' => '/api/registry/{registry}/updates', 'verb' => 'POST'],
         // Bulk Operations.
+        // Record import (administrators only): propose a column mapping for an uploaded
+        // file, then import it with the confirmed mapping through the streaming save.
+        ['name' => 'recordImport#mapping', 'url' => '/api/record-import/{register}/{schema}/mapping', 'verb' => 'POST'],
+        ['name' => 'recordImport#progress', 'url' => '/api/record-import/progress/{token}', 'verb' => 'GET'],
+        ['name' => 'recordImport#dryRun', 'url' => '/api/record-import/{register}/{schema}/dry-run', 'verb' => 'POST'],
+        ['name' => 'recordImport#import', 'url' => '/api/record-import/{register}/{schema}', 'verb' => 'POST'],
         ['name' => 'bulk#save', 'url' => '/api/bulk/{register}/{schema}/save', 'verb' => 'POST'],
         ['name' => 'bulk#delete', 'url' => '/api/bulk/{register}/{schema}/delete', 'verb' => 'POST'],
         ['name' => 'bulk#deleteSchema', 'url' => '/api/bulk/{register}/{schema}/delete-schema', 'verb' => 'POST'],
@@ -1448,6 +1469,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
         ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
         ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        // Dependency breakers (operate-load-shedding D-7): administrator-only.
+        ['name' => 'operationsDependencies#index', 'url' => '/api/operations/dependencies', 'verb' => 'GET'],
+        ['name' => 'operationsDependencies#reset', 'url' => '/api/operations/dependencies/{key}/reset', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.
@@ -1815,6 +1839,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // One named part of one schema back to what its app shipped (admin; shipped-baseline-reset-is-reachable).
         ['name' => 'shippedBaseline#preview', 'url' => '/api/schemas/{id}/shipped-baseline/reset', 'verb' => 'GET'],
         ['name' => 'shippedBaseline#reset', 'url' => '/api/schemas/{id}/shipped-baseline/reset', 'verb' => 'POST'],
+        // A part an app upgrade kept local: list them, accept what the app shipped (admin; local-changes-to-app-shipped-configuration 3.3b).
+        ['name' => 'shippedConflict#conflicts', 'url' => '/api/schemas/{id}/shipped-baseline/conflicts', 'verb' => 'GET'],
+        ['name' => 'shippedConflict#accept', 'url' => '/api/schemas/{id}/shipped-baseline/conflicts/accept', 'verb' => 'POST'],
         ['name' => 'schemaMigration#rollback', 'url' => '/api/schemas/{id}/runs/{run}/rollback', 'verb' => 'POST', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
 
         // Property type conversion — the supported conversions are published,
@@ -2227,6 +2254,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
 		['name' => 'archival#recomputeNomination', 'url' => '/api/archival/objects/{id}/nomination/recompute', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'archivalOverview#overview', 'url' => '/api/archival/overview', 'verb' => 'GET'],
+		// appraisal-inherited-from-a-parent (REQ-AIP-003): what the next destruction run holds back.
+		['name' => 'archivalHeldBack#index', 'url' => '/api/archival/held-back', 'verb' => 'GET'],
 		['name' => 'archivalOverview#drawUp', 'url' => '/api/archival/destruction-lists/draw-up', 'verb' => 'POST'],
 
 		// The classification plan arrives as a file, versioned, and a new
@@ -2235,6 +2264,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'selectielijst#versions', 'url' => '/api/archival/selectielijst/versions', 'verb' => 'GET'],
 		['name' => 'selectielijst#diff', 'url' => '/api/archival/selectielijst/diff', 'verb' => 'GET'],
 		['name' => 'selectielijstReference#resolve', 'url' => '/api/archival/selectielijst/resolve', 'verb' => 'GET'],
+		// external-register-view-leaf: one record of a sourced schema by key, with its degrade state.
+		['name' => 'externalRegister#show', 'url' => '/api/external-register/{register}/{schema}/{key}', 'verb' => 'GET', 'requirements' => ['key' => '[^/]+']],
 
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],
