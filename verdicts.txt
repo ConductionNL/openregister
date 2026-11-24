@@ -4986,3 +4986,4 @@
 10518 78a5d3deae2a819d7903e5ce903768459caa1a8d REVERIFY or-fix-8: merged main 037f95a8 (info.xml keeps PR dev.8 over main dev.7, bump check OK); Architecture green; review needed
 10568 2e920d60ef786a272b959ca4d563271bf1317734 REVERIFY or-fix-8: merged main 037f95a8 (csv union, yaml regenerated), info.xml dev.8 (main took dev.7); Architecture green, Db green bar inherited AreaMapperRegistrarsTest; review needed
 11078 ce17085f66e9aeedbc3cf003b1cc6720a56190e5 REVERIFY or-fix-8: merged main 037f95a8 (sbom conflict; regenerated from merged lockfiles, --check current); review needed
+10526 bbe9e922266f47c67d342022b86f9ca1dd9b4f70 REVERIFY or-fix-6: merged main 7bf08ec0 (second merge: only the components yaml conflicted, regenerated; ComponentDefinition/DependencyRules green); PR tests OK (83 tests, 365 assertions), phpstan clean; review needed
