@@ -137,6 +137,7 @@ class ObjectLinkRouteResolutionGoldenTest extends TestCase {
 				$name === 'string' => 'openregister',
 				$name === IRequest::class => $this->request(),
 				$name === ObjectOperationsInterface::class => $this->resolver(object: $object),
+				$name === \Psr\Log\LoggerInterface::class => $this->createMock(\Psr\Log\LoggerInterface::class),
 				(new ReflectionClass($name))->isFinal() === true => $this->build(class: $name, object: $object),
 				default => $this->service(type: $name),
 			};
