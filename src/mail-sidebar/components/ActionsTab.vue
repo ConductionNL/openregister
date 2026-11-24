@@ -12,9 +12,15 @@
 			}}
 		</div>
 		<div v-else>
+			<template v-for="schema in schemas" :key="keyOf(schema)">
+			<FileLinkBlock
+				v-if="schema.fileLink"
+				:block="schema.fileLink"
+				:accountId="accountId"
+				:messageId="messageId"
+				@linked="$emit('linked', $event)" />
 			<div
-				v-for="schema in schemas"
-				:key="keyOf(schema)"
+				v-else
 				class="or-action-block"
 				:class="{ 'or-action-block--busy': isBusy(schema) }">
 				<label class="or-action-label" :for="'or-action-search-' + keyOf(schema)">
@@ -120,6 +126,7 @@
 					</button>
 				</template>
 			</div>
+			</template>
 		</div>
 
 		<CreateConnectedObjectDialog
@@ -145,9 +152,11 @@ import { NcLoadingIcon } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
+import FileLinkBlock from './FileLinkBlock.vue'
 import ObjectRow from './ObjectRow.vue'
 import { createDialogFor } from '../createDialogs.js'
 import { displayNameOf } from '../displayNames.js'
+import { rememberBlocks } from '../fileLinks.js'
 import { blocksOf } from '../mailBlocks.js'
 import { objectHandler, objectIdentifier, objectStatus } from '../objectRow.js'
 import { itemName } from '../sentenceName.js'
@@ -184,6 +193,7 @@ export default {
 	components: {
 		NcLoadingIcon,
 		CreateConnectedObjectDialog,
+		FileLinkBlock,
 		Magnify,
 		ObjectRow,
 		Plus,
@@ -377,7 +387,8 @@ export default {
 			this.schemas = allSchemas
 				.filter((s) => (s.configuration?.linkedTypes || []).includes('mail'))
 				.flatMap(blocksOf)
-			for (const schema of this.schemas) {
+			rememberBlocks(this.schemas)
+			for (const schema of this.schemas.filter((block) => !block.fileLink)) {
 				this.loadInitialResults(schema)
 			}
 		},

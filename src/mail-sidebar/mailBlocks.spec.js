@@ -17,7 +17,7 @@ const CASE = {
 
 describe('blocksOf', () => {
 	it('gives a schema without blocks one block keyed by its id', () => {
-		expect(blocksOf(CASE)).toEqual([{ ...CASE, blockKey: '72', blockFilter: {}, appDialog: true }])
+		expect(blocksOf(CASE)).toEqual([{ ...CASE, blockKey: '72', blockFilter: {}, appDialog: true, fileLink: null }])
 	})
 
 	it('gives one block per declared entry, each with its own title, name, template, filter and dialog', () => {
