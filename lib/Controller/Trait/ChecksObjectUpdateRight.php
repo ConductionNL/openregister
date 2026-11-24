@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Trait;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Needs the using class to hold `$objectService` and a PermissionHandlerInterface `$permissions`.
@@ -42,10 +43,9 @@ trait ChecksObjectUpdateRight
 		}
 
 		return $this->permissions->hasPermission(
-			schema: $schema,
-			action: 'update',
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))
+				->askedBy(userId: null, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end mayUpdate()
 }//end trait

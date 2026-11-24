@@ -225,7 +225,7 @@ class AggregateReferenceResolver implements AggregateReferenceResolverInterface 
 		}
 
 		$filters = $this->filtersFor(payload: $payload, spec: $spec);
-		return AggregationQuery::create(metric: $metric, field: $field, filter: $filters, groupBy: $groupBy);
+		return AggregationQuery::grouped(metric: $metric, field: $field, filter: $filters, groupBy: $groupBy);
 	}//end queryFor()
 
 	/**
