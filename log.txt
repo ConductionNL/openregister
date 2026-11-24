@@ -4208,3 +4208,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T17:37:42Z integrator-20261124T145419-19cd7a29 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T17:37:53Z or-fix-9: lane 9 share 10499 10509 10519 10529 10539 10549 10569 10629 10639 10869 10979; fixed 10509 (27e0f059) and 10539 (406fad11): components yaml conflicts with main; rest APPROVE at head and clean with main (no churn). Note: with ~/q cloned --depth 1, st_sync's plain 'git fetch origin <branch>' hangs; wrap _g fetch with --depth=200.
+2026-11-24T17:38:03Z precheck-20261124T165103-4e59ef13 NORESULT tree dad159e336: checker floor not measured (exit 2)
