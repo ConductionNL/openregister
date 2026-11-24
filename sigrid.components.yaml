@@ -1698,6 +1698,7 @@ components:
       - ".*/lib/Controller/Settings/ConfigurationSettingsController[.]php"
       - ".*/lib/Controller/Settings/EdepotSettingsController[.]php"
       - ".*/lib/Controller/Settings/LlmSettingsController[.]php"
+      - ".*/lib/Controller/Settings/SearchSettingsController[.]php"
       - ".*/lib/Controller/Settings/SecuritySettingsController[.]php"
       - ".*/lib/Controller/Settings/SeedReportController[.]php"
       - ".*/lib/Controller/Settings/TranslationSettingsController[.]php"
