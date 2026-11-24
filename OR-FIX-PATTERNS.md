@@ -689,3 +689,17 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: merge conflict in tools/sig/modularity-baseline.json (exposed_loc, kernel_loc, total_loc, violation_degree hunks).
 - Cause: generated numbers; main records a new baseline on nearly every modularity merge.
 - Fix: git checkout --theirs the json, run python3 tools/sig/modularity_check.py --check on the merged tree (must pass), then --write-baseline and commit it with the merge (#11000 d86305b2).
+## Main e353e627 (#11024) reverted the Files-owned ports: PRs merged with 6e870ca5 conflict in the generated components yaml (or-fix-6)
+- Symptom: CONFLICT only in the repo-root components yaml; csv auto-merges.
+- Cause: #11024 dropped lib/Kernel/Contracts/Files/* and their csv rows, regenerating the yaml.
+- Fix: git checkout --theirs the yaml, python3 scripts/component-patterns.py; grep lib/tests for the removed Files interfaces (none in #10156/#10516/#10526). Architecture green after.
+
+## Main #9053 (85629dd4): hasPermission(PermissionAsk) - a PR's NEW callers fail silently (or-fix-6)
+- Symptom: after merging main, the PR's own tests fail with 'You may not change/read ...' refusals or empty lists; no 'Unknown named parameter' visible because the caller's try/catch(Throwable) returns false (fail closed). phpstan argument.unknown on the call.
+- Cause: PermissionCheckInterface/PermissionHandlerInterface::hasPermission(schema:, action:, userId:, objectOwner:, object:, register:) became hasPermission(PermissionAsk $ask, bool $_rbac=true).
+- Fix: grep the PR's diff for hasPermission; call with ask: (new PermissionAsk(schema: $s, action: 'update'))->askedBy(userId: $u, objectOwner: $owner)->about(object: $obj, register: null) (use OCA\OpenRegister\Service\Object\PermissionAsk); test closures take (PermissionAsk $ask) and read $ask->objectOwner etc.; ->with($schema, 'create') becomes $this->callback(fn (PermissionAsk $a) => $a->action === 'create'). Remember the use line in the test (#10156).
+
+## Dependabot composer.lock bump without sbom.cdx.json (or-fix-9)
+- Symptom: bin/regen-sbom.sh --check on the PR merged with main lists removed/added pkg:composer purls (e.g. #10639 mail-mime-parser).
+- Cause: dependabot changes composer.lock only; the committed root sbom.cdx.json still names the old versions.
+- Fix: merge main, bash ~/q/bin/regen-sbom.sh ., commit sbom.cdx.json alone, --check must say current (#10639 153e1019).
