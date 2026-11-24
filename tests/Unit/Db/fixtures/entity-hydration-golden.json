@@ -433,7 +433,8 @@
     },
     "FederatedShare": {
         "jsonFields": [
-            "queryFilter"
+            "queryFilter",
+            "crosses"
         ],
         "empty json": {
             "returnsSelf": true,
@@ -456,7 +457,8 @@
                 "owner": "text-owner",
                 "created": "2026-02-03T04:05:06+00:00",
                 "updated": "2026-02-03T04:05:06+00:00",
-                "expiresAt": "2026-02-03T04:05:06+00:00"
+                "expiresAt": "2026-02-03T04:05:06+00:00",
+                "crosses": null
             },
             "updated": [
                 "id",
@@ -502,7 +504,10 @@
                 "owner": "text-owner",
                 "created": "2026-02-03T04:05:06+00:00",
                 "updated": "2026-02-03T04:05:06+00:00",
-                "expiresAt": "2026-02-03T04:05:06+00:00"
+                "expiresAt": "2026-02-03T04:05:06+00:00",
+                "crosses": {
+                    "k": "v"
+                }
             },
             "updated": [
                 "id",
@@ -523,7 +528,8 @@
                 "owner",
                 "created",
                 "updated",
-                "expiresAt"
+                "expiresAt",
+                "crosses"
             ]
         }
     },

@@ -69,6 +69,13 @@ class FileSidebarController extends Controller {
 	private readonly FileSidebarService $fileSidebarService;
 
 	/**
+	 * The thread of a collected mail, when available.
+	 *
+	 * @var \OCA\OpenRegister\Service\Mail\MailThreadService|null
+	 */
+	private readonly ?\OCA\OpenRegister\Service\Mail\MailThreadService $mailThreads;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                                                $request       HTTP request.
@@ -84,6 +91,7 @@ class FileSidebarController extends Controller {
 
 		$this->fileSidebarService = $services->fileSidebarService;
 		$this->logger = $services->logger;
+		$this->mailThreads = $services->mailThreads;
 		$this->fileAccess = new CallerFileAccess(
 			fileReadScope: $fileReadScope,
 			userSession: $services->userSession,
@@ -167,6 +175,45 @@ class FileSidebarController extends Controller {
 			return $this->failed(error: 'Failed to retrieve extraction status.');
 		}
 	}//end getExtractionStatus()
+
+	/**
+	 * The conversation a collected `.eml` file belongs to.
+	 *
+	 * Answers `{thread: [{fileId, messageId, parent, sentAt, from, subject, gap}], position}`
+	 * in date order, over the mail files beside the asked one that the caller may read.
+	 *
+	 * @param int $fileId The Nextcloud file ID.
+	 *
+	 * @return JSONResponse JSON response with the thread.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-a-message-is-read-with-the-messages-around-it-req-rth-011
+	 */
+	public function getThread(int $fileId): JSONResponse {
+		// IDOR guard: the asked file first, then every member by the same rule.
+		if ($this->hasFileAccess(fileId: $fileId) === false) {
+			return $this->fileNotFound();
+		}
+
+		if ($this->mailThreads === null) {
+			return new JSONResponse(data: ['success' => false, 'error' => 'Mail threads are not available'], statusCode: 501);
+		}
+
+		try {
+			return new JSONResponse(
+				data: $this->mailThreads->threadOf(
+					fileId: $fileId,
+					mayRead: fn (int $memberId): bool => $this->hasFileAccess(fileId: $memberId)
+				)
+			);
+		} catch (\Exception $e) {
+			$this->logger->error('[FileSidebarController] Error assembling the thread of file '.$fileId.': '.$e->getMessage());
+
+			return $this->failed(error: 'Failed to assemble the mail thread.');
+		}
+	}//end getThread()
 
 	/**
 	 * The refusal of a file the caller cannot reach: 404, not 403, so a non-owner

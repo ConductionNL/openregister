@@ -142,6 +142,13 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 					<History :size="16" />
 					{{ t('openregister', 'Changes') }}
 				</button>
+				<button
+					class="tabButton"
+					:class="[{ active: activeTab === 'indexes' }]"
+					@click="activeTab = 'indexes'">
+					<TableKey :size="16" />
+					{{ t('openregister', 'Indexes') }}
+				</button>
 			</div>
 
 			<!-- Calendar Provider Tab -->
@@ -169,6 +176,11 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 				v-if="activeTab === 'changes' && isAdmin"
 				kind="schemas"
 				:entityId="schemaStore.schemaItem.id" />
+
+			<!-- Indexes Tab: the database indexes on the schema's tables and the field setting behind each -->
+			<SchemaIndexesTab
+				v-if="activeTab === 'indexes'"
+				:schema="schemaStore.schemaItem" />
 
 			<!-- Dashboard Tab (original content) -->
 			<div v-show="activeTab === 'dashboard'" class="dashboardContent">
@@ -269,6 +281,7 @@ import History from 'vue-material-design-icons/History.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import ShieldAccount from 'vue-material-design-icons/ShieldAccount.vue'
+import TableKey from 'vue-material-design-icons/TableKey.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import EntityChangesList from '../../components/audit/EntityChangesList.vue'
@@ -276,6 +289,7 @@ import SchemaDraftBar from '../../components/schema/SchemaDraftBar.vue'
 import DetailChartGrid from '../register/DetailChartGrid.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
 import CalendarProviderTab from './CalendarProviderTab.vue'
+import SchemaIndexesTab from './SchemaIndexesTab.vue'
 import SchemaRightsTab from './SchemaRightsTab.vue'
 import SchemaRulesTab from './SchemaRulesTab.vue'
 import {
@@ -307,10 +321,12 @@ export default {
 		Gavel,
 		History,
 		ShieldAccount,
+		TableKey,
 		CalendarProviderTab,
 		SchemaWorkflowTab,
 		SchemaRulesTab,
 		SchemaRightsTab,
+		SchemaIndexesTab,
 		SchemaDraftBar,
 		EntityChangesList,
 	},

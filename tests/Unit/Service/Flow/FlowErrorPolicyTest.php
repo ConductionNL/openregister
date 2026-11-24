@@ -41,6 +41,7 @@ class FlowErrorPolicyTest extends TestCase {
 			'stop' => [['onError' => 'stop'], 'stop', false],
 			'continue' => [['onError' => 'continue'], 'continue', true],
 			'dead letter' => [['onError' => 'dead_letter'], 'dead_letter', false],
+			'branch' => [['onError' => 'branch'], 'branch', false],
 			'a typo fails safe as stop' => [['onError' => 'carry-on-regardless'], 'stop', false],
 			'a non-string fails safe as stop' => [['onError' => ['continue']], 'stop', false],
 			'an unknown step is stop' => [null, 'stop', false],
@@ -53,6 +54,12 @@ class FlowErrorPolicyTest extends TestCase {
 	public function testThePolicyOfAStep(?array $step, string $policy, bool $continues): void {
 		$this->assertSame($policy, FlowErrorPolicy::for($step));
 		$this->assertSame($continues, FlowErrorPolicy::continues($step));
+	}
+
+	public function testOnlyBranchBranches(): void {
+		$this->assertTrue(FlowErrorPolicy::branches(['onError' => 'branch']));
+		$this->assertFalse(FlowErrorPolicy::branches(['onError' => 'continue']));
+		$this->assertFalse(FlowErrorPolicy::branches(null));
 	}
 
 	public function testTheDeclaredPolicyKeepsATypoForTheLog(): void {

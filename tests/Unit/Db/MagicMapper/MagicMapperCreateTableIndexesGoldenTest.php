@@ -49,6 +49,9 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun
  * @uses   \OCA\OpenRegister\Db\ObjectHandling
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIdentityIndex
+ * @uses   \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
+ * @uses   \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class MagicMapperCreateTableIndexesGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/create-table-indexes-golden.json';
