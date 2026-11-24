@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
 use OCP\Accounts\IAccountManager;
@@ -75,7 +76,8 @@ class UserServiceProfileActionsTest extends TestCase {
 			$this->auditTrailMapper,
 			$this->secureRandom,
 			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			$this->createMock(IFactory::class),
+			$this->createMock(AuditEntryWriterInterface::class)
 		);
 	}
 

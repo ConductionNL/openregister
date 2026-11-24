@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Service\Archival\DestructionServiceInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\BackgroundJob\IJobList;
@@ -78,9 +78,9 @@ class RetentionController extends Controller {
 	/**
 	 * Settings handler
 	 *
-	 * @var ArchivalSettingsReaderInterface
+	 * @var ArchivalSettingsInterface
 	 */
-	private readonly ArchivalSettingsReaderInterface $settingsHandler;
+	private readonly ArchivalSettingsInterface $settingsHandler;
 
 	/**
 	 * Save object service
@@ -537,7 +537,7 @@ class RetentionController extends Controller {
 
 			// Queue via background job for large datasets.
 			$this->jobList->add(
-				\OCA\OpenRegister\BackgroundJob\JobHandles::BULK_LEGAL_HOLD,
+				\OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface::BULK_LEGAL_HOLD,
 				[
 					'schemaId' => $schemaId,
 					'reason' => $reason,

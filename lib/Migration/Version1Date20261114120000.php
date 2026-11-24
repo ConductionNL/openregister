@@ -41,14 +41,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add the run lineage, the prune mark, the submitted row and the row outcome.
  *
  * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md
  */
-class Version1Date20261114120000 extends SimpleMigrationStep {
+class Version1Date20261114120000 extends TargetedMigrationStep {
 	private const PREVIEWS = 'openregister_import_previews';
 
 	private const ROWS = 'openregister_import_preview_rows';
@@ -66,7 +65,7 @@ class Version1Date20261114120000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-import-export/spec.md#requirement-an-import-leaves-a-durable-record-with-an-outcome-per-row-req-rcn-005
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -106,5 +105,5 @@ class Version1Date20261114120000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearer;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Service\Task\ApprovalPositionFormGuard;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
 use OCA\OpenRegister\Service\Task\TaskFormSources;
@@ -86,7 +87,7 @@ class SchemasControllerApprovalPositionFormTest extends TestCase {
 		$groupManager->method('getUserGroupIds')->willReturn(['admin']);
 		$groupManager->method('isAdmin')->willReturn(true);
 		$services = [
-			ApprovalPositionFormGuard::class => $guard,
+			ApprovalPositionFormCheckInterface::class => $guard,
 			\OCP\IUserSession::class => $userSession,
 			\OCP\IGroupManager::class => $groupManager,
 		];
@@ -170,7 +171,7 @@ class SchemasControllerApprovalPositionFormTest extends TestCase {
 		$this->schemaMapper->expects($this->once())->method('createFromArray')->willReturn($schema);
 
 		$this->assertSame(201, $this->controller->create()->getStatus());
-		$this->assertContains(ApprovalPositionFormGuard::class, $this->resolved);
+		$this->assertContains(ApprovalPositionFormCheckInterface::class, $this->resolved);
 	}//end testARenderableFieldIsSaved()
 
 	public function testABodyWithoutPositionFormsNeverReachesTheGuard(): void {
@@ -182,6 +183,6 @@ class SchemasControllerApprovalPositionFormTest extends TestCase {
 		$this->schemaMapper->method('createFromArray')->willReturn($schema);
 
 		$this->assertSame(201, $this->controller->create()->getStatus());
-		$this->assertNotContains(ApprovalPositionFormGuard::class, $this->resolved);
+		$this->assertNotContains(ApprovalPositionFormCheckInterface::class, $this->resolved);
 	}//end testABodyWithoutPositionFormsNeverReachesTheGuard()
 }//end class

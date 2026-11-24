@@ -21,12 +21,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Service\DisposalSweep;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -54,13 +54,13 @@ class DestructionListCreator implements DestructionListCreatorInterface {
 	 *
 	 * @param RetentionServiceInterface       $retention       Judges each object and builds the list.
 	 * @param DestructionListWriter $writer Reads the eligible objects and saves the new list.
-	 * @param ArchivalSettingsReaderInterface $settingsHandler Names the destruction-list register and schema.
+	 * @param ArchivalSettingsInterface       $settingsHandler Names the destruction-list register and schema.
 	 * @param LoggerInterface        $logger          Records who asked for a list.
 	 */
 	public function __construct(
 		private readonly RetentionServiceInterface $retention,
 		private readonly DestructionListWriter $writer,
-		private readonly ArchivalSettingsReaderInterface $settingsHandler,
+		private readonly ArchivalSettingsInterface $settingsHandler,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

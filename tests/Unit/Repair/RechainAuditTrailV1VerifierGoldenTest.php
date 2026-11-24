@@ -21,7 +21,6 @@ namespace OCA\OpenRegister\Tests\Unit\Repair;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Repair\RechainAuditTrailForFlowAttribution;
-use OCA\OpenRegister\Repair\Support\RepairPlatform;
 use OCA\OpenRegister\Service\AuditCanonicalV1;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\IResult;
@@ -41,7 +40,6 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm
  * @uses \OCA\OpenRegister\Db\Schema
- * @uses \OCA\OpenRegister\Repair\Support\RepairPlatform
  * @uses \OCA\OpenRegister\Repair\V1ChainVerificationRun
  * @uses \OCA\OpenRegister\Service\AuditCanonicalV1
  */
@@ -84,8 +82,10 @@ class RechainAuditTrailV1VerifierGoldenTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturn($qb);
 
 		return new RechainAuditTrailForFlowAttribution(
-			new RepairPlatform($db, $this->createMock(IAppConfig::class), new NullLogger()),
-			$this->createMock(AuditHashService::class)
+			db: $db,
+			config: $this->createMock(IAppConfig::class),
+			logger: new NullLogger(),
+			hashes: $this->createMock(AuditHashService::class)
 		);
 	}//end step()
 

@@ -2,7 +2,7 @@
 
 /**
  * MapsOverviewService — page-level multi-object MAP render surface, the
- * maps equivalent of {@see AnalyticsSeriesServiceInterface}.
+ * maps equivalent of the analytics series service.
  *
  * Where the per-object {@see \OCA\OpenRegister\Service\Integration\Providers\MapsProvider}
  * lists the locations linked to ONE object (a sidebar tab), this service
@@ -13,8 +13,8 @@
  *   1. declareOverview() — declares a `map` page widget on the
  *      IntegrationRegistry (declarative render contract + optional
  *      base-layer config such as PDOK WMTS), so the nc-vue render layer
- *      can discover and place the map surface. Mirrors
- *      AnalyticsSeriesServiceInterface::register()'s widget declaration.
+ *      can discover and place the map surface. Mirrors the widget
+ *      declaration of the analytics series registration.
  *   2. queryPoints() — resolves the marker point set for a register/schema
  *      (+ optional filters) by running the CANONICAL OpenRegister read
  *      path with `_rbac: true`, then extracting `{id,label,lat,lng,...}`
@@ -51,9 +51,7 @@ namespace OCA\OpenRegister\Search\Service;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Search\Service\Geo\FeatureShape;
-use OCA\OpenRegister\Service\Integration\PageWidgetRegistryInterface;
 use OCA\OpenRegister\Service\Rbac\CallerContext;
-use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
 /**

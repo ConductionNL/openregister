@@ -38,6 +38,7 @@ use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
 use OCA\OpenRegister\Files\Service\File\FileReadScopeRules;
 use OCA\OpenRegister\Files\Service\File\FileReadScopeTree;
+use OCA\OpenRegister\Files\Service\File\FileScopeReader;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Controller\DuplicateController;
 use OCA\OpenRegister\Search\Controller\Support\DuplicateControllerServices;
@@ -71,6 +72,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Files\Service\File\FileReadScope
  * @uses   \OCA\OpenRegister\Files\Service\File\FileReadScopeTree
  * @uses   \OCA\OpenRegister\Files\Service\File\FileReadScopeRules
+ * @uses   \OCA\OpenRegister\Files\Service\File\FileScopeReader
  * @uses   \OCA\OpenRegister\Search\Service\Quality\TextGroups
  * @uses   \OCA\OpenRegister\Search\Service\Quality\TextGroupFinder
  * @uses   \OCA\OpenRegister\Search\Service\Quality\DuplicateDetectionService
@@ -174,8 +176,10 @@ final class NearDuplicateEndpointTest extends TestCase {
 		);
 
 		$scope = new NearDuplicateScope(
-			$files,
-			new FileReadScope(new FileReadScopeTree($rootFolder, $userSession), new FileReadScopeRules(), new NullLogger())
+			new FileScopeReader(
+				$files,
+				new FileReadScope(new FileReadScopeTree($rootFolder, $userSession), new FileReadScopeRules(), new NullLogger())
+			)
 		);
 
 		$mapper = $this->createMock(TextSignatureMapper::class);

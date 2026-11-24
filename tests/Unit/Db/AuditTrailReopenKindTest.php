@@ -23,10 +23,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
+use OCA\OpenRegister\Db\AuditProcessContext;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailMapperServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\AuditProcessContextInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContextInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IDBConnection;
 use OCP\IRequest;
@@ -51,6 +55,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\AuditTrail\AuditedChange
  * @uses \OCA\OpenRegister\Service\Audit\AuditRowAttribution
  * @uses \OCA\OpenRegister\Service\Audit\AuditTrailCollaborators
+ * @uses \OCA\OpenRegister\Db\AuditProcessContext
  * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
  */
 final class AuditTrailReopenKindTest extends TestCase {
@@ -84,16 +89,21 @@ final class AuditTrailReopenKindTest extends TestCase {
 	}//end tearDown()
 
 	/**
-	 * The mapper, whose container knows only the lifecycle action frame.
+	 * The mapper, whose container knows only the lifecycle action frame and the process context that reads it.
 	 *
 	 * @return AuditTrailMapper
 	 */
 	private function mapper(): AuditTrailMapper {
+		$db        = $this->createMock(IDBConnection::class);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			function (string $id): object {
-				if ($id === LifecycleActionContext::class) {
+			function (string $id) use ($db, $container): object {
+				if ($id === TransitionInFlightInterface::class || $id === LifecycleActionContextInterface::class) {
 					return $this->actions;
+				}
+
+				if ($id === AuditProcessContextInterface::class) {
+					return new AuditProcessContext(db: $db, container: $container);
 				}
 
 				throw new \RuntimeException('not registered');
@@ -101,7 +111,7 @@ final class AuditTrailReopenKindTest extends TestCase {
 		);
 
 		return new AuditTrailMapper(
-			$this->createMock(IDBConnection::class),
+			$db,
 			new AuditTrailMapperServices($container, $this->createMock(LoggerInterface::class), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
 		);
 	}//end mapper()

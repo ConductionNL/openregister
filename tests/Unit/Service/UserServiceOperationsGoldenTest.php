@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrail\ActionWindow;
 use OCA\OpenRegister\Db\AuditTrail\ActorTrailQuery;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\UserService;
 use OCP\Accounts\IAccountManager;
@@ -85,7 +86,8 @@ class UserServiceOperationsGoldenTest extends TestCase {
 			$this->audit,
 			$this->random,
 			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			$this->createMock(IFactory::class),
+			$this->createMock(AuditEntryWriterInterface::class)
 		);
 	}
 

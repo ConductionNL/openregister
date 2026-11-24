@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerInterface;
 use OCA\OpenRegister\Service\Flow\Timer\EscalationNotice;
 use OCA\OpenRegister\Service\Flow\Timer\TimerFiring;
 use OCP\EventDispatcher\Event;
@@ -58,12 +58,12 @@ class FlowTimerFiredEvent extends Event {
 	/**
 	 * Constructor.
 	 *
-	 * @param FlowTimer             $timer  The timer that fired.
+	 * @param FlowTimerInterface    $timer  The timer that fired.
 	 * @param TimerFiring           $firing The kind, the named transition raised and the rung key.
 	 * @param EscalationNotice|null $notice Recipients, priority, message and consequence; null for none.
 	 */
 	public function __construct(
-		private readonly FlowTimer $timer,
+		private readonly FlowTimerInterface $timer,
 		private readonly TimerFiring $firing,
 		?EscalationNotice $notice = null,
 	) {
@@ -74,11 +74,11 @@ class FlowTimerFiredEvent extends Event {
 	/**
 	 * The timer that fired.
 	 *
-	 * @return FlowTimer The timer.
+	 * @return FlowTimerInterface The timer.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
 	 */
-	public function getTimer(): FlowTimer {
+	public function getTimer(): FlowTimerInterface {
 		return $this->timer;
 	}//end getTimer()
 

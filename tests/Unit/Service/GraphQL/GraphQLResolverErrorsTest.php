@@ -36,6 +36,7 @@ use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolver;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverShaping;
+use OCA\OpenRegister\Service\GraphQL\ListAggregations;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverRights;
 use OCA\OpenRegister\Service\GraphQL\GraphQLResolverObjects;
 use OCA\OpenRegister\Service\Object\GetObject;
@@ -107,8 +108,7 @@ class GraphQLResolverErrorsTest extends TestCase {
 			),
 			new GraphQLResolverShaping(
 				$this->createMock(TranslationHandler::class),
-				$this->createMock(AggregationRunner::class),
-				new TimeseriesRequestValidator()
+				new ListAggregations(runner: $this->createMock(AggregationRunner::class), validator: new TimeseriesRequestValidator())
 			),
 			$this->createMock(LoggerInterface::class)
 		);

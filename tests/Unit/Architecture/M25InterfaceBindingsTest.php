@@ -20,9 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowConsentParking;
 use OCA\OpenRegister\Service\Flow\FlowConsentSweepInterface;
+use OCA\OpenRegister\Service\Flow\FlowWiring;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -56,7 +56,7 @@ final class M25InterfaceBindingsTest extends TestCase {
 
 	#[DataProvider('bindings')]
 	public function testTheInterfaceIsBoundToTheClass(string $interface, string $class): void {
-		$this->assertSame($class, (ContractBindings::BINDINGS[$interface] ?? null));
+		$this->assertSame($class, (FlowWiring::BINDINGS[$interface] ?? null));
 	}
 
 	#[DataProvider('bindings')]

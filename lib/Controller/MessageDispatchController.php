@@ -52,8 +52,8 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Controller\Support\ReadableObject;
 use OCA\OpenRegister\Notifications\Service\Notification\ScheduledMessageScheduler;
@@ -85,7 +85,7 @@ class MessageDispatchController extends Controller {
 		private readonly ?ScheduledMessageScheduler $scheduler = null,
 		private readonly ?ObjectOperationsInterface $objects = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

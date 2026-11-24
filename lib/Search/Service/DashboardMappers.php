@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Search\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
-use OCA\OpenRegister\Db\WebhookLogMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\WebhookLogStatisticsInterface;
 
 /**
  * The mappers the dashboard statistics read from.
@@ -35,16 +35,16 @@ final class DashboardMappers {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param SchemaCatalogInterface    $catalog          Magic table mapper for object statistics, register mapper for register lookups.
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for log statistics.
-	 * @param WebhookLogMapperInterface $webhookLogMapper Webhook log mapper for webhook statistics.
+	 * @param SchemaCatalogInterface        $catalog          Magic table mapper for object statistics, register mapper for register lookups.
+	 * @param AuditTrailMapperInterface     $auditTrailMapper Audit trail mapper for log statistics.
+	 * @param WebhookLogStatisticsInterface $webhookLogMapper Webhook log mapper for webhook statistics.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
 	 */
 	public function __construct(
 		public readonly SchemaCatalogInterface $catalog,
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
-		public readonly WebhookLogMapperInterface $webhookLogMapper,
+		public readonly WebhookLogStatisticsInterface $webhookLogMapper,
 	) {
 	}//end __construct()
 }//end class

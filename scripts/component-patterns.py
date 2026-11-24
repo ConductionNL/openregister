@@ -66,6 +66,11 @@ FLAT = {
 # Matched recursively, so subdirectories the contract lanes add need no new pattern.
 RECURSIVE = {"lib/Kernel": "Kernel", "lib/Support": "Kernel"}
 
+# A contract an area offers others lives in lib/Kernel/Contracts/<Area>/ and belongs to that area
+# (hydra ADR-119 Decision 1), so a call through it counts as a line to its owner. These directories
+# are matched recursively for their area and excluded from Kernel's recursive pattern.
+OWNED_CONTRACTS = "lib/Kernel/Contracts"
+
 # Sigrid excludes migrations by default; they belong to no component.
 EXCLUDED = ("lib/Migration/",)
 
@@ -115,11 +120,25 @@ def read_rows(map_file: Path = MAP_FILE) -> tuple[dict[str, str], dict[str, str]
     return files, dirs
 
 
+def contract_owner(path: str) -> str | None:
+    """The area that owns a file under lib/Kernel/Contracts/<Area>/, if any."""
+    prefix = OWNED_CONTRACTS + "/"
+    if not path.startswith(prefix):
+        return None
+    head = path[len(prefix):].split("/")[0]
+    return head if head in ORDER and head != "Kernel" and "/" in path[len(prefix):] else None
+
+
 def assign(files: list[str], file_rows: dict[str, str], dir_rows: dict[str, str]) -> tuple[dict[str, str], list[str]]:
-    """Return (path => component, paths without a row). A file row wins over the deepest directory row."""
+    """Return (path => component, paths without a row). An owned contract goes to its area; otherwise a
+    file row wins over the deepest directory row."""
     assigned: dict[str, str] = {}
     missing: list[str] = []
     for path in files:
+        owner = contract_owner(path)
+        if owner is not None:
+            assigned[path] = owner
+            continue
         if path in file_rows:
             assigned[path] = file_rows[path]
             continue
@@ -154,9 +173,17 @@ def render(assigned: dict[str, str]) -> str:
         by_dir[os.path.dirname(path)][component].append(path)
 
     patterns: dict[str, list[str]] = defaultdict(list)
+    excludes: dict[str, list[str]] = defaultdict(list)
     emitted_roots: set[str] = set()
+    owned = sorted({contract_owner(p) for p in assigned if contract_owner(p)})
+    for area in owned:
+        patterns[area].append(f".*/{esc(OWNED_CONTRACTS)}/{area}/.*")
+    if owned:
+        excludes["Kernel"].append(f".*/{esc(OWNED_CONTRACTS)}/({'|'.join(owned)})/.*")
     for directory in sorted(by_dir):
         components = by_dir[directory]
+        if any(contract_owner(p) for ps in components.values() for p in ps):
+            continue
         root = recursive_root(directory)
         if root is not None:
             if set(components) != {RECURSIVE[root]}:
@@ -185,6 +212,10 @@ def render(assigned: dict[str, str]) -> str:
         out.append("    include:\n")
         for pattern in patterns[component]:
             out.append(f'      - "{pattern}"\n')
+        if excludes[component]:
+            out.append("    exclude:\n")
+            for pattern in excludes[component]:
+                out.append(f'      - "{pattern}"\n')
     return "".join(out)
 
 

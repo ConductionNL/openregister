@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\TaskService;
@@ -141,7 +141,7 @@ class CalDavSourcesGoldenTest extends TestCase {
 	 * @return CalendarEventObjectSourceProvider The provider.
 	 */
 	private function vevent(?array $rows, ?array $apps = ['dav']): CalendarEventObjectSourceProvider {
-		$service = $this->createMock(CalendarEventService::class);
+		$service = $this->createMock(UserCalendarEventsInterface::class);
 		$service->method('getAllUserEvents')->willReturnCallback(
 			function (int $limit = 200, int $offset = 0) use ($rows): array {
 				$this->log[] = ['getAllUserEvents', $limit, $offset];

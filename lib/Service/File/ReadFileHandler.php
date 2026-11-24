@@ -23,7 +23,7 @@ namespace OCA\OpenRegister\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -83,11 +83,11 @@ class ReadFileHandler {
 	private readonly MagicObjectFinderInterface $objectMapper;
 
 	/**
-	 * Optional OR-side metadata mapper for category-based filtering. Null-safe so legacy fixtures keep working.
+	 * Optional OR-side file records for category-based filtering. Null-safe so legacy fixtures keep working.
 	 *
-	 * @var FileMapperInterface|null
+	 * @var ObjectFileRecordsInterface|null
 	 */
-	private readonly ?FileMapperInterface $fileMapper;
+	private readonly ?ObjectFileRecordsInterface $fileMapper;
 
 	/**
 	 * Constructor for ReadFileHandler.
@@ -342,7 +342,7 @@ class ReadFileHandler {
 	/**
 	 * Filter a node list by OR-side category metadata.
 	 *
-	 * Uses one bulk lookup to fetch the OR-side rows for every
+	 * Uses one bulk lookup to fetch the OR-side category of every
 	 * candidate fileId, then keeps only nodes whose row carries the
 	 * requested category. Files without an OR-side row are excluded
 	 * because they have no category — matching SQL `WHERE category =
@@ -361,10 +361,10 @@ class ReadFileHandler {
 			return [];
 		}
 
-		$orMap = $this->fileMapper->findByFileIds(fileIds: $fileIds);
-		$matched = [];
+		$categories = $this->fileMapper->findCategoriesByFileIds(fileIds: $fileIds);
+		$matched    = [];
 		foreach ($files as $node) {
-			if ($this->hasCategory(row: ($orMap[$this->nodeId(node: $node)] ?? null), category: $category) === true) {
+			if (($categories[$this->nodeId(node: $node)] ?? null) === $category) {
 				$matched[] = $node;
 			}
 		}
@@ -391,25 +391,5 @@ class ReadFileHandler {
 			return 0;
 		}
 	}//end nodeId()
-
-	/**
-	 * Whether an OR-side row carries the category.
-	 *
-	 * @param mixed  $row      The row, or null when the file has none.
-	 * @param string $category The category to match exactly.
-	 *
-	 * @return bool True on an exact match.
-	 */
-	private function hasCategory(mixed $row, string $category): bool {
-		if ($row === null) {
-			return false;
-		}
-
-		try {
-			return $row->getCategory() === $category;
-		} catch (\Throwable) {
-			return false;
-		}
-	}//end hasCategory()
 
 }//end class

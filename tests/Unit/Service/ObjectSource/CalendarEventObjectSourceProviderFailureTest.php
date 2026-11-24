@@ -22,7 +22,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
@@ -40,7 +40,7 @@ class CalendarEventObjectSourceProviderFailureTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailingCalendarReadsAsNoEvents(): void {
-		$calendar = $this->createMock(CalendarEventService::class);
+		$calendar = $this->createMock(UserCalendarEventsInterface::class);
 		$calendar->expects($this->exactly(2))
 			->method('getAllUserEvents')
 			->willThrowException(new RuntimeException('caldav down'));

@@ -3,6 +3,7 @@
 namespace Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use PHPUnit\Framework\TestCase;
 
@@ -306,5 +307,17 @@ class AgentTest extends TestCase {
 		$json = $this->agent->jsonSerialize();
 
 		$this->assertNull($json['managedByConfiguration']);
+	}
+
+	public function testJsonSerializeNamesTheManagingConfiguration(): void {
+		$configuration = new Configuration();
+		$configuration->setId(7);
+		$configuration->setUuid('config-uuid');
+		$configuration->setTitle('Zaken');
+		$this->agent->setManagedByConfig($configuration);
+
+		$json = $this->agent->jsonSerialize();
+
+		$this->assertSame(['id' => 7, 'uuid' => 'config-uuid', 'title' => 'Zaken'], $json['managedByConfiguration']);
 	}
 }

@@ -40,14 +40,13 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates the object read-state table and widens the notification history.
  *
  * @spec openspec/specs/object-read-state/spec.md
  */
-class Version1Date20260914140000 extends SimpleMigrationStep {
+class Version1Date20260914140000 extends TargetedMigrationStep {
 
 	/**
 	 * The read-state table.
@@ -76,7 +75,7 @@ class Version1Date20260914140000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/object-read-state/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		$changed = 0;
 
@@ -110,7 +109,7 @@ class Version1Date20260914140000 extends SimpleMigrationStep {
 
 		return $schema;
 
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 
 	/**
 	 * Add the read stamp, the subject axis and the snooze and archive stamps.

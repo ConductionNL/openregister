@@ -135,6 +135,32 @@ class MagicColumnNullabilityTest extends TestCase {
 		$this->assertSame(['debug [MagicMapper] Making column nullable (no longer required) {"tableName":"openregister_table_1_2","columnName":"b"}'], $this->log);
 	}//end testRelaxingAColumnOnMySqlModifiesItNull()
 
+	public function testAJsonColumnOnMariaDbKeepsItsTextTypeAndCheck(): void {
+		$sync = new TableStructureSync(
+			'openregister_table_1_2',
+			'oc_openregister_table_1_2',
+			new MagicColumnDrift(
+				['tags' => ['type' => 'mediumtext', 'nullable' => true], 'meta' => ['type' => 'mediumtext', 'nullable' => false]],
+				['tags' => ['type' => 'json', 'nullable' => false], 'meta' => ['type' => 'json_ordered']]
+			),
+			false,
+			true
+		);
+
+		$this->nullability()->apply(new MagicNullabilityChange($sync, false));
+		$this->nullability()->apply(new MagicNullabilityChange($sync, true));
+
+		// MODIFY restates the whole column, so a statement without the check would drop it.
+		$text = 'MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin';
+		$this->assertSame(
+			[
+				'ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `tags` ' . $text . ' NOT NULL CHECK (json_valid(`tags`))',
+				'ALTER TABLE `oc_openregister_table_1_2` MODIFY COLUMN `meta` ' . $text . ' NULL CHECK (json_valid(`meta`))',
+			],
+			$this->statements
+		);
+	}//end testAJsonColumnOnMariaDbKeepsItsTextTypeAndCheck()
+
 	public function testOnPostgresTheConstraintIsSetOrDropped(): void {
 		$this->nullability()->apply(new MagicNullabilityChange($this->sync(true), false));
 		$this->nullability()->apply(new MagicNullabilityChange($this->sync(true), true));

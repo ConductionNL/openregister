@@ -26,7 +26,7 @@ use OCA\OpenRegister\BackgroundJob\DestructionCheckJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -194,7 +194,7 @@ class DestructionCheckJobNotificationPayloadTest extends TestCase {
 				INotificationManager::class => $manager,
 				IGroupManager::class => $groups,
 				IAppConfig::class => $appConfig,
-				ArchivalSettingsReaderInterface::class => $this->createMock(ArchivalSettingsReaderInterface::class),
+				ArchivalSettingsInterface::class => $this->createMock(ArchivalSettingsInterface::class),
 				default => $this->createMock(LoggerInterface::class),
 			}
 		);

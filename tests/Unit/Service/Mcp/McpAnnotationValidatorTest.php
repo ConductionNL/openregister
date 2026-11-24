@@ -198,6 +198,28 @@ class McpAnnotationValidatorTest extends TestCase {
 	}//end testHintsMustBeBoolean()
 
 	/**
+	 * `reach` is accepted for every reach level and refused for anything else.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/mcp-reach-annotation/specs/ai-mcp/spec.md#requirement-a-derived-tool-entry-may-declare-its-reach
+	 */
+	public function testReachMustBeAReachLevel(): void {
+		foreach (['self', 'user', 'instance', 'external'] as $level) {
+			$valid = $this->shape();
+			$valid['x-openregister-mcp']['tools']['get']['reach'] = $level;
+			$this->assertSame([], $this->validator->validate($valid), $level . ' is a reach level');
+		}
+
+		foreach (['everyone', 'User', 3, null] as $bad) {
+			$shape = $this->shape();
+			$shape['x-openregister-mcp']['tools']['get']['reach'] = $bad;
+			$this->assertSame(['mcp-bad-reach'], $this->codes($shape), var_export($bad, true) . ' is refused');
+		}
+
+	}//end testReachMustBeAReachLevel()
+
+	/**
 	 * An unrecognised key inside a verb config is reported (typo-safety).
 	 *
 	 * @return void

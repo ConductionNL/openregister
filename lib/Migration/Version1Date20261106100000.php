@@ -26,14 +26,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds the nullable, indexed `rfc_message_id` column once. Existing rows keep null.
  *
  * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
  */
-class Version1Date20261106100000 extends SimpleMigrationStep {
+class Version1Date20261106100000 extends TargetedMigrationStep {
 
 	/**
 	 * Add the column and its index.
@@ -47,7 +46,7 @@ class Version1Date20261106100000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable('openregister_email_links') === false) {
 			return $schema;
@@ -60,5 +59,5 @@ class Version1Date20261106100000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

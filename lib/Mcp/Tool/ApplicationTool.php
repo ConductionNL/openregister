@@ -26,10 +26,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp\Tool;
 
 use OCA\OpenRegister\Mcp\Db\Agent;
-use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ApplicationInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\Entity;
 
 /**
  * ApplicationTool
@@ -47,7 +48,7 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 	 * Constructor
 	 *
 	 * @param ToolCallTrail $trail The session that names the caller and the log of each call.
-	 * @param ApplicationMapperInterface $applicationMapper Application mapper instance
+	 * @param ApplicationMapperInterface<ApplicationInterface&Entity> $applicationMapper Application mapper instance
 	 */
 	public function __construct(
 		ToolCallTrail $trail,
@@ -263,15 +264,14 @@ class ApplicationTool extends AbstractTool implements ToolInterface {
 				context: ['file' => __FILE__, 'line' => __LINE__, 'name' => $name]
 			);
 
-			// Create application entity.
-			$application = new Application();
-			$application->setName($name);
+			// The mapper builds the entity from the fields and inserts it
+			// (RBAC and organisation are enforced in the mapper).
+			$fields = ['name' => $name];
 			if ($description !== null && $description !== '') {
-				$application->setDescription($description);
+				$fields['description'] = $description;
 			}
 
-			// Save via mapper (RBAC and organisation are enforced in mapper).
-			$application = $this->applicationMapper->insert($application);
+			$application = $this->applicationMapper->createFromArray(data: $fields);
 
 			return $this->formatSuccess(
 				data: $application->jsonSerialize(),

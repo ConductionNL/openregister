@@ -43,7 +43,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CaseTokenControllerServices;
 use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
 use OCA\OpenRegister\Service\CaseTokenServiceInterface;
@@ -96,7 +95,7 @@ class CaseTokenController extends Controller {
 		IRequest $request,
 		CaseTokenControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->tokenService = $services->tokenService;
 		$this->rejections = self::rejectionCounter(services: $services);
 	}//end __construct()

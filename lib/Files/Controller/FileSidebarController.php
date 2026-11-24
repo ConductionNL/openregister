@@ -26,10 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
 use OCA\OpenRegister\Files\Controller\Support\FileSidebarControllerServices;
 use OCA\OpenRegister\Files\Service\FileSidebarService;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -80,7 +80,7 @@ class FileSidebarController extends Controller {
 		FileSidebarControllerServices $services,
 		?\OCA\OpenRegister\Files\Service\File\FileReadScope $fileReadScope = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->fileSidebarService = $services->fileSidebarService;
 		$this->logger = $services->logger;

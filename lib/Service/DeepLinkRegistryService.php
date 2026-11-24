@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\AppDeepLinksInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -50,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * Registrations are in-memory only (static array) and populated fresh
  * on each request via app boot cycles.
  */
-class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface {
+class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface, AppDeepLinksInterface {
 
 	/**
 	 * In-memory registry keyed by "registerSlug::schemaSlug".

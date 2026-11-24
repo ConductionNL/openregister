@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -87,7 +87,7 @@ class FolderManagementHandlerObjectFolderBookkeepingTest extends TestCase {
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$registerMapper->method('find')->willReturn($register);
 
-		$recorder = $this->createMock(RegisterFolderRecorder::class);
+		$recorder = $this->createMock(RegisterFolderRecordsInterface::class);
 		$recorder->method('record')->willReturn(true);
 
 		// The save path must not run: update() dispatches the updating and

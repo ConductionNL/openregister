@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Service\Task\TaskSequenceServiceInterface;
 use OCP\EventDispatcher\Event;
@@ -76,8 +77,14 @@ class TaskSequenceProgressListener implements IEventListener {
 			return;
 		}
 
+		// The event carries the Kernel task contract; only a task row can sit in a sequence.
+		$task = $event->getTask();
+		if ($task instanceof Task === false) {
+			return;
+		}
+
 		try {
-			$this->sequences->onTaskTerminal(task: $event->getTask());
+			$this->sequences->onTaskTerminal(task: $task);
 		} catch (Throwable $failure) {
 			$this->logger->error(
 				'[TaskSequenceProgressListener] Sequence progression failed for task '

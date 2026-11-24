@@ -41,14 +41,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Create the administered purpose table and the audit trail's purpose column.
  *
  * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
-class Version1Date20260916223000 extends SimpleMigrationStep {
+class Version1Date20260916223000 extends TargetedMigrationStep {
 	/**
 	 * Change the database schema.
 	 *
@@ -60,7 +59,7 @@ class Version1Date20260916223000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -109,5 +108,5 @@ class Version1Date20260916223000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

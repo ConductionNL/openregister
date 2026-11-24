@@ -35,6 +35,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Object\ViewScopeApplier
  * @uses   \OCA\OpenRegister\Service\Object\ViewScopeRun
  * @uses   \OCA\OpenRegister\Search\Db\View
+ * @uses   \OCA\OpenRegister\Search\Service\StoredViewQueries
  */
 final class ViewScopeApplierGoldenTest extends TestCase {
 	/**
@@ -295,6 +296,6 @@ final class ViewScopeApplierGoldenTest extends TestCase {
 			);
 		}
 
-		return new ViewScopeApplier($mapper, $logger);
+		return new ViewScopeApplier(new \OCA\OpenRegister\Search\Service\StoredViewQueries($mapper, $this->createMock(\OCA\OpenRegister\Search\Service\ViewService::class)), $logger);
 	}//end applier()
 }//end class

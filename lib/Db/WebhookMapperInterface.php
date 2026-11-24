@@ -30,7 +30,7 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 /**
  * The webhook queries and writes that callers outside lib/Db use.
  *
- * Bound to WebhookMapper in DbRegistrar.
+ * Bound to WebhookMapper in IntegrationsMapperRegistrar.
  */
 interface WebhookMapperInterface {
 

@@ -23,9 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Service\Object\UserActivityStamper;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
-use OCA\OpenRegister\Service\TmloService;
 
 /**
  * What a single-object save records beside the object: trail, archival metadata and activity.
@@ -36,17 +36,17 @@ final class SaveObjectRecords {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for logging changes.
-	 * @param SettingsServiceInterface  $settingsService  Settings service for trail settings.
-	 * @param TmloService               $tmloService      TMLO archival metadata service.
-	 * @param ?UserActivityStamper      $userActivity     Stamps `@self.lastUserActivity` when a person writes.
+	 * @param AuditTrailMapperInterface       $auditTrailMapper Audit trail mapper for logging changes.
+	 * @param SettingsServiceInterface        $settingsService  Settings service for trail settings.
+	 * @param ObjectArchivalMetadataInterface $tmloService      Stamps and checks the archival (TMLO) metadata.
+	 * @param ?UserActivityStamper            $userActivity     Stamps `@self.lastUserActivity` when a person writes.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
 		public readonly SettingsServiceInterface $settingsService,
-		public readonly TmloService $tmloService,
+		public readonly ObjectArchivalMetadataInterface $tmloService,
 		public readonly ?UserActivityStamper $userActivity = null,
 	) {
 	}//end __construct()
