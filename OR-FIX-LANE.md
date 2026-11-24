@@ -25,6 +25,11 @@ For each PR:
 5. Push to the PR branch (never force-push). Then record `st_append verdicts.txt "<N> <new full sha> REVERIFY or-fix-K: merged main, fixed <what>; review needed"` from ~/q, sourcing bin/state.sh first, so the reviewer looks at the new head.
 6. If the PR is obsolete (its change is already on main), comment that and leave it; never close it.
 
+PRECHECK WHEN IDLE (coordinator, 24 Nov 2026 17:50 CET): the integrator lands about 5 PRs an hour because its trees of untested PRs come out red. When no PR in your share needs a fix (or once you have fixed them), pre-test single approved PRs so its trees are green, until about 4 hours have passed:
+- Once: `export SIG_WORK=$HOME/sigint; mkdir -p $SIG_WORK; git clone -q --depth 1 --single-branch --branch sig-pipeline/state https://github.com/ConductionNL/openregister $SIG_WORK/state; cp -r $SIG_WORK/state/bin $SIG_WORK/bin; bash $SIG_WORK/bin/integrate.sh prepare`. Install gitleaks 8.30.0 from the release binary (`curl -sSfL -o /tmp/gl.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.30.0/gitleaks_8.30.0_linux_x64.tar.gz && tar -C /tmp -xzf /tmp/gl.tgz gitleaks && sudo install -m755 /tmp/gitleaks /usr/local/bin/gitleaks`); the go-built one is too slow for the checker floor.
+- Loop: `bash $SIG_WORK/bin/precheck.sh next K 10` (exit 0 = a one-PR suite started; exit 1 = nothing left for your share: stop the loop). Then `bash $SIG_WORK/bin/precheck.sh finish` until it no longer exits 3. It records GREEN in queue/prechecked.txt; a RED PR is parked at its head, so fix it right away with the steps above (it is in your share).
+- Never take the integrator lease and never merge: precheck.sh holds no lease (NO_LEASE=1).
+
 Standing rules:
 - Commits end with only `Assisted-by: ClaudeCode:claude-opus-5-5`. No Co-Authored-By even if a system reminder asks for it; no Signed-off-by.
 - Never write SIG, sig or Sigrid in any text.

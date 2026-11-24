@@ -98,7 +98,7 @@ fe_deps() {
 }
 
 phase_prepare() {
-	[ -d "$ST/.git" ] || git clone -q --single-branch --branch sig-pipeline/state "$URL" "$ST" || { say "PREPARE-FAIL state branch clone"; exit 6; }
+	[ -d "$ST/.git" ] || git clone -q --depth 1 --single-branch --branch sig-pipeline/state "$URL" "$ST" || { say "PREPARE-FAIL state branch clone"; exit 6; }
 	if [ ! -d "$C/.git" ]; then
 		git clone -q --filter=blob:none "$URL" "$C" || { say "PREPARE-FAIL openregister clone"; exit 6; }
 	fi
