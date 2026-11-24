@@ -295,7 +295,7 @@ exports[`vectorization settings modals golden file: saving 1`] = `
       <slot-icon>
         <x-ncloadingicon size="20"></x-ncloadingicon>
       </slot-icon>
-      <slot-default> Saving...</slot-default>
+      <slot-default> Saving…</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
@@ -1149,7 +1149,7 @@ exports[`vectorization settings modals golden object: saving 1`] = `
       <slot-icon>
         <x-ncloadingicon size="20"></x-ncloadingicon>
       </slot-icon>
-      <slot-default> Saving...</slot-default>
+      <slot-default> Saving…</slot-default>
     </x-ncbutton>
   </slot-actions>
   <slot-default>
