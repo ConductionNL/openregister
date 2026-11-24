@@ -87,6 +87,7 @@ namespace {
 	class_alias('OCA\\OpenRegister\\Search\\Controller\\AggregationController', 'OCA\\OpenRegister\\Controller\\AggregationController');
 	class_alias('OCA\\OpenRegister\\Files\\Controller\\AttachTargetsController', 'OCA\\OpenRegister\\Controller\\AttachTargetsController');
 	class_alias('OCA\\OpenRegister\\Search\\Controller\\ContactSearchController', 'OCA\\OpenRegister\\Controller\\ContactSearchController');
+	class_alias('OCA\\OpenRegister\\Search\\Controller\\CrossRegisterReportController', 'OCA\\OpenRegister\\Controller\\CrossRegisterReportController');
 	class_alias('OCA\\OpenRegister\\Search\\Controller\\DashboardController', 'OCA\\OpenRegister\\Controller\\DashboardController');
 	class_alias('OCA\\OpenRegister\\Search\\Controller\\DuplicateController', 'OCA\\OpenRegister\\Controller\\DuplicateController');
 	class_alias('OCA\\OpenRegister\\Notifications\\Controller\\EmailsController', 'OCA\\OpenRegister\\Controller\\EmailsController');

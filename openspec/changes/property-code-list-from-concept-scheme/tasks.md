@@ -56,11 +56,12 @@
   - The options route is `/api/vocabulary/options`, read out of
     `appinfo/routes.php` rather than guessed from the controller: the method is
     `propertyOptions` and the URL is not.
-- [ ] 3.2 Unit tests for the validator, the check, deprecation, options paging and labels.
+- [x] 3.2 Unit tests for the validator, the check, deprecation, options paging and labels.
   - DONE 2026-11-13 in a third pass, and it found that 1.2 was not done. `CodedValueGuard` SKIPPED a value its scheme does not hold, with a comment saying this change refuses it, while 1.2 above was ticked as built by the guard. So a value outside the scheme was saved. The guard now refuses it, naming the property and the scheme (`CodedValueRefusals::notInScheme()`); an unreadable or unseeded scheme still refuses nothing. A deprecated concept was not refused on write either (only left out of the options); `deprecatedViolation()` refuses it unless the declaration sets `allowDeprecated`.
   - `tests/Unit/Service/Vocabulary/PropertyCodeListScenariosTest.php` drives the spec scenarios through the real guard and option builder: a value outside the scheme is a 422 naming both; a concept added later is accepted with no schema save; a deprecated concept is refused unless allowed; an unreadable scheme refuses nothing; twelve concepts come back as twelve options labelled in the asked language. Validator, window, leaf, group and label cases were already covered (`CodedChoiceDeclarationTest`, `CodedValueGuardTest`, `CodedOptionsBuilderGoldenTest`).
   - `CodedValueGuardGoldenTest` pinned the old skip ("skipped values") and now pins the refusal.
   - NOT DONE: options PAGING. `CodedOptionsBuilder::options()` returns the whole option list; there is no first page, count or search hint (design D-3), so there is nothing to page in a test. That is a build item, not a test item.
+  - DONE 2026-11-14 in a fourth pass: the flat options answer of `GET /api/vocabulary/options` is bounded (design D-3) by `CodedOptionPage`: one page of at most 200 options, searched by `q` over label, notation and value, with `total` (every matching option), `limit`, `offset`, `page`, `pages` and `searchHint` (more options than one page holds). The parameters follow the concept list on the same controller (`q`, `_limit`, `_offset`). A scheme within one page comes back whole, as before, with the paging keys added. The tree answer is unchanged. Verified by `VocabularyControllerA24GoldenTest::testTheOptionsAreOnePageWithACountAndASearchHint`; the envelope pinned by `testAnOptionsReadByLeftOrRightOnlyIsRefusedOrResolved` gains the paging keys.
 
 ## 4. Discovery wave 1 (CT-4)
 

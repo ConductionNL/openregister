@@ -25,6 +25,11 @@ jest.mock('./components/files-sidebar/ExtractionTab.vue', () => ({
 jest.mock('./files/attachAction.js', () => ({
 	registerAttachAction: () => {},
 }))
+jest.mock('./components/files-sidebar/MailThreadTab.vue', () => ({
+	name: 'MailThreadTab',
+	props: ['fileId'],
+	template: '<p class="thread">{{ fileId }}</p>',
+}))
 jest.mock('./integrations/bootstrap.js', () => ({
 	ensureIntegrationRegistry: jest.fn(),
 }))
@@ -56,6 +61,7 @@ describe('files-sidebar tab update', () => {
 	it.each([
 		[0, 'objects'],
 		[1, 'extraction'],
+		[2, 'thread'],
 	])('tab %i re-renders for the newly selected file', async (index, cls) => {
 		const el = document.createElement('div')
 		tabs[index].mount(el, { id: 5 })

@@ -26,6 +26,11 @@ const mockRegisterAttach = jest.fn()
 jest.mock('./files/attachAction.js', () => ({
 	registerAttachAction: () => mockRegisterAttach(),
 }))
+jest.mock('./components/files-sidebar/MailThreadTab.vue', () => ({
+	name: 'MailThreadTab',
+	props: ['fileId'],
+	template: '<p class="thread">{{ fileId }}</p>',
+}))
 const mockEnsure = jest.fn()
 jest.mock('./integrations/bootstrap.js', () => ({
 	ensureIntegrationRegistry: () => mockEnsure(),
@@ -68,7 +73,7 @@ afterEach(() => {
 })
 
 describe('files-sidebar entry', () => {
-	it('registers translations, the integration registry and both tabs', () => {
+	it('registers translations, the integration registry and the three tabs', () => {
 		load()
 		expect(mockRegister).toHaveBeenCalledTimes(1)
 		expect(mockEnsure).toHaveBeenCalledTimes(1)
@@ -76,12 +81,23 @@ describe('files-sidebar entry', () => {
 		expect(tabs.map((t) => [t.id, t.name])).toEqual([
 			['openregister-objects', 'Register objects'],
 			['openregister-extraction', 'Extraction'],
+			['openregister-conversation', 'Conversation'],
 		])
 		for (const tab of tabs) {
 			expect(tab.icon).toMatch(/^<svg /)
-			expect(tab.enabled({ id: 1 })).toBe(true)
+			expect(tab.enabled({ id: 1, name: 'reply.eml' })).toBe(true)
 			expect(tab.enabled(null)).toBe(false)
 		}
+	})
+
+	it('offers the conversation tab for mail files only', () => {
+		load()
+		const [objects, extraction, conversation] = tabs
+		expect(objects.enabled({ id: 1, name: 'report.pdf' })).toBe(true)
+		expect(extraction.enabled({ id: 1, name: 'report.pdf' })).toBe(true)
+		expect(conversation.enabled({ id: 1, name: 'report.pdf' })).toBe(false)
+		expect(conversation.enabled({ id: 1, name: 'Answer.EML' })).toBe(true)
+		expect(conversation.enabled({ id: 1 })).toBe(false)
 	})
 
 	it('registers nothing where the Files sidebar is missing', () => {
@@ -93,6 +109,7 @@ describe('files-sidebar entry', () => {
 	it.each([
 		[0, 'objects', '_registerObjectsApp', '_registerObjectsProps'],
 		[1, 'extraction', '_extractionApp', '_extractionProps'],
+		[2, 'thread', '_mailThreadApp', '_mailThreadProps'],
 	])('tab %i mounts, follows the file and unmounts', async (index, cls, appKey, propsKey) => {
 		load()
 		const tab = tabs[index]
