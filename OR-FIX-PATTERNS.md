@@ -816,3 +816,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: parked 'sbom: package-lock.json changed without sbom.cdx.json', but the lock diff only adds a name to the root package's dependencies.
 - Cause: the gate checks file names first; the components are unchanged, so regen-sbom.sh leaves sbom.cdx.json untouched and there is nothing to commit.
 - Fix: run bin/regen-sbom.sh --check on the PR head; 'current' means no fix: record a NOTE verdict, do not fake an sbom change (#10395).
+
+## Parked 'precheck-red' on ObjectsList.spec.js paging (or-fix-9)
+- Symptom: parked.txt says precheck-red alone on main: FAIL src/views/object/ObjectsList.spec.js ('a new page size refetches page 1 once': expected 1 refreshObjectList call, got 3) on a PR that does not touch src/views/object.
+- Cause: load-dependent flake in the full jest run; the spec passes alone on the same tree. Not a PR defect.
+- Fix: rerun the spec alone (npx jest src/views/object/ObjectsList.spec.js) to confirm; merge main for a new head, diff check, push, REVERIFY (see #10499 59f3959f).
