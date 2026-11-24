@@ -37,3 +37,4 @@
 2026-11-24T09:19:18Z RED prs=10156,10188,10214,10234,10239,10243 main=cac830e00f integrator-cloud (jest src/services/initial-data.golden.spec.js; PRs retried alone)
 2026-11-24T09:25:22Z RED prs=10156 main=cac830e00f integrator-cloud (solo=10156; jest initial-data.golden.spec.js EditSource starts from the recorded state)
 2026-11-24T09:38:19Z GREEN prs=10188 main=0ca840a80e integrator-cloud
+2026-11-24T09:51:43Z GREEN prs=10214 main=a1a5ce8848 integrator-cloud
