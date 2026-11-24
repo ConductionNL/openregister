@@ -69,6 +69,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 		'lib/Service/Object/SaveObject/InverseRelations.php' => ['relatedObject'],
 		'lib/Service/Edepot/MdtoContainment.php' => ['nameOf'],
 		'lib/Service/Object/SaveObject/InverseWriteBack.php' => ['writeToTarget'],
+		'lib/Service/Object/ObjectActivityAudit.php' => ['record'],
 	];
 
 	/**

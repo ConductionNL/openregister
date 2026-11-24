@@ -22,6 +22,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
+
 /**
  * Write a column definition's type and name as SQL for one platform.
  *
@@ -38,7 +42,8 @@ final class MagicColumnSql {
 		'text' => 'TEXT',
 		'boolean' => 'BOOLEAN',
 		// Order-preserving storage for object-typed properties: PostgreSQL JSONB
-		// hashes keys, its JSON type and MySQL/MariaDB JSON keep document order (#1720).
+		// hashes keys, its JSON type keeps document order (#1720). MySQL's JSON
+		// sorts object keys, so there it is checked text (see orderedJsonAsText).
 		'json_ordered' => 'JSON',
 	];
 
@@ -62,16 +67,38 @@ final class MagicColumnSql {
 	/**
 	 * Build the writer for one platform.
 	 *
-	 * @param bool $isPostgres Whether the platform is PostgreSQL.
-	 * @param bool $jsonAsText Whether JSON is stored as checked text, as on MariaDB.
+	 * @param bool $isPostgres        Whether the platform is PostgreSQL.
+	 * @param bool $jsonAsText        Whether JSON is stored as checked text, as on MariaDB.
+	 * @param bool $orderedJsonAsText Whether order-preserving JSON is stored as checked text, as on MySQL.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional so the many callers that only quote identifiers need not name it
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/tasks.md
 	 */
 	public function __construct(
 		private readonly bool $isPostgres,
 		private readonly bool $jsonAsText=false,
+		private readonly bool $orderedJsonAsText=false,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the platform's native JSON type reorders object keys: MySQL, not MariaDB.
+	 *
+	 * MySQL normalises a JSON document on write and sorts the keys of every
+	 * object in it, so an object-typed property read back in a different key
+	 * order than it was saved. MariaDB's JSON is text, PostgreSQL's JSON is
+	 * stored verbatim, SQLite has no JSON type.
+	 *
+	 * @param AbstractPlatform $platform The database platform.
+	 *
+	 * @return bool True when order-preserving JSON must be stored as checked text.
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
+	 */
+	public static function reordersJsonKeys(AbstractPlatform $platform): bool {
+		return $platform instanceof AbstractMySQLPlatform && ($platform instanceof MariaDBPlatform) === false;
+	}//end reordersJsonKeys()
 
 	/**
 	 * Quote an identifier, doubling embedded quote characters so it cannot break out.
@@ -99,9 +126,10 @@ final class MagicColumnSql {
 	 * @return string The SQL type.
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	public function type(string $type, array $column): string {
-		if ($this->jsonAsText === true && in_array($type, self::JSON_TYPES, true) === true) {
+		if ($this->storesAsText(type: $type) === true) {
 			return self::MARIADB_JSON;
 		}
 
@@ -126,14 +154,32 @@ final class MagicColumnSql {
 	 * @return string The check, or an empty string.
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	public function check(string $type, string $name): string {
-		if ($this->jsonAsText === false || in_array($type, self::JSON_TYPES, true) === false) {
+		if ($this->storesAsText(type: $type) === false) {
 			return '';
 		}
 
 		return ' CHECK (json_valid(' . $this->quote(name: $name) . '))';
 	}//end check()
+
+	/**
+	 * Whether a column type is stored as text that must hold JSON on this platform.
+	 *
+	 * @param string $type The column type.
+	 *
+	 * @return bool True for every JSON type on MariaDB, and for order-preserving JSON on MySQL.
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
+	 */
+	private function storesAsText(string $type): bool {
+		if ($this->jsonAsText === true && in_array($type, self::JSON_TYPES, true) === true) {
+			return true;
+		}
+
+		return $this->orderedJsonAsText === true && $type === 'json_ordered';
+	}//end storesAsText()
 
 	/**
 	 * Pick the type name of the current platform.
