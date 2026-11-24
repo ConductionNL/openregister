@@ -7,6 +7,8 @@ Format: `- <UTC time> <lane> <repo>#<pr> <what is needed, e.g. "merge: dependenc
 Before appending, merge main/development into that PR's branch if it conflicts (never rebase), so it is mergeable when the coordinator sweeps.
 A product or access-control question that FINISH-ORDER.md DECISIONS does not answer: append it here as a question with 2-3 options and your recommendation, skip that task, carry on.
 
+## Done (coordinator sweep 24 Nov 22:40 CET): merged stackiq#2177 #2181, opencatalogi#2969, integriq#3877 #3881, larpinq#1177 (hermiq#1986 already merged); decided portaliq T11b, launchpad task 7, OR#10641, integriq#3834 (see FINISH-ORDER.md DECISIONS); unparked openregister#10634 #10640. Still open for the lanes: opencatalogi twig 3.31.1 bump PR on development (b-opencatalogi), opencatalogi CI env (integriq enable recursion) for the integriq builder.
+
 ## Queue
 - 2026-11-24T19:00Z b-stackiq stackiq#2177 merge: tasks.md-only tick (shared-organisation 4.1 landed in OpenRegister main), mergeable, merge call refused by the session permission check
 - 19:06Z help-opencatalogi-1 opencatalogi#2969 merge: publication-required-at-publish 1.3/1.4/2.1/2.2; local green (PHPUnit same failing set as development, l10n clean, static analysis clean on touched files), but hydra diff-check.sh was refused by the cloud permission check, so run it and merge
