@@ -120,6 +120,31 @@ class VocabularyImportService implements VocabularyImporterInterface {
 	}//end importJsonLd()
 
 	/**
+	 * Make sure a concept scheme exists, creating it empty when its uri is unknown.
+	 *
+	 * @param array{uri: string, title: string, description?: string} $schemeMeta The scheme.
+	 *
+	 * @return array{scheme: string, status: string} The scheme uri and `created` or `present`.
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/tasks.md#3-the-dictionary
+	 */
+	public function ensureScheme(array $schemeMeta): array {
+		$uri  = (string)$schemeMeta['uri'];
+		$data = [
+			'uri'       => $uri,
+			'title'     => (string)$schemeMeta['title'],
+			'publisher' => 'OpenRegister',
+			'version'   => '1.0',
+			'source'    => $uri,
+		];
+		if (($schemeMeta['description'] ?? '') !== '') {
+			$data['description'] = (string)$schemeMeta['description'];
+		}
+
+		return ['scheme' => $uri, 'status' => $this->schemes->createIfMissing(data: $data)['status']];
+	}//end ensureScheme()
+
+	/**
 	 * Import a concept scheme + its concepts from a CSV value-list export.
 	 *
 	 * Expected columns: `uri` (required), `notation`, `prefLabel_<lang>` (one
