@@ -844,3 +844,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: BLOCK 'main merge drops main's <X>' although the merge had no conflict there (e.g. a Repair step missing from appinfo/info.xml).
 - Cause: an earlier main merge on the branch resolved a hunk to the PR side, so git now treats main's line as a PR-side deletion and every later merge keeps it deleted.
 - Fix: after merging, `comm -23 <(git diff --name-only origin/main | sort) <(git diff --name-only $(git merge-base origin/main <orig PR head>) <orig PR head> | sort)` must be empty, and `git diff origin/main -- <file>` of each shared file must show only the PR's own lines; re-add what main has.
+## False 'sbom' auto-park on every lockfile PR (or-fix-7)
+- Symptom: parked.txt 'auto-park: sbom: package-lock.json|composer.lock changed without sbom.cdx.json' (or 'does not match') although bash bin/regen-sbom.sh --check <checkout at the PR head> says current; sbom.out lists dozens of 'removed: pkg:composer/...'.
+- Cause: integrate.sh sbom_gate made its check tree with `git clone --shared` of the blobless $C, which cannot read the missing blobs, so regen-sbom ran on an empty tree; and it parked any untouched sbom by file name, unlike merge_gate.py.
+- Fix: fixed in bin/integrate.sh (worktree checkout; untouched sbom judged by --check alone). Refresh $SIG_WORK/bin from ~/q/bin, delete the PR's park line (and its RED line in queue/prechecked.txt) and precheck it again. Seen on #10627; #10395, #10634, #10640 carry the same park.
