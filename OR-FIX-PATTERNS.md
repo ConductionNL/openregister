@@ -812,3 +812,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: FlowNodeBuiltInRegistrationTest::testRegistersEveryBuiltInOnceInCoreActionBoundaryOrder / FlowNodeRegistrationListenerTest::testEveryBuiltInReachesTheRegistryPortalTaskIncluded: 'actual size N+1 matches expected size N'.
 - Cause: main added a built-in (AuditTrailNode, 33) while the PR added its own node against the older count.
 - Fix: assertCount(main's count + the PR's new nodes) in both tests (message text too); also run tests/Unit/Docs (FlowsDocumentationTest) for the node's flows.md paragraph (#10363).
+## sbom auto-park when package.json only promotes a transitive dep (or-fix-5)
+- Symptom: parked 'sbom: package-lock.json changed without sbom.cdx.json', but the lock diff only adds a name to the root package's dependencies.
+- Cause: the gate checks file names first; the components are unchanged, so regen-sbom.sh leaves sbom.cdx.json untouched and there is nothing to commit.
+- Fix: run bin/regen-sbom.sh --check on the PR head; 'current' means no fix: record a NOTE verdict, do not fake an sbom change (#10395).

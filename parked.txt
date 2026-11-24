@@ -208,3 +208,6 @@ openregister#10464 21c8c5a9076a5c78b6b5b561ad51673384e31c45 auto-park: floor: mo
 openregister#10464 21c8c5a9076a5c78b6b5b561ad51673384e31c45 auto-park: floor: module_coupling: 5.03 -> 5.01
 openregister#10395 c88dcef291ec2629ddff8d87422cf6426e427995 auto-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#10395 c88dcef291ec2629ddff8d87422cf6426e427995 auto-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#10499 2f8e2cdf1cdc1083ba97355d2153fb60d382d863 precheck-red alone on main: FAIL src/views/object/ObjectsList.spec.js
+openregister#10395 c88dcef291ec2629ddff8d87422cf6426e427995 note or-fix-5: merged with main 2026-11-24, regen-sbom says sbom.cdx.json unchanged (771 components; @nextcloud/files already in the lock via @nextcloud/vue). No real sbom edit exists, so the name gate cannot pass; needs a gate exception (pattern or-fix-15)
+openregister#10300 038b55a7449adfd6074e24871cf58d4099bec404 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\Interaction\RecentLensLookupCallSitesTest::testEveryInternalFindHasADecisi
