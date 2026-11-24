@@ -36,3 +36,5 @@ SHARED FIX PATTERNS (Ruben, 21 Nov 2026): most red openregister PRs are expected
 - When a PR's failure matches an entry, apply that recipe first.
 - When you find a NEW recurring cause, append an entry with symptom, cause and fix recipe. Use `st_append OR-FIX-PATTERNS.md "<entry>"` from ~/q, sourcing bin/state.sh; keep each entry to a few lines. Then check the other open PRs in YOUR share (N % 20 == your lane) for the same symptom and fix them all in the same run, before moving on to unrelated failures.
 - Prefer breadth: one pattern across many PRs beats one PR to perfection.
+
+HANDOFF (24 Nov 2026): the draft PRs openregister #11032-#11035 ("perf:") were pushed by a local lane. Treat them as yours to finish: diff check, check:strict once, mark ready. See PERF-HANDOFF.md.
