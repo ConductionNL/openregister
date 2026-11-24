@@ -4817,3 +4817,4 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
