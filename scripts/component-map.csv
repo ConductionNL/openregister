@@ -4637,6 +4637,7 @@ Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notificatio
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Db/MagicMapper/MagicSharePrincipals.php,,Db,,,,,Core
+Kernel/Contracts/TwigSandboxFilters.php,,Kernel,,,,,Kernel
 Service/User/UserAccountStores.php,,Service,,,,,Core
 Service/User/UserPlatform.php,,Service,,,,,Core
 Service/User/UserStorage.php,,Service,,,,,Core
