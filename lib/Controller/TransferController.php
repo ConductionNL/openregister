@@ -35,9 +35,11 @@ use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\TransferControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Edepot\TransferListRunInterface;
 use OCA\OpenRegister\Service\Edepot\TransferListServiceInterface;
 use OCA\OpenRegister\Service\Edepot\TransferRecordServiceInterface;
 use OCA\OpenRegister\Service\Edepot\TransferRejection;
+use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -87,6 +89,20 @@ class TransferController extends Controller {
 	private readonly TransferListServiceInterface $transferListService;
 
 	/**
+	 * Finds the records due for transfer; null where it cannot be resolved.
+	 *
+	 * @var RetentionServiceInterface|null
+	 */
+	private readonly ?RetentionServiceInterface $retention;
+
+	/**
+	 * Names the records already on an active transfer list.
+	 *
+	 * @var TransferListRunInterface|null
+	 */
+	private readonly ?TransferListRunInterface $transferRun;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The request.
@@ -103,6 +119,8 @@ class TransferController extends Controller {
 		$this->jobList = $services->jobList;
 		$this->logger = $services->logger;
 		$this->transferListService = $services->transferListService;
+		$this->retention = $services->retention;
+		$this->transferRun = $services->transferRun;
 
 	}//end __construct()
 
@@ -120,6 +138,44 @@ class TransferController extends Controller {
 
 		return new JSONResponse(data: ['results' => $lists, 'total' => count($lists)]);
 	}//end index()
+
+	/**
+	 * List the records that are due for transfer to the e-Depot today.
+	 *
+	 * GET /api/transfers/eligible. The records the daily transfer check would
+	 * put on a new transfer list: appraised to keep permanently, archiefactiedatum
+	 * passed, not transferred or destroyed, no active legal hold, and not on an
+	 * active transfer list already. A read only; it creates no list. Each row
+	 * names the record and its retention block, so an archivist can see what
+	 * is waiting before the check runs.
+	 *
+	 * @return JSONResponse `{results: [{uuid, name, register, schema, retention}], total, available}`.
+	 *
+	 * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+	 */
+	#[NoCSRFRequired]
+	public function eligible(): JSONResponse {
+		if ($this->retention === null || $this->transferRun === null) {
+			return new JSONResponse(data: ['results' => [], 'total' => 0, 'available' => false]);
+		}
+
+		$onActiveLists = $this->transferRun->getObjectsOnActiveTransferLists(
+			activeTransferLists: $this->transferRecordService->listTransferLists()
+		);
+
+		$results = [];
+		foreach ($this->retention->findEligibleForTransfer(excludeUuids: $onActiveLists) as $object) {
+			$results[] = [
+				'uuid'      => $object->getUuid(),
+				'name'      => $object->getName(),
+				'register'  => $object->getRegister(),
+				'schema'    => $object->getSchema(),
+				'retention' => ($object->getRetention() ?? []),
+			];
+		}
+
+		return new JSONResponse(data: ['results' => $results, 'total' => count($results), 'available' => true]);
+	}//end eligible()
 
 	/**
 	 * Get a specific durable transfer list.
