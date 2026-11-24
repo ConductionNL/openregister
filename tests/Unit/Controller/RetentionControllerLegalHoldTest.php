@@ -108,7 +108,6 @@ class RetentionControllerLegalHoldTest extends TestCase {
 		$this->jobList          = $this->createMock(IJobList::class);
 
 		return RetentionControllerFactory::create(
-			'openregister',
 			$request,
 			$this->retentionService,
 			$this->createMock(ObjectRetentionHandler::class),

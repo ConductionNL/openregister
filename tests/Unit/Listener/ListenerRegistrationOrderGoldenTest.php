@@ -28,16 +28,19 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 258;
+	private const LISTENER_COUNT = 260;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
 	 *
 	 * Last changed when Search started contributing the widget declaration check: one
 	 * SearchDeclarationChecksListener registration appended to the SchemaDeclarationChecksEvent
-	 * listeners; every other registration is unchanged and in the same order.
+	 * listeners; every other registration is unchanged and in the same order. Then two
+	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent),
+	 * and three FlowCalendarIndexListener registrations after FlowTriggerListener on the
+	 * object created, updated and deleted events.
 	 */
-	private const SEQUENCE_SHA256 = 'd7096d23f792622575967dd0e9aafe6a7da2ca29aa91ae6d86003cb46f489deb';
+	private const SEQUENCE_SHA256 = 'c1a80c002b7eed2fb2eef9863875f0d7ea1fda42550072cbc7866b12ad704782';
 
 	/**
 	 * The registration calls, in call order, with every argument.
