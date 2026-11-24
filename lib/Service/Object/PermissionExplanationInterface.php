@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\RemoteRecipientDenialInterface;
 use OCP\IUser;
 
 /**
@@ -31,7 +32,7 @@ use OCP\IUser;
  *
  * Callers that need only this role depend on it, not on the whole handler.
  */
-interface PermissionExplanationInterface {
+interface PermissionExplanationInterface extends RemoteRecipientDenialInterface {
 
 	/**
 	 * The deny rule that is allowed to change this answer, or null.

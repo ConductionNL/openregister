@@ -43,8 +43,8 @@
   a merge.
 
 - [ ] C29.4 An object closed to new entries while staying readable.
-- [ ] C29.5 A withdrawn entry: out of the working timeline, in the record, readable with actor and reason (D-C29-4).
-- [ ] C29.6 A locked note refusing edits, beside `note-edit-history`.
+- [x] C29.5 A withdrawn entry: out of the working timeline, in the record, readable with actor and reason (D-C29-4). (`withdrawn_by`, `withdrawn_at`, `withdrawn_reason` on `openregister_timeline_entries` (`Version1Date20261113210000`); `TimelineEntryService::withdraw()` through `PATCH .../timeline/{entryId}` with `{withdrawn: {reason}}`, manage only, audited as `timeline.entry.withdrawn`; the working timeline, the entry search and the open follow-ups leave withdrawn entries out; `?withdrawn=true` returns them to a caller who may manage the object; `TimelineEntryServiceTest`, `TimelineEntriesControllerTest`.)
+- [x] C29.6 A locked note refusing edits, beside `note-edit-history`. (Delivered by `notes-leaf-rich-text-lock-export` 2.1 and 2.2: `NoteLockService`, verb `note-locked`, edit and delete refused with 423, audited; `tests/Unit/Service/NoteServiceLockTest.php`.)
 
   All three are about TIMELINE ENTRIES and NOTES, not about the object. They
   belong in the files the timeline lane owns, and building half of them here

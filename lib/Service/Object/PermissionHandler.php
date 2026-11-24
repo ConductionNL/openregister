@@ -40,6 +40,8 @@ use OCA\OpenRegister\Service\Rbac\ObjectClassification;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -51,7 +53,9 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityReadGate;
 use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
@@ -896,7 +900,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		if ($this->classificationRefuses(ask: $ask) === true) {
+		if ($this->classificationRefuses(ask: $ask) === true || $this->confidentialityRefuses(ask: $ask) === true) {
 			$this->lastRefusalFinal = true;
 			return false;
 		}
@@ -941,6 +945,40 @@ class PermissionHandler implements PermissionHandlerInterface {
 			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
 		) !== null;
 	}//end classificationRefuses()
+
+	/**
+	 * Whether the schema's confidentiality block refuses this caller a read of this object.
+	 *
+	 * The block narrows, it never grants, so its refusal is final like the
+	 * classification one. Owner and administrator pass. Only an ask about one
+	 * object is checked; the list path compiles the same conditions into its query.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
+	 */
+	private function confidentialityRefuses(PermissionAsk $ask): bool {
+		if ($ask->object === null
+			|| $ask->action !== ConfidentialityReadGate::READ
+			|| ConfidentialityReadGate::declares(schema: $ask->schema) === false
+		) {
+			return false;
+		}
+
+		$userId = $this->callerId(userId: $ask->userId);
+		$gate   = new ConfidentialityReadGate(matcher: $this->rules->conditionMatcher, logger: $this->data->logger);
+
+		return $gate->refuses(
+			schema: $ask->schema,
+			action: $ask->action,
+			envelope: $ask->object->getMatchEnvelope(),
+			userId: $userId,
+			groups: $this->groupsOf(userId: $userId),
+			owner: ($ask->objectOwner ?? $ask->object->getOwner())
+		);
+	}//end confidentialityRefuses()
 
 	/**
 	 * The chain after the deny pass: the private scope, the caller, the administrator bypass, derived groups, custom verbs and the grants.
@@ -1689,6 +1727,66 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $this->denialAnswer(question: $question->about(principals: $principals, object: $question->object));
 	}//end denialFor()
+
+	/**
+	 * The denial that removes a verb from a federated recipient on one object, or null.
+	 *
+	 * A federated recipient is a principal (design D-1 of
+	 * platform-cloud-federation-provider): the share is what grants it, and the
+	 * same cascade and the same deny pass that bind a local caller bind it too.
+	 * It is reached by the principal names it is handed (`remote:*` and
+	 * `remote:<cloud id>`), never by `public` or `authenticated`, which name
+	 * people at this instance, and it is never exempt as an administrator.
+	 *
+	 * The deny enforcement switch is honoured exactly as for a local caller:
+	 * `off` resolves nothing, `staging` records the denial and admits.
+	 *
+	 * FAIL CLOSED: a cascade that cannot be resolved answers a denial, as every
+	 * caller of {@see resolveAuthorization()} must.
+	 *
+	 * @param SchemaInterface       $schema     The object's schema.
+	 * @param ObjectEntityInterface $object     The object.
+	 * @param array<int, string>    $principals The recipient's principal names.
+	 * @param string                $action     The verb.
+	 *
+	 * @return array|null The denial, or null when the verb is not denied.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	public function remoteRecipientDenial(SchemaInterface $schema, ObjectEntityInterface $object, array $principals, string $action): ?array {
+		if ($schema instanceof Schema === false || $object instanceof ObjectEntity === false) {
+			return ['rule' => null, 'principal' => (string)($principals[0] ?? ''), 'action' => $action, 'conditional' => false, 'unresolvable' => true];
+		}
+
+		try {
+			$authorization = $this->resolveAuthorization(schema: $schema, object: $object);
+		} catch (\Throwable $e) {
+			return ['rule' => null, 'principal' => (string)($principals[0] ?? ''), 'action' => $action, 'conditional' => false, 'unresolvable' => true];
+		}
+
+		$mode = $this->denyEnforcementMode();
+		if ($mode->resolves() === false || $this->denyResolver()->declaresAnyDeny(authorization: $authorization) === false) {
+			return null;
+		}
+
+		$denial = $this->denialAnswer(
+			question: (new DenialQuestion(authorization: $authorization, action: $action))->about(principals: array_values($principals), object: $object)
+		);
+		if ($denial === null || $mode->enforces() === true) {
+			return $denial;
+		}
+
+		$mode->record(
+			staged: new StagedDenial(
+				denial: $denial,
+				action: $action,
+				userId: (string)($principals[count($principals) - 1] ?? ''),
+				context: ['schemaId' => $schema->getId(), 'path' => 'federation']
+			)
+		);
+
+		return null;
+	}//end remoteRecipientDenial()
 
 	/**
 	 * The unconditional denial of the question, else the first conditional one that selects its object.
@@ -2673,6 +2771,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
+			if ($this->readIsOwnerOnly(schema: $schema) === true) {
+				// `read: ["@creator"]` normalises to an empty read list, which alone would read as open.
+				return [];
+			}
+
 			return $this->resolveReadGroupIds(authorization: $this->resolveAuthorization(schema: $schema));
 		} catch (AuthorizationUnresolvableException $e) {
 			$this->data->logger->error(
@@ -2682,6 +2785,30 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 	}//end readerGroupIds()
+
+	/**
+	 * Whether the schema limits read to the record's owner: its read list names the owner
+	 * sentinel and nothing that survives normalisation.
+	 *
+	 * The owner is added by getReadableByUsers() itself, so such a schema has no reader groups
+	 * at all, which is not the same as having no read rule.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return bool True when only the owner may read.
+	 *
+	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved.
+	 *
+	 * @spec openspec/changes/access-owner-and-condition-scopes/specs/authorization-rbac/spec.md#requirement-the-owner-sentinel-limits-an-action-to-the-records-owner
+	 */
+	private function readIsOwnerOnly(Schema $schema): bool {
+		$declared = ($this->resolveAuthorizationRaw(schema: $schema)['read'] ?? null);
+		if (is_array($declared) === false || in_array(AuthorizationBlock::CREATOR, $declared, true) === false) {
+			return false;
+		}
+
+		return (($this->resolveAuthorization(schema: $schema)['read'] ?? null) === []);
+	}//end readIsOwnerOnly()
 
 	/**
 	 * Resolve the list of authorised group IDs from an authorization block.
@@ -2850,6 +2977,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$authorization = self::stripMcpScope(
 			authorization: $this->resolveAuthorizationRaw(schema: $schema, object: $object)
 		);
+
+		// THE OWNER SENTINEL AND THE CONDITION SCOPES ARE READ HERE, for the same
+		// reason as the matrix below: every path resolves through this method, so
+		// list queries, single reads and writes all see `@creator` and
+		// `conditions` the same way (access-owner-and-condition-scopes D-1).
+		$authorization = (new AuthorizationBlock())->normalise(authorization: $authorization);
 
 		// THE DEPARTMENT BY ROLE MATRIX IS COMPILED HERE, and here only (row
 		// B13). This method is the one step every path takes — the object read,
