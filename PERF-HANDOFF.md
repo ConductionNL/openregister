@@ -14,7 +14,7 @@ Budget (ADR-124): API <= 100 ms, page usable <= 300 ms warm. Every page is still
 - [x] Fill the dashboard store from the initial state PageController already computes (visible + active dashboards); the store fetches both again (~250 ms). (launchpad #1739, merged 2026-11-24)
 
 ## dossiq
-- [ ] Cases list: type and status labels load in a second wave after the list (5 request levels). Load them with the list or from initial state.
+- [x] (dossiq #6867, merged 24 Nov: lookups start on entering Cases, beside the list; live numbers follow) Cases list: type and status labels load in a second wave after the list (5 request levels). Load them with the list or from initial state.
 - [ ] ~1.6 s of script runs before the first API call on Cases: find what runs at module load and defer it.
 - [x] #6830's body promises before/after numbers "in a comment below"; edit the body to say the A/B numbers instead: Cases usable 7992 -> 6380 ms, Inbox 6371 -> 3958 ms (with vs without the Files scripts).
 
