@@ -82,6 +82,8 @@ use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNode;
 use OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
@@ -417,6 +419,7 @@ final class FlowWiringTest extends TestCase {
 				LockObjectNodeInterface::class             => LockObjectNode::class,
 				HarvestSourceNodeInterface::class          => HarvestSourceNode::class,
 				\OCA\OpenRegister\Kernel\Contracts\StoredFlowWriterInterface::class => \OCA\OpenRegister\Service\Flow\StoredFlowWriter::class,
+				AuditTrailNodeInterface::class             => AuditTrailNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
 				TermDiagnosticInterface::class             => TermDiagnostic::class,

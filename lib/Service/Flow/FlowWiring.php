@@ -81,6 +81,8 @@ use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
 use OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNode;
 use OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
@@ -175,6 +177,7 @@ final class FlowWiring {
 		LockObjectNodeInterface::class => LockObjectNode::class,
 		HarvestSourceNodeInterface::class => HarvestSourceNode::class,
 		\OCA\OpenRegister\Kernel\Contracts\StoredFlowWriterInterface::class => StoredFlowWriter::class,
+		AuditTrailNodeInterface::class => AuditTrailNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
 		CalendarRecomputeInterface::class => CalendarRecompute::class,
 		TermDiagnosticInterface::class => TermDiagnostic::class,
