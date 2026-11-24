@@ -51,7 +51,6 @@ use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreSharing;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
-use OCA\OpenRegister\AppHost\Store\StoreInstallTarget;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -335,7 +334,7 @@ class GenericStoreController extends Controller {
 			);
 		}
 
-		if (StoreInstallTarget::isWellFormed(target: $target) === false) {
+		if ($store->installTarget->isWellFormed(target: $target) === false) {
 			return new JSONResponse(
 				data: ['success' => false, 'message' => 'Malformed install target.'],
 				statusCode: Http::STATUS_BAD_REQUEST

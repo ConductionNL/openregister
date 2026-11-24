@@ -1008,25 +1008,25 @@ class GenericStoreControllerTest extends TestCase {
 	 */
 	public function testAFederatedInstallCarriesTheChosenTarget(): void {
 		$this->signIn(isAdmin: true);
-		$this->manifestLoader->method('loadStore')->willReturn($this->worldStore());
-		$this->request->method('getParam')->willReturnMap([['target', null, 'world-1']]);
+		$this->manifestLoader->method('loadStore')->willReturn(value: $this->worldStore());
+		$this->request->method('getParam')->willReturnMap(valueMap: [['target', null, 'world-1']]);
 		$this->catalog->method('resolve')->willReturn(
-			['typeId' => 'openregister.configset', 'repo' => 'a/b', 'source' => 's', 'bundle' => []]
+			value: ['typeId' => 'openregister.configset', 'repo' => 'a/b', 'source' => 's', 'bundle' => []]
 		);
+		$stamps = [];
 		$this->catalog->expects($this->once())
-			->method('install')
-			->with(
-				$this->anything(),
-				$this->callback(
-					static fn ($stamp): bool => $stamp instanceof BundleObjectStamp
-						&& $stamp->property === 'setting'
-						&& $stamp->schemas === ['larping_skill']
-						&& $stamp->value === 'world-1'
-				)
-			)
-			->willReturn(['success' => true, 'components' => []]);
+			->method(constraint: 'install')
+			->willReturnCallback(
+				callback: static function (array $ref, ?BundleObjectStamp $stamp=null) use (&$stamps): array {
+					$stamps[] = $stamp;
+					return ['success' => true, 'components' => []];
+				}
+			);
 
-		$this->assertSame(Http::STATUS_OK, $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
+		$this->assertSame(expected: Http::STATUS_OK, actual: $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
+		$this->assertSame(expected: 'setting', actual: $stamps[0]?->property);
+		$this->assertSame(expected: ['larping_skill'], actual: $stamps[0]?->schemas);
+		$this->assertSame(expected: 'world-1', actual: $stamps[0]?->value);
 	}//end testAFederatedInstallCarriesTheChosenTarget()
 
 	/**
@@ -1038,12 +1038,12 @@ class GenericStoreControllerTest extends TestCase {
 	 */
 	public function testAnUndeclaredTargetIsRefused(): void {
 		$this->signIn(isAdmin: true);
-		$this->manifestLoader->method('loadStore')->willReturn($this->federatedStore());
-		$this->request->method('getParam')->willReturnMap([['target', null, 'world-1']]);
-		$this->catalog->expects($this->never())->method('resolve');
-		$this->catalog->expects($this->never())->method('install');
+		$this->manifestLoader->method('loadStore')->willReturn(value: $this->federatedStore());
+		$this->request->method('getParam')->willReturnMap(valueMap: [['target', null, 'world-1']]);
+		$this->catalog->expects($this->never())->method(constraint: 'resolve');
+		$this->catalog->expects($this->never())->method(constraint: 'install');
 
-		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller(appId: 'decidiq')->install(slug: 'a-set')->getStatus());
+		$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $this->controller(appId: 'decidiq')->install(slug: 'a-set')->getStatus());
 	}//end testAnUndeclaredTargetIsRefused()
 
 	/**
@@ -1055,11 +1055,11 @@ class GenericStoreControllerTest extends TestCase {
 	 */
 	public function testAMalformedTargetIsRefused(): void {
 		$this->signIn(isAdmin: true);
-		$this->manifestLoader->method('loadStore')->willReturn($this->worldStore());
-		$this->request->method('getParam')->willReturnMap([['target', null, '../other']]);
-		$this->catalog->expects($this->never())->method('install');
+		$this->manifestLoader->method('loadStore')->willReturn(value: $this->worldStore());
+		$this->request->method('getParam')->willReturnMap(valueMap: [['target', null, '../other']]);
+		$this->catalog->expects($this->never())->method(constraint: 'install');
 
-		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
+		$this->assertSame(expected: Http::STATUS_BAD_REQUEST, actual: $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
 	}//end testAMalformedTargetIsRefused()
 
 	/**
@@ -1069,9 +1069,9 @@ class GenericStoreControllerTest extends TestCase {
 	 */
 	public function testThePostureIsCheckedBeforeTheTarget(): void {
 		$this->signIn(isAdmin: false);
-		$this->manifestLoader->method('loadStore')->willReturn($this->worldStore());
-		$this->request->method('getParam')->willReturnMap([['target', null, '../other']]);
+		$this->manifestLoader->method('loadStore')->willReturn(value: $this->worldStore());
+		$this->request->method('getParam')->willReturnMap(valueMap: [['target', null, '../other']]);
 
-		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
 	}//end testThePostureIsCheckedBeforeTheTarget()
 }//end class

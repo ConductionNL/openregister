@@ -57,47 +57,26 @@ final class StoreInstallTarget {
 	}//end __construct()
 
 	/**
-	 * Read the `installTarget` block; anything malformed declares no target.
-	 *
-	 * @param mixed $block The manifest's `store.installTarget` value.
-	 *
-	 * @return self
-	 */
-	public static function fromBlock(mixed $block): self {
-		if (is_array($block) === false) {
-			return new self();
-		}
-
-		$property = $block['property'] ?? '';
-		$schemas  = $block['schemas'] ?? [];
-		if (is_string($property) === false || is_array($schemas) === false) {
-			return new self();
-		}
-
-		$slugs = array_values(
-			array_filter($schemas, static fn (mixed $slug): bool => is_string($slug) === true && $slug !== '')
-		);
-
-		return new self(property: $property, schemas: $slugs);
-	}//end fromBlock()
-
-	/**
 	 * Whether the app declared where an install can go.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
 	public function isDeclared(): bool {
 		return $this->property !== '' && $this->schemas !== [];
 	}//end isDeclared()
 
 	/**
-	 * Whether a requested target id is well-formed.
+	 * Whether a requested target id is well-formed: a UUID, a number or a slug.
 	 *
 	 * @param string $target The id from the install request.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
-	public static function isWellFormed(string $target): bool {
+	public function isWellFormed(string $target): bool {
 		return preg_match(self::ID_PATTERN, $target) === 1;
 	}//end isWellFormed()
 
@@ -107,6 +86,8 @@ final class StoreInstallTarget {
 	 * @param string $target The chosen target id; '' stamps nothing.
 	 *
 	 * @return BundleObjectStamp
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
 	public function stampFor(string $target): BundleObjectStamp {
 		if ($this->isDeclared() === false) {

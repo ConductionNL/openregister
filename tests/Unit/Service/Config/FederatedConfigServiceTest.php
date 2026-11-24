@@ -293,15 +293,15 @@ class FederatedConfigServiceTest extends TestCase {
 		$this->allowlist = ['ConductionNL'];
 		$verified = [];
 		$received = [];
-		$signer   = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
+		$signer   = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Config\BundleSigner::class);
 		$signer->method('verify')->willReturnCallback(
-			static function (array $bundle) use (&$verified): array {
+			callback: static function (array $bundle) use (&$verified): array {
 				$verified = $bundle;
 				return ['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k'];
 			}
 		);
 		$this->registry->method('get')->willReturn(
-			new class($received) implements IShareableConfigType {
+			value: new class($received) implements IShareableConfigType {
 				public function __construct(private array &$received) {
 				}
 				public function getId(): string {
@@ -324,13 +324,13 @@ class FederatedConfigServiceTest extends TestCase {
 		);
 		$service = new FederatedConfigService(
 			new FederatedConfigTransport(
-				$this->createMock(CredentialBrokerService::class),
+				$this->createMock(originalClassName: CredentialBrokerService::class),
 				$signer,
-				$this->createMock(\OCP\Http\Client\IClientService::class)
+				$this->createMock(originalClassName: \OCP\Http\Client\IClientService::class)
 			),
 			$this->registry,
 			$this->config,
-			$this->createMock(\Psr\Log\LoggerInterface::class)
+			$this->createMock(originalClassName: \Psr\Log\LoggerInterface::class)
 		);
 		$bundle = ['components' => ['objects' => [['@self' => ['schema' => 'larping_skill'], 'name' => 'Herbalism']]]];
 
@@ -338,11 +338,11 @@ class FederatedConfigServiceTest extends TestCase {
 			'demo.type',
 			$bundle,
 			'ConductionNL/pack',
-			new \OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp(property: 'setting', schemas: ['larping_skill'], value: 'world-1')
+			(new \OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp(property: 'setting', schemas: ['larping_skill'], value: 'world-1'))->applyTo(...)
 		);
 
-		$this->assertSame($bundle, $verified, 'the signature is checked on the bundle as published');
-		$this->assertSame('world-1', $received['components']['objects'][0]['setting']);
+		$this->assertSame(expected: $bundle, actual: $verified, message: 'the signature is checked on the bundle as published');
+		$this->assertSame(expected: 'world-1', actual: $received['components']['objects'][0]['setting']);
 	}
 
 	public function testFetchBundleDecodesTheRepoContentsFile(): void {

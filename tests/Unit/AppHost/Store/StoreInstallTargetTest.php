@@ -47,8 +47,8 @@ class StoreInstallTargetTest extends TestCase {
 	 */
 	private function worldStore(): StoreManifest {
 		return StoreManifest::fromManifest(
-			'larpinq',
-			[
+			appId: 'larpinq',
+			manifest: [
 				'store' => [
 					'schema' => 'bundle',
 					'installable' => ['larping_skill', 'condition'],
@@ -66,9 +66,9 @@ class StoreInstallTargetTest extends TestCase {
 	public function testTheManifestDeclaresThePropertyAndSchemas(): void {
 		$target = $this->worldStore()->installTarget;
 
-		$this->assertTrue($target->isDeclared());
-		$this->assertSame('setting', $target->property);
-		$this->assertSame(['larping_skill', 'condition'], $target->schemas);
+		$this->assertTrue(condition: $target->isDeclared());
+		$this->assertSame(expected: 'setting', actual: $target->property);
+		$this->assertSame(expected: ['larping_skill', 'condition'], actual: $target->schemas);
 	}//end testTheManifestDeclaresThePropertyAndSchemas()
 
 	/**
@@ -77,11 +77,22 @@ class StoreInstallTargetTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnAbsentOrMalformedBlockDeclaresNoTarget(): void {
-		$this->assertFalse(StoreManifest::fromManifest('larpinq', ['store' => ['schema' => 'bundle']])->installTarget->isDeclared());
-		$this->assertFalse(StoreInstallTarget::fromBlock(block: 'setting')->isDeclared());
-		$this->assertFalse(StoreInstallTarget::fromBlock(block: ['property' => ['x'], 'schemas' => ['a']])->isDeclared());
-		$this->assertFalse(StoreInstallTarget::fromBlock(block: ['property' => 'setting', 'schemas' => []])->isDeclared());
-		$this->assertFalse(StoreInstallTarget::fromBlock(block: ['property' => 'setting', 'schemas' => 'a'])->isDeclared());
+		$blocks = [
+			null,
+			'setting',
+			['property' => ['x'], 'schemas' => ['a']],
+			['property' => 'setting', 'schemas' => []],
+			['property' => 'setting', 'schemas' => 'a'],
+		];
+		foreach ($blocks as $block) {
+			$store = ['schema' => 'bundle'];
+			if ($block !== null) {
+				$store['installTarget'] = $block;
+			}
+
+			$manifest = StoreManifest::fromManifest(appId: 'larpinq', manifest: ['store' => $store]);
+			$this->assertFalse(condition: $manifest->installTarget->isDeclared(), message: json_encode(value: $block));
+		}
 	}//end testAnAbsentOrMalformedBlockDeclaresNoTarget()
 
 	/**
@@ -90,13 +101,13 @@ class StoreInstallTargetTest extends TestCase {
 	 * @return void
 	 */
 	public function testOnlyIdsAreWellFormedTargets(): void {
-		$this->assertTrue(StoreInstallTarget::isWellFormed(target: '0b6f1c3e-2c3a-4f7e-9d1a-5c2e8a1b4d6f'));
-		$this->assertTrue(StoreInstallTarget::isWellFormed(target: '42'));
-		$this->assertTrue(StoreInstallTarget::isWellFormed(target: 'aldmoor_valley'));
-		$this->assertFalse(StoreInstallTarget::isWellFormed(target: ''));
-		$this->assertFalse(StoreInstallTarget::isWellFormed(target: '../other'));
-		$this->assertFalse(StoreInstallTarget::isWellFormed(target: 'a?b=c'));
-		$this->assertFalse(StoreInstallTarget::isWellFormed(target: str_repeat('a', 65)));
+		$this->assertTrue(condition: (new StoreInstallTarget())->isWellFormed(target: '0b6f1c3e-2c3a-4f7e-9d1a-5c2e8a1b4d6f'));
+		$this->assertTrue(condition: (new StoreInstallTarget())->isWellFormed(target: '42'));
+		$this->assertTrue(condition: (new StoreInstallTarget())->isWellFormed(target: 'aldmoor_valley'));
+		$this->assertFalse(condition: (new StoreInstallTarget())->isWellFormed(target: ''));
+		$this->assertFalse(condition: (new StoreInstallTarget())->isWellFormed(target: '../other'));
+		$this->assertFalse(condition: (new StoreInstallTarget())->isWellFormed(target: 'a?b=c'));
+		$this->assertFalse(condition: (new StoreInstallTarget())->isWellFormed(target: str_repeat(string: 'a', times: 65)));
 	}//end testOnlyIdsAreWellFormedTargets()
 
 	/**
@@ -107,8 +118,8 @@ class StoreInstallTargetTest extends TestCase {
 	public function testAnUndeclaredTargetStampsNothing(): void {
 		$stamp = (new StoreInstallTarget())->stampFor(target: 'world-1');
 
-		$this->assertTrue($stamp->isEmpty());
-		$this->assertSame(['name' => 'x'], $stamp->applyToObject(schema: 'larping_skill', object: ['name' => 'x']));
+		$this->assertTrue(condition: $stamp->isEmpty());
+		$this->assertSame(expected: ['name' => 'x'], actual: $stamp->applyToObject(schema: 'larping_skill', object: ['name' => 'x']));
 	}//end testAnUndeclaredTargetStampsNothing()
 
 	/**
@@ -118,10 +129,10 @@ class StoreInstallTargetTest extends TestCase {
 	 */
 	public function testTheInstallerStampsEachObjectOfADeclaredSchema(): void {
 		$saved   = [];
-		$entity  = $this->createMock(ObjectEntity::class);
-		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$entity  = $this->createMock(originalClassName: ObjectEntity::class);
+		$objects = $this->createMock(originalClassName: ObjectOperationsInterface::class);
 		$objects->method('saveObject')->willReturnCallback(
-			static function (array $object) use (&$saved, $entity) {
+			callback: static function (array $object) use (&$saved, $entity) {
 				$saved[] = $object;
 				return $entity;
 			}
@@ -129,8 +140,8 @@ class StoreInstallTargetTest extends TestCase {
 
 		$installer = new GenericStoreInstaller(
 			objectService: $objects,
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class)
+			appConfig: $this->createMock(originalClassName: IAppConfig::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 		$report = $installer->install(
@@ -144,10 +155,10 @@ class StoreInstallTargetTest extends TestCase {
 			target: 'world-1'
 		);
 
-		$this->assertTrue($report['success']);
-		$this->assertCount(2, $saved);
-		$this->assertSame('world-1', $saved[0]['setting']);
-		$this->assertSame('world-1', $saved[1]['setting'], 'the chosen target wins over what the item carried');
+		$this->assertTrue(condition: $report['success']);
+		$this->assertCount(expectedCount: 2, haystack: $saved);
+		$this->assertSame(expected: 'world-1', actual: $saved[0]['setting']);
+		$this->assertSame(expected: 'world-1', actual: $saved[1]['setting'], message: 'the chosen target wins over what the item carried');
 	}//end testTheInstallerStampsEachObjectOfADeclaredSchema()
 
 	/**
@@ -157,10 +168,10 @@ class StoreInstallTargetTest extends TestCase {
 	 */
 	public function testAnInstallWithoutATargetIsUnchanged(): void {
 		$saved   = [];
-		$entity  = $this->createMock(ObjectEntity::class);
-		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$entity  = $this->createMock(originalClassName: ObjectEntity::class);
+		$objects = $this->createMock(originalClassName: ObjectOperationsInterface::class);
 		$objects->method('saveObject')->willReturnCallback(
-			static function (array $object) use (&$saved, $entity) {
+			callback: static function (array $object) use (&$saved, $entity) {
 				$saved[] = $object;
 				return $entity;
 			}
@@ -168,13 +179,13 @@ class StoreInstallTargetTest extends TestCase {
 
 		$installer = new GenericStoreInstaller(
 			objectService: $objects,
-			appConfig: $this->createMock(IAppConfig::class),
-			logger: $this->createMock(LoggerInterface::class)
+			appConfig: $this->createMock(originalClassName: IAppConfig::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 		$installer->install(store: $this->worldStore(), item: ['components' => [['schema' => 'larping_skill', 'object' => ['name' => 'Herbalism']]]]);
 
-		$this->assertArrayNotHasKey('setting', $saved[0]);
+		$this->assertArrayNotHasKey(key: 'setting', array: $saved[0]);
 	}//end testAnInstallWithoutATargetIsUnchanged()
 
 	/**
@@ -198,11 +209,11 @@ class StoreInstallTargetTest extends TestCase {
 			]
 		);
 
-		$this->assertSame('world-1', $bundle['components']['objects'][0]['setting']);
-		$this->assertArrayNotHasKey('setting', $bundle['components']['objects'][1]);
-		$this->assertSame('not an object', $bundle['components']['objects'][2]);
-		$this->assertSame('world-1', $bundle['objects'][0]['setting']);
-		$this->assertSame(['version' => '1.0.0'], $bundle['info']);
+		$this->assertSame(expected: 'world-1', actual: $bundle['components']['objects'][0]['setting']);
+		$this->assertArrayNotHasKey(key: 'setting', array: $bundle['components']['objects'][1]);
+		$this->assertSame(expected: 'not an object', actual: $bundle['components']['objects'][2]);
+		$this->assertSame(expected: 'world-1', actual: $bundle['objects'][0]['setting']);
+		$this->assertSame(expected: ['version' => '1.0.0'], actual: $bundle['info']);
 	}//end testTheStampReachesBothObjectListsOfABundle()
 
 	/**
@@ -213,6 +224,8 @@ class StoreInstallTargetTest extends TestCase {
 	public function testAnEmptyStampLeavesTheBundleAlone(): void {
 		$bundle = ['components' => ['objects' => [['@self' => ['schema' => 'larping_skill']]]]];
 
-		$this->assertSame($bundle, (new BundleObjectStamp(property: 'setting', schemas: ['larping_skill'], value: ''))->applyTo(bundle: $bundle));
+		$stamp  = new BundleObjectStamp(property: 'setting', schemas: ['larping_skill'], value: '');
+
+		$this->assertSame(expected: $bundle, actual: $stamp->applyTo(bundle: $bundle));
 	}//end testAnEmptyStampLeavesTheBundleAlone()
 }//end class

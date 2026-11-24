@@ -124,6 +124,11 @@ final class ShareableConfigCatalogue implements ShareableConfigCatalogueInterfac
 	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
 	public function install(string $typeId, array $bundle, string $source, ?BundleObjectStamp $stamp = null): array {
-		return $this->federated->install(typeId: $typeId, bundle: $bundle, source: $source, stamp: $stamp);
+		$prepare = null;
+		if ($stamp !== null) {
+			$prepare = $stamp->applyTo(...);
+		}
+
+		return $this->federated->install(typeId: $typeId, bundle: $bundle, source: $source, prepare: $prepare);
 	}//end install()
 }//end class
