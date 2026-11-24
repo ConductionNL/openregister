@@ -711,3 +711,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: phpstan argument.unknown / 'Missing parameter $ask' on PermissionCheckInterface::hasPermission(); at runtime an unknown-named-parameter Error; tests with ->with($schema, 'read', ...) fail 'Parameter count ... too low'.
 - Cause: main (475feecd, 198fb738) made hasPermission(PermissionAsk $ask, bool $_rbac = true); PRs still pass schema:/action:/userId:/object:/register:.
 - Fix: hasPermission(ask: (new PermissionAsk(schema: ..., action: ...))->askedBy(userId: ..., objectOwner: null)->about(object: ..., register: ...)); tests ->with(...PermissionAskArgs::with(<old positional args>)) (tests/Unit/Service/Object), with register null when an object is given (about() takes the object's). Fixed #10509, #10269.
+
+## Controller test passes 'openregister' to a ...ControllerFactory::create() (or-fix-3)
+- Symptom: TypeError ...ControllerFactory::args(): Argument #1 ($request) must be of type OCP\IRequest, string given.
+- Cause: main (5ceb54df) made controllers take the app id from AppIdentity/Application::APP_ID, so tests/Unit/Controller/Support/*ControllerFactory::args() lost the $appName parameter.
+- Fix: drop the leading 'openregister' argument from the PR's new tests' Factory::create(...) calls (see #10543).
