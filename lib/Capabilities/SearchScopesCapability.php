@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Capabilities;
 
+use OCA\OpenRegister\Search\SearchProviderIdentities;
 use OCA\OpenRegister\Search\SearchScopeCatalog;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\Capabilities\ICapability;
@@ -77,12 +78,20 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	public const FILTER = 'scopes';
 
 	/**
+	 * The provider filter one provider identity travels in.
+	 *
+	 * @var string
+	 */
+	public const PROVIDER_FILTER = 'provider';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SearchScopeCatalog       $scopes      The searchable schemas described the way a scope names them.
 	 * @param PermissionCheckInterface $permissions Whether the current user may read a schema.
 	 * @param IUserSession             $userSession The current user; nobody signed in is offered nothing.
 	 * @param LoggerInterface          $logger      Where a permission check that fails is reported.
+	 * @param SearchProviderIdentities|null $identities The provider identity per claiming app; null offers none.
 	 *
 	 * @return void
 	 */
@@ -91,6 +100,7 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 		private readonly PermissionCheckInterface $permissions,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ?SearchProviderIdentities $identities = null,
 	) {
 	}//end __construct()
 
@@ -100,23 +110,83 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	 * @inheritDoc
 	 *
 	 * @return array{openregister: array{search: array{
-	 *     contractVersion: int, provider: string, filter: string, scopes: array<int, array<string, string>>
+	 *     contractVersion: int, provider: string, filter: string, scopes: array<int, array<string, string>>,
+	 *     providerFilter: string, providers: array<int, array{id: string, name: string, order: int}>
 	 * }}}
 	 *
 	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
 	 */
 	public function getCapabilities(): array {
+		$readable = $this->readableRows();
+
 		return [
 			'openregister' => [
 				'search' => [
 					'contractVersion' => self::CONTRACT_VERSION,
 					'provider' => self::PROVIDER_ID,
 					'filter' => self::FILTER,
-					'scopes' => $this->availableScopes(),
+					'scopes' => $this->availableScopes(rows: $readable),
+					'providerFilter' => self::PROVIDER_FILTER,
+					'providers' => $this->availableProviders(rows: $readable),
 				],
 			],
 		];
 	}//end getCapabilities()
+
+	/**
+	 * The described schemas the current user may read; nobody signed in reads none.
+	 *
+	 * @return array<int, array<string, mixed>> The readable rows of the scope catalog.
+	 */
+	private function readableRows(): array {
+		$userId = $this->userSession->getUser()?->getUID();
+		if ($userId === null) {
+			return [];
+		}
+
+		$readable = [];
+		foreach ($this->scopes->describe() as $row) {
+			if ($this->mayRead(row: $row, userId: $userId) === true) {
+				$readable[] = $row;
+			}
+		}
+
+		return $readable;
+	}//end readableRows()
+
+	/**
+	 * The provider identities that own at least one schema the current user may read, in their order.
+	 *
+	 * An identity whose every pair is unreadable is not offered, for the same
+	 * reason an app scope is not: it would answer an empty page and its name
+	 * alone says the data exists.
+	 *
+	 * @param array<int, array<string, mixed>> $rows The readable rows.
+	 *
+	 * @return array<int, array{id: string, name: string, order: int}> The identities.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	private function availableProviders(array $rows): array {
+		if ($this->identities === null) {
+			return [];
+		}
+
+		$owning = [];
+		foreach ($rows as $row) {
+			$owning[$this->identities->forPair(registerSlug: (string)$row['register'], schemaSlug: (string)$row['slug'])->id] = true;
+		}
+
+		$providers = [];
+		foreach ($this->identities->all() as $identity) {
+			if (isset($owning[$identity->id]) === true) {
+				$providers[] = $identity->jsonSerialize();
+			}
+		}
+
+		return $providers;
+	}//end availableProviders()
 
 	/**
 	 * The scopes of the schemas the current user may read: apps, then registers, then schemas.
@@ -125,20 +195,13 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	 * slug used in two registers is one `schema:` scope, because the provider
 	 * reads it as one.
 	 *
+	 * @param array<int, array<string, mixed>> $rows The readable rows.
+	 *
 	 * @return array<int, array<string, string>> The scopes, each with its `id`, `type`, `value` and `label`.
 	 */
-	private function availableScopes(): array {
-		$userId = $this->userSession->getUser()?->getUID();
-		if ($userId === null) {
-			return [];
-		}
-
+	private function availableScopes(array $rows): array {
 		$found = ['app' => [], 'register' => [], 'schema' => []];
-		foreach ($this->scopes->describe() as $row) {
-			if ($this->mayRead(row: $row, userId: $userId) === false) {
-				continue;
-			}
-
+		foreach ($rows as $row) {
 			foreach ($row['apps'] as $app) {
 				$found['app'][$app] = ($found['app'][$app] ?? self::scope(type: 'app', value: $app, label: $app));
 			}
