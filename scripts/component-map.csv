@@ -4365,7 +4365,7 @@ Controller/FileDisclosuresController.php,,Controller,,,,,Files
 Exception/TextDisclosureNotRecordedException.php,,Exception,,,,,Compliance
 Files/Db/TextDisclosure.php,,Files,,,,,Compliance
 Files/Db/TextDisclosureMapper.php,,Files,,,,,Compliance
-Service/Mail/MailThreadAssembler.php,,Service,,,,,Notifications
+Service/Mail/MailThreadAssembler.php,,Service,,,,,Files
 Db/AutomationRecord.php,,Db,,,,,Processes
 Db/AutomationRecordFilter.php,,Db,,,,,Processes
 Db/AutomationRecordMapper.php,,Db,,,,,Processes
@@ -4538,6 +4538,12 @@ Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTra
 Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
 Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
 Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
+Migration/Version1Date20261121190000.php,,Migration,,,,,Platform
+BackgroundJob/BackfillEmailLinkMessageIdJob.php,,BackgroundJob,,,,,Integrations
+Notifications/Service/EmailLinkMessageIdBackfill.php,,Notifications,,,,,Integrations
+Notifications/Service/OutboundMailLinkWriter.php,,Notifications,,,,,Integrations
+Contract/ReplyThreadResolutionInterface.php,,Contract,,,,,Kernel
+Service/Mail/MailThreadService.php,,Service,,,,,Files
 Migration/Version1Date20261114103700.php,,Migration,,,,,Platform
 Exception/TaskMandateRefusedException.php,,Exception,Exception,Exception/TaskMandateRefusedException.php,0,,Kernel
 Service/Task/TaskMandateGuard.php,,Service,Work,Work/Service/Task/TaskMandateGuard.php,0,,Processes
@@ -4821,6 +4827,8 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/MailObjectBinding.php,,Kernel,,,,,Kernel
+Kernel/Contracts/OutboundMailLinkRecorderInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel
 Service/ProcessesServiceBindings.php,,Service,,,,,Processes
 Service/ProcessesServiceRegistrar.php,,Service,,,,,Processes
