@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * Who gets what from a survey's results and export routes.
  *
  * @covers \OCA\OpenRegister\Controller\SurveyResultsController
+ * @uses   \OCA\OpenRegister\Service\Export\SpreadsheetCell
  */
 class SurveyResultsControllerTest extends TestCase {
 
@@ -205,4 +206,33 @@ class SurveyResultsControllerTest extends TestCase {
 		);
 		$this->assertSame('text/csv', $response->getHeaders()['Content-Type']);
 	}//end testTheExportIsACsvInColumnOrder()
+
+	/**
+	 * An answer or a label that would start a spreadsheet formula is written with a leading
+	 * apostrophe, as every other CSV export does; numbers and plain text are unchanged.
+	 *
+	 * @return void
+	 */
+	public function testTheExportNeutralisesFormulaCells(): void {
+		$this->signIn(groupIds: ['quality']);
+		$this->results->method('survey')->willReturn(['id' => 's-1']);
+		$this->results->method('mayRead')->willReturn(true);
+		$this->results->method('exportTable')->willReturn(
+			new SurveyAnswerTable(
+				title: 'After closing',
+				columns: ['score', '=Label', 'note'],
+				rows: [
+					['score' => -3, '=Label' => '=HYPERLINK("x")', 'note' => '+1 call'],
+					['score' => '-2', '=Label' => '@SUM(A1)', 'note' => 'fine'],
+				]
+			)
+		);
+
+		$response = $this->controller->export('surveys', 's-1');
+
+		$this->assertSame(
+			"score,'=Label,note\n-3,\"'=HYPERLINK(\"\"x\"\")\",\"'+1 call\"\n-2,'@SUM(A1),fine\n",
+			$response->render()
+		);
+	}//end testTheExportNeutralisesFormulaCells()
 }//end class
