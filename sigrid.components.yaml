@@ -1126,6 +1126,7 @@ components:
       - ".*/lib/Service/Schemas/SchemaCacheHandler[.]php"
       - ".*/lib/Service/Schemas/SchemaCacheHandlerInterface[.]php"
       - ".*/lib/Service/Schemas/SchemaCacheSlot[.]php"
+      - ".*/lib/Service/Schemas/SchemaCatalogue[.]php"
       - ".*/lib/Service/Schemas/SchemaDeclarationValidators[.]php"
       - ".*/lib/Service/Schemas/ScopedField[.]php"
       - ".*/lib/Service/Schemas/ScopedPropertyCensus[.]php"

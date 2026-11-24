@@ -63,6 +63,8 @@ final class SchemaFieldTypes {
 		'owner' => 'string',
 		'application' => 'string',
 		'organisation' => 'string',
+		'classification' => 'string',
+		'catalogue' => 'json',
 		'authorization' => 'json',
 		'sharedWith' => 'json',
 		'deleted' => 'datetime',
