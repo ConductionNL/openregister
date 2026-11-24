@@ -782,3 +782,9 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: on an APPROVED PR that merges clean, ComponentDefinitionTest says 'lib/Service/Audit/AuditResealInterface.php matches no component' and ComponentDependencyRulesTest shows new edges.
 - Cause: git auto-merges sigrid.components.yaml line by line, so main's new pattern lines drop out where the PR rewrote the same component's list.
 - Fix: the PR counts as red on main: merge main, run python3 scripts/component-patterns.py, commit the yaml with the merge (#10493). Run DbalObjectSource* tests serially: in parallel they share one sqlite file and fail with 'table already exists'.
+
+## False merge conflicts from a shallow checkout (or-fix-3)
+- Symptom: `git merge-tree --write-tree origin/main <head>` lists dozens of conflicts (routes.php, Application.php, every *InterfaceBindingsTest) for a PR that reviewers call clean.
+- Cause: the checkout is shallow (.git/shallow exists, e.g. the session's preinstalled repo); merge-base resolution is wrong without full history.
+- Fix: use a full-history blobless clone (`git clone --filter=blob:none`) for merge-tree and merges; never resolve conflicts seen only in a shallow repo.
+- Also: tests with @runInSeparateProcess fatal on 'OCP\EventDispatcher\Event not found' when auto_prepend is passed with -d; put it in an ini under PHP_INI_SCAN_DIR (see entry above).
