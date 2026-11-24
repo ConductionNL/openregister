@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -166,7 +167,7 @@ class B01PermissionHandlerWiringGoldenTest extends TestCase {
 	public function testAGrantedGroupMayRead(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
 
-		$this->assertTrue($handler->hasPermission($this->schemaWith(['read' => ['behandelaars']]), 'read', 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
 	}//end testAGrantedGroupMayRead()
 
 	/**
@@ -177,7 +178,7 @@ class B01PermissionHandlerWiringGoldenTest extends TestCase {
 	public function testACallerOutsideTheGroupIsRefused(): void {
 		$handler = $this->handlerFor('bob', ['burgers']);
 
-		$this->assertFalse($handler->hasPermission($this->schemaWith(['read' => ['behandelaars']]), 'read', 'bob'));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))->askedBy(userId: 'bob', objectOwner: null)));
 	}//end testACallerOutsideTheGroupIsRefused()
 
 	/**
@@ -188,7 +189,7 @@ class B01PermissionHandlerWiringGoldenTest extends TestCase {
 	public function testAnUngrantedVerbIsRefused(): void {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
 
-		$this->assertFalse($handler->hasPermission($this->schemaWith(['read' => ['behandelaars']]), 'delete', 'ana'));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'delete'))->askedBy(userId: 'ana', objectOwner: null)));
 	}//end testAnUngrantedVerbIsRefused()
 
 	/**
@@ -200,7 +201,7 @@ class B01PermissionHandlerWiringGoldenTest extends TestCase {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
 		$schema  = $this->schemaWith(['read' => ['behandelaars'], 'deny' => ['read' => ['behandelaars']]]);
 
-		$this->assertFalse($handler->hasPermission($schema, 'read', 'ana'));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
 	}//end testTheInjectedDenyModeRefuses()
 
 	/**
@@ -211,7 +212,7 @@ class B01PermissionHandlerWiringGoldenTest extends TestCase {
 	public function testAnAdminMayRead(): void {
 		$handler = $this->handlerFor('root', ['admin']);
 
-		$this->assertTrue($handler->hasPermission($this->schemaWith(['read' => ['behandelaars']]), 'read', 'root'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))->askedBy(userId: 'root', objectOwner: null)));
 	}//end testAnAdminMayRead()
 
 	/**
@@ -222,7 +223,7 @@ class B01PermissionHandlerWiringGoldenTest extends TestCase {
 	public function testTheInjectedDispatcherHearsTheDecision(): void {
 		$this->events = [];
 		$handler      = $this->handlerFor('ana', ['behandelaars']);
-		$handler->hasPermission($this->schemaWith(['read' => ['behandelaars']]), 'read', 'ana');
+		$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))->askedBy(userId: 'ana', objectOwner: null));
 
 		$this->assertNotSame([], $this->events);
 	}//end testTheInjectedDispatcherHearsTheDecision()
