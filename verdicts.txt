@@ -4988,3 +4988,4 @@
 11078 ce17085f66e9aeedbc3cf003b1cc6720a56190e5 REVERIFY or-fix-8: merged main 037f95a8 (sbom conflict; regenerated from merged lockfiles, --check current); review needed
 10526 bbe9e922266f47c67d342022b86f9ca1dd9b4f70 REVERIFY or-fix-6: merged main 7bf08ec0 (second merge: only the components yaml conflicted, regenerated; ComponentDefinition/DependencyRules green); PR tests OK (83 tests, 365 assertions), phpstan clean; review needed
 10498 97dea9a46220d5051371f519379b7d5ddd66081b APPROVE cloud-or-reviewer-2: fast path; since approved ecb399a3 only a main merge; PR-side diff same 24 files, +/- lines identical; merges clean with main 7bf08ec0, listener golden green
+11056 f0585cdf87d2daeb90927301420d407111a200fd REVERIFY or-fix-6: merged main 7bf08ec0 (only component-map.csv conflicted: rows unioned, yaml regenerated; ComponentDefinition/DependencyRules green); PR tests OK (24 tests, 132 assertions), phpstan clean; review needed
