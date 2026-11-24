@@ -19,20 +19,19 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Clone Dolphin repository
-RUN git clone https://github.com/bytedance/Dolphin.git /app/dolphin
+# Clone Dolphin at a fixed commit; requirements.in names the same commit
+ARG DOLPHIN_COMMIT=befa5dad986f86396b73cbd8c37e557b5770c902
+RUN git clone https://github.com/bytedance/Dolphin.git /app/dolphin && \
+    git -C /app/dolphin checkout --detach "${DOLPHIN_COMMIT}"
 
-# Install requirements
+# Install Dolphin's and the API server's Python dependencies, hash-checked
 WORKDIR /app/dolphin
-RUN pip3 install --no-cache-dir -r requirements.txt
-
-# Install additional dependencies for API server
-RUN pip3 install --no-cache-dir flask flask-cors pdf2image
+COPY requirements.lock /app/requirements.lock
+RUN pip3 install --no-cache-dir --require-hashes -r /app/requirements.lock
 RUN apt-get update && apt-get install -y poppler-utils && rm -rf /var/lib/apt/lists/*
 
 # Download model
-RUN pip3 install huggingface_hub && \
-    python3 -c "from huggingface_hub import snapshot_download; \
+RUN python3 -c "from huggingface_hub import snapshot_download; \
     snapshot_download(repo_id='ByteDance/Dolphin-1.5', local_dir='/app/models')"
 
 # Copy API server

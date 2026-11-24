@@ -47,6 +47,13 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Files\Service\NoteService
  * @covers \OCA\OpenRegister\Event\ObjectNoteAddedEvent
+ * @uses   \OCA\OpenRegister\Files\Service\NoteAccounts
+ * @uses   \OCA\OpenRegister\Files\Service\NoteLockService
+ * @uses   \OCA\OpenRegister\Files\Service\NoteReplies
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\NoteAuthor
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\NoteDraft
+ * @uses   \OCA\OpenRegister\Notifications\Service\TimelineVisibilityPlatform
+ * @uses   \OCA\OpenRegister\Notifications\Service\TimelineVisibilityService
  */
 final class NoteServiceNoteAddedEventTest extends TestCase {
 

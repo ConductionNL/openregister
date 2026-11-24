@@ -26,14 +26,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Creates `openregister_file_restrictions`.
  *
  * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
  */
-class Version1Date20261024200000 extends SimpleMigrationStep {
+class Version1Date20261024200000 extends TargetedMigrationStep {
 
 	/**
 	 * The table.
@@ -52,7 +51,7 @@ class Version1Date20261024200000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/specs/file-actions/spec.md#requirement-a-file-in-an-objects-folder-can-carry-a-read-restriction-req-pfrr-001
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === true) {
 			return $schema;
@@ -70,5 +69,5 @@ class Version1Date20261024200000 extends SimpleMigrationStep {
 		$table->addUniqueIndex(['file_id'], 'or_file_restr_file_uniq');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

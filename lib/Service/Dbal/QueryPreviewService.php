@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\Dbal;
 
 use Doctrine\DBAL\Exception as DbalException;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 
 /**
  * Previews a query against a database source (design D-3).
@@ -78,7 +78,7 @@ class QueryPreviewService {
 	/**
 	 * The columns and first rows a query returns.
 	 *
-	 * @param Source $source The database source.
+	 * @param SourceInterface $source The database source.
 	 * @param string $query  The query an administrator is writing.
 	 *
 	 * @return array{columns: array<int, array{name: string, type: string}>, rows: array<int, array<string, mixed>>}
@@ -89,7 +89,7 @@ class QueryPreviewService {
 	 *
 	 * @spec openspec/changes/dbal-query-schema-guarded-and-previewed/specs/dbal-virtual-registers/spec.md
 	 */
-	public function preview(Source $source, string $query): array {
+	public function preview(SourceInterface $source, string $query): array {
 		$sql = trim($query);
 		if ($sql === '') {
 			throw new InvalidArgumentException('A query is required.');

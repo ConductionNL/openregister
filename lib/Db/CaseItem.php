@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\CaseItem\CaseItemFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\CaseItemInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -131,7 +132,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
-class CaseItem extends Entity implements JsonSerializable {
+class CaseItem extends Entity implements JsonSerializable, CaseItemInterface {
 	use HydrateKnownFieldsTrait;
 
 	/**

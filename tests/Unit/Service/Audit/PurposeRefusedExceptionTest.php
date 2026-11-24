@@ -24,6 +24,7 @@ namespace Unit\Service\Audit;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use PHPUnit\Framework\TestCase;
 
@@ -65,5 +66,17 @@ class PurposeRefusedExceptionTest extends TestCase {
 			['error' => 'PURPOSE_REFUSED', 'rule' => 'purpose-missing', 'message' => 'Name a purpose.', 'purpose' => null],
 			$refusal->toResponseBody()
 		);
+	}
+
+	/**
+	 * The refusal is the one the Core read port names, so a Core reader can answer it.
+	 *
+	 * @return void
+	 */
+	public function testIsTheRefusalTheCoreReadPortNames(): void {
+		$refusal = new PurposeRefusedException(rule: PurposeRefusedException::RULE_MISSING, reason: 'no purpose');
+
+		$this->assertInstanceOf(ReadPurposeRefusalInterface::class, $refusal);
+		$this->assertSame(403, $refusal->getStatusCode());
 	}
 }

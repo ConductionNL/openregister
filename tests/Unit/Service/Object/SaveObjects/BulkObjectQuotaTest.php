@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object\SaveObjects;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectQuota;
-use OCA\OpenRegister\Service\Quota\ObjectQuotaServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -36,7 +36,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectQuota
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects\BulkQuotaTally
- * @uses   \OCA\OpenRegister\Listener\ObjectQuotaListener
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaRefusal
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
  * @uses   \OCA\OpenRegister\Db\Schema\ConfigurationValidator
@@ -44,7 +44,7 @@ use RuntimeException;
  */
 final class BulkObjectQuotaTest extends TestCase {
 
-	private ObjectQuotaServiceInterface&MockObject $quotas;
+	private ObjectQuotaInterface&MockObject $quotas;
 
 	private LoggerInterface&MockObject $logger;
 
@@ -56,7 +56,7 @@ final class BulkObjectQuotaTest extends TestCase {
 	private array $counted = [];
 
 	protected function setUp(): void {
-		$this->quotas = $this->createMock(ObjectQuotaServiceInterface::class);
+		$this->quotas = $this->createMock(ObjectQuotaInterface::class);
 		$this->quotas->method('limitFor')->willReturnCallback(
 			static fn (Schema $schema): ?int => $schema->getSlug() === 'schedule' ? 2 : null
 		);

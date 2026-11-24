@@ -51,13 +51,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\FlowLifecycleRefusalTrait;
 use OCA\OpenRegister\Controller\Support\FlowNodeCall;
 use OCA\OpenRegister\Controller\Support\FlowNodeRunControllerServices;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Flow\FlowDeadEndInterface;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefusedInterface;
@@ -73,6 +73,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Delegation\DelegationRefused;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -187,7 +188,7 @@ class FlowNodeRunController extends Controller {
 		IRequest $request,
 		FlowNodeRunControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->userSession = $services->platform->userSession;
 		$this->flows = $services->graph->flows;
 		$this->publishedGraphs = $services->graph->publishedGraphs;
@@ -562,12 +563,10 @@ class FlowNodeRunController extends Controller {
 		}
 
 		$permitted = $this->permissions->hasPermission(
-			schema: $schemaEntity,
-			action: 'update',
-			userId: $this->callerUid(),
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: $this->callerUid(), objectOwner: $object->getOwner())
+				->about(object: $object, register: null),
+			_rbac: true
 		);
 
 		if ($permitted === false) {

@@ -31,6 +31,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Search\Controller\AggregationController;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
@@ -116,7 +117,7 @@ class AggregationControllerTimeseriesTest extends TestCase {
 	 */
 	public function testReturns403WhenRunnerDeniesAccess(): void {
 		$schema = $this->createMock(Schema::class);
-		$query = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
+		$query = AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'status']));
 		$this->runner->method('findSchema')->willReturn($schema);
 		$this->validator->method('validate')->willReturn($query);
 		$this->runner->method('runAdhocByRef')->willThrowException(
@@ -138,7 +139,7 @@ class AggregationControllerTimeseriesTest extends TestCase {
 	 */
 	public function testHappyPathReturnsGroups(): void {
 		$schema = $this->createMock(Schema::class);
-		$query = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
+		$query = AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'status']));
 		$this->runner->method('findSchema')->willReturn($schema);
 		$this->validator->method('validate')->willReturn($query);
 		$this->runner->method('runAdhocByRef')->willReturn(
@@ -172,7 +173,7 @@ class AggregationControllerTimeseriesTest extends TestCase {
 	 */
 	public function testReturns404WhenRegisterCannotBeResolved(): void {
 		$schema = $this->createMock(Schema::class);
-		$query = AggregationQuery::create(metric: 'count', groupBy: ['field' => 'status']);
+		$query = AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'status']));
 		$this->runner->method('findSchema')->willReturn($schema);
 		$this->validator->method('validate')->willReturn($query);
 		$this->runner->method('runAdhocByRef')->willThrowException(

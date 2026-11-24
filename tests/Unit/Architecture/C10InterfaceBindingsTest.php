@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\AuthenticationService;
 use OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar;
 use OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrarInterface;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
@@ -58,7 +59,7 @@ final class C10InterfaceBindingsTest extends TestCase {
 		AuthenticationService::class => [AuthenticationTokenFetcherInterface::class, ContractBindings::class],
 		DoriathApplicationRegistrar::class => [DoriathApplicationRegistrarInterface::class, ContractBindings::class],
 		ObjectPreviewFormatter::class => [ObjectPreviewFormatterInterface::class, ContractBindings::class],
-		TaskMetricsProvider::class => [TaskMetricsProviderInterface::class, ContractBindings::class],
+		TaskMetricsProvider::class => [TaskMetricsProviderInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**
@@ -135,18 +136,19 @@ final class C10InterfaceBindingsTest extends TestCase {
 	 * AppHost resolves ConfigurationService by its contract's name, not the class's.
 	 *
 	 * AppHostSettingsService looks the service up by a string id so leaf apps need
-	 * no compile-time dependency; the id is ConfigurationServiceInterface, which
-	 * ContractBindings aliases to ConfigurationService.
+	 * no compile-time dependency; the id is the Core import contract
+	 * AppConfigurationImporterInterface, which ContractBindings aliases to
+	 * ConfigurationService.
 	 *
 	 * @return void
 	 */
 	public function testAppHostResolvesConfigurationServiceByItsContract(): void {
 		$source = (string) file_get_contents(self::LIB . '/AppHost/Service/AppHostSettingsService.php');
 		$this->assertStringNotContainsString("'OCA\\OpenRegister\\Service\\ConfigurationService'", $source);
-		$this->assertStringContainsString("'OCA\\OpenRegister\\Service\\ConfigurationServiceInterface'", $source);
+		$this->assertStringContainsString("'OCA\\OpenRegister\\Service\\AppConfigurationImporterInterface'", $source);
 		$this->assertSame(
 			\OCA\OpenRegister\Service\ConfigurationService::class,
-			ContractBindings::BINDINGS[\OCA\OpenRegister\Service\ConfigurationServiceInterface::class]
+			ContractBindings::BINDINGS[\OCA\OpenRegister\Service\AppConfigurationImporterInterface::class]
 		);
 	}//end testAppHostResolvesConfigurationServiceByItsContract()
 

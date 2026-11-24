@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\Configuration\ConfigurationFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationMembershipInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -105,7 +107,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
-class Configuration extends Entity implements JsonSerializable {
+class Configuration extends Entity implements JsonSerializable, ConfigurationMembershipInterface, ConfigurationInterface {
 	use IsoTimestampsTrait;
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait {
@@ -494,4 +496,29 @@ class Configuration extends Entity implements JsonSerializable {
 		// Final fallback.
 		return 'Configuration';
 	}//end __toString()
+
+	/**
+	 * Whether the member list of one kind holds an id, compared strictly.
+	 *
+	 * @param string     $kind The member list: objects, schemas, registers, views, agents, sources or applications.
+	 * @param int|string $id   The entity id.
+	 *
+	 * @return bool True when the list holds the id; false for an empty or unknown list.
+	 *
+	 * @spec exclude shared entity plumbing, not a capability of its own
+	 */
+	public function listsMember(string $kind, int|string $id): bool {
+		$members = match ($kind) {
+			'objects' => $this->objects,
+			'schemas' => $this->schemas,
+			'registers' => $this->registers,
+			'views' => $this->views,
+			'agents' => $this->agents,
+			'sources' => $this->sources,
+			'applications' => $this->applications,
+			default => null,
+		};
+
+		return in_array($id, ($members ?? []), true);
+	}//end listsMember()
 }//end class

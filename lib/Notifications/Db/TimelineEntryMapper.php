@@ -118,16 +118,21 @@ class TimelineEntryMapper extends QBMapper {
 	 * @param string|null $visibility Keep only entries carrying this flag; null returns every entry.
 	 * @param integer     $limit      Page size.
 	 * @param integer     $offset     Page offset.
+	 * @param boolean     $includeWithdrawn Also the withdrawn entries; the working timeline leaves them out.
 	 *
 	 * @return array<int, TimelineEntry> The rows.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The working timeline is the default; the record read is opt-in.
 	 */
 	public function findForObject(
 		string $objectUuid,
 		?string $visibility = null,
 		int $limit = 50,
 		int $offset = 0,
+		bool $includeWithdrawn = false,
 	): array {
 		$qb = $this->selectWhereEquals(columns: ['object_uuid' => $objectUuid]);
 		$qb->orderBy('pinned', 'DESC')
@@ -136,6 +141,9 @@ class TimelineEntryMapper extends QBMapper {
 			->setFirstResult($offset);
 
 		$this->whereEqualsWhenGiven(qb: $qb, columns: ['visibility' => $visibility]);
+		if ($includeWithdrawn === false) {
+			$this->whereNotWithdrawn(qb: $qb);
+		}
 
 		return $this->findEntities(query: $qb);
 	}//end findForObject()
@@ -170,6 +178,7 @@ class TimelineEntryMapper extends QBMapper {
 
 		$this->whereObjectIn(qb: $qb, objectUuids: $search->scope->objectUuids);
 		$this->whereEqualsWhenGiven(qb: $qb, columns: ['visibility' => $search->visibility]);
+		$this->whereNotWithdrawn(qb: $qb);
 
 		return $this->findOfKind(qb: $qb, kind: $search->scope->kind);
 	}//end searchEntries()
@@ -196,9 +205,23 @@ class TimelineEntryMapper extends QBMapper {
 			->setMaxResults($scope->limit);
 
 		$this->whereObjectIn(qb: $qb, objectUuids: $scope->objectUuids);
+		$this->whereNotWithdrawn(qb: $qb);
 
 		return $this->findOfKind(qb: $qb, kind: $scope->kind);
 	}//end findOpenFollowUps()
+
+	/**
+	 * Leave withdrawn entries out: they are in the record, not in the working views.
+	 *
+	 * @param IQueryBuilder $qb The query.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 */
+	private function whereNotWithdrawn(IQueryBuilder $qb): void {
+		$qb->andWhere($qb->expr()->isNull('withdrawn_at'));
+	}//end whereNotWithdrawn()
 
 	/**
 	 * Run the query, narrowed to one kind when one is given.

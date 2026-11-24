@@ -24,9 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Service\ContactMatchingService;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
-use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPreviewCacheInterface;
+use OCA\OpenRegister\Service\DeepLinkResolverInterface;
 use OCP\AppFramework\IAppContainer;
 use OCP\Collaboration\Reference\IReferenceManager;
 use Psr\Log\LoggerInterface;
@@ -36,7 +36,10 @@ use Throwable;
  * Clears the caches that outlive a save of one object.
  *
  * Every invalidation here is a non-essential side effect: a failure is logged
- * with its context and never fails the save.
+ * with its context and never fails the save. The caches are reached through
+ * Core-owned contracts; contact matching (Processes), the reference provider
+ * (Configuration) and the deep-link registry (Integrations) bind their answers
+ * in their own wiring.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
@@ -75,7 +78,7 @@ final class ObjectCacheInvalidator {
 	 */
 	private function clearContactMatches(SavedObjectScope $saved): void {
 		try {
-			$contacts = $this->container->get(ContactMatchingService::class);
+			$contacts = $this->container->get(ContactMatchCacheInterface::class);
 			$contacts->invalidateCacheForObject($saved->object->getObject());
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -96,8 +99,8 @@ final class ObjectCacheInvalidator {
 		try {
 			$invalidation = new ReferencePreviewInvalidation(
 				references: $this->container->get(IReferenceManager::class),
-				formatter: $this->container->get(ObjectPreviewFormatter::class),
-				deepLinks: $this->container->get(DeepLinkRegistryService::class)
+				formatter: $this->container->get(ObjectPreviewCacheInterface::class),
+				deepLinks: $this->container->get(DeepLinkResolverInterface::class)
 			);
 			$invalidation->invalidate(saved: $saved);
 		} catch (Throwable $e) {

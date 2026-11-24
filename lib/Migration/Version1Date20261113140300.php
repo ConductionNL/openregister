@@ -27,7 +27,6 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper\SearchFolding;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Accent folding for object search on PostgreSQL.
@@ -41,7 +40,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md
  */
-class Version1Date20261113140300 extends SimpleMigrationStep {
+class Version1Date20261113140300 extends TargetedMigrationStep {
 
 	/**
 	 * The wrapper's definition.
@@ -71,7 +70,7 @@ class Version1Date20261113140300 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/search-accent-insensitive/tasks.md#1.1
 	 */
-	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function afterTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$platform = $this->connection->getDatabasePlatform();
 
 		if (str_contains(get_class($platform), 'PostgreSQL') === false) {
@@ -103,7 +102,7 @@ class Version1Date20261113140300 extends SimpleMigrationStep {
 				. '). Object search stays accent-sensitive.'
 			);
 		}
-	}//end postSchemaChange()
+	}//end afterTargetedSchemaChange()
 
 	/**
 	 * Whether unaccent is installed already; a failed check counts as no.

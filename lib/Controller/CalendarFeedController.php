@@ -32,12 +32,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CalendarFeedControllerServices;
 use OCA\OpenRegister\Controller\Support\CalendarFeedPlatform;
 use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
 use OCA\OpenRegister\Controller\Support\TrimmedRequestParam;
 use OCA\OpenRegister\Db\CalendarFeedToken;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeServiceInterface;
 use OCA\OpenRegister\Service\Calendar\AttendeeResponse;
 use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
@@ -116,7 +116,7 @@ class CalendarFeedController extends Controller {
 		IRequest $request,
 		CalendarFeedControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->tokens = $services->domain->tokens;
 		$this->feed = $services->domain->feed;
 		$this->attendees = $services->domain->attendees;

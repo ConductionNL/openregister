@@ -43,6 +43,11 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // against the session user. All owner-scoped, static errors, no secret leak.
         ['name' => 'credential#index',         'url' => '/api/credentials',                       'verb' => 'GET'],
         ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
+        // Approval plane of app-declared credential providers (app-declared-credential-providers 3.2):
+        // administrators only. The identifier is `<appId>:<localId>`.
+        ['name' => 'credentialProviderApproval#approve', 'url' => '/api/credentials/providers/{identifier}/approve', 'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
+        ['name' => 'credentialProviderApproval#reject',  'url' => '/api/credentials/providers/{identifier}/reject',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
+        ['name' => 'credentialProviderApproval#revoke',  'url' => '/api/credentials/providers/{identifier}/revoke',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
         // Sharing (shared-credentials-and-flows). `shared-with-me` is a LITERAL
         // segment and is registered next to `providers`, before the `{id}` routes,
         // so a future `GET /api/credentials/{id}` cannot swallow it.
@@ -265,6 +270,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'sources#patch', 'url' => '/api/sources/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 
         // Curated MDI glyph as an SVG image (used to render a schema's icon in unified search).
+        // BAG address lookup by postcode and house number (bag-address-lookup-by-postcode): public, throttled, read-only.
+        ['name' => 'bagAddress#index', 'url' => '/api/bag/addresses', 'verb' => 'GET'],
         ['name' => 'icon#mdi', 'url' => '/api/icon/mdi/{name}', 'verb' => 'GET', 'requirements' => ['name' => '[A-Za-z0-9-]+']],
 
         // Data sync / harvesting — manual trigger + status (data-sync-harvesting spec).
@@ -327,6 +334,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'settings#getSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'GET'],
         ['name' => 'settings#updateSearchBackend', 'url' => '/api/settings/search-backend', 'verb' => 'PATCH'],
         ['name' => 'settings#getSearchIndexStatus', 'url' => '/api/settings/search-index', 'verb' => 'GET'],
+        ['name' => 'settings#queueSearchIndexRun', 'url' => '/api/settings/search-index/run', 'verb' => 'POST'],
         // The last report of the operator's seed directory (administrator only).
         ['name' => 'Settings\SeedReport#show', 'url' => '/api/settings/seed', 'verb' => 'GET'],
         ['name' => 'Settings\TranslationSettings#show', 'url' => '/api/settings/translation', 'verb' => 'GET'],
@@ -410,6 +418,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'Settings\AuditSettings#getAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'GET'],
         ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PATCH'],
         ['name' => 'Settings\AuditSettings#updateAggregationSettings', 'url' => '/api/settings/audit-aggregation', 'verb' => 'PUT', 'postfix' => 'put'],
+        // The load shedding thresholds and the database-pressure switch (administrator only).
+        ['name' => 'Settings\LoadSheddingSettings#index', 'url' => '/api/settings/load-shedding', 'verb' => 'GET'],
+        ['name' => 'Settings\LoadSheddingSettings#update', 'url' => '/api/settings/load-shedding', 'verb' => 'PUT'],
 
         // Settings — additional endpoints.
         ['name' => 'settings#load',                     'url' => '/api/settings/load',                            'verb' => 'GET'],
@@ -1264,7 +1275,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
         ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
         ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
-        ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // A form open to visitors without an account (`access: anonymous`), on a page that needs no account.
+        ['name' => 'publicFormPage#show', 'url' => '/forms/{formId}', 'verb' => 'GET'],
+        ['name' => 'objectExport#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
         // Address an object by its schema's declared identity. BEFORE objects#show for the same reason.
@@ -1301,7 +1314,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'verb' => 'GET',
             'requirements' => ['id' => '[^/]+'],
         ],
-        ['name' => 'objects#logs',      'url' => '/api/objects/{register}/{schema}/{id}/logs',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'auditTrail#objectLogs', 'url' => '/api/objects/{register}/{schema}/{id}/logs',      'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // Relation rows and the relation graph (relation-types-with-inverses).
         // The stored rows are the links no $ref property can hold: a split's
         // provenance, what a child inherited, an address outside the product,
@@ -1438,6 +1451,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
         ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
         ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        // Dependency breakers (operate-load-shedding D-7): administrator-only.
+        ['name' => 'operationsDependencies#index', 'url' => '/api/operations/dependencies', 'verb' => 'GET'],
+        ['name' => 'operationsDependencies#reset', 'url' => '/api/operations/dependencies/{key}/reset', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
         // Import preview and conflict policy — an import says what it would
         // create, update, skip and refuse before it writes anything.
         // The static routes come before the parameterised {id} ones.
@@ -1583,7 +1599,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'files#saveChat', 'url' => '/api/objects/{register}/{schema}/{id}/files/chat', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#index', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
-        ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectFilesArchive#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/files-multipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		// Legacy camelCase address of the same upload, kept so existing clients keep working.
 		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+'], 'postfix' => 'legacy'],
@@ -2217,6 +2233,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
 		['name' => 'archival#recomputeNomination', 'url' => '/api/archival/objects/{id}/nomination/recompute', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'archivalOverview#overview', 'url' => '/api/archival/overview', 'verb' => 'GET'],
+		// appraisal-inherited-from-a-parent (REQ-AIP-003): what the next destruction run holds back.
+		['name' => 'archivalHeldBack#index', 'url' => '/api/archival/held-back', 'verb' => 'GET'],
 		['name' => 'archivalOverview#drawUp', 'url' => '/api/archival/destruction-lists/draw-up', 'verb' => 'POST'],
 
 		// The classification plan arrives as a file, versioned, and a new

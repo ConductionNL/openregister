@@ -22,6 +22,8 @@ namespace OCA\OpenRegister\Tests\Unit\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
 use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
+use OCA\OpenRegister\Listener\SchemaDeclarationChecksListener;
+use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -52,6 +54,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators
  * @uses   \OCA\OpenRegister\Service\Survivorship\MdmAnnotationChecks
  * @uses   \OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\AggregationJoinAnnotationValidator
+ * @uses   \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaAggregationValidator
  */
 final class AdvisoryAnnotationChecksTest extends TestCase {
 	/**
@@ -61,12 +65,12 @@ final class AdvisoryAnnotationChecksTest extends TestCase {
 	 */
 	public static function checks(): array {
 		return [
-			'aggregations' => ['checkAggregations', 'x-openregister-aggregations', 'x-openregister-aggregations annotation on schema "zaak" is invalid and was ignored (aggregation not registered): ', ['bogus' => ['nested' => true], 7 => 'x']],
+			'aggregations' => ['aggregationsRule', 'x-openregister-aggregations', 'x-openregister-aggregations annotation on schema "zaak" is invalid and was ignored (aggregation not registered): ', ['bogus' => ['nested' => true], 7 => 'x']],
 			'quality'      => ['checkQuality', 'x-openregister-quality', 'x-openregister-quality annotation on schema "zaak" is invalid and was ignored (quality score not materialised): ', ['bogus' => ['nested' => true], 7 => 'x']],
 			'dedup'        => ['checkDedup', 'x-openregister-dedup', 'x-openregister-dedup annotation on schema "zaak" is invalid and was ignored (declared match rules not used): ', ['bogus' => ['nested' => true], 7 => 'x']],
 			'survivorship' => ['checkSurvivorship', 'x-openregister-survivorship', 'x-openregister-survivorship annotation on schema "zaak" is invalid and was ignored (golden record not materialised): ', ['bogus' => ['nested' => true], 7 => 'x']],
 			'merge'        => ['checkMerge', 'x-openregister-merge', 'x-openregister-merge annotation on schema "zaak" is invalid and was ignored (merge falls back to defaults): ', ['reversalWindowDays' => -1]],
-			'party'        => ['checkParty', 'x-openregister-party', 'x-openregister-party annotation on schema "zaak" is invalid and was ignored (the schema is not treated as a party schema): ', ['maxDepth' => 0]],
+			'party'        => ['partyRule', 'x-openregister-party', 'x-openregister-party annotation on schema "zaak" is invalid and was ignored (the schema is not treated as a party schema): ', ['maxDepth' => 0]],
 			'hinge'        => ['checkHinge', Schema::LENS_ANNOTATION, 'Hinge annotations on schema "zaak" are invalid and were ignored: ', ['byName' => 'not a lens']],
 		];
 	}//end checks()
@@ -107,7 +111,7 @@ final class AdvisoryAnnotationChecksTest extends TestCase {
 			}
 		);
 
-		(new AdvisoryAnnotationChecks(logger: $logger))->{$method}(self::schema([$key => $block]));
+		self::runCheck(checks: new AdvisoryAnnotationChecks(logger: $logger), method: $method, schema: self::schema([$key => $block]));
 
 		self::assertCount(1, $logged);
 		self::assertStringStartsWith($prefix, $logged[0]);
@@ -133,7 +137,7 @@ final class AdvisoryAnnotationChecksTest extends TestCase {
 		$logger->expects(self::once())->method('warning');
 		$discarded = new DiscardedAnnotations();
 
-		(new AdvisoryAnnotationChecks(logger: $logger, discarded: $discarded))->{$method}(self::schema([$key => $block]));
+		self::runCheck(checks: new AdvisoryAnnotationChecks(logger: $logger, discarded: $discarded), method: $method, schema: self::schema([$key => $block]));
 
 		$family = ($method === 'checkHinge') ? 'hinge' : substr($key, strlen('x-openregister-'));
 		$entries = $discarded->all();
@@ -172,7 +176,7 @@ final class AdvisoryAnnotationChecksTest extends TestCase {
 				$this->logged = (string)$message;
 			}
 		};
-		(new AdvisoryAnnotationChecks(logger: $logger))->{$method}(self::schema([$key => $block]));
+		self::runCheck(checks: new AdvisoryAnnotationChecks(logger: $logger), method: $method, schema: self::schema([$key => $block]));
 
 		return $logged;
 	}//end lastMessageOf()
@@ -192,9 +196,9 @@ final class AdvisoryAnnotationChecksTest extends TestCase {
 		$discarded = new DiscardedAnnotations();
 		$checks = new AdvisoryAnnotationChecks(logger: $this->createMock(LoggerInterface::class), discarded: $discarded);
 
-		$checks->{$method}(self::schema([]));
+		self::runCheck(checks: $checks, method: $method, schema: self::schema([]));
 		if ($method !== 'checkHinge') {
-			$checks->{$method}(self::schema([$key => 'not a block']));
+			self::runCheck(checks: $checks, method: $method, schema: self::schema([$key => 'not a block']));
 		}
 
 		self::assertSame([], $discarded->all());
@@ -214,10 +218,10 @@ final class AdvisoryAnnotationChecksTest extends TestCase {
 		$logger->expects(self::never())->method('warning');
 		$checks = new AdvisoryAnnotationChecks(logger: $logger);
 
-		$checks->{$method}(self::schema([]));
-		$checks->{$method}(self::schema(['x-openregister-other' => ['a' => 1]]));
+		self::runCheck(checks: $checks, method: $method, schema: self::schema([]));
+		self::runCheck(checks: $checks, method: $method, schema: self::schema(['x-openregister-other' => ['a' => 1]]));
 		if ($method !== 'checkHinge') {
-			$checks->{$method}(self::schema([$key => 'not a block']));
+			self::runCheck(checks: $checks, method: $method, schema: self::schema([$key => 'not a block']));
 		}
 	}//end testAnAbsentOrScalarAnnotationIsSilent()
 
@@ -241,15 +245,39 @@ final class AdvisoryAnnotationChecksTest extends TestCase {
 		);
 		$checks = new AdvisoryAnnotationChecks(logger: $logger);
 
-		$checks->checkAggregations(
-			self::schema(['x-openregister-aggregations' => ['documents' => ['metric' => 'count', 'schema' => 'document', 'filter' => ['zaak' => '@self.id']]]])
+		$checks->checkContributed(
+			self::schema(['x-openregister-aggregations' => ['documents' => ['metric' => 'count', 'schema' => 'document', 'filter' => ['zaak' => '@self.id']]]]),
+			AggregationDeclarationCheckListener::rule()
 		);
 		self::assertSame([], $logged, 'a count over a related schema was discarded');
 
-		$checks->checkAggregations(
-			self::schema(['x-openregister-aggregations' => ['titled' => ['metric' => 'count', 'schema' => 'Zaak', 'filter' => ['titel' => 'x']]]])
+		$checks->checkContributed(
+			self::schema(['x-openregister-aggregations' => ['titled' => ['metric' => 'count', 'schema' => 'Zaak', 'filter' => ['titel' => 'x']]]]),
+			AggregationDeclarationCheckListener::rule()
 		);
 		self::assertCount(1, $logged);
 		self::assertStringContainsString('filter references unknown field "titel"', $logged[0]);
 	}//end testAnAggregationOverARelatedSchemaIsKeptAtSave()
+
+	/**
+	 * Run one check: a method of the class, or a rule another area contributes.
+	 *
+	 * @param AdvisoryAnnotationChecks $checks The checks.
+	 * @param string                   $method The method, or `aggregationsRule` / `partyRule`.
+	 * @param Schema                   $schema The schema.
+	 *
+	 * @return void
+	 */
+	private static function runCheck(AdvisoryAnnotationChecks $checks, string $method, Schema $schema): void {
+		$rules = [
+			'aggregationsRule' => AggregationDeclarationCheckListener::rule(),
+			'partyRule' => SchemaDeclarationChecksListener::partyRule(),
+		];
+		if (isset($rules[$method]) === true) {
+			$checks->checkContributed(schema: $schema, rule: $rules[$method]);
+			return;
+		}
+
+		$checks->{$method}($schema);
+	}//end runCheck()
 }//end class

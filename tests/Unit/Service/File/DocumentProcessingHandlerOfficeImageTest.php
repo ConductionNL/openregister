@@ -56,6 +56,31 @@ use ZipArchive;
  * @covers \OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler
  * @covers \OCA\OpenRegister\Service\File\ImageRedactionService
  * @covers \OCA\OpenRegister\Service\File\OfficeMediaBurner
+ * @uses   \OCA\OpenRegister\Db\EntityRelation
+ * @uses   \OCA\OpenRegister\Db\GdprEntity
+ * @uses   \OCA\OpenRegister\Files\Db\AnonymisationLog
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentProcessingPlatform
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentRedactionServices
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocumentReplacement
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocxTextMatch
+ * @uses   \OCA\OpenRegister\Files\Service\File\DocxTextReplacer
+ * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderIdTranslator
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderLookup
+ * @uses   \OCA\OpenRegister\Files\Service\File\PlaceholderText
+ * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationReport
+ * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationResult
+ * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationRevisionCounts
+ * @uses   \OCA\OpenRegister\Files\Service\File\SanitizationStructureCounts
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationOptions
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\DocumentAnonymisationRequest
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\WordReplacementRequest
+ * @uses   \OCA\OpenRegister\Service\Anonymisation\PipelineSteps
+ * @uses   \OCA\OpenRegister\Service\File\ImageBurner
+ * @uses   \OCA\OpenRegister\Service\File\ImageRegion
+ * @uses   \OCA\OpenRegister\Service\File\ImageRegionDetectorRegistry
+ * @uses   \OCA\OpenRegister\Service\File\ImageRegionNotBurnableException
+ * @uses   \OCA\OpenRegister\Service\File\OcrWords
  */
 final class DocumentProcessingHandlerOfficeImageTest extends TestCase {
 

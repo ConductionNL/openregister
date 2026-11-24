@@ -99,6 +99,10 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setApplication(?string $application)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ * @method string|null getClassification()
+ * @method void setClassification(?string $classification)
+ * @method array|null getCatalogue()
+ * @method void setCatalogue(?array $catalogue)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
  * @method array|null getSharedWith()
@@ -125,6 +129,8 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setDeck(?array $deck)
  * @method array|null getDraft()
  * @method void setDraft(?array $draft)
+ * @method array|null getFormerSlugs()
+ * @method void setFormerSlugs(?array $formerSlugs)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -139,6 +145,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  */
 class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	use JsonFieldsTrait;
+	use ManagedByConfigurationTrait;
 	use LinkedItemsTrait;
 
 	/**
@@ -283,6 +290,23 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string|null Organisation UUID this schema belongs to
 	 */
 	protected ?string $organisation = null;
+
+	/**
+	 * The data classification of this record type: open, internal,
+	 * confidential or strictly-confidential. Descriptive only: it never
+	 * changes who may read the schema or its objects.
+	 *
+	 * @var string|null The classification, or null when unset
+	 */
+	protected ?string $classification = null;
+
+	/**
+	 * Data catalogue metadata: maintainer, contact, sourceSystem,
+	 * updateFrequency, documentationUrl and labels.
+	 *
+	 * @var array|null The catalogue block, or null when unset
+	 */
+	protected ?array $catalogue = null;
 
 	/**
 	 * JSON object describing authorizations
@@ -455,6 +479,18 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var array|null The draft body, or null when there is none
 	 */
 	protected ?array $draft = null;
+
+	/**
+	 * The slugs this schema answered to before it was renamed, oldest first.
+	 *
+	 * Only the `renameSchema` migration writes it, never hydrate(): a former slug
+	 * keeps an old API path and an app re-import pointing at this schema.
+	 *
+	 * @var array|null The former slugs, or null when the schema was never renamed
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md
+	 */
+	protected ?array $formerSlugs = null;
 
 	/**
 	 * Constructor for the Schema class
@@ -788,6 +824,16 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public const LIST_ANNOTATION = 'x-openregister-list';
 
 	/**
+	 * The composite-index annotation: lists of properties indexed together.
+	 *
+	 * `[["postcode", "huisnummer"]]` gives the magic table one index over both
+	 * columns, so an exact filter on the pair is one indexed query.
+	 *
+	 * @var string
+	 */
+	public const INDEXES_ANNOTATION = 'x-openregister-indexes';
+
+	/**
 	 * The geographic-inheritance annotation: which references carry map features.
 	 *
 	 * A record may show the point its address holds. Every inherited feature
@@ -797,6 +843,27 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string
 	 */
 	public const GEO_INHERITANCE_ANNOTATION = 'x-openregister-geo-inheritance';
+
+	/**
+	 * The hierarchy annotation: the parent edge grants travel along.
+	 *
+	 * @var string
+	 */
+	public const HIERARCHY_ANNOTATION = 'x-openregister-hierarchy';
+
+	/**
+	 * The classification annotation: the scale an object's classification is read on.
+	 *
+	 * @var string
+	 */
+	public const CLASSIFICATION_ANNOTATION = 'x-openregister-classification';
+
+	/**
+	 * The confidentiality annotation: a per-object tier, legal ground and timed release.
+	 *
+	 * @var string
+	 */
+	public const CONFIDENTIALITY_ANNOTATION = 'x-openregister-confidentiality';
 
 	/**
 	 * The property keys whose falsy value is a real one.
@@ -980,9 +1047,16 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return true True if the authorization structure is valid
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\AuthorizationRulesValidator::validate()},
+	 *             built with {@see \OCA\OpenRegister\Db\Schema\DeclaredActions::names()}
+	 *             of the schema's configuration, instead; no openregister code calls this method.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function validateAuthorization(): bool {
-		return (new AuthorizationRulesValidator(declaredActions: $this->declaredActionNames()))->validate(
+		return (new AuthorizationRulesValidator(declaredActions: (new DeclaredActions())->names(configuration: $this->configuration)))->validate(
 			authorization: $this->authorization,
 			properties: $this->properties
 		);
@@ -999,6 +1073,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, string> Declared action keys.
 	 *
 	 * @spec openspec/specs/declared-actions/spec.md
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\DeclaredActions::names()} with
+	 *             the schema's configuration instead; every openregister caller
+	 *             does. The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function declaredActionNames(): array {
 		return (new DeclaredActions())->names(configuration: $this->configuration);
@@ -1126,7 +1206,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<string, mixed>
 	 */
 	private static function withHydrateDefaults(array $object): array {
-		unset($object['draft']);
+		unset($object['draft'], $object['formerSlugs']);
 
 		$object['metadata'] = ($object['metadata'] ?? []);
 		$object['required'] = ($object['required'] ?? []);
@@ -1276,9 +1356,31 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			$this->serialisedContent(),
 			$this->serialisedOwnership(),
 			$this->serialisedComposition(),
-			$this->serialisedLinks()
+			$this->serialisedLinks(),
+			$this->serialisedCatalogue()
 		);
 	}//end jsonSerialize()
+
+	/**
+	 * The classification and catalogue block, only when set, so a schema
+	 * without them serialises exactly as before.
+	 *
+	 * @return array<string, mixed> The set fields.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-a-schema-carries-catalogue-metadata
+	 */
+	private function serialisedCatalogue(): array {
+		$fields = [];
+		if ($this->classification !== null) {
+			$fields['classification'] = $this->classification;
+		}
+
+		if ($this->catalogue !== null) {
+			$fields['catalogue'] = $this->catalogue;
+		}
+
+		return $fields;
+	}//end serialisedCatalogue()
 
 	/**
 	 * The identity fields of the serialised schema.
@@ -1390,8 +1492,24 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'_talk' => $this->talk,
 			'_deck' => $this->deck,
 			'draft' => $this->draft,
-		];
+		] + $this->serialisedFormerSlugs();
 	}//end serialisedLinks()
+
+	/**
+	 * The former slugs, only on a schema that was renamed, so every other
+	 * schema serialises as before.
+	 *
+	 * @return array<string, array<int, string>>
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-record-type-can-be-renamed-without-breaking-its-links
+	 */
+	private function serialisedFormerSlugs(): array {
+		if ($this->formerSlugs === null || $this->formerSlugs === []) {
+			return [];
+		}
+
+		return ['formerSlugs' => $this->formerSlugs];
+	}//end serialisedFormerSlugs()
 
 	/**
 	 * Converts schema to an object representation
@@ -1462,16 +1580,15 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, string> The constraint names, in declaration order.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator::upsertKeys()}
+	 *             with the schema's configuration instead; every openregister caller does.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function getUpsertKeys(): array {
-		$keys = [];
-		foreach ((new UniqueConstraintEvaluator())->constraints(configuration: $this->getConfiguration(), includeLegacy: true) as $constraint) {
-			if ($constraint['action'] === UniqueConstraintEvaluator::ACTION_REFUSE) {
-				$keys[] = $constraint['name'];
-			}
-		}
-
-		return $keys;
+		return (new UniqueConstraintEvaluator())->upsertKeys(configuration: $this->getConfiguration());
 	}//end getUpsertKeys()
 
 	/**
@@ -1870,6 +1987,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, array{key: string, label: string, description?: string}> The vocabulary.
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\VocabularyEntries::configuredVocabulary()}
+	 *             with the schema's configuration and `linkRoles` instead; every openregister caller does.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function getLinkRoles(): array {
 		return (new VocabularyEntries())->configuredVocabulary(configuration: $this->configuration, config: 'linkRoles');
@@ -1885,6 +2008,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 *
+	 * @deprecated The entity (Kernel) should not construct a Core helper. Ask
+	 *             {@see \OCA\OpenRegister\Db\Schema\VocabularyEntries::configuredVocabulary()}
+	 *             with the schema's configuration and `partyKinds` instead; every openregister caller does.
+	 *             The method keeps working, with the same result, until no
+	 *             app calls it; it is removed in a later, separate change.
 	 */
 	public function getPartyKinds(): array {
 		return (new VocabularyEntries())->configuredVocabulary(configuration: $this->configuration, config: 'partyKinds');
@@ -2296,58 +2425,11 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end setAnyOf()
 
 	/**
-	 * Check if this schema is managed by any configuration
+	 * The member list a configuration keeps its schemas in, see ManagedByConfigurationTrait.
 	 *
-	 * This method checks if the schema's ID is present in the schemas array
-	 * of any provided configuration entities.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return bool True if this schema is managed by at least one configuration
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @return string
 	 */
-	public function isManagedByConfiguration(array $configurations): bool {
-		if (empty($configurations) === true || $this->id === null) {
-			return false;
-		}
-
-		foreach ($configurations as $configuration) {
-			$schemas = $configuration->getSchemas();
-			if (in_array($this->id, $schemas ?? [], true) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isManagedByConfiguration()
-
-	/**
-	 * Get the configuration that manages this schema
-	 *
-	 * Returns the first configuration that has this schema's ID in its schemas array.
-	 * Returns null if the schema is not managed by any configuration.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return Configuration|null The configuration managing this schema, or null
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
-	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$schemas = $configuration->getSchemas();
-			if (in_array($this->id, $schemas ?? [], true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
-	}//end getManagedByConfiguration()
+	protected function configurationMemberKind(): string {
+		return 'schemas';
+	}//end configurationMemberKind()
 }//end class

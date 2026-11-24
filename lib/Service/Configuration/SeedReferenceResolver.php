@@ -125,15 +125,20 @@ final class SeedReferenceResolver {
 	}//end itemsTarget()
 
 	/**
-	 * The schema slug a `$ref` names: its last path segment, or null for no reference.
+	 * The schema a `$ref` names: its last path segment, the id of a stored schema whose
+	 * `$ref` was saved as that id, or null for no reference.
 	 *
 	 * @param mixed $value The `$ref` value.
 	 *
-	 * @return string|null The slug.
+	 * @return string|null The slug or id.
 	 *
 	 * @spec openspec/changes/aggregation-dialect-repair/tasks.md#6-adjacent-repair-a--seed-ref-resolution
 	 */
 	private function referenceOf(mixed $value): ?string {
+		if (is_int($value) === true && $value > 0) {
+			return (string)$value;
+		}
+
 		if (is_string($value) === false) {
 			return null;
 		}

@@ -22,8 +22,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
 use DateTime;
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
@@ -33,12 +36,25 @@ use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
 use OCA\OpenRegister\Db\AuditTrail\ToolInvocation;
 use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
+use OCA\OpenRegister\Service\Object\IntegrityAuditEntry;
 use OCP\AppFramework\Db\Entity;
 
 /**
  * Every public method of AuditTrailMapper. Callers depend on this interface, not on the class.
+ *
+ * It extends the Core port through which Core records an action on one object.
  */
-interface AuditTrailMapperInterface {
+interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
+
+	/**
+	 * The most changes one slug backfill entry lists; the rest is in the log.
+	 *
+	 * Owned here, by the port, because the slug backfill (Core) splits its log
+	 * lines by the same number the entry is capped at.
+	 *
+	 * @var int
+	 */
+	public const SLUG_BACKFILL_MAX_CHANGES = 1000;
 
 	/**
 	 * Set the request-scoped import-job UUID stamped on all
@@ -257,6 +273,21 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function applyRetentionExpiry(AuditTrail $auditTrail, ?ObjectEntity $objectEntity): AuditTrail;
+
+	/**
+	 * Record what referential integrity did to one object: build the row, stamp its expiry, insert it.
+	 *
+	 * The row's expiry follows the retention of `$entry->object` (or#4101); without
+	 * one it is retained indefinitely, as {@see applyRetentionExpiry()} says. A
+	 * database failure is thrown; the caller decides whether that blocks it.
+	 *
+	 * @param IntegrityAuditEntry $entry What happened to which object, by whom, and the object itself when found.
+	 *
+	 * @return AuditTrail The stored row.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function recordIntegrityAction(IntegrityAuditEntry $entry): AuditTrail;
 
 	/**
 	 * Create audit trail rows for many object changes with batched inserts.
@@ -481,6 +512,40 @@ interface AuditTrailMapperInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function findObjectActions(string $objectUuid, AuditTrail\ActionLookupOptions $options): array;
+
+	/**
+	 * Destruction entries created since a moment, oldest first, one page.
+	 *
+	 * @param DestructionQuery $query The moment, register, schema, actor and page.
+	 *
+	 * @return array<int, AuditTrail> The matching destruction entries, oldest first.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function findDestructions(DestructionQuery $query): array;
+
+	/**
+	 * How many destruction entries a query matches, ignoring its page.
+	 *
+	 * @param DestructionQuery $query The moment, register, schema and actor.
+	 *
+	 * @return int The number of matching destruction entries.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function countDestructions(DestructionQuery $query): int;
+
+	/**
+	 * When the oldest destruction entry still held was written, or null when none is held.
+	 *
+	 * The audit trail has its own retention, so a destruction older than this
+	 * moment may no longer be on record.
+	 *
+	 * @return DateTimeImmutable|null The oldest destruction entry's `created`.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function oldestDestruction(): ?DateTimeImmutable;
 
 	/**
 	 * Tombstone the audit rows that belong to one object.

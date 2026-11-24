@@ -26,8 +26,8 @@
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Service\Object\ReferenceKey;
-use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Class PropertyValidatorHandler
@@ -39,6 +39,9 @@ use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
  *   vocabulary tables (~170 lines of pure data), deliberately co-located so a type is
  *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
  *   second file to forget". Extracting them to satisfy a line count would defeat that intent.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Thirteen: most are the declaration checks
+ *   (generated identifier, coded choice, reference filter, scoped property, property source,
+ *   error messages), each a static assert on one annotation; the vocabulary is their sum.
  */
 class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 
@@ -254,6 +257,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'bsn',
 		// Dutch licence plate in one of the fourteen sidecodes. See LicensePlateNlFormat.
 		'license-plate-nl',
+		// IANA time zone name, as DateTimeZone lists it. See TimeZoneFormat.
+		'time-zone',
 		// International Bank Account Number, checked with mod-97. See IbanFormat.
 		'iban',
 		// Nextcloud user id, checked against the user backend. The referenced
@@ -493,8 +498,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 	private const ON_DELETE_ACTIONS = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
 
 	public const CLOSED_MODIFIER_VALUES = [
-		'matchType' => PropertySearchProfile::MATCH_TYPES,
-		'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
+		'matchType' => PropertySearchProfileInterface::MATCH_TYPES,
+		'inputControl' => PropertySearchProfileInterface::INPUT_CONTROLS,
 	];
 
 	/**
@@ -577,6 +582,15 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		],
 		'table' => ['value' => 'object', 'description' => 'How the field behaves in a table: whether it is one of the default columns.'],
 		'widget' => ['value' => 'string', 'description' => 'Which control a form renders the field with.'],
+		'columns' => [
+			'value' => 'array',
+			'description' => 'The fields of the related rows a form shows as table columns, for an inverse relation edited inline.',
+		],
+		'totals' => ['value' => 'array', 'description' => 'The sums a form shows under the table of related rows, each over one column.'],
+		'addFrom' => [
+			'value' => 'object',
+			'description' => 'The picker that adds a related row prefilled from another schema\'s object, with its field map.',
+		],
 		'defaultBehavior' => ['value' => 'string', 'description' => 'When the declared default is applied: always, or only to a falsy answer.'],
 		'conceptScheme' => [
 			'value' => 'string',
@@ -943,6 +957,7 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
 		ScopedPropertyDeclaration::assert(property: $property, path: $path);
 		PropertySourceDeclaration::assert(property: $property, path: $path);
+		ErrorMessagesDeclaration::assert(property: $property, path: $path);
 		RequiredWhenDeclaration::fromProperty(property: $property, path: $path);
 		PropertyTitles::assert(property: $property, path: $path);
 		// Cross-app-semantic-references: a semantic type no resolver can match is refused at save.

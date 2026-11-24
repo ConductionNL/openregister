@@ -19,9 +19,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Settings;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ChatProbe;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\LlmSettingsControllerServices;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\AppSettingsInterface;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
@@ -66,13 +67,6 @@ class LlmSettingsController extends Controller {
 	private const DEFAULT_TEST_TEXT = 'This is a test embedding to verify the LLM configuration.';
 
 	/**
-	 * The message sent when the request names none.
-	 *
-	 * @var string
-	 */
-	private const DEFAULT_TEST_MESSAGE = 'Hello! Please respond with a brief greeting.';
-
-	/**
 	 * DI container.
 	 *
 	 * @var ContainerInterface
@@ -110,7 +104,7 @@ class LlmSettingsController extends Controller {
 		IRequest $request,
 		LlmSettingsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->container = $services->platform->container;
 		$this->settingsService = $services->domain->settingsService;
 		$this->vectorizationService = $services->domain->vectorizationService;
@@ -249,13 +243,15 @@ class LlmSettingsController extends Controller {
 		try {
 			$provider = (string)$this->request->getParam('provider');
 			$config = $this->request->getParam('config', []);
-			$testMessage = (string)$this->request->getParam('testMessage', self::DEFAULT_TEST_MESSAGE);
+			$testMessage = (string)$this->request->getParam('testMessage', ChatProbe::DEFAULT_MESSAGE);
 			$invalid = $this->invalidTestRequest(provider: $provider, config: $config);
 			if ($invalid !== null) {
 				return $invalid;
 			}
 
-			$result = $this->chatService()->testChat(provider: $provider, config: $config, _testMessage: $testMessage);
+			$result = $this->chatService()->testChat(
+				probe: new ChatProbe(provider: $provider, config: $config, testMessage: $testMessage)
+			);
 			return $this->testResult(result: $result);
 		} catch (Exception $e) {
 			return $this->testFailure(prefix: 'Failed to test chat: ', e: $e);

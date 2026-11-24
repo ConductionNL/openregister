@@ -456,6 +456,7 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 				\OCA\OpenRegister\Service\DateTimeNormalizerInterface::class => $this->createMock(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
 				\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
 				\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
+				\OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface::class => new \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile(),
 				default => null,
 			}
 		);

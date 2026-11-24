@@ -30,13 +30,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TranslationBindingInterface;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyProvider;
 use OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
-use OCA\OpenRegister\Service\Translation\TaskProcessingTranslationProvider;
-use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Container\ContainerInterface;
@@ -57,13 +56,6 @@ class ConnectionSeamReportJob extends TimedJob {
 	 * @var integer
 	 */
 	private const INTERVAL_SECONDS = 21600;
-
-	/**
-	 * The identifier IdentityTranslationProvider reports.
-	 *
-	 * @var string
-	 */
-	private const IDENTITY_TRANSLATION = 'identity';
 
 	/**
 	 * Constructor.
@@ -93,61 +85,10 @@ class ConnectionSeamReportJob extends TimedJob {
 	 * @spec openspec/specs/app-connections/spec.md
 	 */
 	protected function run($argument): void {
-		$this->reportSeam(key: 'translation', describe: fn (): array => $this->describeTranslation());
+		$this->reportSeam(key: 'translation', describe: fn (): array => $this->container->get(TranslationBindingInterface::class)->describe());
 		$this->reportSeam(key: 'dsar-identity', describe: fn (): array => $this->describeIdentity());
 		$this->reportSeam(key: 'dsar-regulator', describe: fn (): array => $this->describeRegulator());
 	}//end run()
-
-	/**
-	 * What answers behind the translation seam.
-	 *
-	 * @return array{0: string, 1: string} The status and the message.
-	 *
-	 * @spec openspec/specs/app-connections/spec.md
-	 */
-	private function describeTranslation(): array {
-		/*
-		 * @var TranslationProviderInterface $provider
-		 */
-
-		$provider = $this->container->get(TranslationProviderInterface::class);
-		$identifier = $provider->getIdentifier();
-
-		if ($identifier === self::IDENTITY_TRANSLATION) {
-			return [
-				'simulated',
-				'The identity provider is bound. A translation returns the source text unchanged. Bind a real TranslationProviderInterface to translate.',
-			];
-		}
-
-		if ($provider instanceof TaskProcessingTranslationProvider) {
-			return ['configured', $this->describeTaskProcessing(names: $provider->providerNames())];
-		}
-
-		return ['configured', 'Translation provider "' . $identifier . '" is bound. Not tested.'];
-	}//end describeTranslation()
-
-	/**
-	 * The message for the Task Processing provider: the Nextcloud providers it sends text to.
-	 *
-	 * @param array<string, string> $names The provider name per task type.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/ai-translation-with-a-glossary/specs
-	 */
-	private function describeTaskProcessing(array $names): string {
-		if ($names === []) {
-			return 'Translation runs through Nextcloud Task Processing, which reports no provider for translation. Not tested.';
-		}
-
-		$parts = [];
-		foreach ($names as $taskTypeId => $name) {
-			$parts[] = $name . ' (' . $taskTypeId . ')';
-		}
-
-		return 'Translation runs through Nextcloud Task Processing: ' . implode(', ', $parts) . '. Not tested.';
-	}//end describeTaskProcessing()
 
 	/**
 	 * What answers behind the DSAR identity-verify seam.

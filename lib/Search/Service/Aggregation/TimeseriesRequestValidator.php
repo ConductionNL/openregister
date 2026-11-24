@@ -93,10 +93,12 @@ class TimeseriesRequestValidator implements TimeseriesRequestValidatorInterface 
 			metric: $this->requestedMetric(input: $input),
 			field: $request->metricField,
 			filter: (array) ($input['filter'] ?? []),
-			groupBy: $request->groupBy,
-			dateBucket: $request->dateBucket,
-			metrics: $this->validatedMetrics(raw: ($input['metrics'] ?? null), allowed: $request->allowed),
-			cumulative: $this->validatedCumulative(input: $input, dateBucket: $request->dateBucket)
+			layout: new AggregationLayout(
+				groupBy: $request->groupBy,
+				dateBucket: $request->dateBucket,
+				metrics: $this->validatedMetrics(raw: ($input['metrics'] ?? null), allowed: $request->allowed),
+				cumulative: $this->validatedCumulative(input: $input, dateBucket: $request->dateBucket)
+			)
 		);
 	}//end validate()
 

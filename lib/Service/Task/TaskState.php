@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 
 /**
  * Resolves any fleet status vocabulary onto the six CMMN states.
@@ -95,7 +96,7 @@ final class TaskState {
 	 *
 	 * @var array<int, string>
 	 */
-	public const REJECTING_OUTCOMES = ['rejected', 'returned', 'declined', 'denied'];
+	public const REJECTING_OUTCOMES = TaskInterface::REJECTING_OUTCOMES;
 
 	/**
 	 * Outcomes that approve a sequence position when its template declares none.

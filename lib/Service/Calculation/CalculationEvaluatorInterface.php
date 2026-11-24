@@ -22,10 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Calculation;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionEvaluatorInterface;
+
 /**
  * Every public method of CalculationEvaluator. Callers depend on this interface, not on the class.
+ *
+ * It extends the render's port: a render only evaluates, and types against that port.
  */
-interface CalculationEvaluatorInterface {
+interface CalculationEvaluatorInterface extends ExpressionEvaluatorInterface {
 
 	/**
 	 * Evaluate an expression against an object payload.

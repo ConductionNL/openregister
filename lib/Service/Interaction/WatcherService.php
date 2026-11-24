@@ -52,10 +52,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Interaction;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Notifications\Db\Watcher;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 
@@ -74,7 +76,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
  * subscription lookup can never take out an object read or a dispatch. Removing a branch
  * here means removing a fail-safe.
  */
-class WatcherService implements WatcherServiceInterface {
+class WatcherService implements WatcherServiceInterface, ObjectWatchMarkersInterface {
 
 	/**
 	 * What the current user follows, loaded once per request: uuid to whether
@@ -432,10 +434,9 @@ class WatcherService implements WatcherServiceInterface {
 
 		try {
 			return $this->permissions->hasPermission(
-				schema: $schema,
-				action: 'update',
-				objectOwner: $object->getOwner(),
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: null, objectOwner: $object->getOwner())
+					->about(object: $object, register: null)
 			);
 		} catch (\Throwable $e) {
 			return false;

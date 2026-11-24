@@ -10,7 +10,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileOverwrite;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Files\Service\File\FileOwnershipHandlerInterface;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
@@ -232,7 +232,7 @@ class UpdateFileHandlerGoldenTest extends TestCase {
 			}
 		});
 
-		$ownership = $this->createMock(FileOwnershipHandler::class);
+		$ownership = $this->createMock(FileOwnershipHandlerInterface::class);
 		$ownership->method('transferFileOwnershipIfNeeded')->willReturnCallback(function () {
 			$this->record(method: 'ownership.transferFileOwnershipIfNeeded', args: func_get_args());
 			return true;

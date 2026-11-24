@@ -28,7 +28,6 @@ namespace OCA\OpenRegister\Controller;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
 use OCA\OpenRegister\Controller\Support\BulkSaveBatch;
 use OCA\OpenRegister\Controller\Support\BulkSaveCounts;
@@ -49,6 +48,7 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
@@ -64,6 +64,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
 
 /**
  * Bulk operations controller for OpenRegister
@@ -153,7 +154,7 @@ class BulkController extends Controller {
 		IRequest $request,
 		BulkControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->store = $services->store;
 		$this->objectService = $services->store->objectService;
 		$this->registerMapper = $services->store->registerMapper;
@@ -321,6 +322,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
+	#[Sheddable]
 	public function delete(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
@@ -718,6 +720,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
+	#[Sheddable]
 	public function save(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
@@ -852,6 +855,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
+	#[Sheddable]
 	public function deleteSchema(string $register, string $schema): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -992,6 +996,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
 	 */
+	#[Sheddable]
 	public function deleteSchemaObjects(string $register, string $schema): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -1060,6 +1065,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
 	 */
+	#[Sheddable]
 	public function deleteRegister(string $register): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -1131,6 +1137,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
+	#[Sheddable]
 	public function runSchemaValidation(string $schema): JSONResponse {
 		try {
 			// Validate input.

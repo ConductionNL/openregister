@@ -60,10 +60,11 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException;
 use OCA\OpenRegister\Exception\SharedMasterDataWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\Retention\ExpiryDeclaration;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\DeclaredRow;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\CascadeRun;
@@ -127,17 +128,13 @@ use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
-use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
-use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
-use OCA\OpenRegister\Search\Service\Search\PlaceholderResolvers;
+use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
-use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\TmloServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Service\File\FolderAccessCheck;
-use OCA\OpenRegister\Service\TranslationProjectionService;
-use OCA\OpenRegister\Service\TranslationStatusService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -151,6 +148,10 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -461,16 +462,16 @@ class SaveObject implements SaveObjectInterface {
 	/**
 	 * Collaborator, taken from the services bundle.
 	 *
-	 * @var TranslationProjectionService
+	 * @var SourceLanguagesInterface
 	 */
-	private readonly TranslationProjectionService $translationProjectionService;
+	private readonly SourceLanguagesInterface $translationProjectionService;
 
 	/**
 	 * Collaborator, taken from the services bundle.
 	 *
-	 * @var TranslationStatusService
+	 * @var DerivedTranslationsInterface
 	 */
-	private readonly TranslationStatusService $translationStatusService;
+	private readonly DerivedTranslationsInterface $translationStatusService;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -480,11 +481,11 @@ class SaveObject implements SaveObjectInterface {
 	private readonly LoggerInterface $logger;
 
 	/**
-	 * Collaborator, taken from the services bundle.
+	 * Stamps and checks the archival (TMLO) metadata, taken from the services bundle.
 	 *
-	 * @var TmloService
+	 * @var ObjectArchivalMetadataInterface
 	 */
-	private readonly TmloService $tmloService;
+	private readonly ObjectArchivalMetadataInterface $tmloService;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -522,11 +523,11 @@ class SaveObject implements SaveObjectInterface {
 	private readonly ?FieldEncryptionHandler $fieldEncryptionHandler;
 
 	/**
-	 * Collaborator, taken from the services bundle.
+	 * Which flow run is writing, taken from the services bundle.
 	 *
-	 * @var \OCA\OpenRegister\Service\Flow\FlowRunContext|null
+	 * @var CurrentFlowRunInterface|null
 	 */
-	private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext;
+	private readonly ?CurrentFlowRunInterface $runContext;
 
 	/**
 	 * Collaborator, taken from the services bundle.
@@ -1166,37 +1167,33 @@ class SaveObject implements SaveObjectInterface {
 	 * update would silently overwrite what a caseworker typed, which is a
 	 * calculation and is a different annotation.
 	 *
-	 * The resolver is built here from this handler's own session rather than
-	 * injected, because adding a constructor parameter to this class would
-	 * change the positional signature ten unit tests construct it by. It holds
-	 * no state between calls, so building it per create costs an object.
+	 * The expressions are the rules engine's work (Processes): this handler asks
+	 * the Core port {@see ExpressionDefaultsInterface}, resolved from the
+	 * injected app container rather than taken as a constructor parameter,
+	 * because adding one would change the positional form ten unit tests
+	 * construct this class by. A container that cannot serve the port fails
+	 * loudly; only a hand-built handler with no container at all derives nothing.
 	 *
 	 * @param Schema $schema The schema being written against.
 	 * @param array<string, mixed> $data The object being created.
 	 *
 	 * @return array<string, mixed> The object with the derived defaults written onto it.
 	 *
-	 * @throws ExpressionDefaultException When an expression cannot be evaluated.
+	 * @throws \RuntimeException When an expression cannot be evaluated; the create is refused (HTTP 422).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyExpressionDefaults(Schema $schema, array $data): array {
-		$properties = ($schema->getProperties() ?? []);
-		if (is_array($properties) === false || $properties === []) {
+		if ($this->container === null) {
 			return $data;
 		}
 
-		$resolver = new ExpressionDefaultResolver(
-			evaluator: new CalculationEvaluator(
-				placeholders: PlaceholderResolvers::forSession(userSession: $this->userSession)
-			)
-		);
-
-		if ($resolver->declaresAny(properties: $properties) === false) {
-			return $data;
+		$defaults = $this->container->get(ExpressionDefaultsInterface::class);
+		if ($defaults instanceof ExpressionDefaultsInterface === false) {
+			throw new \LogicException('The expression defaults port is bound to ' . get_debug_type($defaults));
 		}
 
-		return $resolver->apply(properties: $properties, data: $data);
+		return $defaults->apply(schema: $schema, data: $data);
 	}//end applyExpressionDefaults()
 
 	/**
@@ -2582,9 +2579,10 @@ class SaveObject implements SaveObjectInterface {
 	 *
 	 * @return void
 	 *
-	 * @throws Exception When the incoming data touches an unauthorized property.
+	 * @throws PropertyWriteNotAuthorizedException When the incoming data touches a property the caller may not modify.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md
 	 */
 	private function refuseUnauthorizedProperties(ObjectSaveCall $call): void {
 		$isCreate = ($call->uuid === null);
@@ -2602,9 +2600,7 @@ class SaveObject implements SaveObjectInterface {
 		);
 
 		if (empty($unauthorizedProps) === false) {
-			throw new Exception(
-				'You are not authorized to modify the following properties: ' . implode(', ', $unauthorizedProps)
-			);
+			throw new PropertyWriteNotAuthorizedException(properties: array_values($unauthorizedProps));
 		}
 	}//end refuseUnauthorizedProperties()
 
@@ -3658,7 +3654,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		$this->noteClientCauseAttempt(call: $call, object: $savedEntity);
-		$log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity, action: $action);
+		$log = $this->auditTrailMapper->recordChange(change: new AuditedChange(old: null, new: $savedEntity, action: $action));
 
 		$savedEntity->setLastLog($log->jsonSerialize());
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
@@ -3696,6 +3692,8 @@ class SaveObject implements SaveObjectInterface {
 
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $objectEntity, submission: new SelfSubmission(selfData: $selfData, actingUser: $flags->currentUser));
+		// An opted-in schema stores `@self.expires` (expired-object-sweep); this save already runs behind the update check.
+		ExpiryDeclaration::stampRequestedExpiry(schema: $schema, object: $objectEntity, selfData: $selfData);
 
 		// Start the object's version sequence. Nothing wrote this before, so on
 		// the magic tables (which carry no column default) every object read
@@ -3902,6 +3900,7 @@ class SaveObject implements SaveObjectInterface {
 
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $existingObject, submission: new SelfSubmission(selfData: $selfData, actingUser: $currentUser));
+		ExpiryDeclaration::stampRequestedExpiry(schema: $schema, object: $existingObject, selfData: $selfData);
 
 		// A save is a patch. Bumped here rather than after the write so the
 		// value the audit trail copies onto its own `version` column is the
@@ -4345,7 +4344,7 @@ class SaveObject implements SaveObjectInterface {
 	 * Populate TMLO defaults on a new object if the register has TMLO enabled.
 	 *
 	 * Client-supplied @self.tmlo is intentionally NOT accepted here (wave-11 WF1 fix).
-	 * All TMLO fields on CREATE are system-managed defaults applied by TmloService.
+	 * All TMLO fields on CREATE are system-managed defaults applied by the archival metadata port.
 	 * On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix instead.
 	 *
 	 * @param ObjectEntity $objectEntity The object entity being created
@@ -4484,7 +4483,7 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function assertTmloTransition(ObjectEntity $existingObject, array $newTmlo): void {
 		$oldTmlo = $existingObject->getTmlo();
-		$oldStatus = ($oldTmlo['archiefstatus'] ?? TmloService::ARCHIEFSTATUS_ACTIEF);
+		$oldStatus = ($oldTmlo['archiefstatus'] ?? TmloServiceInterface::ARCHIEFSTATUS_ACTIEF);
 		$newStatus = ($newTmlo['archiefstatus'] ?? null);
 		if ($newStatus === null || $newStatus === $oldStatus) {
 			return;
@@ -5167,10 +5166,6 @@ class SaveObject implements SaveObjectInterface {
 	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
 	 */
 	private function auditUpdate(ObjectUpdateRun $run, ObjectEntity $updatedEntity): AuditTrail {
-		if ($run->origin === null && $run->marks === []) {
-			return $this->auditTrailMapper->createAuditTrail(old: $run->oldObject, new: $updatedEntity);
-		}
-
 		return $this->auditTrailMapper->recordChange(
 			change: new AuditedChange(old: $run->oldObject, new: $updatedEntity, action: $run->origin, marks: $run->marks)
 		);
@@ -5316,7 +5311,7 @@ class SaveObject implements SaveObjectInterface {
 		}
 
 		try {
-			$this->auditTrailMapper->createAuditTrail(old: $change->old, new: $change->new, action: $change->action);
+			$this->auditTrailMapper->recordChange(change: new AuditedChange(old: $change->old, new: $change->new, action: $change->action));
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				'[SaveObject] audit trail for external ' . $change->action . ' on uuid ' . ((string)$change->new->getUuid()) . ' could not be recorded: ' . $e->getMessage(),

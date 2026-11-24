@@ -18,7 +18,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -63,7 +63,12 @@ class ObjectsControllerCoverageTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 	private ExportService&MockObject $exportService;
 	private ImportService&MockObject $importService;
-	private WebhookService&MockObject $webhookService;
+	/**
+	 * The dispatcher of the write-request event.
+	 *
+	 * @var IEventDispatcher&MockObject
+	 */
+	private IEventDispatcher&MockObject $writeRequestDispatcher;
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -97,7 +102,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->importService = $this->createMock(ImportService::class);
-		$this->webhookService = $this->createMock(WebhookService::class);
+		$this->writeRequestDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
 		// Entities resolved by ObjectService::setRegister()/setSchema() default
@@ -117,7 +122,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			$this->groupManager,
 			$this->exportService,
 			$this->importService,
-			$this->webhookService,
+			$this->writeRequestDispatcher,
 			$this->logger
 		);
 	}
@@ -200,7 +205,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			$this->groupManager,
 			$this->exportService,
 			$this->importService,
-			$this->webhookService,
+			$this->writeRequestDispatcher,
 			$this->logger
 		);
 	}
@@ -1460,7 +1465,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 	/**
 	 * Test create() continues when webhook interception fails.
 	 * Exercises lines 1643-1657 (webhook error catch block).
-	 * Uses a fresh controller with a custom webhookService mock.
+	 * Uses a fresh controller with a custom dispatcher mock.
 	 */
 	#[\PHPUnit\Framework\Attributes\DataProvider('webhookFailures')]
 	public function testCreateContinuesWhenWebhookFails(\Throwable $webhookException): void {
@@ -1474,9 +1479,9 @@ class ObjectsControllerCoverageTest extends TestCase {
 		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
 		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
-		// Create a fresh webhookService mock with interceptRequest throwing.
-		$failingWebhookService = $this->createMock(WebhookService::class);
-		$failingWebhookService->method('interceptRequest')
+		// A fresh dispatcher whose write-request listener throws.
+		$failingDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
+		$failingDispatcher->method('dispatchTyped')
 			->willThrowException($webhookException);
 
 		$controller = ObjectsControllerFactory::create(
@@ -1493,7 +1498,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 			$this->groupManager,
 			$this->exportService,
 			$this->importService,
-			$failingWebhookService,
+			$failingDispatcher,
 			$this->logger
 		);
 
@@ -2009,7 +2014,7 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$data = $this->controller->index('reg', 'sch', $this->objectService)->getData();
 
-		$this->assertSame(expected: ['results', 'total', 'pages', 'page', 'limit', '@self'], actual: array_keys($data));
+		$this->assertSame(expected: ['results', 'total', 'pages', 'page', 'limit', '@self', 'syncWatermark'], actual: array_keys($data));
 		$this->assertSame(expected: [[], 45, 5, 3, 10], actual: [$data['results'], $data['total'], $data['pages'], $data['page'], $data['limit']]);
 		$this->assertSame(
 			expected: ['source', 'register', 'schema', 'query', 'rbac', 'multi', 'deleted', 'activeOrganisation', 'lenses'],

@@ -23,10 +23,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Search;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadableFileHitsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Search\Db\View;
+use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Search\Service\StoredViewQueries;
 use OCA\OpenRegister\Search\Service\ViewService;
 use OCA\OpenRegister\Service\Search\VectorResultFilter;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -42,12 +44,13 @@ use RuntimeException;
  * Results of two users: alice searches, bob's file and a record alice may not read must not come back.
  */
 #[CoversClass(VectorResultFilter::class)]
+#[UsesClass(StoredViewQueries::class)]
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(ObjectFindOptions::class)]
 #[UsesClass(View::class)]
 class VectorResultFilterTest extends TestCase {
 
-	private FileReadScope&MockObject $files;
+	private ReadableFileHitsInterface&MockObject $files;
 
 	private ObjectOperationsInterface&MockObject $objects;
 
@@ -59,7 +62,7 @@ class VectorResultFilterTest extends TestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->files = $this->createMock(FileReadScope::class);
+		$this->files = $this->createMock(ReadableFileHitsInterface::class);
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->views = $this->createMock(ViewService::class);
 		$this->session = $this->createMock(IUserSession::class);
@@ -88,7 +91,7 @@ class VectorResultFilterTest extends TestCase {
 			}
 		);
 
-		$this->filter = new VectorResultFilter($this->files, $this->objects, $this->views, $this->session);
+		$this->filter = new VectorResultFilter($this->files, $this->objects, new StoredViewQueries($this->createMock(ViewMapperInterface::class), $this->views), $this->session);
 	}
 
 	/**
@@ -123,7 +126,7 @@ class VectorResultFilterTest extends TestCase {
 	public function testEachEntityIsCheckedOnceHoweverManyChunksRank(): void {
 		$objects = $this->createMock(ObjectOperationsInterface::class);
 		$objects->expects($this->once())->method('find')->willReturn(new ObjectEntity());
-		$filter = new VectorResultFilter($this->files, $objects, $this->views, $this->session);
+		$filter = new VectorResultFilter($this->files, $objects, new StoredViewQueries($this->createMock(ViewMapperInterface::class), $this->views), $this->session);
 
 		$kept = $filter->readable([self::hit('object', 'obj-a'), self::hit('object', 'obj-a'), self::hit('object', 'obj-a')]);
 
@@ -140,7 +143,7 @@ class VectorResultFilterTest extends TestCase {
 				true
 			)
 			->willReturn(new ObjectEntity());
-		$filter = new VectorResultFilter($this->files, $objects, $this->views, $this->session);
+		$filter = new VectorResultFilter($this->files, $objects, new StoredViewQueries($this->createMock(ViewMapperInterface::class), $this->views), $this->session);
 
 		$filter->readable([self::hit('object', 'obj-a', ['register' => 3, 'schema' => 'beleid'])]);
 	}
@@ -148,7 +151,7 @@ class VectorResultFilterTest extends TestCase {
 	public function testWithoutACallerNothingIsReadable(): void {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(null);
-		$filter = new VectorResultFilter($this->files, $this->objects, $this->views, $session);
+		$filter = new VectorResultFilter($this->files, $this->objects, new StoredViewQueries($this->createMock(ViewMapperInterface::class), $this->views), $session);
 
 		$this->assertSame([], $filter->readable([self::hit('file', 10), self::hit('object', 'obj-a')]));
 	}

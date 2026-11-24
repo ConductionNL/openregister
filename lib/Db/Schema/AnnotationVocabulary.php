@@ -19,9 +19,6 @@
 namespace OCA\OpenRegister\Db\Schema;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
-use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
-use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 
 /**
  * The `x-openregister-*` keys a schema configuration keeps.
@@ -194,6 +191,13 @@ final class AnnotationVocabulary {
 		// Absent from this list the key is dropped on save and the quota never
 		// fires, the same or#460/#462-class trap as the entries above.
 		'x-openregister-quota',
+		// The schema-level `x-openregister` block. Today it carries `expiry`
+		// (expired-object-sweep): what an object's passed `expires` means,
+		// delete or anonymise. Absent from this list setConfiguration() would
+		// drop the block, the schema would read as not opted in, and the daily
+		// sweep would never touch its objects. SchemaMapper refuses an invalid
+		// expiry block on save (RecordAnnotationRefusals::checkExpiry()).
+		'x-openregister',
 		// Nested write-only dot-paths. Unlike every other entry in this list
 		// this key is NOT a plain pass-through: validateConfigurationEntry has
 		// a dedicated branch above that validates its shape, and
@@ -239,6 +243,11 @@ final class AnnotationVocabulary {
 		// The columns a list surface shows and the fields it searches on, so an
 		// object type is as usable as a case list with no page of its own.
 		Schema::LIST_ANNOTATION,
+		// Lists of properties the magic table indexes together, such as
+		// postcode with house number. Read by MagicTableIndexer. Absent from
+		// this list it would be dropped on save and the index never made, so
+		// the lookup it backs would scan the whole table without a word.
+		Schema::INDEXES_ANNOTATION,
 		// The reference properties a record collects map features from, each
 		// feature naming the relation it arrived through.
 		Schema::GEO_INHERITANCE_ANNOTATION,
@@ -282,7 +291,7 @@ final class AnnotationVocabulary {
 		// stopped at the root while its author read a 201. Measured on a live
 		// instance 2026-09-19 — POST with the annotation returned 201 and the
 		// configuration column was empty.
-		AccessDeclarationValidators::HIERARCHY_ANNOTATION,
+		Schema::HIERARCHY_ANNOTATION,
 		// Whether this schema's objects may invite an external
 		// (non-Nextcloud-user) participant into a linked Talk room by email,
 		// via TalkLinkService::invite() — default OFF.
@@ -297,13 +306,13 @@ final class AnnotationVocabulary {
 		// ClassificationDeclarationValidator. Absent from this list
 		// setConfiguration() would drop it and every classified object would
 		// read as unclassified, the same silent no-op every entry above records.
-		ClassificationScale::ANNOTATION,
+		Schema::CLASSIFICATION_ANNOTATION,
 		// A per-object confidentiality tier, legal ground and timed release
 		// (confidentiality-classification-primitive). Read by
 		// ConfidentialityRule; a faulty block is logged at error level and
 		// fails closed. Absent from this list setConfiguration() would drop it
 		// and every confidential object would read as unclassified.
-		ConfidentialityAnnotationValidator::ANNOTATION,
+		Schema::CONFIDENTIALITY_ANNOTATION,
 	];
 
 

@@ -25,7 +25,7 @@ use OCP\Files\File;
 use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\IPreview;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Files\Service\File\PreviewSizeInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\PreviewDimensionsInterface;
 
 /**
  * Handles file preview and thumbnail generation.
@@ -67,7 +67,7 @@ class FilePreviewHandler {
 	 * Get a preview for a file.
 	 *
 	 * @param File             $file The file to generate a preview for.
-	 * @param PreviewSizeInterface $size The preview size.
+	 * @param PreviewDimensionsInterface $size The preview size.
 	 *
 	 * @return ISimpleFile The preview image file.
 	 *
@@ -75,7 +75,7 @@ class FilePreviewHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function getPreview(File $file, PreviewSizeInterface $size): ISimpleFile {
+	public function getPreview(File $file, PreviewDimensionsInterface $size): ISimpleFile {
 		if ($this->previewManager->isAvailable($file) === false) {
 			throw new Exception(self::UNAVAILABLE);
 		}
@@ -95,13 +95,13 @@ class FilePreviewHandler {
 	 * Generates the preview and logs its size.
 	 *
 	 * @param File        $file The file to generate a preview for.
-	 * @param PreviewSizeInterface $size The preview size.
+	 * @param PreviewDimensionsInterface $size The preview size.
 	 *
 	 * @return ISimpleFile The preview image file.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	private function generate(File $file, PreviewSizeInterface $size): ISimpleFile {
+	private function generate(File $file, PreviewDimensionsInterface $size): ISimpleFile {
 		$preview = $this->previewManager->getPreview($file, $size->width(), $size->height());
 
 		$this->logger->debug(

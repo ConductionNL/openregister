@@ -27,6 +27,7 @@ use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailFieldTypes;
 use OCA\OpenRegister\Db\AuditTrail\AuditTrailSealedForm;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -102,6 +103,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setPurpose(?string $purpose)
  * @method string|null getConsumer()
  * @method void setConsumer(?string $consumer)
+ * @method string|null getTriggerObject()
+ * @method void setTriggerObject(?string $triggerObject)
  * @method string|null getProcessingActivityId()
  * @method void setProcessingActivityId(?string $processingActivityId)
  * @method string|null getVersion()
@@ -113,7 +116,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields) Domain entity requires many fields for complete audit trail data
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class AuditTrail extends Entity implements JsonSerializable {
+class AuditTrail extends Entity implements JsonSerializable, AuditRecordInterface {
 	use JsonFieldsTrait;
 	use HydrateEmptyJsonAsNullTrait;
 
@@ -490,6 +493,23 @@ class AuditTrail extends Entity implements JsonSerializable {
 	 * @var string|null
 	 */
 	protected ?string $consumer = null;
+
+	/**
+	 * The uuid of the object whose delete caused this entry, for a cascade
+	 * delete, a cleared reference or a defaulted reference.
+	 *
+	 * A projection of `changed` (the cascade context's or the integrity entry's
+	 * `triggerObject`), written in the same insert so the dependants of a delete
+	 * are one indexed lookup instead of a scan of the JSON column. It is NOT in
+	 * the sealed form: `changed` already carries the value and is sealed, so no
+	 * chain is re-sealed and no stored hash changes (openregister ADR-003).
+	 * Null on every other entry and on rows written before the column existed.
+	 *
+	 * @var string|null
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	protected ?string $triggerObject = null;
 
 	/**
 	 * Constructor for the AuditTrail class

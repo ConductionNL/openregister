@@ -24,10 +24,9 @@ use OCA\OpenRegister\Files\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\NotFoundException;
@@ -176,15 +175,15 @@ class FilePublishingHandlerGoldenTest extends TestCase {
 			});
 		}
 
-		$restrictions = $this->createMock(FileRestrictionGuard::class);
+		$restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$restrictions->method('isRestricted')->willReturn(false);
-		$guard = $this->createMock(PartyIndicatorGuard::class);
+		$guard = $this->createMock(PublicationRefusalInterface::class);
 		$container = $this->createMock(IServerContainer::class);
-		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileRestrictionGuardInterface::class ? $restrictions : $guard);
+		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileReadRestrictionInterface::class ? $restrictions : $guard);
 
 		$fileMapper = $this->createMock(FileMapper::class);
-		$fileMapper->method('publishFile')->willReturnCallback(function (int $fileId, string $sharedBy) use ($share): array {
-			$this->calls[] = ['share.publish' => [$fileId, $sharedBy]];
+		$fileMapper->method('publishFile')->willReturnCallback(function (\OCA\OpenRegister\Files\Db\PublicShareRequest $request) use ($share): array {
+			$this->calls[] = ['share.publish' => [$request->fileId, $request->sharedBy]];
 			if ($share['fails'] === true) {
 				throw new Exception('db down');
 			}

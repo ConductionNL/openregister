@@ -29,7 +29,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IGroup;
@@ -398,7 +398,7 @@ class DestructionCheckJobTrailTest extends TestCase {
 		$logger    = $this->logger();
 		$services  = [
 			RetentionServiceInterface::class => $this->retention(),
-			ArchivalSettingsReaderInterface::class => $this->settingsReader(),
+			ArchivalSettingsInterface::class => $this->settingsReader(),
 			IAppConfig::class => $this->appConfig(),
 			INotificationManager::class => $this->notificationManager(),
 			IGroupManager::class => $this->groupManager(),
@@ -470,10 +470,10 @@ class DestructionCheckJobTrailTest extends TestCase {
 	/**
 	 * The archival settings reader stub.
 	 *
-	 * @return ArchivalSettingsReaderInterface&MockObject
+	 * @return ArchivalSettingsInterface&MockObject
 	 */
-	private function settingsReader(): ArchivalSettingsReaderInterface&MockObject {
-		$reader = $this->createMock(ArchivalSettingsReaderInterface::class);
+	private function settingsReader(): ArchivalSettingsInterface&MockObject {
+		$reader = $this->createMock(ArchivalSettingsInterface::class);
 		$reader->method('getArchivalSettingsOnly')->willReturnCallback(fn (): array => $this->settings);
 		return $reader;
 	}//end settingsReader()

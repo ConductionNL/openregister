@@ -18,12 +18,11 @@ final class DsarCaseControllerFactory {
 	/**
 	 * The constructor arguments of DsarCaseController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param ObjectService $objectService Constructor argument.
 	 * @param CaseObjectAccessor $accessor Constructor argument.
 	 * @param CaseAccessControl $accessControl Constructor argument.
-	 * @param TransitionEngine $transitionEngine Constructor argument.
+	 * @param LifecycleTransitionInterface $transitionEngine Constructor argument.
 	 * @param EvidenceHarvestService $harvestService Constructor argument.
 	 * @param RedactionWriteService $redactionService Constructor argument.
 	 * @param ExportBundleService $bundleService Constructor argument.
@@ -35,12 +34,11 @@ final class DsarCaseControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCA\OpenRegister\Service\ObjectService $objectService,
 		\OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor $accessor,
 		\OCA\OpenRegister\Service\Gdpr\Case\CaseAccessControl $accessControl,
-		\OCA\OpenRegister\Service\Lifecycle\TransitionEngine $transitionEngine,
+		\OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface $transitionEngine,
 		\OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceHarvestService $harvestService,
 		\OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService $redactionService,
 		\OCA\OpenRegister\Service\Gdpr\Export\ExportBundleService $bundleService,
@@ -50,7 +48,6 @@ final class DsarCaseControllerFactory {
 		\OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry $regulatorRegistry,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\DsarCaseControllerServices(
 				cases: new \OCA\OpenRegister\Controller\Support\DsarCaseCases(

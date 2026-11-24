@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
+use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\IL10N;
@@ -129,7 +130,7 @@ class RenderObjectUpdateRightTest extends TestCase {
 					return new ObjectScopeResolver();
 				}
 
-				if ($id === ObjectActionList::class) {
+				if ($id === RunnableActionsInterface::class) {
 					return $actionList;
 				}
 

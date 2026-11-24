@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\ExportProfile;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorderInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileServiceInterface;
 use OCA\OpenRegister\Service\Export\ExportProfileWriterInterface;
@@ -64,7 +65,7 @@ use OCA\OpenRegister\Service\Export\ProfileProjection;
  *
  * @spec openspec/specs/data-import-export/spec.md
  */
-class ExportWholeSetAction implements BulkActionInterface {
+class ExportWholeSetAction implements WholeSetExportActionInterface {
 
 	/**
 	 * The action id.

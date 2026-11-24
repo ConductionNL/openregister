@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Event\AppWebhookEvents;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\WebhooksControllerFactory;
@@ -55,10 +56,37 @@ class AppWebhookEventsTest extends TestCase {
 	 */
 	private static int $request = 0;
 
+	/**
+	 * Whether REQUEST_TIME_FLOAT was set before the test.
+	 *
+	 * @var boolean
+	 */
+	private bool $hadRequestTime = false;
+
+	/**
+	 * REQUEST_TIME_FLOAT before the test.
+	 *
+	 * @var mixed
+	 */
+	private mixed $requestTime = null;
+
 	protected function setUp(): void {
 		parent::setUp();
+		$this->hadRequestTime = array_key_exists('REQUEST_TIME_FLOAT', $_SERVER);
+		$this->requestTime = $_SERVER['REQUEST_TIME_FLOAT'] ?? null;
 		// Each test is its own request, so the registry starts empty.
 		$_SERVER['REQUEST_TIME_FLOAT'] = 'app-webhook-events-' . (++self::$request);
+	}
+
+	protected function tearDown(): void {
+		// Later tests read the request time as a number (WritePhaseProbe), so the token must not leak.
+		if ($this->hadRequestTime === true) {
+			$_SERVER['REQUEST_TIME_FLOAT'] = $this->requestTime;
+		} else {
+			unset($_SERVER['REQUEST_TIME_FLOAT']);
+		}
+
+		parent::tearDown();
 	}
 
 	private function declareSigned(IEventDispatcher $dispatcher, string $payload = 'getPayload'): bool {
@@ -76,7 +104,7 @@ class AppWebhookEventsTest extends TestCase {
 		$dispatcher = $this->createMock(IEventDispatcher::class);
 		$dispatcher->expects($this->once())
 			->method('addServiceListener')
-			->with(ThingSignedEvent::class, WebhookEventListener::class);
+			->with(ThingSignedEvent::class, AppEventWebhookListenerInterface::class);
 
 		$this->assertTrue($this->declareSigned($dispatcher));
 		$this->assertTrue($this->declareSigned($dispatcher));
@@ -204,7 +232,6 @@ class AppWebhookEventsTest extends TestCase {
 
 	public function testTheEventsEndpointAppendsDeclaredEventsToTheBuiltInOnes(): void {
 		$controller = WebhooksControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(WebhookMapper::class),
 			$this->createMock(WebhookLogMapper::class),

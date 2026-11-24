@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
 use OCA\OpenRegister\Db\SearchTrailCleanupInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
@@ -44,6 +44,8 @@ use OCA\OpenRegister\Service\Authorization\GroupReconcilerInterface;
 use OCA\OpenRegister\Service\AvgRetentionPassInterface;
 use OCA\OpenRegister\Service\AvgRetentionService;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Credential\OAuth2CredentialSweepInterface;
 use OCA\OpenRegister\Service\Credential\OAuth2RefreshService;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
@@ -79,16 +81,16 @@ final class C07InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		ArchiveActionDateCalculator::class => [ArchiveReferenceReaderInterface::class, ContractBindings::class],
-		AuditHashService::class => [AuditSealInterface::class, ContractBindings::class],
-		AuditTrailMapper::class => [AuditTrailMapperInterface::class, DbRegistrar::class],
+		ArchiveActionDateCalculator::class => [ArchiveReferenceReaderInterface::class, ComplianceServiceBindings::class],
+		AuditHashService::class => [AuditSealInterface::class, ComplianceServiceBindings::class],
+		AuditTrailMapper::class => [AuditTrailMapperInterface::class, ComplianceMapperRegistrar::class],
 		AvgRetentionService::class => [AvgRetentionPassInterface::class, ContractBindings::class],
-		DpiaPatternDetectionService::class => [DpiaPatternDetectorInterface::class, ContractBindings::class],
-		ExternalGrantLapseNotifier::class => [ExternalGrantLapseNotifierInterface::class, ContractBindings::class],
-		GroupReconciler::class => [GroupReconcilerInterface::class, ContractBindings::class],
+		DpiaPatternDetectionService::class => [DpiaPatternDetectorInterface::class, ComplianceServiceBindings::class],
+		ExternalGrantLapseNotifier::class => [ExternalGrantLapseNotifierInterface::class, CoreServiceBindings::class],
+		GroupReconciler::class => [GroupReconcilerInterface::class, CoreServiceBindings::class],
 		OAuth2RefreshService::class => [OAuth2CredentialSweepInterface::class, ContractBindings::class],
-		RetentionSweepService::class => [RetentionSweepInterface::class, ContractBindings::class],
-		SearchTrailMapper::class => [SearchTrailCleanupInterface::class, DbRegistrar::class],
+		RetentionSweepService::class => [RetentionSweepInterface::class, ComplianceServiceBindings::class],
+		SearchTrailMapper::class => [SearchTrailCleanupInterface::class, ComplianceMapperRegistrar::class],
 	];
 
 	/**

@@ -33,7 +33,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\BulkJobsControllerServices;
 use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\BulkJobMapperInterface;
@@ -56,6 +55,8 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Db\OutcomeFilter;
 use OCA\OpenRegister\Db\QueryPage;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 
 /**
  * BulkJobsController.
@@ -135,7 +136,7 @@ class BulkJobsController extends Controller {
 		IRequest $request,
 		BulkJobsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->service = $services->domain->service;
 		$this->reversal = $services->domain->reversal;
 		$this->jobMapper = $services->domain->jobMapper;
@@ -243,6 +244,7 @@ class BulkJobsController extends Controller {
 	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
+	#[Sheddable]
 	public function create(): JSONResponse {
 		$uid = $this->currentUid();
 		if ($uid === null) {
