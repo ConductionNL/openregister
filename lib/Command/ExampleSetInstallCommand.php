@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogueInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
@@ -167,7 +168,7 @@ class ExampleSetInstallCommand extends Command {
 
 		$adopt = array_values(array_filter(array_map('strval', (array) $input->getOption('adopt'))));
 		if ($input->getOption('check') === true) {
-			return $this->reportCheck(result: $this->installer->check(plan: $plan, adopt: $adopt), output: $output);
+			return $this->reportCheck(result: $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, adopt: $adopt)), output: $output);
 		}
 
 		$password = '';
@@ -180,7 +181,7 @@ class ExampleSetInstallCommand extends Command {
 		}
 
 		$plan['refresh'] = ($input->getOption('refresh') === true);
-		$report          = $this->installer->install(plan: $plan, adopt: $adopt, password: $password);
+		$report          = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, adopt: $adopt, password: $password));
 		if ($report['refusals'] !== []) {
 			$this->printRefusals(refusals: $report['refusals'], output: $output);
 			$output->writeln('<error>The set was refused, so none of its accounts, groups or objects was written.</error>');

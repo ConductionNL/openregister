@@ -48,10 +48,12 @@ use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use DateTime;
+use InvalidArgumentException;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Query\ReferenceFilterParser;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -395,9 +397,14 @@ class MagicFacetHandler {
 			return [];
 		}
 
-		$run = new FacetResults(startTime: $startTime, config: $this->normaliseFacetConfig(facetConfig: $facetConfig, schema: $table->schema));
+		$config     = $this->normaliseFacetConfig(facetConfig: $facetConfig, schema: $table->schema);
+		$references = ($config[ReferenceFilterParser::KEY] ?? null);
+		unset($config[ReferenceFilterParser::KEY]);
+
+		$run = new FacetResults(startTime: $startTime, config: $config);
 		$this->addTableSelfFacets(table: $table, run: $run);
 		$this->addTablePropertyFacets(table: $table, run: $run);
+		$this->addTableReferenceFacets(table: $table, run: $run, references: $references);
 
 		// Add timing metadata to facets for performance debugging.
 		return $run->withMetrics(metrics: [], labels: $this->cacheStats);
@@ -463,6 +470,87 @@ class MagicFacetHandler {
 			$run->putField(field: $field, computed: ['facet' => $facet, 'config' => $config, 'start' => $facetStart]);
 		}
 	}//end addTablePropertyFacets()
+
+	/**
+	 * Compute the facets over fields of referenced objects: `_facets[_ref][<property>][<field>]`.
+	 *
+	 * Each counts the queried objects per value of `<field>` on the object
+	 * `<property>` points to, under the filters the list applies and the
+	 * referenced schema's own access rules. The result sits under
+	 * `_ref.<property>.<field>`, mirroring the request.
+	 *
+	 * @param TermsFacetTable $table      The table and filters, without a field.
+	 * @param FacetResults    $run        The facet configuration and the results so far.
+	 * @param mixed           $references The `_ref` part of the facet configuration, or null.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the configuration or a name is unusable.
+	 * @throws \OCP\DB\Exception If a database error occurs.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	private function addTableReferenceFacets(TermsFacetTable $table, FacetResults $run, mixed $references): void {
+		if ($references === null) {
+			return;
+		}
+
+		foreach ((new ReferenceFacetConfig())->entries(config: $references) as $entry) {
+			$start = microtime(true);
+			$facet = $this->referenceTermsFacet(table: $table, entry: $entry);
+			if ($facet === null) {
+				continue;
+			}
+
+			$run->putReferenceField(property: $entry['property'], field: $entry['field'], facet: $facet, start: $start);
+		}
+	}//end addTableReferenceFacets()
+
+	/**
+	 * One terms facet over a field of a referenced object, or null when the caller may not read it.
+	 *
+	 * @param TermsFacetTable                                                 $table The table and filters.
+	 * @param array{property: string, field: string, config: array<mixed>} $entry The facet asked for.
+	 *
+	 * @return array|null Facet result with type, buckets and missing count; null to omit it.
+	 *
+	 * @throws InvalidArgumentException When a name is unusable.
+	 * @throws \OCP\DB\Exception If a database error occurs.
+	 */
+	private function referenceTermsFacet(TermsFacetTable $table, array $entry): ?array {
+		if ($this->searchHandler === null) {
+			// Without the search handler there is no filtered query to join through,
+			// and a count that ignores the list's filters answers another question.
+			throw new InvalidArgumentException('A facet through a reference is not available on this route.');
+		}
+
+		$queryBuilder = $this->searchHandler->referenceFacetQuery(
+			query: $table->baseQuery,
+			table: new MagicReadTable(schema: $table->schema, registerId: $table->register->getId(), tableName: $table->tableName),
+			property: $entry['property'],
+			field: $entry['field']
+		);
+		if ($queryBuilder === null) {
+			return null;
+		}
+
+		$queryBuilder->orderBy('doc_count', 'DESC')->setMaxResults(self::MAX_FACET_BUCKETS);
+		[$rawBuckets, $missingCount] = $this->splitTermsRows(rows: $queryBuilder->executeQuery());
+
+		$facet = [
+			'type' => 'terms',
+			'buckets' => $this->labelledBuckets(
+				buckets: $this->normalizeArrayFacetBuckets(rawBuckets: $rawBuckets),
+				labelOf: static fn (mixed $key): string => (string)$key
+			),
+			'missing' => ['results' => $missingCount],
+		];
+		if (isset($entry['config']['title']) === true) {
+			$facet['title'] = $entry['config']['title'];
+		}
+
+		return $facet;
+	}//end referenceTermsFacet()
 
 	/**
 	 * Expand a facet configuration given as a string or a list of names.
@@ -566,6 +654,7 @@ class MagicFacetHandler {
 		// arms. Refuse HERE, before the per-facet queries, whose own catch blocks
 		// would turn the refusal into empty buckets with only a log line.
 		$this->searchHandler?->refuseRelatedRowFilters(query: $query);
+		ReferenceFacetConfig::refuseAcrossSchemas(facetConfig: ($query['_facets'] ?? null));
 
 		$facetConfig = $query['_facets'] ?? [];
 		if (empty($facetConfig) === true) {

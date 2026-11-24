@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use OCA\OpenRegister\Controller\Support\ScopesControllerServices;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 
 /**
@@ -146,7 +147,7 @@ class ScopesControllerA24GoldenTest extends TestCase {
 	public function testAMemberIsToldOnlyWhatThePermissionChainGrants(): void {
 		$this->signIn(['users']);
 		$this->catalogue();
-		$this->permissions->method('hasPermission')->willReturnCallback(
+		$this->permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static function (Schema $schema, string $action, ?string $userId, ?string $owner, bool $rbac): bool {
 				if ($userId !== 'alice' || $owner !== null || $rbac !== true) {
 					return false;
@@ -156,7 +157,7 @@ class ScopesControllerA24GoldenTest extends TestCase {
 				}
 				return $schema->getSlug() !== 'medewerker' && in_array($action, ['read', 'list', 'delete'], true);
 			}
-		);
+		));
 		$this->permissions->method('provenanceFor')->willReturnCallback(
 			static function (ProvenanceRequest $request): array {
 				if ($request->schema->getSlug() === 'besluit') {
@@ -187,9 +188,9 @@ class ScopesControllerA24GoldenTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->groupManager->expects($this->never())->method('getUserGroupIds');
 		$this->catalogue();
-		$this->permissions->method('hasPermission')->willReturnCallback(
+		$this->permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static fn (Schema $schema, string $action, ?string $userId): bool => $userId === null && $action === 'read' && $schema->getId() === 3
-		);
+		));
 		$this->permissions->method('provenanceFor')->willReturn([]);
 
 		$data = $this->controller->index()->getData();

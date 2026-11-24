@@ -369,6 +369,11 @@ const SCENARIOS = {
 		[{ id: 4, title: 'Empty' }],
 		[{}],
 	],
+	'removeSchemaFromRegister one object': [
+		'removeSchemaFromRegister',
+		[{ id: 4, title: 'Single', stats: { objects: { total: 1 } } }],
+		[],
+	],
 	'removeSchemaFromRegister declined': [
 		'removeSchemaFromRegister',
 		[{ id: 4, title: 'Empty', stats: { objects: { total: 0 } } }],

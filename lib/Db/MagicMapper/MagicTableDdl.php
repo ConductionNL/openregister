@@ -54,6 +54,13 @@ final class MagicTableDdl {
 	public readonly bool $isMariaDb;
 
 	/**
+	 * Whether the platform's JSON reorders object keys (MySQL), so ordered JSON is checked text.
+	 *
+	 * @var boolean
+	 */
+	public readonly bool $reordersJsonKeys;
+
+	/**
 	 * The column definitions, in order.
 	 *
 	 * @var string[]
@@ -88,6 +95,7 @@ final class MagicTableDdl {
 	 * @param string           $tableName The table name, without prefix.
 	 *
 	 * @spec openspec/specs/magic-table-reads/spec.md
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	public function __construct(
 		public readonly AbstractPlatform $platform,
@@ -96,6 +104,7 @@ final class MagicTableDdl {
 		$this->isPostgres = ($platform instanceof PostgreSQLPlatform);
 		$this->isSqlite = ($platform instanceof SqlitePlatform);
 		$this->isMariaDb = ($platform instanceof MariaDBPlatform);
+		$this->reordersJsonKeys = MagicColumnSql::reordersJsonKeys(platform: $platform);
 	}//end __construct()
 
 	/**

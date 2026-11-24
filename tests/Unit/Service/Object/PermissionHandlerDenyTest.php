@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
@@ -258,7 +259,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		$handler = $this->handlerFor('ana', ['behandelaars']);
 		$schema = $this->schemaWith(['read' => ['behandelaars']]);
 
-		$this->assertTrue($handler->hasPermission($schema, 'read', 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
 	}//end testTheGrantWorksBeforeAnyDenyIsWritten()
 
 	/**
@@ -273,7 +274,7 @@ class PermissionHandlerDenyTest extends TestCase {
 			'deny' => ['read' => ['behandelaars']],
 		]);
 
-		$this->assertFalse($handler->hasPermission($schema, 'read', 'ana'));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
 	}//end testADenyBeatsASchemaGrant()
 
 	/**
@@ -292,7 +293,7 @@ class PermissionHandlerDenyTest extends TestCase {
 			'deny' => ['update' => ['waarnemers']],
 		]);
 
-		$this->assertFalse($handler->hasPermission($schema, 'update', 'ana'));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'ana', objectOwner: null)));
 	}//end testABroaderGrantDoesNotRestoreADeniedVerb()
 
 	/**
@@ -311,7 +312,7 @@ class PermissionHandlerDenyTest extends TestCase {
 			'deny' => ['delete' => ['user:ana']],
 		]);
 
-		$this->assertFalse($handler->hasPermission($schema, 'delete', 'ana', 'ana'));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'delete'))->askedBy(userId: 'ana', objectOwner: 'ana')));
 	}//end testADenyBeatsTheOwnerBypass()
 
 	/**
@@ -331,7 +332,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		]);
 		$object = $this->objectWith(['deny' => ['update' => ['stagiairs']]]);
 
-		$this->assertFalse($handler->hasPermission($schema, 'read', 'ana', null, true, $object));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)->about(object: $object, register: null), _rbac: true));
 	}//end testAnObjectBlockDoesNotUndoASchemaDeny()
 
 	/**
@@ -349,8 +350,8 @@ class PermissionHandlerDenyTest extends TestCase {
 		$denied = $this->objectWith(['deny' => ['read' => ['behandelaars']]]);
 		$other = $this->objectWith(null);
 
-		$this->assertFalse($handler->hasPermission($schema, 'read', 'ana', null, true, $denied));
-		$this->assertTrue($handler->hasPermission($schema, 'read', 'ana', null, true, $other));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)->about(object: $denied, register: null), _rbac: true));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)->about(object: $other, register: null), _rbac: true));
 	}//end testADenyOnOneObjectLeavesTheRestOfTheSchemaAlone()
 
 	/**
@@ -365,7 +366,7 @@ class PermissionHandlerDenyTest extends TestCase {
 			'deny' => ['read' => ['public']],
 		]);
 
-		$this->assertFalse($handler->hasPermission($schema, 'read'));
+		$this->assertFalse($handler->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read')));
 	}//end testADenyReachesAnAnonymousCaller()
 
 	/**
@@ -380,7 +381,7 @@ class PermissionHandlerDenyTest extends TestCase {
 			'deny' => ['read' => ['admin', 'user:root']],
 		]);
 
-		$this->assertTrue($handler->hasPermission($schema, 'read', 'root'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'root', objectOwner: null)));
 	}//end testAnAdministratorIsExemptFromEveryDeny()
 
 	/**
@@ -406,8 +407,8 @@ class PermissionHandlerDenyTest extends TestCase {
 		$closed = $this->objectWith(null, ['status' => 'gesloten']);
 		$open = $this->objectWith(null, ['status' => 'open']);
 
-		$this->assertFalse($handler->hasPermission($schema, 'update', 'ana', null, true, $closed));
-		$this->assertTrue($handler->hasPermission($schema, 'update', 'ana', null, true, $open));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'ana', objectOwner: null)->about(object: $closed, register: null), _rbac: true));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'ana', objectOwner: null)->about(object: $open, register: null), _rbac: true));
 	}//end testAConditionalDenyBitesOnlyTheMatchingRow()
 
 	/**
@@ -427,7 +428,7 @@ class PermissionHandlerDenyTest extends TestCase {
 			'deny' => ['update' => [['group' => 'behandelaars', 'match' => ['status' => 'gesloten']]]],
 		]);
 
-		$this->assertTrue($handler->hasPermission($schema, 'update', 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'ana', objectOwner: null)));
 	}//end testAConditionalDenyWithNoRowDeniesNothing()
 
 	/**
@@ -448,8 +449,8 @@ class PermissionHandlerDenyTest extends TestCase {
 		]);
 		$withoutDeny = $this->schemaWith(['read' => ['behandelaars']]);
 
-		$this->assertFalse($handler->hasPermission($withDeny, 'read', 'zoe'));
-		$this->assertFalse($handler->hasPermission($withoutDeny, 'read', 'zoe'));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $withDeny, action: 'read'))->askedBy(userId: 'zoe', objectOwner: null)));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $withoutDeny, action: 'read'))->askedBy(userId: 'zoe', objectOwner: null)));
 	}//end testACallerWithNoGrantIsRefusedAndTheDenyIsNotWhyItWasRefused()
 
 	/**
@@ -465,10 +466,10 @@ class PermissionHandlerDenyTest extends TestCase {
 		// bypasses. A schema with NO block at all is deliberately absent: it
 		// walks the register cascade, which needs a live register mapper rather
 		// than a mock, and it is covered by the existing fail-closed suite.
-		$this->assertTrue($handler->hasPermission($this->schemaWith(['read' => ['behandelaars']]), 'read', 'ana'));
-		$this->assertFalse($handler->hasPermission($this->schemaWith(['read' => ['anderen']]), 'read', 'ana'));
-		$this->assertTrue($handler->hasPermission($this->schemaWith(['read' => ['authenticated']]), 'read', 'ana'));
-		$this->assertTrue($handler->hasPermission($this->schemaWith(['read' => ['anderen']]), 'read', 'ana', 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['anderen']]), action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['authenticated']]), action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['anderen']]), action: 'read'))->askedBy(userId: 'ana', objectOwner: 'ana')));
 	}//end testAnInstanceWithNoDenyIsUnchanged()
 
 	/**
@@ -509,7 +510,7 @@ class PermissionHandlerDenyTest extends TestCase {
 			'deny' => ['read' => ['behandelaars']],
 		]);
 
-		$this->assertTrue($handler->hasPermission($schema, 'read', 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
 	}//end testAStagedDenyLeavesTheGrantStanding()
 
 	/**
@@ -536,7 +537,7 @@ class PermissionHandlerDenyTest extends TestCase {
 			'deny' => ['read' => ['waarnemers']],
 		]);
 
-		$this->assertTrue($handler->hasPermission($schema, 'read', 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
 
 		$staged = $this->stagedRecordsIn($records);
 		$this->assertCount(1, $staged);
@@ -567,7 +568,7 @@ class PermissionHandlerDenyTest extends TestCase {
 			'deny' => ['read' => ['waarnemers']],
 		]);
 
-		$this->assertTrue($handler->hasPermission($schema, 'read', 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'ana', objectOwner: null)));
 		$this->assertCount(0, $this->stagedRecordsIn($records));
 	}//end testTheOffModeNeitherRefusesNorRecords()
 
@@ -649,7 +650,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		);
 
 		$this->assertFalse(
-			$handler->hasPermission($this->schemaWith(['update' => ['behandelaars']]), 'update', 'ana')
+			$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['update' => ['behandelaars']]), action: 'update'))->askedBy(userId: 'ana', objectOwner: null))
 		);
 
 		$refusals = array_values(
@@ -686,7 +687,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		);
 
 		$this->assertFalse(
-			$handler->hasPermission($this->schemaWith(['read' => ['behandelaars']]), 'update', 'ana')
+			$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['behandelaars']]), action: 'update'))->askedBy(userId: 'ana', objectOwner: null))
 		);
 
 		$refusals = array_values(

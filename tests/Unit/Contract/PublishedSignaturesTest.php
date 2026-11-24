@@ -59,6 +59,19 @@ class PublishedSignaturesTest extends TestCase {
 		'patchObject'   => ['patch', Contract\ObjectPatch::class],
 	];
 
+	/**
+	 * The search values that were published without an older Kernel name.
+	 *
+	 * Unlike PUBLISHED_PARAMETERS there is no deprecated subclass to keep fitting:
+	 * the contract and ObjectService take these classes and nothing else.
+	 */
+	private const PUBLISHED_ONLY_PARAMETERS = [
+		'searchObjects'          => ['options', Contract\SearchOptions::class],
+		'searchObjectsPaginated' => ['options', Contract\SearchOptions::class],
+		'searchObjectsBySlug'    => ['target', Contract\RegisterSchemaSlugs::class],
+		'countSearchObjects'     => ['selection', Contract\ObjectSelection::class],
+	];
+
 	private IAppConfig&MockObject $appConfig;
 
 	private MagicMapper&MockObject $magicMapper;
@@ -145,6 +158,20 @@ class PublishedSignaturesTest extends TestCase {
 			$this->assertSame([$published], self::classNames($parameter->getType()), 'ObjectService::' . $methodName . '()');
 		}
 	}//end testObjectServiceTakesThePublishedValues()
+
+	/**
+	 * The contract and ObjectService take the search values under their published names.
+	 *
+	 * @return void
+	 */
+	public function testTheSearchMethodsTakeThePublishedValues(): void {
+		foreach ([ObjectServiceInterface::class, ObjectService::class] as $class) {
+			foreach (self::PUBLISHED_ONLY_PARAMETERS as $methodName => [$parameterName, $published]) {
+				$parameter = $this->parameter($class, $methodName, $parameterName);
+				$this->assertSame([$published], self::classNames($parameter->getType()), $class . '::' . $methodName . '()');
+			}
+		}
+	}//end testTheSearchMethodsTakeThePublishedValues()
 
 	/**
 	 * A caller still passing the old name is accepted by the widened parameters.

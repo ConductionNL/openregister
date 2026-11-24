@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * A fragment gives a case history by a named person, once, marked as seeded, and remove leaves it.
  */
@@ -70,10 +72,10 @@ class ExampleSetAuditEntriesTest extends ExampleSetTestCase {
 		$this->caseWithEntries(rows: [['key' => 'inzage', 'data' => self::download()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame([], $this->auditTrail, 'the check writes no entry');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$entry = array_values($this->auditTrail)[0];
 		$this->assertSame('esra.demir', $entry->getUser());
@@ -83,7 +85,7 @@ class ExampleSetAuditEntriesTest extends ExampleSetTestCase {
 		$this->assertSame(['import', 'example-set:alpha/inzage'], [$entry->getCause(), $entry->getCauseRun()]);
 		$this->assertSame($this->store->ids(register: 'cases', schema: 'case')[0], $entry->getObjectUuid());
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(1, $this->auditTrail, 'a kept entry is written once');
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -104,7 +106,7 @@ class ExampleSetAuditEntriesTest extends ExampleSetTestCase {
 	public function testACheckRefusesAFaultyEntry(array $data, string $reason): void {
 		$this->caseWithEntries(rows: [['key' => 'bad', 'data' => $data]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(1, $refusals);
 		$this->assertStringContainsString($reason, $refusals[0]);

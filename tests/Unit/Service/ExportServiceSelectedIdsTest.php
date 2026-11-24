@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -32,7 +33,6 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
 use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use OCP\IGroupManager;
-use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
@@ -52,15 +52,14 @@ class ExportServiceSelectedIdsTest extends TestCase {
 		$captured = ['unset'];
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('searchObjects')->willReturnCallback(
-			static function (array $query, bool $_rbac = true, bool $_multitenancy = true, ?array $ids = null) use (&$captured): array {
-				$captured = $ids;
+			static function (array $query, bool $_rbac = true, bool $_multitenancy = true, SearchOptions $options = new SearchOptions()) use (&$captured): array {
+				$captured = $options->selection->ids;
 				return [];
 			}
 		);
 
 		$service = new ExportService(
 			$this->createMock(RegisterMapper::class),
-			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),
 			$objectService,
 			$this->createMock(CacheHandler::class),
@@ -122,7 +121,6 @@ class ExportServiceSelectedIdsTest extends TestCase {
 
 		$service = new ExportService(
 			$this->createMock(RegisterMapper::class),
-			$this->createMock(IUserManager::class),
 			$this->createMock(IGroupManager::class),
 			$objectService,
 			$this->createMock(CacheHandler::class),

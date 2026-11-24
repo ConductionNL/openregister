@@ -79,7 +79,6 @@ final class SettingsStraightThroughTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(IDBConnection::class),
 			null,
-			'openregister',
 			$this->createMock(ValidationOperationsHandler::class),
 			$this->handlers['searchBackend'],
 			$this->handlers['llm'],

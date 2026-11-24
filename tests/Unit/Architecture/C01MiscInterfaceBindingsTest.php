@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\FeedbackMapperInterface;
 use OCA\OpenRegister\Service\AnalyticsSeriesService;
 use OCA\OpenRegister\Service\AnalyticsSeriesServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\Object\CorrectionService;
 use OCA\OpenRegister\Service\Object\CorrectionServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -58,7 +59,7 @@ final class C01MiscInterfaceBindingsTest extends TestCase {
 	private const CLASSES = [
 		AnalyticsSeriesService::class => [AnalyticsSeriesServiceInterface::class, ContractBindings::class],
 		ConsumerMapper::class => [ConsumerMapperInterface::class, IntegrationsMapperRegistrar::class],
-		CorrectionService::class => [CorrectionServiceInterface::class, ContractBindings::class],
+		CorrectionService::class => [CorrectionServiceInterface::class, ComplianceServiceBindings::class],
 		FeedbackMapper::class => [FeedbackMapperInterface::class, PlatformMapperRegistrar::class],
 	];
 

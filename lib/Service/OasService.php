@@ -32,9 +32,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Schemas\SchemaCatalogue;
 use Exception;
 use OCA\OpenRegister\Service\Oas\NlGovConformance;
 use OCA\OpenRegister\Service\Oas\NlGovRuleCatalogue;
+use OCA\OpenRegister\Service\Oas\OasByKeyPaths;
 use OCA\OpenRegister\Service\Oas\OasExtendedTypes;
 use OCA\OpenRegister\Service\Oas\OasIssue;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -872,8 +874,35 @@ class OasService implements OasServiceInterface {
 			$described['required'] = $required;
 		}
 
-		return $this->withWithheldCount(described: $described, withheld: $withheld);
+		return $this->withWithheldCount(described: self::withCatalogue(described: $described, schema: $schema), withheld: $withheld);
 	}//end enrichSchema()
+
+	/**
+	 * The described schema with its classification and catalogue block, when set.
+	 *
+	 * The OpenAPI document does not know its reader, and it is published to
+	 * anonymous readers too, so the catalogue's contact person is left out
+	 * here: it is read from the schema API by a signed-in caller.
+	 *
+	 * @param array<string, mixed> $described The described schema.
+	 * @param object               $schema    The schema.
+	 *
+	 * @return array<string, mixed> The described schema.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-catalogue-metadata-travels-with-the-register
+	 */
+	private static function withCatalogue(array $described, object $schema): array {
+		$serialised = SchemaCatalogue::withoutContact(schema: ['classification' => $schema->getClassification(), 'catalogue' => $schema->getCatalogue()]);
+		if ($serialised['classification'] !== null) {
+			$described['x-openregister-classification'] = $serialised['classification'];
+		}
+
+		if ($serialised['catalogue'] !== null) {
+			$described['x-openregister-catalogue'] = $serialised['catalogue'];
+		}
+
+		return $described;
+	}//end withCatalogue()
 
 	/**
 	 * The described schema, marked with how many properties were withheld from it, if any.
@@ -959,6 +988,12 @@ class OasService implements OasServiceInterface {
 			'patch' => $this->finishOperation(operation: $this->createPatchOperation(schema: $schema), groupsKey: 'updateGroups'),
 			'delete' => $this->finishOperation(operation: $this->createDeleteOperation(schema: $schema), groupsKey: 'deleteGroups'),
 		];
+
+		// A schema with an identity is also addressed by its key (modelling-composite-identity 4.1).
+		$byKey = OasByKeyPaths::pathItem(schema: $schema, itemPath: $this->oas['paths'][$basePath . '/{id}']);
+		if ($byKey !== null) {
+			$this->oas['paths'][$basePath . '/by-key'] = $byKey;
+		}
 	}//end addCrudPaths()
 
 	/**

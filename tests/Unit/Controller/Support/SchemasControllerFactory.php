@@ -18,7 +18,6 @@ final class SchemasControllerFactory {
 	/**
 	 * The constructor arguments of SchemasController.
 	 *
-	 * @param string $appName Constructor argument.
 	 * @param IRequest $request Constructor argument.
 	 * @param IAppConfig $config Unused; kept so existing calls still fit.
 	 * @param SchemaMapper $schemaMapper Constructor argument.
@@ -41,7 +40,6 @@ final class SchemasControllerFactory {
 	 * @return array<int, mixed>
 	 */
 	public static function args(
-		string $appName,
 		\OCP\IRequest $request,
 		\OCP\IAppConfig $config,
 		\OCA\OpenRegister\Db\SchemaMapper $schemaMapper,
@@ -62,7 +60,6 @@ final class SchemasControllerFactory {
 		?\OCA\OpenRegister\Service\Schemas\SemanticRoleHandler $semanticRoles = null,
 	): array {
 		return [
-			$appName,
 			$request,
 			new \OCA\OpenRegister\Controller\Support\SchemasControllerServices(
 				mappers: new \OCA\OpenRegister\Controller\Support\RegisterMappers(

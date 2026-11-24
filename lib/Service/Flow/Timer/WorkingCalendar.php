@@ -98,6 +98,27 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	}//end fromArray()
 
 	/**
+	 * This calendar with a person's working days laid over it.
+	 *
+	 * Its zone, rules, closure days, service hours and blackouts stay; the
+	 * weekdays and hours the person gives replace the calendar's, and their
+	 * absences are non-working days on top of the closure days.
+	 *
+	 * @param array<int, int>|null                          $weekdays The person's working weekdays, or null to keep the calendar's.
+	 * @param float|null                                    $hours    The person's hours per working day, or null to keep the calendar's.
+	 * @param array<int, array{date: string, name: string}> $absences The person's days off.
+	 *
+	 * @return self The overlaid calendar, under the same slug.
+	 *
+	 * @throws FlowTimerValidationException When the replaced weekdays or hours are refused.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-persons-working-pattern-is-read-from-the-app-that-owns-it-req-wca-006
+	 */
+	public function withPersonalDays(?array $weekdays, ?float $hours, array $absences): self {
+		return new self(definition: $this->definition->withPersonalDays(weekdays: $weekdays, hours: $hours, absences: $absences));
+	}//end withPersonalDays()
+
+	/**
 	 * The hours of the day this calendar's clock runs, per weekday.
 	 *
 	 * Empty on a calendar that declares none, and every caller has to ask
@@ -234,14 +255,39 @@ final class WorkingCalendar implements WorkingCalendarInterface {
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function isWorkingDay(DateTimeInterface $moment): bool {
-		if (in_array((int)$moment->format('N'), $this->getWorkingWeekdays(), true) === false) {
+		// The date is the calendar's own: 22:30Z on a Friday is 23:30 that
+		// Friday in Amsterdam, and Friday is the day that counts.
+		$local = $this->local(moment: $moment);
+		if (in_array((int)$local->format('N'), $this->getWorkingWeekdays(), true) === false) {
 			return false;
 		}
 
-		$nonWorking = $this->nonWorkingDates(year: (int)$moment->format('Y'));
+		$nonWorking = $this->nonWorkingDates(year: (int)$local->format('Y'));
 
-		return array_key_exists($moment->format('Y-m-d'), $nonWorking) === false;
+		return array_key_exists($local->format('Y-m-d'), $nonWorking) === false;
 	}//end isWorkingDay()
+
+	/**
+	 * The same instant on the calendar's wall clock.
+	 *
+	 * A calendar that names its zone counts its days there. One that does not
+	 * keeps counting them on the moment's own clock, as before zones existed:
+	 * reading it as UTC instead would move every date given with an offset,
+	 * and a Saturday at 00:00+02:00 would become a working Friday.
+	 *
+	 * @param DateTimeInterface $moment Any instant.
+	 *
+	 * @return DateTimeImmutable The instant, on the calendar's wall clock.
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	public function local(DateTimeInterface $moment): DateTimeImmutable {
+		if ($this->definition->declaresTimezone() === false) {
+			return DateTimeImmutable::createFromInterface($moment);
+		}
+
+		return (new DateTimeImmutable('@'.$moment->format('U.u')))->setTimezone(new DateTimeZone($this->getTimezone()));
+	}//end local()
 
 	/**
 	 * The blackout period refusing this kind of booking at this moment, or null.

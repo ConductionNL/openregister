@@ -78,6 +78,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ChecklistTick;
  * @covers \OCA\OpenRegister\Exception\TaskConflictException
  * @uses \OCA\OpenRegister\Service\Task\TaskForm
  * @uses \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard
+ * @uses \OCA\OpenRegister\Service\Task\TaskMandateGuard
  * @uses \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  * @uses \OCA\OpenRegister\Service\Task\TaskAct
  * @uses \OCA\OpenRegister\Service\Task\TaskAnswer

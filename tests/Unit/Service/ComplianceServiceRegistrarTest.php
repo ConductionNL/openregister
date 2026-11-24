@@ -16,11 +16,14 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
+use OCA\OpenRegister\Service\Audit\AuditResealInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
@@ -75,19 +78,20 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	}//end testContractBindingsDoesNotBindThemAgain()
 
 	/**
-	 * registerGdpr() registers exactly what the GDPR registrar registers, in its order.
+	 * register() registers exactly what the GDPR registrar registers, in its order, after the area's bindings.
 	 *
 	 * @return void
 	 */
-	public function testRegisterGdprRegistersTheGdprServices(): void {
+	public function testRegisterEndsWithTheGdprServices(): void {
 		$entry = new RecordingRegistrationContext();
-		ComplianceServiceRegistrar::registerGdpr(context: $entry);
+		ComplianceServiceRegistrar::register(context: $entry);
 		$direct = new RecordingRegistrationContext();
 		GdprRegistrar::register(context: $direct);
 
 		$this->assertNotSame(expected: [], actual: $entry->services);
 		$this->assertSame(expected: $direct->services, actual: $entry->services);
-	}//end testRegisterGdprRegistersTheGdprServices()
+		$this->assertSame(expected: ComplianceServiceBindings::BINDINGS, actual: array_column($entry->aliases, 'target', 'alias'));
+	}//end testRegisterEndsWithTheGdprServices()
 
 	/**
 	 * The object search records its trails through the Core port the search trail service answers.
@@ -147,4 +151,17 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	public function testTheArchivalMetadataPortIsAnsweredByTheTmloService(): void {
 		$this->assertSame(expected: TmloService::class, actual: (ComplianceServiceRegistrar::BINDINGS[ObjectArchivalMetadataInterface::class] ?? null));
 	}//end testTheArchivalMetadataPortIsAnsweredByTheTmloService()
+
+	/**
+	 * The anonymisation's reseal of the audit chain is answered by the audit hash service, bound in this area's map only.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-reaches-every-derived-copy-or-does-nothing-req-aao-003
+	 */
+	public function testTheAuditResealPortIsAnsweredByTheAuditHashService(): void {
+		$this->assertSame(expected: AuditHashService::class, actual: (ComplianceServiceRegistrar::BINDINGS[AuditResealInterface::class] ?? null));
+		$this->assertArrayNotHasKey(key: AuditResealInterface::class, array: ContractBindings::BINDINGS);
+		$this->assertTrue(condition: is_subclass_of(object_or_class: AuditHashService::class, class: AuditResealInterface::class));
+	}//end testTheAuditResealPortIsAnsweredByTheAuditHashService()
 }//end class

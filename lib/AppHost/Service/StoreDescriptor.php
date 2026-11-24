@@ -36,46 +36,77 @@ namespace OCA\OpenRegister\AppHost\Service;
  */
 final class StoreDescriptor {
 	/**
+	 * App whose IAppConfig holds the registry connection.
+	 *
+	 * @var string
+	 */
+	public readonly string $appId;
+
+	/**
+	 * Remote schema slug exposed by the registry.
+	 *
+	 * @var string
+	 */
+	public readonly string $schema;
+
+	/**
+	 * Remote register segment used when `registry_register` is unset/empty.
+	 *
+	 * @var string
+	 */
+	public readonly string $defaultRegister;
+
+	/**
+	 * Card field name => remote object property.
+	 *
+	 * @var array<string, string>
+	 */
+	public readonly array $cardFields;
+
+	/**
+	 * Shareable configuration type ids the calling app declared.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $types;
+
+	/**
+	 * Remote object properties a publish may send, next to the slug.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $publishFields;
+
+	/**
+	 * Nextcloud groups whose members may publish.
+	 *
+	 * @var array<int, string>
+	 */
+	public readonly array $publishGroups;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param string $appId App whose IAppConfig holds the registry connection
-	 *                      (`registry_url`, `registry_token`, `registry_register`).
-	 * @param string $schema Remote schema slug exposed by the registry
-	 *                       (e.g. "application-template", "catalog_item").
-	 * @param string $defaultRegister Remote register segment used when
-	 *                                `registry_register` is unset/empty.
-	 * @param array<string, string> $cardFields Card field name => remote object property. Drives
-	 *                                          normalisation; a missing property yields an empty
-	 *                                          string rather than a missing key, so the frontend
-	 *                                          never has to null-check a card.
-	 * @param array<int, string> $types Shareable configuration type ids the calling app declared.
-	 *                                  A non-empty list selects federated discovery, where an item
-	 *                                  is a configuration set, a flow or a schema that marked
-	 *                                  itself shareable. An empty list keeps the remote objects
-	 *                                  API, so an app that has not moved is untouched.
-	 * @param array<int, string> $publishFields Remote object properties a publish may send, next to
-	 *                                          the slug. Empty means this descriptor cannot publish.
-	 * @param array<int, string> $publishGroups Nextcloud groups whose members may publish, usually
-	 *                                          the groups the app's own ADR-023 matrix holds for its
-	 *                                          publish action. Empty means nobody may publish.
+	 * The descriptor is built from two cohesive parts: where the store reads
+	 * from, and what it shares. Readers keep the flat properties above, so
+	 * nothing that consumes a descriptor changes.
+	 *
+	 * @param StoreListing $listing Registry connection app, remote schema and register, card field map.
+	 * @param StoreSharing $sharing Shareable types and the publish opt-in. Defaults to sharing nothing.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		public readonly string $appId,
-		public readonly string $schema,
-		public readonly string $defaultRegister,
-		public readonly array $cardFields = [
-			'slug' => 'slug',
-			'title' => 'title',
-			'description' => 'description',
-			'category' => 'category',
-			'version' => 'version',
-		],
-		public readonly array $types = [],
-		public readonly array $publishFields = [],
-		public readonly array $publishGroups = [],
+		public readonly StoreListing $listing,
+		public readonly StoreSharing $sharing = new StoreSharing(),
 	) {
+		$this->appId           = $listing->appId;
+		$this->schema          = $listing->schema;
+		$this->defaultRegister = $listing->defaultRegister;
+		$this->cardFields      = $listing->cardFields;
+		$this->types           = $sharing->types;
+		$this->publishFields   = $sharing->publishFields;
+		$this->publishGroups   = $sharing->publishGroups;
 	}//end __construct()
 
 	/**

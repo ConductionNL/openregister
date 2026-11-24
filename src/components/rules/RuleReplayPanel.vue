@@ -89,6 +89,22 @@ import { NcButton, NcTextField } from '@nextcloud/vue'
 import { messageFor, replayRule } from '../../services/rules.js'
 
 /**
+ * The refusal to show for a failed preview request: the server's error
+ * envelope, or a message built from the failure.
+ *
+ * @param {object} failure The failed request.
+ * @return {object} The refusal.
+ */
+function replayFailure(failure) {
+	return failure?.response?.data?.error ?? {
+		message: messageFor(
+			failure,
+			t('openregister', 'The replay could not be previewed.'),
+		),
+	}
+}
+
+/**
  * The replay, and the one place an operator sees the ceiling refuse.
  *
  * The refusal is rendered as its own block with the two numbers in it, rather
@@ -169,32 +185,46 @@ export default {
 			this.running = true
 
 			try {
-				let selection = {}
-				if (this.query.trim() !== '') {
-					selection = { query: JSON.parse(this.query) }
-				}
-
-				const payload = { selection, justification: this.justification }
-				if (this.register !== '') {
-					payload.registerId = this.register
-				}
-
-				const data = await replayRule(this.schema, this.ruleId, payload)
-				if (data.ok === false) {
-					this.refusal = data.error
-					return
-				}
-				this.result = data
+				await this.previewReplay()
 			} catch (failure) {
-				this.refusal = failure?.response?.data?.error ?? {
-					message: messageFor(
-						failure,
-						t('openregister', 'The replay could not be previewed.'),
-					),
-				}
+				this.refusal = replayFailure(failure)
 			} finally {
 				this.running = false
 			}
+		},
+
+		/**
+		 * Ask for the replay preview and show it, or the refusal the server
+		 * answered with.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async previewReplay() {
+			const data = await replayRule(this.schema, this.ruleId, this.replayPayload())
+			if (data.ok === false) {
+				this.refusal = data.error
+				return
+			}
+			this.result = data
+		},
+
+		/**
+		 * What the replay runs on: the parsed query when one is typed, the
+		 * reason, and the register when one is chosen.
+		 *
+		 * @return {object} The payload.
+		 */
+		replayPayload() {
+			let selection = {}
+			if (this.query.trim() !== '') {
+				selection = { query: JSON.parse(this.query) }
+			}
+
+			const payload = { selection, justification: this.justification }
+			if (this.register !== '') {
+				payload.registerId = this.register
+			}
+			return payload
 		},
 	},
 }

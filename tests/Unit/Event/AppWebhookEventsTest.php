@@ -232,7 +232,6 @@ class AppWebhookEventsTest extends TestCase {
 
 	public function testTheEventsEndpointAppendsDeclaredEventsToTheBuiltInOnes(): void {
 		$controller = WebhooksControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(WebhookMapper::class),
 			$this->createMock(WebhookLogMapper::class),

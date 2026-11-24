@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -115,8 +116,7 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 
 		$verdict = $this->handler()->hasPermission(
-			schema: $this->schemaWith(['read' => ['mcp']]),
-			action: 'read'
+			ask: new PermissionAsk(schema: $this->schemaWith(['read' => ['mcp']]), action: 'read')
 		);
 
 		$this->assertFalse(
@@ -139,9 +139,8 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 		$this->groupManager->method('getUserGroupIds')->willReturn(['users']);
 
 		$verdict = $this->handler()->hasPermission(
-			schema: $this->schemaWith(['read' => ['mcp']]),
-			action: 'read',
-			userId: 'mallory'
+			ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['mcp']]), action: 'read'))
+				->askedBy(userId: 'mallory', objectOwner: null)
 		);
 
 		$this->assertFalse(
@@ -190,9 +189,8 @@ class PermissionHandlerMcpScopeSecurityTest extends TestCase {
 
 		$this->assertFalse(
 			$this->handler()->hasPermission(
-				schema: $this->schemaWith(['read' => ['mcp'], 'create' => ['staff']]),
-				action: 'read',
-				userId: 'mallory'
+				ask: (new PermissionAsk(schema: $this->schemaWith(['read' => ['mcp'], 'create' => ['staff']]), action: 'read'))
+					->askedBy(userId: 'mallory', objectOwner: null)
 			),
 			'An mcp offer widened a block that still carried real rules.'
 		);

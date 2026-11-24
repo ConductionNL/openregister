@@ -24,6 +24,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionGate;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionInputs;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -54,9 +55,9 @@ class ObjectActionListTest extends TestCase {
 	 */
 	private function list(): ObjectActionList {
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			fn ($schema, string $action): bool => ($this->rights[$action] ?? true)
-		);
+		));
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('anna');
 		$session = $this->createMock(IUserSession::class);

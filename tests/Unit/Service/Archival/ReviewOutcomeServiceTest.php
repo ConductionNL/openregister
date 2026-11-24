@@ -87,6 +87,19 @@ class ReviewOutcomeServiceTest extends TestCase {
 		);
 	}
 
+	public function testAnonymisingTouchesTheRecordNotAtAllAndHandsNothingOn(): void {
+		$this->objectMapper->expects($this->never())->method('find');
+		$this->objectMapper->expects($this->never())->method('update');
+		$this->transferListService->expects($this->never())->method($this->anything());
+
+		$this->assertNull(
+			$this->service->apply(
+				entryUuid: 'obj-1',
+				given: new ReviewerAnswer(answer: DestructionReviewService::ANSWER_ANONYMISE, reason: 'Keep the statistics')
+			)
+		);
+	}
+
 	public function testRetainingMovesTheDateAndSaysWhy(): void {
 		$object = $this->object();
 		$this->objectMapper->method('find')->willReturn($object);

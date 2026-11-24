@@ -94,6 +94,7 @@ use OCP\IUserManager;
 use OCA\OpenRegister\Service\Party\PartyHolding;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
@@ -341,6 +342,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			WatcherMapperInterface::class      => $this->watcherMapper(),
 			PartyRoleService::class   => $this->partyRoles(),
 			PartyService::class       => $this->partyService(),
+			ObjectOperationsInterface::class => $this->objectLayer(),
 			ContactLinkMapperInterface::class => $this->contactLinks(),
 			ICommentsManager::class   => $this->commentsManager(),
 			ObjectReadStateMapperInterface::class => $this->readStateMapper(),
@@ -1329,21 +1331,47 @@ abstract class ExampleSetTestCase extends TestCase {
 	private function partyService(): PartyService {
 		$parties = $this->createMock(PartyService::class);
 		$parties->method('find')->willReturn(null);
-		$parties->method('findUnscoped')->willReturnCallback(function (string $uuid): ?ObjectEntity {
-			// A task is not an object, as on an instance.
-			if (str_starts_with($uuid, 'missing') === true || isset($this->engineTasks[$uuid]) === true) {
-				return null;
-			}
-
-			$object = new ObjectEntity();
-			$object->setUuid($uuid);
-			$object->setRegister('7');
-			$object->setSchema('9');
-			$object->setOwner($this->store->owners[$uuid] ?? null);
-			return $object;
-		});
+		$parties->method('findUnscoped')->willReturnCallback(fn (string $uuid): ?ObjectEntity => $this->installedObject(uuid: $uuid));
 
 		return $parties;
+	}
+
+	/**
+	 * The object layer as an occ install meets it: a read with rbac and
+	 * multitenancy off finds every object, a scoped read finds none.
+	 *
+	 * @return ObjectOperationsInterface
+	 */
+	private function objectLayer(): ObjectOperationsInterface {
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->method('find')->willReturnCallback(
+			fn (int|string $id, mixed $options = null, bool $rbac = true, bool $multitenancy = true): ?ObjectEntity => (
+				$rbac === false && $multitenancy === false ? $this->installedObject(uuid: (string) $id) : null
+			)
+		);
+
+		return $objects;
+	}
+
+	/**
+	 * The object an install finds for a uuid: none for a task or a "missing" uuid.
+	 *
+	 * @param string $uuid The uuid.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function installedObject(string $uuid): ?ObjectEntity {
+		// A task is not an object, as on an instance.
+		if (str_starts_with($uuid, 'missing') === true || isset($this->engineTasks[$uuid]) === true) {
+			return null;
+		}
+
+		$object = new ObjectEntity();
+		$object->setUuid($uuid);
+		$object->setRegister('7');
+		$object->setSchema('9');
+		$object->setOwner($this->store->owners[$uuid] ?? null);
+		return $object;
 	}
 
 	/**

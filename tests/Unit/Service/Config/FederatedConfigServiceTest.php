@@ -99,12 +99,22 @@ class FederatedConfigServiceTest extends TestCase {
 		$this->service->bundle('nope', []);
 	}
 
-	public function testInstallSucceedsWhenNoAllowlistIsSet(): void {
-		$this->allowlist = ['']; // empty = not yet enforced
+	public function testInstallIsRefusedWhenNoAllowlistIsSet(): void {
+		$this->allowlist = [''];
 		$this->registry->method('get')->willReturn($this->type());
 
-		$result = $this->service->install('demo.type', ['flows' => []], 'anyone/repo');
-		$this->assertSame(['x'], $result['installed']);
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('allowlist');
+		$this->service->install('demo.type', ['flows' => []], 'anyone/repo');
+	}
+
+	public function testInstallWithoutASourceIsRefused(): void {
+		$this->allowlist = ['ConductionNL'];
+		$this->registry->method('get')->willReturn($this->type());
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('allowlist');
+		$this->service->install('demo.type', ['flows' => []], '');
 	}
 
 	public function testInstallFromANonAllowlistedSourceIsRefused(): void {
@@ -123,9 +133,10 @@ class FederatedConfigServiceTest extends TestCase {
 		$this->assertSame(['x'], $result['installed']);
 	}
 
-	public function testEmptyAllowlistAllowsAnySourceButASetOneEnforces(): void {
+	public function testEmptyAllowlistAllowsNoSourceAndASetOneEnforces(): void {
 		$this->allowlist = [''];
-		$this->assertTrue($this->service->isSourceAllowed('whoever/repo'));
+		$this->assertFalse($this->service->isSourceAllowed('whoever/repo'));
+		$this->assertFalse($this->service->isSourceAllowed(''));
 
 		$this->allowlist = ['acme, ConductionNL/flows'];
 		$this->assertTrue($this->service->isSourceAllowed('ConductionNL/flows'));
@@ -172,7 +183,7 @@ class FederatedConfigServiceTest extends TestCase {
 
 	#[\PHPUnit\Framework\Attributes\DataProvider('unverifiedVerdicts')]
 	public function testInstallRefusesABundleNothingVouchesFor(array $verdict, string $allowance): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->allowUnverified = $allowance;
 		$this->registry->expects($this->never())->method('get');
 
@@ -182,7 +193,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testAnAdministratorMayAllowUnverifiedBundles(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->allowUnverified = 'true';
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => false, 'valid' => false, 'trusted' => true, 'publicKey' => null]);
@@ -191,7 +202,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testATrustedKeyVerifiesWithoutTheAllowance(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->allowUnverified = '';
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k'], enforced: true);
@@ -200,7 +211,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testTheAllowanceDoesNotOverruleATrustedKeysList(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->allowUnverified = 'true';
 		$this->registry->expects($this->never())->method('get');
 		$service = $this->serviceWithVerdict(['signed' => false, 'valid' => false, 'trusted' => false, 'publicKey' => null], enforced: true);
@@ -245,7 +256,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testInstallRefusesATamperedSignature(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => true, 'valid' => false, 'trusted' => true, 'publicKey' => 'k']);
 
@@ -255,7 +266,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testInstallRefusesAnUntrustedPublisher(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => true, 'valid' => true, 'trusted' => false, 'publicKey' => 'k']);
 
@@ -265,7 +276,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testInstallAcceptsAValidTrustedBundle(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k']);
 

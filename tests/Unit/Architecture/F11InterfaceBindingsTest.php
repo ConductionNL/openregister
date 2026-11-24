@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionPin;
 use OCA\OpenRegister\Service\Flow\FlowDefinitionPinInterface;
 use OCA\OpenRegister\Service\Flow\FlowRunAdvancer;
@@ -64,15 +64,15 @@ final class F11InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		ActionInputsNode::class => [ActionInputsNodeInterface::class, ContractBindings::class],
-		FlowDefinitionPin::class => [FlowDefinitionPinInterface::class, ContractBindings::class],
-		FlowRunAdvancer::class => [FlowRunAdvancerInterface::class, ContractBindings::class],
-		FlowSemanticVersion::class => [FlowSemanticVersionInterface::class, ContractBindings::class],
-		FlowTriggerIndex::class => [FlowTriggerIndexInterface::class, ContractBindings::class],
-		FlowTriggerService::class => [FlowTriggerServiceInterface::class, ContractBindings::class],
-		FlowTriggerSlugs::class => [FlowTriggerSlugsInterface::class, ContractBindings::class],
-		SwitchNode::class => [SwitchNodeInterface::class, ContractBindings::class],
-		UnlockObjectNode::class => [UnlockObjectNodeInterface::class, ContractBindings::class],
+		ActionInputsNode::class => [ActionInputsNodeInterface::class, ProcessesServiceBindings::class],
+		FlowDefinitionPin::class => [FlowDefinitionPinInterface::class, ProcessesServiceBindings::class],
+		FlowRunAdvancer::class => [FlowRunAdvancerInterface::class, ProcessesServiceBindings::class],
+		FlowSemanticVersion::class => [FlowSemanticVersionInterface::class, ProcessesServiceBindings::class],
+		FlowTriggerIndex::class => [FlowTriggerIndexInterface::class, ProcessesServiceBindings::class],
+		FlowTriggerService::class => [FlowTriggerServiceInterface::class, ProcessesServiceBindings::class],
+		FlowTriggerSlugs::class => [FlowTriggerSlugsInterface::class, ProcessesServiceBindings::class],
+		SwitchNode::class => [SwitchNodeInterface::class, ProcessesServiceBindings::class],
+		UnlockObjectNode::class => [UnlockObjectNodeInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**
