@@ -34,7 +34,9 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Authorization\DeclaredGroupRights;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
+use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -241,8 +243,22 @@ class ImportHandlerActingUserAccessGoldenTest extends TestCase {
 		$this->assertSame([], $this->calls);
 	}//end testADocumentWithoutGroupsProvisionsNothing()
 
+	public function testWithoutARightsReaderOnlyTheGroupListIsRecorded(): void {
+		$this->provisioner();
+		$this->call('provisionDeclaredGroups', [self::RBAC_DOCUMENT, 'zaakapp']);
+
+		$this->assertSame(
+			[
+				'provision [["medewerkers","archivarissen"],"zaakapp"]',
+				'config ["openregister","declared_groups_zaakapp","[\\"medewerkers\\",\\"archivarissen\\"]"]',
+			],
+			$this->calls
+		);
+	}//end testWithoutARightsReaderOnlyTheGroupListIsRecorded()
+
 	public function testDeclaredGroupsAreProvisionedAndRecordedPerApp(): void {
 		$this->provisioner();
+		$this->handler->setDeclaredGroupRights(new DeclaredGroupRights(collector: new RbacGroupCollector()));
 		$this->call('provisionDeclaredGroups', [self::RBAC_DOCUMENT, 'zaakapp']);
 		$this->call('provisionDeclaredGroups', [self::RBAC_DOCUMENT, null]);
 
@@ -250,6 +266,7 @@ class ImportHandlerActingUserAccessGoldenTest extends TestCase {
 			[
 				'provision [["medewerkers","archivarissen"],"zaakapp"]',
 				'config ["openregister","declared_groups_zaakapp","[\"medewerkers\",\"archivarissen\"]"]',
+				'config ["openregister","declared_group_rights_zaakapp","{\"schemas\":{\"zaak\":{\"delete\":[\"archivarissen\"]}},\"registers\":{\"zaken\":{\"read\":[\"medewerkers\"]}}}"]',
 				'provision [["medewerkers","archivarissen"],"unknown"]',
 			],
 			$this->calls
