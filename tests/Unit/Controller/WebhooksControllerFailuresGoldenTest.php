@@ -152,7 +152,8 @@ final class WebhooksControllerFailuresGoldenTest extends TestCase {
 	}//end testAnUnknownWebhookIs404()
 
 	/**
-	 * A failing lookup answers 500 and logs one error line per route.
+	 * A failing lookup answers 500 and logs one error line per route; no
+	 * route echoes the exception message into the response body.
 	 *
 	 * @return void
 	 */
@@ -168,16 +169,19 @@ final class WebhooksControllerFailuresGoldenTest extends TestCase {
 
 		$err = '[WebhooksController] Error ';
 		$idTrace = ['file', 'line', 'id', 'trace'];
+		// Routes answering through handleApiException(): a generic body, the detail in the log only.
+		$translated = '[' . WebhooksController::class . '] ';
+		$exceptionKeys = ['file', 'line', 'exception'];
 		$expected = [
 			'index' => ['Failed to list webhooks', $err . 'listing webhooks: db down', ['file', 'line', 'trace'], null],
 			'show' => ['Failed to retrieve webhook', $err . 'retrieving webhook: db down', $idTrace, 7],
-			'create' => ['Failed to create webhook: db down', $err . 'creating webhook: db down', ['file', 'line', 'fields', 'trace'], null],
-			'update' => ['Failed to update webhook: db down', $err . 'updating webhook: db down', ['file', 'line', 'id', 'fields', 'trace'], 7],
+			'create' => ['Internal server error', $translated . 'Webhook creation failed (fields: name, url): db down', $exceptionKeys, null],
+			'update' => ['Internal server error', $translated . 'Webhook update failed (fields: name, url): db down', $exceptionKeys, null],
 			'destroy' => ['Failed to delete webhook', $err . 'deleting webhook: db down', $idTrace, 7],
-			'test' => ['Failed to test webhook: db down', $err . 'testing webhook: db down', $idTrace, 7],
+			'test' => ['Internal server error', $translated . 'Webhook test failed: db down', $exceptionKeys, null],
 			'logs' => ['Failed to retrieve webhook logs', $err . 'retrieving webhook logs: db down', $idTrace, 7],
 			'logStats' => ['Failed to retrieve webhook log statistics', $err . 'retrieving webhook log statistics: db down', $idTrace, 7],
-			'allLogs' => ['Failed to retrieve webhook logs: db down', $err . 'retrieving webhook logs: db down', ['file', 'line', 'trace'], null],
+			'allLogs' => ['Internal server error', $translated . 'Webhook log listing failed: db down', $exceptionKeys, null],
 			'retry' => ['Failed to retry webhook', $err . 'retrying webhook: db down', ['file', 'line', 'log_id', 'trace'], 7],
 		];
 		foreach ($expected as $route => [$error, $message, $keys, $id]) {
@@ -190,6 +194,29 @@ final class WebhooksControllerFailuresGoldenTest extends TestCase {
 			$this->assertSame([[$message, $keys, $id]], $this->errors, $route);
 		}
 	}//end testAFailingLookupIs500AndLogged()
+
+	/**
+	 * A typed failure on create or update keeps its own status and message.
+	 *
+	 * @return void
+	 */
+	public function testATypedFailureKeepsItsStatus(): void {
+		$this->webhookMapper->method('createFromArray')->willThrowException(new \InvalidArgumentException('url is required'));
+		$this->webhookMapper->method('updateFromArray')->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('bad events'));
+		$controller = $this->controller();
+
+		$created = $controller->create();
+		$updated = $controller->update(7);
+
+		$this->assertSame(
+			[400, ['message' => 'url is required', 'error' => 'invalid-argument']],
+			[$created->getStatus(), $created->getData()]
+		);
+		$this->assertSame(
+			[422, ['message' => 'bad events', 'error' => 'validation']],
+			[$updated->getStatus(), $updated->getData()]
+		);
+	}//end testATypedFailureKeepsItsStatus()
 
 	/**
 	 * A transport failure while testing answers 500 with a delivery-failed body.

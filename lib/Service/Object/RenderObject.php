@@ -4498,7 +4498,8 @@ class RenderObject implements RenderObjectInterface {
 
 		$this->preloadExtendTargets(
 			entity: $run->entity,
-			uuids: $this->collectUuidsForExtend(objectData: $run->objectData, extend: $run->extend)
+			uuids: $this->collectUuidsForExtend(objectData: $run->objectData, extend: $run->extend),
+			extend: $run->extend
 		);
 	}//end preloadOwnExtendTargets()
 
@@ -4536,19 +4537,21 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @param ObjectEntity $entity The entity being extended; its register scopes the load.
 	 * @param array        $uuids  The identifiers to load.
+	 * @param array        $extend The extend list; the schemas its properties reference scope the load first.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function preloadExtendTargets(ObjectEntity $entity, array $uuids): void {
+	private function preloadExtendTargets(ObjectEntity $entity, array $uuids, array $extend = []): void {
 		if (empty($uuids) === true) {
 			return;
 		}
 
 		$preloadedObjects = $this->stores->mappers->objectCacheService->preloadObjects(
 			identifiers: $uuids,
-			registerId: $this->registerIdOf(entity: $entity)
+			registerId: $this->registerIdOf(entity: $entity),
+			schemaIds: $this->extendTargetSchemaIds(entities: [$entity], extend: $extend)
 		);
 		$this->cacheExtendTargets(objects: $preloadedObjects);
 
@@ -5225,7 +5228,7 @@ class RenderObject implements RenderObjectInterface {
 		);
 
 		if (empty($allUuidsToPreload) === false) {
-			$this->cachePreloadedObjects(entities: $entities, uuids: $allUuidsToPreload);
+			$this->cachePreloadedObjects(entities: $entities, uuids: $allUuidsToPreload, extend: $extend);
 		}
 
 		// Batch preload objects that REFERENCE our entities, so extending inverse
@@ -5238,15 +5241,17 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @param array $entities The page of entities, for the register they share.
 	 * @param array $uuids    The UUIDs to load.
+	 * @param array $extend   The extend list; the schemas its properties reference scope the load first.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cachePreloadedObjects(array $entities, array $uuids): void {
+	private function cachePreloadedObjects(array $entities, array $uuids, array $extend = []): void {
 		$preloadedObjects = $this->stores->mappers->objectCacheService->preloadObjects(
 			identifiers: $uuids,
-			registerId: $this->sharedRegisterIdOf(entities: $entities)
+			registerId: $this->sharedRegisterIdOf(entities: $entities),
+			schemaIds: $this->extendTargetSchemaIds(entities: $entities, extend: $extend)
 		);
 		$this->cacheExtendTargets(objects: $preloadedObjects);
 
@@ -5261,6 +5266,63 @@ class RenderObject implements RenderObjectInterface {
 			]
 		);
 	}//end cachePreloadedObjects()
+
+	/**
+	 * The schemas the extended properties of these entities reference through `$ref`.
+	 *
+	 * Lets a preload read one table per target schema instead of every table in
+	 * the register. Null when any extended property has no resolvable `$ref`
+	 * (or the extend is `all`), because its values could then live anywhere.
+	 *
+	 * @param array $entities The entities being extended.
+	 * @param array $extend   The extend list.
+	 *
+	 * @return list<int>|null The target schema ids, or null when they are not all known.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendTargetSchemaIds(array $entities, array $extend): ?array {
+		$properties = array_filter(
+			array_unique(array_map(fn ($key) => explode('.', (string)$key)[0], $extend)),
+			fn ($name) => str_starts_with($name, '@') === false
+		);
+		if ($properties === [] || in_array('all', $properties, true) === true) {
+			return null;
+		}
+
+		$targets = [];
+		foreach ($entities as $entity) {
+			$schema = null;
+			if ($entity instanceof ObjectEntity === true && $entity->getSchema() !== null) {
+				$schema = $this->getSchema(id: $entity->getSchema());
+			}
+
+			if ($schema === null) {
+				return null;
+			}
+
+			foreach ($properties as $name) {
+				$definition = ($schema->getProperties()[$name] ?? null);
+				$ref = null;
+				if (is_array($definition) === true) {
+					$ref = ($definition['$ref'] ?? ($definition['items']['$ref'] ?? null));
+				}
+
+				$target = null;
+				if (self::isSchemaRef(ref: $ref) === true) {
+					$target = $this->getSchema(id: $ref);
+				}
+
+				if ($target === null) {
+					return null;
+				}
+
+				$targets[$target->getId()] = true;
+			}
+		}//end foreach
+
+		return array_keys($targets);
+	}//end extendTargetSchemaIds()
 
 	/**
 	 * Batch-prefetch the lightweight @self.files ids of the whole page.
