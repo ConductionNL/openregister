@@ -283,3 +283,4 @@
 2026-11-24T19:16Z help-filinq-1 skipped propose-grondslag-per-entity-type: 7.1 owned by OpenAnonymiser team, 7.2/7.3 follow it
 2026-11-24T19:16Z help-filinq-1 skipped document-editing-tools 3.3: needs a Euro-Office instance
 2026-11-24T19:18Z help-filinq-1 skipped shillinq abstract-order-primitive (compliance re-point): PurchaseOrder/Subsidie/DBAOpdracht stay the live write targets in 15+ services and Order is a folded copy until RetireSubsidieSchema (deletes data, Ruben) runs; re-pointing now reads the copy, not the source
+2026-11-24T19:19Z help-portaliq-3 helped portaliq: mail-templates-admin-screen #2687 (T07 e2e written, runs in nightly; T08 live left)
