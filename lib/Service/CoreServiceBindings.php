@@ -29,6 +29,7 @@ use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectUpdateRightsInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
@@ -105,6 +106,7 @@ use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidatorInterface;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilder;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
+use OCA\OpenRegister\Service\Object\ObjectActivityAudit;
 use OCA\OpenRegister\Service\Object\ArchiveHandler;
 use OCA\OpenRegister\Service\Object\ArchiveHandlerInterface;
 use OCA\OpenRegister\Service\Object\AuthorizationResolutionInterface;
@@ -371,6 +373,7 @@ final class CoreServiceBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		ObjectActivityAuditInterface::class => ObjectActivityAudit::class,
 		\OCA\OpenRegister\Kernel\Contracts\OperatorActionAuditInterface::class => \OCA\OpenRegister\Service\Audit\OperatorActionAudit::class,
 		MandateEvidenceInterface::class => MandateEvidence::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
