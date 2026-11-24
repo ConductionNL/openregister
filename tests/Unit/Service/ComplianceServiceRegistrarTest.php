@@ -21,6 +21,7 @@ use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\ComplianceServiceRegistrar;
 use OCA\OpenRegister\Service\Gdpr\GdprRegistrar;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
@@ -75,19 +76,20 @@ final class ComplianceServiceRegistrarTest extends TestCase {
 	}//end testContractBindingsDoesNotBindThemAgain()
 
 	/**
-	 * registerGdpr() registers exactly what the GDPR registrar registers, in its order.
+	 * register() registers exactly what the GDPR registrar registers, in its order, after the area's bindings.
 	 *
 	 * @return void
 	 */
-	public function testRegisterGdprRegistersTheGdprServices(): void {
+	public function testRegisterEndsWithTheGdprServices(): void {
 		$entry = new RecordingRegistrationContext();
-		ComplianceServiceRegistrar::registerGdpr(context: $entry);
+		ComplianceServiceRegistrar::register(context: $entry);
 		$direct = new RecordingRegistrationContext();
 		GdprRegistrar::register(context: $direct);
 
 		$this->assertNotSame(expected: [], actual: $entry->services);
 		$this->assertSame(expected: $direct->services, actual: $entry->services);
-	}//end testRegisterGdprRegistersTheGdprServices()
+		$this->assertSame(expected: ComplianceServiceBindings::BINDINGS, actual: array_column($entry->aliases, 'target', 'alias'));
+	}//end testRegisterEndsWithTheGdprServices()
 
 	/**
 	 * The object search records its trails through the Core port the search trail service answers.
