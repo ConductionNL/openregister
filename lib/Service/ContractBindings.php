@@ -35,6 +35,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
+use OCA\OpenRegister\Kernel\Contracts\TablePdfRendererInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
@@ -328,6 +329,7 @@ final class ContractBindings {
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
 		SourceRowReaderInterface::class => SourceRowReader::class,
 		SupportBundleServiceInterface::class => SupportBundleService::class,
+		TablePdfRendererInterface::class => ExportService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,
