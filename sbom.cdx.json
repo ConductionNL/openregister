@@ -4700,7 +4700,7 @@
           "name": "dialogs",
           "group": "@nextcloud",
           "version": "7.6.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@nextcloud/dialogs@7.6.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@nextcloud/dialogs@7.6.0",
           "licenses": [
             {
               "license": {
@@ -4734,7 +4734,7 @@
               "name": "core",
               "group": "@vueuse",
               "version": "15.0.0",
-              "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@nextcloud/dialogs@7.6.0|@vueuse/core@15.0.0",
+              "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@nextcloud/dialogs@7.6.0|@vueuse/core@15.0.0",
               "licenses": [
                 {
                   "license": {
@@ -4770,7 +4770,7 @@
           "name": "metadata",
           "group": "@vueuse",
           "version": "15.0.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@vueuse/metadata@15.0.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@vueuse/metadata@15.0.0",
           "licenses": [
             {
               "license": {
@@ -4804,7 +4804,7 @@
           "name": "shared",
           "group": "@vueuse",
           "version": "15.0.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@vueuse/shared@15.0.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@vueuse/shared@15.0.0",
           "licenses": [
             {
               "license": {
