@@ -52,15 +52,21 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 class TaskDueSoonWarningTest extends TestCase {
-	/** Friday 12 March 2027, 17:00 Amsterdam. */
+	/**
+	 * Friday 12 March 2027, 17:00 Amsterdam.
+	 */
 	private const DEADLINE = '2027-03-12 17:00:00';
 
+	/** @var TaskMapper&MockObject */
 	private TaskMapper&MockObject $tasks;
 
+	/** @var TaskAuditMapper&MockObject */
 	private TaskAuditMapper&MockObject $audits;
 
+	/** @var IEventDispatcher&MockObject */
 	private IEventDispatcher&MockObject $events;
 
+	/** @var Task */
 	private Task $task;
 
 	/** @var array<int, TaskAudit> */
@@ -159,7 +165,11 @@ class TaskDueSoonWarningTest extends TestCase {
 		return $timer;
 	}
 
-	private static function fired(FlowTimer $timer, ?string $trigger = EscalationLadderService::TRIGGER_PRE_BREACH, string $key = 'preBreach:1:businessDays'): FlowTimerFiredEvent {
+	private static function fired(
+		FlowTimer $timer,
+		?string $trigger = EscalationLadderService::TRIGGER_PRE_BREACH,
+		string $key = 'preBreach:1:businessDays'
+	): FlowTimerFiredEvent {
 		return new FlowTimerFiredEvent(
 			timer: $timer,
 			firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: 'escalation:' . $key, rungKey: $key, rungTrigger: $trigger)
