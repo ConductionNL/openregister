@@ -67,7 +67,23 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 	 *
 	 * @var array<int, string>
 	 */
-	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn', 'reserved', 'kind', 'length', 'alphabet'];
+	private const KNOWN_KEYS = ['sequence', 'format', 'resetOn', 'reserved', 'kind', 'length', 'alphabet', 'partitionBy'];
+
+	/**
+	 * What a `partitionBy` value must look like: one plain property name.
+	 *
+	 * @var string
+	 */
+	private const PARTITION_PROPERTY = '/^[A-Za-z_][A-Za-z0-9_]*$/';
+
+	/**
+	 * The property whose value splits the counter, or null for one counter.
+	 *
+	 * Set once, by {@see self::fromAnnotation()}, right after construction.
+	 *
+	 * @var string|null
+	 */
+	private ?string $partitionBy = null;
 
 	/**
 	 * A counter shown as its number: the default kind.
@@ -171,6 +187,17 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 			reserved: self::reservedOf(raw: $raw, path: $path),
 			random: self::randomOf(raw: $raw, path: $path)
 		);
+		// Only a plain property name splits the counter: a path or an expression would
+		// make the counter depend on how a nested value happens to be shaped.
+		$partitionBy = ($raw['partitionBy'] ?? null);
+		if (array_key_exists('partitionBy', $raw) === true
+			&& (is_string($partitionBy) === false || preg_match(self::PARTITION_PROPERTY, $partitionBy) !== 1)
+		) {
+			$message = '%s.partitionBy at \'%s\' must be the name of one property of the object.';
+			throw self::refusal(message: sprintf($message, self::ANNOTATION, $path), path: $path);
+		}
+
+		$declaration->partitionBy = $partitionBy;
 		self::assertRenderable(declaration: $declaration, path: $path);
 		return $declaration;
 	}//end fromAnnotation()
@@ -217,6 +244,17 @@ final class GeneratedIdentifierDeclaration implements GeneratedIdentifierDeclara
 
 		return ['alphabet' => $alphabet, 'length' => $length];
 	}//end randomOf()
+
+	/**
+	 * The property whose value splits the counter, or null for one counter.
+	 *
+	 * @return string|null The property name.
+	 *
+	 * @spec openspec/changes/generated-identifier-partition/specs/computed-fields/spec.md#requirement-a-sequence-may-count-separately-per-value-of-a-property
+	 */
+	public function getPartitionBy(): ?string {
+		return $this->partitionBy;
+	}//end getPartitionBy()
 
 	/**
 	 * Whether this identifier is drawn from a random sequence.

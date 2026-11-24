@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 259;
+	private const LISTENER_COUNT = 260;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -38,10 +38,11 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * listeners; every other registration is unchanged and in the same order. Then two
 	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent). The platform
 	 * share provider then appended one PlatformShareRoutingListener registration on
-	 * BeforeShareCreatedEvent in AccessListenerRegistrar. The deadline warning then appended one
-	 * TaskDueSoonListener registration on FlowTimerFiredEvent, after CaseItemTimerListener.
+	 * BeforeShareCreatedEvent in AccessListenerRegistrar. Then the ServiceAccountLoginListener
+	 * (PostLoginEvent) was added (count 258 -> 259). The deadline warning then appended one
+	 * TaskDueSoonListener registration on FlowTimerFiredEvent, after CaseItemTimerListener (259 -> 260).
 	 */
-	private const SEQUENCE_SHA256 = '856a2ad246870152a7f078d6c8876b9d179ad456ce3322097a4163ef35b834fa';
+	private const SEQUENCE_SHA256 = 'b5cabaf71368b7cf5eb02613f7c90c1d5c9e1dee50bfea7fea8008e32bb00e73';
 
 	/**
 	 * The registration calls, in call order, with every argument.

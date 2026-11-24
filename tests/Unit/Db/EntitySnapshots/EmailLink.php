@@ -22,6 +22,7 @@ return array (
     'linkedBy' => 'string',
     'linkedAt' => 'datetime',
     'rfcMessageId' => 'string',
+    'direction' => 'string',
   ),
   'empty' => 
   array (
@@ -65,7 +66,7 @@ return array (
     'metadata' => 'metadata-v',
     'details' => 
     array (
-      'direction' => NULL,
+      'direction' => 'direction-v',
       'recipientName' => NULL,
       'attachmentCount' => NULL,
       'linkedVia' => NULL,
@@ -92,6 +93,7 @@ return array (
     12 => 'linkedBy',
     13 => 'linkedAt',
     14 => 'rfcMessageId',
+    15 => 'direction',
   ),
   'refused' => 
   array (

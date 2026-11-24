@@ -382,6 +382,9 @@
 	"OCP\\User\\Events\\OutOfOfficeStartedEvent": [
 		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
 	],
+	"OCP\\User\\Events\\PostLoginEvent": [
+		"OCA\\OpenRegister\\Listener\\ServiceAccountLoginListener"
+	],
 	"OCP\\User\\Events\\UserCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
 	],
