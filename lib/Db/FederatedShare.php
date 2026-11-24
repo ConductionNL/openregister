@@ -71,6 +71,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getExpiresAt()
  * @method void setExpiresAt(?DateTime $expiresAt)
+ * @method array|null getCrosses()
+ * @method void setCrosses(?array $crosses)
  */
 class FederatedShare extends Entity implements JsonSerializable, FederatedShareInterface {
 	use JsonFieldsTrait;
@@ -202,6 +204,15 @@ class FederatedShare extends Entity implements JsonSerializable, FederatedShareI
 	 * @var DateTime|null
 	 */
 	protected ?DateTime $expiresAt = null;
+
+	/**
+	 * What crosses to the recipient: a subset of `data`, `files`, `timeline`.
+	 * Null on a share made before the declaration existed, which serves the
+	 * narrowest (see ShareCrosses).
+	 *
+	 * @var array|null
+	 */
+	protected ?array $crosses = null;
 
 	/**
 	 * Constructor: registers field types.
