@@ -230,11 +230,11 @@ class GeneratedIdentifierPartitionTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheDeclarationReadsPartitionBy(): void {
-		$this->assertSame(expected: 'unit', actual: GeneratedIdentifierDeclaration::fromProperty(property: self::partitionedProperty())?->partitionBy());
+		$this->assertSame(expected: 'unit', actual: GeneratedIdentifierDeclaration::fromProperty(property: self::partitionedProperty())?->getPartitionBy());
 
 		$plain = self::partitionedProperty();
 		unset($plain[GeneratedIdentifierDeclaration::ANNOTATION]['partitionBy']);
-		$this->assertNull(actual: GeneratedIdentifierDeclaration::fromProperty(property: $plain)?->partitionBy());
+		$this->assertNull(actual: GeneratedIdentifierDeclaration::fromProperty(property: $plain)?->getPartitionBy());
 
 	}//end testTheDeclarationReadsPartitionBy()
 

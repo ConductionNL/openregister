@@ -65,7 +65,7 @@ interface GeneratedIdentifierDeclarationInterface {
 	 *
 	 * @spec openspec/changes/generated-identifier-partition/specs/computed-fields/spec.md#requirement-a-sequence-may-count-separately-per-value-of-a-property
 	 */
-	public function partitionBy(): ?string;
+	public function getPartitionBy(): ?string;
 
 	/**
 	 * The period that keys the counter at a given moment.
