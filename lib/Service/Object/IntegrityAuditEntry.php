@@ -46,6 +46,13 @@ final class IntegrityAuditEntry {
 	public ?string $registerId = null;
 
 	/**
+	 * The earliest moment the entry may expire, when its evidence must outlive a recovery window.
+	 *
+	 * @var \DateTimeImmutable|null
+	 */
+	public ?\DateTimeImmutable $expiresNoEarlierThan = null;
+
+	/**
 	 * The object, when already at hand.
 	 *
 	 * @var ObjectEntity|null
@@ -99,4 +106,19 @@ final class IntegrityAuditEntry {
 
 		return $this;
 	}//end about()
+
+	/**
+	 * Keep the entry at least until the given moment.
+	 *
+	 * @param \DateTimeImmutable|null $until The earliest expiry, or null for no floor.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	public function lastingUntil(?\DateTimeImmutable $until): self {
+		$this->expiresNoEarlierThan = $until;
+
+		return $this;
+	}//end lastingUntil()
 }//end class

@@ -24,7 +24,9 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
 use DateTime;
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrail\ExportOutcome;
 use OCA\OpenRegister\Db\AuditTrail\HardeningChange;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
@@ -510,6 +512,40 @@ interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function findObjectActions(string $objectUuid, AuditTrail\ActionLookupOptions $options): array;
+
+	/**
+	 * Destruction entries created since a moment, oldest first, one page.
+	 *
+	 * @param DestructionQuery $query The moment, register, schema, actor and page.
+	 *
+	 * @return array<int, AuditTrail> The matching destruction entries, oldest first.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function findDestructions(DestructionQuery $query): array;
+
+	/**
+	 * How many destruction entries a query matches, ignoring its page.
+	 *
+	 * @param DestructionQuery $query The moment, register, schema and actor.
+	 *
+	 * @return int The number of matching destruction entries.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function countDestructions(DestructionQuery $query): int;
+
+	/**
+	 * When the oldest destruction entry still held was written, or null when none is held.
+	 *
+	 * The audit trail has its own retention, so a destruction older than this
+	 * moment may no longer be on record.
+	 *
+	 * @return DateTimeImmutable|null The oldest destruction entry's `created`.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function oldestDestruction(): ?DateTimeImmutable;
 
 	/**
 	 * Tombstone the audit rows that belong to one object.
