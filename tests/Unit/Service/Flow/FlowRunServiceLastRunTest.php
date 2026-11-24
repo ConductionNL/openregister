@@ -54,6 +54,9 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\Flow\FlowUnattributed
  * @uses   \OCA\OpenRegister\Db\FlowRun
  * @uses   \OCA\OpenRegister\Db\Flow
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowRunStreamStores
+ * @uses   \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 final class FlowRunServiceLastRunTest extends TestCase {
 

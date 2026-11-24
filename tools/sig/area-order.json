@@ -1,0 +1,4 @@
+{
+  "comment": "The order of the functional areas, bottom to top (hydra ADR-119 Decision 8; openspec change functional-areas-depend-in-one-direction). An area uses only areas listed before it.",
+  "order": ["Kernel", "Core", "Notifications", "Search", "Compliance", "Files", "Integrations", "Processes", "Configuration", "Platform"]
+}

@@ -38,12 +38,11 @@ use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds `semver` to flows and `semver`/`semver_source` to flow versions.
  */
-class Version1Date20260907100000 extends SimpleMigrationStep {
+class Version1Date20260907100000 extends TargetedMigrationStep {
 
 	private const FLOWS = 'openregister_flows';
 
@@ -60,7 +59,7 @@ class Version1Date20260907100000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/flow-semantic-versions/specs/flow-semantic-versions/spec.md#requirement-a-semantic-version-is-derived-at-publish-from-the-graph
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -110,5 +109,5 @@ class Version1Date20260907100000 extends SimpleMigrationStep {
 		$output->info(message: 'Added semantic version columns to flows and flow versions; the ordinal is unchanged.');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

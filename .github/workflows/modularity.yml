@@ -1,0 +1,54 @@
+name: Modularity
+
+# The modularity ratchet of the backend (hydra ADR-119 Decision 12; openspec change
+# functional-areas-depend-in-one-direction). tools/sig/modularity_check.py reads the module
+# graph of lib/ the way the maintainability scorer does and fails when, in the functional
+# areas of sigrid.components.yaml, the exposed lines of an area, the size of Kernel or the
+# violation degree rise, or a reference against the area order (tools/sig/area-order.json)
+# is new. A change that lowers a number records it in tools/sig/modularity-baseline.json.
+# deptrac reads the same order with a PHP parser as the second reading; its violating class
+# pairs are recorded in tools/sig/deptrac/areas.baseline.json and may only shrink.
+
+on:
+  push:
+    branches: [main, master, 'stable*']
+  pull_request:
+    branches: [main, master, 'stable*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modularity-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ratchet:
+    runs-on: ubuntu-latest
+    # The ratchet takes under a minute; deptrac about one more.
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Tests of the check
+        run: python3 -m unittest discover -s tools/sig -p 'test_*.py'
+
+      - name: The ratchet
+        run: python3 tools/sig/modularity_check.py --check
+
+      - name: Set up PHP for deptrac
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install deptrac
+        run: composer --working-dir=vendor-bin/deptrac install --no-interaction --no-progress
+
+      - name: deptrac, second reading of the area order
+        run: |
+          python3 tools/sig/deptrac_areas.py --check
+          tools/sig/deptrac.sh areas --check

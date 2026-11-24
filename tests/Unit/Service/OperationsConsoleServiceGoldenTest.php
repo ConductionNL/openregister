@@ -31,7 +31,7 @@ use OCA\OpenRegister\Db\RuleRunSummaryMapper;
 use OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
-use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Service\OperationsConsoleJobs;
 use OCA\OpenRegister\Service\OperationsConsoleNotifications;
 use OCA\OpenRegister\Service\OperationsConsoleRules;
@@ -52,7 +52,7 @@ final class OperationsConsoleServiceGoldenTest extends TestCase {
 		$dispatches->method('countByStatus')->willReturn([]);
 		$queue = $this->createMock(QueuedNotificationMapper::class);
 		$queue->method('findAll')->willReturn([]);
-		$templates = $this->createMock(NotificationTemplateRegistry::class);
+		$templates = $this->createMock(NotificationTemplatesInterface::class);
 		$templates->method('gaps')->willReturn([]);
 		$ruleRuns = $this->createMock(RuleRunMapper::class);
 		$ruleRuns->method('findRecent')->willReturn($runs);

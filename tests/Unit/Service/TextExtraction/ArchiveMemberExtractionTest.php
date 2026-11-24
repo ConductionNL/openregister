@@ -82,8 +82,22 @@ use ZipArchive;
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\TextExtractionAnalysis
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\SourceText
  * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ChunkSource
- * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ExtractionSource
+ * @uses   \OCA\OpenRegister\Files\Service\ExtractionSource
  * @uses   \OCA\OpenRegister\Files\Db\Chunk
+ * @uses   \OCA\OpenRegister\Db\SchemaCatalog
+ * @uses   \OCA\OpenRegister\Files\Service\ChunkSizing
+ * @uses   \OCA\OpenRegister\Files\Service\ChunkingPlan
+ * @uses   \OCA\OpenRegister\Files\Service\FileExtractionOptions
+ * @uses   \OCA\OpenRegister\Files\Service\FileSidebarEntityStore
+ * @uses   \OCA\OpenRegister\Files\Service\FileSidebarSchemaLookup
+ * @uses   \OCA\OpenRegister\Files\Service\SourceStamp
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ChunkOwnership
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EmlBody
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EmlFlattener
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\EmlHeaderParser
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\OoxmlPackage
+ * @uses   \OCA\OpenRegister\Files\Service\TextExtraction\WordExtractor
  */
 class ArchiveMemberExtractionTest extends TestCase {
 

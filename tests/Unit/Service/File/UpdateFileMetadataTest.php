@@ -26,7 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use Exception;
 use OCA\OpenRegister\Files\Db\File as FileRow;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\FileMetadataChange;
@@ -57,7 +57,7 @@ class UpdateFileMetadataTest extends TestCase {
 
 		return new UpdateFileHandler(
 			new UpdateFileLocator($this->createMock(FolderManagementHandler::class), $this->createMock(ReadFileHandler::class)),
-			new UpdateFileGuards($this->createMock(FileValidationHandler::class), $this->createMock(FileOwnershipHandler::class)),
+			new UpdateFileGuards($this->createMock(FileValidationHandler::class), $this->createMock(FileAccountInterface::class)),
 			$logger,
 			$mapper
 		);

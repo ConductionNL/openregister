@@ -25,21 +25,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Twig;
 
-use Twig\Environment;
+use OCA\OpenRegister\Kernel\Contracts\Core\TwigFunctionsInstallerInterface;
 
 /**
  * Puts the mapping filters, functions and their runtime on a Twig environment.
  *
+ * Its installOn() is declared by Core's TwigFunctionsInstallerInterface, the port
+ * computed fields use; this interface keeps the name lib/Twig callers know.
+ *
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  */
-interface MappingTwigInstallerInterface {
-	/**
-	 * Add the mapping extension and the runtime loader its functions call.
-	 *
-	 * @param Environment $twig The environment to extend.
-	 *
-	 * @return void
-	 */
-	public function installOn(Environment $twig): void;
+interface MappingTwigInstallerInterface extends TwigFunctionsInstallerInterface {
 }//end interface

@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTrailReaderInterface;
 
 /**
  * Reconstructs an object's access set from its audit trail.
@@ -67,8 +67,9 @@ class ObjectAccessHistory {
 	 * that changed only the object's data is not one, and is dropped rather than
 	 * reported as a change nobody made.
 	 *
-	 * @param array<int, AuditTrail> $entries The object's audit trail, newest first.
-	 * @param string|null            $moment  An ISO-8601 moment to report the set AS OF, or null for every change.
+	 * @param list<array<string, mixed>> $entries The object's audit trail, newest first, as
+	 *                                          {@see ObjectTrailReaderInterface::objectTrail()} reads it.
+	 * @param string|null                $moment  An ISO-8601 moment to report the set AS OF, or null for every change.
 	 *
 	 * @return array{changes: array<int, array<string, mixed>>, asOf: array<string, mixed>|null}
 	 *         The changes, and the set as it stood at the named moment.
@@ -153,12 +154,12 @@ class ObjectAccessHistory {
 	/**
 	 * One trail entry's authorization change, or null when it carried none.
 	 *
-	 * @param AuditTrail $entry The trail entry.
+	 * @param array<string, mixed> $entry The trail entry: action, user, userName, changed and created.
 	 *
 	 * @return array<string, mixed>|null The change.
 	 */
-	private function authorizationChangeIn(AuditTrail $entry): ?array {
-		$changed = $entry->getChanged();
+	private function authorizationChangeIn(array $entry): ?array {
+		$changed = $entry['changed'];
 		if (is_array($changed) === false || isset($changed[self::AUTHORIZATION_KEY]) === false) {
 			return null;
 		}
@@ -169,10 +170,10 @@ class ObjectAccessHistory {
 		}
 
 		return [
-			'at' => $entry->getCreated()?->format('c'),
-			'by' => $entry->getUser(),
-			'byName' => $entry->getUserName(),
-			'action' => $entry->getAction(),
+			'at' => $entry['created']?->format('c'),
+			'by' => $entry['user'],
+			'byName' => $entry['userName'],
+			'action' => $entry['action'],
 			'from' => $this->blockOf(value: ($change['old'] ?? null)),
 			'to' => $this->blockOf(value: ($change['new'] ?? null)),
 		];

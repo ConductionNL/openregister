@@ -49,6 +49,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskHooks
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FormFieldsTrait
  */
 final class UserTaskPrincipalFieldsTest extends TestCase {
 

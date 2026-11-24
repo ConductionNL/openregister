@@ -40,6 +40,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Pins that only an update rule explicitly marked `crossOrganisation: true`
@@ -71,6 +72,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses   \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 final class PermissionHandlerUpdateCrossesOrganisationsTest extends TestCase {
 
@@ -177,7 +179,7 @@ final class PermissionHandlerUpdateCrossesOrganisationsTest extends TestCase {
 		$schema  = $this->schemaWith(['update' => ['behandelaars']]);
 		$handler = $this->handlerFor('ana', ['behandelaars']);
 
-		$this->assertTrue($handler->hasPermission($schema, 'update', 'ana'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'ana', objectOwner: null)));
 		$this->assertFalse($handler->updateCrossesOrganisations(schema: $schema, row: $this->foreignRow()));
 	}//end testAnUnmarkedUpdateRuleDoesNotCrossOrganisations()
 

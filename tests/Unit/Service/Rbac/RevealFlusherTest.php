@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Rbac\PropertyReveal;
@@ -92,7 +93,7 @@ class RevealFlusherTest extends TestCase {
 	private function flusher(): RevealFlusher {
 		return new RevealFlusher(
 			recording: new RevealRecording(logger: $this->logger, reveals: $this->collector),
-			mapper: $this->mapper
+			trail: new AuditEntryWriter(mapper: $this->mapper)
 		);
 	}//end flusher()
 
@@ -154,10 +155,10 @@ class RevealFlusherTest extends TestCase {
 			]
 		);
 
-		$changed = $row->getChanged();
+		$changed = $row->entry->changed;
 		$this->assertSame('bsn', $changed['property']);
 
-		$serialised = json_encode($row->jsonSerialize());
+		$serialised = json_encode([$row->entry, $row->register, $row->schema]);
 		$this->assertStringNotContainsString(
 			'123456782',
 			$serialised,
@@ -190,7 +191,7 @@ class RevealFlusherTest extends TestCase {
 			]
 		);
 
-		$changed = $row->getChanged();
+		$changed = $row->entry->changed;
 		$this->assertSame('retention-sweep', $changed['process']);
 		$this->assertSame('run-7', $changed['run']);
 		$this->assertSame(120000, $changed['revealed']);
@@ -323,10 +324,10 @@ class RevealFlusherTest extends TestCase {
 			['user' => 'alice', 'object' => 'object-1', 'property' => 'bsn']
 		);
 
-		$this->assertSame('object-1', $row->getObjectUuid());
-		$this->assertNull($row->getSchema());
-		$this->assertNull($row->getRegister());
-		$this->assertNotEmpty($row->getUuid());
+		$this->assertSame('object-1', $row->entry->objectUuid);
+		$this->assertNull($row->schema);
+		$this->assertNull($row->register);
+		$this->assertNotEmpty($row->entry->uuid);
 	}//end testARevealWithoutContextStillWrites()
 
 	/**
@@ -337,7 +338,7 @@ class RevealFlusherTest extends TestCase {
 	public function testWithoutACollectorNothingIsWritten(): void {
 		$this->mapper->expects($this->never())->method('insertAuditTrails');
 
-		$flusher = new RevealFlusher(recording: new RevealRecording(logger: $this->logger), mapper: $this->mapper);
+		$flusher = new RevealFlusher(recording: new RevealRecording(logger: $this->logger), trail: new AuditEntryWriter(mapper: $this->mapper));
 
 		$this->assertSame(0, $flusher->flush());
 	}//end testWithoutACollectorNothingIsWritten()

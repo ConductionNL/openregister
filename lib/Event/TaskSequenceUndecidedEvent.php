@@ -44,12 +44,23 @@ class TaskSequenceUndecidedEvent extends AbstractTaskSequenceEvent {
 	 * @param Task $task The position that completed without a decision.
 	 */
 	public function __construct(
-		TaskSequence $sequence,
+		private readonly TaskSequence $sequence,
 		private readonly Task $task,
 	) {
 		parent::__construct(sequence: $sequence);
 
 	}//end __construct()
+
+	/**
+	 * The sequence the event is about, as the TaskSequence row it was dispatched with.
+	 *
+	 * @return TaskSequence The sequence as persisted.
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
+	 */
+	public function getSequence(): TaskSequence {
+		return $this->sequence;
+	}//end getSequence()
 
 	/**
 	 * The position that completed without a decision.

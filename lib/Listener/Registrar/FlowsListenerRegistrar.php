@@ -28,6 +28,7 @@ use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
+use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
 use OCA\OpenRegister\Listener\BulkActionRegistrationListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
@@ -81,7 +82,25 @@ final class FlowsListenerRegistrar {
 		self::registerFileAndDiscoveryListeners(context: $context);
 		self::registerTriggerListeners(context: $context);
 		self::registerPageScriptListeners(context: $context);
+		self::bindAppEventWebhookListener(context: $context);
 	}//end register()
+
+	/**
+	 * Bind the Kernel webhook-delivery port to the webhook listener.
+	 *
+	 * AppWebhookEvents::declare() subscribes the port by its service name to
+	 * each app-declared event; this alias makes that resolve to
+	 * WebhookEventListener. It registers no listener, so the order is unchanged.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/connect-document-webhooks/specs/app-declared-webhook-events/spec.md
+	 */
+	private static function bindAppEventWebhookListener(IRegistrationContext $context): void {
+		$context->registerServiceAlias(AppEventWebhookListenerInterface::class, WebhookEventListener::class);
+	}//end bindAppEventWebhookListener()
 
 	/**
 	 * Register the file, discovery and platform listeners.

@@ -49,6 +49,10 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Controller\Support\FlowDefinitions
  * @uses   \OCA\OpenRegister\Controller\Support\FlowNodeTypes
  * @uses   \OCA\OpenRegister\Service\Flow\FlowNodeRightRefused
+ * @uses   \OCA\OpenRegister\Db\Flow
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowPublishOptions
+ * @uses   \OCA\OpenRegister\Db\Flow\FlowJson
+ * @uses   \OCA\OpenRegister\Db\TypedFieldsJson
  */
 final class FlowControllerNodeRightsTest extends TestCase {
 

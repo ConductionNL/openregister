@@ -49,6 +49,7 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Files\Service\TextExtractionService::getExtractedText
+ * @covers \OCA\OpenRegister\Files\Service\TextExtractionService::readExtractedText
  * @uses \OCA\OpenRegister\Files\Db\Chunk
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor
  * @uses \OCA\OpenRegister\Files\Service\TextExtraction\SpreadsheetExtractor
@@ -208,4 +209,50 @@ final class TextExtractionReadBackTest extends TestCase {
 
 		$this->assertNull($this->service->getExtractedText(fileId: 5));
 	}//end testAFileWithoutChunksHasNoText()
+
+	/**
+	 * The read counts the content chunks only and carries the latest time one was written.
+	 *
+	 * @return void
+	 */
+	public function testTheReadCountsContentChunksAndCarriesTheLatestWrite(): void {
+		$metadata = new Chunk();
+		$metadata->setChunkIndex(-1);
+		$metadata->setTextContent('{"title":"x"}');
+		$metadata->setPositionReference(['type' => 'metadata']);
+		$metadata->setUpdatedAt(new \DateTime('2026-12-01T00:00:00+00:00'));
+		$first = new Chunk();
+		$first->setChunkIndex(0);
+		$first->setTextContent('First part of the text.');
+		$first->setUpdatedAt(new \DateTime('2026-11-02T08:00:00+00:00'));
+		$second = new Chunk();
+		$second->setChunkIndex(1);
+		$second->setTextContent('Second part of the text.');
+		$second->setUpdatedAt(new \DateTime('2026-11-03T09:30:00+00:00'));
+		$this->chunks->method('findBySource')->with('file', 5)->willReturn([$metadata, $first, $second]);
+
+		$this->assertSame(
+			[
+				'text'        => "First part of the text.\nSecond part of the text.",
+				'chunkCount'  => 2,
+				'extractedAt' => '2026-11-03T09:30:00+00:00',
+			],
+			$this->service->readExtractedText(fileId: 5)
+		);
+	}//end testTheReadCountsContentChunksAndCarriesTheLatestWrite()
+
+	/**
+	 * Only a metadata chunk is no text, so the read answers null.
+	 *
+	 * @return void
+	 */
+	public function testOnlyAMetadataChunkReadsAsNoText(): void {
+		$metadata = new Chunk();
+		$metadata->setChunkIndex(-1);
+		$metadata->setTextContent('{"title":"x"}');
+		$metadata->setPositionReference(['type' => 'metadata']);
+		$this->chunks->method('findBySource')->willReturn([$metadata]);
+
+		$this->assertNull($this->service->readExtractedText(fileId: 5));
+	}//end testOnlyAMetadataChunkReadsAsNoText()
 }//end class

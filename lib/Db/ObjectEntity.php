@@ -181,6 +181,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 */
 	public const PRESERVED_ARCHIVAL_STATUSES = ['semi_static', 'semi_statisch', 'gearchiveerd'];
 	use JsonFieldsTrait;
+	use ManagedByConfigurationTrait;
 
 	/**
 	 * Lifecycle status: saved to carry on later, not yet received (decision 180).
@@ -2007,8 +2008,35 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
 	 */
 	public function acquireLock(IUserSession $userSession, LockTerms $terms=new LockTerms()): bool {
+		return $this->acquireLockAs(ownerId: self::loggedInUid(userSession: $userSession), terms: $terms);
+	}//end acquireLock()
+
+	/**
+	 * Take or extend a lock on the object for an explicit owner, without a session.
+	 *
+	 * The same rules as acquireLock(), for a caller that has no signed-in user:
+	 * a background job or worker names the owner it claims for. This only
+	 * changes the object in memory; MagicMapper::claimObjectEntity() is what
+	 * makes the claim atomic in the table.
+	 *
+	 * @param string    $ownerId The owner the lock is taken for.
+	 * @param LockTerms $terms   Process, duration and holding run
+	 *
+	 * @throws Exception If the owner id is empty or the object is locked by another holder
+	 *
+	 * @return true True if lock was successful
+	 *
+	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-ownership-is-decided-by-one-predicate
+	 */
+	public function acquireLockAs(string $ownerId, LockTerms $terms=new LockTerms()): bool {
+		if (trim($ownerId) === '') {
+			throw new Exception('A lock needs an owner');
+		}
+
 		$now = new DateTime();
-		$payload = $terms->payloadFor(userId: self::loggedInUid(userSession: $userSession), now: $now);
+		$payload = $terms->payloadFor(userId: $ownerId, now: $now);
 
 		// If already locked, only the holder may extend it.
 		if ($this->isLocked() === true) {
@@ -2018,7 +2046,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->setLocked($this->withExpiration(payload: $payload, now: $now));
 
 		return true;
-	}//end acquireLock()
+	}//end acquireLockAs()
 
 	/**
 	 * The payload that extends the current lock for the caller it was built for.
@@ -2251,23 +2279,6 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end getLockedBy()
 
 	/**
-	 * Delete the object
-	 *
-	 * @param IUserSession $userSession Current user session
-	 * @param string $deletedReason Reason for deletion
-	 * @param int $retentionPeriod Retention period in days (default: 30 days)
-	 *
-	 * @throws Exception If no user is logged in
-	 *
-	 * @return static Returns the entity
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
-		return $this->softDelete(userSession: $userSession, deletion: new SoftDeletion(reason: $deletedReason, retentionDays: $retentionPeriod));
-	}//end delete()
-
-	/**
 	 * Soft-delete the object: record who deleted it, why, and until when it stays recoverable.
 	 *
 	 * The retention handed in is the window (a non-positive one takes the
@@ -2287,7 +2298,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->setDeleted($deletion->metadataFor(userId: $userId, now: new DateTime()));
 
 		return $this;
-	}//end delete()
+	}//end softDelete()
 
 	/**
 	 * Whether an active legal hold keeps this record from being destroyed.
@@ -2602,58 +2613,11 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end __toString()
 
 	/**
-	 * Check if this object is managed by any configuration
+	 * The member list a configuration keeps its objects in, see ManagedByConfigurationTrait.
 	 *
-	 * This method checks if the object's ID is present in the objects array
-	 * of any provided configuration entities.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return bool True if this object is managed by at least one configuration
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
+	 * @return string
 	 */
-	public function isManagedByConfiguration(array $configurations): bool {
-		if (empty($configurations) === true || $this->id === null) {
-			return false;
-		}
-
-		foreach ($configurations as $configuration) {
-			$objects = $configuration->getObjects();
-			if (in_array($this->id, $objects ?? [], true) === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end isManagedByConfiguration()
-
-	/**
-	 * Get the configuration that manages this object
-	 *
-	 * Returns the first configuration that has this object's ID in its objects array.
-	 * Returns null if the object is not managed by any configuration.
-	 *
-	 * @param array<Configuration> $configurations Array of Configuration entities to check against
-	 *
-	 * @return Configuration|null The configuration managing this object, or null
-	 *
-	 * @phpstan-param array<Configuration> $configurations
-	 * @psalm-param   array<Configuration> $configurations
-	 */
-	public function getManagedByConfiguration(array $configurations): ?Configuration {
-		if (empty($configurations) === true || $this->id === null) {
-			return null;
-		}
-
-		foreach ($configurations as $configuration) {
-			$objects = $configuration->getObjects();
-			if (in_array($this->id, $objects ?? [], true) === true) {
-				return $configuration;
-			}
-		}
-
-		return null;
-	}//end getManagedByConfiguration()
+	protected function configurationMemberKind(): string {
+		return 'objects';
+	}//end configurationMemberKind()
 }//end class

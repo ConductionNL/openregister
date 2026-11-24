@@ -37,13 +37,13 @@ use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectClassification;
-use OCA\OpenRegister\Service\ObjectAction\ElevatedWrite;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\DeclaredActions;
 use OCP\IUser;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ActionEvaluatedEvent;
@@ -56,7 +56,6 @@ use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
@@ -432,14 +431,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * read path by {@see \OCA\OpenRegister\Service\Object\RenderObject::renderEntity()}.
 	 * This handler owns object/schema-level RBAC only.
 	 *
-	 * @param Schema $schema The schema to check permissions for.
-	 * @param string $action The CRUD action (create, read, update, delete).
-	 * @param string|null $userId Optional user ID (defaults to current user).
-	 * @param string|null $objectOwner Optional object owner for ownership check.
-	 * @param bool $_rbac Whether to apply RBAC checks (default: true).
-	 * @param ObjectEntity|null $object Optional object entity for conditional authorization matching.
-	 * @param string|null $register The register written to, for a check that names no object (a create, a delete by id).
-	 *                              Only a declared action's elevation reads it.
+	 * @param PermissionAsk $ask   The question: the schema and the CRUD action (create, read, update, delete);
+	 *                            the user (null for the current user) and the object owner for the ownership
+	 *                            check; the object for conditional authorization matching, or, for a check that
+	 *                            names no object (a create, a delete by id), the register written to, which only
+	 *                            a declared action's elevation reads.
+	 * @param bool          $_rbac Whether to apply RBAC checks (default: true).
 	 *
 	 * @return bool True if user has permission, false otherwise
 	 *
@@ -449,19 +446,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function hasPermission(
-		Schema $schema,
-		string $action,
-		?string $userId = null,
-		?string $objectOwner = null,
-		bool $_rbac = true,
-		?ObjectEntity $object = null,
-		?string $register = null,
-	): bool {
-		$ask = (new PermissionAsk(schema: $schema, action: $action))
-			->askedBy(userId: $userId, objectOwner: $objectOwner)
-			->about(object: $object, register: $register);
-
+	public function hasPermission(PermissionAsk $ask, bool $_rbac = true): bool {
 		return $this->permits(ask: $ask, _rbac: $_rbac);
 	}//end hasPermission()
 
@@ -627,9 +612,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @param bool          $verdict The person's own verdict.
 	 * @param PermissionAsk $ask     The question, with the schema, register and verb written to.
 	 *
-	 * @return bool The verdict after elevation.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectActionElevationScope is the request-scoped frame the run opened.
+	 * @return bool The verdict after elevation; without an elevation port the person's own verdict stands.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-elevation-is-declared-scoped-and-attributed
 	 */
@@ -638,9 +621,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return $verdict;
 		}
 
-		return ObjectActionElevationScope::permits(
-			write: new ElevatedWrite(schemaId: $ask->schema->getId(), registerId: $ask->register, verb: $ask->action)
-		);
+		return ($this->rules->writeElevation?->permits(ask: $ask) ?? false);
 	}//end elevated()
 
 	/**
@@ -2227,7 +2208,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 			$schema = $this->data->schemaMapper->find($schemaId);
 
 			return $caller->keptFromDraft(object: $object, schema: $schema) === false
-				&& $this->hasPermission(schema: $schema, action: 'delete', userId: $caller->userId, objectOwner: $object->getOwner());
+				&& $this->hasPermission(
+					ask: (new PermissionAsk(schema: $schema, action: 'delete'))
+						->askedBy(userId: $caller->userId, objectOwner: $object->getOwner())
+				);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return false;
 		}
@@ -3013,7 +2997,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		try {
-			$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+			$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 			$compiled = $this->compiledMatrixRules(compiler: $compiler, matrix: $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix));
 			return $compiler->merge(authorization: $authorization, compiled: $compiled);
 		} catch (\Throwable $e) {
@@ -3081,7 +3065,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return ['values' => [], 'scopes' => []];
 		}
 
-		$compiler = new DepartmentMatrixCompiler(declaredActions: $schema->declaredActionNames());
+		$compiler = new DepartmentMatrixCompiler(declaredActions: (new DeclaredActions())->names(configuration: $schema->getConfiguration()));
 		$matrix = $this->matrixRowsFromApps()->withAppRows(schema: $schema, matrix: $matrix);
 		$values = $this->matrixOwnValues(compiler: $compiler, matrix: $matrix, userId: $user->getUID());
 

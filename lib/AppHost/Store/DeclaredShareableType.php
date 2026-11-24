@@ -3,7 +3,7 @@
 /**
  * OpenRegister AppHost — Declared Shareable Type
  *
- * A declared shareable type id together with the registered type that owns it.
+ * A declared shareable type id together with what the store reads of the type that owns it.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,24 +24,25 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Store;
 
-use OCA\OpenRegister\Service\Config\IShareableConfigType;
-
 /**
- * A store's declared type id and the shareable type registered under it.
+ * A store's declared type id and what the store reads of the shareable type registered under it.
  *
- * The catalogue reads both together for every discovery, card and slug, so
- * they travel as one value rather than as two loose parameters.
+ * The catalogue reads them together for every discovery, card and slug, so
+ * they travel as one value rather than as loose parameters. The shareable
+ * configuration catalogue builds it from the registered type.
  */
 final class DeclaredShareableType {
 	/**
 	 * Constructor.
 	 *
-	 * @param string               $typeId The declared type id.
-	 * @param IShareableConfigType $type   The registered type that owns it.
+	 * @param string $typeId   The declared type id.
+	 * @param string $typeName The display name of the registered type that owns it.
+	 * @param string $topic    The discovery topic of that type.
 	 */
 	public function __construct(
 		public readonly string $typeId,
-		public readonly IShareableConfigType $type,
+		public readonly string $typeName,
+		public readonly string $topic,
 	) {
 	}//end __construct()
 }//end class

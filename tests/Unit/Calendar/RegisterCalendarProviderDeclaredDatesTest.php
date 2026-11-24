@@ -39,7 +39,6 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
-use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedSources;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -96,7 +95,7 @@ class RegisterCalendarProviderDeclaredDatesTest extends TestCase {
 		$this->transformer    = $this->createMock(CalendarEventTransformer::class);
 		$this->objects        = $this->createMock(ObjectOperationsInterface::class);
 		$this->views          = $this->createMock(ViewMapperInterface::class);
-		$this->feed           = $this->createMock(ObjectCalendarFeedService::class);
+		$this->feed           = $this->createPartialMock(ObjectCalendarFeedService::class, ['eventsFor']);
 
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('alice');
@@ -115,7 +114,9 @@ class RegisterCalendarProviderDeclaredDatesTest extends TestCase {
 			$this->sources,
 			new DeclaredDateCalendars(
 				$this->feed,
-				new ObjectCalendarFeedSources($this->objects, $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), $this->views, $users),
+				$this->objects,
+				$this->views,
+				$users,
 				new VeventSearchShape(),
 				$this->createMock(LoggerInterface::class)
 			)

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCA\OpenRegister\Service\AuthorizationAuditService;
+use OCA\OpenRegister\Kernel\Contracts\Core\SchemaAccessChangeLogInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,11 +34,11 @@ final class ReachRevocationLog {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param AuthorizationAuditService $audit  The record of what was removed.
-	 * @param LoggerInterface           $logger PSR logger.
+	 * @param SchemaAccessChangeLogInterface $audit  The record of what was removed.
+	 * @param LoggerInterface                $logger PSR logger.
 	 */
 	public function __construct(
-		public readonly AuthorizationAuditService $audit,
+		public readonly SchemaAccessChangeLogInterface $audit,
 		public readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

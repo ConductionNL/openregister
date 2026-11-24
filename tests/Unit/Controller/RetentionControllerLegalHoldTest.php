@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Controller\RetentionController;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -108,7 +108,6 @@ class RetentionControllerLegalHoldTest extends TestCase {
 		$this->jobList          = $this->createMock(IJobList::class);
 
 		return RetentionControllerFactory::create(
-			'openregister',
 			$request,
 			$this->retentionService,
 			$this->createMock(ObjectRetentionHandler::class),
@@ -269,7 +268,7 @@ class RetentionControllerLegalHoldTest extends TestCase {
 	public function testABulkHoldIsQueuedForTheSignedInUser(): void {
 		$controller = $this->controller(['schemaId' => '12', 'reason' => 'Investigation']);
 		$this->jobList->expects($this->once())->method('add')
-			->with(JobHandles::BULK_LEGAL_HOLD, ['schemaId' => '12', 'reason' => 'Investigation', 'userId' => 'archivist']);
+			->with(ComplianceJobHandlesInterface::BULK_LEGAL_HOLD, ['schemaId' => '12', 'reason' => 'Investigation', 'userId' => 'archivist']);
 
 		$response = $controller->placeBulkLegalHold();
 
@@ -283,7 +282,7 @@ class RetentionControllerLegalHoldTest extends TestCase {
 	public function testABulkHoldWithoutAUserIsQueuedAsSystem(): void {
 		$controller = $this->controller(['schemaId' => '12', 'reason' => 'Investigation'], null);
 		$this->jobList->expects($this->once())->method('add')
-			->with(JobHandles::BULK_LEGAL_HOLD, ['schemaId' => '12', 'reason' => 'Investigation', 'userId' => 'system']);
+			->with(ComplianceJobHandlesInterface::BULK_LEGAL_HOLD, ['schemaId' => '12', 'reason' => 'Investigation', 'userId' => 'system']);
 
 		$this->assertSame(200, $controller->placeBulkLegalHold()->getStatus());
 	}

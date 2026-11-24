@@ -42,6 +42,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\MagicMapper
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableCreator
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer
@@ -246,7 +248,7 @@ class MagicTableHandlerSyncTest extends TestCase {
 				'getExistingTableColumns("'.self::TABLE.'")',
 				'buildTableColumnsFromSchema(schema)',
 				'updateTableStructure("'.self::TABLE.'", '.json_encode($current).', '.json_encode($required).')',
-				'updateTableIndexes("'.self::TABLE.'", register, schema)',
+				'updateTableIndexes("'.self::TABLE.'", schema)',
 				'storeRegisterSchemaVersion(register, schema)',
 			],
 			$this->calls

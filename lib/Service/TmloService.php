@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Service\Edepot\MdtoXmlGenerator;
 use Psr\Log\LoggerInterface;
 
@@ -52,7 +53,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
-class TmloService implements TmloServiceInterface {
+class TmloService implements TmloServiceInterface, ObjectArchivalMetadataInterface {
 
 	/**
 	 * Valid values for archiefnominatie field

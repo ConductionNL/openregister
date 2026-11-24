@@ -23,10 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Task;
 
-use OCA\OpenRegister\AppHost\IMetricsProvider;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 
 /**
  * OpenRegister's own task metrics provider.
  */
-interface TaskMetricsProviderInterface extends IMetricsProvider {
+interface TaskMetricsProviderInterface extends TaskGaugeInterface {
 }//end interface

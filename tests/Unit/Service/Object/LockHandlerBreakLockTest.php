@@ -26,8 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
-use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -58,7 +57,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Object\LockAuthorization
  * @uses \OCA\OpenRegister\Service\Object\LockStores
  * @uses \OCA\OpenRegister\Db\ObjectEntity
- * @uses \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest
  * @uses \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
@@ -155,7 +154,7 @@ final class LockHandlerBreakLockTest extends TestCase {
 	public function testANonAdminCannotBreakALock(): void {
 		$this->callerIsAdmin(false);
 		$this->magic->expects($this->never())->method('unlockObjectEntity');
-		$this->audit->expects($this->never())->method('recordObjectEvent');
+		$this->audit->expects($this->never())->method('writeObjectEvent');
 
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage('Only an administrator may break a lock');
@@ -172,17 +171,16 @@ final class LockHandlerBreakLockTest extends TestCase {
 			->willReturn($this->unlockedObject());
 
 		$recorded = [];
-		$this->audit->method('recordObjectEvent')->willReturnCallback(
-			function (ObjectAuditEvent $event) use (&$recorded): AuditTrail {
+		$this->audit->method('writeObjectEvent')->willReturnCallback(
+			function (ObjectAuditEntry $event) use (&$recorded): void {
 				$recorded[] = $event;
-				return new AuditTrail();
 			}
 		);
 
 		$broke = $this->handler()->breakLock(self::OBJ);
 
 		$this->assertTrue($broke);
-		$actions = array_map(static fn (ObjectAuditEvent $e): string => $e->action, $recorded);
+		$actions = array_map(static fn (ObjectAuditEntry $e): string => $e->action, $recorded);
 		$this->assertContains('lock.broken', $actions, 'the break was not audited under lock.broken');
 
 		$broken = null;
@@ -199,7 +197,7 @@ final class LockHandlerBreakLockTest extends TestCase {
 		$this->callerIsAdmin(true);
 		$this->resolvesTo($this->unlockedObject());
 		$this->magic->expects($this->never())->method('unlockObjectEntity');
-		$this->audit->expects($this->never())->method('recordObjectEvent');
+		$this->audit->expects($this->never())->method('writeObjectEvent');
 
 		$this->assertFalse($this->handler()->breakLock(self::OBJ));
 	}//end testBreakingWhenThereIsNoLockReturnsFalseAndDoesNotAudit()

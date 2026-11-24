@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Object\BulkSaveReporting;
 use OCA\OpenRegister\Service\Object\BulkSaveSession;
 use OCA\OpenRegister\Service\Object\BulkSaveStores;
 use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\ObjectService;
@@ -118,6 +119,15 @@ class DecisionTableBulkGuardTest extends TestCase {
 
 		return $row;
 	}//end table()
+
+	/**
+	 * The guard is the decision-table rules' answer to the Core bulk-row refusals port.
+	 *
+	 * @return void
+	 */
+	public function testTheGuardIsTheBulkRowRefusalsPort(): void {
+		$this->assertInstanceOf(BulkRowRefusalsInterface::class, $this->guard());
+	}//end testTheGuardIsTheBulkRowRefusalsPort()
 
 	/**
 	 * A valid table under a free key, and rows of other schemas, pass.

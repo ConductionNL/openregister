@@ -1,98 +1,74 @@
-# Enforcing confidentiality (vertrouwelijkheidaanduiding)
+# Enforcing confidentiality (classification clearance)
 
-OpenRegister can filter objects by ZGW confidentiality level on read. The
-machinery is complete and shipped — but it is **off until a schema is configured
-for it**, and as of 2026-08-12 no schema in this repository is.
+OpenRegister filters objects by a classification level, such as the ZGW
+`vertrouwelijkheidaanduiding`, when a schema declares an
+`x-openregister-classification` block in its configuration. A schema without
+the block behaves exactly as before.
 
-This document is the missing half: what exists, what does not, and how to turn
-it on.
+The order of the levels is the schema's. OpenRegister holds no built-in
+vocabulary: ZGW's eight levels, a security marking and a three-step internal
+scale are the same mechanism configured differently.
 
-## What already works
-
-| piece | where | state |
-|---|---|---|
-| `$in` operator | `lib/Service/OperatorEvaluator.php` | implemented |
-| conditional `match` on authorization entries | `lib/Service/Object/PermissionHandler.php` | implemented |
-| clearance ordinal ordering | `ZaaktypeAuthorizationService::confidentialityOrdinal()` | implemented, unit-tested |
-| clause builder | `ZaaktypeAuthorizationService::buildConfidentialityMatch()` | implemented, unit-tested |
-| ZGW Autorisaties mapping | `ZaaktypeAuthorizationService::mapZgwAutorisatie()` | implemented, unit-tested |
-
-## What does not
-
-**Nothing calls any of it.** `ZaaktypeAuthorizationService` has zero references
-in `lib/` and is not registered in the DI container; it is exercised only by
-`tests/Unit/Service/ZaaktypeAuthorizationServiceTest.php`.
-
-**No schema is configured.** Measured across `lib/Settings/*.json`: zero files
-contain a `match` clause of any kind. So no read is currently filtered by
-clearance.
-
-This matters because the archived change `2026-06-14-rbac-zaaktype` marks the
-confidentiality requirement complete, which reads as an active control. The
-capability is real; the enforcement is not switched on.
-
-## Turning it on
-
-Confidentiality is enforced by attaching a conditional `match` to an
-`authorization` entry on the schema. The engine then filters at both the PHP and
-SQL layers with no further code.
+## The block
 
 ```json
 {
-  "authorization": {
-    "read": [
-      {
-        "groups": ["zaakbehandelaars"],
-        "match": {
-          "vertrouwelijkheidaanduiding": {
-            "$in": ["openbaar", "beperkt_openbaar", "intern"]
-          }
-        }
-      }
-    ]
+  "configuration": {
+    "x-openregister-classification": {
+      "property": "vertrouwelijkheidaanduiding",
+      "levels": [
+        "openbaar", "beperkt_openbaar", "intern", "zaakvertrouwelijk",
+        "vertrouwelijk", "confidentieel", "geheim", "zeer_geheim"
+      ],
+      "clearances": [
+        { "group": "zaakbehandelaars", "level": "zaakvertrouwelijk" },
+        { "group": "juristen", "level": "geheim" }
+      ],
+      "default": "openbaar",
+      "ceilings": [
+        { "scope": "public", "atOrAbove": "vertrouwelijk" }
+      ],
+      "floor": { "property": "minimumVertrouwelijkheid", "sourceRelation": "documentType" }
+    }
   }
 }
 ```
 
-`buildConfidentialityMatch()` generates the `match` value, so the list stays in
-step with the ordinal ordering rather than being hand-maintained:
+| key | meaning |
+|---|---|
+| `property` | The object property carrying the label. Must be declared on the schema. |
+| `levels` | The labels, least restrictive first. At least two, no duplicates. |
+| `clearances` | Group to level mappings. The highest level among the caller's groups wins. |
+| `default` | The clearance of a caller no mapping names. Without it, the lowest level. |
+| `ceilings` | A scope that may never reach an object at or above a level, whatever a grant says. |
+| `floor` | Where the least restrictive level a write may set is read: a property on the object, or behind one reference. |
 
-```php
-$service->buildConfidentialityMatch(maxLevel: 'intern');
-// => ['vertrouwelijkheidaanduiding' => ['$in' => ['openbaar', 'beperkt_openbaar', 'intern']]]
-```
+The block is validated at schema save.
 
-Pass `property:` when the schema stores the level under a different name — see
-the naming caveat below.
+## What it enforces
 
-## The decision this needs
+- **Read above the caller's clearance is refused on both layers.** The find
+  path (`Service/Rbac/ClassificationReadGate`, called from `PermissionHandler`)
+  refuses the object. The list and aggregation paths (`MagicRbacHandler`, via
+  `Service/Rbac/ClassificationListTerm`) compile the comparison into the query
+  as an `IN` over the admitted labels, so the page size, the total and any
+  count reflect only what the caller may see.
+- **An absent, empty or unknown label ranks most restrictive**, and is logged
+  on the find path. An unmapped caller takes the declared `default`.
+- **A ceiling refuses its scope outright.** An anonymous caller is the `public`
+  scope; no schema rule or per-object grant re-opens an object above the
+  ceiling to it.
+- **A write may raise a label and not lower it below the floor**, refused at
+  save naming both levels.
+- **Administrators are cleared to the top level**, the existing administrator
+  bypass.
 
-Enabling it is a **policy** question, not a technical one: *which group may read
-up to which level, on which schemas*. That mapping cannot be derived from the
-code, which is why no default is shipped here.
-
-Two properties of the design worth knowing before choosing:
-
-- **It fails closed on an unknown level.** `isAccessibleAtClearance()` returns
-  false when either level is unrecognised, so a typo denies rather than grants.
-- **It filters, it does not error.** Objects above the clearance disappear from
-  results. A user cannot distinguish "no such object" from "not cleared", which
-  is usually what you want for confidential records.
+Classification only narrows: it is applied on top of the schema's
+`authorization` block and the deny rules, never instead of them.
 
 ## Naming caveat
 
-The same concept appears under three property names in this codebase:
-
-- `vertrouwelijkheidaanduiding` — the ZGW/GGM schema property, and the builder's
-  default
-- `confidentialityLevel` — what `SeedZgwZakenMigrationPack` maps it onto
-- `confidentiality` — what `FederationController` reads
-
-Point `buildConfidentialityMatch(property: ...)` at whichever name the schema
-actually declares. Getting this wrong does not error: the `$in` clause simply
-matches nothing, or everything, depending on the engine's null handling.
-
-That mismatch already caused a live fail-open in the federation path — see
-openregister#2438, where the guard read `confidentiality` while the migration
-pack wrote `confidentialityLevel`, and the empty-string fallback sat inside the
-public allowlist.
+The same concept appears under several property names across schemas
+(`vertrouwelijkheidaanduiding`, `confidentialityLevel`, `confidentiality`).
+Point `property` at the name the schema actually declares; schema save refuses
+a `property` the schema does not declare.

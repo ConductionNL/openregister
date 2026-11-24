@@ -2,7 +2,7 @@
     "pg / multiple / deleted false": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -141,7 +141,7 @@
     "pg / multiple scoped / deleted false": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -205,7 +205,7 @@
     "pg / relation / deleted false": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -336,7 +336,7 @@
     "pg / multiple / deleted true": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -441,7 +441,7 @@
     "pg / multiple scoped / deleted true": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -503,7 +503,7 @@
     "pg / relation / deleted true": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -600,7 +600,7 @@
     "pg / multiple / union fails": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -632,7 +632,7 @@
     "pg / relation / union fails": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -664,7 +664,7 @@
     "pg / multiple / no tables": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -678,7 +678,7 @@
     "pg / relation / no tables": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -692,7 +692,7 @@
     "pg / multiple / scope matches nothing": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = current_schema()"
             },
             {
                 "execute": [
@@ -706,7 +706,7 @@
     "maria / multiple / deleted false": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -815,7 +815,7 @@
     "maria / multiple scoped / deleted false": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -879,7 +879,7 @@
     "maria / relation / deleted false": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -980,7 +980,7 @@
     "maria / multiple / deleted true": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1085,7 +1085,7 @@
     "maria / multiple scoped / deleted true": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1147,7 +1147,7 @@
     "maria / relation / deleted true": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1244,7 +1244,7 @@
     "maria / multiple / union fails": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1276,7 +1276,7 @@
     "maria / relation / union fails": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1308,7 +1308,7 @@
     "maria / multiple / no tables": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1322,7 +1322,7 @@
     "maria / relation / no tables": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [
@@ -1336,7 +1336,7 @@
     "maria / multiple / scope matches nothing": {
         "events": [
             {
-                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ?"
+                "prepare": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE ? AND table_schema = DATABASE()"
             },
             {
                 "execute": [

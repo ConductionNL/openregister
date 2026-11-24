@@ -80,6 +80,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnReading
  * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnInterchange
  * @uses \OCA\OpenRegister\Service\Rbac\CallerContext
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowNodeRightsGuard
+ * @uses   \OCA\OpenRegister\Service\Flow\FlowPublishOptions
  */
 class FlowControllerTest extends TestCase {
 

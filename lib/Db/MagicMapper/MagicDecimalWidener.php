@@ -63,6 +63,11 @@ final class MagicDecimalWidener {
 			if ($size !== null) {
 				$type = 'DECIMAL(' . $size['precision'] . ',' . $size['scale'] . ')';
 				$widenings[$columnName] = new MagicNumberWidening(column: $columnName, type: $type);
+				continue;
+			}
+
+			if ($this->needsBigint(live: $columns->current[$columnName], required: $columnDef) === true) {
+				$widenings[$columnName] = new MagicNumberWidening(column: $columnName, type: 'BIGINT');
 			}
 		}
 
@@ -137,6 +142,26 @@ final class MagicDecimalWidener {
 			]
 		);
 	}//end widerSize()
+
+	/**
+	 * Whether a live 16- or 32-bit integer column must become a bigint.
+	 *
+	 * @param array $live     The live column.
+	 * @param array $required The required column definition.
+	 *
+	 * @return bool True when the property now maps to bigint and the column is narrower.
+	 *
+	 * @spec openspec/changes/widen-integer-columns-to-bigint/specs/magic-table-columns/spec.md#requirement-an-integer-column-holds-every-value-its-property-accepts-req-mtc-003
+	 */
+	private function needsBigint(array $live, array $required): bool {
+		if (($required['type'] ?? null) !== 'bigint') {
+			return false;
+		}
+
+		$liveType = strtolower((string)($live['type'] ?? ''));
+
+		return in_array($liveType, ['smallint', 'integer', 'int', 'int2', 'int4', 'mediumint', 'tinyint'], true);
+	}//end needsBigint()
 
 	/**
 	 * Widen one column.

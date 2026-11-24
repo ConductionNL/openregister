@@ -28,7 +28,7 @@ use OCA\OpenRegister\Db\ConfigurationDraftMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftMapperInterface;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapper;
 use OCA\OpenRegister\Db\ConfigurationDraftSetMapperInterface;
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ConfigurationMapperRegistrar;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -52,9 +52,9 @@ final class F06ConfigurationDeploymentInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		ConfigurationDeploymentMapper::class => [ConfigurationDeploymentMapperInterface::class, DbRegistrar::class],
-		ConfigurationDraftMapper::class => [ConfigurationDraftMapperInterface::class, DbRegistrar::class],
-		ConfigurationDraftSetMapper::class => [ConfigurationDraftSetMapperInterface::class, DbRegistrar::class],
+		ConfigurationDeploymentMapper::class => [ConfigurationDeploymentMapperInterface::class, ConfigurationMapperRegistrar::class],
+		ConfigurationDraftMapper::class => [ConfigurationDraftMapperInterface::class, ConfigurationMapperRegistrar::class],
+		ConfigurationDraftSetMapper::class => [ConfigurationDraftSetMapperInterface::class, ConfigurationMapperRegistrar::class],
 	];
 
 	/**

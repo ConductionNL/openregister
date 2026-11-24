@@ -29,6 +29,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * PermissionHandler::checkPermission() refuses exactly what hasPermission() answers false, for every caller,
@@ -58,6 +59,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerCheckPermissionGoldenTest extends TestCase {
 
@@ -208,13 +211,10 @@ class PermissionHandlerCheckPermissionGoldenTest extends TestCase {
 		}
 
 		return $this->handler($case['session'])->hasPermission(
-			schema: $schema,
-			action: $case['action'],
-			userId: $userId,
-			objectOwner: ($case['extra']['objectOwner'] ?? null),
-			_rbac: $case['rbac'],
-			object: $object,
-			register: ($case['extra']['register'] ?? null)
+			ask: (new PermissionAsk(schema: $schema, action: $case['action']))
+				->askedBy(userId: $userId, objectOwner: ($case['extra']['objectOwner'] ?? null))
+				->about(object: $object, register: ($case['extra']['register'] ?? null)),
+			_rbac: $case['rbac']
 		);
 	}//end answered()
 

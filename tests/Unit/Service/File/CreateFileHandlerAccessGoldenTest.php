@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\File\ShareLinkRequest;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCA\OpenRegister\Service\File\CreateFileHandler;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
@@ -60,7 +60,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 	/** @var FileValidationHandler&MockObject */
 	private $validation;
 
-	/** @var FileOwnershipHandler&MockObject */
+	/** @var FileAccountInterface&MockObject */
 	private $ownership;
 
 	/** @var MagicMapperInterface&MockObject */
@@ -82,7 +82,7 @@ class CreateFileHandlerAccessGoldenTest extends TestCase {
 		parent::setUp();
 		$this->folders = $this->createMock(FolderManagementHandler::class);
 		$this->validation = $this->createMock(FileValidationHandler::class);
-		$this->ownership = $this->createMock(FileOwnershipHandler::class);
+		$this->ownership = $this->createMock(FileAccountInterface::class);
 		$this->objects = $this->createMock(MagicMapperInterface::class);
 		$this->fileService = $this->createMock(FileService::class);
 		$this->folder = $this->createMock(Folder::class);

@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Indexes the predicate the calendar recompute actually reads on.
@@ -48,7 +47,7 @@ use OCP\Migration\SimpleMigrationStep;
  * reads: it leads on `state`, which is two values here, so it cannot narrow to
  * one calendar.
  */
-class Version1Date20260918235900 extends SimpleMigrationStep {
+class Version1Date20260918235900 extends TargetedMigrationStep {
 
 	/**
 	 * The timers table.
@@ -69,7 +68,7 @@ class Version1Date20260918235900 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper The schema, changed or not.
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -103,5 +102,5 @@ class Version1Date20260918235900 extends SimpleMigrationStep {
 		$output->info('Added ' . self::INDEX . ' to ' . self::TABLE);
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

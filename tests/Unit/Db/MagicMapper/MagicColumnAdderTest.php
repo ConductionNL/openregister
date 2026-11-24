@@ -156,6 +156,34 @@ class MagicColumnAdderTest extends TestCase {
 		$this->assertCount(1, $this->debug);
 	}//end testANullableColumnKeepsItsDefaultWithoutNotNull()
 
+	public function testAJsonColumnOnMariaDbIsAddedAsCheckedText(): void {
+		$sync = new TableStructureSync(
+			'openregister_table_1_2',
+			'oc_openregister_table_1_2',
+			new MagicColumnDrift([], ['tags' => ['type' => 'json'], 'roles' => ['type' => 'json_ordered', 'nullable' => false, 'default' => '{}']]),
+			false,
+			true
+		);
+
+		$this->adder()->addMissing($sync);
+
+		$text = 'MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin';
+		$this->assertSame(
+			[
+				'ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `tags` ' . $text . ' CHECK (json_valid(`tags`))',
+				// The check closes the definition: MariaDB refuses it ahead of NOT NULL or DEFAULT.
+				'ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `roles` ' . $text . " NOT NULL DEFAULT '{}' CHECK (json_valid(`roles`))",
+			],
+			$this->statements
+		);
+	}//end testAJsonColumnOnMariaDbIsAddedAsCheckedText()
+
+	public function testAJsonColumnOnMySqlStaysNativeJson(): void {
+		$this->adder()->addMissing($this->sync([], ['tags' => ['type' => 'json']]));
+
+		$this->assertSame(['ALTER TABLE `oc_openregister_table_1_2` ADD COLUMN `tags` JSON'], $this->statements);
+	}//end testAJsonColumnOnMySqlStaysNativeJson()
+
 	public function testAFailingStatementStopsTheSync(): void {
 		$sync = $this->sync([], ['a' => ['type' => 'text'], 'b' => ['type' => 'text']]);
 

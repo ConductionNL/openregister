@@ -134,6 +134,26 @@ final class SearchFoldingTest extends TestCase {
 	}//end testSimilarityFoldsBothSidesWhenFolded()
 
 	/**
+	 * The relevance score folds both sides only when folding on PostgreSQL.
+	 *
+	 * @return void
+	 */
+	public function testScoreFoldsBothSidesOnlyWhenFoldingOnPostgres(): void {
+		$this->assertSame(
+			"similarity(openregister_fold(t._name::text), openregister_fold('cafe'))",
+			(new SearchFolding(platform: SearchFolding::PLATFORM_POSTGRES, folded: true))->score(textExpression: 't._name::text', quotedLiteral: "'cafe'")
+		);
+		$this->assertSame(
+			"similarity(t._name::text, 'cafe')",
+			(new SearchFolding(platform: SearchFolding::PLATFORM_POSTGRES, folded: false))->score(textExpression: 't._name::text', quotedLiteral: "'cafe'")
+		);
+		$this->assertSame(
+			"similarity(t._name::text, 'cafe')",
+			(new SearchFolding(platform: SearchFolding::PLATFORM_MYSQL, folded: true))->score(textExpression: 't._name::text', quotedLiteral: "'cafe'")
+		);
+	}//end testScoreFoldsBothSidesOnlyWhenFoldingOnPostgres()
+
+	/**
 	 * Only `_accents=exact` asks for the exact comparison.
 	 *
 	 * @return void

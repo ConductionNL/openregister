@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\OperatorEvaluator;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -88,6 +89,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Object\Permission\PermissionRuleServices
  * @uses \OCA\OpenRegister\Service\Rbac\McpScope
  * @uses \OCA\OpenRegister\Service\Rbac\UndeclaredPropertyConditions
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 
@@ -282,10 +285,9 @@ class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 		$this->handler->clearPermissionCache();
 
 		return $this->handler->hasPermission(
-			schema: $schema,
-			action: $action,
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: $action))
+				->askedBy(userId: null, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end may()
 

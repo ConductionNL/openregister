@@ -10,6 +10,8 @@
  */
 
 import { generateUrl } from '@nextcloud/router'
+import pinia from './pinia.js'
+import { useNavigationStore } from './store/modules/navigation.js'
 
 /**
  * Where Add integration lands: integriq's overview, preset to OpenRegister, linking.
@@ -34,6 +36,25 @@ export function openIntegriqConnections() {
 	window.location.assign(generateUrl(INTEGRIQ_CONNECTIONS_PATH))
 }
 
+/**
+ * The dialog the Connections page's "Daily report by e-mail" action opens.
+ */
+export const CONNECTION_REPORT_DIALOG = 'connectionReport'
+
+/**
+ * The Connections page's Daily report by e-mail header action.
+ *
+ * Opens ConnectionReportDialog, which Dialogs.vue renders while the navigation
+ * store names it as the active dialog.
+ *
+ * @return {void}
+ * @spec openspec/changes/connections-daily-report-mail/tasks.md#task-4.1
+ */
+export function openConnectionReportDialog() {
+	useNavigationStore(pinia).setDialog(CONNECTION_REPORT_DIALOG)
+}
+
 export default {
 	openIntegriqConnections,
+	openConnectionReportDialog,
 }

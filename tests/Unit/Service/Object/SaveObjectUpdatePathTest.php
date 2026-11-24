@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -187,6 +188,10 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
  * @uses \OCA\OpenRegister\Service\Object\StoredObjectUpdate
  * @uses \OCA\OpenRegister\Service\ProtectedCarryForward
  * @uses \OCA\OpenRegister\Service\RecordUpdate
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ClassificationFloorGuard
+ * @uses \OCA\OpenRegister\Service\Object\SaveObject\ImageObjectForm
+ * @uses \OCA\OpenRegister\Service\Rbac\ExplicitReveal
  */
 final class SaveObjectUpdatePathTest extends TestCase {
 
@@ -420,14 +425,14 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$settings = $this->createMock(SettingsService::class);
 		$settings->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => ($case['audit'] ?? true)]);
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrail')->willReturnCallback(function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null): AuditTrail {
+		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null): AuditTrail {
 			$this->trace[] = ['audit', $old?->getUuid(), $new?->getUuid(), $action];
 			$uuid = (string)($new?->getUuid() ?? $old?->getUuid());
 			$this->auditedMarks[$uuid] = WriteCause::clientAttemptedFor(objectUuid: $uuid);
 			$log = $this->createMock(AuditTrail::class);
 			$log->method('jsonSerialize')->willReturn(['log' => 1]);
 			return $log;
-		});
+		}));
 		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('guardClassificationOverride')->willReturnCallback(function (Schema $schema, array $data): void {
 			$this->trace[] = ['retentionGuard', $schema->getId(), array_key_exists('title', $data)];
