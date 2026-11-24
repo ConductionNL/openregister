@@ -4449,3 +4449,5 @@
 10154 dbf25076f45f9ed9ce97b8338b18a26fbe6a70dd APPROVE cloud-or-reviewer-2: fast path; PR-side diff vs merge-base identical to approved 0ab7c7b5 (same 32 files, only hunk offsets moved), only a main merge in between; clean with main
 10234 2facbcdce27b26eb37965653eaae387fa7446d9b APPROVE cloud-or-reviewer-2: fast path; PR-side diff vs merge-base byte-identical to approved c4d17d8a (same 7 Bpmn files), only a main merge in between; clean with main
 10514 81a3a7d892e814d57d9c1f91c84a2fb8046b3dde APPROVE cloud-or-reviewer-2: fast path; PR-side diff vs merge-base identical to approved 5b824b49 (same 117 files, only hunk offsets moved), only a main merge in between; clean with main
+10214 c2f92c02c3d0c6b9e1bd6f133a45cf3e2928f1f8 APPROVE cloud-or-reviewer-6: fast path; PR-side diff vs merge-base identical to approved a8320c8b (same 6 vocabulary files, same changed lines), only a main merge in between; clean with main
+10534 491512af0a5529ab9f9ef9be4bee8593a2d99abb APPROVE cloud-or-reviewer-6: fast path; PR-side diff vs merge-base identical to approved b535e85a (same 22 files, same changed lines), only a main merge in between; clean with main
