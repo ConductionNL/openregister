@@ -4491,3 +4491,4 @@
 10526 69b7636c4cd4db801bfc6a2988ed2cc73106d828 REVERIFY or-fix-6: merged main (component-map.csv conflict unioned, yaml regenerated), no code changes; Architecture, Contract, Controller, Service/File|Settings|TextExtraction, Db, Files green except inherited AreaMapperRegistrars and ReservedColumnNames; review needed
 10539 2c4d9499afad6f00e5505319ad560592f357927e REVERIFY or-fix-9: merged main, fixed component-map.csv conflict (union, yaml regenerated); review needed
 10568 8c72261029be1f5f9fc212cad4e12e3777344515 REVERIFY or-fix-8: merged main, fixed component-map.csv conflict (row union, yaml regenerated); Architecture, Db, Migration green bar inherited reds (AreaMapperRegistrarsTest, network-bound ReservedColumnNamesTest); review needed
+10549 0b29460e94f966f244e7dbab2d105c5301c57de1 REVERIFY or-fix-9: merged main, fixed component-map.csv conflict (union, yaml regenerated); review needed
