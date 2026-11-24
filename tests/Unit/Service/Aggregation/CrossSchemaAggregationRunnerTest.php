@@ -45,6 +45,10 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
@@ -52,6 +56,7 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -130,16 +135,24 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		);
 
 		$this->runner = new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
-			placeholders: $this->placeholderResolver,
-			db: $this->db,
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
+				db: $this->db
+			),
 			cache: $this->cache,
-			permissionHandler: $this->permissionHandler,
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $this->createMock(TranslationHandler::class),
-			languageService: $this->createMock(LanguageService::class),
+			access: new AggregationAccess(
+				permissionHandler: $this->permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $this->userSession,
+				organisationService: $this->organisationService,
+				placeholders: $this->placeholderResolver
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(TranslationHandler::class),
+				languageService: $this->createMock(LanguageService::class)
+			)
 		);
 
 	}//end setUp()
@@ -582,13 +595,13 @@ class CrossSchemaAggregationRunnerTest extends TestCase {
 		// Parent schema: permitted. Target schema: forbidden.
 		$callCount = 0;
 		$this->permissionHandler->method('hasPermission')
-			->willReturnCallback(
+			->willReturnCallback(PermissionAskArgs::spread(
 				function () use (&$callCount): bool {
 					$callCount++;
 					// First call = parent schema (allowed), second = target schema (denied).
 					return $callCount === 1;
 				}
-			);
+			));
 
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Forbidden');

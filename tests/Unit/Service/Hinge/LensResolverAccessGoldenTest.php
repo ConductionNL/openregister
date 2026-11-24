@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Hinge\LensLookups;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -82,12 +83,12 @@ final class LensResolverAccessGoldenTest extends TestCase {
 		}
 
 		$permissionHandler = $this->createMock(PermissionHandlerInterface::class);
-		$permissionHandler->method('hasPermission')->willReturnCallback(
+		$permissionHandler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($mayRead): bool {
 				$this->asked[] = $args;
 				return $mayRead;
 			}
-		);
+		));
 
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('alice');
