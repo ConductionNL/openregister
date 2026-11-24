@@ -37,10 +37,12 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Db\DraftVersion;
 use OCA\OpenRegister\Db\DraftVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
+use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
 use OCA\OpenRegister\Service\Object\DraftService;
 use OCA\OpenRegister\Service\Task\ChangeGateDeclaration;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -99,6 +101,7 @@ class ChangeGateListener implements IEventListener {
 	 * @param IUserSession          $userSession   The submitter.
 	 * @param IGroupManager         $groups        The submitter's groups, for the exemption.
 	 * @param LoggerInterface       $logger        Logs a gate that fails closed.
+	 * @param ApprovalChainSequences|null $sequences The chain's task sequence, started for each held change.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemas,
@@ -107,6 +110,7 @@ class ChangeGateListener implements IEventListener {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groups,
 		private readonly LoggerInterface $logger,
+		private readonly ?ApprovalChainSequences $sequences = null,
 	) {
 
 	}//end __construct()
@@ -239,13 +243,24 @@ class ChangeGateListener implements IEventListener {
 			return;
 		}
 
+		$template = $this->chainTemplate(object: $written, chainKey: $chainKey);
+		if ($template === false) {
+			$this->refuseMisconfigured(event: $event, chainKey: $chainKey);
+			return;
+		}
+
+		$submitter = (string)$this->userSession->getUser()?->getUID();
 		$draft = $this->drafts->create(
 			object: $base,
 			key: $this->nextKey(objectUuid: (string)$base->getUuid()),
 			name: $chainKey,
 			changes: $changes,
-			actor: (string)$this->userSession->getUser()?->getUID()
+			actor: $submitter
 		);
+
+		if ($template !== null) {
+			$this->startDecision(template: $template, base: $base, submitter: $submitter);
+		}
 
 		$event->setErrors(
 			[
@@ -260,6 +275,71 @@ class ChangeGateListener implements IEventListener {
 		$event->stopPropagation();
 
 	}//end hold()
+
+	/**
+	 * The compiled task template of the chain: null when no sequence store is wired, false when the chain cannot be compiled.
+	 *
+	 * A chain that holds a change but cannot start its decision would leave the
+	 * change waiting for nobody, so it fails closed, as a transition gate does.
+	 *
+	 * @param ObjectEntity $object   The written object.
+	 * @param string       $chainKey The chain.
+	 *
+	 * @return array<string, mixed>|false|null The template, false when uncompilable, null without a sequence store.
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/tasks.md#3.1
+	 */
+	private function chainTemplate(ObjectEntity $object, string $chainKey): array|false|null {
+		if ($this->sequences === null) {
+			return null;
+		}
+
+		$schema = $this->schemaOf(object: $object);
+		if ($schema === null) {
+			return false;
+		}
+
+		return ($this->sequences->installer->compile(schema: $schema, chainKey: $chainKey) ?? false);
+	}//end chainTemplate()
+
+	/**
+	 * Start the chain's task sequence for a held change, with the submitter as its requester.
+	 *
+	 * The requester is what separation of duties binds the decision to: the
+	 * sequence's decision guard refuses the submitter's own approve (403, with
+	 * the separation-of-duties reason). The sequence is anchored on the record
+	 * (the reserved uuid of a held create), where the pending change waits.
+	 *
+	 * @param array<string, mixed> $template  The compiled chain.
+	 * @param ObjectEntity         $base      The record the change waits beside.
+	 * @param string               $submitter The user whose change is held.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/tasks.md#3.1
+	 */
+	private function startDecision(array $template, ObjectEntity $base, string $submitter): void {
+		if ($this->sequences === null) {
+			return;
+		}
+
+		$register   = (string)$base->getRegister();
+		$registerId = null;
+		if (is_numeric($register) === true) {
+			$registerId = (int)$register;
+		}
+
+		$requester = null;
+		if ($submitter !== '') {
+			$requester = $submitter;
+		}
+
+		$service = $this->sequences->sequenceService;
+		$service->provision(
+			chain: $service->chain(template: $template),
+			anchor: $service->anchorOf(objectUuid: (string)$base->getUuid(), requesterId: $requester, registerId: $registerId)
+		);
+	}//end startDecision()
 
 	/**
 	 * Fail closed on a change gate that is declared but cannot be read.
@@ -292,14 +372,8 @@ class ChangeGateListener implements IEventListener {
 	 * @return array<string, array<string, mixed>> The entries.
 	 */
 	private function changeGatesOf(ObjectEntity $object): array {
-		$reference = $object->getSchema();
-		if ($reference === null || (string)$reference === '') {
-			return [];
-		}
-
-		try {
-			$schema = $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
-		} catch (DoesNotExistException) {
+		$schema = $this->schemaOf(object: $object);
+		if ($schema === null) {
 			return [];
 		}
 
@@ -317,6 +391,26 @@ class ChangeGateListener implements IEventListener {
 
 		return $gated;
 	}//end changeGatesOf()
+
+	/**
+	 * The written object's schema, or null when it names none that exists.
+	 *
+	 * @param ObjectEntity $object The written object.
+	 *
+	 * @return Schema|null
+	 */
+	private function schemaOf(ObjectEntity $object): ?Schema {
+		$reference = $object->getSchema();
+		if ($reference === null || (string)$reference === '') {
+			return null;
+		}
+
+		try {
+			return $this->schemas->find(id: $reference, _rbac: false, _multitenancy: false);
+		} catch (DoesNotExistException) {
+			return null;
+		}
+	}//end schemaOf()
 
 	/**
 	 * The pending change of this chain still open on the object, if any.

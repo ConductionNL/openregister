@@ -18,7 +18,8 @@
 
 ## 3. Deciding
 
-- [ ] 3.1 Start the chain's task sequence for the pending change; separation of duties refuses the submitter. Verify: test that the submitter's approve answers 403 with the separation-of-duties reason.
+- [x] 3.1 Start the chain's task sequence for the pending change; separation of duties refuses the submitter. Verify: test that the submitter's approve answers 403 with the separation-of-duties reason.
+      Built in `ChangeGateListener::hold()`: the chain is compiled first (a chain that cannot start its decision holds nothing and fails closed), then the pending change is stored and the chain's sequence is provisioned, anchored on the record (the reserved uuid of a held create) with the submitter as requester. Separation of duties is the sequence's own `TaskSequenceDecisionGuard`, which refuses the requester; the 403 mapping of `TaskSeparationOfDutiesException` is the task API's. Tests: `ChangeGateListenerDecisionTest` (5: sequence with the submitter as requester, a held create anchored on its reserved uuid, an uncompilable chain refused before any pending change, an ungated change starts nothing, the submitter's own decision refused).
 - [ ] 3.2 `onApprove: applyChange` promotes the draft; rejection discards it with the comment on the audit entry. Verify: tests for approve, reject, and a promotion refused by validation.
 
 ## 4. Interface and docs
