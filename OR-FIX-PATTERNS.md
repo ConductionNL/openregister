@@ -749,3 +749,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: RecentLensLookupCallSitesTest::testEveryInternalFindHasADecision lists 'lib/<File>.php::<method>' for a PR's new ->find( call.
 - Cause: the sweep counts every ->find( in lib as a possible ObjectService read; a find on MagicMapperInterface (or another mapper) writes no read row.
 - Fix: when the receiver is not ObjectService, add the file/method to NOT_OBJECT_SERVICE in that test (as SharerAccessSweepJob); when it is ObjectService, wrap in WriteCause::asLookup or pass audit: false. (#10535 a02052cf)
+
+## Conflict in an area *ServiceBindings.php map after main widened it (or-fix-2)
+- Symptom: content conflict in lib/Service/<Area>ServiceBindings.php (use block and BINDINGS const), e.g. after main f1c351de moved Compliance service interfaces into ComplianceServiceBindings.
+- Cause: the PR added one binding row to the small old map; main rewrote the map with many rows (often already containing the PR's other rows).
+- Fix: take main's side whole, re-add only the PR's rows main lacks (and their use lines, alphabetical); php -l, the area's *ServiceRegistrarTest and Architecture (#10132 95435873).
