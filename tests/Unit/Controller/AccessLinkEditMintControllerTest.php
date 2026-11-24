@@ -24,6 +24,7 @@ use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectLinks;
 use OCA\OpenRegister\Service\Sharing\LinkJourneyGuard;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCP\AppFramework\Http;
@@ -83,6 +84,7 @@ class AccessLinkEditMintControllerTest extends TestCase {
 					reader: $this->createMock(AccessLinkReaderInterface::class),
 					mintGuard: $this->mintGuard,
 					acts: $this->createMock(AccessLinkActsInterface::class),
+					subjectLinks: $this->createMock(AccessLinkSubjectLinks::class),
 					journeys: $journeys
 				),
 				platform: new AccessLinkPlatform(userSession: $session, throttler: $this->createMock(IThrottler::class), logger: new NullLogger())

@@ -68,6 +68,13 @@ class GeneratedIdentifierListener implements IEventListener {
 	public const ERROR_CODE = 'generated-identifier-frozen';
 
 	/**
+	 * The width of the openregister_sequences.scope_key column.
+	 *
+	 * @var int
+	 */
+	private const SCOPE_KEY_LENGTH = 64;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemaMapper Resolves the object's schema.
@@ -202,11 +209,15 @@ class GeneratedIdentifierListener implements IEventListener {
 		$declaration = $run->declarations[$field];
 		$supplied = (string)($run->data[$field] ?? '');
 		if ($supplied !== '') {
-			$this->advancePast(declaration: $declaration, value: $supplied);
+			$this->advancePast(declaration: $declaration, value: $supplied, partition: $this->partitionOf(declaration: $declaration, data: $run->data));
 			return null;
 		}
 
-		$scope = $this->scopeKey(declaration: $declaration, period: $declaration->periodAt(moment: $run->now));
+		$scope = $this->scopeKey(
+			declaration: $declaration,
+			period: $declaration->periodAt(moment: $run->now),
+			partition: $this->partitionOf(declaration: $declaration, data: $run->data)
+		);
 
 		return $this->firstUnreserved(declaration: $declaration, scope: $scope, moment: $run->now);
 
@@ -397,19 +408,20 @@ class GeneratedIdentifierListener implements IEventListener {
 	 *
 	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string $value The value that was supplied.
+	 * @param string $partition The value that splits the counter, '' for none.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-generated-identifier-is-frozen-after-creation
 	 */
-	private function advancePast(GeneratedIdentifierDeclarationInterface $declaration, string $value): void {
+	private function advancePast(GeneratedIdentifierDeclarationInterface $declaration, string $value, string $partition=''): void {
 		$parsed = $declaration->parse(value: $value);
 		if ($parsed === null) {
 			return;
 		}
 
 		$this->sequences->advanceTo(
-			$this->scopeKey(declaration: $declaration, period: $parsed['period']),
+			$this->scopeKey(declaration: $declaration, period: $parsed['period'], partition: $partition),
 			reserved: $parsed['sequence']
 		);
 
@@ -424,17 +436,67 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * sentinel is also what lets two schemas share a counter by naming it,
 	 * which a per-schema scope cannot express.
 	 *
+	 * A partitioned counter adds the partition value, encoded so that no value
+	 * can read as another sequence's name or period. An empty partition value
+	 * draws from the unpartitioned counter, the one the sequence had before it
+	 * was partitioned. A key that would not fit the scope_key column
+	 * (SCOPE_KEY_LENGTH) carries a hash of the sequence and partition instead.
+	 *
 	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
 	 * @param string $period The period keying the counter.
+	 * @param string $partition The value that splits the counter, '' for none.
 	 *
 	 * @return string The scope key.
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-two-schemas-may-share-one-sequence
+	 * @spec openspec/changes/generated-identifier-partition/specs/computed-fields/spec.md#requirement-a-sequence-may-count-separately-per-value-of-a-property
 	 */
-	private function scopeKey(GeneratedIdentifierDeclarationInterface $declaration, string $period): string {
-		return 'gen:'.$declaration->sequence().'|'.$period;
+	private function scopeKey(GeneratedIdentifierDeclarationInterface $declaration, string $period, string $partition=''): string {
+		if ($partition === '') {
+			return 'gen:'.$declaration->sequence().'|'.$period;
+		}
+
+		$key = 'gen:'.$declaration->sequence().'@'.rawurlencode($partition).'|'.$period;
+		if (strlen($key) <= self::SCOPE_KEY_LENGTH) {
+			return $key;
+		}
+
+		// Too long for the scope_key column: the sequence and partition are
+		// hashed together, so a long value (a uuid, a full name) still gets a
+		// counter of its own, the same one on every write, and the period
+		// still ends the key.
+		return 'gen:#'.sha1($declaration->sequence().'@'.$partition).'|'.$period;
 
 	}//end scopeKey()
+
+	/**
+	 * The value of the object's partition property, or '' when the sequence has
+	 * none or the object leaves it empty.
+	 *
+	 * Only a text or number value splits the counter; anything else (a list, an
+	 * object) is not a value two objects can sensibly share, and counts as empty.
+	 *
+	 * @param GeneratedIdentifierDeclarationInterface $declaration The property's declaration.
+	 * @param array<string, mixed> $data The object's data.
+	 *
+	 * @return string The partition value.
+	 *
+	 * @spec openspec/changes/generated-identifier-partition/specs/computed-fields/spec.md#requirement-a-sequence-may-count-separately-per-value-of-a-property
+	 */
+	private function partitionOf(GeneratedIdentifierDeclarationInterface $declaration, array $data): string {
+		$property = $declaration->getPartitionBy();
+		if ($property === null) {
+			return '';
+		}
+
+		$value = ($data[$property] ?? null);
+		if (is_string($value) === true || is_int($value) === true) {
+			return trim((string)$value);
+		}
+
+		return '';
+
+	}//end partitionOf()
 
 	/**
 	 * Every property of the object's schema that declares a generated identifier.
