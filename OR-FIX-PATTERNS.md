@@ -839,3 +839,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: FederationController*Test create test 'Failed asserting that 500 is identical to 201' (the controller catches the mock's ExpectationFailedException as Throwable and answers 500).
 - Cause: main's FederationController::createShare now passes 'crosses' => getParam('crosses') to createOutgoingShare.
 - Fix: add 'crosses' => null (or the request's value) to the test's ->with([...]) array (see #10587 3b25f4b6).
+
+## A later main merge silently keeps an earlier merge's lost main line (or-fix-3)
+- Symptom: BLOCK 'main merge drops main's <X>' although the merge had no conflict there (e.g. a Repair step missing from appinfo/info.xml).
+- Cause: an earlier main merge on the branch resolved a hunk to the PR side, so git now treats main's line as a PR-side deletion and every later merge keeps it deleted.
+- Fix: after merging, `comm -23 <(git diff --name-only origin/main | sort) <(git diff --name-only $(git merge-base origin/main <orig PR head>) <orig PR head> | sort)` must be empty, and `git diff origin/main -- <file>` of each shared file must show only the PR's own lines; re-add what main has.
