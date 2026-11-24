@@ -31,4 +31,4 @@ Budget (ADR-124): API <= 100 ms, page usable <= 300 ms warm. Every page is still
 - [ ] nextcloud-vue useLifecycleTransitions calls the deprecated /api/objects/{uuid}/available-actions (300 ms); switch to /{register}/{schema}/{id}/actions.
 
 ## all apps
-- [ ] English catalogues map 99% of strings to themselves (dossiq 1.25 MB, integriq 489 KB): drop identity entries at build time.
+- [ ] English catalogues map 99% of strings to themselves (dossiq 1.25 MB, integriq 489 KB): drop identity entries at build time. NOTE 24 Nov (cloud): thematiq done in #1967 (merged): scripts/build-l10n-js.js drops identity entries for en only, en.json stays complete, gate 103 still green; en.js 183 KB -> 1.6 KB. Other apps with the same generator can copy browserEntries() and tests/vitest/l10n-browser-catalogue.spec.js.
