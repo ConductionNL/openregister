@@ -730,3 +730,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after a main merge, TypeError in a PR's own controller test: '<X>ControllerFactory::args(): Argument #1 ($request) must be of type OCP\IRequest, string given' or an ArgumentCountError/TypeError on new <X>Controller('openregister', ...).
 - Cause: main 5ceb54df made Credential, Deleted, DsarCase, Forms, GdprEntities, Integrations, Retention, Rules, Schemas, Transition and Webhooks controllers take Application::APP_ID internally; constructors and test factories start at IRequest.
 - Fix: drop the leading 'openregister' (or $appName) argument from the PR's call sites of those controllers/factories; if the PR adds a constructor param, keep it after IRequest (#10244).
+## A PR's Core listener registered directly in an area Registrar/*ListenerRegistrar (or-fix-8)
+- Symptom: after a clean main merge, testNoComponentEdgeBeyondTheBaseline lists 'lib/Listener/Registrar/<Area>ListenerRegistrar.php -> lib/Listener/<New>Listener.php (Processes -> Core)'.
+- Cause: main moved registrations into per-area registrars; a listener of another component must go through that component's slot class (e.g. CoreListenerRegistrar::identityClaims).
+- Fix: add a public static slot to lib/Listener/CoreListenerRegistrar.php holding the PR's registerEventListener line, call it from the area registrar at the same position, add the slot row to tests/Unit/Listener/CoreListenerRegistrarTest::slots(); order golden unchanged (#10458 aa9653a1).
