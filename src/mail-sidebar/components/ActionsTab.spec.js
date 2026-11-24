@@ -272,6 +272,10 @@ describe('ActionsTab connect', () => {
 			'/index.php/apps/openregister/api/objects/u1/_linked/mail',
 			{ id: '1/42' },
 		)
+		expect(axios.post).toHaveBeenCalledWith(
+			'/index.php/apps/openregister/api/objects/2/5/u1/emails',
+			{ mailAccountId: 1, messageId: '42' },
+		)
 		expect(showSuccess).toHaveBeenCalledWith('Connected to Acme')
 		expect(wrapper.emitted('linked')).toHaveLength(1)
 		expect(wrapper.vm.visibleResults[5]).toBe(false)
@@ -292,6 +296,8 @@ describe('ActionsTab connect', () => {
 		expect(picked.find('.or-object-row__name').text()).toBe('Lead two')
 		expect(picked.find('.or-object-row__sub').text()).toBe('From the fair')
 		expect(wrapper.find('.or-action-block--busy').exists()).toBe(true)
+		release({})
+		await flushPromises()
 		release({})
 		await pending
 	})

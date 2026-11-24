@@ -3489,6 +3489,8 @@
         "Note from the administrator: %s": "Note from the administrator: %s",
         "Open changelog": "Open changelog",
         "Your saved views and the objects you watch. The objects themselves stay with your organisation.": "Your saved views and the objects you watch. The objects themselves stay with your organisation.",
+        "Its ancestor %1$s has appraisal %2$s": "Its ancestor %1$s has appraisal %2$s",
+        "Its ancestor %s could not be read": "Its ancestor %s could not be read",
         "Close connections": "Close connections",
         "Found in this mail": "Found in this mail",
         "Names, addresses and numbers": "Names, addresses and numbers",
@@ -3499,9 +3501,7 @@
         "Fields marked * are required. The new {name} is connected to this mail.": "Fields marked * are required. The new {name} is connected to this mail.",
         "(optional)": "(optional)",
         "Create and connect": "Create and connect",
-        "No {name} matches “{term}”.": "No {name} matches “{term}”.",
-        "Its ancestor %1$s has appraisal %2$s": "Its ancestor %1$s has appraisal %2$s",
-        "Its ancestor %s could not be read": "Its ancestor %s could not be read"
+        "No {name} matches “{term}”.": "No {name} matches “{term}”."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
