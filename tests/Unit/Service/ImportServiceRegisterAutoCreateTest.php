@@ -363,6 +363,10 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 			]
 		);
 
+		// Register/schema creation must never be attempted for a non-bundle payload.
+		$this->registerMapper->expects($this->never())->method('createFromArray');
+		$this->schemaMapper->expects($this->never())->method('createFromArray');
+
 		try {
 			$this->service->importFromJson(
 				request: new ImportRequest(
@@ -382,9 +386,5 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 			$this->assertGreaterThanOrEqual(400, $e->getCode());
 			$this->assertLessThan(500, $e->getCode());
 		}
-
-		// Register/schema creation must never be attempted for a non-bundle payload.
-		$this->registerMapper->expects($this->never())->method('createFromArray');
-		$this->schemaMapper->expects($this->never())->method('createFromArray');
 	}//end testPlainObjectListForMissingRegisterThrowsClearNamedError()
 }//end class

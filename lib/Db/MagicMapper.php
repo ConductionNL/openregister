@@ -114,6 +114,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicLockClaim;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectUnlock;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugBackfill;
 use OCA\OpenRegister\Db\MagicMapper\MagicSlugTable;
+use OCA\OpenRegister\Db\MagicMapper\MagicRelationsTable;
 use OCA\OpenRegister\Db\MagicMapper\SlugBackfillCursor;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicUnionPage;
@@ -3053,11 +3054,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * The column writer of the connection's platform.
 	 *
 	 * @return MagicColumnSql
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	private function columnSql(): MagicColumnSql {
 		$platform = $this->db->getDatabasePlatform();
 
-		return new MagicColumnSql(isPostgres: ($platform instanceof PostgreSQLPlatform), jsonAsText: ($platform instanceof MariaDBPlatform));
+		return new MagicColumnSql(
+			isPostgres: ($platform instanceof PostgreSQLPlatform),
+			jsonAsText: ($platform instanceof MariaDBPlatform),
+			orderedJsonAsText: MagicColumnSql::reordersJsonKeys(platform: $platform)
+		);
 	}//end columnSql()
 
 	/**
@@ -3784,14 +3791,19 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param MagicColumnDrift $columns   The live and required columns.
 	 *
 	 * @return TableStructureSync
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	private function tableSync(string $tableName, MagicColumnDrift $columns): TableStructureSync {
+		$platform = $this->db->getDatabasePlatform();
+
 		return new TableStructureSync(
 			tableName: $tableName,
 			fullTableName: $this->getFullTableName(tableName: $tableName),
 			columns: $columns,
 			isPostgres: $this->onPostgres(),
-			jsonAsText: ($this->db->getDatabasePlatform() instanceof MariaDBPlatform)
+			jsonAsText: ($platform instanceof MariaDBPlatform),
+			orderedJsonAsText: MagicColumnSql::reordersJsonKeys(platform: $platform)
 		);
 	}//end tableSync()
 
@@ -4822,6 +4834,88 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end updateSlugColumn()
 
 	/**
+	 * Add a UUID to one object's `_relations`, touching only that column and `_updated`.
+	 *
+	 * The inverse side of a relation. The object is not re-saved, so it gets no
+	 * version bump; but when the column changed, the same ObjectUpdatedEvent the
+	 * full update dispatched still goes out (old object without the UUID, new
+	 * object with it), so the audit trail, webhooks, flow triggers, activity
+	 * and cache listeners keep seeing the change. Withheld inside a system
+	 * operation, as every lifecycle event is.
+	 *
+	 * @param RegisterSchema $table       The register and schema whose table to use.
+	 * @param string         $uuid        The object pointed at.
+	 * @param string         $relatedUuid The object that points at it.
+	 *
+	 * @return int Rows updated: 0 when the object is missing, deleted or already holds the UUID.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function appendRelation(RegisterSchema $table, string $uuid, string $relatedUuid): int {
+		$tableName = $this->getTableNameForRegisterSchema(register: $table->register, schema: $table->schema);
+		$updated   = $this->appendToRelationsColumn(tableName: $tableName, uuid: $uuid, relatedUuid: $relatedUuid);
+		if ($updated > 0 && $this->suppressLifecycleEvents() === false) {
+			$this->announceAppendedRelation(table: $table, uuid: $uuid, relatedUuid: $relatedUuid);
+		}
+
+		return $updated;
+	}//end appendRelation()
+
+	/**
+	 * Write the UUID into the table's relations column.
+	 *
+	 * @param string $tableName   The magic table.
+	 * @param string $uuid        The object pointed at.
+	 * @param string $relatedUuid The object that points at it.
+	 *
+	 * @return int Rows updated.
+	 */
+	protected function appendToRelationsColumn(string $tableName, string $uuid, string $relatedUuid): int {
+		return (new MagicRelationsTable(db: $this->db, tableName: $tableName))->append(uuid: $uuid, relatedUuid: $relatedUuid);
+	}//end appendToRelationsColumn()
+
+	/**
+	 * Dispatch the update event for a relation that was just appended.
+	 *
+	 * The column is already written; a failure to read the object back is
+	 * logged and leaves the write in place.
+	 *
+	 * @param RegisterSchema $table       The register and schema.
+	 * @param string         $uuid        The object pointed at.
+	 * @param string         $relatedUuid The UUID that was appended.
+	 *
+	 * @return void
+	 */
+	private function announceAppendedRelation(RegisterSchema $table, string $uuid, string $relatedUuid): void {
+		try {
+			$new = $this->find(
+				identifier: $uuid,
+				register: $table->register,
+				schema: $table->schema,
+				includeDeleted: false,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] Inverse relation written, but the object could not be read back for its update event',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid, 'exception' => get_class($e)]
+			);
+			return;
+		}
+
+		$old       = clone $new;
+		$relations = ($new->getRelations() ?? []);
+		$key       = array_search($relatedUuid, $relations, true);
+		if ($key !== false) {
+			unset($relations[$key]);
+		}
+
+		$old->setRelations($relations);
+		(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $new, old: $old);
+	}//end announceAppendedRelation()
+
+	/**
 	 * Find objects by a list of uuids within ONE register+schema table.
 	 *
 	 * The batched counterpart of {@see findInRegisterSchemaTable()}: one indexed
@@ -5756,9 +5850,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * This method efficiently searches all magic tables for multiple UUIDs in batch.
 	 * It's optimized for performance by searching all UUIDs in each table with a single query.
 	 *
-	 * @param array    $uuids           Array of UUIDs to search for.
-	 * @param bool     $includeDeleted  Whether to include soft-deleted objects.
-	 * @param int|null $registerIdScope Only look in this register's tables (null: every table).
+	 * @param array          $uuids           Array of UUIDs to search for.
+	 * @param bool           $includeDeleted  Whether to include soft-deleted objects.
+	 * @param int|null       $registerIdScope Only look in this register's tables (null: every table).
+	 * @param list<int>|null $schemaIdScope   Only look in these schemas' tables, in any register (null: every schema).
 	 *
 	 * @return ObjectEntity[] Array of found objects (may be fewer than requested if some not found).
 	 */
@@ -5766,8 +5861,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		array $uuids,
 		bool $includeDeleted = false,
 		?int $registerIdScope = null,
+		?array $schemaIdScope = null,
 	): array {
-		return $this->findMultipleAcross(lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted), registerIdScope: $registerIdScope);
+		return $this->findMultipleAcross(
+			lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted),
+			registerIdScope: $registerIdScope,
+			schemaIdScope: $schemaIdScope
+		);
 	}//end findMultipleAcrossAllMagicTables()
 
 	/**
@@ -5775,11 +5875,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param UuidBatchLookup $lookup          The uuids and whether soft-deleted rows count.
 	 * @param int|null        $registerIdScope Restrict the scan to one register's tables.
+	 * @param list<int>|null  $schemaIdScope   Restrict the scan to these schemas' tables.
 	 *
 	 * @return array The found objects.
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function findMultipleAcross(UuidBatchLookup $lookup, ?int $registerIdScope=null): array {
+	public function findMultipleAcross(UuidBatchLookup $lookup, ?int $registerIdScope=null, ?array $schemaIdScope=null): array {
 		$uuids          = $lookup->uuids;
 		$includeDeleted = $lookup->includeDeleted;
 
@@ -5791,6 +5892,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$scan = new MagicCrossTableScan(label: 'findMultipleAcrossAllMagicTables');
 		$scan->includeDeleted = $includeDeleted;
 		$scan->registerIdScope = $registerIdScope;
+		$scan->schemaIdScope = $schemaIdScope;
 		$scan->predicate = '_uuid IN (' . implode(',', array_fill(0, count($uuids), '?')) . ')';
 		$scan->parameters = $uuids;
 
@@ -6421,11 +6523,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			$registerId = (int)$matches[1];
-			if ($scan->registerIdScope !== null && $registerId !== $scan->registerIdScope) {
+			$schemaId = (int)$matches[2];
+			if (($scan->registerIdScope !== null && $registerId !== $scan->registerIdScope)
+				|| ($scan->schemaIdScope !== null && in_array($schemaId, $scan->schemaIdScope, true) === false)
+			) {
 				continue;
 			}
 
-			$scan->tables[$fullTableName] = ['registerId' => $registerId, 'schemaId' => (int)$matches[2]];
+			$scan->tables[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
 		}
 	}//end listCrossTableScanTables()
 
