@@ -9,8 +9,8 @@ import { showError } from '@nextcloud/dialogs'
  */
 import { mount } from '@vue/test-utils'
 import ObjectDetails from './ObjectDetails.vue'
-import { objectStore } from '../../store/store.js'
-import { sendReadState } from './recordFollow.js'
+import { objectStore, schemaStore } from '../../store/store.js'
+import { fetchRecordCan, sendReadState } from './recordFollow.js'
 
 jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => `t:${text}` }))
 jest.mock('@nextcloud/vue', () => mockLibrary())
@@ -82,10 +82,12 @@ jest.mock('vue-material-design-icons/TrashCanOutline.vue', () =>
 jest.mock('../../store/store.js', () => ({
 	navigationStore: {},
 	objectStore: {},
+	schemaStore: {},
 }))
 jest.mock('./recordFollow.js', () => ({
 	...jest.requireActual('./recordFollow.js'),
 	sendReadState: jest.fn(),
+	fetchRecordCan: jest.fn(),
 }))
 
 /**
@@ -194,7 +196,53 @@ describe('ObjectDetails follow and read state', () => {
 	beforeEach(() => {
 		sendReadState.mockReset()
 		sendReadState.mockResolvedValue(true)
+		fetchRecordCan.mockReset()
+		fetchRecordCan.mockResolvedValue(null)
 		showError.mockReset()
+		for (const key of Object.keys(schemaStore)) delete schemaStore[key]
+	})
+
+	it('tells the toggle the record notifies nobody when its schema sends followers nothing', async () => {
+		Object.assign(schemaStore, { schemaItem: { id: 's', configuration: { 'x-openregister-notifications': { changed: { recipients: [{ kind: 'user', value: 'admin' }] } } } } })
+		const wrapper = view(RECORD)
+		await settle()
+
+		expect(wrapper.find('x-CnFollowToggle').attributes('notifies')).toBe('false')
+	})
+
+	it('reads the schema when the store holds another one, and keeps notifying when its rules reach followers', async () => {
+		const getSchema = jest.fn().mockResolvedValue({ id: 's', configuration: { 'x-openregister-notifications': { changed: { recipients: [{ watchers: true }] } } } })
+		Object.assign(schemaStore, { schemaItem: { id: 'other' }, getSchema })
+		const wrapper = view(RECORD)
+		await settle()
+
+		expect(getSchema).toHaveBeenCalledWith('s')
+		expect(wrapper.find('x-CnFollowToggle').attributes('notifies')).toBe('true')
+	})
+
+	it('keeps the toggle notifying when the schema cannot be read', async () => {
+		Object.assign(schemaStore, { getSchema: jest.fn().mockRejectedValue(new Error('403')) })
+		const wrapper = view(RECORD)
+		await settle()
+
+		expect(wrapper.find('x-CnFollowToggle').attributes('notifies')).toBe('true')
+	})
+
+	it('fetches @self.can for a record reached without it and offers the picker it allows', async () => {
+		fetchRecordCan.mockResolvedValue({ update: true, manage: true })
+		const row = { id: 'o1', '@self': { id: 'o1', register: 'r', schema: 's', watching: false } }
+		const wrapper = view(row)
+		await settle()
+
+		expect(fetchRecordCan).toHaveBeenCalledWith({ register: 'r', schema: 's', id: 'o1' })
+		expect(wrapper.find('x-CnFollowToggle').attributes('canmanage')).toBe('true')
+	})
+
+	it('does not fetch @self.can when the record carries it', async () => {
+		view(RECORD)
+		await settle()
+
+		expect(fetchRecordCan).not.toHaveBeenCalled()
 	})
 
 	it('places the Follow toggle with the record\'s follow state', () => {
@@ -202,6 +250,20 @@ describe('ObjectDetails follow and read state', () => {
 
 		expect(toggle.exists()).toBe(true)
 		expect(toggle.attributes()).toMatchObject({ register: 'r', schema: 's', objectid: 'o1', watching: 'true', notify: 'false', watchercount: '2', canmanage: 'false' })
+	})
+
+	it('badges the Files tab with its unread count and leaves the others bare', () => {
+		const wrapper = view({ ...RECORD, '@self': { ...RECORD['@self'], unreadCounts: { files: 2 } } })
+		const files = wrapper.findAll('x-AppTab').find((tab) => tab.attributes('title') === 't:Files')
+		const syncs = wrapper.findAll('x-AppTab').find((tab) => tab.attributes('title') === 't:Syncs')
+
+		expect(files.find('slot-title x-NcCounterBubble').text()).toBe('2')
+		expect(files.find('slot-title').text()).toContain('t:Files')
+		expect(syncs.find('slot-title x-NcCounterBubble').exists()).toBe(false)
+	})
+
+	it('shows no tab badges when the record carries no unread counts', () => {
+		expect(view(RECORD).find('x-NcCounterBubble.tab-unread').exists()).toBe(false)
 	})
 
 	it('marks the record read once after it renders', async () => {

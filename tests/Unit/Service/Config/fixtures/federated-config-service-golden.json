@@ -832,6 +832,16 @@
                 [
                     "cred-1",
                     "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
                     "PUT",
                     "/repos/o/r/topics",
                     {
@@ -896,6 +906,16 @@
                         "Accept": "application/vnd.github+json"
                     },
                     "{\"name\":\"r\",\"private\":false,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
                 ],
                 [
                     "cred-1",
@@ -966,6 +986,16 @@
                 [
                     "cred-1",
                     "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
                     "PUT",
                     "/repos/o/r/topics",
                     {
@@ -1018,6 +1048,16 @@
                         "Accept": "application/vnd.github+json"
                     },
                     "{\"name\":\"r\",\"private\":true,\"auto_init\":true}"
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
                 ],
                 [
                     "cred-1",
@@ -1078,6 +1118,16 @@
                 [
                     "cred-1",
                     "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
                     "PUT",
                     "/repos/o/r/topics",
                     {
@@ -1111,6 +1161,16 @@
         },
         "record": {
             "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos//r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
                 [
                     "cred-1",
                     "openregister",
@@ -1152,6 +1212,16 @@
                     "openregister",
                     "GET",
                     "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
                     {
                         "Accept": "application/vnd.github+json"
                     },
@@ -1216,6 +1286,16 @@
                 [
                     "cred-1",
                     "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
                     "PUT",
                     "/repos/o/r/topics",
                     {
@@ -1249,6 +1329,16 @@
         },
         "record": {
             "broker": [
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/lonely/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
                 [
                     "cred-1",
                     "openregister",
@@ -1318,6 +1408,16 @@
                 [
                     "cred-1",
                     "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
                     "PUT",
                     "/repos/o/r/topics",
                     {
@@ -1356,6 +1456,16 @@
                     "openregister",
                     "GET",
                     "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
                     {
                         "Accept": "application/vnd.github+json"
                     },
@@ -1421,6 +1531,16 @@
                 [
                     "cred-1",
                     "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
                     "PUT",
                     "/repos/o/r/topics",
                     {
@@ -1456,6 +1576,16 @@
                     "openregister",
                     "GET",
                     "/repos/o/r",
+                    {
+                        "Accept": "application/vnd.github+json"
+                    },
+                    null
+                ],
+                [
+                    "cred-1",
+                    "openregister",
+                    "GET",
+                    "/repos/o/r/topics",
                     {
                         "Accept": "application/vnd.github+json"
                     },
