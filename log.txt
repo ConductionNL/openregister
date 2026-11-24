@@ -3945,3 +3945,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T04:16:21Z integrator-20261124T032406-ad60bce4 MERGED-TREE 419cbce77c: 1 PRs, main now f1c351debe = tested tree
 2026-11-24T04:39:37Z session-20261124T043937-2fbb77ba cloud-or-reviewer-0: overlap guard, ended without reviewing; a lane-0 verdict was appended 04:06Z (5968) with no closing log line, so that session is still active
+2026-11-24T04:43:32Z or-fix-6: main 677fdcdc; lane PRs 10156 10496 10506 10516 10526 10966 11006 11016 all merge clean with main, none parked or BLOCK at head; PHP ones merged with main: phpstan clean, Architecture + touched tests green bar main's inherited reds (AreaMapperRegistrars, ReservedColumnNames, isolated-process OCP stubs); nothing to fix
