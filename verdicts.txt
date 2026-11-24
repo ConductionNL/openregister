@@ -4561,3 +4561,4 @@
 10509 bb510476f8c9fbb2ebd47e58bdd8712dfc4ee335 REVERIFY or-fix-9: merged main, fixed generated components yaml conflict (main's + regenerated from csv); phpstan clean, Architecture and PR tests green; review needed
 10526 2efc9e26c0eae4292ae1a3924ef8f8e53ec434fc REVERIFY or-fix-6: merged main 9bd7e0b3 (generated components yaml conflict, regenerated from csv), no code change; phpstan clean, Architecture, Contract, Controller, BackgroundJob, Files, Service/Settings|TextExtraction green; Migration ReservedColumnNames and Service/File OCP Event isolation reds inherited from main; review needed
 5968 eaf5bd95bf0885ff4c981619feb648ef49b9f5cc REVERIFY or-fix-8: merged main, bumped info.xml to 2.2.0-dev.7 (bump absorbed by main, migration would not run); review needed
+10283 c2638298032aaa4d4d5b306cd4d33b9f6cfad958 REVERIFY or-fix-3: merged main (components yaml conflict, regenerated), Architecture + touched dirs green; review needed
