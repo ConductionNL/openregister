@@ -52,7 +52,9 @@ with a credential they did not choose.
   repositories by a type's topic (anonymous, or through your credential).
 - `GET /api/federated-config/fetch?repo=<owner/repo>&path=<path>` — read a
   published bundle back.
-- `POST /api/federated-config/install` with `{type, bundle, source}` — install it.
+- `POST /api/federated-config/install` with `{type, repo, path}` — install it. The
+  server fetches the bundle from that repository itself, and the repository is the
+  source the allowlist judges.
   Install **verifies the signature** (a tampered bundle is always refused) and is
   governed by your organisation's trust rules.
 
@@ -64,15 +66,15 @@ with a credential they did not choose.
 > output of `/api/federated-config/bundle` is unsigned, so copying a bundle between
 > instances needs that setting or a published, signed bundle.
 >
-> Set `installGroups` before you turn the setting on. While `installGroups` is
-> empty, any signed-in user may install, and with the setting on that includes
-> bundles nothing vouches for.
+> Federated installs also need a `sourceAllowlist`: with an empty list every source
+> is refused. While `installGroups` or `publishGroups` is empty, only administrators
+> may install or publish.
 
 An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
 
-- **`sourceAllowlist`** — comma-separated GitHub sources you install from. Empty
-  means "not yet enforced"; once set, an install from a source not on the list is
-  refused. A bare org (e.g. `ConductionNL`) covers all its repositories.
+- **`sourceAllowlist`** — comma-separated GitHub sources you install from. An
+  install from a source not on the list is refused, and an empty list refuses
+  every source. A bare org (e.g. `ConductionNL`) covers all its repositories.
 - **`trustedKeys`**: comma-separated base64 publisher public keys you trust. Append
   a key with `PUT {trustKey: "<base64>"}`. An install needs a bundle signed by a key
   on this list. With an empty list, every install is refused until you add a key or
@@ -80,10 +82,9 @@ An administrator manages trust at `GET`/`PUT /api/federated-config/trust`:
 - **`allowUnverifiedBundles`**: set `PUT {field: "allowUnverifiedBundles", value: true}`
   to accept bundles nothing vouches for while the key list is empty. `true`, `"true"`
   and `"1"` turn it on; anything else turns it off. A key on the list always wins over
-  this setting. Set `installGroups` first: an empty `installGroups` lets any signed-in
-  user install.
+  this setting.
 - **`publishGroups`** / **`installGroups`** — Nextcloud groups permitted to publish
-  / install. Empty means any signed-in user; admins are always allowed.
+  / install. Admins are always allowed; with an empty list nobody else is.
 
 Share this instance's public key (`GET /api/federated-config/public-key`) with
 organisations that want to trust the configuration you publish.

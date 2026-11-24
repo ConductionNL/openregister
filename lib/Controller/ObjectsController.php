@@ -82,6 +82,7 @@ use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\SearchTermSyntaxException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
+use OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -138,6 +139,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -3679,7 +3681,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private function sampleRefusal(ObjectRef $ref, mixed $schemaEntity, bool $update): ?JSONResponse {
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 		if ($update === false) {
-			if ($permissions->hasPermission(schema: $schemaEntity, action: 'create') === true) {
+			if ($permissions->hasPermission(ask: new PermissionAsk(schema: $schemaEntity, action: 'create')) === true) {
 				return null;
 			}
 
@@ -3691,7 +3693,11 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return $object;
 		}
 
-		if ($permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $object->getOwner(), object: $object) === true) {
+		if ($permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: null, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
+		) === true) {
 			return null;
 		}
 
@@ -3879,6 +3885,10 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			$e instanceof AppendOnlyException => new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED),
 			$e instanceof TranslationTargetConflictException => new JSONResponse(data: $e->toErrorBody(), statusCode: 400),
 			$e instanceof ValidationException, $e instanceof CustomValidationException => $objectService->handleValidationException(exception: $e),
+			$e instanceof PropertyWriteNotAuthorizedException => new JSONResponse(
+				data: ['error' => $e->getMessage(), 'properties' => $e->getProperties()],
+				statusCode: PropertyWriteNotAuthorizedException::HTTP_STATUS
+			),
 			$e instanceof HookStoppedException && self::heldChangeAnswer(exception: $e) !== null => self::heldChangeAnswer(exception: $e),
 			$e instanceof HookStoppedException => new JSONResponse(data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()], statusCode: 422),
 			$e instanceof LockedException => $this->lockedResponse(exception: $e),
@@ -5436,7 +5446,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		}
 
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		if ($permissions->hasPermission(schema: $resolved['schemaEntity'], action: 'create') === false) {
+		if ($permissions->hasPermission(ask: new PermissionAsk(schema: $resolved['schemaEntity'], action: 'create')) === false) {
 			return new JSONResponse(data: ['error' => 'You may not create objects in this schema.'], statusCode: 403);
 		}
 
@@ -5630,8 +5640,12 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private function mayMove(ObjectEntity $object, array $schemas): bool {
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
 
-		return $permissions->hasPermission(schema: $schemas[0], action: 'update', objectOwner: $object->getOwner(), object: $object)
-			&& $permissions->hasPermission(schema: $schemas[1], action: 'create');
+		return $permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemas[0], action: 'update'))
+				->askedBy(userId: null, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
+		)
+			&& $permissions->hasPermission(ask: new PermissionAsk(schema: $schemas[1], action: 'create'));
 	}//end mayMove()
 
 	/**
@@ -6037,12 +6051,15 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		$schemaEntity = $this->schemaInRegister(schemaRef: $source->schema, register: $this->registerOrNull(registerRef: $source->register));
 		$permissions = $this->container->get(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		$mayUpdateTarget = $permissions->hasPermission(schema: $schemaEntity, action: 'update', objectOwner: $target->getOwner(), object: $target);
+		$mayUpdateTarget = $permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'update'))
+				->askedBy(userId: null, objectOwner: $target->getOwner())
+				->about(object: $target, register: null)
+		);
 		$mayDeleteSource = $permissions->hasPermission(
-			schema: $schemaEntity,
-			action: 'delete',
-			objectOwner: $sourceObject->getOwner(),
-			object: $sourceObject
+			ask: (new PermissionAsk(schema: $schemaEntity, action: 'delete'))
+				->askedBy(userId: null, objectOwner: $sourceObject->getOwner())
+				->about(object: $sourceObject, register: null)
 		);
 		if ($mayUpdateTarget === false || $mayDeleteSource === false) {
 			return new JSONResponse(data: ['error' => 'You may not merge these objects.'], statusCode: 403);
