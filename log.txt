@@ -4222,3 +4222,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T17:46:34Z session-20261124T170110-296ba546 or-fix-3: fixed 10283 10363 10513 10523 (REVERIFY); precheck not run: gitleaks install refused by a permission check in this session
 2026-11-24T17:49:00Z precheck-20261124T170427-3ddd1c90 GREEN tree aeb9789e05 on dev 3848cdb322 prs 1 front=ok: Tests: 64163, Assertions: 226518, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-24T17:50:06Z precheck-20261124T165526-aecd965b NORESULT tree a54a20c249: checker floor not measured (exit 2)
+2026-11-24T17:50:16Z integrator-20261124T145419-19cd7a29 GREEN tree f8d8da181c on dev 3848cdb322 prs 1 front=ok: Tests: 64130, Assertions: 226374, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
