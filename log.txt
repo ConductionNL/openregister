@@ -4229,3 +4229,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T17:50:29Z or-fix-2-20261124T175029 or-fix-2: fixed #10182 (flows.md openregister.code doc, head 0deb4996) and #10532 (main conflict ObjectEntity, head 29152a80); #10982/#11032 BLOCK await product decisions on PR; #11042 REVERIFY awaits review; rest clean; precheck idle step not run: gitleaks install refused by permission check
 2026-11-24T17:50:41Z integrator-20261124T145419-19cd7a29 MERGED-TREE f8d8da181c: 1 PRs, main now f22f5cae4b = tested tree
+2026-11-24T17:52:07Z session-20261124T172139-3e0772ee learniq builder: merged nextcloud-vue #2307 (CnQuietHours, after main merged in; jest 2936/22030 green, lint/build/checks green); learniq raises nc-vue once released
