@@ -4212,6 +4212,7 @@ BackgroundJob/ExpiredObjectSweepJob.php,,BackgroundJob,,,,,Compliance
 Command/ExpirySweepCommand.php,,Command,,,,,Compliance
 Listener/RecordTypeAuditListener.php,,Listener,,,,,Compliance
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Migration/Version1Date20261121170017.php,,Migration,,,,,Compliance
 Service/Object/DeclaredErrorMessage.php,,Service,,,,,Core
 Service/Schemas/ErrorMessagesDeclaration.php,,Service,,,,,Core
 Db/SchemaMapper/IdentityDeclarationCheck.php,,Db,,,,,Core
