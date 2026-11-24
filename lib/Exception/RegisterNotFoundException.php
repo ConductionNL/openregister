@@ -28,6 +28,8 @@ use Exception;
  * doesn't have permission to access. Used for error handling in register operations.
  * Uses HTTP 404 Not Found status code.
  *
+ * @spec openspec/specs/data-import-export/spec.md
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *

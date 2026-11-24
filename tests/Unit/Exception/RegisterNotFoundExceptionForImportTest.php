@@ -38,12 +38,12 @@ class RegisterNotFoundExceptionForImportTest extends TestCase {
 		$refusal = RegisterNotFoundException::forImport(registerSlugOrId: 'orders');
 
 		$this->assertSame(
-			"Register not found: 'orders' " . RegisterNotFoundException::IMPORT_REMEDIES,
-			$refusal->getMessage()
+			expected: "Register not found: 'orders' " . RegisterNotFoundException::IMPORT_REMEDIES,
+			actual: $refusal->getMessage()
 		);
-		$this->assertStringContainsString('Create the register first', $refusal->getMessage());
-		$this->assertStringContainsString('full register bundle', $refusal->getMessage());
-		$this->assertSame(404, $refusal->getCode());
+		$this->assertStringContainsString(needle: 'Create the register first', haystack: $refusal->getMessage());
+		$this->assertStringContainsString(needle: 'full register bundle', haystack: $refusal->getMessage());
+		$this->assertSame(expected: 404, actual: $refusal->getCode());
 	}//end testForImportNamesTheRegisterAndBothRemedies()
 
 	/**
@@ -54,7 +54,7 @@ class RegisterNotFoundExceptionForImportTest extends TestCase {
 	public function testThePlainConstructorKeepsItsMessage(): void {
 		$refusal = new RegisterNotFoundException(registerSlugOrId: 'orders');
 
-		$this->assertSame("Register not found: 'orders'", $refusal->getMessage());
-		$this->assertSame(404, $refusal->getCode());
+		$this->assertSame(expected: "Register not found: 'orders'", actual: $refusal->getMessage());
+		$this->assertSame(expected: 404, actual: $refusal->getCode());
 	}//end testThePlainConstructorKeepsItsMessage()
 }//end class
