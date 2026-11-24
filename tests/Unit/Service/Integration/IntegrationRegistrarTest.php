@@ -93,6 +93,7 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Schema\SchemaMigrationService',
 				'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
 				'OCA\OpenRegister\Contract\EmailLinkReaderInterface',
+				'OCA\OpenRegister\Contract\ReplyThreadResolutionInterface',
 				'OCA\OpenRegister\Service\Credential\CredentialStore',
 				'OCA\OpenRegister\Service\Sync\SourceFetcherRegistry',
 				'OCA\OpenRegister\Controller\IntegrationsController',
