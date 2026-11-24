@@ -462,3 +462,4 @@
 2026-11-24T22:47:03Z help-dossiq-4 skipped beschikking-chain-on-the-case 1.1-2.2, woo-case-screens-and-objections 1.1: board-bound (decision 162), identity.conduction.nl unreachable
 2026-11-24T22:47:03Z help-dossiq-4 skipped woo-request-takes-over-from-opencatalogi 6.1: portaliq delivers Woo forms to opencatalogi only (decision-179 architect change), and branch cloud/b-dossiq-woo-takeover-e2e-tick exists
 2026-11-24T22:47:03Z help-dossiq-4 idle: rescan of development matches help-dossiq-2 (22:27Z); unstarted changes hold only live/:8080, next-release, Mail-release, access-control decisions (admin-data-access 1.2/1.3) or archive-time checks (hermiq-ai-tooling 4.x behind live 5.x); everything else has a branch or lease
+2026-11-24T22:49Z help-opencatalogi-1 built dependency openregister#11094 (FileAddedEvent from the files API, left for the OR integrator) for opencatalogi publications-name-their-responsible-organisation 2.2d
