@@ -426,3 +426,4 @@
 2026-11-24T22:11:28Z help-dossiq-3 skipped portaliq supplier-portal T10/T13/T14: eHerkenning auth edge + security review (security)
 2026-11-24T22:11:28Z help-dossiq-3 skipped portaliq docusaurus-plugin-portaliq: needs a new repository
 2026-11-24T22:11:28Z help-dossiq-3 portaliq: every other unstarted change has only live/coordinator checks left
+2026-11-24T22:17Z stackiq: merged #2182 (29 more e2e Test tasks ticked as written, runs in nightly; decision record scenario un-fixmed via the sub-objects editor) and #2183 (archived contracts-expiry-and-owner, landscape-dependent-field-options, landscape-migrate-from-previous-catalogue with specs synced); development 80a51e70; run continues
