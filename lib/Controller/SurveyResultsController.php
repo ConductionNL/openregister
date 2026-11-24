@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Export\SpreadsheetCell;
+use OCA\OpenRegister\Kernel\Contracts\CsvCell;
 use OCA\OpenRegister\Service\Survey\SurveyAnswerTable;
 use OCA\OpenRegister\Service\Survey\SurveyResults;
 use OCA\OpenRegister\Service\Survey\SurveyResultsWithheldException;
@@ -164,14 +164,14 @@ class SurveyResultsController extends Controller {
 	 */
 	private static function csvOf(SurveyAnswerTable $table): string {
 		$handle = fopen('php://temp', 'r+');
-		fputcsv($handle, SpreadsheetCell::csvRow(row: $table->columns), ',', '"', '');
+		fputcsv($handle, CsvCell::row(row: $table->columns), ',', '"', '');
 		foreach ($table->rows as $row) {
 			$line = [];
 			foreach ($table->columns as $key) {
 				$line[] = self::cell(value: ($row[$key] ?? null));
 			}
 
-			fputcsv($handle, SpreadsheetCell::csvRow(row: $line), ',', '"', '');
+			fputcsv($handle, CsvCell::row(row: $line), ',', '"', '');
 		}
 
 		rewind($handle);

@@ -33,7 +33,7 @@ use PHPUnit\Framework\TestCase;
  * Who gets what from a survey's results and export routes.
  *
  * @covers \OCA\OpenRegister\Controller\SurveyResultsController
- * @uses   \OCA\OpenRegister\Service\Export\SpreadsheetCell
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\CsvCell
  */
 class SurveyResultsControllerTest extends TestCase {
 
