@@ -80,6 +80,8 @@ use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
@@ -177,6 +179,8 @@ final class FlowWiring {
 		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
 		FlowRunSignalInterface::class => FlowRunSignalService::class,
 		LockObjectNodeInterface::class => LockObjectNode::class,
+		CodeNodeInterface::class => CodeNode::class,
+		CodeRunnerClientInterface::class => CodeRunnerClient::class,
 		TagObjectNodeInterface::class => TagObjectNode::class,
 		AuditTrailNodeInterface::class => AuditTrailNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
