@@ -184,6 +184,35 @@ class ShippedSchemaBaselineTest extends TestCase {
 		);
 	}//end testAPendingBaselineIsRecordedForTheApp()
 
+	public function testAGuardedUpgradeRecordsItsConflictsBesideTheBaseline(): void {
+		$conflicts = [['path' => 'properties.title.type', 'shipped' => 'string', 'live' => 'text']];
+		$this->guard->method('guardUpgrade')->willReturn(['guarded' => true, 'baseline' => ['required' => []], 'definition' => ['required' => []], 'conflicts' => $conflicts]);
+		$this->guard->expects($this->once())->method('recordShippedSchema');
+		$this->guard->expects($this->once())->method('recordShippedConflicts')->with(
+			'case',
+			$this->callback(
+				static fn (ShippedDefinition $shipped): bool => $shipped->definition === ['conflicts' => $conflicts]
+					&& $shipped->app === 'dossiq' && $shipped->appVersion === '2.1.0'
+			)
+		);
+		$baseline = new ShippedSchemaBaseline($this->guard, $this->logger);
+
+		$pending = $baseline->resolve(new ImportedSchemaUpdate(['slug' => 'case', 'required' => []], $this->existing()), $this->app());
+		$baseline->recordPending($pending, $this->app());
+
+		$this->assertSame($conflicts, $pending->conflicts);
+	}//end testAGuardedUpgradeRecordsItsConflictsBesideTheBaseline()
+
+	public function testAnUnguardedPendingBaselineRecordsNoConflicts(): void {
+		$this->guard->expects($this->once())->method('recordShippedSchema');
+		$this->guard->expects($this->never())->method('recordShippedConflicts');
+
+		(new ShippedSchemaBaseline($this->guard, $this->logger))->recordPending(
+			new PendingSchemaBaseline(data: [], baseline: ['required' => []], slug: 'case'),
+			$this->app()
+		);
+	}//end testAnUnguardedPendingBaselineRecordsNoConflicts()
+
 	public function testNoBaselineRecordsNothing(): void {
 		$this->guard->expects($this->never())->method('recordShippedSchema');
 
