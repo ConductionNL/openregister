@@ -108,6 +108,46 @@ class ReadHistoryServiceTest extends TestCase {
 	}//end testAnAuditedReadWritesOneReadRow()
 
 	/**
+	 * A second read of the same object and version in one request returns the row already written.
+	 *
+	 * @return void
+	 */
+	public function testASecondReadOfTheSameObjectWritesNoSecondRow(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('11111111-1111-4111-8111-111111111111');
+		$object->setVersion('1.0.0');
+		$row = new AuditTrail();
+		$this->auditTrails->expects($this->once())->method('createAuditTrail')->willReturn($row);
+
+		$service = $this->service();
+		$this->assertSame($row, $service->registerAuditRead(object: $object));
+		$this->assertSame($row, $service->registerAuditRead(object: clone $object));
+	}//end testASecondReadOfTheSameObjectWritesNoSecondRow()
+
+	/**
+	 * A new version, another object, or an object without a uuid is a read of its own.
+	 *
+	 * @return void
+	 */
+	public function testAnotherVersionOrObjectWritesItsOwnRow(): void {
+		$first = new ObjectEntity();
+		$first->setUuid('11111111-1111-4111-8111-111111111111');
+		$first->setVersion('1.0.0');
+		$changed = clone $first;
+		$changed->setVersion('1.0.1');
+		$other = new ObjectEntity();
+		$other->setUuid('22222222-2222-4222-8222-222222222222');
+		$this->auditTrails->expects($this->exactly(5))->method('createAuditTrail')->willReturnCallback(fn () => new AuditTrail());
+
+		$service = $this->service();
+		$service->registerAuditRead(object: $first);
+		$service->registerAuditRead(object: $changed);
+		$service->registerAuditRead(object: $other);
+		$service->registerAuditRead(object: new ObjectEntity());
+		$service->registerAuditRead(object: new ObjectEntity());
+	}//end testAnotherVersionOrObjectWritesItsOwnRow()
+
+	/**
 	 * A `_audit: false` load writes nothing.
 	 *
 	 * @return void

@@ -111,6 +111,13 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 	 * @param ContainerInterface $container   Resolves the processing log lazily.
 	 * @param LoggerInterface    $logger      Logger.
 	 */
+	/**
+	 * The read rows written in this request, by object uuid and version.
+	 *
+	 * @var array<string, AuditTrail>
+	 */
+	private array $auditedReads = [];
+
 	public function __construct(
 		private readonly AuditTrailMapperInterface $auditTrails,
 		private readonly SettingsServiceInterface $settings,
@@ -148,6 +155,11 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 	 * audit trail is a legal record and its failure must stay visible, exactly
 	 * as it was when `GetObject` wrote the row itself.
 	 *
+	 * One request reads the same object once: a later read of the same uuid
+	 * and version in this request returns the row already written instead of
+	 * writing another. A service that loads a case type eight times while
+	 * answering one page wrote eight rows, each an insert on the audit table.
+	 *
 	 * @param ObjectEntity $object The object that was read.
 	 * @param bool         $audit  False for an internal load that must not be audited.
 	 *
@@ -162,9 +174,38 @@ class ReadHistoryService implements ReadHistoryInterface, ProcessingReadsInterfa
 			return null;
 		}
 
-		return $this->auditTrails->createAuditTrail(old: null, new: $object, action: self::READ_ACTION);
+		$key = self::readKey(object: $object);
+		if ($key !== null && isset($this->auditedReads[$key]) === true) {
+			return $this->auditedReads[$key];
+		}
+
+		$row = $this->auditTrails->createAuditTrail(old: null, new: $object, action: self::READ_ACTION);
+		if ($key !== null && $row instanceof AuditTrail) {
+			$this->auditedReads[$key] = $row;
+		}
+
+		return $row;
 
 	}//end registerAuditRead()
+
+	/**
+	 * The key one read of an object is known by in this request: its uuid and version.
+	 *
+	 * @param ObjectEntity $object The object that was read.
+	 *
+	 * @return string|null The key, or null for an object without a uuid (never deduplicated).
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-every-user-facing-read-of-an-object-is-logged-as-a-read
+	 */
+	private static function readKey(ObjectEntity $object): ?string {
+		$uuid = (string)($object->getUuid() ?? '');
+		if ($uuid === '') {
+			return null;
+		}
+
+		return $uuid.'|'.(string)($object->getVersion() ?? '');
+
+	}//end readKey()
 
 	/**
 	 * Register a read of an object on the AVG processing log.
