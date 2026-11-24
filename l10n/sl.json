@@ -3354,7 +3354,9 @@
         "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" vam je dodeljen",
         "Audit trail export ready": "Izvoz revizijske sledi je pripravljen",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Vaš izvoz revizijske sledi s %1$s vnosi je shranjen v %2$s%3$s.",
-        "Open Files": "Odpri Datoteke"
+        "Open Files": "Odpri Datoteke",
+        "Its ancestor %1$s has appraisal %2$s": "Njegov prednik %1$s ima oceno %2$s",
+        "Its ancestor %s could not be read": "Njegovega prednika %s ni bilo mogoče prebrati"
     },
     "pluralForm": "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);",
     "plurals": {

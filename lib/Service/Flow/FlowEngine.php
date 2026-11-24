@@ -472,19 +472,98 @@ class FlowEngine {
 			$produced = $pass->dispatcher->dispatch(step: $hop->step, items: $hop->itemsIn, context: $pass->context);
 			$pass->items = FlowItems::normalise(value: $produced);
 			$pass->log[] = $hop->completedEntry();
+			$this->forgetAttempts(hop: $hop);
 		} catch (FlowStop $stop) {
 			return $hop->stopped(stop: $stop);
 		} catch (FlowSuspension $suspension) {
 			return $hop->suspended(suspension: $suspension);
 		} catch (Throwable $e) {
-			$pass->log[] = $hop->failedEntry(error: $e);
-			return $this->outcomeForFailedStep(hop: $hop, error: $e);
+			return $this->failedSingleHop(hop: $hop, error: $e);
 		} finally {
 			$this->services->runContext?->pop();
 		}//end try
 
 		return null;
 	}//end dispatchSingleHop()
+
+	/**
+	 * A failed step on the single-stream walk: retry it later, branch its items, or apply its policy.
+	 *
+	 * A retry suspends the run on this transition, so the walk resumes on the
+	 * same step with the same items once the delay has passed. A branch hands
+	 * the failed items to the `error` output and returns null, so the caller
+	 * advances the token as for a completed step.
+	 *
+	 * @param FlowWalkHop $hop   The failed hop.
+	 * @param Throwable   $error The failure.
+	 *
+	 * @return array|null The run result when the hop ends or suspends the run, null to walk on.
+	 *
+	 * @spec openspec/changes/flow-error-branch-and-step-retry/specs/flow-engine/spec.md
+	 */
+	private function failedSingleHop(FlowWalkHop $hop, Throwable $error): array|null {
+		$pass = $hop->pass;
+		$failure = FlowStepFailure::of(hop: $hop, error: $error, state: $this->attemptState(hop: $hop));
+		$pass->log[] = $failure->entry;
+		if ($failure->outcome === FlowStepFailure::RETRYING && $failure->suspension !== null) {
+			return $hop->suspended(suspension: $failure->suspension);
+		}
+
+		if ($failure->outcome === FlowStepFailure::BRANCHED) {
+			$this->logStepFailure(hop: $hop, error: $error);
+			$pass->items = FlowItems::normalise(value: $failure->items);
+			return null;
+		}
+
+		return $this->outcomeForFailedStep(hop: $hop, error: $error);
+	}//end failedSingleHop()
+
+	/**
+	 * The resume state a retry's attempts are counted on.
+	 *
+	 * The run service hands every walk the object. A single-stream walk
+	 * started without one gets one when the failed step declares `retry`, so
+	 * its count still travels with the context it returns; a step without
+	 * `retry` leaves the context as it was. A stream walk's context is fixed,
+	 * so without the object it cannot remember a retry and makes none.
+	 *
+	 * @param FlowWalkHop|FlowStreamHop $hop The failed hop.
+	 *
+	 * @return FlowResumeState|null The state, or null when none is kept.
+	 *
+	 * @spec openspec/changes/flow-error-branch-and-step-retry/specs/flow-engine/spec.md
+	 */
+	private function attemptState(FlowWalkHop|FlowStreamHop $hop): ?FlowResumeState {
+		$pass = $hop->pass;
+		$state = ($pass->context[FlowResumeState::CONTEXT_KEY] ?? null);
+		if ($state instanceof FlowResumeState) {
+			return $state;
+		}
+
+		if ($pass instanceof FlowWalkPass && FlowStepRetry::for(step: $hop->step) !== null) {
+			$state = FlowResumeState::fromArray(stored: $state);
+			$pass->context[FlowResumeState::CONTEXT_KEY] = $state;
+			return $state;
+		}
+
+		return null;
+	}//end attemptState()
+
+	/**
+	 * Forget a step's failed attempts once it has completed.
+	 *
+	 * @param FlowWalkHop|FlowStreamHop $hop The completed hop.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-error-branch-and-step-retry/specs/flow-engine/spec.md
+	 */
+	private function forgetAttempts(FlowWalkHop|FlowStreamHop $hop): void {
+		$state = ($hop->pass->context[FlowResumeState::CONTEXT_KEY] ?? null);
+		if ($state instanceof FlowResumeState) {
+			FlowStepAttempts::clear(state: $state, step: $hop->name());
+		}
+	}//end forgetAttempts()
 
 	/**
 	 * Move the token and the items past a fired hop.
@@ -665,6 +744,7 @@ class FlowEngine {
 			$produced = $pass->dispatcher->dispatch(step: $hop->step, items: $hop->itemsIn, context: $pass->context);
 			$pass->items = FlowItems::normalise(value: $produced);
 			$entry = $hop->completedEntry();
+			$this->forgetAttempts(hop: $hop);
 		} catch (FlowStop $stop) {
 			return $hop->stopped(stop: $stop);
 		} catch (FlowSuspension $suspension) {
@@ -684,9 +764,11 @@ class FlowEngine {
 	/**
 	 * Apply a failed step's `onError` policy on its stream.
 	 *
-	 * Under `continue` the marking advances (leaving the token would spin this
-	 * transition forever), recorded as a firing whose step failed. Any other
-	 * policy ends the run.
+	 * A step with tries left parks its stream until the retry is due. Under
+	 * `branch` the failed items fire down the `error` output. Under `continue`
+	 * the marking advances (leaving the token would spin this transition
+	 * forever), recorded as a firing whose step failed. Any other policy ends
+	 * the run.
 	 *
 	 * @param FlowStreamHop $hop   The failed hop.
 	 * @param Throwable     $error The failure.
@@ -696,9 +778,20 @@ class FlowEngine {
 	 * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
 	 */
 	private function failOnStream(FlowStreamHop $hop, Throwable $error): ?array {
-		$entry = $hop->failedEntry(error: $error);
+		$failure = FlowStepFailure::of(hop: $hop, error: $error, state: $this->attemptState(hop: $hop));
+		$entry = $failure->entry;
+		if ($failure->outcome === FlowStepFailure::RETRYING && $failure->suspension !== null) {
+			$hop->pass->log[] = $hop->onStream(entry: $entry);
+			$hop->parked(suspension: $failure->suspension);
+			return null;
+		}
 
 		$policy = $this->logStepFailure(hop: $hop, error: $error);
+		if ($failure->outcome === FlowStepFailure::BRANCHED) {
+			$hop->pass->items = FlowItems::normalise(value: $failure->items);
+			$this->fireOnStream(hop: $hop, entry: $entry);
+			return null;
+		}
 
 		if ($policy === self::ON_ERROR_CONTINUE) {
 			$this->fireOnStream(hop: $hop, entry: $entry);

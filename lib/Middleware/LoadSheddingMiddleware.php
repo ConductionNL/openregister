@@ -34,6 +34,7 @@ use Exception;
 use OCA\OpenRegister\Service\Oas\ProblemDescription;
 use OCA\OpenRegister\Service\Oas\ProblemDetailsBuilderInterface;
 use OCA\OpenRegister\Service\Oas\ProblemStatement;
+use OCA\OpenRegister\Service\Resilience\DatabasePressureMeter;
 use OCA\OpenRegister\Service\Resilience\DependencyUnavailableException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -43,7 +44,8 @@ use OCP\AppFramework\Middleware;
 use Psr\Log\LoggerInterface;
 
 /**
- * Translates an open breaker's refusal into the 503 contract.
+ * Translates an open breaker's refusal into the 503 contract, and sheds the
+ * heavy routes while the database is under pressure (design D-4, D-5).
  *
  * @package OCA\OpenRegister\Middleware
  *
@@ -52,21 +54,94 @@ use Psr\Log\LoggerInterface;
 class LoadSheddingMiddleware extends Middleware {
 
 	/**
+	 * The `Retry-After` of a pressure refusal, in seconds.
+	 */
+	public const PRESSURE_RETRY_AFTER = 30;
+
+	/**
+	 * When the controller method started, from microtime(); null before it starts or after a refusal.
+	 *
+	 * @var float|null
+	 */
+	private ?float $startedAt = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ProblemDetailsBuilderInterface $problems The RFC 7807 response shape builder.
 	 * @param LoggerInterface                $logger   The app logger.
+	 * @param DatabasePressureMeter|null     $pressure The database-pressure meter; null sheds nothing.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ProblemDetailsBuilderInterface $problems,
 		private readonly LoggerInterface $logger,
+		private readonly ?DatabasePressureMeter $pressure = null,
 	) {
 	}//end __construct()
 
 	/**
-	 * Map a DependencyUnavailableException onto the 503 contract; rethrow anything else.
+	 * Refuse a #[Sheddable] method while the database is under pressure; stamp the start of any other.
+	 *
+	 * @param Controller $controller The controller about to run.
+	 * @param string     $methodName The controller method about to run.
+	 *
+	 * @return void
+	 *
+	 * @throws DependencyUnavailableException A sheddable method while the database is under pressure.
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	public function beforeController(Controller $controller, string $methodName): void {
+		$this->startedAt = null;
+		if ($this->pressure === null) {
+			return;
+		}
+
+		if ($this->pressure->sheds(controller: $controller, methodName: $methodName) === true) {
+			throw new DependencyUnavailableException(key: 'database', retryAfter: self::PRESSURE_RETRY_AFTER);
+		}
+
+		$this->startedAt = microtime(true);
+	}//end beforeController()
+
+	/**
+	 * Count a finished request on the pressure meter.
+	 *
+	 * @param Controller $controller The controller that ran.
+	 * @param string     $methodName The controller method that ran.
+	 * @param Response   $response   Its response.
+	 *
+	 * @return Response The response, unchanged.
+	 *
+	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+	 */
+	public function afterController(Controller $controller, string $methodName, Response $response): Response {
+		$this->recordRequest(error: null);
+		return $response;
+	}//end afterController()
+
+	/**
+	 * Count the request that started in beforeController(), once.
+	 *
+	 * @param Exception|null $error What it ended in, if it did not end in a response.
+	 *
+	 * @return void
+	 */
+	private function recordRequest(?Exception $error): void {
+		if ($this->pressure === null || $this->startedAt === null) {
+			return;
+		}
+
+		$seconds         = (microtime(true) - $this->startedAt);
+		$this->startedAt = null;
+		$this->pressure->recordOutcome(seconds: $seconds, error: $error);
+	}//end recordRequest()
+
+
+	/**
+	 * Count the request, then map a DependencyUnavailableException onto the 503 contract; rethrow anything else.
 	 *
 	 * @param Controller $controller The controller that was executing.
 	 * @param string     $methodName The controller method that was executing.
@@ -79,6 +154,8 @@ class LoadSheddingMiddleware extends Middleware {
 	 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
 	 */
 	public function afterException(Controller $controller, string $methodName, Exception $exception): Response {
+		$this->recordRequest(error: $exception);
+
 		if ($exception instanceof DependencyUnavailableException === false) {
 			throw $exception;
 		}

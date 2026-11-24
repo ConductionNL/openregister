@@ -30,11 +30,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Service\SearchMeasurement;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
 use OCA\OpenRegister\Support\FilterParams;
@@ -123,6 +125,7 @@ class SearchQueryHandler {
 	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
 	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid to its id.
 	 * @param ReadHistoryInterface|null $readHistory The read history behind the `_recent` lens.
+	 * @param RegisterMapperInterface|null $registerMapper Scopes a schema slug to the searched register.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -148,6 +151,11 @@ class SearchQueryHandler {
 		// same reason; absent, the lens answers an empty page that says the
 		// history could not be read, never the whole register.
 		private readonly ?ReadHistoryInterface $readHistory = null,
+		// The register reader that scopes a schema slug to the searched
+		// register's own schemas (register-scoped-schema-slug-resolution).
+		// Nullable and last for the same reason; absent, a slug resolves
+		// globally, as before.
+		private readonly ?RegisterMapperInterface $registerMapper = null,
 	) {
 	}//end __construct()
 
@@ -172,26 +180,36 @@ class SearchQueryHandler {
 	 * the object-source Source lookup, openregister#2089).
 	 *
 	 * @param int|string|array|null $schema The schema id/slug (single value only).
+	 * @param int|string|array|null $register The searched register; a schema slug resolves among its schemas first.
 	 *
 	 * @return bool True when the schema declares an x-openregister-object-source.
 	 */
-	private function schemaHasObjectSource(int|string|array|null $schema): bool {
+	private function schemaHasObjectSource(int|string|array|null $schema, int|string|array|null $register = null): bool {
 		if ($schema === null || is_array($schema) === true) {
 			return false;
 		}
 
-		return ($this->schemaOrNull(reference: $schema)?->getObjectSource() !== null);
+		return ($this->schemaOrNull(reference: $schema, register: $register)?->getObjectSource() !== null);
 	}//end schemaHasObjectSource()
 
 	/**
 	 * Read one schema, answering null when it cannot be read.
 	 *
 	 * @param mixed $reference The schema reference, as a schema list may hold it.
+	 * @param int|string|array|null $register The searched register; a slug resolves among its schemas first.
 	 *
 	 * @return Schema|null The schema.
 	 */
-	private function schemaOrNull(mixed $reference): ?Schema {
+	private function schemaOrNull(mixed $reference, int|string|array|null $register = null): ?Schema {
 		try {
+			if ((is_int($reference) === true || is_string($reference) === true) && is_array($register) === false) {
+				// A slug resolves among the searched register's own schemas
+				// first, so a same-slug schema of another register never
+				// decides how this search's parameters are parsed.
+				return (new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper))
+					->find(schemaRef: $reference, register: $register, _rbac: false, _multitenancy: false);
+			}
+
 			return $this->schemaMapper->find(id: $reference, _rbac: false, _multitenancy: false);
 		} catch (\Throwable $e) {
 			return null;
@@ -211,14 +229,15 @@ class SearchQueryHandler {
 	 * bypasses RBAC and multitenancy. The data read stays checked downstream.
 	 *
 	 * @param int|string|array|null $schema The schema id/slug, or a list of them.
+	 * @param int|string|array|null $register The searched register; a schema slug resolves among its schemas first.
 	 *
 	 * @return bool True when a target schema declares a `filter` property.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-both-filter-spellings-mean-the-same-filter-on-object-search-and-the-aggregations
 	 */
-	private function schemaDeclaresFilterProperty(int|string|array|null $schema): bool {
+	private function schemaDeclaresFilterProperty(int|string|array|null $schema, int|string|array|null $register = null): bool {
 		foreach ((array)$schema as $schemaRef) {
-			$properties = ($this->schemaOrNull(reference: $schemaRef)?->getProperties() ?? []);
+			$properties = ($this->schemaOrNull(reference: $schemaRef, register: $register)?->getProperties() ?? []);
 			if (array_key_exists(FilterParams::FILTER_KEY, $properties) === true) {
 				return true;
 			}
@@ -251,7 +270,7 @@ class SearchQueryHandler {
 		int|string|array|null $schema = null,
 		?array $ids = null,
 	): array {
-		$params = $this->searchableParams(requestParams: $requestParams, schema: $schema);
+		$params = $this->searchableParams(requestParams: $requestParams, schema: $schema, register: $register);
 		$scope = (new SearchScopeFilters(resolver: $this->referenceResolver))->forScope(register: $register, schema: $schema);
 		$parts = $this->splitSearchParams(params: $params, self: $scope);
 		$query = array_merge(['@self' => $parts->self], $this->expandedFilters(filters: $parts->objectFilters, schema: $schema));
@@ -277,14 +296,16 @@ class SearchQueryHandler {
 	 *
 	 * @param array                 $requestParams The request parameters.
 	 * @param int|string|array|null $schema        The schema, or schemas, searched.
+	 * @param int|string|array|null $register The searched register; a schema slug resolves among its schemas first.
 	 *
 	 * @return array The parameters.
 	 */
-	private function searchableParams(array $requestParams, int|string|array|null $schema): array {
+	private function searchableParams(array $requestParams, int|string|array|null $schema, int|string|array|null $register = null): array {
 		return $this->filterableParams(
 			params: $this->liftBracketFilterUnlessDeclared(
-				params: $this->restoreDottedParams(requestParams: $requestParams, schema: $schema),
-				schema: $schema
+				params: $this->restoreDottedParams(requestParams: $requestParams, schema: $schema, register: $register),
+				schema: $schema,
+				register: $register
 			)
 		);
 	}//end searchableParams()
@@ -319,13 +340,14 @@ class SearchQueryHandler {
 	 *
 	 * @param array                 $requestParams The request parameters.
 	 * @param int|string|array|null $schema        The schema reference of the search.
+	 * @param int|string|array|null $register The searched register; a schema slug resolves among its schemas first.
 	 *
 	 * @return array<string, mixed> The parameters with nested paths rebuilt.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function restoreDottedParams(array $requestParams, int|string|array|null $schema): array {
-		$keepsUnderscores = $this->schemaHasObjectSource(schema: $schema);
+	private function restoreDottedParams(array $requestParams, int|string|array|null $schema, int|string|array|null $register = null): array {
+		$keepsUnderscores = $this->schemaHasObjectSource(schema: $schema, register: $register);
 
 		$tree = new DottedParamTree();
 		foreach ($requestParams as $key => $value) {
@@ -363,14 +385,15 @@ class SearchQueryHandler {
 	 *
 	 * @param array<string, mixed>  $params The parameters.
 	 * @param int|string|array|null $schema The schema reference of the search.
+	 * @param int|string|array|null $register The searched register; a schema slug resolves among its schemas first.
 	 *
 	 * @return array<string, mixed> The parameters.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
-	private function liftBracketFilterUnlessDeclared(array $params, int|string|array|null $schema): array {
+	private function liftBracketFilterUnlessDeclared(array $params, int|string|array|null $schema, int|string|array|null $register = null): array {
 		if (is_array($params[FilterParams::FILTER_KEY] ?? null) === true
-			&& $this->schemaDeclaresFilterProperty(schema: $schema) === false
+			&& $this->schemaDeclaresFilterProperty(schema: $schema, register: $register) === false
 		) {
 			return FilterParams::liftBracketFilter(params: $params);
 		}
