@@ -20,6 +20,8 @@ use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCA\OpenRegister\Event\ObjectWriteRequestEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
@@ -299,9 +301,9 @@ class ObjectsControllerTest extends TestCase {
 		);
 		$this->schemaMapper->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			static fn ($schema, string $action) => ($action === 'update' && $mayUpdate) || ($action === 'delete' && $mayDelete)
-		);
+		));
 		$this->container->method('get')->willReturnCallback(
 			static fn (string $id) => $id === \OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class ? $permissions : null
 		);
@@ -5381,7 +5383,7 @@ class ObjectsControllerTest extends TestCase {
 			)
 		)->willReturn(['moved' => $moved]);
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
-		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(
+		$permissions->expects($this->exactly(2))->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($schemas, $object): bool {
 				$this->assertSame(
 					$args[1] === 'update' ? [$schemas['b'], $object] : [$schemas['s'], null],
@@ -5389,7 +5391,7 @@ class ObjectsControllerTest extends TestCase {
 				);
 				return true;
 			}
-		);
+		));
 		$this->moveServices(mover: $mover, permissions: $permissions);
 
 		$result = $this->controller->move('a', 'b', 'uuid-123');
