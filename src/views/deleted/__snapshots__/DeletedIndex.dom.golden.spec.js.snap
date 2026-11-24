@@ -24,7 +24,7 @@ exports[`DeletedIndex table shows every deleted item with its window and menu 1`
         "admin",
         "2026:12:01 10:05",
         "n:23:%n days left",
-        "t:Restoret:Permanently Delete",
+        "t:Restoret:Permanently Deletet:Restore with related records",
       ],
       [
         "",
@@ -35,7 +35,7 @@ exports[`DeletedIndex table shows every deleted item with its window and menu 1`
         "t:Unknown",
         "2026:11:08 00:00",
         "t:Destroyable now",
-        "t:Restoret:Permanently Delete",
+        "t:Restoret:Permanently Deletet:Restore with related records",
       ],
       [
         "",
@@ -46,7 +46,7 @@ exports[`DeletedIndex table shows every deleted item with its window and menu 1`
         "t:Unknown",
         "t:No purge date set",
         "t:Unknown",
-        "t:Restoret:Permanently Delete",
+        "t:Restoret:Permanently Deletet:Restore with related records",
       ],
     ],
   },

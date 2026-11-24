@@ -395,14 +395,14 @@ export default {
 					run: () => this.restoreItem(item),
 				},
 				{
-					label: t('openregister', 'Restore with related records'),
-					icon: RestoreAlert,
-					run: () => this.restoreWithRelated(item),
-				},
-				{
 					label: t('openregister', 'Permanently Delete'),
 					icon: Delete,
 					run: () => this.permanentlyDelete(item),
+				},
+				{
+					label: t('openregister', 'Restore with related records'),
+					icon: RestoreAlert,
+					run: () => this.restoreWithRelated(item),
 				},
 			]
 		},

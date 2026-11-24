@@ -13,7 +13,7 @@
 
 ## 3. Page, tests and docs
 
-- [ ] 3.1 "Restore with related records" and the preview dialog in `src/dialogs/` from `DeletedIndex.vue`, store call in `deleted.js`, texts in en and nl. Verify: component test for the dialog.
+- [x] 3.1 "Restore with related records" and the preview dialog in `src/dialogs/` from `DeletedIndex.vue`, store call in `deleted.js`, texts in en and nl. Verify: component test for the dialog.
 - [ ] 3.2 Add `tests/e2e/ci/restore-with-cascade.spec.ts`: delete a lead with two cascading activities and one set-null reference, edit a second survivor, preview, restore, and assert the activities are back, the reference is back and the edited survivor is untouched.
 - [ ] 3.3 Document restore with related records in `docs/features/`, with a screenshot of the preview.
 
