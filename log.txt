@@ -4106,3 +4106,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T15:32:41Z session-20261124T153241-3665a354 builder opencatalogi: merged #2941 (archived api-says-what-it-filtered with specs synced; decided D10 strike row 13.26, REQ-ASF-003 removed; local green same as development efaad284b)
 2026-11-24T15:32:47Z integrator-20261124T145419-19cd7a29 MERGED-TREE 9b2d84f694: 1 PRs, main now 68b89c9394 = tested tree
+2026-11-24T15:34:11Z session-20261124T153411-2f5cae49 or-fix-5 start: targets #10515 (conflict), #10535 (conflict)
