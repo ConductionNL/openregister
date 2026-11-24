@@ -27,12 +27,14 @@ namespace OCA\OpenRegister\Search\Service;
 
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Search\Db\View;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -66,6 +68,8 @@ class ViewService {
 	 * @param ViewMapperInterface $viewMapper View mapper for database operations
 	 * @param LoggerInterface $logger Logger for error tracking
 	 * @param SchemaMapperInterface $schemaMapper Schema mapper for presentation field validation
+	 * @param RegisterMapperInterface|null $registerMapper Reads the view's register, so its schema slug resolves
+	 *                                     inside it; last and nullable so no construction site shifts
 	 *
 	 * @return void
 	 */
@@ -73,6 +77,7 @@ class ViewService {
 		private readonly ViewMapperInterface $viewMapper,
 		private readonly LoggerInterface $logger,
 		private readonly SchemaMapperInterface $schemaMapper,
+		private readonly ?RegisterMapperInterface $registerMapper = null,
 	) {
 	}//end __construct()
 
@@ -686,7 +691,10 @@ class ViewService {
 		}
 
 		try {
-			return $this->schemaMapper->find($schemaRef);
+			// The view's own register first: a slug two registers share names
+			// the schema of the register this view queries.
+			return (new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper))
+				->find(schemaRef: $schemaRef, register: $check->registerRef());
 		} catch (Exception $e) {
 			throw new InvalidArgumentException(
 				'Cannot validate ' . $label . ': schema "' . $schemaRef . '" could not be resolved',

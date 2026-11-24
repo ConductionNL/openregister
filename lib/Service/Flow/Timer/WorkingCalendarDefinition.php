@@ -134,6 +134,46 @@ final class WorkingCalendarDefinition {
 	}//end __construct()
 
 	/**
+	 * This definition with a person's working days laid over it.
+	 *
+	 * The replaced weekdays and hours are validated like any definition. The
+	 * absences are added after validation, as non-working days beside the
+	 * calendar's own: a person's days off are enumerated by nature, and the
+	 * guard against a calendar of enumerated dates only protects the
+	 * administered calendar, which this copy is not and is never stored as.
+	 * A closure day keeps its own name.
+	 *
+	 * @param array<int, int>|null                          $weekdays The person's working weekdays, or null to keep the calendar's.
+	 * @param float|null                                    $hours    The person's hours per working day, or null to keep the calendar's.
+	 * @param array<int, array{date: string, name: string}> $absences The person's days off.
+	 *
+	 * @return self The overlaid copy.
+	 *
+	 * @throws FlowTimerValidationException When the replaced weekdays or hours are refused.
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-persons-working-pattern-is-read-from-the-app-that-owns-it-req-wca-006
+	 */
+	public function withPersonalDays(?array $weekdays, ?float $hours, array $absences): self {
+		$raw = $this->raw;
+		if ($weekdays !== null) {
+			$raw['workingWeekdays'] = $weekdays;
+		}
+
+		if ($hours !== null) {
+			$raw['hoursPerWorkingDay'] = $hours;
+		}
+
+		$copy = new self(raw: $raw);
+		foreach ($absences as $absence) {
+			$copy->exceptions[$absence['date']] = ($copy->exceptions[$absence['date']] ?? $absence['name']);
+		}
+
+		ksort($copy->exceptions);
+
+		return $copy;
+	}//end withPersonalDays()
+
+	/**
 	 * The calendar's name.
 	 *
 	 * @return string The slug.
