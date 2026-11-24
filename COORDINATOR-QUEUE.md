@@ -10,3 +10,4 @@ A product or access-control question that FINISH-ORDER.md DECISIONS does not ans
 ## Queue
 - 2026-11-24T19:00Z b-stackiq stackiq#2177 merge: tasks.md-only tick (shared-organisation 4.1 landed in OpenRegister main), mergeable, merge call refused by the session permission check
 - 19:06Z help-opencatalogi-1 opencatalogi#2969 merge: publication-required-at-publish 1.3/1.4/2.1/2.2; local green (PHPUnit same failing set as development, l10n clean, static analysis clean on touched files), but hydra diff-check.sh was refused by the cloud permission check, so run it and merge
+- 19:14Z b-integriq integriq#3877 merge: perf(l10n) en.js identity entries dropped (PERF-HANDOFF line 46), development merged in at 5a37b39f, local green (test:l10n OK, check:l10n-js up to date, vitest same 2 inherited failures, lint 0 errors, diff-check only inherited gate-119); 'gh pr merge --admin' refused by this session's permission check
