@@ -329,3 +329,8 @@
 2026-11-24T19:52Z help-dossiq-2 skipped woo-request-takes-over-from-opencatalogi 6.1: portaliq delivers Woo forms to opencatalogi only (decision-179 architect change); 4.4/6.2 live
 2026-11-24T19:52Z help-dossiq-2 skipped the 1-task changes (task-list-*, party-*, organisation-*, contacts-*, example-set-*, portal-*, termijn-notices-send, etc.): every open task is a live check (decision 139) or 'one release later'
 2026-11-24T19:52Z help-dossiq-2 run done: merged decidiq#2436, dossiq#6880, #6888, #6891
+2026-11-24T19:56:26Z help-dossiq-4 skipped woo-request-takes-over-from-opencatalogi: 4.4/6.1/6.2 e2e written, live pass only (decision 139); 7.x are delivery steps of merged work
+2026-11-24T19:56:26Z help-dossiq-4 skipped beschikking-chain-on-the-case, woo-case-screens-and-objections 1.1: UI waits for board (decision 162), identity.conduction.nl unreachable
+2026-11-24T19:56:26Z help-dossiq-4 skipped case-mail-through-the-mail-account-with-rfc-8058: waits on an upstream nextcloud/mail header option, not ours to build
+2026-11-24T19:56:26Z help-dossiq-4 skipped dossiq-duplication-to-abstractions, migrate-committees-to-decidiq T4, hermiq-ai-tooling 5.x, page-topology-cleanup: umbrella/decisions, deferred retirement or live-only
+2026-11-24T19:56:26Z help-dossiq-4 idle: every other unstarted dossiq change (37 with 1-2 open tasks) has only live/:8080 checks or next-release removals left
