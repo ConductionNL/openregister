@@ -422,3 +422,7 @@
 2026-11-24T22:10:02Z dossiq helped pipelinq: notify-the-followers-of-tickets-and-leads #4098, archived #4107
 2026-11-24T22:10:44Z help-dossiq-3 skipped pipelinq the-billing-time-entry-is-a-satellite: moves billing hours to humaniq and migrates existing billing rows (money + data migration, waits for Ruben)
 2026-11-24T22:10:44Z help-dossiq-3 skipped pipelinq contract-contact-ref, a-contact-question-is-required-and-dated, only-the-drawn-pipelines, segment-last-contact-signal: only a DQ-DATA item or live checks left
+2026-11-24T22:11:28Z help-dossiq-3 skipped portaliq portal-public-search: blocked on openregister rbac-default-authenticated (0/8, anonymous-read security order), waits for Ruben
+2026-11-24T22:11:28Z help-dossiq-3 skipped portaliq supplier-portal T10/T13/T14: eHerkenning auth edge + security review (security)
+2026-11-24T22:11:28Z help-dossiq-3 skipped portaliq docusaurus-plugin-portaliq: needs a new repository
+2026-11-24T22:11:28Z help-dossiq-3 portaliq: every other unstarted change has only live/coordinator checks left
