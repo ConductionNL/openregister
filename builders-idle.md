@@ -302,3 +302,8 @@
 2026-11-24T19:28Z help-portaliq-1 helped portaliq: case-page-tasks-decision-dates-and-next-step T07 #2693 (filed dossiq#6886). Run ends: remaining unstarted portaliq changes are live checks, OR rbac-default-authenticated (portal-public-search, security), supplier-portal T10/T11/T14 (procest auth edge + security review), docusaurus-plugin-portaliq (needs a new repository), home-and-theme 6.x / traffic-zero 4.x (delivery steps of merged code, no PR evidence to cite), or leased/branched by others
 2026-11-24T19:30Z help-filinq-1 helped learniq week-timetable-grid: dependency merged as nextcloud-vue#2324 (CnWeekGrid, openspec week-grid); learniq side next
 2026-11-24T19:40Z help-portaliq-3 helped portaliq: public-detail-page-for-a-provider-item #2694 (task 5 built as dependency learniq#2736: getPublicDetail + item slugs; task 4 left: no route from a public page to an app action)
+2026-11-24T19:40Z help-portaliq-3 skipped portal-public-search: blocked on openregister rbac-default-authenticated (security: anonymous read would expose unmarked schemas), waits for Ruben
+2026-11-24T19:40Z help-portaliq-3 skipped docusaurus-plugin-portaliq: needs a new repository (creating repos is outside this lane)
+2026-11-24T19:40Z help-portaliq-3 skipped sign-in-with-an-email-link 14 and supplier-portal T10/T11: security review / auth edge in procest (access-control)
+2026-11-24T19:40Z help-portaliq-3 skipped site-multi-step-forms T8b: needs openregister or-form-and-journey-registry 2-3 and intake-conditional-questions-and-drafts T06 (in progress on another branch)
+2026-11-24T19:40Z help-portaliq-3 run ends: every other open portaliq task is a live pass, Playwright run, board check or a delivery step of an already-merged build
