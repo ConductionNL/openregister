@@ -338,6 +338,18 @@ flow holds.
 { "operation": "set", "key": "lastSyncedAt", "from": "updated" }
 ```
 
+**`openregister.code`** (Run code). Runs authored JavaScript on the items. The
+code never runs inside Nextcloud: the step sends it, the items and its limits
+to the `flow-code-runner` ExApp and takes the items it returns. Keys: `source`
+(required), `language` (only `javascript`), `mode` (`perItem`, the default, or
+`allItems`), `timeoutMs` (default 5000), `memoryMb` (default 64), `egress` (a
+list of public host names the code may call; none by default). A limit above
+the instance's ceiling (`flow_code_max_timeout_ms`, default 30000;
+`flow_code_max_memory_mb`, default 256) is refused. Without the runner the step
+is not offered, and a flow that holds one is refused at save, publish and run.
+A failing run fails the step, so its `onError` decides. In `perItem` mode each
+output keeps its input's place, so provenance survives the step.
+
 ### Branching and ending
 
 **`openregister.switch`** (Switch). No keys. Passes its items through unchanged;

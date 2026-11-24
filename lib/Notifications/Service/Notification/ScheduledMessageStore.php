@@ -69,7 +69,9 @@ class ScheduledMessageStore implements ScheduledMessageStoreInterface {
 	 *
 	 * @param int $limit The most rows to return.
 	 *
-	 * @return array<int, array<string, mixed>> The rows, in the policy's shape.
+	 * @return array<int, array<string, mixed>> The rows, in the policy's shape, plus the
+	 *                                          channel and bound object the sweep's audit
+	 *                                          entries are written against.
 	 *
 	 * @spec openspec/changes/send-at-on-the-messaging-leaf/specs/integration-message-dispatch/spec.md#requirement-the-scheduled-sweep-is-bounded-and-sends-once
 	 */
@@ -85,7 +87,10 @@ class ScheduledMessageStore implements ScheduledMessageStoreInterface {
 		$result = $qb->executeQuery();
 		$rows   = [];
 		while (($row = $result->fetch()) !== false) {
-			$rows[] = self::rowOf(row: $row);
+			$rows[] = self::rowOf(row: $row) + [
+				'channel' => (string)($row['channel'] ?? ''),
+				'objectUuid' => (string)($row['object_uuid'] ?? ''),
+			];
 		}
 
 		$result->closeCursor();

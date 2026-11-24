@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectSearchInterface;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekRelabelInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -42,12 +43,15 @@ final class FacetCalculation {
 	 *
 	 * @param MagicObjectSearchInterface $mapper The object mapper.
 	 * @param LoggerInterface      $logger The logger.
+	 * @param FacetWeekRelabelInterface|null $weeks  Relabels week buckets by a declared first week; null keeps ISO weeks.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
 	 */
 	public function __construct(
 		private readonly MagicObjectSearchInterface $mapper,
 		private readonly LoggerInterface $logger,
+		private readonly ?FacetWeekRelabelInterface $weeks = null,
 	) {
 	}//end __construct()
 
@@ -60,11 +64,16 @@ final class FacetCalculation {
 	 * @return array{facets: array<string, mixed>, performance_metadata: array<string, mixed>}
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-response-standardized-format
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
 	 */
 	public function calculate(array $facetQuery, array $facetableConfig): array {
 		$facets = $this->mergedFacets(facetQuery: $facetQuery, facetableConfig: $facetableConfig);
 		$performanceMetadata = $this->performanceMetadata(facets: $facets, facetQuery: $facetQuery);
 		unset($facets['_metrics']);
+		if ($this->weeks !== null) {
+			$facets = $this->weeks->relabel(facets: $facets);
+		}
+
 		return [
 			'facets' => (new FacetListing(facetableConfig: $facetableConfig))->format(facets: $facets),
 			'performance_metadata' => $performanceMetadata,

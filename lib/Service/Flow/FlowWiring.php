@@ -24,12 +24,14 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekNumberingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
+use OCA\OpenRegister\Service\Object\FacetWeekNumbering;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
@@ -80,6 +82,8 @@ use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
@@ -177,10 +181,13 @@ final class FlowWiring {
 		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
 		FlowRunSignalInterface::class => FlowRunSignalService::class,
 		LockObjectNodeInterface::class => LockObjectNode::class,
+		CodeNodeInterface::class => CodeNode::class,
+		CodeRunnerClientInterface::class => CodeRunnerClient::class,
 		TagObjectNodeInterface::class => TagObjectNode::class,
 		AuditTrailNodeInterface::class => AuditTrailNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
 		CalendarRecomputeInterface::class => CalendarRecompute::class,
+		FacetWeekNumberingInterface::class => FacetWeekNumbering::class,
 		TermDiagnosticInterface::class => TermDiagnostic::class,
 		WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
 		TaskCalendarDocumentInterface::class => TaskCalendarDocument::class,
