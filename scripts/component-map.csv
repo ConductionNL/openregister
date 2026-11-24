@@ -2286,8 +2286,11 @@ Service/Export/XmlObjectWriter.php,268,Service,Configuration,Configuration/Servi
 Service/ExportService.php,696,Service,Configuration,Configuration/Service/ExportService.php,1,,Configuration
 Service/ExternalLink/ExternalLinkAnnotationValidator.php,119,Service,Service,Service/ExternalLink/ExternalLinkAnnotationValidator.php,0,,Core
 Service/ExternalLink/ExternalLinkResolver.php,130,Service,Integrations,Integrations/Service/ExternalLink/ExternalLinkResolver.php,0,218,Core
+Service/Federation/OcmShareSender.php,,Service,,,,,Integrations
 Service/Federation/RemoteShareNotification.php,50,Service,Access,Access/Service/Federation/RemoteShareNotification.php,0,,Integrations
 Service/Federation/ShareGrantor.php,57,Service,Access,Access/Service/Federation/ShareGrantor.php,0,367,Core
+Service/Federation/ShareCrosses.php,,Service,,,,,Integrations
+Service/Federation/RemoteRecipientGate.php,,Service,,,,,Integrations
 Service/Federation/ShareTargets.php,60,Service,Access,Access/Service/Federation/ShareTargets.php,0,,Core
 Service/FederationShareService.php,116,Service,Integrations,Integrations/Service/FederationShareService.php,4,,Integrations
 Service/FieldEncryptionHandler.php,104,Service,Service,Service/FieldEncryptionHandler.php,0,,Core
@@ -4293,6 +4296,8 @@ Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
+Migration/Version1Date20261121170011.php,63,Migration,,,,,Platform
+Exception/FederatedShareNotDeliveredException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121180018.php,80,Migration,,,,,Platform
 Formats/EmailFormat.php,,Formats,,,,,Kernel
 Service/Schemas/SchemaCatalogue.php,,Service,,,,,Core
@@ -4753,6 +4758,7 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel
 Service/ProcessesServiceBindings.php,,Service,,,,,Processes
 Service/ProcessesServiceRegistrar.php,,Service,,,,,Processes
 Service/Object/PermissionAsk.php,,Service,,,,,Kernel

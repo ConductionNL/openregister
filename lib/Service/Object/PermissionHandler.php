@@ -40,6 +40,8 @@ use OCA\OpenRegister\Service\Rbac\ObjectClassification;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -1690,6 +1692,66 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $this->denialAnswer(question: $question->about(principals: $principals, object: $question->object));
 	}//end denialFor()
+
+	/**
+	 * The denial that removes a verb from a federated recipient on one object, or null.
+	 *
+	 * A federated recipient is a principal (design D-1 of
+	 * platform-cloud-federation-provider): the share is what grants it, and the
+	 * same cascade and the same deny pass that bind a local caller bind it too.
+	 * It is reached by the principal names it is handed (`remote:*` and
+	 * `remote:<cloud id>`), never by `public` or `authenticated`, which name
+	 * people at this instance, and it is never exempt as an administrator.
+	 *
+	 * The deny enforcement switch is honoured exactly as for a local caller:
+	 * `off` resolves nothing, `staging` records the denial and admits.
+	 *
+	 * FAIL CLOSED: a cascade that cannot be resolved answers a denial, as every
+	 * caller of {@see resolveAuthorization()} must.
+	 *
+	 * @param SchemaInterface       $schema     The object's schema.
+	 * @param ObjectEntityInterface $object     The object.
+	 * @param array<int, string>    $principals The recipient's principal names.
+	 * @param string                $action     The verb.
+	 *
+	 * @return array|null The denial, or null when the verb is not denied.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	public function remoteRecipientDenial(SchemaInterface $schema, ObjectEntityInterface $object, array $principals, string $action): ?array {
+		if ($schema instanceof Schema === false || $object instanceof ObjectEntity === false) {
+			return ['rule' => null, 'principal' => (string)($principals[0] ?? ''), 'action' => $action, 'conditional' => false, 'unresolvable' => true];
+		}
+
+		try {
+			$authorization = $this->resolveAuthorization(schema: $schema, object: $object);
+		} catch (\Throwable $e) {
+			return ['rule' => null, 'principal' => (string)($principals[0] ?? ''), 'action' => $action, 'conditional' => false, 'unresolvable' => true];
+		}
+
+		$mode = $this->denyEnforcementMode();
+		if ($mode->resolves() === false || $this->denyResolver()->declaresAnyDeny(authorization: $authorization) === false) {
+			return null;
+		}
+
+		$denial = $this->denialAnswer(
+			question: (new DenialQuestion(authorization: $authorization, action: $action))->about(principals: array_values($principals), object: $object)
+		);
+		if ($denial === null || $mode->enforces() === true) {
+			return $denial;
+		}
+
+		$mode->record(
+			staged: new StagedDenial(
+				denial: $denial,
+				action: $action,
+				userId: (string)($principals[count($principals) - 1] ?? ''),
+				context: ['schemaId' => $schema->getId(), 'path' => 'federation']
+			)
+		);
+
+		return null;
+	}//end remoteRecipientDenial()
 
 	/**
 	 * The unconditional denial of the question, else the first conditional one that selects its object.
