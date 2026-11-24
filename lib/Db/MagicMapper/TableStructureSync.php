@@ -48,8 +48,11 @@ final class TableStructureSync {
 	 * @param MagicColumnDrift $columns       The live and required columns.
 	 * @param bool             $isPostgres    Whether the platform is PostgreSQL.
 	 * @param bool             $jsonAsText    Whether JSON is stored as checked text, as on MariaDB.
+	 * @param bool             $orderedJsonAsText Whether order-preserving JSON is stored as checked text, as on MySQL.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional: only MariaDB differs
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional: only MariaDB and MySQL differ
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	public function __construct(
 		public readonly string $tableName,
@@ -57,6 +60,7 @@ final class TableStructureSync {
 		public readonly MagicColumnDrift $columns,
 		public readonly bool $isPostgres,
 		public readonly bool $jsonAsText=false,
+		public readonly bool $orderedJsonAsText=false,
 	) {
 		$this->tableNameQuoted = (new MagicColumnSql(isPostgres: $isPostgres))->quote(name: $fullTableName);
 		$this->requiredNames = $columns->requiredNames();
@@ -68,8 +72,9 @@ final class TableStructureSync {
 	 * @return MagicColumnSql
 	 *
 	 * @spec openspec/specs/magic-table-columns/spec.md
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	public function columnSql(): MagicColumnSql {
-		return new MagicColumnSql(isPostgres: $this->isPostgres, jsonAsText: $this->jsonAsText);
+		return new MagicColumnSql(isPostgres: $this->isPostgres, jsonAsText: $this->jsonAsText, orderedJsonAsText: $this->orderedJsonAsText);
 	}//end columnSql()
 }//end class
