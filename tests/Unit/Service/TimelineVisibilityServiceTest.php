@@ -290,4 +290,21 @@ class TimelineVisibilityServiceTest extends TestCase {
 			$this->service->auditNoteMove(object: $this->object(), move: new NoteVisibilityMove(noteId: 42, from: 'internal', to: 'public'))
 		);
 	}
+
+	public function testATimelineEventIsWrittenOnTheObjectsTrail(): void {
+		$object = $this->object();
+		$this->auditTrailMapper->expects($this->once())
+			->method('recordObjectEvent')
+			->with(AuditTrailEvents::matching([$object, 'timeline.entry.withdrawn', ['entry' => 'entry-1', 'reason' => 'wrongly filed']]));
+
+		$this->assertTrue($this->service->auditTimelineEvent(object: $object, action: 'timeline.entry.withdrawn', context: ['entry' => 'entry-1', 'reason' => 'wrongly filed']));
+	}
+
+	public function testALostTimelineEventIsLoggedRatherThanThrown(): void {
+		$this->auditTrailMapper->method('recordObjectEvent')
+			->willThrowException(new \RuntimeException('trail unavailable'));
+		$this->logger->expects($this->once())->method('warning');
+
+		$this->assertFalse($this->service->auditTimelineEvent(object: $this->object(), action: 'timeline.entry.withdrawn', context: []));
+	}
 }
