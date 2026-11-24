@@ -3054,11 +3054,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * The column writer of the connection's platform.
 	 *
 	 * @return MagicColumnSql
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	private function columnSql(): MagicColumnSql {
 		$platform = $this->db->getDatabasePlatform();
 
-		return new MagicColumnSql(isPostgres: ($platform instanceof PostgreSQLPlatform), jsonAsText: ($platform instanceof MariaDBPlatform));
+		return new MagicColumnSql(
+			isPostgres: ($platform instanceof PostgreSQLPlatform),
+			jsonAsText: ($platform instanceof MariaDBPlatform),
+			orderedJsonAsText: MagicColumnSql::reordersJsonKeys(platform: $platform)
+		);
 	}//end columnSql()
 
 	/**
@@ -3785,14 +3791,19 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param MagicColumnDrift $columns   The live and required columns.
 	 *
 	 * @return TableStructureSync
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	private function tableSync(string $tableName, MagicColumnDrift $columns): TableStructureSync {
+		$platform = $this->db->getDatabasePlatform();
+
 		return new TableStructureSync(
 			tableName: $tableName,
 			fullTableName: $this->getFullTableName(tableName: $tableName),
 			columns: $columns,
 			isPostgres: $this->onPostgres(),
-			jsonAsText: ($this->db->getDatabasePlatform() instanceof MariaDBPlatform)
+			jsonAsText: ($platform instanceof MariaDBPlatform),
+			orderedJsonAsText: MagicColumnSql::reordersJsonKeys(platform: $platform)
 		);
 	}//end tableSync()
 
