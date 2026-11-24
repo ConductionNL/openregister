@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\Service\Connection\ConnectionReporter;
 use OCA\OpenRegister\Service\Connection\ConnectionReporterInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
@@ -61,12 +62,12 @@ final class C03EdepotInterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		ConnectionReporter::class => [ConnectionReporterInterface::class, ContractBindings::class],
-		EdepotTransferService::class => [EdepotTransferServiceInterface::class, ContractBindings::class],
-		OpenConnectorTransport::class => [OpenConnectorTransportInterface::class, ContractBindings::class],
-		RestApiTransport::class => [RestApiTransportInterface::class, ContractBindings::class],
-		SftpTransport::class => [SftpTransportInterface::class, ContractBindings::class],
-		TransferListService::class => [TransferListServiceInterface::class, ContractBindings::class],
-		TransferRecordService::class => [TransferRecordServiceInterface::class, ContractBindings::class],
+		EdepotTransferService::class => [EdepotTransferServiceInterface::class, ComplianceServiceBindings::class],
+		OpenConnectorTransport::class => [OpenConnectorTransportInterface::class, ComplianceServiceBindings::class],
+		RestApiTransport::class => [RestApiTransportInterface::class, ComplianceServiceBindings::class],
+		SftpTransport::class => [SftpTransportInterface::class, ComplianceServiceBindings::class],
+		TransferListService::class => [TransferListServiceInterface::class, ComplianceServiceBindings::class],
+		TransferRecordService::class => [TransferRecordServiceInterface::class, ComplianceServiceBindings::class],
 	];
 
 	/**
