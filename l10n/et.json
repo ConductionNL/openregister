@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" on sulle määratud",
         "Audit trail export ready": "Auditijälje eksport on valmis",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Teie auditijälje eksport (%1$s kirjet) salvestati asukohta %2$s%3$s.",
-        "Open Files": "Ava Failid"
+        "Open Files": "Ava Failid",
+        "Its ancestor %1$s has appraisal %2$s": "Selle ülemkirjel %1$s on hinnang %2$s",
+        "Its ancestor %s could not be read": "Selle ülemkirjet %s ei õnnestunud lugeda"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

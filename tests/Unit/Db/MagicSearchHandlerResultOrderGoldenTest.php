@@ -48,6 +48,8 @@ use ReflectionMethod;
  * @uses   \OCA\OpenRegister\Service\DateTimeNormalizer
  * @uses   \OCA\OpenRegister\Db\MagicMapper\SortRequest
  * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal
+ * @uses   \OCA\OpenRegister\Support\OrderParameter
  */
 class MagicSearchHandlerResultOrderGoldenTest extends TestCase {
 

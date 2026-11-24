@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.2.0-dev.26</version>
+    <version>2.2.0-dev.6</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -324,6 +324,7 @@ Vrij en open source onder de EUPL-licentie.
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportExternalRegisterRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDecisionTableRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportRedactionPolicyRegister</step>
 			<!-- The glossary and style guides AI translation follows (ai-translation-with-a-glossary). -->
@@ -540,6 +541,7 @@ Vrij en open source onder de EUPL-licentie.
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportExternalRegisterRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDecisionTableRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportRedactionPolicyRegister</step>
 			<!-- The glossary and style guides AI translation follows (ai-translation-with-a-glossary). -->

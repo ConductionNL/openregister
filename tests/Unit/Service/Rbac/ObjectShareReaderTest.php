@@ -203,6 +203,32 @@ class ObjectShareReaderTest extends TestCase {
 	}//end testThePanelReadingListsEveryGrantButNoSharerView()
 
 	/**
+	 * A share made through the platform sharing surface on the object's folder
+	 * is the core folder share itself, so its sharer's reading and the folder
+	 * owner's re-share reading both answer it; the object's share list holds it
+	 * once (platform-share-provider REQ-PSH-001, "one model, one answer").
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-share-provider/specs/platform-share-provider/spec.md
+	 */
+	public function testAShareMadeThroughThePlatformSurfaceIsListedOnce(): void {
+		$platformShare = $this->share('ocinternal:12', 'carla');
+		$reader = $this->readerFor(
+			static fn (string $sharer, int $type): array => (in_array($sharer, ['bea', 'openregister'], true) === true && $type === IShare::TYPE_USER)
+				? [$platformShare]
+				: []
+		);
+
+		$found = $reader->sharesOn(object: $this->object(), sharers: ['bea']);
+
+		$this->assertSame(['ocinternal:12'], array_keys($found));
+		$this->assertSame('user', $found['ocinternal:12']['type']);
+		$this->assertSame($platformShare, $found['ocinternal:12']['share']);
+		$this->assertSame(['bea', 'openregister'], array_values(array_unique(array_column($this->asked, 0))));
+	}//end testAShareMadeThroughThePlatformSurfaceIsListedOnce()
+
+	/**
 	 * The complete reading also asks as the folder owner with re-shares, so a colleague's share is found.
 	 *
 	 * @return void
