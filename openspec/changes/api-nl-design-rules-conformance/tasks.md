@@ -34,7 +34,7 @@
 
 ## 7. Docs and end-to-end test
 
-- [ ] 7.1 Document the report, the marker, the probe, the occ command and each declared deviation with its reason in `docs/features/api-generation.md`. Verify: `npm run build` in `docs/` succeeds and the page names ruleset 2.2.1.
+- [x] 7.1 Document the report, the marker, the probe, the occ command and each declared deviation with its reason in `docs/features/api-generation.md`. Verify: `npm run build` in `docs/` succeeds and the page names ruleset 2.2.1.
 - [ ] 7.2 Add `tests/e2e/ci/nl-api-design-rules.spec.ts`: an anonymous read of the report and the marker, an administrator probing from the register list dialog, and a non-administrator refused on the probe. Verify: the spec runs green in the Playwright CI project.
 
 ## Acceptance

@@ -198,6 +198,38 @@ Every API path is served twice: under `/api/v1/` and at its unversioned path.
 
 `ApiPathAliases` in `lib/Middleware/Support/` adds the aliases to `appinfo/routes.php`, so a new route gets its `/api/v1/` alias automatically.
 
+### Conformance report (ruleset 2.2.1)
+
+Open Register checks its generated documents against the NLGov REST API Design Rules, ruleset **2.2.1**. Every rule of the ruleset gets one result:
+
+| Result | Meaning |
+|---|---|
+| `pass` | A check ran and found nothing. |
+| `fail` | A check ran and found a violation; the findings name the path. |
+| `deviation` | Open Register breaks the rule on purpose; the reason is given. |
+| `manual` | A functional guideline or module that no machine can decide. |
+| `not-probed` | A rule only a live response can show, before anyone probed. |
+
+**The marker.** Every generated document carries `x-nl-api-design-rules` with `version` and the `pass`, `fail`, `deviation` and `manual` lists of its document and functional rules. Response rules are not in the marker, so probing never changes the document's ETag.
+
+**The report.** `GET /api/registers/{id}/oas/conformance` reports one register, `GET /api/registers/oas/conformance` the combined document. Both are public, like the document they are read from, and rate-limited to 30 anonymous calls a minute. The body has `ruleset`, `generatedAt`, `probedAt`, one entry per rule (`id`, `title`, `kind`, `result`, `findings`, and `deviation` where one is declared) and `counts` per result.
+
+**The probe.** `POST /api/registers/{id}/oas/conformance/probe` is for administrators only. It reads two of the register's own responses (a collection and a record that cannot exist), at most five requests of at most 10 seconds each, without following redirects, and checks:
+
+- `/core/version-header`: `API-Version` is a full `major.minor.patch` version. Today it is the negotiated version id, which is digits only, so this rule fails until the API versioning work changes that header.
+- `/core/transport/security-headers`: `Cache-Control`, `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` and `X-Frame-Options` are present.
+- `/core/date-time/timezone`: every date-time value in the body carries an offset.
+- `/core/error-handling/problem-details`: the error is served as `application/problem+json`.
+
+The caller's `Authorization` header is passed on, so the probe reads no more than the caller may. The last result is kept per register and read by the report.
+
+**The occ command.** `occ openregister:api:conformance <register> [--probe] [--output=json]` prints the same report, one line per rule, for CI and operators.
+
+**Declared deviations.** The rule catalogue (`lib/Service/Oas/NlGovRuleCatalogue.php`) is the only place a deviation is declared; there is no setting to add one.
+
+- `/core/uri-version`: the URL pattern `/index.php/apps/{app}/api/{resource}` is fixed for every app (hydra ADR-002); the version is negotiated by the `API-Version` header instead.
+- `/core/query-keys-camel-case`: the underscore prefix marks a reserved query key (`_limit`, `_page`, `_extend`, ...) and every client sends them; renaming them breaks the contract.
+
 ## Standards
 
 | Standard | Role |
