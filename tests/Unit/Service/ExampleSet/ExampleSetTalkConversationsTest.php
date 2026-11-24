@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * A fragment puts a conversation with a held call on a case, links it, and remove takes it away.
  */
@@ -70,10 +72,10 @@ class ExampleSetTalkConversationsTest extends ExampleSetTestCase {
 		$this->caseWithConversations(rows: [['key' => 'gesprek-sanne', 'data' => self::conversation()]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame([], $this->talk['rooms'], 'the check writes no room');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$room = array_values($this->talk['rooms'])[0];
 		$this->assertSame(['esra.demir', 'sanne.devries'], $room['participants']);
@@ -85,7 +87,7 @@ class ExampleSetTalkConversationsTest extends ExampleSetTestCase {
 		$this->assertSame($caseId, $link->getObjectUuid());
 		$this->assertSame('alpha', $link->getLinkedBy());
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(1, $this->talk['rooms'], 'a kept conversation is written once');
 		$this->assertCount(2, $this->talk['messages'], 'its call is written once');
 
@@ -104,7 +106,7 @@ class ExampleSetTalkConversationsTest extends ExampleSetTestCase {
 		$this->talkInstalled = false;
 		$this->caseWithConversations(rows: [['key' => 'gesprek-sanne', 'data' => self::conversation()]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertFalse($report['ok']);
 		$this->assertStringContainsString('Talk is not installed', (string) json_encode($report['dropped']));
@@ -123,7 +125,7 @@ class ExampleSetTalkConversationsTest extends ExampleSetTestCase {
 	public function testACheckRefusesAFaultyConversation(array $data, string $reason): void {
 		$this->caseWithConversations(rows: [['key' => 'bad', 'data' => $data]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(1, $refusals);
 		$this->assertStringContainsString($reason, $refusals[0]);
