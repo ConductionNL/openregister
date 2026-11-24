@@ -126,6 +126,7 @@
 		"Markt": "The source string is already Dutch (market); a schema title in a Dutch municipal register.",
 		"Openbare verlichting": "The source string is already Dutch (public lighting); a schema title in a Dutch municipal register.",
 		"Wegen en paden": "The source string is already Dutch (roads and paths); a schema title in a Dutch municipal register.",
-		"Diagram": "The native word for a drawn diagram is spelled identically to English."
+		"Diagram": "The native word for a drawn diagram is spelled identically to English.",
+		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in nl as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
 	}
 }

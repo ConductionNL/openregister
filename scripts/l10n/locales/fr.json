@@ -94,6 +94,7 @@
 		"Classification": "Same spelling and meaning in French (archival and information-science term).",
 		"Concept": "Same spelling and meaning in French; the SKOS term is used unchanged in French thesaurus language.",
 		"Monumental": "Same spelling and meaning in French as an adjective (here: listed as a monument).",
-		"Surface": "Same spelling and meaning in French."
+		"Surface": "Same spelling and meaning in French.",
+		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in fr as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
 	}
 }

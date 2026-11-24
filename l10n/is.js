@@ -1430,6 +1430,7 @@ OC.L10N.register(
     "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\")." : "Læsilegt heiti hugtakaskemans, eins og heimildin birtir það (t.d. „Woo-informatiecategorieën“).",
     "Human-readable title." : "Læsilegur titill.",
     "Hybrid search readiness" : "Viðbúnaður blandaðrar leitar",
+    "IBAN" : "IBAN",
     "IBANs" : "IBAN númer",
     "ID" : "Auðkenni",
     "Id" : "Auðkenni",

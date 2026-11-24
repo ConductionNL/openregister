@@ -1430,6 +1430,7 @@ OC.L10N.register(
     "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\")." : "Kavram şemasının, kaynağın yayımladığı biçimiyle okunabilir adı (örn. \"Woo-informatiecategorieën\").",
     "Human-readable title." : "Okunabilir başlık.",
     "Hybrid search readiness" : "Karma arama hazırlığı",
+    "IBAN" : "IBAN",
     "IBANs" : "IBAN'lar",
     "ID" : "Kimlik",
     "Id" : "Id",

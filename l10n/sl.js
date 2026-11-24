@@ -1430,6 +1430,7 @@ OC.L10N.register(
     "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\")." : "Berljivo ime sheme pojmov, kot ga objavlja vir (npr. »Woo-informatiecategorieën«).",
     "Human-readable title." : "Berljiv naslov.",
     "Hybrid search readiness" : "Pripravljenost hibridnega iskanja",
+    "IBAN" : "IBAN",
     "IBANs" : "IBAN-ovi",
     "ID" : "ID",
     "Id" : "Id",

@@ -133,6 +133,7 @@
 		"Respondent": "'Respondent' is the established Swedish term for a person answering a survey and is spelled identically to the English.",
 		"Token": "'Token' is the established Swedish loanword for a signed credential and is already used unchanged elsewhere in this app (API-token).",
 		"Definition": "Same spelling and meaning in Swedish.",
-		"Diagram": "The native word for a drawn diagram is spelled identically to English."
+		"Diagram": "The native word for a drawn diagram is spelled identically to English.",
+		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in sv as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
 	}
 }

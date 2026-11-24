@@ -1430,6 +1430,7 @@ OC.L10N.register(
     "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\")." : "Jēdzienu shēmas lasāms nosaukums, kādu to publicē avots (piem., „Woo-informatiecategorieën”).",
     "Human-readable title." : "Salasāms virsraksts.",
     "Hybrid search readiness" : "Hibrīdmeklēšanas gatavība",
+    "IBAN" : "IBAN",
     "IBANs" : "IBAN numuri",
     "ID" : "ID",
     "Id" : "Id",

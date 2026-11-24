@@ -1430,6 +1430,7 @@ OC.L10N.register(
     "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\")." : "Ainm inléite na scéimre coincheap, mar a fhoilsíonn an fhoinse é (m.sh. \"Woo-informatiecategorieën\").",
     "Human-readable title." : "Teideal inléite.",
     "Hybrid search readiness" : "Ullmhacht chuardaigh hibridigh",
+    "IBAN" : "IBAN",
     "IBANs" : "IBANanna",
     "ID" : "ID",
     "Id" : "Id",

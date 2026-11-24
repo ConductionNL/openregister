@@ -1430,6 +1430,7 @@ OC.L10N.register(
     "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\")." : "Читаемое название схемы понятий в том виде, в каком его публикует источник (например, «Woo-informatiecategorieën»).",
     "Human-readable title." : "Human-readable title.",
     "Hybrid search readiness" : "Hybrid search readiness",
+    "IBAN" : "IBAN",
     "IBANs" : "Номера IBAN",
     "ID" : "ID",
     "Id" : "Id",

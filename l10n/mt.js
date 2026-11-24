@@ -1430,6 +1430,7 @@ OC.L10N.register(
     "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\")." : "Isem li jinqara tal-iskema tal-kunċetti, kif ippubblikat mis-sors (eż. \"Woo-informatiecategorieën\").",
     "Human-readable title." : "Titlu li jinqara.",
     "Hybrid search readiness" : "Tħejjija għat-tfittxija ibrida",
+    "IBAN" : "IBAN",
     "IBANs" : "IBANs",
     "ID" : "ID",
     "Id" : "Id",

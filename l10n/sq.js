@@ -1430,6 +1430,7 @@ OC.L10N.register(
     "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\")." : "Emri i lexueshëm i skemës së koncepteve, siç e publikon burimi (p.sh. \"Woo-informatiecategorieën\").",
     "Human-readable title." : "Titull i lexueshëm.",
     "Hybrid search readiness" : "Gatishmëria e kërkimit hibrid",
+    "IBAN" : "IBAN",
     "IBANs" : "IBAN",
     "ID" : "ID",
     "Id" : "Id",
