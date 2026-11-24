@@ -71,5 +71,8 @@ final class CapabilityRegistrar {
 		// SearchScopesCapability — the scopes the unified search provider
 		// accepts for the current user (content-search-index D-2).
 		$context->registerCapability(SearchScopesCapability::class);
+		// AuthorizationCapability — the access scope kinds the engine enforces
+		// (access-owner-and-condition-scopes).
+		$context->registerCapability(AuthorizationCapability::class);
 	}//end register()
 }//end class
