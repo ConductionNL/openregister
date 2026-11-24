@@ -135,8 +135,8 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 
 	/**
 	 * Of every controller in lib/Controller, exactly the console, the
-	 * maintenance verbs and the consistency check stay reachable while the
-	 * mode holds; every other controller is refused.
+	 * maintenance verbs, the consistency check and the dependency breakers
+	 * stay reachable while the mode holds; every other controller is refused.
 	 *
 	 * Pins the reachable set over the whole controller directory, so changing
 	 * how the middleware recognises those three neither opens nor closes
@@ -160,6 +160,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 			[
 				'OCA\\OpenRegister\\Controller\\OperationsConsistencyController',
 				'OCA\\OpenRegister\\Controller\\OperationsConsoleController',
+				'OCA\\OpenRegister\\Controller\\OperationsDependenciesController',
 				'OCA\\OpenRegister\\Controller\\OperationsMaintenanceController',
 			],
 			$reachable

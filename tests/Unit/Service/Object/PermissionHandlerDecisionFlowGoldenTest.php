@@ -475,6 +475,24 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 	}//end recordReaders()
 
 	/**
+	 * A read list of only the owner sentinel targets the owner alone; mixed with a group it adds that group.
+	 *
+	 * @return void
+	 */
+	public function testAnOwnerOnlyReadTargetsTheOwnerAlone(): void {
+		$object = $this->bulkObject('r', ['owner' => 'carol', 'schema' => '5']);
+
+		$ownerOnly = $this->newHandler(['block' => ['read' => ['@creator']]]);
+		$this->assertSame(['carol'], $ownerOnly->getReadableByUsers($object));
+
+		$withGroup = $this->newHandler(['block' => ['read' => ['@creator', 'editors']]]);
+		$this->assertSame(['alice', 'bob', 'carol'], $withGroup->getReadableByUsers($object));
+
+		$open = $this->newHandler(['block' => ['update' => ['editors']]]);
+		$this->assertSame([], $open->getReadableByUsers($object), 'no read rule is still no targeted list');
+	}//end testAnOwnerOnlyReadTargetsTheOwnerAlone()
+
+	/**
 	 * Every case.
 	 *
 	 * @return array<string, mixed>
