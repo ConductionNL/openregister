@@ -21,13 +21,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetainingActivityResolverInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
  * The methods of VerwerkingsactiviteitMapper that callers outside its component use.
- * Callers depend on this interface, not on the class.
+ * Callers depend on this interface, not on the class. Core callers ask the
+ * narrower RetainingActivityResolverInterface, which this interface extends.
  */
-interface VerwerkingsactiviteitMapperInterface {
+interface VerwerkingsactiviteitMapperInterface extends RetainingActivityResolverInterface {
 
 	/**
 	 * Find by primary key.

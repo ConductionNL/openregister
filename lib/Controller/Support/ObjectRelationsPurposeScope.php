@@ -26,8 +26,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
-use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCP\AppFramework\Http\JSONResponse;
 
@@ -52,12 +52,12 @@ final class ObjectRelationsPurposeScope {
 	 * Constructor.
 	 *
 	 * @param ObjectReadAccessInterface $access         Resolves an object's schema under the caller's own RBAC.
-	 * @param PurposeGuardInterface     $purposeGuard   The doelbinding guard the object read runs.
+	 * @param ReadPurposeGuardInterface     $purposeGuard   The doelbinding guard the object read runs.
 	 * @param RegisterMapperInterface   $registerMapper Resolves an object's register for that guard.
 	 */
 	public function __construct(
 		public readonly ObjectReadAccessInterface $access,
-		public readonly PurposeGuardInterface $purposeGuard,
+		public readonly ReadPurposeGuardInterface $purposeGuard,
 		public readonly RegisterMapperInterface $registerMapper,
 	) {
 		$this->reachability = new ObjectRelationsReachability();
@@ -85,7 +85,7 @@ final class ObjectRelationsPurposeScope {
 
 		try {
 			$this->purposeGuard->enforce(register: $register, schema: $schema);
-		} catch (PurposeRefusedException $refusal) {
+		} catch (ReadPurposeRefusalInterface $refusal) {
 			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
 		}
 
@@ -197,7 +197,7 @@ final class ObjectRelationsPurposeScope {
 	private function purposeAllows(Register $register, Schema $schema): bool {
 		try {
 			$this->purposeGuard->enforce(register: $register, schema: $schema);
-		} catch (PurposeRefusedException $refusal) {
+		} catch (ReadPurposeRefusalInterface $refusal) {
 			return false;
 		}
 

@@ -56,6 +56,16 @@ interface AccessLinkServiceInterface {
 	public const ACT_UPLOAD = 'accesslink.upload';
 
 	/**
+	 * The brute-force throttler action of the access-link surface.
+	 *
+	 * Owned here, beside the surface it throttles; the hardening report reads
+	 * the same value through ThrottledSurfacesInterface::ACCESS_LINK.
+	 *
+	 * @var string
+	 */
+	public const THROTTLE_ACTION = 'openregister_access_link';
+
+	/**
 	 * Every link one principal minted, with the URL each one opens.
 	 *
 	 * @param string $userId The minting principal.
@@ -65,6 +75,28 @@ interface AccessLinkServiceInterface {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
 	public function listForUser(string $userId): array;
+
+	/**
+	 * The absolute URL a holder opens, the JSON API link.
+	 *
+	 * @param string $anchor The link anchor.
+	 *
+	 * @return string The absolute link URL.
+	 *
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
+	 */
+	public function linkUrl(string $anchor): string;
+
+	/**
+	 * The page a holder opens for an anchor, rendered for a person.
+	 *
+	 * @param string $anchor The anchor.
+	 *
+	 * @return string The absolute page URL.
+	 *
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
+	 */
+	public function pageUrl(string $anchor): string;
 
 	/**
 	 * Mint a link over one subject.

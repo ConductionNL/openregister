@@ -25,25 +25,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
- * The object, the kind of lock and who releases it.
+ * The published UnlockRequest, under the name openregister used before it was published.
+ *
+ * @deprecated Use \OCA\OpenRegister\Contract\UnlockRequest, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  *
  * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-is-released-through-its-own-endpoint-and-a-release-says-whether-there-was-one
  */
-final class UnlockRequest {
-
-	/**
-	 * Constructor.
-	 *
-	 * @param string      $identifier Object ID or UUID (or the advisory key).
-	 * @param bool        $advisory   Release a pre-creation advisory lock without a lookup.
-	 * @param string|null $runUuid    Flow run releasing the lock, for a run-scoped lock.
-	 * @param bool        $break      Release regardless of holder; authorized at the call site.
-	 */
-	public function __construct(
-		public readonly string $identifier,
-		public readonly bool $advisory=false,
-		public readonly ?string $runUuid=null,
-		public readonly bool $break=false,
-	) {
-	}//end __construct()
+final class UnlockRequest extends \OCA\OpenRegister\Contract\UnlockRequest {
 }//end class

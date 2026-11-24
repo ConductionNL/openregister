@@ -25,20 +25,21 @@ namespace OCA\OpenRegister\Service\Schema;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\SchemaChangeNoticeJob;
-use OCA\OpenRegister\Db\ApiCallRecordMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaChangelog;
 use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaFollowerMapper;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\RouteCallersInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RouteCallWindow;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCP\BackgroundJob\IJobList;
 use OCP\IUserManager;
 use OCP\Notification\IManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Who builds on a schema: accounts that called its object routes in the last
@@ -87,8 +88,7 @@ class SchemaChangeNoticeService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ApiCallRecordMapperInterface   $callers     The caller record.
-	 * @param ApiCallRecorder                $recorder    Whether the caller record is on.
+	 * @param RouteCallersInterface          $callers     The caller record, and whether it is on.
 	 * @param SchemaFollowerMapper           $followers   The followers.
 	 * @param SchemaChangelogMapperInterface $changelog   The changelog.
 	 * @param RegisterMapperInterface        $registers   The registers that hold a schema.
@@ -102,8 +102,7 @@ class SchemaChangeNoticeService {
 	 * @spec openspec/changes/schema-breaking-change-notice/specs/schema-migration/spec.md
 	 */
 	public function __construct(
-		private readonly ApiCallRecordMapperInterface $callers,
-		private readonly ApiCallRecorder $recorder,
+		private readonly RouteCallersInterface $callers,
 		private readonly SchemaFollowerMapper $followers,
 		private readonly SchemaChangelogMapperInterface $changelog,
 		private readonly RegisterMapperInterface $registers,
@@ -127,7 +126,7 @@ class SchemaChangeNoticeService {
 	 */
 	public function reach(Schema $schema): array {
 		$followers = $this->followers->countFollowers(schemaId: (int)$schema->getId());
-		if ($this->recorder->isEnabled() === false) {
+		if ($this->callers->isRecording() === false) {
 			return [
 				'affectedCallers' => [
 					'recorded' => false,
@@ -137,20 +136,19 @@ class SchemaChangeNoticeService {
 			];
 		}
 
-		$prefixes = $this->routePrefixes(schema: $schema);
-		$from = $this->callerWindowStart();
+		$window = new RouteCallWindow(prefixes: $this->routePrefixes(schema: $schema), from: $this->callerWindowStart());
 
 		return [
 			'affectedCallers' => [
 				'recorded' => true,
-				'count' => $this->callers->countCallersOfRoutes(prefixes: $prefixes, from: $from),
+				'count' => $this->callers->countCallersOf(window: $window),
 				'top' => array_map(
 					static fn (array $caller): array => [
 						'principal' => $caller['principal'],
 						'calls' => $caller['calls'],
 						'lastSeen' => $caller['lastSeen'],
 					],
-					$this->callers->findCallersOfRoutes(prefixes: $prefixes, from: $from, limit: self::TOP)
+					$this->callers->callersOf(window: $window, limit: self::TOP)
 				),
 			],
 			'followers' => $followers,
@@ -241,10 +239,9 @@ class SchemaChangeNoticeService {
 	 */
 	public function recipients(Schema $schema): array {
 		$candidates = [];
-		if ($this->recorder->isEnabled() === true) {
-			$callers = $this->callers->findCallersOfRoutes(
-				prefixes: $this->routePrefixes(schema: $schema),
-				from: $this->callerWindowStart(),
+		if ($this->callers->isRecording() === true) {
+			$callers = $this->callers->callersOf(
+				window: new RouteCallWindow(prefixes: $this->routePrefixes(schema: $schema), from: $this->callerWindowStart()),
 				limit: self::RECIPIENT_CAP
 			);
 			foreach ($callers as $caller) {
@@ -316,7 +313,8 @@ class SchemaChangeNoticeService {
 		}
 
 		try {
-			return $this->permissions->hasPermission(schema: $schema, action: 'read', userId: $uid);
+			return $this->permissions->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: $uid, objectOwner: null));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[SchemaChangeNoticeService] Read check failed; the user is not told',

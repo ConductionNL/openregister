@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Db;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\StateHistory\TrackedProperty;
+use OCA\OpenRegister\Kernel\Contracts\ObjectPropertyHistoryInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -32,7 +33,7 @@ use OCP\AppFramework\Db\Entity;
  * Callers type against this interface and resolve it from the container; the
  * registrar binds it to StateHistoryMapper. Guarded by C04InterfaceBindingsTest.
  */
-interface StateHistoryMapperInterface {
+interface StateHistoryMapperInterface extends ObjectPropertyHistoryInterface {
 
 	/**
 	 * Close the interval an object is currently in, for one declared property.

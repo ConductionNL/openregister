@@ -23,7 +23,7 @@ use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
@@ -400,7 +400,7 @@ class ObjectServiceFindGoldenTest extends TestCase {
 			}
 		);
 
-		$readHistory = $this->createMock(ReadHistoryService::class);
+		$readHistory = $this->createMock(ProcessingReadsInterface::class);
 		$readHistory->method('registerProcessingRead')->willReturnCallback(
 			function (ObjectEntity $object): void {
 				$this->calls[] = ['processingRead' => $object->getUuid()];

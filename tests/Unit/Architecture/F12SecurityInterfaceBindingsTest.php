@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\InboundAuthRateLimitInterface;
 use OCA\OpenRegister\Service\LoginSecurityInterface;
 use OCA\OpenRegister\Service\RateLimitResetInterface;
@@ -53,10 +53,10 @@ final class F12SecurityInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const BINDINGS = [
-		InboundAuthRateLimitInterface::class => [SecurityService::class, ContractBindings::class],
-		LoginSecurityInterface::class => [SecurityService::class, ContractBindings::class],
-		RateLimitResetInterface::class => [SecurityService::class, ContractBindings::class],
-		SecurityHeadersInterface::class => [SecurityService::class, ContractBindings::class],
+		InboundAuthRateLimitInterface::class => [SecurityService::class, CoreServiceBindings::class],
+		LoginSecurityInterface::class => [SecurityService::class, CoreServiceBindings::class],
+		RateLimitResetInterface::class => [SecurityService::class, CoreServiceBindings::class],
+		SecurityHeadersInterface::class => [SecurityService::class, CoreServiceBindings::class],
 	];
 
 	/**

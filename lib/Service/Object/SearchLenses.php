@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
 use OCP\IUserSession;
 
 /**
@@ -93,13 +93,13 @@ final class SearchLenses {
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserSession|null       $userSession The session naming the caller.
-	 * @param ReadHistoryService|null $readHistory The read history behind `_recent`; absent, that lens
-	 *                                             answers an empty page that says the history could not be read.
+	 * @param IUserSession|null         $userSession The session naming the caller.
+	 * @param ReadHistoryInterface|null $readHistory The read history behind `_recent`; absent, that lens
+	 *                                               answers an empty page that says the history could not be read.
 	 */
 	public function __construct(
 		private readonly ?IUserSession $userSession,
-		private readonly ?ReadHistoryService $readHistory,
+		private readonly ?ReadHistoryInterface $readHistory,
 	) {
 	}//end __construct()
 
@@ -296,7 +296,7 @@ final class SearchLenses {
 	 */
 	private function recentHistory(): array {
 		if ($this->readHistory === null) {
-			return ['available' => false, 'reason' => ReadHistoryService::REASON_UNAVAILABLE, 'views' => []];
+			return ['available' => false, 'reason' => ReadHistoryInterface::REASON_UNAVAILABLE, 'views' => []];
 		}
 
 		return $this->readHistory->resolveRecentLens(userId: $this->userSession?->getUser()?->getUID());

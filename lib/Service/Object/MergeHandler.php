@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SoftDeletion;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCP\AppFramework\Db\DoesNotExistException as OcpDoesNotExistException;
 use OCP\Files\File;
@@ -484,9 +485,9 @@ class MergeHandler {
 	 * @return void
 	 */
 	private function softDeleteMergedSource(MergeRun $run): void {
-		$run->source->delete(
+		$run->source->softDelete(
 			userSession: $this->userSession,
-			deletedReason: 'Merged into object ' . $run->target->getUuid()
+			deletion: new SoftDeletion(reason: 'Merged into object ' . $run->target->getUuid())
 		);
 		$this->objectEntityMapper->update(
 			entity: $run->source,

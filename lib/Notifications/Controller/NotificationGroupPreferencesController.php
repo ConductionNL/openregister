@@ -36,9 +36,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceAddress;
 use OCA\OpenRegister\Kernel\Contracts\PreferenceWrite;
@@ -61,6 +61,13 @@ class NotificationGroupPreferencesController extends Controller {
 	 * @var IGroupManager
 	 */
 	private readonly IGroupManager $groupManager;
+
+	/**
+	 * The authority on who administers one particular group.
+	 *
+	 * @var ISubAdmin
+	 */
+	private readonly ISubAdmin $subAdmin;
 
 	/**
 	 * The user session.
@@ -86,23 +93,20 @@ class NotificationGroupPreferencesController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                                       $request      Request.
-	 * @param NotificationGroupPreferencesControllerServices $services     The preference resolver, the schema mapper and the session.
-	 * @param IGroupManager                                  $groupManager The authority on who is an administrator.
-	 * @param ISubAdmin                                      $subAdmin     The authority on who administers one particular group.
+	 * @param IRequest                                       $request  Request.
+	 * @param NotificationGroupPreferencesControllerServices $services The preference resolver, the schema mapper, the session and the group authorities.
 	 */
 	public function __construct(
 		IRequest $request,
 		NotificationGroupPreferencesControllerServices $services,
-		IGroupManager $groupManager,
-		private readonly ISubAdmin $subAdmin,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		$this->preferenceService = $services->preferenceService;
 		$this->schemaMapper      = $services->schemaMapper;
 		$this->userSession       = $services->userSession;
-		$this->groupManager      = $groupManager;
+		$this->groupManager      = $services->groups->groupManager;
+		$this->subAdmin          = $services->groups->subAdmin;
 	}//end __construct()
 
 	/**

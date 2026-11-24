@@ -230,7 +230,7 @@ class FacetHandlerEntryPointsGoldenTest extends TestCase {
 			);
 		}
 
-		return new FacetHandler(new FacetLookups($mapper, $schemas), $cache, $logger);
+		return new FacetHandler(new FacetLookups($mapper, $schemas), $cache, $logger, new \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile());
 	}//end handler()
 
 	/**

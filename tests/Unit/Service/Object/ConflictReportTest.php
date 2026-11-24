@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCA\OpenRegister\Service\Object\ConflictReport;
 use OCA\OpenRegister\Service\Object\RefusedWrite;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -249,6 +250,63 @@ final class ConflictReportTest extends TestCase {
 
 		self::assertSame('Bram', $body['changedBy']);
 		self::assertStringStartsWith('2026-09-18T12:34:56', (string)$body['changedAt']);
+	}
+
+	/**
+	 * The report reads an intervening write through the Core audit record contract, not the entity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-refused-write-names-the-values-that-conflict-req-cso-001
+	 */
+	public function testTheReportReadsAnyAuditRecord(): void {
+		$record = new class implements AuditRecordInterface {
+
+			/**
+			 * The actor id.
+			 *
+			 * @return string|null
+			 */
+			public function getUser(): ?string {
+				return 'bram';
+			}
+
+			/**
+			 * The actor display name, absent here.
+			 *
+			 * @return string|null
+			 */
+			public function getUserName(): ?string {
+				return null;
+			}
+
+			/**
+			 * What the write changed.
+			 *
+			 * @return array|null
+			 */
+			public function getChanged(): ?array {
+				return ['status' => ['old' => 'in-behandeling', 'new' => 'granted']];
+			}
+
+			/**
+			 * When it was written.
+			 *
+			 * @return DateTime|null
+			 */
+			public function getCreated(): ?DateTime {
+				return new DateTime('2026-09-18T12:34:56+00:00');
+			}
+		};
+
+		$body = $this->report()->build(
+			write: new RefusedWrite(stored: $this->stored(['status' => 'granted']), schema: new Schema(), sent: ['status' => 'refused']),
+			intervening: [$record],
+		);
+
+		self::assertSame('bram', $body['changedBy']);
+		self::assertStringStartsWith('2026-09-18T12:34:56', (string)$body['changedAt']);
+		self::assertSame('in-behandeling', $body['conflicts']['status']['read'] ?? null);
 	}
 
 	/**

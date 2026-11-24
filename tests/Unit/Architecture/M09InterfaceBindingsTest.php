@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\Service\Bindings\FeatureBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -45,7 +45,7 @@ final class M09InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: string, 2: array<class-string, class-string>}>
 	 */
 	private const BINDINGS = [
-		ObjectSearchResultFormatterInterface::class => [ObjectSearchResultFormatter::class, 'Service', FeatureBindings::BINDINGS],
+		ObjectSearchResultFormatterInterface::class => [ObjectSearchResultFormatter::class, 'Service', CoreServiceBindings::BINDINGS],
 	];
 
 	/**

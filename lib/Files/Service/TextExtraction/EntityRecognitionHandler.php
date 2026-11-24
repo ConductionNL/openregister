@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -44,6 +44,7 @@ use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\TextEntityDetectorInterface;
 
 /**
  * Entity Recognition Handler.
@@ -65,7 +66,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/text-extraction/spec.md#requirement-file-and-object-chunk-extraction-lifecycle
  */
-class EntityRecognitionHandler {
+class EntityRecognitionHandler implements TextEntityDetectorInterface {
 	/**
 	 * Entity type constants.
 	 */
@@ -145,14 +146,14 @@ class EntityRecognitionHandler {
 	 * @param EntityRecognitionStores   $stores       Chunk, entity and relation stores plus the DB connection.
 	 * @param EntityRecognitionBackends $backends     Settings, anonymisation backend and the lazy app container.
 	 * @param LoggerInterface           $logger       Logger.
-	 * @param FileSettingsHandler|null  $fileSettings The organisation's detection threshold (REQ-ADI-007).
+	 * @param RedactionSettingsInterface|null $fileSettings The organisation's detection threshold (REQ-ADI-007).
 	 * @param JurisdictionPatternSets   $patternSets The jurisdiction pattern sets and their merge.
 	 */
 	public function __construct(
 		private readonly EntityRecognitionStores $stores,
 		private readonly EntityRecognitionBackends $backends,
 		private readonly LoggerInterface $logger,
-		private readonly ?FileSettingsHandler $fileSettings=null,
+		private readonly ?RedactionSettingsInterface $fileSettings=null,
 		private readonly JurisdictionPatternSets $patternSets=new JurisdictionPatternSets(),
 	) {
 	}//end __construct()
@@ -172,7 +173,7 @@ class EntityRecognitionHandler {
 		}
 
 		if ($this->fileSettings === null) {
-			return FileSettingsHandler::DEFAULT_CONFIDENCE_THRESHOLD;
+			return RedactionSettingsInterface::DEFAULT_CONFIDENCE_THRESHOLD;
 		}
 
 		return $this->fileSettings->confidenceThreshold();
@@ -526,6 +527,24 @@ class EntityRecognitionHandler {
 			);
 		}
 	}//end setRelationSource()
+
+	/**
+	 * Detect entities in a text with one backend method, at the organisation's
+	 * confidence threshold, without storing anything: what an evaluation run
+	 * scores (REQ-ADI-002).
+	 *
+	 * @param string $text   The text.
+	 * @param string $method The detection method.
+	 *
+	 * @return array<int, array> Detected entities with type, value, category, position and confidence.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-precision-and-recall-are-measured-over-a-named-corpus-and-published-with-the-detector-version-req-adi-002
+	 */
+	public function detectInText(string $text, string $method): array {
+		$query = new EntityDetectionQuery(text: $text, entityTypes: null, confidenceThreshold: $this->confidenceThreshold(options: []));
+
+		return array_values($this->detectEntities(query: $query, method: $method));
+	}//end detectInText()
 
 	/**
 	 * Detect entities in text using specified method.

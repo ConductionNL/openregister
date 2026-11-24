@@ -28,8 +28,9 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -123,12 +124,12 @@ class ObjectsControllerMoveRightsTest extends TestCase {
 		);
 
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null) use ($rights): bool {
 				$this->asked[] = [$action, $schema->getId(), $objectOwner];
 				return in_array($schema->getId() . ':' . $action, $rights, true);
 			}
-		);
+		));
 
 		$response = $this->controller(mover: $mover, permissions: $permissions)->move('1', '10', 'u-1');
 
@@ -194,7 +195,7 @@ class ObjectsControllerMoveRightsTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			windowService: $this->createMock(DeletionWindowService::class)
 		);

@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Configuration;
 
+use OCA\OpenRegister\Kernel\Contracts\Configuration\SeedOutcomeInterface;
+
 /**
  * The report of one seed run: the digest, the moment, and per file the counts
  * of imported, skipped and failed registers, schemas and objects, with every
@@ -36,14 +38,11 @@ namespace OCA\OpenRegister\Service\Configuration;
  * when nothing failed, `failed` when something failed and nothing imported,
  * and `partial` otherwise; it is never reported as success with a failure in it.
  *
+ * STATUS_SUCCESS ("nothing failed") is inherited from SeedOutcomeInterface.
+ *
  * @spec openspec/changes/seed-from-a-mounted-directory/specs/data-import-export/spec.md
  */
-final class SeedReport {
-
-	/**
-	 * Nothing failed.
-	 */
-	public const STATUS_SUCCESS = 'success';
+final class SeedReport implements SeedOutcomeInterface {
 
 	/**
 	 * Something failed and something else imported.

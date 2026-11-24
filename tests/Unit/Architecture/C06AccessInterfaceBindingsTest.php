@@ -9,7 +9,7 @@
  * the facet handler resolved the concrete PropertyRbacHandler from the
  * container. They now take the checks from AccessDeclarationValidators (typed
  * as interfaces), read constants off interfaces, and resolve
- * PropertyRbacHandlerInterface, which ContractBindings aliases to the same
+ * PropertyRbacHandlerInterface, which CoreServiceBindings aliases to the same
  * shared PropertyRbacHandler. This test pins the implementations, the binding,
  * that the factory builds exactly what the callers used to build, the key
  * values, and that no lib file outside lib/Service names these classes.
@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
@@ -114,7 +114,7 @@ final class C06AccessInterfaceBindingsTest extends TestCase {
 	public function testThePropertyRbacInterfaceIsBound(): void {
 		$this->assertSame(
 			expected: PropertyRbacHandler::class,
-			actual: ContractBindings::BINDINGS[PropertyRbacHandlerInterface::class] ?? null
+			actual: CoreServiceBindings::BINDINGS[PropertyRbacHandlerInterface::class] ?? null
 		);
 	}//end testThePropertyRbacInterfaceIsBound()
 

@@ -22,11 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Relation;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 
 /**
- * The child reader, the hierarchy declaration reader and the instance's node cap.
+ * The child reader, the hierarchy and party declaration readers and the instance's node cap.
  *
  * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
  */
@@ -37,6 +38,7 @@ final class ObjectTreeSources {
 	 * @param HierarchyDescender     $descender   Reads one level of children from a magic table.
 	 * @param HierarchyGrantExpander $hierarchies Reads a schema's hierarchy declaration.
 	 * @param RelationGraphService   $graphs      Holds the instance's node cap.
+	 * @param PartyParentInterface   $parties     Reads the parent chain a schema's party annotation declares.
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
@@ -44,6 +46,7 @@ final class ObjectTreeSources {
 		public readonly HierarchyDescender $descender,
 		public readonly HierarchyGrantExpander $hierarchies,
 		public readonly RelationGraphService $graphs,
+		public readonly PartyParentInterface $parties,
 	) {
 	}//end __construct()
 }//end class

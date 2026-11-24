@@ -10,7 +10,7 @@
  * {@see CalDavVtodoObjectSourceProvider} but for VEVENT instead of VTODO, and —
  * unlike the VTODO provider's link-scoped projection — surfaces the acting user's
  * WHOLE event directory (no X-OPENREGISTER link filter). Reuses
- * {@see \OCA\OpenRegister\Service\CalendarEventService}, which is already scoped to
+ * {@see \OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface}, which is already scoped to
  * the logged-in user's calendars, so another user's events are simply absent
  * (denied == not-found, no enumeration oracle).
  *
@@ -34,7 +34,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -85,13 +85,13 @@ class CalendarEventObjectSourceProvider implements ObjectSourceProvider {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalendarEventService $calendarEventService The CalDAV VEVENT read/list service.
+	 * @param UserCalendarEventsInterface $calendarEventService The CalDAV VEVENT read/list service.
 	 * @param OptionalAppBridge    $app                  Whether the app is installed, its services, and the log of failed reads.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly CalendarEventService $calendarEventService,
+		private readonly UserCalendarEventsInterface $calendarEventService,
 		OptionalAppBridge $app,
 	) {
 		$this->appManager = $app->appManager;

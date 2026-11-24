@@ -43,6 +43,7 @@ use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -131,6 +132,24 @@ class _ControllerStubProvider extends AbstractIntegrationProvider {
 }//end class
 
 /**
+ * A stub provider that declares two extra top-level keys of its list answer.
+ */
+class _ControllerExtraKeysStubProvider extends _ControllerStubProvider implements \OCA\OpenRegister\Service\Integration\DeclaresListExtraKeys {
+
+	/**
+	 * @param array<int,string> $declared The keys to declare.
+	 * @param array             $answer   What list() answers.
+	 */
+	public function __construct(private array $declared, array $answer) {
+		parent::__construct(id: 'layout', listEnvelope: $answer);
+	}//end __construct()
+
+	public function listExtraKeys(): array {
+		return $this->declared;
+	}//end listExtraKeys()
+}//end class
+
+/**
  * Unit tests for ObjectIntegrationsController.
  */
 class ObjectIntegrationsControllerTest extends TestCase {
@@ -144,6 +163,7 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		?\OCA\OpenRegister\Service\ObjectService $objectService = null,
 		?\OCA\OpenRegister\Notifications\Service\TimelineVisibilityService $visibility = null,
 		?\OCA\OpenRegister\Service\Object\PermissionHandler $permissions = null,
+		\OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency $idempotency = new \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency(),
 	): ObjectIntegrationsController {
 		$request = $request ?? $this->createMock(IRequest::class);
 		return new ObjectIntegrationsController(
@@ -158,10 +178,55 @@ class ObjectIntegrationsControllerTest extends TestCase {
 					visibility: $visibility ?? $this->passThroughVisibility(),
 					permissions: $permissions ?? $this->permissions(mayUpdate: true)
 				),
-				logger: new NullLogger()
+				logger: new NullLogger(),
+				idempotency: $idempotency
 			)
 		);
 	}//end buildController()
+
+	/**
+	 * An idempotency runner over an in-memory answer store, for the signed-in user `daan`.
+	 *
+	 * @return \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency
+	 */
+	private function idempotency(): \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency {
+		$entries = new \ArrayObject();
+		$store = $this->createMock(\OCA\OpenRegister\Service\Form\FormIdempotencyStore::class);
+		$store->method('bindingFor')->willReturnCallback(fn (string $subject, array $payload): string => hash('sha256', $subject . json_encode($payload)));
+		$store->method('answerFor')->willReturnCallback(
+			function (\OCA\OpenRegister\Service\Form\IdempotentRequest $request) use ($entries): ?array {
+				$entry = $entries[$request->scope . '|' . $request->key] ?? null;
+				if ($entry !== null && $entry['binding'] !== $request->binding) {
+					throw new \OCA\OpenRegister\Exception\FormSubmitRefusedException('taken', 409);
+				}
+				return $entry['response'] ?? null;
+			}
+		);
+		$store->method('keep')->willReturnCallback(
+			function (\OCA\OpenRegister\Service\Form\IdempotentRequest $request, array $response) use ($entries): void {
+				$entries[$request->scope . '|' . $request->key] = ['binding' => $request->binding, 'response' => $response];
+			}
+		);
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('daan');
+		$session = $this->createMock(\OCP\IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		return new \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency(new \OCA\OpenRegister\Service\Form\IdempotentAnswerStore($store), $session);
+	}//end idempotency()
+
+	/**
+	 * A request with these params and this Idempotency-Key header.
+	 *
+	 * @param array<string, mixed> $params The params.
+	 * @param string               $key    The header value.
+	 *
+	 * @return IRequest
+	 */
+	private function keyedRequest(array $params, string $key): IRequest {
+		$request = $this->buildRequest($params);
+		$request->method('getHeader')->willReturnCallback(fn (string $name): string => $name === 'Idempotency-Key' ? $key : '');
+		return $request;
+	}//end keyedRequest()
 
 	/**
 	 * A permission handler that answers the `update` right with $mayUpdate and records the actions asked.
@@ -172,12 +237,12 @@ class ObjectIntegrationsControllerTest extends TestCase {
 	 */
 	private function permissions(bool $mayUpdate): \OCA\OpenRegister\Service\Object\PermissionHandler {
 		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (\OCA\OpenRegister\Db\Schema $schema, string $action) use ($mayUpdate): bool {
 				$this->askedActions[] = $action;
 				return $action === 'update' ? $mayUpdate : true;
 			}
-		);
+		));
 		return $permissions;
 	}//end permissions()
 
@@ -363,6 +428,48 @@ class ObjectIntegrationsControllerTest extends TestCase {
 		$this->assertSame('1', $body['nextCursor']);
 	}//end testIndexPassesThroughProviderEnvelope()
 
+	/**
+	 * The answer of a layout leaf: an envelope with two explanation keys and an internal one.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function layoutAnswer(): array {
+		return [
+			'items' => [['id' => 'layout-1']],
+			'total' => 1,
+			'nextCursor' => null,
+			'appliedLayers' => [['id' => 'base'], ['id' => 'override']],
+			'withheld' => [['id' => 'stale', 'reason' => 'base moved']],
+			'internal' => 'not for consumers',
+		];
+	}//end layoutAnswer()
+
+	public function testIndexPassesThroughTheExtraKeysAProviderDeclares(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerExtraKeysStubProvider(declared: ['appliedLayers', 'withheld', 'total'], answer: self::layoutAnswer()));
+
+		$response = $this->buildController($registry)->index('r', 's', 'o', 'layout');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$body = $response->getData();
+		$this->assertSame([['id' => 'layout-1']], $body['items']);
+		$this->assertSame(1, $body['total']);
+		$this->assertNull($body['nextCursor']);
+		$this->assertSame([['id' => 'base'], ['id' => 'override']], $body['appliedLayers']);
+		$this->assertSame([['id' => 'stale', 'reason' => 'base moved']], $body['withheld']);
+		$this->assertArrayNotHasKey('internal', $body);
+		$this->assertSame(['items', 'results', 'total', 'nextCursor', 'appliedLayers', 'withheld'], array_keys($body));
+	}//end testIndexPassesThroughTheExtraKeysAProviderDeclares()
+
+	public function testIndexDropsExtraKeysOfAProviderThatDeclaresNone(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider(id: 'layout', listEnvelope: self::layoutAnswer()));
+
+		$body = $this->buildController($registry)->index('r', 's', 'o', 'layout')->getData();
+
+		$this->assertSame(['items', 'results', 'total', 'nextCursor'], array_keys($body));
+	}//end testIndexDropsExtraKeysOfAProviderThatDeclaresNone()
+
 	public function testIndexNormalizesResultsKeyedEnvelope(): void {
 		$registry = new IntegrationRegistry(new NullLogger());
 		$registry->addProvider(
@@ -422,6 +529,82 @@ class ObjectIntegrationsControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $this->buildController($registry)->create('r', 's', 'o', 'missing')->getStatus());
 	}//end testAFailedCreateKeepsItsStatus()
+
+	/**
+	 * A create sent again under the same Idempotency-Key gets the first answer, marked as replayed, and creates nothing.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
+	 *
+	 * @return void
+	 */
+	public function testAReplayedCreateGetsTheFirstAnswer(): void {
+		$provider = new class('stub') extends _ControllerStubProvider {
+			public int $creates = 0;
+			public function create(ObjectRef $ref, array $payload): array {
+				$this->creates++;
+				return ['id' => 'entry-' . $this->creates];
+			}
+		};
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider($provider);
+		$idempotency = $this->idempotency();
+		$params = ['minutes' => 30, 'register' => 'r', 'schema' => 's', 'id' => 'o', 'integrationId' => 'stub'];
+
+		$first = $this->buildController($registry, $this->keyedRequest($params, 'k-1'), idempotency: $idempotency)->create('r', 's', 'o', 'stub');
+		$second = $this->buildController($registry, $this->keyedRequest($params, 'k-1'), idempotency: $idempotency)->create('r', 's', 'o', 'stub');
+
+		$this->assertSame(1, $provider->creates);
+		$this->assertSame(Http::STATUS_CREATED, $first->getStatus());
+		$this->assertSame('false', $first->getHeaders()['Idempotent-Replayed']);
+		$this->assertSame(Http::STATUS_CREATED, $second->getStatus());
+		$this->assertSame(['id' => 'entry-1'], $second->getData());
+		$this->assertSame('true', $second->getHeaders()['Idempotent-Replayed']);
+	}//end testAReplayedCreateGetsTheFirstAnswer()
+
+	/**
+	 * The same key with another payload answers 409 and creates nothing.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
+	 *
+	 * @return void
+	 */
+	public function testATakenKeyWithAnotherPayloadAnswers409(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$stub = new _ControllerStubProvider('stub');
+		$registry->addProvider($stub);
+		$idempotency = $this->idempotency();
+
+		$this->buildController($registry, $this->keyedRequest(['minutes' => 30], 'k-1'), idempotency: $idempotency)->create('r', 's', 'o', 'stub');
+		$stub->createCalled = [];
+		$response = $this->buildController($registry, $this->keyedRequest(['minutes' => 45], 'k-1'), idempotency: $idempotency)->create('r', 's', 'o', 'stub');
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertSame([], $stub->createCalled);
+	}//end testATakenKeyWithAnotherPayloadAnswers409()
+
+	/**
+	 * A create refused by the update right never reaches the idempotency store.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
+	 *
+	 * @return void
+	 */
+	public function testARefusedCreateNeverReachesTheKeyStore(): void {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->addProvider(new _ControllerStubProvider('stub'));
+		$store = $this->createMock(\OCA\OpenRegister\Service\Form\FormIdempotencyStore::class);
+		$store->expects($this->never())->method('reserve');
+		$idempotency = new \OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency(new \OCA\OpenRegister\Service\Form\IdempotentAnswerStore($store), $this->createMock(\OCP\IUserSession::class));
+
+		$response = $this->buildController(
+			$registry,
+			$this->keyedRequest([], 'k-1'),
+			permissions: $this->permissions(mayUpdate: false),
+			idempotency: $idempotency
+		)->create('r', 's', 'o', 'stub');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testARefusedCreateNeverReachesTheKeyStore()
 
 	public function testAnItemOfAnotherObjectAnswers404(): void {
 		$provider = new class('stub') extends _ControllerStubProvider {

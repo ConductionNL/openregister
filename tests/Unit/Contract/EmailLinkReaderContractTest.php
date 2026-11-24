@@ -27,11 +27,14 @@ use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Db\EmailLink;
 use OCA\OpenRegister\Db\EmailLinkMapper;
 use OCA\OpenRegister\Service\EmailLinkService;
+use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\LinkServiceRuntime;
+use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -55,12 +58,15 @@ class EmailLinkReaderContractTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheContainerBindsTheInterface(): void {
-		$source = (string)file_get_contents(filename: __DIR__ . '/../../../lib/Service/ServiceRegistrar.php');
+		$context = new RecordingRegistrationContext();
+		IntegrationRegistrar::register(context: $context);
 
-		$this->assertMatchesRegularExpression(
-			pattern: '/registerService\(\s*EmailLinkReaderInterface::class,\s*function \(\$c\) \{\s*return \$c->get\(EmailLinkService::class\);/',
-			string: $source
-		);
+		$service   = $this->createMock(originalClassName: EmailLinkService::class);
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
+		$container->method('get')->with(EmailLinkService::class)->willReturn($service);
+
+		$this->assertArrayHasKey(key: EmailLinkReaderInterface::class, array: $context->factories);
+		$this->assertSame(expected: $service, actual: $context->factories[EmailLinkReaderInterface::class]($container));
 	}//end testTheContainerBindsTheInterface()
 
 	/**

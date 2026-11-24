@@ -33,7 +33,7 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregationAnnotationValidatorIn
 use OCA\OpenRegister\Search\Service\Quality\UniqueHintAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidatorInterface;
 use OCA\OpenRegister\Search\Service\SearchAnnotationValidators;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators;
@@ -63,9 +63,9 @@ final class F02InterfaceBindingsTest extends TestCase {
 	 */
 	private const CLASSES = [
 		AggregationAnnotationValidator::class => [AggregationAnnotationValidatorInterface::class, SearchRegistrar::class],
-		HingeAnnotationValidator::class => [HingeAnnotationValidatorInterface::class, ContractBindings::class],
+		HingeAnnotationValidator::class => [HingeAnnotationValidatorInterface::class, CoreServiceBindings::class],
 		NotificationAnnotationValidator::class => [NotificationAnnotationValidatorInterface::class, NotificationsRegistrar::class],
-		SurvivorshipAnnotationValidator::class => [SurvivorshipAnnotationValidatorInterface::class, ContractBindings::class],
+		SurvivorshipAnnotationValidator::class => [SurvivorshipAnnotationValidatorInterface::class, CoreServiceBindings::class],
 		UniqueHintAnnotationValidator::class => [UniqueHintAnnotationValidatorInterface::class, SearchRegistrar::class],
 	];
 

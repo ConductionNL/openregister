@@ -40,7 +40,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AuthDenialWarning;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EntityRelationPatch;
@@ -55,9 +54,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCA\OpenRegister\Service\Decision\RelationDecisionServiceInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -154,7 +155,7 @@ class EntityRelationsController extends Controller {
 		IRequest $request,
 		EntityRelationsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->entityRelationMapper = $services->mappers->entityRelationMapper;
 		$this->session = $services->platform->session;
 		$this->rootFolder = $services->platform->rootFolder;
@@ -445,11 +446,9 @@ class EntityRelationsController extends Controller {
 		}
 
 		return $this->permissionHandler->hasPermission(
-			schema: $resolvedSchema,
-			action: 'update',
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $resolvedSchema, action: 'update'))
+				->askedBy(userId: $userId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end canUpdateObject()
 
@@ -572,11 +571,9 @@ class EntityRelationsController extends Controller {
 		}
 
 		return $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'update',
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))
+				->askedBy(userId: $userId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end canUpdateEmailParentObject()
 

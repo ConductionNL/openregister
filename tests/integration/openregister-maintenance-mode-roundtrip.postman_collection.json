@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "or-t28-maintenance-reachable-2026-11-09",
 		"name": "OpenRegister maintenance mode round trip",
-		"description": "Enter maintenance mode over the API, see an ordinary route held with 503, and leave it again over the same API. Guards MaintenanceReachableControllersInterface::ALWAYS_REACHABLE: the controller that administers the mode must not be closed by it, or an administrator who entered it cannot leave without occ. Seeds its own register and deletes it; depends on no other collection.",
+		"description": "Enter maintenance mode over the API, see an ordinary route held with 503, and leave it again over the same API. Guards MaintenanceReachableInterface (the controllers that carry it stay reachable): the controller that administers the mode must not be closed by it, or an administrator who entered it cannot leave without occ. Seeds its own register and deletes it; depends on no other collection.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {

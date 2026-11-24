@@ -74,7 +74,7 @@ class RegistersControllerTest extends TestCase {
 	 * @var (\OCA\OpenRegister\Service\Schemas\RegisterModelService&MockObject)|null
 	 */
 	private ?\OCA\OpenRegister\Service\Schemas\RegisterModelService $modelService = null;
-	private \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder&MockObject $appImportJobRecorder;
+	private \OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface&MockObject $appImportJobRecorder;
 
 	/**
 	 * The user the mocked session resolves to. Defaults to an admin so write
@@ -119,12 +119,12 @@ class RegistersControllerTest extends TestCase {
 		// checkRegisterManagePermission() resolves IGroupManager via the container
 		// on its no-authorization (admin-only) branch — return the stubbed one.
 		$this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
-		$this->appImportJobRecorder = $this->createMock(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class);
+		$this->appImportJobRecorder = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface::class);
 		$this->container->method('get')->willReturnCallback(function ($id) {
 			if ($id === \OCP\IGroupManager::class) {
 				return $this->groupManager;
 			}
-			if ($id === \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class) {
+			if ($id === \OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface::class) {
 				return $this->appImportJobRecorder;
 			}
 			if ($id === \OCA\OpenRegister\Service\Schemas\RegisterModelService::class) {
@@ -134,7 +134,6 @@ class RegistersControllerTest extends TestCase {
 		});
 
 		$this->controller = RegistersControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->registerService,
 			$this->objectMapper,
@@ -1672,6 +1671,87 @@ class RegistersControllerTest extends TestCase {
 		$this->assertSame(404, $result->getStatus());
 		unlink($bundlePath);
 	}
+
+	/**
+	 * REQ-IMP-AC-02: an admin's plain object list for a register that does not
+	 * exist cannot create it, so the import answers 404 naming the register and
+	 * both remedies, before any schema lookup or import runs.
+	 *
+	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-clear-failure-when-auto-create-is-impossible-req-imp-ac-02
+	 */
+	public function testImportMissingRegisterPlainJsonListAdminAnswers404NamingTheRegister(): void {
+		$listPath = tempnam(sys_get_temp_dir(), 'list_test_') . '.json';
+		file_put_contents($listPath, json_encode([['name' => 'Order 1'], ['name' => 'Order 2']]));
+
+		$this->request->method('getUploadedFile')->willReturn([
+			'name' => 'orders.json',
+			'tmp_name' => $listPath,
+			'size' => 64,
+		]);
+		$this->request->method('getParam')->willReturnMap([
+			['type', null, null],
+			['includeObjects', false, false],
+			['validation', false, false],
+			['events', false, false],
+			['publish', false, false],
+			['enrich', true, true],
+			['rbac', true, true],
+			['multi', true, true],
+			['schema', null, '7'],
+		]);
+
+		$this->registerMapper->method('find')
+			->willThrowException(new DoesNotExistException('Not found'));
+		$this->schemaMapper->expects($this->never())->method('find');
+		$this->importService->expects($this->never())->method('importFromJson');
+
+		$result = $this->controller->import('orders');
+		unlink($listPath);
+
+		$this->assertSame(404, $result->getStatus());
+		$error = $result->getData()['error'];
+		$this->assertStringContainsString("'orders'", $error);
+		$this->assertStringContainsString('Create the register first', $error);
+		$this->assertStringContainsString('full register bundle', $error);
+	}//end testImportMissingRegisterPlainJsonListAdminAnswers404NamingTheRegister()
+
+	/**
+	 * REQ-IMP-AC-02: the same plain list without a schema parameter is refused
+	 * for its missing register, not with the less helpful missing-schema 400.
+	 *
+	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-clear-failure-when-auto-create-is-impossible-req-imp-ac-02
+	 */
+	public function testImportMissingRegisterPlainJsonListWithoutSchemaNamesTheRegister(): void {
+		$listPath = tempnam(sys_get_temp_dir(), 'list_test_') . '.json';
+		file_put_contents($listPath, json_encode(['results' => [['name' => 'Order 1']]]));
+
+		$this->request->method('getUploadedFile')->willReturn([
+			'name' => 'orders.json',
+			'tmp_name' => $listPath,
+			'size' => 64,
+		]);
+		$this->request->method('getParam')->willReturnMap([
+			['type', null, null],
+			['includeObjects', false, false],
+			['validation', false, false],
+			['events', false, false],
+			['publish', false, false],
+			['enrich', true, true],
+			['rbac', true, true],
+			['multi', true, true],
+			['schema', null, null],
+		]);
+
+		$this->registerMapper->method('find')
+			->willThrowException(new DoesNotExistException('Not found'));
+		$this->importService->expects($this->never())->method('importFromJson');
+
+		$result = $this->controller->import('orders');
+		unlink($listPath);
+
+		$this->assertSame(404, $result->getStatus());
+		$this->assertStringContainsString("Register not found: 'orders'", $result->getData()['error']);
+	}//end testImportMissingRegisterPlainJsonListWithoutSchemaNamesTheRegister()
 
 	/**
 	 * A missing register with a non-JSON upload (e.g. Excel) still 404s

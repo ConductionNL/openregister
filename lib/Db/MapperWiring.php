@@ -20,8 +20,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
-use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandlerInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperLookups;
@@ -30,7 +28,6 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
-use OCA\OpenRegister\Db\Support\SecretAtRest;
 
 
 /**
@@ -45,7 +42,7 @@ use OCA\OpenRegister\Db\Support\SecretAtRest;
 final class MapperWiring {
 
 	/**
-	 * Register the schema, register, webhook, magic and entity-relation mappers.
+	 * Register the schema, register and magic mappers.
 	 *
 	 * @param IRegistrationContext $context The registration context.
 	 *
@@ -56,9 +53,7 @@ final class MapperWiring {
 	public static function register(IRegistrationContext $context): void {
 		$context->registerService(SchemaMapper::class, self::schemaMapper(...));
 		$context->registerService(RegisterMapper::class, self::registerMapper(...));
-		$context->registerService(WebhookMapper::class, self::webhookMapper(...));
 		$context->registerService(MagicMapper::class, self::magicMapper(...));
-		$context->registerService(EntityRelationMapper::class, self::entityRelationMapper(...));
 	}//end register()
 
 	/**
@@ -87,8 +82,7 @@ final class MapperWiring {
 			services: new SchemaMapperServices(
 				eventDispatcher: $eventDispatcher,
 				validator: $validator,
-				logger: $container->get('Psr\Log\LoggerInterface'),
-				objectActions: static fn (): ObjectActionValidatorInterface => $container->get(ObjectActionValidatorInterface::class)
+				logger: $container->get('Psr\Log\LoggerInterface')
 			)
 		);
 	}//end schemaMapper()
@@ -128,29 +122,6 @@ final class MapperWiring {
 			)
 		);
 	}//end registerMapper()
-
-	/**
-	 * Build the WebhookMapper.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return WebhookMapper The mapper.
-	 */
-	private static function webhookMapper(ContainerInterface $container): WebhookMapper {
-		return new WebhookMapper(
-			db: $container->get('OCP\IDBConnection'),
-			tenancy: new TenancyServices(
-				organisationMapper: $container->get(OrganisationMapperInterface::class),
-				userSession: $container->get('OCP\IUserSession'),
-				groupManager: $container->get('OCP\IGroupManager')
-			),
-			appConfig: $container->get('OCP\IAppConfig'),
-			secrets: new SecretAtRest(
-				crypto: $container->get('OCP\Security\ICrypto'),
-				logger: $container->get('Psr\Log\LoggerInterface')
-			)
-		);
-	}//end webhookMapper()
 
 	/**
 	 * Build the MagicMapper.
@@ -213,28 +184,4 @@ final class MapperWiring {
 			logger: $container->get('Psr\Log\LoggerInterface')
 		);
 	}//end magicRuntime()
-
-	/**
-	 * Build the EntityRelationMapper.
-	 *
-	 * EntityRelationMapper is registered explicitly because it constructor-injects
-	 * `IEventDispatcher` to dispatch `EntityRelationDecisionUpdatedEvent`. Every
-	 * other event-dispatcher-dependent mapper in this class (SchemaMapper,
-	 * RegisterMapper, MagicMapper, WebhookMapper) is wired explicitly to avoid
-	 * depending on NC's autowirer resolution of framework-interface keys, which
-	 * has historically been version-sensitive.
-	 *
-	 * @param ContainerInterface $container The container.
-	 *
-	 * @return EntityRelationMapper The mapper.
-	 */
-	private static function entityRelationMapper(ContainerInterface $container): EntityRelationMapper {
-		return new EntityRelationMapper(
-			db: $container->get('OCP\IDBConnection'),
-			auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapperInterface::class),
-			userSession: $container->get('OCP\IUserSession'),
-			entityEvents: $container->get(EntityEventsInterface::class),
-			logger: $container->get('Psr\Log\LoggerInterface')
-		);
-	}//end entityRelationMapper()
 }//end class

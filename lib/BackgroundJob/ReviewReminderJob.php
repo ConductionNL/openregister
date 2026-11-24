@@ -32,12 +32,13 @@ use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Service\Archival\DestructionListRepositoryInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewReminderInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\Notification\IManager as INotificationManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Archival\PendingReviewQuery;
 
 /**
  * The reminder pass over every destruction list still under review.
@@ -86,7 +87,7 @@ class ReviewReminderJob extends TimedJob {
 	 */
 	private function intervalSeconds(): int {
 		try {
-			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
+			$handler = $this->container->get(ArchivalSettingsInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$frequency = (string)($settings['reviewReminderFrequency'] ?? self::DEFAULT_FREQUENCY);
 
@@ -158,9 +159,7 @@ class ReviewReminderJob extends TimedJob {
 				$pending,
 				$reviews->pendingEntries(
 					listData: ($list->getObject() ?? []),
-					listUuid: (string)$list->getUuid(),
-					reviewer: null,
-					waitingSince: $cutoff
+					query: new PendingReviewQuery(listUuid: (string)$list->getUuid(), reviewer: null, waitingSince: $cutoff)
 				)
 			);
 		}
@@ -175,7 +174,7 @@ class ReviewReminderJob extends TimedJob {
 	 */
 	private function frequency(): string {
 		try {
-			$handler = $this->container->get(ArchivalSettingsReaderInterface::class);
+			$handler = $this->container->get(ArchivalSettingsInterface::class);
 			$settings = $handler->getArchivalSettingsOnly();
 			$frequency = (string)($settings['reviewReminderFrequency'] ?? self::DEFAULT_FREQUENCY);
 

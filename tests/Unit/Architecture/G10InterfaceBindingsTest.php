@@ -24,7 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
+use OCA\OpenRegister\Service\ServiceRegistrar;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\RenderObjectInterface;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -74,10 +75,10 @@ final class G10InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('contracts')]
 	public function testTheContractIsBoundToTheClass(string $contract, string $class): void {
-		$this->assertSame($class, ContractBindings::BINDINGS[$contract] ?? null);
+		$this->assertSame($class, CoreServiceBindings::BINDINGS[$contract] ?? null);
 
 		$context = new RecordingRegistrationContext();
-		ContractBindings::register(context: $context);
+		ServiceRegistrar::register(context: $context);
 		$aliases = array_column($context->aliases, 'target', 'alias');
 		$this->assertSame($class, $aliases[$contract] ?? null);
 	}//end testTheContractIsBoundToTheClass()

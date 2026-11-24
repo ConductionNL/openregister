@@ -1,83 +1,55 @@
 <template>
-	<div class="or-tab-objects">
+	<section
+		v-if="loading || objects.length > 0"
+		class="or-tab-objects"
+		:aria-label="t('openregister', 'Connected to')">
+		<h4 class="or-mail-panel__section-title">
+			{{ t('openregister', 'Connected to') }}
+		</h4>
 		<div v-if="loading" class="or-tab-loading">
-			<NcLoadingIcon :size="28" />
+			<NcLoadingIcon :size="20" />
 			<span>{{ t('openregister', 'Loading connections...') }}</span>
 		</div>
-		<NcEmptyContent
-			v-else-if="objects.length === 0"
-			:name="t('openregister', 'No connections yet')"
-			:description="
-				t(
-					'openregister',
-					'Connect this email to a case, lead, invoice and more.',
-				)
-			">
-			<template #icon>
-				<LinkVariant :size="48" />
-			</template>
-			<template #action>
-				<NcButton variant="primary" @click="$emit('switch-tab', 'actions')">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Add a connection') }}
-				</NcButton>
-			</template>
-		</NcEmptyContent>
-		<template v-else>
-			<div class="or-mail-object-list">
-				<div
-					v-for="obj in objects"
-					:key="obj.uuid"
-					class="or-mail-object-card"
-					@dragover.prevent="onAttachmentDragOver"
-					@drop.prevent="onAttachmentDrop($event, obj)">
-					<div class="or-mail-object-card__header">
-						<div class="or-mail-object-card__title">
-							<component
-								:is="schemaIconComponent(obj.schemaIcon)"
-								:size="20"
-								class="or-mail-object-card__icon" />
-							<a
-								:href="objectUrl(obj)"
-								target="_blank"
-								:title="t('openregister', 'Open connected item')">
-								{{ displayName(obj) }}
-							</a>
-						</div>
-						<NcButton
-							variant="tertiary"
-							:aria-label="
-								t('openregister', 'Remove connection to {name}', {
-									name: displayName(obj),
-								})
-							"
-							@click="promptUnlink(obj)">
-							<template #icon>
-								<Close :size="20" />
-							</template>
-						</NcButton>
-					</div>
-					<div class="or-mail-object-card__meta">
-						<span class="or-mail-object-card__schema">{{
-							obj.schema
-						}}</span>
-					</div>
+		<div v-else class="or-mail-object-list">
+			<div
+				v-for="obj in objects"
+				:key="obj.uuid"
+				class="or-mail-object-card"
+				@dragover.prevent="onAttachmentDragOver"
+				@drop.prevent="onAttachmentDrop($event, obj)">
+				<div class="or-mail-object-card__header">
+					<span class="or-mail-object-card__schema">
+						<component
+							:is="schemaIconComponent(obj.schemaIcon)"
+							:size="16"
+							class="or-mail-object-card__icon" />
+						{{ obj.schema }}
+					</span>
+					<NcButton
+						variant="tertiary"
+						:aria-label="
+							t('openregister', 'Remove connection to {name}', {
+								name: displayName(obj),
+							})
+						"
+						@click="promptUnlink(obj)">
+						<template #icon>
+							<Close :size="20" />
+						</template>
+					</NcButton>
 				</div>
+				<a
+					class="or-mail-object-card__title"
+					:href="objectUrl(obj)"
+					target="_blank"
+					:title="t('openregister', 'Open connected item')">
+					{{ displayName(obj) }}
+				</a>
+				<p class="or-mail-object-card__drop">
+					{{ t('openregister', 'Drop an attachment here to add it') }}
+				</p>
 			</div>
-			<div class="or-tab-objects__actions">
-				<NcButton
-					variant="secondary"
-					wide
-					@click="$emit('switch-tab', 'actions')">
-					<template #icon>
-						<Plus :size="20" />
-					</template>
-					{{ t('openregister', 'Add another connection') }}
-				</NcButton>
-			</div>
-		</template>
+		</div>
 
 		<RemoveConnectionDialog
 			:show="removeTarget !== null"
@@ -85,15 +57,15 @@
 			:removing="removing"
 			@cancel="cancelUnlink"
 			@confirm="confirmUnlink" />
-	</div>
+	</section>
 </template>
 
 <script>
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 /**
- * Objects tab — linked-objects list inside the three-tab sidebar; also acts
- * as the drop target for Mail attachments (drops upload the file to the
+ * The items the open mail is connected to, at the top of the mail panel;
+ * each card is also the drop target for Mail attachments (drops upload the file to the
  * linked OR object via /api/objects/{r}/{s}/{id}/files-multipart).
  *
  * @spec openspec/specs/mail-sidebar/spec.md
@@ -101,10 +73,8 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
  */
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
-import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vue'
 import { mailMessageTab } from '../composables/mailMessageTab.js'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
@@ -140,11 +110,8 @@ export default {
 	name: 'ObjectsTab',
 	components: {
 		NcButton,
-		NcEmptyContent,
 		NcLoadingIcon,
-		Plus,
 		Close,
-		LinkVariant,
 		RemoveConnectionDialog,
 	},
 
@@ -210,6 +177,66 @@ export default {
 		},
 
 		/**
+		 * The endpoint listing the objects linked to the open message.
+		 *
+		 * @return {string} The URL
+		 */
+		linkedObjectsUrl() {
+			const base = generateUrl('/apps/openregister/api/linked/mail')
+			return `${base}/${this.accountId}/${this.messageId}`
+		},
+
+		/**
+		 * Fetch the objects linked to the open message.
+		 *
+		 * @return {Promise<Array<object>>} The objects
+		 */
+		async fetchLinkedObjects() {
+			const response = await axios.get(this.linkedObjectsUrl(), {
+				timeout: 10000,
+			})
+			return response.data?.results || []
+		},
+
+		/**
+		 * The endpoint that unlinks an object from the open message.
+		 *
+		 * @param {object} obj The linked object
+		 * @return {string} The URL
+		 */
+		unlinkUrl(obj) {
+			const base = generateUrl(
+				'/apps/openregister/api/objects/{uuid}/_linked/mail',
+				{
+					uuid: obj.uuid,
+				},
+			)
+			return `${base}/${this.accountId}/${this.messageId}`
+		},
+
+		/**
+		 * Log a failed load and show no objects.
+		 *
+		 * @param {Error} err What went wrong
+		 * @return {void}
+		 */
+		showLoadFailure(err) {
+			console.error('[ObjectsTab] Load failed:', err)
+			this.objects = []
+		},
+
+		/**
+		 * Say the connection was removed, close the dialog and reload.
+		 *
+		 * @return {void}
+		 */
+		showUnlinked() {
+			showSuccess(t('openregister', 'Connection removed'))
+			this.removeTarget = null
+			this.loadObjects()
+		},
+
+		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async loadObjects() {
@@ -221,13 +248,9 @@ export default {
 
 			this.loading = true
 			try {
-				const base = generateUrl('/apps/openregister/api/linked/mail')
-				const url = `${base}/${this.accountId}/${this.messageId}`
-				const response = await axios.get(url, { timeout: 10000 })
-				this.objects = response.data?.results || []
+				this.objects = await this.fetchLinkedObjects()
 			} catch (err) {
-				console.error('[ObjectsTab] Load failed:', err)
-				this.objects = []
+				this.showLoadFailure(err)
 			} finally {
 				this.loading = false
 				this.$emit('count', this.objects.length)
@@ -266,17 +289,8 @@ export default {
 			}
 			this.removing = true
 			try {
-				const base = generateUrl(
-					'/apps/openregister/api/objects/{uuid}/_linked/mail',
-					{
-						uuid: obj.uuid,
-					},
-				)
-				const url = `${base}/${this.accountId}/${this.messageId}`
-				await axios.delete(url)
-				showSuccess(t('openregister', 'Connection removed'))
-				this.removeTarget = null
-				this.loadObjects()
+				await axios.delete(this.unlinkUrl(obj))
+				this.showUnlinked()
 			} catch (err) {
 				showError(t('openregister', 'Failed to remove connection'))
 				console.error('[ObjectsTab] Unlink failed:', err)
@@ -343,51 +357,67 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async uploadAttachmentToObject(attachment, target) {
-			const response = await fetch(attachment.downloadUrl, {
-				credentials: 'same-origin',
-			})
-			if (!response.ok) {
-				throw new Error(
-					`Attachment download failed with status ${response.status}`,
-				)
-			}
-			const blob = await response.blob()
-			const fileName =
-				attachment.fileName || `attachment-${attachment.attachmentId}`
-			const file = new File([blob], fileName, {
-				type: attachment.mime || blob.type || 'application/octet-stream',
-			})
+			const file = await downloadAttachment(attachment)
 			const formData = new FormData()
 			formData.append('files[]', file)
-			const uploadUrl = generateUrl(
-				'/apps/openregister/api/objects/{register}/{schema}/{id}/files-multipart',
-				{
-					register: target.register,
-					schema: target.schema,
-					id: target.objectId,
-				},
-			)
-			await axios.post(uploadUrl, formData, {
+			await axios.post(objectFilesUrl(target), formData, {
 				headers: { 'Content-Type': 'multipart/form-data' },
 				timeout: 20000,
 			})
 		},
 	},
 }
+
+/**
+ * Download a mail attachment as a file, named and typed as the attachment
+ * says, or as the download does.
+ *
+ * @param {object} attachment The dropped attachment
+ * @return {Promise<File>} The file
+ */
+async function downloadAttachment(attachment) {
+	const response = await fetch(attachment.downloadUrl, {
+		credentials: 'same-origin',
+	})
+	if (!response.ok) {
+		throw new Error(
+			`Attachment download failed with status ${response.status}`,
+		)
+	}
+	const blob = await response.blob()
+	return attachmentFile(attachment, blob)
+}
+
+/**
+ * A downloaded attachment as a file, named and typed as the attachment says,
+ * or as the download does.
+ *
+ * @param {object} attachment The dropped attachment
+ * @param {Blob} blob The downloaded content
+ * @return {File} The file
+ */
+function attachmentFile(attachment, blob) {
+	const fileName =
+		attachment.fileName || `attachment-${attachment.attachmentId}`
+	return new File([blob], fileName, {
+		type: attachment.mime || blob.type || 'application/octet-stream',
+	})
+}
+
+/**
+ * The endpoint that takes multipart file uploads for an object.
+ *
+ * @param {{register: string, schema: string, objectId: string}} target The object
+ * @return {string} The URL
+ */
+function objectFilesUrl(target) {
+	return generateUrl(
+		'/apps/openregister/api/objects/{register}/{schema}/{id}/files-multipart',
+		{
+			register: target.register,
+			schema: target.schema,
+			id: target.objectId,
+		},
+	)
+}
 </script>
-
-<style scoped>
-.or-tab-objects__actions {
-	margin-top: 12px;
-	padding: 0 4px;
-}
-
-.or-tab-loading {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-	padding: 24px 0;
-	color: var(--color-text-maxcontrast);
-}
-</style>

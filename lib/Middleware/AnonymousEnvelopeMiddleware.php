@@ -22,8 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Controller\RegistersController;
-use OCA\OpenRegister\Controller\SchemasController;
+use OCA\OpenRegister\Kernel\Contracts\Core\EnvelopedDefinitionControllerInterface;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelopeInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\DataResponse;
@@ -79,10 +78,10 @@ class AnonymousEnvelopeMiddleware extends Middleware {
 	 *
 	 * @param Controller $controller The controller that answered.
 	 *
-	 * @return bool True for the register and schema controllers.
+	 * @return bool True for the controllers that answer with register or schema definitions.
 	 */
 	private function answersConfiguration(Controller $controller): bool {
-		return $controller instanceof RegistersController || $controller instanceof SchemasController;
+		return $controller instanceof EnvelopedDefinitionControllerInterface;
 	}//end answersConfiguration()
 
 	/**

@@ -237,7 +237,8 @@ class ObjectTreeServiceTest extends TestCase {
 			sources: new ObjectTreeSources(
 				descender: $descender,
 				hierarchies: new HierarchyGrantExpander(descender: $descender, logger: $logger),
-				graphs: $graphs
+				graphs: $graphs,
+				parties: new \OCA\OpenRegister\Service\Party\PartyParent()
 			),
 			catalog: new SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $objectMapper),
 			renderer: ($this->renderer ?? $this->createMock(RenderObject::class)),

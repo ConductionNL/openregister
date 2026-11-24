@@ -23,9 +23,10 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ApplicationsControllerServices;
+use OCA\OpenRegister\Db\Application;
 use OCA\OpenRegister\Db\ApplicationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -71,7 +72,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * Used for direct database queries when needed, bypassing service layer.
 	 *
-	 * @var ApplicationMapperInterface Application mapper instance
+	 * @var ApplicationMapperInterface<Application> Application mapper instance
 	 */
 	private readonly ApplicationMapperInterface $applicationMapper;
 
@@ -100,7 +101,7 @@ class ApplicationsController extends Controller {
 		ApplicationsControllerServices $services,
 	) {
 		// Call parent constructor to initialize base controller.
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 		// Store dependencies for use in controller methods.
 		$this->applicationService = $services->applicationService;

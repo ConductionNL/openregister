@@ -28,7 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRightsInterface;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\MountRefresh;
 use OCA\OpenRegister\Service\Rbac\SharerFolderAccess;
@@ -51,7 +51,7 @@ class SharerFolderAccessTest extends TestCase {
 
 	private IManager&MockObject $shareManager;
 
-	private ObjectFileAccess&MockObject $fileAccess;
+	private ObjectFileRightsInterface&MockObject $fileAccess;
 
 	private GrantManageGuard&MockObject $grantManage;
 
@@ -60,7 +60,7 @@ class SharerFolderAccessTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->shareManager = $this->createMock(IManager::class);
-		$this->fileAccess = $this->createMock(ObjectFileAccess::class);
+		$this->fileAccess = $this->createMock(ObjectFileRightsInterface::class);
 		$this->grantManage = $this->createMock(GrantManageGuard::class);
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->userManager->method('get')->willReturnCallback(fn (string $uid): IUser => $this->user(uid: $uid));
@@ -105,7 +105,7 @@ class SharerFolderAccessTest extends TestCase {
 	private function holds(bool $read, bool $add, bool $delete): void {
 		$this->fileAccess->method('mayRead')->willReturn($read);
 		$this->fileAccess->method('mayChangeFiles')->willReturnCallback(
-			static fn (ObjectEntity $object, string $verb): bool => ($verb === ObjectFileAccess::ADD_FILES ? $add : $delete)
+			static fn (ObjectEntity $object, string $verb): bool => ($verb === ObjectFileRightsInterface::ADD_FILES ? $add : $delete)
 		);
 	}//end holds()
 

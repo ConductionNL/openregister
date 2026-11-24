@@ -38,7 +38,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Service\Object\RenderObject;
-use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Rbac\HierarchyLevel;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use Psr\Log\LoggerInterface;
@@ -124,7 +123,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			];
 		}
 
-		return self::partyDeclaration(schema: $schema);
+		return $this->partyDeclaration(schema: $schema);
 	}//end declarationFor()
 
 	/**
@@ -133,18 +132,16 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @param Schema $schema The schema.
 	 *
 	 * @return array{property: string, maxDepth: int, source: string}|null The declaration.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) PartyDefinition::fromSchema() is the party model's one reader of the annotation.
 	 */
-	private static function partyDeclaration(Schema $schema): array|null {
-		$party = PartyDefinition::fromSchema(schema: $schema);
-		if ($party === null || $party->parentProperty() === null) {
+	private function partyDeclaration(Schema $schema): array|null {
+		$party = $this->sources->parties->parentOf(schema: $schema);
+		if ($party === null) {
 			return null;
 		}
 
 		return [
-			'property' => $party->parentProperty(),
-			'maxDepth' => min($party->maxDepth(), HierarchyGrantExpander::DEPTH_CEILING),
+			'property' => $party['property'],
+			'maxDepth' => min($party['maxDepth'], HierarchyGrantExpander::DEPTH_CEILING),
 			'source' => 'x-openregister-party',
 		];
 	}//end partyDeclaration()

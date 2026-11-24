@@ -53,6 +53,24 @@ interface MagicObjectLockInterface {
 	): ObjectEntity;
 
 	/**
+	 * Claim a lock on an object for an explicit owner, atomically, without a session.
+	 *
+	 * @param ObjectEntity $entity       The object to lock.
+	 * @param Register     $register     The register context.
+	 * @param Schema       $schema       The schema context.
+	 * @param string       $ownerId      The owner the lock is taken for.
+	 * @param int|null     $lockDuration Lock duration in seconds (null for no expiry).
+	 * @param string|null  $process      What the lock was taken for.
+	 * @param string|null  $runUuid      Flow run taking the lock, for a run-scoped lock.
+	 *
+	 * @return bool True when this caller now holds the lock; false when another holder has it.
+	 */
+	public function claimObjectEntity(
+		ObjectEntity $entity, Register $register, Schema $schema, string $ownerId, ?int $lockDuration = null,
+		?string $process = null, ?string $runUuid = null
+	): bool;
+
+	/**
 	 * Unlock object in register+schema table.
 	 *
 	 * @param ObjectEntity $entity The object entity to unlock.

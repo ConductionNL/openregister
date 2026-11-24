@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\FormLinkService;
@@ -78,7 +79,7 @@ final class D4InterfaceBindingsTest extends TestCase {
 		MigrationPackService::class => [MigrationPackServiceInterface::class, ContractBindings::class],
 		MigrationService::class => [MigrationServiceInterface::class, ContractBindings::class],
 		NotificationService::class => [NotificationServiceInterface::class, ContractBindings::class],
-		OasService::class => [OasServiceInterface::class, ContractBindings::class],
+		OasService::class => [OasServiceInterface::class, CoreServiceBindings::class],
 		ObjectRelationCleanupService::class => [ObjectRelationCleanupServiceInterface::class, ContractBindings::class],
 		OpenProjectLinkService::class => [OpenProjectLinkServiceInterface::class, ContractBindings::class],
 		OperationsConsoleService::class => [OperationsConsoleServiceInterface::class, ContractBindings::class],

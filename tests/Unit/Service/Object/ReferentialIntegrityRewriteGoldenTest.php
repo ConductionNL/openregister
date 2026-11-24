@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\Object\CascadeDeleteOrigin;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Tests\Unit\Support\IntegrityAuditTrailDouble;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -138,7 +139,7 @@ class ReferentialIntegrityRewriteGoldenTest extends TestCase {
 			}
 		);
 
-		$auditMapper = $this->createMock(AuditTrailMapper::class);
+		$auditMapper = IntegrityAuditTrailDouble::create(test: $this);
 		$auditMapper->method('insert')->willReturnCallback(
 			function (AuditTrail $row): AuditTrail {
 				$this->seen['audit'][] = [

@@ -173,6 +173,7 @@ class FacetHandlerFacetableFieldsGoldenTest extends TestCase {
 			lookups: new FacetLookups($this->createMock(MagicMapper::class), $this->createMock(SchemaMapperInterface::class)),
 			responseCache: $this->createMock(FacetResponseCache::class),
 			logger: $logger,
+			searchProfile: new \OCA\OpenRegister\Search\Service\Search\PropertySearchProfile(),
 			propertyRbac: $rbac
 		);
 

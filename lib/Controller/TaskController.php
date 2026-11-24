@@ -44,7 +44,6 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\TaskCompletionCommand;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\TaskControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Controller\Support\TaskInboxRequest;
@@ -60,8 +59,10 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
+use OCA\OpenRegister\Exception\TaskMandateRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaskManagerInterface;
 use OCA\OpenRegister\Service\Task\TaskAnswer;
@@ -187,7 +188,7 @@ class TaskController extends Controller {
 		IRequest $request,
 		TaskControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->tasks = $services->work->tasks;
 		$this->inbox = $services->work->inbox;
 		$this->authorization = $services->work->authorization;
@@ -815,6 +816,10 @@ class TaskController extends Controller {
 			// objects exist. This catch sits ABOVE the write refusal because
 			// both are about the subject and only this one is about access.
 			return new JSONResponse(['error' => $missing->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (TaskMandateRefusedException $refused) {
+			// The delegate does not hold what the task requires. 422 naming
+			// the verb and the person, nothing about the subject or the rule.
+			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_UNPROCESSABLE_ENTITY);
 		} catch (TaskSubjectWriteRefusedException $refused) {
 			// The payload passed the form and the SUBJECT refused it, on the
 			// ordinary save path: not malformed, not completed.

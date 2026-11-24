@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
+use OCA\OpenRegister\Service\Schemas\ApprovalChainDeclarations;
 use OCP\IL10N;
 use Throwable;
 use UnexpectedValueException;
@@ -41,14 +43,14 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
  */
-class ApprovalPositionFormGuard {
+class ApprovalPositionFormGuard implements ApprovalPositionFormCheckInterface {
 
 	/**
 	 * The schema configuration key that declares approval chains.
 	 *
 	 * @var string
 	 */
-	public const CHAINS_KEY = 'x-openregister-approval-chains';
+	public const CHAINS_KEY = ApprovalChainDeclarations::CHAINS_KEY;
 
 	/**
 	 * Constructor.
@@ -72,15 +74,7 @@ class ApprovalPositionFormGuard {
 	 * @spec openspec/changes/approval-position-task-form/specs/flow-approval-consolidation/spec.md#requirement-an-approval-position-may-declare-the-form-its-task-presents
 	 */
 	public static function declaresForms(array $data): bool {
-		foreach (self::chainsOf(data: $data) as $chain) {
-			foreach ((array)($chain['approvers'] ?? []) as $approver) {
-				if (is_array($approver) === true && array_key_exists('form', $approver) === true) {
-					return true;
-				}
-			}
-		}
-
-		return false;
+		return ApprovalChainDeclarations::declaresForms(data: $data);
 	}//end declaresForms()
 
 	/**
@@ -95,7 +89,7 @@ class ApprovalPositionFormGuard {
 	public function violations(array $data): array {
 		$schema     = $this->bodySchema(data: $data);
 		$violations = [];
-		foreach (self::chainsOf(data: $data) as $chainKey => $chain) {
+		foreach (ApprovalChainDeclarations::chainsOf(data: $data) as $chainKey => $chain) {
 			$approvers = array_values((array)($chain['approvers'] ?? []));
 			foreach ($approvers as $index => $approver) {
 				if (is_array($approver) === false || array_key_exists('form', $approver) === false) {
@@ -181,20 +175,4 @@ class ApprovalPositionFormGuard {
 
 		return $schema;
 	}//end bodySchema()
-
-	/**
-	 * The chains a schema body declares, by key.
-	 *
-	 * @param array<string, mixed> $data The schema body.
-	 *
-	 * @return array<int|string, array<string, mixed>> The chains that are maps.
-	 */
-	private static function chainsOf(array $data): array {
-		$chains = (((array)($data['configuration'] ?? []))[self::CHAINS_KEY] ?? null);
-		if (is_array($chains) === false) {
-			return [];
-		}
-
-		return array_filter($chains, 'is_array');
-	}//end chainsOf()
 }//end class

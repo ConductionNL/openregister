@@ -2622,6 +2622,10 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	/**
 	 * Try one name column; a missing column is not an error, the next one is tried.
 	 *
+	 * Inside an open transaction the probe runs in a savepoint: on PostgreSQL a
+	 * failed statement aborts the whole transaction, so every later query of the
+	 * caller would fail too.
+	 *
 	 * @param NameTableQuery $query  The query.
 	 * @param string         $column The name column.
 	 *
@@ -2630,13 +2634,26 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function readsNamesFromColumn(NameTableQuery $query, string $column): bool {
+		$nested = ($this->stores->db?->inTransaction() === true);
+		if ($nested === true) {
+			$this->stores->db->beginTransaction();
+		}
+
 		try {
 			$this->readNameColumn(query: $query, column: $column);
+			if ($nested === true) {
+				$this->stores->db->commit();
+			}
+
 			return empty($query->names) === false;
 		} catch (\Exception $e) {
 			// Column doesn't exist, try next one.
+			if ($nested === true) {
+				$this->stores->db->rollBack();
+			}
+
 			return false;
-		}
+		}//end try
 	}//end readsNamesFromColumn()
 
 	/**

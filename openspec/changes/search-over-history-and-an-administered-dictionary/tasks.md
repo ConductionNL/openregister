@@ -15,7 +15,7 @@
 
 ## 3. The dictionary
 
-- [~] 3.1 A synonym-group and stopword register, per language, with an admin surface.
+- [x] 3.1 A synonym-group and stopword register, per language, with an admin surface.
 - [x] 3.2 Query-time expansion under an administered cap, per group and per query.
 - [x] 3.3 Stopword removal that would empty a query falls back to the original query.
 - [x] 3.4 The response reports the terms the query expanded to.
@@ -156,3 +156,26 @@ decides what the line SAYS — and the replace-don't-append contract.
 
 Section 3's remaining piece (a seeded empty pair of concept schemes) and 4.2's
 e2e are still open, with their reasons above.
+
+## Status of 3.1, 2026-11-13
+
+**Built: the seeded, empty pair of concept schemes.** `SeedVocabularyRegister`
+now makes sure `https://openregister.app/vocabularies/search-synonyms` and
+`https://openregister.app/vocabularies/search-stopwords` exist in the
+vocabulary register, so an administrator has somewhere to write without
+creating the schemes by hand first.
+
+- **Created only when missing, through `VocabularyImporterInterface::ensureScheme()`,
+  never through `importJsonLd()`.** The import deprecates every concept of a
+  scheme that the document does not list, and the repair step runs on every
+  upgrade: seeding an empty scheme through it would deprecate the whole
+  administered dictionary each time. An existing scheme, renamed or not, is
+  left exactly as it is, and its concepts are never read.
+- **No synonym or stopword is seeded.** Which words mean the same is each
+  organisation's own policy.
+- A scheme that cannot be created warns and the repair step carries on.
+
+Covered by `SearchDictionarySchemeSeedTest`: create only when the uri is
+unknown, no concept sweep, both schemes asked for, a failure warned about and
+passed. 4.2 (e2e) remains open: it needs a running stack.
+

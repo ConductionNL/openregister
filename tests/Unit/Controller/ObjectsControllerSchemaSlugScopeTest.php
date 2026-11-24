@@ -28,7 +28,7 @@ use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -39,6 +39,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
@@ -140,8 +141,8 @@ class ObjectsControllerSchemaSlugScopeTest extends TestCase {
 		$mover->method('perform')->willReturn(['moved' => true, 'uuid' => 'u-1', 'from' => [], 'to' => [], 'errors' => []]);
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			function (Schema $schema, string $action) : bool {
-				$this->asked[] = [$action, $schema->getId()];
+			function (PermissionAsk $ask) : bool {
+				$this->asked[] = [$ask->action, $ask->schema->getId()];
 				return true;
 			}
 		);
@@ -207,7 +208,7 @@ class ObjectsControllerSchemaSlugScopeTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			windowService: $this->createMock(DeletionWindowService::class)
 		);

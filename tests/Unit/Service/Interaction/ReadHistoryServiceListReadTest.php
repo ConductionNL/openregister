@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Service\Interaction\ProcessingListRead;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ProcessingLogService;
@@ -128,6 +129,36 @@ class ReadHistoryServiceListReadTest extends TestCase {
 		);
 
 	}//end testRowsAreLoggedPerRegisterAndSchema()
+
+	/**
+	 * The Core port's queried read is a list read with the query, as a read.
+	 *
+	 * @return void
+	 */
+	public function testAQueriedReadIsAListReadWithTheQuery(): void {
+		$entity = new ObjectEntity();
+		$entity->setUuid('u-1');
+		$entity->setRegister('1');
+		$entity->setSchema('2');
+
+		$reads = [];
+		$log   = $this->createMock(ProcessingLogService::class);
+		$log->expects($this->once())
+			->method('recordReadList')
+			->willReturnCallback(
+				static function (array $objects, ProcessingRead $read) use (&$reads): void {
+					$reads[] = [count($objects), $read->action, $read->query];
+				}
+			);
+		$this->container->method('get')->with(ProcessingLogService::class)->willReturn($log);
+
+		$service = $this->service();
+		$this->assertInstanceOf(ProcessingReadsInterface::class, $service);
+		$service->registerQueriedRead([$entity], ['status' => 'open']);
+
+		$this->assertSame([[1, ReadHistoryService::READ_ACTION, ['status' => 'open']]], $reads);
+
+	}//end testAQueriedReadIsAListReadWithTheQuery()
 
 	/**
 	 * A rendered row keeps its data, minus the @self block, and its organisation.

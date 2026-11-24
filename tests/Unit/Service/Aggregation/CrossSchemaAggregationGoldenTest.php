@@ -40,12 +40,17 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationSlot;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
 use OCP\IDBConnection;
@@ -284,7 +289,7 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 		);
 
 		$permissions = $this->createMock(PermissionHandler::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($case): bool {
 				$schema = ($args['schema'] ?? $args[0]);
 				$action = ($args['action'] ?? $args[1] ?? null);
@@ -292,7 +297,7 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 				$this->calls[] = ['permission' => [$schema->getSlug(), $action, $userId]];
 				return $case['allow'][$schema->getSlug()];
 			}
-		);
+		));
 
 		$session = $this->createMock(IUserSession::class);
 		$user = null;
@@ -324,16 +329,24 @@ class CrossSchemaAggregationGoldenTest extends TestCase {
 		);
 
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic),
-			placeholders: new PlaceholderResolver($session),
-			db: $db,
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $registerMapper, schemas: $schemaMapper, tables: $magic),
+				db: $db
+			),
 			cache: $cache,
-			permissionHandler: $permissions,
-			userSession: $session,
-			organisationService: $orgs,
-			organizationHandler: $orgHandler,
-			translationHandler: $this->createMock(TranslationHandler::class),
-			languageService: $this->createMock(LanguageService::class)
+			access: new AggregationAccess(
+				permissionHandler: $permissions,
+				organizationHandler: $orgHandler
+			),
+			caller: new AggregationCaller(
+				userSession: $session,
+				organisationService: $orgs,
+				placeholders: new PlaceholderResolver($session)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(TranslationHandler::class),
+				languageService: $this->createMock(LanguageService::class)
+			)
 		);
 	}//end runner()
 

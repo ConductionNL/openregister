@@ -24,6 +24,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Contract\ObjectSaveOptions as PublishedObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
@@ -151,7 +152,7 @@ class ValidationHandlerBySchemaGoldenTest extends TestCase {
 		$received = [];
 		$save = function (
 			array|ObjectEntity $object,
-			ObjectSaveOptions $options=new ObjectSaveOptions(),
+			PublishedObjectSaveOptions $options=new ObjectSaveOptions(),
 			bool $_rbac=true,
 			bool $_multitenancy=true
 		) use (&$received): ObjectEntity {

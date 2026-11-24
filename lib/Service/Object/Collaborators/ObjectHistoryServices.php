@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object\Collaborators;
 
-use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\RevertHandler;
@@ -39,7 +39,7 @@ final class ObjectHistoryServices {
 	 * @param LockHandler             $lockHandler     Handler for object locking.
 	 * @param AuditHandler            $auditHandler    Handler for audit trail operations.
 	 * @param RevertHandler           $revertHandler   Handler for revert operations.
-	 * @param AutoTransitionPass|null $autoTransitions Request-scoped pass applying automatic lifecycle moves.
+	 * @param SaveBoundaryInterface|null $autoTransitions The write boundary around a save (the request-scoped automatic-transition pass answers it).
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
@@ -47,7 +47,7 @@ final class ObjectHistoryServices {
 		public readonly LockHandler $lockHandler,
 		public readonly AuditHandler $auditHandler,
 		public readonly RevertHandler $revertHandler,
-		public readonly ?AutoTransitionPass $autoTransitions = null,
+		public readonly ?SaveBoundaryInterface $autoTransitions = null,
 	) {
 	}//end __construct()
 }//end class

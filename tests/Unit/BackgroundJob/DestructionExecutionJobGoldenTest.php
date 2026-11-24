@@ -20,7 +20,7 @@ use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -149,7 +149,7 @@ class DestructionExecutionJobGoldenTest extends TestCase
         $services = [
             LoggerInterface::class           => $this->logger(),
             RetentionServiceInterface::class => $this->retention(),
-            ArchivalSettingsReaderInterface::class => $this->settings($case),
+            ArchivalSettingsInterface::class => $this->settings($case),
             MagicMapperInterface::class      => $this->mapper($case),
             AuditTrailMapperInterface::class => $this->audit(),
             DeleteObject::class              => $this->deleter(),

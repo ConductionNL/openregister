@@ -35,13 +35,12 @@ use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapper;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCP\Files\File;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -300,14 +299,14 @@ class FileAccessGuardsGoldenTest extends TestCase {
 	}//end object()
 
 	private function publishing(bool $indicatorRefuses, bool $restricted): FilePublishingHandler {
-		$guard = $this->createMock(PartyIndicatorGuard::class);
+		$guard = $this->createMock(PublicationRefusalInterface::class);
 		$guard->method('assertPublicationAllowed')->willReturnCallback(function (string $objectUuid) use ($indicatorRefuses): void {
 			$this->trace[] = 'indicator ' . $objectUuid;
 			if ($indicatorRefuses === true) {
 				throw new Exception('Publication is refused', 403);
 			}
 		});
-		$restrictions = $this->createMock(FileRestrictionGuard::class);
+		$restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$restrictions->method('isRestricted')->willReturnCallback(function (int $fileId) use ($restricted): bool {
 			$this->trace[] = 'isRestricted ' . $fileId;
 			return $restricted;
@@ -317,7 +316,7 @@ class FileAccessGuardsGoldenTest extends TestCase {
 			return array_values(array_filter($nodes, fn ($node): bool => $node->getName() !== 'secret.txt'));
 		});
 		$container = $this->createMock(IServerContainer::class);
-		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileRestrictionGuardInterface::class ? $restrictions : $guard);
+		$container->method('get')->willReturnCallback(fn (string $id): object => $id === FileReadRestrictionInterface::class ? $restrictions : $guard);
 
 		$handler = new FilePublishingHandler($this->createMock(MagicMapper::class), $this->shareMapper(), $this->createMock(LoggerInterface::class), $container, $this->passThroughDigests());
 		$handler->setFileService($this->fileService());
@@ -326,8 +325,8 @@ class FileAccessGuardsGoldenTest extends TestCase {
 
 	private function shareMapper(): FileMapper {
 		$mapper = $this->createMock(FileMapper::class);
-		$mapper->method('publishFile')->willReturnCallback(function (int $fileId, string $sharedBy): array {
-			$this->trace[] = 'share ' . $fileId . ' by ' . $sharedBy;
+		$mapper->method('publishFile')->willReturnCallback(function (\OCA\OpenRegister\Files\Db\PublicShareRequest $request): array {
+			$this->trace[] = 'share ' . $request->fileId . ' by ' . $request->sharedBy;
 			return ['id' => 1, 'token' => 't', 'accessUrl' => 'https://x/s/t'];
 		});
 		$mapper->method('depublishFile')->willReturnCallback(function (int $fileId): array {

@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\RuleRun;
 use OCA\OpenRegister\Db\RuleRunMapper;
 use OCA\OpenRegister\Db\RuleRunSummary;
 use OCA\OpenRegister\Db\RuleRunSummaryMapper;
-use OCA\OpenRegister\Service\Notification\NotificationTemplateRegistry;
+use OCA\OpenRegister\Kernel\Contracts\NotificationTemplatesInterface;
 use OCA\OpenRegister\Service\OperationsConsoleJobs;
 use OCA\OpenRegister\Service\OperationsConsoleNotifications;
 use OCA\OpenRegister\Service\OperationsConsoleRules;
@@ -80,9 +80,9 @@ final class OperationsConsoleServiceTest extends TestCase {
 	/**
 	 * The shipped notification texts.
 	 *
-	 * @var NotificationTemplateRegistry
+	 * @var NotificationTemplatesInterface
 	 */
-	private NotificationTemplateRegistry $templates;
+	private NotificationTemplatesInterface $templates;
 
 	/**
 	 * The rules engine's run log.
@@ -105,7 +105,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 		$this->jobList = $this->createMock(IJobList::class);
 		$this->dispatches = $this->createMock(NotificationHistoryMapper::class);
 		$this->queue = $this->createMock(QueuedNotificationMapper::class);
-		$this->templates = $this->createMock(NotificationTemplateRegistry::class);
+		$this->templates = $this->createMock(NotificationTemplatesInterface::class);
 		$this->ruleRuns = $this->createMock(RuleRunMapper::class);
 		$this->ruleSummaries = $this->createMock(RuleRunSummaryMapper::class);
 
@@ -229,7 +229,7 @@ final class OperationsConsoleServiceTest extends TestCase {
 				'transport-refused' => 1,
 			]
 		);
-		$this->templates = $this->createMock(NotificationTemplateRegistry::class);
+		$this->templates = $this->createMock(NotificationTemplatesInterface::class);
 		$this->templates->method('gaps')->willReturn(['object.merged', 'object.split']);
 
 		$pane = $this->pane($this->service()->panes(), 'notifications');

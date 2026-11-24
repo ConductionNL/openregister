@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Credential;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -83,6 +84,20 @@ class DeclaredProviderApprovals {
 	}//end decisionsFor()
 
 	/**
+	 * Forget what was read for an identifier, so a decision recorded in this
+	 * request is read back rather than the cached state before it.
+	 *
+	 * @param string $identifier The `<appId>:<localId>` identifier.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-approval-decisions-are-recorded-in-the-audit-trail-with-the-deciding-user
+	 */
+	public function forget(string $identifier): void {
+		unset($this->cache[$identifier]);
+	}//end forget()
+
+	/**
 	 * Read the decisions from the register.
 	 *
 	 * @param string $identifier The provider identifier.
@@ -92,8 +107,7 @@ class DeclaredProviderApprovals {
 	private function read(string $identifier): array {
 		try {
 			$result = $this->objectService->searchObjectsBySlug(
-				registerSlug: CredentialBrokerService::REGISTER,
-				schemaSlug: self::SCHEMA,
+				target: new RegisterSchemaSlugs(register: CredentialBrokerService::REGISTER, schema: self::SCHEMA),
 				filters: ['providerIdentifier' => $identifier],
 				_rbac: false,
 				_multitenancy: false

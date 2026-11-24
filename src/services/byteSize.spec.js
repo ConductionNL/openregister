@@ -14,6 +14,7 @@ describe('uploadSizeLabel', () => {
 		[500, '< 1 KB'],
 		[1536, '1.5 KB'],
 		[5 * 1024 * 1024, '5.0 MB'],
+		[1024 ** 5 - 1, '1024.0 TB'],
 	])('labels %s bytes as %s', (bytes, label) => {
 		expect(uploadSizeLabel(bytes)).toBe(label)
 	})
@@ -25,6 +26,7 @@ describe('binarySize', () => {
 		[512, '512 B'],
 		[1536, '1.5 KB'],
 		[1234567890, '1.15 GB'],
+		[1024 ** 5 - 1, '1024 TB'],
 	])('labels %s bytes as %s', (bytes, label) => {
 		expect(binarySize(bytes)).toBe(label)
 	})

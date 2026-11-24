@@ -26,7 +26,6 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -36,6 +35,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
+use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
 
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
@@ -110,7 +110,6 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
- * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
@@ -205,6 +204,21 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
  * @uses \OCA\OpenRegister\Service\Rules\DependentValueDeclaration
  * @uses \OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators
  * @uses \OCA\OpenRegister\Service\Survivorship\MdmAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\NamedConditionCheck
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationReminderValidator
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget
+ * @uses \OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration
+ * @uses \OCA\OpenRegister\Service\Rules\DeclaredRuleDescriptors
+ * @uses \OCA\OpenRegister\Service\Rules\NamedConditionGraph
+ * @uses \OCA\OpenRegister\Service\Rules\NamedConditionLibrary
+ * @uses \OCA\OpenRegister\Service\Rules\RuleDescriptor
+ * @uses \OCA\OpenRegister\Service\Rules\RuleEffect
+ * @uses \OCA\OpenRegister\Service\Rules\RuleOrigin
+ * @uses \OCA\OpenRegister\Service\Rules\RuleScope
+ * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
+ * @uses \OCA\OpenRegister\Service\Search\SearchResultDeclaration
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;
@@ -594,7 +608,7 @@ class SchemaMapperSaveGoldenTest extends TestCase {
 			),
 			appConfig: $this->createMock(IAppConfig::class),
 			services: new SchemaMapperServices(
-				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				eventDispatcher: new ProcessDeclarationChecksDispatcher(logger: $logger),
 				validator: $this->createMock(PropertyValidatorHandler::class),
 				logger: $logger
 			)

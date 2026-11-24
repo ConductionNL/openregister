@@ -24,29 +24,12 @@
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
 /**
- * How one SaveObjects::saveObjects() call saves its rows, apart from its RBAC and multitenancy flags.
+ * The published BulkSaveOptions, under the name openregister used before it was published.
  *
- * No strict_types: SaveObjects declares none, and these values arrive from it.
+ * @deprecated Use \OCA\OpenRegister\Contract\BulkSaveOptions, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class BulkSaveOptions {
-
-	/**
-	 * Constructor.
-	 *
-	 * @param BulkBatchDefaults $defaults   The register and schema for every row that names none.
-	 * @param bool              $validation Whether to validate rows against their schema.
-	 * @param bool              $events     Whether to dispatch object lifecycle events.
-	 * @param bool              $audit      Whether to write audit trail rows for the persisted objects.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		public readonly BulkBatchDefaults $defaults=new BulkBatchDefaults(),
-		public readonly bool $validation=false,
-		public readonly bool $events=false,
-		public readonly bool $audit=true,
-	) {
-	}//end __construct()
+final class BulkSaveOptions extends \OCA\OpenRegister\Contract\BulkSaveOptions {
 }//end class

@@ -24,7 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembership;
 use OCA\OpenRegister\Service\Flow\FlowTenantMembershipInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
@@ -52,8 +53,8 @@ final class C10AccessInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AccessLinkSubject::class => [AccessLinkSubjectInterface::class, ContractBindings::class],
-		FlowTenantMembership::class => [FlowTenantMembershipInterface::class, ContractBindings::class],
+		AccessLinkSubject::class => [AccessLinkSubjectInterface::class, CoreServiceBindings::class],
+		FlowTenantMembership::class => [FlowTenantMembershipInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**

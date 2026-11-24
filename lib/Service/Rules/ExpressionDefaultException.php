@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rules;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultRefusalInterface;
 use RuntimeException;
 
 /**
@@ -36,7 +37,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class ExpressionDefaultException extends RuntimeException {
+final class ExpressionDefaultException extends RuntimeException implements ExpressionDefaultRefusalInterface {
 
 	/**
 	 * Constructor.

@@ -37,8 +37,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\ObjectFindRequest;
 use OCA\OpenRegister\Service\Object\ReadScope;
@@ -48,7 +46,7 @@ use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\GraphQL\GraphQLErrorFormatter;
+use OCA\OpenRegister\Kernel\Contracts\BoundedQueryRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -147,14 +145,25 @@ class GraphQLResolver {
 	 *
 	 * @param Schema $schema The register schema
 	 * @param array $args Query arguments (filter, sort, search, fuzzy, first, offset, after, facets, selfFilter)
+	 * @param array|null $context The resolver context; carries a BoundedRun when the admin query console runs the query
 	 *
 	 * @return array<string, mixed> The connection result
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
 	 */
-	public function resolveList(Schema $schema, array $args): array {
+	public function resolveList(Schema $schema, array $args, ?array $context = null): array {
 		// Check schema-level RBAC.
 		$this->checkSchemaPermission(schema: $schema, action: 'read');
+
+		// A bounded run (the admin query console) caps the rows across the whole
+		// document and refuses the rest once its deadline has passed. The cap
+		// and deadline ride in the context; an ordinary GraphQL request carries
+		// neither, so nothing here changes for it.
+		$bounded = ($context[BoundedQueryRunInterface::CONTEXT_KEY] ?? null);
+		if ($bounded instanceof BoundedQueryRunInterface === true) {
+			$bounded->assertWithinDeadline();
+			$args['first'] = $bounded->clampFirst(requested: (int) ($args['first'] ?? 20));
+		}
 
 		$register = $this->findRegisterForSchema(schema: $schema);
 		$request = new ListRequest(schema: $schema, register: $register, args: $args);
@@ -170,6 +179,10 @@ class GraphQLResolver {
 			if ($item instanceof ObjectEntity === true || is_array(value: $item) === true) {
 				$filteredResults[] = $this->filterProperties(schema: $schema, item: $item);
 			}
+		}
+
+		if ($bounded instanceof BoundedQueryRunInterface === true) {
+			$bounded->consume(rows: count($filteredResults));
 		}
 
 		$connection = new ListConnection(result: $result, request: $request);
@@ -205,7 +218,7 @@ class GraphQLResolver {
 	 * @return ListAggregations The aggregations.
 	 */
 	private function aggregations(): ListAggregations {
-		return new ListAggregations(runner: $this->shaping->aggregationRunner, validator: $this->shaping->timeseriesValidator);
+		return $this->shaping->aggregations;
 	}//end aggregations()
 
 	/**
@@ -415,8 +428,30 @@ class GraphQLResolver {
 			$schemaTitle = $schema->getSlug();
 		}
 
-		return GraphQLErrorFormatter::notFound($schemaTitle, $id);
+		return self::recordNotFound(type: $schemaTitle, id: $id);
 	}//end notFoundError()
+
+	/**
+	 * The NOT_FOUND error for a record of a type, as the resolver raises it.
+	 *
+	 * @param string $type The object type.
+	 * @param string $id   The requested id.
+	 *
+	 * @return Error The GraphQL error, with extension code NOT_FOUND.
+	 *
+	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
+	 */
+	public static function recordNotFound(string $type, string $id): Error {
+		return new Error(
+			"$type with ID '$id' not found",
+			null,
+			null,
+			[],
+			null,
+			null,
+			['code' => 'NOT_FOUND']
+		);
+	}//end recordNotFound()
 
 	/**
 	 * One page of a list query, RBAC and multitenancy on.

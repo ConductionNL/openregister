@@ -24,16 +24,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\ObjectFolderControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Files\Service\File\FolderCreation;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderPath;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderResponder;
 use OCA\OpenRegister\Files\Service\File\ObjectFolderUploads;
+use OCA\OpenRegister\Files\Service\File\RenameInstruction;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCP\AppFramework\Controller;
@@ -101,7 +103,7 @@ class ObjectFolderController extends Controller {
 		ObjectFolderControllerServices $services,
 		private readonly FileWriteGuardInterface $fileWriteGuard,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
 		$this->objectFileAccess = $services->objectFileAccess;
 		$this->browser = $services->browser;
@@ -172,7 +174,7 @@ class ObjectFolderController extends Controller {
 			$path = $this->text(name: 'path');
 			$name = $this->text(name: 'name');
 			return new JSONResponse(
-				data: $this->browser->createFolder(object: $this->ensureChangeable(ref: $ref), path: $path, name: $name),
+				data: $this->browser->createFolder(object: $this->ensureChangeable(ref: $ref), creation: new FolderCreation(path: $path, name: $name)),
 				statusCode: 201
 			);
 		});
@@ -248,7 +250,7 @@ class ObjectFolderController extends Controller {
 		return $this->answer(work: function () use ($ref, $nodeId): JSONResponse {
 			$name = $this->text(name: 'name');
 			return new JSONResponse(
-				data: $this->browser->rename(object: $this->ensureChangeable(ref: $ref), nodeId: $nodeId, name: $name)
+				data: $this->browser->rename(object: $this->ensureChangeable(ref: $ref), instruction: new RenameInstruction(nodeId: $nodeId, name: $name))
 			);
 		});
 	}//end rename()

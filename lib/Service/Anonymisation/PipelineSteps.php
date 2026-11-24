@@ -22,20 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
-use OCA\OpenRegister\Files\Service\File\DocumentProcessingHandler;
-use OCA\OpenRegister\Files\Service\File\Pdf\PdfMetadataSanitizer;
-use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
-use OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer;
-use OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer;
-use OCA\OpenRegister\Service\File\ImageBurner;
-use OCA\OpenRegister\Service\File\ImageRedactionService;
 
 /**
- * Every step that changes a document's content, the class that does it, the
- * file types it applies to, and the outcome of each step in one run.
+ * Every step that changes a document's content, the file types it applies
+ * to, and the outcome of each step in one run.
  *
- * A new step is added here; the unit suite fails for a sanitiser class that
- * has no entry.
+ * A new step is added here. Which class does each step is the file pipeline's
+ * own knowledge, kept by the Files area's PipelineStepImplementers; the unit
+ * suite fails for a sanitiser class that has no entry there.
  *
  * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md#requirement-every-content-altering-step-reports-its-state-req-adi-006
  */
@@ -47,6 +41,13 @@ final class PipelineSteps {
 	public const ODT_SANITISER = 'odt-sanitiser';
 	public const IMAGE_BURNER = 'image-burner';
 
+	/**
+	 * The standalone image types the image steps apply to; the image redaction seam detects these.
+	 *
+	 * @var list<string>
+	 */
+	public const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/tiff', 'image/webp'];
+
 	public const OUTCOME_RAN = 'ran';
 	public const OUTCOME_SKIPPED = 'skipped';
 	public const OUTCOME_NOT_APPLICABLE = 'not-applicable';
@@ -56,40 +57,34 @@ final class PipelineSteps {
 	private const ODT = 'application/vnd.oasis.opendocument.text';
 
 	/**
-	 * The steps in pipeline order: label, implementing class, and the MIME types it applies to (null: every type).
+	 * The steps in pipeline order: label and the MIME types it applies to (null: every type).
 	 *
-	 * @var array<string, array{label: string, implementedBy: class-string, mimeTypes: list<string>|null}>
+	 * @var array<string, array{label: string, mimeTypes: list<string>|null}>
 	 */
 	private const STEPS = [
 		self::ANONYMISER => [
 			'label' => 'Anonymiser (detected entities replaced by placeholders)',
-			'implementedBy' => DocumentProcessingHandler::class,
 			'mimeTypes' => null,
 		],
 		self::PDF_TEXT_REPLACER => [
 			'label' => 'PDF text replacer',
-			'implementedBy' => PdfTextReplacer::class,
 			'mimeTypes' => [self::PDF],
 		],
 		self::PDF_METADATA_SANITISER => [
 			'label' => 'PDF metadata sanitiser',
-			'implementedBy' => PdfMetadataSanitizer::class,
 			'mimeTypes' => [self::PDF],
 		],
 		self::DOCX_SANITISER => [
 			'label' => 'DOCX sanitiser',
-			'implementedBy' => DocxSanitizer::class,
 			'mimeTypes' => [self::DOCX],
 		],
 		self::ODT_SANITISER => [
 			'label' => 'ODT sanitiser',
-			'implementedBy' => OdtSanitizer::class,
 			'mimeTypes' => [self::ODT],
 		],
 		self::IMAGE_BURNER => [
 			'label' => 'Image region burner (decided regions painted into the pixels)',
-			'implementedBy' => ImageBurner::class,
-			'mimeTypes' => [...ImageRedactionService::STANDALONE_TYPES, self::DOCX, self::ODT],
+			'mimeTypes' => [...self::IMAGE_TYPES, self::DOCX, self::ODT],
 		],
 	];
 
@@ -129,25 +124,6 @@ final class PipelineSteps {
 	public function mimeTypes(string $step): ?array {
 		return self::STEPS[$step]['mimeTypes'] ?? null;
 	}//end mimeTypes()
-
-	/**
-	 * The step a class implements, or null when it is no registered step.
-	 *
-	 * @param string $class The fully qualified class name.
-	 *
-	 * @return string|null
-	 *
-	 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md#requirement-every-content-altering-step-reports-its-state-req-adi-006
-	 */
-	public function stepImplementedBy(string $class): ?string {
-		foreach (self::STEPS as $step => $definition) {
-			if ($definition['implementedBy'] === ltrim($class, '\\')) {
-				return $step;
-			}
-		}
-
-		return null;
-	}//end stepImplementedBy()
 
 	/**
 	 * The outcome of every step in one run.

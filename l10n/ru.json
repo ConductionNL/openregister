@@ -3354,7 +3354,9 @@
         "Object \"%1$s\" assigned to you": "Объект \"%1$s\" назначен вам",
         "Audit trail export ready": "Экспорт журнала аудита готов",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Ваш экспорт журнала аудита (%1$s записей) сохранён в %2$s%3$s.",
-        "Open Files": "Открыть Файлы"
+        "Open Files": "Открыть Файлы",
+        "Its ancestor %1$s has appraisal %2$s": "Его предок %1$s имеет оценку %2$s",
+        "Its ancestor %s could not be read": "Не удалось прочитать его предка %s"
     },
     "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {

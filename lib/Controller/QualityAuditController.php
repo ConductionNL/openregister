@@ -28,15 +28,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Db\QualityAudit;
 use OCA\OpenRegister\Db\QualityAuditRun;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\Quality\QualityAuditRefusedException;
 use OCA\OpenRegister\Service\Quality\QualityAuditService;
 use OCA\OpenRegister\Service\Quality\QualityAuditStores;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
+use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -82,7 +82,7 @@ class QualityAuditController extends Controller {
 		private readonly QualityAuditStores $stores,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -92,7 +92,7 @@ class QualityAuditController extends Controller {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-declares-a-population-a-rule-set-and-a-tolerance-req-rcn-003
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function index(): JSONResponse {
 		$refusal = $this->gate->refusal(forbidden: self::ADMIN_ONLY);
 		if ($refusal !== null) {
@@ -109,7 +109,7 @@ class QualityAuditController extends Controller {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-declares-a-population-a-rule-set-and-a-tolerance-req-rcn-003
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function create(): JSONResponse {
 		$refusal = $this->gate->refusal(forbidden: self::ADMIN_ONLY);
 		if ($refusal !== null) {
@@ -128,7 +128,7 @@ class QualityAuditController extends Controller {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-run-is-kept-with-its-failures-and-the-tolerance-it-was-judged-against-req-rcn-004
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function show(int $id): JSONResponse {
 		$audit = $this->audit(id: $id);
 		if ($audit instanceof JSONResponse) {
@@ -149,7 +149,7 @@ class QualityAuditController extends Controller {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-run-is-kept-with-its-failures-and-the-tolerance-it-was-judged-against-req-rcn-004
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function update(int $id): JSONResponse {
 		$audit = $this->audit(id: $id);
 		if ($audit instanceof JSONResponse) {
@@ -168,7 +168,7 @@ class QualityAuditController extends Controller {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-declares-a-population-a-rule-set-and-a-tolerance-req-rcn-003
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function destroy(int $id): JSONResponse {
 		$audit = $this->audit(id: $id);
 		if ($audit instanceof JSONResponse) {
@@ -189,7 +189,7 @@ class QualityAuditController extends Controller {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-run-is-kept-with-its-failures-and-the-tolerance-it-was-judged-against-req-rcn-004
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function run(int $id): JSONResponse {
 		$audit = $this->audit(id: $id);
 		if ($audit instanceof JSONResponse) {
@@ -214,7 +214,7 @@ class QualityAuditController extends Controller {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-run-is-kept-with-its-failures-and-the-tolerance-it-was-judged-against-req-rcn-004
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function runs(int $id): JSONResponse {
 		$audit = $this->audit(id: $id);
 		if ($audit instanceof JSONResponse) {
@@ -233,7 +233,7 @@ class QualityAuditController extends Controller {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-run-is-kept-with-its-failures-and-the-tolerance-it-was-judged-against-req-rcn-004
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function failures(int $id): JSONResponse {
 		$run = $this->auditRun(id: $id);
 		if ($run instanceof JSONResponse) {
@@ -257,7 +257,7 @@ class QualityAuditController extends Controller {
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/data-quality-scoring/spec.md#requirement-a-quality-audit-run-is-kept-with-its-failures-and-the-tolerance-it-was-judged-against-req-rcn-004
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
+	#[AuthorizedAdminSetting(settings: AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function failuresCsv(int $id): DataDownloadResponse|JSONResponse {
 		$run = $this->auditRun(id: $id);
 		if ($run instanceof JSONResponse) {

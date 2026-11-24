@@ -17,6 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Service\Object\RefusedDeletion;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Tests\Unit\Support\IntegrityAuditTrailDouble;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -130,7 +131,7 @@ class ReferentialIntegrityAuditLogGoldenTest extends TestCase {
 	}//end testRetainedTargetsAreReportedOnceAndLogged()
 
 	private function service(bool $insertFails = false): ReferentialIntegrityService {
-		$audit = $this->createMock(AuditTrailMapper::class);
+		$audit = IntegrityAuditTrailDouble::create(test: $this);
 		$audit->method('insert')->willReturnCallback(function (AuditTrail $row) use ($insertFails): AuditTrail {
 			if ($insertFails === true) {
 				throw new RuntimeException('insert failed');

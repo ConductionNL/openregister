@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\Bindings\RootBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\MdiIconSvg;
 use OCA\OpenRegister\Service\MdiIconSvgInterface;
 use PHPUnit\Framework\TestCase;
@@ -23,9 +23,9 @@ final class K27InterfaceBindingsTest extends TestCase {
 
 	private const LIB = __DIR__ . '/../../../lib';
 
-	public function testMdiIconSvgInterfaceIsBoundInRootBindings(): void {
-		$this->assertArrayHasKey(MdiIconSvgInterface::class, RootBindings::BINDINGS);
-		$this->assertSame(MdiIconSvg::class, RootBindings::BINDINGS[MdiIconSvgInterface::class]);
+	public function testMdiIconSvgInterfaceIsBoundInTheCoreMap(): void {
+		$this->assertArrayHasKey(MdiIconSvgInterface::class, CoreServiceBindings::BINDINGS);
+		$this->assertSame(MdiIconSvg::class, CoreServiceBindings::BINDINGS[MdiIconSvgInterface::class]);
 	}
 
 	public function testMdiIconSvgImplementsItsInterface(): void {

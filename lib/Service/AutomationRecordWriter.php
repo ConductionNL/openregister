@@ -32,6 +32,8 @@ use DateTimeZone;
 use OCA\OpenRegister\Db\AutomationRecord;
 use OCA\OpenRegister\Db\AutomationRecordMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRun;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -40,7 +42,7 @@ use Throwable;
  *
  * @spec openspec/changes/automation-run-records/design.md
  */
-class AutomationRecordWriter {
+class AutomationRecordWriter implements NotificationRunRecorderInterface {
 
 	/**
 	 * Constructor.
@@ -107,6 +109,28 @@ class AutomationRecordWriter {
 			);
 		}
 	}//end write()
+
+	/**
+	 * Record one evaluated notification rule. A failure is logged, never thrown.
+	 *
+	 * @param NotificationRun $run The evaluated rule.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/automation-run-records/design.md
+	 */
+	public function recordNotificationRun(NotificationRun $run): void {
+		$record = self::draft(kind: AutomationRecord::KIND_NOTIFICATION, key: $run->key, name: $run->name, object: $run->object);
+		$record->setEventId($run->eventId);
+		$record->setOutcome($run->outcome);
+		$record->setReason($run->reason);
+		if ($run->message !== null) {
+			$record->setMessage($run->message);
+		}
+
+		$record->setChannels($run->channels);
+		$this->write(record: $record);
+	}//end recordNotificationRun()
 
 	/**
 	 * A declaration's key as stored: text, trimmed, at most 191 characters.

@@ -255,7 +255,8 @@ final class MapperEntityEventsTest extends TestCase {
 	}
 
 	public function testTaskMapperAnnouncesATerminalTaskOnly(): void {
-		$mapper = new TaskMapper($this->connection(), $this->entityEvents());
+		// TaskMapper dispatches its own task event (Processes), not through the Core publisher.
+		$mapper = new TaskMapper($this->connection(), $this->dispatcher());
 
 		$mapper->insert($this->given(new Task(), ['uuid' => 't-0', 'state' => Task::STATE_COMPLETED]));
 		$mapper->update($this->given(new Task(), ['id' => 15, 'uuid' => 't-1', 'state' => Task::STATE_COMPLETED]));
@@ -267,6 +268,7 @@ final class MapperEntityEventsTest extends TestCase {
 			array_column($this->events, 0),
 			'insert announces nothing; update and updateIfOpen announce a terminal task'
 		);
+		// The terminal event carries the task in its base (the Kernel task contract), so `committed` is read off the subclass first.
 		$this->assertSame(['committed' => false, 'task' => 'given'], $this->events[0][1]);
 		$this->assertSame(['committed' => false, 'task' => 'given'], $this->events[1][1]);
 	}

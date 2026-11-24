@@ -38,6 +38,7 @@ use ReflectionMethod;
 use ReflectionProperty;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Free-text search SQL, recorded per term, platform, fuzzy flag and column set.
@@ -75,6 +76,10 @@ use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
  * @uses \OCA\OpenRegister\Service\Search\SearchTermLiteral
  * @uses \OCA\OpenRegister\Service\Search\SearchTokenStream
  * @uses \OCA\OpenRegister\Service\Search\TokenizeRun
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicUnaccentProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\SearchFolding
+ * @uses   \OCA\OpenRegister\Service\Object\PreservedListLens
+ * @uses   \OCA\OpenRegister\Service\Object\PreservedListing
  */
 class MagicSearchHandlerSearchLeafGoldenTest extends TestCase {
 
@@ -227,7 +232,8 @@ class MagicSearchHandlerSearchLeafGoldenTest extends TestCase {
 			$organisation,
 			new SchemaTypeConverter(),
 			$this->createMock(DateTimeNormalizer::class),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class),
+			searchProfile: new PropertySearchProfile()
 		);
 		$probe = new \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe($this->createMock(IDBConnection::class), $this->createMock(LoggerInterface::class));
 		(new ReflectionProperty($probe, 'available'))->setValue($probe, $fuzzy);

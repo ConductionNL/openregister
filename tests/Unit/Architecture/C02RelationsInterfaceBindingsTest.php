@@ -5,7 +5,7 @@
  *
  * Each class listed here was named directly by a controller, which lives in
  * another component. It now has a narrow interface next to it; the controllers
- * type against that interface, and ContractBindings aliases it to the same class, so
+ * type against that interface, and CoreServiceBindings aliases it to the same class, so
  * the container still hands out the one shared instance. A missing alias is a
  * runtime 500 that no other unit test sees, so this test pins the binding as
  * well as the implementation and the callers.
@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\Object\ObjectReadAccessInterface;
 use OCA\OpenRegister\Service\Relation\ObjectTreeService;
@@ -80,7 +80,7 @@ final class C02RelationsInterfaceBindingsTest extends TestCase {
 	}//end classes()
 
 	/**
-	 * The class implements each interface, and ContractBindings binds each to it.
+	 * The class implements each interface, and CoreServiceBindings binds each to it.
 	 *
 	 * @param class-string $class The class.
 	 *
@@ -91,7 +91,7 @@ final class C02RelationsInterfaceBindingsTest extends TestCase {
 		foreach (self::CLASSES[$class] as $contract) {
 			$this->assertTrue(condition: interface_exists($contract), message: $contract . ' exists');
 			$this->assertContains(needle: $contract, haystack: class_implements($class), message: $class . ' implements ' . $contract);
-			$this->assertSame(expected: $class, actual: ContractBindings::BINDINGS[$contract] ?? null, message: $contract . ' is bound');
+			$this->assertSame(expected: $class, actual: CoreServiceBindings::BINDINGS[$contract] ?? null, message: $contract . ' is bound');
 		}
 	}//end testEachInterfaceIsImplementedAndBound()
 

@@ -54,6 +54,7 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Locks the boolean grammar of `_search` on both search paths.
@@ -86,7 +87,8 @@ class MagicSearchHandlerBooleanTermTest extends TestCase {
 			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
 			schemaTypeConverter: new SchemaTypeConverter(),
 			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class),
+			searchProfile: new PropertySearchProfile()
 		);
 
 		$this->captured = [];

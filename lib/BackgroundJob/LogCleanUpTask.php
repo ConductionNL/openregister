@@ -24,8 +24,8 @@ use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\SearchTrailCleanupInterface;
 use OCA\OpenRegister\Db\StateHistoryMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetentionSettingsInterface;
 use OCA\OpenRegister\Kernel\Contracts\MetricsRetentionInterface;
-use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
@@ -108,7 +108,7 @@ class LogCleanUpTask extends TimedJob {
 	 *
 	 * @param ITimeFactory           $time              The time factory for time operations
 	 * @param LogCleanUpTrails $trails Audit trail, search trail, state history and metrics to cut.
-	 * @param RetentionSettingsReaderInterface $retentionHandler  The retention settings handler
+	 * @param RetentionSettingsInterface $retentionHandler  The retention settings handler
 	 * @param LoggerInterface        $logger            The logger for logging operations
 	 *
 	 * @return void
@@ -118,7 +118,7 @@ class LogCleanUpTask extends TimedJob {
 	public function __construct(
 		ITimeFactory $time,
 		LogCleanUpTrails $trails,
-		private readonly RetentionSettingsReaderInterface $retentionHandler,
+		private readonly RetentionSettingsInterface $retentionHandler,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->auditTrailMapper = $trails->auditTrailMapper;
@@ -244,13 +244,18 @@ class LogCleanUpTask extends TimedJob {
 	 *
 	 * @return void
 	 *
+	 * The run records how many entries it removed, in the message and as
+	 * `purged` in the log context.
+	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-hourly-log-cleanup-job-must-enforce-the-configured-search-trail-retention
+	 * @spec openspec/changes/audit-trail-purge-by-age/specs/retention-management/spec.md#requirement-the-hourly-log-cleanup-job-deletes-audit-trail-entries-past-the-configured-retention
 	 */
 	private function clearAuditTrails(): void {
 		try {
-			if ($this->auditTrailMapper->clearLogs() === true) {
-				$message = '[LogCleanUpTask] Tombstoned expired audit trail rows (payload purged, chain preserved)';
-				$this->logger->info(message: $message, context: $this->logContext());
+			$purged = $this->auditTrailMapper->purgeExpiredLogs();
+			if ($purged > 0) {
+				$message = '[LogCleanUpTask] Tombstoned ' . $purged . ' expired audit trail rows (payload purged, chain preserved)';
+				$this->logger->info(message: $message, context: $this->logContext(extra: ['purged' => $purged]));
 				return;
 			}
 

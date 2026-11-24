@@ -28,8 +28,9 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\TwigFunctionsInstallerInterface;
+use OCA\OpenRegister\Kernel\Contracts\TwigSandboxFilters;
 use OCA\OpenRegister\Service\Vocabulary\CodedValueGuard;
-use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
 use Twig\Extension\SandboxExtension;
@@ -95,23 +96,7 @@ class ComputedFieldHandler {
 	 * The filters the Twig sandbox allows in computed expressions.
 	 */
 	private const SANDBOX_FILTERS = [
-		'date',
-		'date_modify',
-		'upper',
-		'lower',
-		'trim',
-		'length',
-		'default',
-		'number_format',
-		'round',
-		'abs',
-		'split',
-		'join',
-		'slice',
-		'first',
-		'last',
-		'replace',
-		'format',
+		...TwigSandboxFilters::COMMON,
 		'b64enc',
 		'b64dec',
 		'json_decode',
@@ -148,7 +133,7 @@ class ComputedFieldHandler {
 	 * Constructor for ComputedFieldHandler.
 	 *
 	 * @param MagicObjectFinderInterface $objectMapper Mapper for fetching referenced objects.
-	 * @param MappingTwigInstallerInterface $mappingTwig Adds the mapping filters, functions and their runtime.
+	 * @param TwigFunctionsInstallerInterface $mappingTwig Adds the mapping filters, functions and their runtime.
 	 * @param LoggerInterface $logger Logger for error and debug messages.
 	 * @param CodedValueGuard|null $codedValues Rolls concept weights up into the declared score property.
 	 *
@@ -156,7 +141,7 @@ class ComputedFieldHandler {
 	 */
 	public function __construct(
 		private readonly MagicObjectFinderInterface $objectMapper,
-		private readonly MappingTwigInstallerInterface $mappingTwig,
+		private readonly TwigFunctionsInstallerInterface $mappingTwig,
 		private readonly LoggerInterface $logger,
 		// The rolled-up concept score. Nullable with a null default so the
 		// unit tests that build this handler positionally keep working; the

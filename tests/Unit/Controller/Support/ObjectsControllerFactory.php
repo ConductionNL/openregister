@@ -31,7 +31,7 @@ final class ObjectsControllerFactory {
 	 * @param IGroupManager $groupManager Constructor argument.
 	 * @param ObjectExporterInterface $exportService Constructor argument.
 	 * @param ObjectImporterInterface $importService Constructor argument.
-	 * @param ?WebhookService $webhookService Constructor argument.
+	 * @param ?IEventDispatcher $eventDispatcher Constructor argument.
 	 * @param ?LoggerInterface $logger Constructor argument.
 	 * @param ?GeoFilterParser $geoFilterParser Constructor argument.
 	 * @param ?GeoFilterApplier $geoFilterApplier Constructor argument.
@@ -63,7 +63,7 @@ final class ObjectsControllerFactory {
 		\OCP\IGroupManager $groupManager,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface $exportService,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface $importService,
-		?\OCA\OpenRegister\Service\WebhookService $webhookService = null,
+		?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher = null,
 		?\Psr\Log\LoggerInterface $logger = null,
 		?\OCA\OpenRegister\Search\Service\Geo\GeoFilterParser $geoFilterParser = null,
 		?\OCA\OpenRegister\Search\Service\Geo\GeoFilterApplier $geoFilterApplier = null,
@@ -97,7 +97,7 @@ final class ObjectsControllerFactory {
 				transfer: new \OCA\OpenRegister\Controller\Support\ObjectTransfer(
 					exportService: $exportService,
 					importService: $importService,
-					webhookService: $webhookService,
+					eventDispatcher: $eventDispatcher,
 					upsertOnKeyHandler: $upsertOnKeyHandler,
 				),
 				governance: new \OCA\OpenRegister\Controller\Support\ObjectGovernanceServices(
@@ -108,8 +108,7 @@ final class ObjectsControllerFactory {
 				),
 				extensions: new \OCA\OpenRegister\Controller\Support\ObjectsExtensions(
 					geo: new \OCA\OpenRegister\Controller\Support\GeoServices(
-						geoFilterParser: $geoFilterParser,
-						geoFilterApplier: $geoFilterApplier,
+						spatialFilter: ($geoFilterParser !== null && $geoFilterApplier !== null) ? new \OCA\OpenRegister\Search\Service\Geo\SpatialFilter(parser: $geoFilterParser, applier: $geoFilterApplier) : null,
 						geoFeatureBuilder: $geoFeatureBuilder,
 						pdokGeocoder: $pdokGeocoder,
 					),

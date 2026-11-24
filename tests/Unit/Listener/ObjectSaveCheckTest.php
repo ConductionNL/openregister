@@ -22,9 +22,11 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\CodedValueException;
+use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
 use OCA\OpenRegister\Listener\CodedValueValidationListener;
 use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
+use OCA\OpenRegister\Service\Object\ObjectSaveCheck;
 use OCA\OpenRegister\Service\Object\ObjectSaveChecks;
 use OCA\OpenRegister\Service\Rules\DependentValueTableInterface;
 use OCA\OpenRegister\Service\Rules\DependentValueWrite;
@@ -144,5 +146,18 @@ final class ObjectSaveCheckTest extends TestCase {
 
 		$this->assertSame(['coded-value', 'dependent-value'], array_column($checks->violations(['gemeente' => 'X'], $this->schema(), null), 'rule'));
 		$this->assertCount(2, $checks->all());
+	}
+
+	public function testTheDependentValueRuleIsTheCoreContractTheRegistryTakes(): void {
+		$this->assertTrue(is_a(DependentValueListener::class, DependentValueCheckInterface::class, true));
+		$this->assertTrue(is_a(DependentValueCheckInterface::class, ObjectSaveCheck::class, true));
+
+		$rule = $this->createMock(DependentValueCheckInterface::class);
+		$rule->expects($this->once())->method('check')->willReturn([['property' => 'wijk', 'message' => 'dependent', 'rule' => 'dependent-value']]);
+		$guard = $this->createMock(CodedValueGuardInterface::class);
+		$checks = new ObjectSaveChecks($this->coded($guard), $rule);
+
+		$this->assertSame(['dependent-value'], array_column($checks->violations(['wijk' => 'Zuid'], $this->schema(), null), 'rule'));
+		$this->assertSame($rule, $checks->all()[1]);
 	}
 }

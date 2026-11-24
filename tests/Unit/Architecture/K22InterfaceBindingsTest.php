@@ -5,8 +5,8 @@
  *
  * ImportService drove the notify_push batch through the static NotifyPushBatch
  * entry class. It now types against NotifyPushBatchInterface, which
- * ListenerRegistrar binds to NotifyPushBatch, so no file outside lib/Listener
- * names the class.
+ * ListenerBootstrap binds to NotifyPushBatch next to the other Platform
+ * listener bindings, so no file outside lib/Listener names the class.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture
@@ -21,7 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Listener\ListenerRegistrar;
+use OCA\OpenRegister\Listener\ListenerBootstrap;
 use OCA\OpenRegister\Listener\NotifyPushBatch;
 use OCA\OpenRegister\Listener\NotifyPushBatchInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -47,7 +47,7 @@ final class K22InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		NotifyPushBatch::class => [NotifyPushBatchInterface::class, ListenerRegistrar::class],
+		NotifyPushBatch::class => [NotifyPushBatchInterface::class, ListenerBootstrap::class],
 	];
 
 	/**

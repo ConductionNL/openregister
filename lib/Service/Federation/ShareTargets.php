@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Federation;
 
-use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
@@ -55,13 +55,13 @@ class ShareTargets {
 	 * Resolved inside the share's register, as serving does: a slug is not unique across
 	 * registers, so a global lookup could judge a different schema than the token reaches.
 	 *
-	 * @param FederatedShare $share The share.
+	 * @param FederatedShareInterface $share The share.
 	 *
 	 * @return Schema|null The schema.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	public function schema(FederatedShare $share): ?Schema {
+	public function schema(FederatedShareInterface $share): ?Schema {
 		$register = (string)$share->getRegister();
 		$schema   = (string)$share->getSchema();
 		if ($register === '' || $schema === '') {
@@ -78,13 +78,13 @@ class ShareTargets {
 	/**
 	 * The register the share names, or null when it names none or it does not resolve.
 	 *
-	 * @param FederatedShare $share The share.
+	 * @param FederatedShareInterface $share The share.
 	 *
 	 * @return Register|null The register.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	public function register(FederatedShare $share): ?Register {
+	public function register(FederatedShareInterface $share): ?Register {
 		$named = (string)$share->getRegister();
 		if ($named === '') {
 			return null;
@@ -98,15 +98,47 @@ class ShareTargets {
 	}//end register()
 
 	/**
+	 * Every schema of the register a register share names, or null when the
+	 * register or one of its schemas does not resolve.
+	 *
+	 * @param FederatedShareInterface $share The register share.
+	 *
+	 * @return array<int, Schema>|null The schemas.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-a-federated-share-declares-what-crosses-req-pcf-002
+	 */
+	public function registerSchemas(FederatedShareInterface $share): ?array {
+		$register = $this->register(share: $share);
+		if ($register === null) {
+			return null;
+		}
+
+		$schemas = [];
+		foreach ($register->getSchemas() as $schemaRef) {
+			if (is_int($schemaRef) === false && is_string($schemaRef) === false) {
+				return null;
+			}
+
+			try {
+				$schemas[] = $this->resolver->resolveSchemaWithin(register: $register, schemaRef: $schemaRef);
+			} catch (Throwable $e) {
+				return null;
+			}
+		}
+
+		return $schemas;
+	}//end registerSchemas()
+
+	/**
 	 * Whether the caller's own read reaches the one object an object-scope share names.
 	 *
-	 * @param FederatedShare $share The share.
+	 * @param FederatedShareInterface $share The share.
 	 *
 	 * @return bool True when the caller reads that object in the share's register and schema.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md#requirement-a-share-never-grants-more-than-its-creator-holds-req-fse-005
 	 */
-	public function callerReadsObject(FederatedShare $share): bool {
+	public function callerReadsObject(FederatedShareInterface $share): bool {
 		$parts = explode('/', rtrim((string)$share->getObjectUri(), '/'));
 		$id    = (string)end($parts);
 		if ($id === '') {

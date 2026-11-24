@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use OCA\OpenRegister\Contract\ObjectFileReaderInterface;
-use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCP\Files\File;
 
 /**
@@ -34,10 +34,10 @@ class ObjectFileReader implements ObjectFileReaderInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileService $fileService The file service that owns the object folders.
+	 * @param ObjectFilesInterface $fileService The file service that owns the object folders.
 	 */
 	public function __construct(
-		private readonly FileService $fileService
+		private readonly ObjectFilesInterface $fileService
 	) {
 	}//end __construct()
 

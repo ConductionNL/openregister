@@ -29,6 +29,9 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationEntries;
 use OCA\OpenRegister\Service\ObjectAction\ActionElevation;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationScope;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionElevationAttribution;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ElevationAttributionInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -109,11 +112,11 @@ class ObjectActionElevationTest extends TestCase {
 
 	public function testAHandlerPublishesIntoARegisterTheyCannotWrite(): void {
 		$handler = $this->handler();
-		$this->assertFalse($handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna'), 'precondition: anna may not create');
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)), 'precondition: anna may not create');
 
 		$granted = ObjectActionElevationScope::run(
 			new ActionElevation('publish', 'anna', $this->entries()),
-			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', register: '4')
+			fn (): bool => $handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)->about(object: null, register: '4'))
 		);
 
 		$this->assertTrue($granted);
@@ -133,9 +136,9 @@ class ObjectActionElevationTest extends TestCase {
 				$elsewhere->setRegister('5');
 
 				return [
-					$handler->hasPermission(schema: $this->schema(), action: 'update', userId: 'anna', object: $object),
-					$handler->hasPermission(schema: $this->schema(10), action: 'create', userId: 'anna'),
-					$handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', object: $elsewhere),
+					$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'update'))->askedBy(userId: 'anna', objectOwner: null)->about(object: $object, register: null)),
+					$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(10), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)),
+					$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)->about(object: $elsewhere, register: null)),
 				];
 			}
 		);
@@ -150,7 +153,7 @@ class ObjectActionElevationTest extends TestCase {
 
 		$granted = ObjectActionElevationScope::run(
 			new ActionElevation('publish', 'anna', $this->entries()),
-			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna')
+			fn (): bool => $handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null))
 		);
 
 		$this->assertFalse($granted, 'an elevation for register 4 opened a create that names no register');
@@ -161,7 +164,7 @@ class ObjectActionElevationTest extends TestCase {
 
 		$granted = ObjectActionElevationScope::run(
 			new ActionElevation('publish', 'anna', $this->entries()),
-			fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna', register: '5')
+			fn (): bool => $handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)->about(object: null, register: '5'))
 		);
 
 		$this->assertFalse($granted, 'an elevation for register 4 opened a create in register 5');
@@ -174,7 +177,7 @@ class ObjectActionElevationTest extends TestCase {
 
 		$granted = ObjectActionElevationScope::run(
 			new ActionElevation('publish', 'anna', $this->entries()),
-			fn (): bool => $handler->hasPermission(schema: $schema, action: 'create', userId: 'anna', register: '4')
+			fn (): bool => $handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'create'))->askedBy(userId: 'anna', objectOwner: null)->about(object: null, register: '4'))
 		);
 
 		$this->assertFalse($granted, 'an elevation overrode an explicit deny');
@@ -245,11 +248,11 @@ class ObjectActionElevationTest extends TestCase {
 		}
 
 		$this->assertFalse(ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create')));
-		$this->assertFalse($this->handler()->hasPermission(schema: $this->schema(), action: 'create', userId: 'anna'));
+		$this->assertFalse($this->handler()->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'create'))->askedBy(userId: 'anna', objectOwner: null)));
 	}//end testTheElevationEndsWithTheRunEvenWhenItThrows()
 
 	public function testAnElevatedWriteIsAttributedAndAnOrdinaryOneIsNot(): void {
-		$mapper = (new \ReflectionClass(AuditTrailMapper::class))->newInstanceWithoutConstructor();
+		$mapper = $this->mapperAnsweredBy(attribution: new ObjectActionElevationAttribution());
 		$apply = new ReflectionMethod(AuditTrailMapper::class, 'applyElevation');
 
 		$elevated = new AuditTrail();
@@ -277,6 +280,72 @@ class ObjectActionElevationTest extends TestCase {
 		);
 		$this->assertArrayNotHasKey('elevation', $ordinary->getChanged());
 	}//end testAnElevatedWriteIsAttributedAndAnOrdinaryOneIsNot()
+
+	/**
+	 * A hand-built audit mapper whose container answers the elevation port with the given attribution.
+	 *
+	 * @param ElevationAttributionInterface|null $attribution What answers the port; null for a container that answers nothing.
+	 *
+	 * @return AuditTrailMapper The mapper.
+	 */
+	private function mapperAnsweredBy(?ElevationAttributionInterface $attribution): AuditTrailMapper {
+		$mapper = (new \ReflectionClass(AuditTrailMapper::class))->newInstanceWithoutConstructor();
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static function (string $id) use ($attribution): object {
+				if ($id === ElevationAttributionInterface::class && $attribution !== null) {
+					return $attribution;
+				}
+
+				throw new RuntimeException('not bound: ' . $id);
+			}
+		);
+		\Closure::bind(static function (AuditTrailMapper $mapper) use ($container): void {
+			$mapper->container = $container;
+		}, null, AuditTrailMapper::class)($mapper);
+
+		return $mapper;
+	}//end mapperAnsweredBy()
+
+	public function testAnElevatedWriteIsNotAttributedWhenNothingAnswersThePort(): void {
+		$mapper = $this->mapperAnsweredBy(attribution: null);
+		$apply = new ReflectionMethod(AuditTrailMapper::class, 'applyElevation');
+		$elevated = new AuditTrail();
+		$elevated->setRegister(4);
+		$elevated->setSchema(9);
+		$elevated->setAction('create');
+		$elevated->setChanged(['title' => 'Besluit']);
+
+		ObjectActionElevationScope::run(
+			new ActionElevation('publish', 'anna', $this->entries()),
+			function () use ($mapper, $apply, $elevated): void {
+				ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create'));
+				$apply->invoke($mapper, $elevated);
+			}
+		);
+
+		$this->assertSame(['title' => 'Besluit'], $elevated->getChanged());
+	}//end testAnElevatedWriteIsNotAttributedWhenNothingAnswersThePort()
+
+	public function testTheAttributionAnswersTheRowsRegisterSchemaAndVerb(): void {
+		$row = new AuditTrail();
+		$row->setRegister(4);
+		$row->setSchema(9);
+		$row->setAction('create');
+		$attribution = new ObjectActionElevationAttribution();
+
+		$this->assertInstanceOf(ElevationAttributionInterface::class, $attribution);
+		$this->assertNull($attribution->attributionFor(row: $row));
+		$seen = ObjectActionElevationScope::run(
+			new ActionElevation('publish', 'anna', $this->entries()),
+			function () use ($attribution, $row): ?array {
+				ObjectActionElevationScope::permits(new ElevatedWrite(9, '4', 'create'));
+				return $attribution->attributionFor(row: $row);
+			}
+		);
+
+		$this->assertSame(['elevatedBy' => 'publish', 'triggeredBy' => 'anna', 'runAs' => 'system'], $seen);
+	}//end testTheAttributionAnswersTheRowsRegisterSchemaAndVerb()
 
 	public function testEntriesResolveToIdsAndAnUnresolvableOneIsDropped(): void {
 		$registers = $this->createMock(RegisterMapper::class);

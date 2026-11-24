@@ -31,6 +31,7 @@ use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
+use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
 use OCP\Files\File;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
@@ -48,11 +49,11 @@ use Throwable;
 class ImageRedactionService {
 
 	/**
-	 * The standalone image types the seam detects.
+	 * The standalone image types the seam detects: the image types of the anonymisation pipeline's steps.
 	 *
 	 * @var list<string>
 	 */
-	public const STANDALONE_TYPES = ['image/png', 'image/jpeg', 'image/tiff', 'image/webp'];
+	public const STANDALONE_TYPES = PipelineSteps::IMAGE_TYPES;
 
 	/**
 	 * The message when no OCR words with positions exist for a file.

@@ -7,6 +7,8 @@
  * pins each binding, that the bound class implements the interface, and that
  * the callers outside lib/Search name only the interface or handle.
  *
+ * The example-set views writer counts to Configuration and is pinned in K07InterfaceBindingsTest.
+ *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture
  *
@@ -21,8 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Search\SearchWiring;
-use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViewRowsInterface;
-use OCA\OpenRegister\Search\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactory;
 use OCA\OpenRegister\Search\Service\Vectorization\Handlers\ChunkVectorFactoryInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -47,7 +47,6 @@ final class H11InterfaceBindingsTest extends TestCase {
 	 */
 	public static function bindings(): array {
 		return [
-			'example-set views' => [ExampleSetViewRowsInterface::class, ExampleSetViews::class],
 			'chunk vector factory' => [ChunkVectorFactoryInterface::class, ChunkVectorFactory::class],
 		];
 	}//end bindings()
@@ -74,7 +73,6 @@ final class H11InterfaceBindingsTest extends TestCase {
 	 */
 	public static function callers(): array {
 		return [
-			'example-set own row kinds' => ['Service/ExampleSet/ExampleSetOwnRowKinds.php', ['ExampleSetViews']],
 			'operations jobs' => ['Service/Operations/OperationsJobsService.php', ['SearchIndexRebuildJob']],
 			'chunk vectorization batch' => [
 				'Files/BackgroundJob/ChunkVectorizationBatch.php',

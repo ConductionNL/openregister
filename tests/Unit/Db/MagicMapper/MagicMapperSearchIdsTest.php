@@ -45,7 +45,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
-use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -117,7 +117,7 @@ class MagicMapperSearchIdsTest extends TestCase {
 			DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
 			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
-			PurposeGuardInterface::class => ($this->purposeGuard ?? $this->permissiveGuard()),
+			ReadPurposeGuardInterface::class => ($this->purposeGuard ?? $this->permissiveGuard()),
 		];
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
@@ -164,7 +164,7 @@ class MagicMapperSearchIdsTest extends TestCase {
 			->getMock();
 
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query): array {
+			function (RegisterSchema $table, array $query): array {
 				$this->tableQueries[] = $query;
 				$this->searches++;
 				return ($this->tableRows ?? [new ObjectEntity()]);

@@ -2,19 +2,11 @@
     "mysql mixed shapes": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -65,19 +57,11 @@
     "postgres": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = current_schema()"
         ],
         [
             "bind",
@@ -127,14 +111,6 @@
     ],
     "no schemas": [
         [
-            "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
             "result",
             []
         ]
@@ -142,19 +118,11 @@
     "no tables at all": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -194,14 +162,6 @@
     "only unusable shapes": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 3 schemas for register 1"
         ],
         [
@@ -224,19 +184,11 @@
     "catalog read fails": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -253,7 +205,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -270,7 +222,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -287,7 +239,7 @@
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -343,19 +295,11 @@
     "count query fails": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 4 schemas for register 1"
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",
@@ -397,19 +341,11 @@
     "array id as string": [
         [
             "log.debug",
-            "[RegisterService] RegisterService constructor started."
-        ],
-        [
-            "log.debug",
-            "[RegisterService] RegisterService constructor completed."
-        ],
-        [
-            "log.debug",
             "[RegisterService] GetSchemaObjectCounts: Processing 2 schemas for register 1"
         ],
         [
             "prepare",
-            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern"
+            "SELECT table_name FROM information_schema.tables WHERE table_name LIKE :pattern AND table_schema = DATABASE()"
         ],
         [
             "bind",

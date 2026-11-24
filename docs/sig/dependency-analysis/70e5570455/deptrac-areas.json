@@ -1,0 +1,737 @@
+{
+ "by_layers": [
+  {
+   "class_pairs": 563,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\SyncConfigurationsJob -> OCA\\OpenRegister\\Service\\AppConfigurationImporterInterface",
+    "OCA\\OpenRegister\\Command\\BackfillSystemOwnerCommand -> OCA\\OpenRegister\\Command\\MagicTableCommand",
+    "OCA\\OpenRegister\\Command\\BackfillSystemOwnerCommand -> OCA\\OpenRegister\\Command\\MagicTableRun"
+   ],
+   "layers": "Configuration -> Core",
+   "occurrences": 1000
+  },
+  {
+   "class_pairs": 397,
+   "examples": [
+    "OCA\\OpenRegister\\AppHost\\Controller\\GenericSettingsControllerBase -> OCA\\OpenRegister\\Controller\\Trait\\HandlesExceptionsTrait",
+    "OCA\\OpenRegister\\AppHost\\Controller\\GenericSettingsControllerBase -> OCA\\OpenRegister\\Service\\Resolver\\Exception\\MissingConfigException",
+    "OCA\\OpenRegister\\AppHost\\Controller\\GenericSettingsControllerBase -> OCA\\OpenRegister\\Service\\Resolver\\Exception\\PropertyNotFoundException"
+   ],
+   "layers": "Integrations -> Core",
+   "occurrences": 912
+  },
+  {
+   "class_pairs": 245,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\AnnotationNotificationDispatchJob -> OCA\\OpenRegister\\Service\\OrganisationServiceInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\AutoTransitionJob -> OCA\\OpenRegister\\Service\\OrganisationServiceInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\FlowRunWorker -> OCA\\OpenRegister\\Service\\Delegation\\DelegationService"
+   ],
+   "layers": "Processes -> Core",
+   "occurrences": 585
+  },
+  {
+   "class_pairs": 197,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\DbalIntrospectionJob -> OCA\\OpenRegister\\Db\\Source",
+    "OCA\\OpenRegister\\BackgroundJob\\ObjectCleanupJob -> OCA\\OpenRegister\\BackgroundJob\\ActorForwardedJob",
+    "OCA\\OpenRegister\\Controller\\AccessLinkController -> OCA\\OpenRegister\\Db\\AccessLink"
+   ],
+   "layers": "Core -> Integrations",
+   "occurrences": 529
+  },
+  {
+   "class_pairs": 380,
+   "examples": [
+    "OCA\\OpenRegister\\BulkAction\\ExportWholeSetAction -> OCA\\OpenRegister\\BulkAction\\BulkActionInterface",
+    "OCA\\OpenRegister\\BulkAction\\ExportWholeSetAction -> OCA\\OpenRegister\\BulkAction\\BulkActionResult",
+    "OCA\\OpenRegister\\Command\\RollbackApprovalMigrationCommand -> OCA\\OpenRegister\\Db\\Task"
+   ],
+   "layers": "Configuration -> Processes",
+   "occurrences": 511
+  },
+  {
+   "class_pairs": 193,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\ArchivalRetentionTask -> OCA\\OpenRegister\\Db\\MagicMapperInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\ArchivalSweep -> OCA\\OpenRegister\\Db\\MagicMapperInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\AvgRetentionJob -> OCA\\OpenRegister\\BackgroundJob\\AbstractRetentionJob"
+   ],
+   "layers": "Compliance -> Core",
+   "occurrences": 429
+  },
+  {
+   "class_pairs": 254,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\JobHandles -> OCA\\OpenRegister\\BackgroundJob\\AnnotationNotificationDispatchJob",
+    "OCA\\OpenRegister\\BackgroundJob\\JobHandles -> OCA\\OpenRegister\\BackgroundJob\\AutoTransitionJob",
+    "OCA\\OpenRegister\\BackgroundJob\\JobHandles -> OCA\\OpenRegister\\BackgroundJob\\BulkJobRunner"
+   ],
+   "layers": "Core -> Processes",
+   "occurrences": 414
+  },
+  {
+   "class_pairs": 162,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\DeferredObjectEventJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\DeferredObjectEventActor",
+    "OCA\\OpenRegister\\BackgroundJob\\DeferredObjectEventJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\DeferredObjectEventLookup",
+    "OCA\\OpenRegister\\BackgroundJob\\DeferredObjectEventJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\DeferredObjectEventPlatform"
+   ],
+   "layers": "Core -> Compliance",
+   "occurrences": 403
+  },
+  {
+   "class_pairs": 83,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\AnnotationNotificationDispatchJob -> OCA\\OpenRegister\\BackgroundJob\\ActorForwardedJob",
+    "OCA\\OpenRegister\\BackgroundJob\\AutoTransitionJob -> OCA\\OpenRegister\\BackgroundJob\\ActorForwardedJob",
+    "OCA\\OpenRegister\\BackgroundJob\\SourceRecordRecomputeJob -> OCA\\OpenRegister\\BackgroundJob\\ActorForwardedJob"
+   ],
+   "layers": "Processes -> Integrations",
+   "occurrences": 245
+  },
+  {
+   "class_pairs": 149,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\BackfillCalendarLinksJob -> OCA\\OpenRegister\\Db\\CalendarLink",
+    "OCA\\OpenRegister\\BackgroundJob\\BackfillCalendarLinksJob -> OCA\\OpenRegister\\Db\\CalendarLinkMapperInterface",
+    "OCA\\OpenRegister\\Controller\\ApplicationsController -> OCA\\OpenRegister\\Db\\ApplicationMapperInterface"
+   ],
+   "layers": "Configuration -> Integrations",
+   "occurrences": 235
+  },
+  {
+   "class_pairs": 108,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\JobHandles -> OCA\\OpenRegister\\BackgroundJob\\CacheClearAndWarmJob",
+    "OCA\\OpenRegister\\BackgroundJob\\JobHandles -> OCA\\OpenRegister\\BackgroundJob\\ConsistencyCheckJob",
+    "OCA\\OpenRegister\\BackgroundJob\\JobHandles -> OCA\\OpenRegister\\BackgroundJob\\ImportPreviewRunner"
+   ],
+   "layers": "Core -> Configuration",
+   "occurrences": 214
+  },
+  {
+   "class_pairs": 152,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\BackfillCalendarLinksJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\BackfillCalendarLinksPlatform",
+    "OCA\\OpenRegister\\BackgroundJob\\BackfillCalendarLinksJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\BackfillCalendarLinksSources",
+    "OCA\\OpenRegister\\BackgroundJob\\BlobMigrationJob -> OCA\\OpenRegister\\BackgroundJob\\BlobGroup"
+   ],
+   "layers": "Configuration -> Compliance",
+   "occurrences": 203
+  },
+  {
+   "class_pairs": 68,
+   "examples": [
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\BulkAction\\BulkActionRegistrar",
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\Db\\DbRegistrar",
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\Db\\MapperRegistrar"
+   ],
+   "layers": "Platform -> Core",
+   "occurrences": 162
+  },
+  {
+   "class_pairs": 88,
+   "examples": [
+    "OCA\\OpenRegister\\Db\\ObjectEntity -> OCA\\OpenRegister\\Service\\Deletion\\DeletionWindowService",
+    "OCA\\OpenRegister\\Db\\Register -> OCA\\OpenRegister\\Db\\JsonArrayColumn",
+    "OCA\\OpenRegister\\Db\\Register -> OCA\\OpenRegister\\Db\\LinkedItemsTrait"
+   ],
+   "layers": "Kernel -> Core",
+   "occurrences": 149
+  },
+  {
+   "class_pairs": 57,
+   "examples": [
+    "OCA\\OpenRegister\\Controller\\ObjectsController -> OCA\\OpenRegister\\Files\\Service\\File\\BulkDownloadArchive",
+    "OCA\\OpenRegister\\Controller\\ObjectsController -> OCA\\OpenRegister\\Service\\FileServiceInterface",
+    "OCA\\OpenRegister\\Controller\\Support\\EntityRelationsMappers -> OCA\\OpenRegister\\Files\\Db\\EntityRelationMapperInterface"
+   ],
+   "layers": "Core -> Files",
+   "occurrences": 145
+  },
+  {
+   "class_pairs": 69,
+   "examples": [
+    "OCA\\OpenRegister\\Controller\\SettingsController -> OCA\\OpenRegister\\Controller\\Support\\DatabaseServerProfile",
+    "OCA\\OpenRegister\\Controller\\SettingsController -> OCA\\OpenRegister\\Controller\\Support\\HybridSearchDiagnostics",
+    "OCA\\OpenRegister\\Controller\\SettingsController -> OCA\\OpenRegister\\Controller\\Support\\SettingsControllerServices"
+   ],
+   "layers": "Search -> Core",
+   "occurrences": 143
+  },
+  {
+   "class_pairs": 46,
+   "examples": [
+    "OCA\\OpenRegister\\Files\\Controller\\FileTextController -> OCA\\OpenRegister\\Controller\\Support\\ControllerSession",
+    "OCA\\OpenRegister\\Files\\Controller\\FileTextController -> OCA\\OpenRegister\\Controller\\Trait\\RequiresJsonBodyTrait",
+    "OCA\\OpenRegister\\Files\\Controller\\FilesController -> OCA\\OpenRegister\\Controller\\Support\\ObjectLinkRoute"
+   ],
+   "layers": "Files -> Core",
+   "occurrences": 135
+  },
+  {
+   "class_pairs": 53,
+   "examples": [
+    "OCA\\OpenRegister\\AppHost\\ObservabilityWiring -> OCA\\OpenRegister\\Service\\Task\\TaskMetricsProviderInterface",
+    "OCA\\OpenRegister\\AppHost\\Scheduling\\CompiledScheduleFlow -> OCA\\OpenRegister\\Db\\Flow",
+    "OCA\\OpenRegister\\AppHost\\Scheduling\\ScheduleFlowStore -> OCA\\OpenRegister\\Db\\Flow"
+   ],
+   "layers": "Integrations -> Processes",
+   "occurrences": 122
+  },
+  {
+   "class_pairs": 21,
+   "examples": [
+    "OCA\\OpenRegister\\Db\\ObjectEntity -> OCA\\OpenRegister\\Db\\JsonFieldsTrait",
+    "OCA\\OpenRegister\\Db\\Register -> OCA\\OpenRegister\\Db\\JsonFieldsTrait",
+    "OCA\\OpenRegister\\Db\\Schema -> OCA\\OpenRegister\\Db\\JsonFieldsTrait"
+   ],
+   "layers": "Kernel -> Integrations",
+   "occurrences": 119
+  },
+  {
+   "class_pairs": 41,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\AnnotationNotificationDispatchJob -> OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationRuleDispatcherInterface",
+    "OCA\\OpenRegister\\Controller\\ObjectFavouriteController -> OCA\\OpenRegister\\Notifications\\Db\\Watcher",
+    "OCA\\OpenRegister\\Listener\\AnnotationNotificationListener -> OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationRuleDispatcherInterface"
+   ],
+   "layers": "Processes -> Notifications",
+   "occurrences": 111
+  },
+  {
+   "class_pairs": 38,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\LogCleanUpTask -> OCA\\OpenRegister\\Db\\SearchTrailCleanupInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\ViewAlertSweepJob -> OCA\\OpenRegister\\Search\\Db\\View",
+    "OCA\\OpenRegister\\BackgroundJob\\ViewAlertSweepJob -> OCA\\OpenRegister\\Search\\Db\\ViewMapperInterface"
+   ],
+   "layers": "Core -> Search",
+   "occurrences": 102
+  },
+  {
+   "class_pairs": 19,
+   "examples": [
+    "OCA\\OpenRegister\\Command\\RematerialiseCalculationsCommand -> OCA\\OpenRegister\\Command\\Support\\RematerialiseEvaluation",
+    "OCA\\OpenRegister\\Command\\RematerialiseCalculationsCommand -> OCA\\OpenRegister\\Command\\Support\\RematerialiseStorage",
+    "OCA\\OpenRegister\\Controller\\RulesController -> OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetDateValue"
+   ],
+   "layers": "Processes -> Configuration",
+   "occurrences": 101
+  },
+  {
+   "class_pairs": 31,
+   "examples": [
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\AppHost\\AppHostRegistrar",
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\AppHost\\FeatureToggleRegistrar",
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\AppHost\\ObservabilityRegistrar"
+   ],
+   "layers": "Platform -> Integrations",
+   "occurrences": 95
+  },
+  {
+   "class_pairs": 11,
+   "examples": [
+    "OCA\\OpenRegister\\Db\\ObjectEntity -> OCA\\OpenRegister\\Db\\Configuration",
+    "OCA\\OpenRegister\\Db\\Register -> OCA\\OpenRegister\\Db\\Configuration",
+    "OCA\\OpenRegister\\Db\\Schema -> OCA\\OpenRegister\\Db\\Configuration"
+   ],
+   "layers": "Kernel -> Configuration",
+   "occurrences": 70
+  },
+  {
+   "class_pairs": 30,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\AnnotationNotificationDispatchJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\ActorForwardingServices",
+    "OCA\\OpenRegister\\BackgroundJob\\AutoTransitionJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\ActorForwardingServices",
+    "OCA\\OpenRegister\\BackgroundJob\\AutoTransitionJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\AutoTransitionServices"
+   ],
+   "layers": "Processes -> Compliance",
+   "occurrences": 66
+  },
+  {
+   "class_pairs": 22,
+   "examples": [
+    "OCA\\OpenRegister\\Controller\\ActivityLinksController -> OCA\\OpenRegister\\Notifications\\Service\\TimelineVisibilityServiceInterface",
+    "OCA\\OpenRegister\\Controller\\ActivityLinksController -> OCA\\OpenRegister\\Service\\ActivityFilterServiceInterface",
+    "OCA\\OpenRegister\\Controller\\IntegrationControllersWiring -> OCA\\OpenRegister\\Notifications\\Service\\TimelineVisibilityServiceInterface"
+   ],
+   "layers": "Integrations -> Notifications",
+   "occurrences": 64
+  },
+  {
+   "class_pairs": 21,
+   "examples": [
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\Service\\Flow\\FlowRegistrar",
+    "OCA\\OpenRegister\\Listener\\NotifyPushListener -> OCA\\OpenRegister\\Listener\\Support\\NotifyPushPlatform",
+    "OCA\\OpenRegister\\Listener\\NotifyPushListener -> OCA\\OpenRegister\\Listener\\Support\\PushSlugResolver"
+   ],
+   "layers": "Platform -> Processes",
+   "occurrences": 63
+  },
+  {
+   "class_pairs": 15,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\ConfigurationCheckJob -> OCA\\OpenRegister\\Service\\NotificationServiceInterface",
+    "OCA\\OpenRegister\\Controller\\ConfigurationController -> OCA\\OpenRegister\\Service\\NotificationServiceInterface",
+    "OCA\\OpenRegister\\Service\\ContractBindings -> OCA\\OpenRegister\\Service\\ActivityFilterServiceInterface"
+   ],
+   "layers": "Configuration -> Notifications",
+   "occurrences": 61
+  },
+  {
+   "class_pairs": 12,
+   "examples": [
+    "OCA\\OpenRegister\\Event\\BulkActionRegistrationEvent -> OCA\\OpenRegister\\BulkAction\\BulkActionInterface",
+    "OCA\\OpenRegister\\Event\\CaseItemTransitionedEvent -> OCA\\OpenRegister\\Db\\CaseItem",
+    "OCA\\OpenRegister\\Event\\DecisionChangeRequestedEvent -> OCA\\OpenRegister\\Db\\Decision"
+   ],
+   "layers": "Kernel -> Processes",
+   "occurrences": 55
+  },
+  {
+   "class_pairs": 21,
+   "examples": [
+    "OCA\\OpenRegister\\Notifications\\BackgroundJob\\TaskNotificationCandidates -> OCA\\OpenRegister\\Db\\TaskMapper",
+    "OCA\\OpenRegister\\Notifications\\BackgroundJob\\TaskNotificationCandidates -> OCA\\OpenRegister\\Service\\Task\\TaskInboxServiceInterface",
+    "OCA\\OpenRegister\\Notifications\\BackgroundJob\\TaskScheduledNotificationJob -> OCA\\OpenRegister\\Db\\Task"
+   ],
+   "layers": "Notifications -> Processes",
+   "occurrences": 55
+  },
+  {
+   "class_pairs": 15,
+   "examples": [
+    "OCA\\OpenRegister\\AppHost\\Reference\\AbstractSchemaReferenceProvider -> OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatterInterface",
+    "OCA\\OpenRegister\\AppHost\\Store\\FederatedStoreCatalog -> OCA\\OpenRegister\\Service\\Config\\FederatedConfigServiceInterface",
+    "OCA\\OpenRegister\\AppHost\\Store\\FederatedStoreCatalog -> OCA\\OpenRegister\\Service\\Config\\IShareableConfigType"
+   ],
+   "layers": "Integrations -> Configuration",
+   "occurrences": 54
+  },
+  {
+   "class_pairs": 30,
+   "examples": [
+    "OCA\\OpenRegister\\Controller\\RegisterDescriptorController -> OCA\\OpenRegister\\Settings\\OpenRegisterAdmin",
+    "OCA\\OpenRegister\\Controller\\SetupController -> OCA\\OpenRegister\\Settings\\OpenRegisterAdmin",
+    "OCA\\OpenRegister\\Db\\TranslationMapper -> OCA\\OpenRegister\\Db\\TranslationBackfillScope"
+   ],
+   "layers": "Configuration -> Platform",
+   "occurrences": 48
+  },
+  {
+   "class_pairs": 15,
+   "examples": [
+    "OCA\\OpenRegister\\Search\\BackgroundJob\\SearchIndexRebuildJob -> OCA\\OpenRegister\\BackgroundJob\\RecordedQueuedJob",
+    "OCA\\OpenRegister\\Search\\BackgroundJob\\SearchIndexRebuildJob -> OCA\\OpenRegister\\BackgroundJob\\RecordsItsRuns",
+    "OCA\\OpenRegister\\Search\\BackgroundJob\\SearchIndexRebuildJob -> OCA\\OpenRegister\\Db\\JobRun"
+   ],
+   "layers": "Search -> Configuration",
+   "occurrences": 46
+  },
+  {
+   "class_pairs": 16,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\Support\\LogCleanUpTrails -> OCA\\OpenRegister\\Db\\SearchTrailCleanupInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\Support\\ViewAlertSweepSources -> OCA\\OpenRegister\\Search\\Db\\ViewMapperInterface",
+    "OCA\\OpenRegister\\Controller\\SearchTrailController -> OCA\\OpenRegister\\Db\\SearchTrailMapperInterface"
+   ],
+   "layers": "Compliance -> Search",
+   "occurrences": 46
+  },
+  {
+   "class_pairs": 25,
+   "examples": [
+    "OCA\\OpenRegister\\Notification\\AnnotationNotifier -> OCA\\OpenRegister\\Service\\DeepLinkResolverInterface",
+    "OCA\\OpenRegister\\Notifications\\BackgroundJob\\ScheduledNotificationJob -> OCA\\OpenRegister\\Db\\MagicMapper\\MagicObjectFinderInterface",
+    "OCA\\OpenRegister\\Notifications\\BackgroundJob\\ScheduledObjectSources -> OCA\\OpenRegister\\Db\\MagicMapperInterface"
+   ],
+   "layers": "Notifications -> Core",
+   "occurrences": 43
+  },
+  {
+   "class_pairs": 23,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\AuditTrailExportJob -> OCA\\OpenRegister\\BackgroundJob\\RecordedQueuedJob",
+    "OCA\\OpenRegister\\BackgroundJob\\AuditTrailExportJob -> OCA\\OpenRegister\\BackgroundJob\\RecordsItsRuns",
+    "OCA\\OpenRegister\\BackgroundJob\\AuditTrailExportJob -> OCA\\OpenRegister\\Db\\JobRun"
+   ],
+   "layers": "Compliance -> Configuration",
+   "occurrences": 42
+  },
+  {
+   "class_pairs": 18,
+   "examples": [
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\Service\\Configuration\\ConfigurationServiceRegistrar",
+    "OCA\\OpenRegister\\Db\\TranslationEdit -> OCA\\OpenRegister\\Db\\Translation",
+    "OCA\\OpenRegister\\Db\\TranslationFilter -> OCA\\OpenRegister\\Db\\Translation"
+   ],
+   "layers": "Platform -> Configuration",
+   "occurrences": 39
+  },
+  {
+   "class_pairs": 16,
+   "examples": [
+    "OCA\\OpenRegister\\Files\\Controller\\Settings\\FileSettingsController -> OCA\\OpenRegister\\Service\\Anonymisation\\AnonymisationBackendServiceInterface",
+    "OCA\\OpenRegister\\Files\\Controller\\Settings\\FileSettingsController -> OCA\\OpenRegister\\Service\\Anonymisation\\BackendMethodsInterface",
+    "OCA\\OpenRegister\\Files\\Service\\FileSidebarEntityStore -> OCA\\OpenRegister\\Db\\GdprEntityMapperInterface"
+   ],
+   "layers": "Files -> Compliance",
+   "occurrences": 37
+  },
+  {
+   "class_pairs": 19,
+   "examples": [
+    "OCA\\OpenRegister\\Controller\\ObjectReadStateController -> OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationClearingServiceInterface",
+    "OCA\\OpenRegister\\Controller\\ObjectsController -> OCA\\OpenRegister\\Notifications\\Service\\PresenceServiceInterface",
+    "OCA\\OpenRegister\\Controller\\SchemasController -> OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationDeclarationException"
+   ],
+   "layers": "Core -> Notifications",
+   "occurrences": 35
+  },
+  {
+   "class_pairs": 11,
+   "examples": [
+    "OCA\\OpenRegister\\Listener\\NotificationsAnnotationInstallListener -> OCA\\OpenRegister\\Service\\Notification\\NotificationsAnnotationInstallerInterface",
+    "OCA\\OpenRegister\\Notifications\\Service\\ExampleSet\\ExampleSetTimelineEntries -> OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetEngineRows",
+    "OCA\\OpenRegister\\Notifications\\Service\\ExampleSet\\ExampleSetTimelineEntries -> OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetRecord"
+   ],
+   "layers": "Notifications -> Configuration",
+   "occurrences": 33
+  },
+  {
+   "class_pairs": 15,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\TranslationProjectionJob -> OCA\\OpenRegister\\Service\\TranslationProjectionServiceInterface",
+    "OCA\\OpenRegister\\Controller\\FlowTimerDiagnosticController -> OCA\\OpenRegister\\Settings\\OpenRegisterAdmin",
+    "OCA\\OpenRegister\\Controller\\RulesController -> OCA\\OpenRegister\\Settings\\OpenRegisterAdmin"
+   ],
+   "layers": "Processes -> Platform",
+   "occurrences": 30
+  },
+  {
+   "class_pairs": 10,
+   "examples": [
+    "OCA\\OpenRegister\\Notifications\\Controller\\EmailsController -> OCA\\OpenRegister\\Service\\EmailLinkServiceInterface",
+    "OCA\\OpenRegister\\Notifications\\Controller\\Support\\EmailsDomain -> OCA\\OpenRegister\\Service\\EmailLinkServiceInterface",
+    "OCA\\OpenRegister\\Notifications\\Service\\EmailService -> OCA\\OpenRegister\\Db\\EmailLink"
+   ],
+   "layers": "Notifications -> Integrations",
+   "occurrences": 28
+  },
+  {
+   "class_pairs": 16,
+   "examples": [
+    "OCA\\OpenRegister\\AppHost\\Scheduling\\ScheduleAuditTrail -> OCA\\OpenRegister\\Db\\AuditTrail",
+    "OCA\\OpenRegister\\AppHost\\Scheduling\\ScheduleAuditTrail -> OCA\\OpenRegister\\Db\\AuditTrailMapper",
+    "OCA\\OpenRegister\\BackgroundJob\\OAuth2TokenRefreshJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\OAuth2TokenRefreshServices"
+   ],
+   "layers": "Integrations -> Compliance",
+   "occurrences": 26
+  },
+  {
+   "class_pairs": 14,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\ConnectionSeamReportJob -> OCA\\OpenRegister\\Service\\Connection\\ConnectionReporterInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\Support\\BackfillCalendarLinksSources -> OCA\\OpenRegister\\Db\\CalendarLinkMapperInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\Support\\OAuth2TokenRefreshServices -> OCA\\OpenRegister\\Service\\Credential\\OAuth2CredentialSweepInterface"
+   ],
+   "layers": "Compliance -> Integrations",
+   "occurrences": 26
+  },
+  {
+   "class_pairs": 4,
+   "examples": [
+    "OCA\\OpenRegister\\Event\\ViewAlertCrossedEvent -> OCA\\OpenRegister\\Search\\Db\\View",
+    "OCA\\OpenRegister\\Event\\ViewCreatedEvent -> OCA\\OpenRegister\\Search\\Db\\View",
+    "OCA\\OpenRegister\\Event\\ViewDeletedEvent -> OCA\\OpenRegister\\Search\\Db\\View"
+   ],
+   "layers": "Kernel -> Search",
+   "occurrences": 26
+  },
+  {
+   "class_pairs": 9,
+   "examples": [
+    "OCA\\OpenRegister\\Listener\\AggregationCacheInvalidationListener -> OCA\\OpenRegister\\Search\\Service\\Aggregation\\AggregationCacheInterface",
+    "OCA\\OpenRegister\\Listener\\ListenerRegistrar -> OCA\\OpenRegister\\Search\\Listener\\AggregationThresholdListener",
+    "OCA\\OpenRegister\\Listener\\ListenerRegistrar -> OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener"
+   ],
+   "layers": "Processes -> Search",
+   "occurrences": 22
+  },
+  {
+   "class_pairs": 13,
+   "examples": [
+    "OCA\\OpenRegister\\BackgroundJob\\Support\\AutoTransitionServices -> OCA\\OpenRegister\\Service\\Deferral\\DeferredEntryObjectResolverInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\Support\\AutoTransitionServices -> OCA\\OpenRegister\\Service\\Lifecycle\\AutoTransitionPassInterface",
+    "OCA\\OpenRegister\\BackgroundJob\\Support\\AutoTransitionServices -> OCA\\OpenRegister\\Service\\Lifecycle\\TransitionEngine"
+   ],
+   "layers": "Compliance -> Processes",
+   "occurrences": 20
+  },
+  {
+   "class_pairs": 12,
+   "examples": [
+    "OCA\\OpenRegister\\Controller\\Support\\TranslationControllerServices -> OCA\\OpenRegister\\Db\\TranslationMapperInterface",
+    "OCA\\OpenRegister\\Controller\\Support\\TranslationControllerServices -> OCA\\OpenRegister\\Service\\TranslationStatusServiceInterface",
+    "OCA\\OpenRegister\\Db\\DbRegistrar -> OCA\\OpenRegister\\Db\\FeedbackMapper"
+   ],
+   "layers": "Core -> Platform",
+   "occurrences": 20
+  },
+  {
+   "class_pairs": 8,
+   "examples": [
+    "OCA\\OpenRegister\\Files\\BackgroundJob\\ChunkVectorizationBatch -> OCA\\OpenRegister\\Search\\Service\\Vectorization\\Handlers\\ChunkVectorFactoryInterface",
+    "OCA\\OpenRegister\\Files\\BackgroundJob\\ChunkVectorizationBatch -> OCA\\OpenRegister\\Search\\Service\\Vectorization\\Handlers\\ChunkVectorSource",
+    "OCA\\OpenRegister\\Files\\BackgroundJob\\ChunkVectorizationBatch -> OCA\\OpenRegister\\Search\\Service\\Vectorization\\Handlers\\VectorStorageHandlerInterface"
+   ],
+   "layers": "Files -> Search",
+   "occurrences": 18
+  },
+  {
+   "class_pairs": 7,
+   "examples": [
+    "OCA\\OpenRegister\\Db\\FeedbackMapperInterface -> OCA\\OpenRegister\\Db\\Feedback",
+    "OCA\\OpenRegister\\Notifications\\Controller\\NotificationBroadcastController -> OCA\\OpenRegister\\AppInfo\\Application",
+    "OCA\\OpenRegister\\Notifications\\Controller\\NotificationGroupPreferencesController -> OCA\\OpenRegister\\AppInfo\\Application"
+   ],
+   "layers": "Notifications -> Platform",
+   "occurrences": 17
+  },
+  {
+   "class_pairs": 5,
+   "examples": [
+    "OCA\\OpenRegister\\Db\\SearchTrailMapperInterface -> OCA\\OpenRegister\\Db\\SearchTrail",
+    "OCA\\OpenRegister\\Search\\BackgroundJob\\AggregationThresholdJob -> OCA\\OpenRegister\\BackgroundJob\\Support\\ActorForwardingServices",
+    "OCA\\OpenRegister\\Search\\Service\\DashboardSizes -> OCA\\OpenRegister\\Db\\AuditTrail"
+   ],
+   "layers": "Search -> Compliance",
+   "occurrences": 16
+  },
+  {
+   "class_pairs": 9,
+   "examples": [
+    "OCA\\OpenRegister\\Service\\Configuration\\ConfigurationServiceRegistrar -> OCA\\OpenRegister\\Files\\Service\\File\\RegisterFolderProvisionerInterface",
+    "OCA\\OpenRegister\\Service\\Configuration\\ImportHandler -> OCA\\OpenRegister\\Files\\Service\\File\\RegisterFolderProvisionerInterface",
+    "OCA\\OpenRegister\\Service\\Configuration\\SeedRelatedItems -> OCA\\OpenRegister\\Service\\FileWriterInterface"
+   ],
+   "layers": "Configuration -> Files",
+   "occurrences": 16
+  },
+  {
+   "class_pairs": 8,
+   "examples": [
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\Notification\\NotifierRegistrar",
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\Notifications\\NotificationsRegistrar",
+    "OCA\\OpenRegister\\Controller\\ChatController -> OCA\\OpenRegister\\Db\\FeedbackMapperInterface"
+   ],
+   "layers": "Platform -> Notifications",
+   "occurrences": 15
+  },
+  {
+   "class_pairs": 8,
+   "examples": [
+    "OCA\\OpenRegister\\Repair\\ReportUnpublishedSchedules -> OCA\\OpenRegister\\AppHost\\Scheduling\\ScheduleFlowStoreInterface",
+    "OCA\\OpenRegister\\Repair\\ReportUnpublishedSchedules -> OCA\\OpenRegister\\AppHost\\Scheduling\\ScheduleManifest",
+    "OCA\\OpenRegister\\Repair\\ReportUnpublishedSchedules -> OCA\\OpenRegister\\AppHost\\Scheduling\\ScheduleManifestLoaderInterface"
+   ],
+   "layers": "Search -> Integrations",
+   "occurrences": 15
+  },
+  {
+   "class_pairs": 4,
+   "examples": [
+    "OCA\\OpenRegister\\Search\\BackgroundJob\\AggregationThresholdJob -> OCA\\OpenRegister\\Service\\Deferral\\DeferredEntryObjectResolverInterface",
+    "OCA\\OpenRegister\\Search\\BackgroundJob\\AggregationThresholdJob -> OCA\\OpenRegister\\Service\\Deferral\\DeferredListenerContext",
+    "OCA\\OpenRegister\\Search\\BackgroundJob\\Support\\AggregationThresholdServices -> OCA\\OpenRegister\\Service\\Deferral\\DeferredEntryObjectResolverInterface"
+   ],
+   "layers": "Search -> Processes",
+   "occurrences": 13
+  },
+  {
+   "class_pairs": 6,
+   "examples": [
+    "OCA\\OpenRegister\\Controller\\EntityRelationsController -> OCA\\OpenRegister\\Files\\Db\\EntityRelationMapperInterface",
+    "OCA\\OpenRegister\\Controller\\GdprEntitiesController -> OCA\\OpenRegister\\Files\\Db\\EntityRelationMapperInterface",
+    "OCA\\OpenRegister\\Listener\\FrozenNodeWriteListener -> OCA\\OpenRegister\\Files\\Service\\File\\FileOwnershipHandlerInterface"
+   ],
+   "layers": "Processes -> Files",
+   "occurrences": 13
+  },
+  {
+   "class_pairs": 4,
+   "examples": [
+    "OCA\\OpenRegister\\Files\\FilesRegistrar -> OCA\\OpenRegister\\Notifications\\Service\\TimelineVisibilityServiceInterface",
+    "OCA\\OpenRegister\\Files\\Service\\NoteService -> OCA\\OpenRegister\\Notifications\\Service\\TimelineVisibilityServiceInterface",
+    "OCA\\OpenRegister\\Files\\Service\\Sharing\\AccessLinkReader -> OCA\\OpenRegister\\Notifications\\Service\\Timeline\\PublicTimelineInterface"
+   ],
+   "layers": "Files -> Notifications",
+   "occurrences": 9
+  },
+  {
+   "class_pairs": 4,
+   "examples": [
+    "OCA\\OpenRegister\\Files\\Controller\\FilesController -> OCA\\OpenRegister\\AppHost\\Exception\\ConfigurationMissingException",
+    "OCA\\OpenRegister\\Files\\Controller\\FilesController -> OCA\\OpenRegister\\AppHost\\Exception\\FoundationUnavailableException",
+    "OCA\\OpenRegister\\Files\\Service\\Sharing\\AccessLinkReader -> OCA\\OpenRegister\\Db\\AccessLink"
+   ],
+   "layers": "Files -> Integrations",
+   "occurrences": 8
+  },
+  {
+   "class_pairs": 4,
+   "examples": [
+    "OCA\\OpenRegister\\Controller\\Settings\\LlmSettingsController -> OCA\\OpenRegister\\Search\\Service\\VectorizationServiceInterface",
+    "OCA\\OpenRegister\\Service\\ContractBindings -> OCA\\OpenRegister\\Service\\SearchTrailServiceInterface",
+    "OCA\\OpenRegister\\Service\\ExampleSet\\ExampleSetOwnRowKinds -> OCA\\OpenRegister\\Search\\Service\\ExampleSet\\ExampleSetViewRowsInterface"
+   ],
+   "layers": "Configuration -> Search",
+   "occurrences": 6
+  },
+  {
+   "class_pairs": 3,
+   "examples": [
+    "OCA\\OpenRegister\\Listener\\ViewAlertAudience -> OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationRecipientResolverInterface",
+    "OCA\\OpenRegister\\Listener\\ViewAlertMail -> OCA\\OpenRegister\\Notifications\\Service\\Notification\\EmailSenderInterface",
+    "OCA\\OpenRegister\\Search\\Service\\Aggregation\\ThresholdEvaluationService -> OCA\\OpenRegister\\Notifications\\Service\\Notification\\NotificationRuleDispatcherInterface"
+   ],
+   "layers": "Search -> Notifications",
+   "occurrences": 6
+  },
+  {
+   "class_pairs": 5,
+   "examples": [
+    "OCA\\OpenRegister\\Files\\Controller\\FileExtractionController -> OCA\\OpenRegister\\AppInfo\\Application",
+    "OCA\\OpenRegister\\Files\\Controller\\FileSearchController -> OCA\\OpenRegister\\AppInfo\\Application",
+    "OCA\\OpenRegister\\Files\\Controller\\FileSidebarController -> OCA\\OpenRegister\\AppInfo\\Application"
+   ],
+   "layers": "Files -> Platform",
+   "occurrences": 5
+  },
+  {
+   "class_pairs": 3,
+   "examples": [
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\Files\\FilesRegistrar",
+    "OCA\\OpenRegister\\Repair\\CreateMissingRegisterFolders -> OCA\\OpenRegister\\Files\\Service\\File\\RegisterFolderProvisionerInterface",
+    "OCA\\OpenRegister\\Repair\\RegisterRiskLevelMetadata -> OCA\\OpenRegister\\Files\\Service\\RiskLevelServiceInterface"
+   ],
+   "layers": "Platform -> Files",
+   "occurrences": 4
+  },
+  {
+   "class_pairs": 1,
+   "examples": [
+    "OCA\\OpenRegister\\Mcp\\Service\\Chat\\ContextRetrievalHandler -> OCA\\OpenRegister\\Search\\Service\\Vectorization\\VectorEmbeddingsInterface"
+   ],
+   "layers": "Integrations -> Search",
+   "occurrences": 4
+  },
+  {
+   "class_pairs": 3,
+   "examples": [
+    "OCA\\OpenRegister\\Service\\Integration\\BuiltinProviders\\FilesProvider -> OCA\\OpenRegister\\Files\\Service\\File\\FileRestrictionGuardInterface",
+    "OCA\\OpenRegister\\Service\\Integration\\BuiltinProviders\\FilesProvider -> OCA\\OpenRegister\\Service\\FileFolderServiceInterface",
+    "OCA\\OpenRegister\\Service\\ShareLinkService -> OCA\\OpenRegister\\Files\\Service\\File\\FileRestrictionGuardInterface"
+   ],
+   "layers": "Integrations -> Files",
+   "occurrences": 4
+  },
+  {
+   "class_pairs": 2,
+   "examples": [
+    "OCA\\OpenRegister\\Command\\BackfillTranslationSourceLanguageCommand -> OCA\\OpenRegister\\Db\\TranslationSourceLanguageBackfillInterface",
+    "OCA\\OpenRegister\\Controller\\CompanyLookupController -> OCA\\OpenRegister\\AppInfo\\Application"
+   ],
+   "layers": "Integrations -> Platform",
+   "occurrences": 3
+  },
+  {
+   "class_pairs": 2,
+   "examples": [
+    "OCA\\OpenRegister\\Files\\Service\\NoteService -> OCA\\OpenRegister\\Db\\StoredEntity",
+    "OCA\\OpenRegister\\Files\\Service\\Sharing\\AccessLinkReader -> OCA\\OpenRegister\\Db\\StoredEntity"
+   ],
+   "layers": "Files -> Configuration",
+   "occurrences": 3
+  },
+  {
+   "class_pairs": 3,
+   "examples": [
+    "OCA\\OpenRegister\\Search\\Controller\\AggregationController -> OCA\\OpenRegister\\AppInfo\\Application",
+    "OCA\\OpenRegister\\Search\\Controller\\DuplicateController -> OCA\\OpenRegister\\AppInfo\\Application",
+    "OCA\\OpenRegister\\Search\\Controller\\GraphQLController -> OCA\\OpenRegister\\AppInfo\\Application"
+   ],
+   "layers": "Search -> Platform",
+   "occurrences": 3
+  },
+  {
+   "class_pairs": 2,
+   "examples": [
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\Search\\SearchProviderRegistrar",
+    "OCA\\OpenRegister\\AppInfo\\Application -> OCA\\OpenRegister\\Search\\SearchRegistrar"
+   ],
+   "layers": "Platform -> Search",
+   "occurrences": 2
+  },
+  {
+   "class_pairs": 1,
+   "examples": [
+    "OCA\\OpenRegister\\Exception\\CircularReferenceException -> OCA\\OpenRegister\\Exception\\ReferenceCycle"
+   ],
+   "layers": "Kernel -> Platform",
+   "occurrences": 2
+  },
+  {
+   "class_pairs": 1,
+   "examples": [
+    "OCA\\OpenRegister\\Kernel\\Contracts\\ChunkMapperInterface -> OCA\\OpenRegister\\Files\\Db\\Chunk"
+   ],
+   "layers": "Kernel -> Files",
+   "occurrences": 2
+  },
+  {
+   "class_pairs": 2,
+   "examples": [
+    "OCA\\OpenRegister\\Kernel\\Contracts\\ObjectOperationsInterface -> OCA\\OpenRegister\\Db\\AuditTrail",
+    "OCA\\OpenRegister\\Kernel\\Contracts\\TaskManagerInterface -> OCA\\OpenRegister\\Db\\TaskAudit"
+   ],
+   "layers": "Kernel -> Compliance",
+   "occurrences": 2
+  },
+  {
+   "class_pairs": 1,
+   "examples": [
+    "OCA\\OpenRegister\\Middleware\\PublicApiCorsMiddleware -> OCA\\OpenRegister\\Service\\Hardening\\AllowedOriginsInterface"
+   ],
+   "layers": "Platform -> Compliance",
+   "occurrences": 2
+  },
+  {
+   "class_pairs": 1,
+   "examples": [
+    "OCA\\OpenRegister\\Search\\Service\\Reporting\\PdfReportWriter -> OCA\\OpenRegister\\Files\\Service\\File\\Pdf\\Fallback\\NcOfficeConverterInterface"
+   ],
+   "layers": "Search -> Files",
+   "occurrences": 2
+  },
+  {
+   "class_pairs": 1,
+   "examples": [
+    "OCA\\OpenRegister\\Service\\Gdpr\\PrivacyOfficerRecipientResolver -> OCA\\OpenRegister\\Notifications\\Service\\Notification\\RecipientResolverInterface"
+   ],
+   "layers": "Compliance -> Notifications",
+   "occurrences": 1
+  }
+ ],
+ "class_pairs": 3925,
+ "report": {
+  "Allowed": 18405,
+  "Errors": 0,
+  "Skipped violations": 0,
+  "Uncovered": 28666,
+  "Violations": 8310,
+  "Warnings": 0
+ }
+}

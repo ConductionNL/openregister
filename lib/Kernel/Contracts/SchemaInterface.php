@@ -34,8 +34,7 @@ use stdClass;
  * Implemented by \OCA\OpenRegister\Db\Schema. The column accessors are
  * served by Nextcloud's Entity::__call, so they are listed as tags here.
  * hydrate() and validateProperties() stay on the entity (they take a
- * Service validator), and so does getManagedByConfiguration() (it returns a
- * Db\Configuration): a Kernel contract names no Service or Db class.
+ * Service validator): a Kernel contract names no Service or Db class.
  *
  * @method int getId()
  * @method string|null getUuid()
@@ -71,6 +70,10 @@ use stdClass;
  * @method void setApplication(?string $application)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ * @method string|null getClassification()
+ * @method void setClassification(?string $classification)
+ * @method array|null getCatalogue()
+ * @method void setCatalogue(?array $catalogue)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
  * @method array|null getSharedWith()
@@ -95,6 +98,8 @@ use stdClass;
  * @method void setDeck(?array $deck)
  * @method array|null getDraft()
  * @method void setDraft(?array $draft)
+ * @method array|null getFormerSlugs()
+ * @method void setFormerSlugs(?array $formerSlugs)
  */
 interface SchemaInterface extends JsonSerializable {
 
@@ -264,6 +269,9 @@ interface SchemaInterface extends JsonSerializable {
 	 * @return true True if the authorization structure is valid
 	 *
 	 * @psalm-suppress PossiblyUnusedReturnValue
+	 *
+	 * @deprecated Ask the Core `Db\Schema\AuthorizationRulesValidator` instead; every openregister caller does.
+	 *             Kept until no app calls it, then removed in a separate change.
 	 */
 	public function validateAuthorization(): bool;
 
@@ -384,6 +392,9 @@ interface SchemaInterface extends JsonSerializable {
 	 * @return array<int, string> The constraint names, in declaration order.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
+	 *
+	 * @deprecated Ask the Core `UniqueConstraintEvaluator::upsertKeys()` instead; every openregister caller does.
+	 *             Kept until no app calls it, then removed in a separate change.
 	 */
 	public function getUpsertKeys(): array;
 
@@ -541,6 +552,9 @@ interface SchemaInterface extends JsonSerializable {
 	 * @return array<int, array{key: string, label: string, description?: string}> The vocabulary.
 	 *
 	 * @spec openspec/changes/people-on-objects/specs/people-on-objects/spec.md#requirement-a-schema-declares-the-roles-its-objects-carry
+	 *
+	 * @deprecated Ask the Core `VocabularyEntries::configuredVocabulary()` with `linkRoles` instead; every openregister caller does.
+	 *             Kept until no app calls it, then removed in a separate change.
 	 */
 	public function getLinkRoles(): array;
 
@@ -554,6 +568,9 @@ interface SchemaInterface extends JsonSerializable {
 	 * @return array<int, array{key: string, label: string, description?: string, roles?: array<int, string>}> The vocabulary.
 	 *
 	 * @spec openspec/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 *
+	 * @deprecated Ask the Core `VocabularyEntries::configuredVocabulary()` with `partyKinds` instead; every openregister caller does.
+	 *             Kept until no app calls it, then removed in a separate change.
 	 */
 	public function getPartyKinds(): array;
 

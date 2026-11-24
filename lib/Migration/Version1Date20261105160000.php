@@ -26,7 +26,6 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Adds `object_uuids`, `subject_ids` and `query_params` to `openregister_processing_log`.
@@ -34,7 +33,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @spec openspec/specs/avg-verwerkingsregister/spec.md
  */
-class Version1Date20261105160000 extends SimpleMigrationStep {
+class Version1Date20261105160000 extends TargetedMigrationStep {
 
 	/**
 	 * Add the three nullable JSON text columns once.
@@ -48,7 +47,7 @@ class Version1Date20261105160000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable('openregister_processing_log') === false) {
 			return $schema;
@@ -62,5 +61,5 @@ class Version1Date20261105160000 extends SimpleMigrationStep {
 		}
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

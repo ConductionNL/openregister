@@ -29,6 +29,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Schemas\RandomSequenceCode;
+use OCA\OpenRegister\Service\RunningNumbers;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IConfig;
@@ -41,6 +42,7 @@ use Psr\Log\LoggerInterface;
  * shows it as a code keyed by the instance secret and the sequence name.
  *
  * @covers \OCA\OpenRegister\Listener\GeneratedIdentifierListener
+ * @uses   \OCA\OpenRegister\Service\RunningNumbers
  * @uses   \OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration
  * @uses   \OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationReader
  * @uses   \OCA\OpenRegister\Service\Schemas\RandomSequenceCode
@@ -90,7 +92,7 @@ final class GeneratedIdentifierRandomTest extends TestCase {
 
 		return new GeneratedIdentifierListener(
 			$this->schemaMapper,
-			$this->sequences,
+			new RunningNumbers($this->sequences),
 			$this->createMock(originalClassName: LoggerInterface::class),
 			new ObjectEventGate($this->createMock(originalClassName: IEventDispatcher::class)),
 			$config

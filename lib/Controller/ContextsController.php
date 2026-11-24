@@ -29,11 +29,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContextsControllerServices;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolverInterface;
@@ -45,6 +45,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Serves JSON-LD context documents.
@@ -92,7 +93,7 @@ class ContextsController extends Controller {
 		IRequest $request,
 		ContextsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->catalog = $services->catalog;
 		$this->contextService = $services->contextService;
 		$this->userSession = $services->userSession;
@@ -233,7 +234,7 @@ class ContextsController extends Controller {
 	 */
 	private function isPublished(Schema $schema): bool {
 		try {
-			return $this->permissions->hasPermission(schema: $schema, action: 'read');
+			return $this->permissions->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 		} catch (\Throwable $e) {
 			return false;
 		}

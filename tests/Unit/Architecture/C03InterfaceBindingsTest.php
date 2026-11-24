@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\AdminGateInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
@@ -58,12 +58,12 @@ final class C03InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AdminGate::class => [AdminGateInterface::class, ContractBindings::class],
-		ObjectSharingService::class => [ObjectSharingServiceInterface::class, ContractBindings::class],
-		PermissionReportScope::class => [PermissionReportScopeInterface::class, ContractBindings::class],
-		ReachRevocationService::class => [ReachRevocationServiceInterface::class, ContractBindings::class],
-		ScopeAudit::class => [ScopeAuditInterface::class, ContractBindings::class],
-		UserService::class => [UserServiceInterface::class, ContractBindings::class],
+		AdminGate::class => [AdminGateInterface::class, CoreServiceBindings::class],
+		ObjectSharingService::class => [ObjectSharingServiceInterface::class, CoreServiceBindings::class],
+		PermissionReportScope::class => [PermissionReportScopeInterface::class, CoreServiceBindings::class],
+		ReachRevocationService::class => [ReachRevocationServiceInterface::class, CoreServiceBindings::class],
+		ScopeAudit::class => [ScopeAuditInterface::class, CoreServiceBindings::class],
+		UserService::class => [UserServiceInterface::class, CoreServiceBindings::class],
 	];
 
 	/**

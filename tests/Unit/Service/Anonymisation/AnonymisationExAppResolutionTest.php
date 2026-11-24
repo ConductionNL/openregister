@@ -38,6 +38,8 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(AnonymisationBackendCollaborators::class)]
 #[UsesClass(AnonymiserCall::class)]
 #[UsesClass(ProbeResultCache::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Anonymisation\DetectorVersionHistory::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Anonymisation\DetectorVersionReader::class)]
 final class AnonymisationExAppResolutionTest extends TestCase {
 
 	/**
@@ -58,7 +60,8 @@ final class AnonymisationExAppResolutionTest extends TestCase {
 			new AnonymisationBackendCollaborators(
 				$this->createMock(FileSettingsHandler::class),
 				$this->createMock(LoggerInterface::class),
-				$this->createMock(ConnectionReporter::class)
+				$this->createMock(ConnectionReporter::class),
+				new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion()
 			)
 		);
 	}

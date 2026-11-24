@@ -133,7 +133,7 @@ class SettingsLoadConfigurationTrailTest extends TestCase {
 		};
 	}
 
-	private const APPHOST_ID = 'OCA\OpenRegister\Service\ConfigurationServiceInterface';
+	private const APPHOST_ID = 'OCA\OpenRegister\Service\AppConfigurationImporterInterface';
 	private const GENERIC_ID = 'OCA\OpenRegister\Service\ConfigurationService';
 
 	public function testAppHostBranches(): void {
@@ -144,7 +144,7 @@ class SettingsLoadConfigurationTrailTest extends TestCase {
 			'imported' => [$this->appHost(true, $this->container(self::APPHOST_ID, ['version' => '2']), ['a' => 1]), ['success' => true, 'message' => 'Configuration imported successfully.', 'version' => '2']],
 			'unversioned' => [$this->appHost(true, $this->container(self::APPHOST_ID, ['x' => 1]), ['a' => 1]), ['success' => true, 'message' => 'Configuration imported successfully.', 'version' => 'unknown']],
 			'throws' => [$this->appHost(true, $this->container(self::APPHOST_ID, new \RuntimeException('boom')), ['a' => 1]), ['success' => false, 'message' => 'boom']],
-			'unresolvable' => [$this->appHost(true, $this->container('other', []), ['a' => 1]), ['success' => false, 'message' => 'unknown service OCA\OpenRegister\Service\ConfigurationServiceInterface']],
+			'unresolvable' => [$this->appHost(true, $this->container('other', []), ['a' => 1]), ['success' => false, 'message' => 'unknown service OCA\OpenRegister\Service\AppConfigurationImporterInterface']],
 		];
 		$results = [];
 		foreach ($cases as $name => [$service, $expected]) {
@@ -171,7 +171,7 @@ class SettingsLoadConfigurationTrailTest extends TestCase {
 				'-- throws',
 				'error [AppHost:myapp] configuration import failed {"exception":"boom"}',
 				'-- unresolvable',
-				'error [AppHost:myapp] configuration import failed {"exception":"unknown service OCA\\\\OpenRegister\\\\Service\\\\ConfigurationServiceInterface"}',
+				'error [AppHost:myapp] configuration import failed {"exception":"unknown service OCA\\\\OpenRegister\\\\Service\\\\AppConfigurationImporterInterface"}',
 			],
 			$this->events
 		);

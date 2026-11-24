@@ -22,11 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\AuditTrail;
 
-use OCA\OpenRegister\Db\AuditTrail;
-
 /**
  * What one audit row is about: the register, schema and object it touched,
  * each only when known.
+ *
+ * Pure data: the audit trail mapper writes it onto the row
+ * ({@see \OCA\OpenRegister\Db\AuditTrailMapper::stampTarget()}).
  *
  * @spec openspec/specs/ai-mcp/spec.md
  */
@@ -47,20 +48,4 @@ final readonly class AuditedObject {
 		public ?string $objectUuid = null,
 	) {
 	}//end __construct()
-
-	/**
-	 * Write the four references onto a row, unknown ones as null.
-	 *
-	 * @param AuditTrail $auditTrail The row being built.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/ai-mcp/spec.md
-	 */
-	public function stampOnto(AuditTrail $auditTrail): void {
-		$auditTrail->setRegister($this->register);
-		$auditTrail->setSchema($this->schema);
-		$auditTrail->setObject($this->object);
-		$auditTrail->setObjectUuid($this->objectUuid);
-	}//end stampOnto()
 }//end class

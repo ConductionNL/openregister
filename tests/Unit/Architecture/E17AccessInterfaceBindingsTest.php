@@ -25,7 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\AnonymiserRequestInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportAssemblerInterface;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantLoginInterface;
@@ -46,10 +47,10 @@ final class E17AccessInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const BINDINGS = [
-		AnonymiserRequestInterface::class => [AnonymisationBackendService::class, ContractBindings::class],
-		DerivedGrantLoginInterface::class => [DerivedGrantStore::class, ContractBindings::class],
-		SubjectExportAssemblerInterface::class => [SubjectExportService::class, ContractBindings::class],
-		ViewerReachCheckInterface::class => [ViewerReachResolver::class, ContractBindings::class],
+		AnonymiserRequestInterface::class => [AnonymisationBackendService::class, ComplianceServiceBindings::class],
+		DerivedGrantLoginInterface::class => [DerivedGrantStore::class, CoreServiceBindings::class],
+		SubjectExportAssemblerInterface::class => [SubjectExportService::class, ComplianceServiceBindings::class],
+		ViewerReachCheckInterface::class => [ViewerReachResolver::class, CoreServiceBindings::class],
 	];
 
 	/**

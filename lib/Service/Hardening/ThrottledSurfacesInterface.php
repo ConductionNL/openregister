@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
+use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+
 /**
  * The throttler actions this app registers attempts against, as constants.
  *
@@ -46,7 +48,7 @@ interface ThrottledSurfacesInterface {
 	 *
 	 * @var string
 	 */
-	public const ACCESS_LINK = 'openregister_access_link';
+	public const ACCESS_LINK = AccessLinkServiceInterface::THROTTLE_ACTION;
 
 	/**
 	 * A calendar feed served against a token.

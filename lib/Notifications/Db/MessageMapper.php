@@ -29,7 +29,6 @@ use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use OCA\OpenRegister\Mcp\Db\Conversation;
 
 /**
  * MessageMapper handles database operations for Message entities

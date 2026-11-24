@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\SourceInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -30,6 +31,14 @@ use OCP\AppFramework\Db\Entity;
  *
  * Callers type against this interface and resolve it from the container; the
  * registrar binds it to SourceMapper.
+ *
+ * The native return types name the Kernel source contract, so a caller below
+ * Integrations reads a source without naming the Integrations entity. The
+ * template carries the entity class for callers that need it: SourceMapper
+ * implements `SourceMapperInterface<Source>`, and an Integrations caller types
+ * its property the same way.
+ *
+ * @template-covariant TSource of SourceInterface
  */
 interface SourceMapperInterface {
 
@@ -38,31 +47,31 @@ interface SourceMapperInterface {
 	 *
 	 * @param array $object The object to create
 	 *
-	 * @return Source The created source
+	 * @return TSource The created source
 	 *
 	 */
-	public function createFromArray(array $object): Source;
+	public function createFromArray(array $object): SourceInterface;
 
 	/**
 	 * Delete a source
 	 *
 	 * @param Entity $entity Source entity to delete
 	 *
-	 * @return Source The deleted source
+	 * @return TSource The deleted source
 	 * @throws \Exception If user doesn't have delete permission or access to this organisation
 	 *
 	 */
-	public function delete(Entity $entity): Source;
+	public function delete(Entity $entity): SourceInterface;
 
 	/**
 	 * Finds a source by id
 	 *
 	 * @param int $id The id of the source
 	 *
-	 * @return Source The source
+	 * @return TSource The source
 	 * @throws \Exception If user doesn't have read permission
 	 */
-	public function find(int $id): Source;
+	public function find(int $id): SourceInterface;
 
 	/**
 	 * Finds all sources
@@ -71,11 +80,11 @@ interface SourceMapperInterface {
 	 * @param int|null   $offset  The offset of the results
 	 * @param array|null $filters The filters to apply
 	 *
-	 * @return Source[]
+	 * @return TSource[]
 	 *
 	 * @throws \Exception If user doesn't have read permission
 	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
+	 * @psalm-return list<TSource>
 	 */
 	public function findAll(?int $limit=null, ?int $offset=null, ?array $filters=[]): array;
 
@@ -84,11 +93,11 @@ interface SourceMapperInterface {
 	 *
 	 * @param ListQuery $query The limit (unbounded for all), offset and column filters.
 	 *
-	 * @return Source[]
+	 * @return TSource[]
 	 *
 	 * @throws \Exception If user doesn't have read permission
 	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
+	 * @psalm-return list<TSource>
 	 */
 	public function findList(ListQuery $query): array;
 
@@ -101,9 +110,9 @@ interface SourceMapperInterface {
 	 * returned source still carries its `organisation` field so the
 	 * harvest pipeline can scope the objects it creates.
 	 *
-	 * @return Source[] Sources with sync_enabled = true
+	 * @return TSource[] Sources with sync_enabled = true
 	 *
-	 * @psalm-return list<\OCA\OpenRegister\Db\Source>
+	 * @psalm-return list<TSource>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
@@ -142,22 +151,22 @@ interface SourceMapperInterface {
 	 *
 	 * @param string $sourceId The Source id (digits) or uuid.
 	 *
-	 * @return Source|null The source, or null when not found.
+	 * @return TSource|null The source, or null when not found.
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
 	 * @spec openspec/changes/dbal-source-resolution-system-context/specs/dbal-source-resolution-system-context/spec.md
 	 */
-	public function findForSystem(string $sourceId): ?Source;
+	public function findForSystem(string $sourceId): ?SourceInterface;
 
 	/**
 	 * Update an existing source
 	 *
 	 * @param Entity $entity Source entity to update
 	 *
-	 * @return Source The updated source
+	 * @return TSource The updated source
 	 * @throws \Exception If user doesn't have update permission or access to this organisation
 	 */
-	public function update(Entity $entity): Source;
+	public function update(Entity $entity): SourceInterface;
 
 	/**
 	 * Updates a source from an array
@@ -165,7 +174,7 @@ interface SourceMapperInterface {
 	 * @param int $id The id of the source to update
 	 * @param array $object The object to update
 	 *
-	 * @return Source The updated source
+	 * @return TSource The updated source
 	 */
-	public function updateFromArray(int $id, array $object): Source;
+	public function updateFromArray(int $id, array $object): SourceInterface;
 }//end interface

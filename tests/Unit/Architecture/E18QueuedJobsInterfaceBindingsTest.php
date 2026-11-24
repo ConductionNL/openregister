@@ -5,9 +5,9 @@
  *
  * TransferController queued TransferExecutionJob::class and
  * TranslationProjectionListener deferred TranslationProjectionJob::class. Both now
- * use a constant on QueuedJobClassesInterface, whose value is the same class name,
- * so the job list stores exactly what it stored before and the job classes stay
- * inside their component.
+ * use a constant on their own area's job-handle holder (ComplianceJobHandlesInterface,
+ * ProcessesJobHandlesInterface), whose value is the same class name, so the job list
+ * stores exactly what it stored before and the job classes stay inside their component.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Architecture
@@ -22,7 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\BackgroundJob\QueuedJobClassesInterface;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
+use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
 use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
 use OCA\OpenRegister\BackgroundJob\TranslationProjectionJob;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -48,8 +49,8 @@ final class E18QueuedJobsInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, string}>
 	 */
 	private const CLASSES = [
-		TransferExecutionJob::class => [QueuedJobClassesInterface::class, 'TRANSFER_EXECUTION'],
-		TranslationProjectionJob::class => [QueuedJobClassesInterface::class, 'TRANSLATION_PROJECTION'],
+		TransferExecutionJob::class => [ComplianceJobHandlesInterface::class, 'TRANSFER_EXECUTION'],
+		TranslationProjectionJob::class => [ProcessesJobHandlesInterface::class, 'TRANSLATION_PROJECTION'],
 	];
 
 	/**

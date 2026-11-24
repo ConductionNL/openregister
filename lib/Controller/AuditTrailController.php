@@ -32,12 +32,12 @@
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
@@ -46,6 +46,17 @@ use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\LogService;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
+use OCA\OpenRegister\Controller\Support\ResultWindow;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeRefusalInterface;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceException;
+use OCA\OpenRegister\Service\ObjectSource\DbalWriteException;
+use OCA\OpenRegister\Service\WriteCause;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
+use Psr\Log\LoggerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -133,6 +144,13 @@ class AuditTrailController extends Controller {
 	private readonly ?ExplicitRevealTrailMaskerInterface $revealMasker;
 
 	/**
+	 * Logs a failed object history lookup.
+	 *
+	 * @var LoggerInterface
+	 */
+	private readonly LoggerInterface $logger;
+
+	/**
 	 * Constructor for AuditTrailController
 	 *
 	 * @param IRequest $request The request object
@@ -142,12 +160,13 @@ class AuditTrailController extends Controller {
 		IRequest $request,
 		AuditTrailControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->logService = $services->log->logService;
 		$this->auditTrailMapper = $services->mappers->auditTrailMapper;
 		$this->auditHashService = $services->log->auditHashService;
 		$this->userSession = $services->platform->userSession;
 		$this->groupManager = $services->platform->groupManager;
+		$this->logger = $services->log->logger;
 		$this->readableLister = $services->log->readableLister;
 		$this->auditPage = $services->log->auditPage;
 		$this->historyForReaders = $services->readers->historyForReaders;
@@ -368,7 +387,8 @@ class AuditTrailController extends Controller {
 	 * The audit page's filters, read from the request.
 	 *
 	 * Actor, period, action, register, schema and object. `user` is accepted
-	 * as a synonym of `actor`.
+	 * as a synonym of `actor`. `tool`, `actionPrefix` and `toolPrefix` narrow
+	 * the list to assistant tool calls (an exact tool id, or a prefix).
 	 *
 	 * @return array<string, mixed> The filters for AuditTrailPageQuery.
 	 *
@@ -381,7 +401,7 @@ class AuditTrailController extends Controller {
 			'from' => ($params['from'] ?? null),
 			'to' => ($params['to'] ?? null),
 		];
-		foreach (['action', 'register', 'schema', 'object'] as $key) {
+		foreach (['action', 'register', 'schema', 'object', 'tool', 'actionPrefix', 'toolPrefix'] as $key) {
 			$filters[$key] = ($params[$key] ?? null);
 		}
 
@@ -706,7 +726,7 @@ class AuditTrailController extends Controller {
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	public function objects(string $register, string $schema, string $id): JSONResponse {
-		return $this->objectLogs(object: new AuditObjectRef(register: $register, schema: $schema, id: $id));
+		return $this->trailOfObject(object: new AuditObjectRef(register: $register, schema: $schema, id: $id));
 	}//end objects()
 
 	/**
@@ -718,7 +738,7 @@ class AuditTrailController extends Controller {
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md
 	 */
-	private function objectLogs(AuditObjectRef $object): JSONResponse {
+	private function trailOfObject(AuditObjectRef $object): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
@@ -732,7 +752,7 @@ class AuditTrailController extends Controller {
 		}
 
 		return $this->adminObjectLogs(object: $object, params: $this->extractRequestParameters());
-	}//end objectLogs()
+	}//end trailOfObject()
 
 	/**
 	 * An administrator's read of one object's audit trail, read events included.
@@ -838,6 +858,275 @@ class AuditTrailController extends Controller {
 
 		return new JSONResponse(data: $page);
 	}//end objectsForReader()
+
+	/**
+	 * One object's history on the object API route `/api/objects/{register}/{schema}/{id}/logs`.
+	 *
+	 * Whoever may read the object reads its history, redacted like the audit-trails route: a
+	 * non-admin is answered by the reader history (404 when the object GET would be, the
+	 * doelbinding guard, and no `session`, `request`, `ipAddress` or property the caller may
+	 * not see). An administrator reads the stored log of the object, masked for
+	 * explicit-reveal values. Moved here from ObjectsController::logs() unchanged.
+	 *
+	 * @param string                    $id            The ID of the object to retrieve logs for.
+	 * @param string                    $register      The register slug or identifier.
+	 * @param string                    $schema        The schema slug or identifier.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse JSON response with object audit logs.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Guarded in-body: a non-admin is answered only through
+	 *     ReadableObjectHistoryInterface::page(), which resolves the object with the caller's
+	 *     read access and returns null, answered 404, when that read is refused.
+	 *
+	 * @psalm-return JSONResponse<200|404|409,
+	 *     array{results?: array<int, mixed>, total?: int<0, max>,
+	 *     page?: float|int<1, max>, pages?: 1|float, limit?: int<1, max>,
+	 *     offset?: int<0, max>, next?: string, prev?: string,
+	 *     message?: string, error?: string},
+	 *     array<never, never>>
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
+	 */
+	public function objectLogs(string $id, string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
+		if ($this->inAdminGroup() === false) {
+			return $this->logsForReader(ref: new ObjectRef(register: $register, schema: $schema, id: $id));
+		}
+
+		// Set the register and schema context first.
+		$objectService->setRegister(register: $register);
+		$objectService->setSchema(schema: $schema);
+
+		// Fetch the object by ID/UUID only (no register/schema filter yet).
+		$object = $this->historyObject(id: $id, objectService: $objectService);
+		if ($object instanceof JSONResponse) {
+			return $object;
+		}
+
+		if (self::livesAt(object: $object, route: self::resolvedRoute(route: [$register, $schema], objectService: $objectService)) === false) {
+			$msg = 'Object does not belong to specified register/schema';
+			return new JSONResponse(data: ['message' => $msg], statusCode: 404);
+		}
+
+		return $this->logsPage(id: $id, objectService: $objectService);
+	}//end objectLogs()
+
+	/**
+	 * Whether the session user is in the `admin` group, as the object API decides it.
+	 *
+	 * @return bool False without a session user.
+	 */
+	private function inAdminGroup(): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		return in_array('admin', $this->groupManager->getUserGroupIds($user));
+	}//end inAdminGroup()
+
+	/**
+	 * The paging, filters, order and search of this request, as the object API reads them.
+	 *
+	 * @return array{query: ListQuery, page: int|null, search: string|null} The request's listing.
+	 */
+	private function listingConfig(): array {
+		$params = $this->request->getParams();
+
+		unset($params['id']);
+		unset($params['_route']);
+
+		$listing = ['query' => ListQuery::fromParams(params: $params), 'page' => null, 'search' => null];
+		if (($params['page'] ?? $params['_page'] ?? null) !== null) {
+			$listing['page'] = (int)($params['page'] ?? $params['_page']);
+		}
+
+		if (($params['_search'] ?? null) !== null) {
+			$listing['search'] = (string)$params['_search'];
+		}
+
+		return $listing;
+	}//end listingConfig()
+
+	/**
+	 * The object whose history an administrator asks for.
+	 *
+	 * @param string                    $id            The object ID or UUID.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return ObjectEntity|JSONResponse The object, or the answer when it cannot be read.
+	 */
+	private function historyObject(string $id, ObjectOperationsInterface $objectService): ObjectEntity|JSONResponse {
+		try {
+			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifier(id: $id);
+		} catch (\Exception $e) {
+			return $this->historyLookupFailure(failure: $e);
+		}
+
+		return ($object ?? new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404));
+	}//end historyObject()
+
+	/**
+	 * Answer an object history lookup that failed with a 404, logging anything but a plain miss.
+	 *
+	 * @param \Exception $failure The failure.
+	 *
+	 * @return JSONResponse The 404 answer.
+	 *
+	 * @throws DbalObjectSourceException|DbalWriteException For ObjectSourceErrorMiddleware to answer.
+	 */
+	private function historyLookupFailure(\Exception $failure): JSONResponse {
+		if ($failure instanceof DbalObjectSourceException || $failure instanceof DbalWriteException) {
+			throw $failure;
+		}
+
+		if ($failure instanceof DoesNotExistException === false) {
+			$this->logger->error(
+				message: '[AuditTrailController] Object history lookup failed',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $failure->getMessage()]
+			);
+		}
+
+		return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
+	}//end historyLookupFailure()
+
+	/**
+	 * Whether an object's stored register and schema are the given ones, ignoring case.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param array        $route  The register and schema to compare with.
+	 *
+	 * @return bool
+	 */
+	private static function livesAt(ObjectEntity $object, array $route): bool {
+		return strtolower((string)$object->getRegister()) === strtolower($route[0])
+			&& strtolower((string)$object->getSchema()) === strtolower($route[1]);
+	}//end livesAt()
+
+	/**
+	 * The ids a route's register and schema resolved to; a part that did not resolve stays as named.
+	 *
+	 * @param array                     $route         The register and schema on the route.
+	 * @param ObjectOperationsInterface $objectService The object service, with the route set.
+	 *
+	 * @return array The register and schema.
+	 */
+	private static function resolvedRoute(array $route, ObjectOperationsInterface $objectService): array {
+		return [
+			(string)($objectService->getCurrentRegisterEntity()?->getId() ?? $route[0]),
+			(string)($objectService->getCurrentSchemaEntity()?->getId() ?? $route[1]),
+		];
+	}//end resolvedRoute()
+
+	/**
+	 * One page of an object's audit log, masked for explicit-reveal values.
+	 *
+	 * @param string                    $id            The object ID or UUID.
+	 * @param ObjectOperationsInterface $objectService The object service.
+	 *
+	 * @return JSONResponse The page.
+	 */
+	private function logsPage(string $id, ObjectOperationsInterface $objectService): JSONResponse {
+		$config = $this->listingConfig();
+		$query = $config['query'];
+		$logs = $objectService->getLogs(uuid: $id, filters: $query->filters);
+
+		// An explicit-reveal value reads masked for an administrator too.
+		if ($this->revealMasker !== null) {
+			$logs = $this->revealMasker->mask(entries: $logs);
+		}
+
+		$window = new ResultWindow(total: count($logs), limit: $query->limit, offset: $query->offset, page: $config['page']);
+		$paginated = $window->over(results: $logs);
+
+		return new JSONResponse(data: array_merge($paginated, $this->pageLinks(page: (int)$paginated['page'], pages: (int)$paginated['pages'])));
+	}//end logsPage()
+
+	/**
+	 * The `next` link while a later page exists and the `prev` link past the first, on this request's URI.
+	 *
+	 * @param int $page  The current page.
+	 * @param int $pages The number of pages.
+	 *
+	 * @return array{next?: string, prev?: string} The links that apply.
+	 */
+	private function pageLinks(int $page, int $pages): array {
+		$targets = [];
+		if ($page < $pages) {
+			$targets['next'] = ($page + 1);
+		}
+
+		if ($page > 1) {
+			$targets['prev'] = ($page - 1);
+		}
+
+		$uri = $this->request->getRequestUri();
+
+		return array_map(
+			static function (int $target) use ($uri): string {
+				$count = 0;
+				$linked = (string)preg_replace('/([?&]_?page=)[^&]*/', '${1}'.$target, $uri, -1, $count);
+				if ($count > 0) {
+					return $linked;
+				}
+
+				$separator = '?';
+				if (str_contains($linked, '?') === true) {
+					$separator = '&';
+				}
+
+				return $linked.$separator.'page='.$target;
+			},
+			$targets
+		);
+	}//end pageLinks()
+
+	/**
+	 * One object's history for a non-admin on the object API route, when they may read the object.
+	 *
+	 * @param ObjectRef $ref The register, the schema and the object ID or UUID, as the route names them.
+	 *
+	 * @return JSONResponse 200 with the redacted page, 404 when the object is not readable to this caller,
+	 *                      or the doelbinding refusal.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
+	 */
+	private function logsForReader(ObjectRef $ref): JSONResponse {
+		$config = $this->listingConfig();
+		$query = $config['query'];
+
+		try {
+			$page = $this->historyForReaders->page(
+				ref: $ref,
+				params: [
+					'limit' => $query->limit,
+					'offset' => $query->offset,
+					'page' => $config['page'],
+					'filters' => $query->filters,
+					'sort' => $query->sort,
+					'search' => $config['search'],
+				]
+			);
+		} catch (ReadPurposeRefusalInterface $refusal) {
+			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+		} catch (MultipleObjectsReturnedException $e) {
+			// The 409 an administrator gets on this route (#4037), not a 500.
+			return $this->ambiguousIdentifier(id: $ref->id);
+		}
+
+		if ($page === null) {
+			// The answer the object GET gives a caller who may not read the object.
+			return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
+		}
+
+		return new JSONResponse(data: $page);
+	}//end logsForReader()
 
 	/**
 	 * Export audit trail logs in specified format
@@ -965,8 +1254,8 @@ class AuditTrailController extends Controller {
 					'queued' => true,
 					'message' => sprintf(
 						'More than %d entries match. The export runs in the background and you get a notification when the file is in your Files under "%s".',
-						JobHandles::AUDIT_TRAIL_EXPORT_INLINE_LIMIT,
-						JobHandles::AUDIT_TRAIL_EXPORT_FOLDER
+						ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_INLINE_LIMIT,
+						ComplianceJobHandlesInterface::AUDIT_TRAIL_EXPORT_FOLDER
 					),
 				],
 				statusCode: Http::STATUS_ACCEPTED

@@ -22,8 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
+use OCA\OpenRegister\Kernel\Contracts\Configuration\SeedDirectoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\SeedOutcomeInterface;
 use OCA\OpenRegister\Service\Configuration\SeedDirectoryImporter;
-use OCA\OpenRegister\Service\Configuration\SeedReport;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Throwable;
@@ -41,6 +42,10 @@ class SeedFromDirectory implements IRepairStep {
 
 	/**
 	 * Build the step.
+	 *
+	 * Typed by the importer until Configuration binds SeedDirectoryInterface in
+	 * its own service map; the step reads the key and the outcome through the
+	 * Configuration contracts already.
 	 *
 	 * @param SeedDirectoryImporter $importer The seed import.
 	 */
@@ -78,11 +83,11 @@ class SeedFromDirectory implements IRepairStep {
 		}
 
 		if ($report === null) {
-			$output->info('No seed directory configured (' . SeedDirectoryImporter::CONFIG_KEY . ')');
+			$output->info('No seed directory configured (' . SeedDirectoryInterface::CONFIG_KEY . ')');
 			return;
 		}
 
-		if ($report->status() === SeedReport::STATUS_SUCCESS) {
+		if ($report->status() === SeedOutcomeInterface::STATUS_SUCCESS) {
 			$output->info($report->summary());
 			return;
 		}

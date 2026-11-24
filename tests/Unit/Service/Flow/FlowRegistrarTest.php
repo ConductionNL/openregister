@@ -1,7 +1,7 @@
 <?php
 
 /**
- * FlowRegistrar registers the flow run guards, run context and step dispatcher in a fixed order.
+ * FlowRegistrar registers the flow run guards, run context, step dispatcher, lifecycle state and task services in a fixed order.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -12,6 +12,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use OCP\AppFramework\IAppContainer;
 use PHPUnit\Framework\TestCase;
@@ -19,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 class FlowRegistrarTest extends TestCase {
 
 	/**
-	 * register() registers the flow run guards, run context and step dispatcher, in this order.
+	 * register() registers the flow run guards, run context, step dispatcher, lifecycle state and task services, in this order.
 	 *
 	 * @return void
 	 */
@@ -33,10 +34,34 @@ class FlowRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Flow\FlowRunnableGuard',
 				'OCA\OpenRegister\Service\Flow\FlowRunContext',
 				'OCA\OpenRegister\Service\Flow\FlowStepDispatcher',
+				'OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext',
+				'OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass',
+				'OCA\OpenRegister\Service\Task\TaskInboxService',
+				'OCA\OpenRegister\Service\Portal\PortalPartyResolver',
+				'OCA\OpenRegister\Service\TaskService',
+				'OCA\OpenRegister\Service\FlowLinkService',
 			],
 			actual: $context->services
 		);
 	}//end testRegistersTheServicesInOrder()
+
+	/**
+	 * register() also aliases every Processes service contract to its class, after the flow wiring's own aliases.
+	 *
+	 * @return void
+	 */
+	public function testBindsEveryProcessesServiceContract(): void {
+		$context = new RecordingRegistrationContext();
+		FlowRegistrar::register(context: $context);
+
+		$expected = [];
+		foreach (ProcessesServiceBindings::BINDINGS as $contract => $class) {
+			$expected[] = ['alias' => $contract, 'target' => $class];
+		}
+
+		$this->assertNotSame([], $expected);
+		$this->assertSame($expected, array_slice($context->aliases, -count($expected)));
+	}//end testBindsEveryProcessesServiceContract()
 
 	/**
 	 * Every factory builds an instance of the name it is registered under.

@@ -6,8 +6,12 @@ namespace Unit\Service;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Event\UserProfileUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\UserService;
+use OCA\OpenRegister\Service\User\UserAccountStores;
+use OCA\OpenRegister\Service\User\UserPlatform;
+use OCA\OpenRegister\Service\User\UserStorage;
 use OCP\Accounts\IAccount;
 use OCP\Accounts\IAccountManager;
 use OCP\Accounts\IAccountProperty;
@@ -64,19 +68,26 @@ class UserServiceTest extends TestCase {
 		$this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
 		$this->service = new UserService(
-			$this->userManager,
-			$this->userSession,
-			$this->config,
-			$this->groupManager,
-			$this->accountManager,
-			$this->logger,
-			$this->organisationService,
-			$this->eventDispatcher,
-			$this->createMock(IAvatarManager::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(ISecureRandom::class),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			directory: new UserAccountStores(
+				userManager: $this->userManager,
+				groupManager: $this->groupManager,
+				accountManager: $this->accountManager,
+				avatarManager: $this->createMock(IAvatarManager::class)
+			),
+			platform: new UserPlatform(
+				userSession: $this->userSession,
+				eventDispatcher: $this->eventDispatcher,
+				l10nFactory: $this->createMock(IFactory::class),
+				logger: $this->logger
+			),
+			storage: new UserStorage(
+				config: $this->config,
+				db: $this->createMock(IDBConnection::class),
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				secureRandom: $this->createMock(ISecureRandom::class),
+				auditEntries: $this->createMock(AuditEntryWriterInterface::class)
+			),
+			organisationService: $this->organisationService
 		);
 	}
 
@@ -85,19 +96,26 @@ class UserServiceTest extends TestCase {
 	 */
 	private function freshService(): UserService {
 		return new UserService(
-			$this->userManager,
-			$this->userSession,
-			$this->config,
-			$this->groupManager,
-			$this->accountManager,
-			$this->logger,
-			$this->organisationService,
-			$this->eventDispatcher,
-			$this->createMock(IAvatarManager::class),
-			$this->createMock(AuditTrailMapper::class),
-			$this->createMock(ISecureRandom::class),
-			$this->createMock(IDBConnection::class),
-			$this->createMock(IFactory::class)
+			directory: new UserAccountStores(
+				userManager: $this->userManager,
+				groupManager: $this->groupManager,
+				accountManager: $this->accountManager,
+				avatarManager: $this->createMock(IAvatarManager::class)
+			),
+			platform: new UserPlatform(
+				userSession: $this->userSession,
+				eventDispatcher: $this->eventDispatcher,
+				l10nFactory: $this->createMock(IFactory::class),
+				logger: $this->logger
+			),
+			storage: new UserStorage(
+				config: $this->config,
+				db: $this->createMock(IDBConnection::class),
+				auditTrailMapper: $this->createMock(AuditTrailMapper::class),
+				secureRandom: $this->createMock(ISecureRandom::class),
+				auditEntries: $this->createMock(AuditEntryWriterInterface::class)
+			),
+			organisationService: $this->organisationService
 		);
 	}
 

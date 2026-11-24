@@ -44,7 +44,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
+use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
@@ -87,7 +87,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
- * @uses   \OCA\OpenRegister\Search\Service\Quality\CreateCandidate
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\CreateCandidate
  * @uses   \OCA\OpenRegister\Service\AnonymousEvaluationContext
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\CascadeRules
  * @uses   \OCA\OpenRegister\Service\Object\SaveObject\NestedSaveTransaction
@@ -120,7 +120,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
- * @uses \OCA\OpenRegister\Search\Service\Quality\CreateCandidate
+ * @uses \OCA\OpenRegister\Kernel\Contracts\CreateCandidate
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectWriteTarget
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectHandlers
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SaveObjectMappers

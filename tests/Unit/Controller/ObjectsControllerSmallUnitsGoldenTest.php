@@ -15,6 +15,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\History\StateHistoryProjector;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
+use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\ReadStateServiceInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -203,7 +205,7 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 	public function testRestoreHandsTheConverterItsThreeInputs(): void {
 		$converter = $this->createMock(SchemaTypeConverter::class);
 		$converter->expects($this->once())->method('restoreStringTypedValues')
-			->with(['a' => [1]], ['p' => 1], ['b'])
+			->with(['a' => [1]], ['p' => 1])
 			->willReturn(['restored' => true]);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->with(SchemaTypeConverterInterface::class)->willReturn($converter);
@@ -244,6 +246,40 @@ class ObjectsControllerSmallUnitsGoldenTest extends TestCase {
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getProperties')->willReturn($properties);
 		return $schema;
+	}
+
+	public function testTheCallerRunIsAskedOfTheCoreFlowRunPort(): void {
+		$run = $this->createMock(CurrentFlowRunInterface::class);
+		$run->method('currentRunUuid')->willReturn('run-7');
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->with(CurrentFlowRunInterface::class)->willReturn($run);
+		$controller = $this->controller();
+		$this->set($controller, 'container', $container);
+
+		$this->assertSame('run-7', $this->invoke($controller, 'callerRunUuid', []));
+	}
+
+	public function testACallerRunPortThatCannotBeServedReadsAsAPerson(): void {
+		$controller = $this->controller();
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new RuntimeException('no flows'));
+		$this->set($controller, 'container', $container);
+		$this->assertNull($this->invoke($controller, 'callerRunUuid', []));
+
+		$controller = $this->controller();
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn(new \stdClass());
+		$this->set($controller, 'container', $container);
+		$this->assertNull($this->invoke($controller, 'callerRunUuid', []));
+	}
+
+	public function testAPurposeRefusalIsAnsweredWithItsOwnStatusAndBody(): void {
+		$refusal = new PurposeRefusedException(PurposeRefusedException::RULE_MISSING, 'No purpose given', null, ['schema' => 7]);
+
+		$answer = $this->invoke($this->controller(), 'purposeRefusal', [$refusal]);
+
+		$this->assertSame(403, $answer->getStatus());
+		$this->assertSame($refusal->toResponseBody(), $answer->getData());
 	}
 
 	private function controller(?LoggerInterface $logger = null): ObjectsController {

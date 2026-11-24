@@ -33,7 +33,7 @@ use OCA\OpenRegister\Service\Object\DeletionRequest;
 use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
-use OCA\OpenRegister\Service\Settings\ArchivalSettingsReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -216,7 +216,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 			fn (ExecutedDestruction $execution): array => ['certificateFor' => $execution->destructionList['status'], 'count' => $execution->destroyedCount, 'at' => $execution->executedAt]
 		);
 
-		$settingsReader = $this->createMock(ArchivalSettingsReaderInterface::class);
+		$settingsReader = $this->createMock(ArchivalSettingsInterface::class);
 		$settingsReader->method('getArchivalSettingsOnly')->willReturn($settings);
 
 		$audit = $this->createMock(AuditTrailMapperInterface::class);
@@ -290,7 +290,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 
 		$services = [
 			RetentionServiceInterface::class       => $retention,
-			ArchivalSettingsReaderInterface::class => $settingsReader,
+			ArchivalSettingsInterface::class => $settingsReader,
 			MagicMapperInterface::class            => $mapper,
 			AuditTrailMapperInterface::class       => $audit,
 			DeleteObject::class                    => $delete,
@@ -457,6 +457,29 @@ class DestructionListRunBehaviourTest extends TestCase {
 		$this->assertContains('[DestructionExecutionJob] Refusing to destroy keep: review decision "retain"', $this->warnings);
 		$this->assertContains('[DestructionExecutionJob] Refusing to destroy move: review decision "transfer"', $this->warnings);
 		$this->assertArrayNotHasKey('archiefstatus', $this->objects['keep']->getRetention());
+	}
+
+	public function testAnAnonymiseAnswerOrNominationIsNeverDestroyedButADestroyAnswerIs(): void {
+		$this->listObject(
+			'approved',
+			[
+				['uuid' => 'answered', 'decision' => 'anonymise'],
+				['uuid' => 'nominated', 'action' => 'anonymise'],
+				['uuid' => 'overruled', 'action' => 'anonymise', 'decision' => 'destroy'],
+				['uuid' => 'plain', 'action' => 'destroy'],
+			]
+		);
+		foreach (['answered', 'nominated', 'overruled', 'plain'] as $uuid) {
+			$this->object($uuid);
+		}
+
+		$this->makeRun()->execute('list-1');
+
+		$this->assertSame(['overruled', 'plain'], array_column($this->deleted, 2));
+		$this->assertSame(2, $this->updates[1]['skippedDecisions']);
+		$this->assertContains('[DestructionExecutionJob] Refusing to destroy answered: review decision "anonymise"', $this->warnings);
+		$this->assertContains('[DestructionExecutionJob] Refusing to destroy nominated: nominated for anonymising', $this->warnings);
+		$this->assertArrayNotHasKey('archiefstatus', $this->objects['nominated']->getRetention());
 	}
 
 	public function testHeldObjectIsNeitherAuditedNorDeletedAndArchivistsAreNotified(): void {

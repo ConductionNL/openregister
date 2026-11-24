@@ -1,0 +1,1362 @@
+{
+ "areas": {
+  "Compliance": {
+   "exposed_loc": 16373,
+   "incoming_refs": 377,
+   "internal_refs": 606,
+   "loc": 29319,
+   "outgoing_refs": 469
+  },
+  "Configuration": {
+   "exposed_loc": 7792,
+   "incoming_refs": 206,
+   "internal_refs": 918,
+   "loc": 48165,
+   "outgoing_refs": 1570
+  },
+  "Core": {
+   "exposed_loc": 52399,
+   "incoming_refs": 1538,
+   "internal_refs": 3028,
+   "loc": 131485,
+   "outgoing_refs": 2402
+  },
+  "Files": {
+   "exposed_loc": 553,
+   "incoming_refs": 75,
+   "internal_refs": 339,
+   "loc": 15809,
+   "outgoing_refs": 197
+  },
+  "Integrations": {
+   "exposed_loc": 18893,
+   "incoming_refs": 493,
+   "internal_refs": 1199,
+   "loc": 50105,
+   "outgoing_refs": 739
+  },
+  "Kernel": {
+   "exposed_loc": 6785,
+   "incoming_refs": 3595,
+   "internal_refs": 102,
+   "loc": 7374,
+   "outgoing_refs": 112
+  },
+  "Notifications": {
+   "exposed_loc": 1140,
+   "incoming_refs": 114,
+   "internal_refs": 439,
+   "loc": 17445,
+   "outgoing_refs": 216
+  },
+  "Platform": {
+   "exposed_loc": 1160,
+   "incoming_refs": 76,
+   "internal_refs": 70,
+   "loc": 6717,
+   "outgoing_refs": 190
+  },
+  "Processes": {
+   "exposed_loc": 33725,
+   "incoming_refs": 758,
+   "internal_refs": 2467,
+   "loc": 74739,
+   "outgoing_refs": 1223
+  },
+  "Search": {
+   "exposed_loc": 1386,
+   "incoming_refs": 83,
+   "internal_refs": 285,
+   "loc": 13705,
+   "outgoing_refs": 197
+  }
+ },
+ "commit": "70e557045555e68834e6f55f195211db3bd3b07e",
+ "cycles": {
+  "cyclic_sets": 91,
+  "files_in_cyclic_sets": 434,
+  "largest": {
+   "by_area": {
+    "Compliance": 15,
+    "Core": 133,
+    "Kernel": 20,
+    "Notifications": 1,
+    "Platform": 1,
+    "Processes": 19,
+    "Search": 1
+   },
+   "by_directory": {
+    "BackgroundJob": 12,
+    "BackgroundJob/Support": 6,
+    "Db": 8,
+    "Db/MagicMapper": 54,
+    "Db/Schema": 10,
+    "Event": 16,
+    "Exception": 1,
+    "Kernel/Contracts": 1,
+    "Notifications/Service": 1,
+    "Search/Service": 1,
+    "Service": 10,
+    "Service/Archival": 1,
+    "Service/Audit": 1,
+    "Service/Deferral": 2,
+    "Service/Deletion": 1,
+    "Service/Edepot": 1,
+    "Service/Form": 2,
+    "Service/Lifecycle": 11,
+    "Service/Object": 14,
+    "Service/Query": 5,
+    "Service/Rbac": 27,
+    "Service/Schema": 5
+   },
+   "files": 190,
+   "loc": 23989,
+   "loc_share": 0.0608,
+   "members": [
+    "lib/BackgroundJob/AnnotationNotificationDispatchJob.php",
+    "lib/BackgroundJob/AuditExportSource.php",
+    "lib/BackgroundJob/AuditTrailExportJob.php",
+    "lib/BackgroundJob/AutoTransitionJob.php",
+    "lib/BackgroundJob/BulkLegalHoldJob.php",
+    "lib/BackgroundJob/DeferredObjectEventJob.php",
+    "lib/BackgroundJob/JobHandles.php",
+    "lib/BackgroundJob/ObjectCleanupJob.php",
+    "lib/BackgroundJob/RelatedRetentionRecalculationJob.php",
+    "lib/BackgroundJob/SchemaRunJob.php",
+    "lib/BackgroundJob/Support/AutoTransitionServices.php",
+    "lib/BackgroundJob/Support/DeferredObjectEventLookup.php",
+    "lib/BackgroundJob/Support/RelatedRetentionLookup.php",
+    "lib/BackgroundJob/Support/RelatedRetentionRules.php",
+    "lib/BackgroundJob/Support/SchemaRunServices.php",
+    "lib/BackgroundJob/Support/TransferExecutionRecords.php",
+    "lib/BackgroundJob/TransferExecutionJob.php",
+    "lib/BackgroundJob/TranslationProjectionJob.php",
+    "lib/Db/AbstractObjectMapper.php",
+    "lib/Db/AuditTrailMapperInterface.php",
+    "lib/Db/MagicMapper.php",
+    "lib/Db/MagicMapper/MagicAccessPredicateInterface.php",
+    "lib/Db/MagicMapper/MagicBulkHandler.php",
+    "lib/Db/MagicMapper/MagicBulkSaveGroup.php",
+    "lib/Db/MagicMapper/MagicBulkUpsertSql.php",
+    "lib/Db/MagicMapper/MagicCrossTableHit.php",
+    "lib/Db/MagicMapper/MagicCrossTableReaderInterface.php",
+    "lib/Db/MagicMapper/MagicDroppedProperties.php",
+    "lib/Db/MagicMapper/MagicFacetHandler.php",
+    "lib/Db/MagicMapper/MagicFlaggedEncryption.php",
+    "lib/Db/MagicMapper/MagicMapperLookups.php",
+    "lib/Db/MagicMapper/MagicMetadataColumn.php",
+    "lib/Db/MagicMapper/MagicMetadataColumnHealer.php",
+    "lib/Db/MagicMapper/MagicObjectDeletionInterface.php",
+    "lib/Db/MagicMapper/MagicObjectFinderInterface.php",
+    "lib/Db/MagicMapper/MagicObjectLockInterface.php",
+    "lib/Db/MagicMapper/MagicObjectLookup.php",
+    "lib/Db/MagicMapper/MagicObjectSearchInterface.php",
+    "lib/Db/MagicMapper/MagicObjectWriterInterface.php",
+    "lib/Db/MagicMapper/MagicPropertyColumns.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php",
+    "lib/Db/MagicMapper/MagicReadTable.php",
+    "lib/Db/MagicMapper/MagicRelationReaderInterface.php",
+    "lib/Db/MagicMapper/MagicRowMetadata.php",
+    "lib/Db/MagicMapper/MagicRowWrite.php",
+    "lib/Db/MagicMapper/MagicSchemaColumns.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php",
+    "lib/Db/MagicMapper/MagicSequentialOrder.php",
+    "lib/Db/MagicMapper/MagicSlugBackfill.php",
+    "lib/Db/MagicMapper/MagicSlugStoreInterface.php",
+    "lib/Db/MagicMapper/MagicStatisticsHandler.php",
+    "lib/Db/MagicMapper/MagicStatisticsInterface.php",
+    "lib/Db/MagicMapper/MagicTableHandler.php",
+    "lib/Db/MagicMapper/MagicTableHandlerInterface.php",
+    "lib/Db/MagicMapper/MagicTableIndexer.php",
+    "lib/Db/MagicMapper/MagicTableLocatorInterface.php",
+    "lib/Db/MagicMapper/MagicTableMaintenanceInterface.php",
+    "lib/Db/MagicMapper/MagicTableRowReaderInterface.php",
+    "lib/Db/MagicMapper/MagicTableTarget.php",
+    "lib/Db/MagicMapper/MagicUnionArm.php",
+    "lib/Db/MagicMapper/MultiSchemaSearch.php",
+    "lib/Db/MagicMapper/PurposeBoundTables.php",
+    "lib/Db/MagicMapper/RbacAccessCall.php",
+    "lib/Db/MagicMapper/RbacFilterCall.php",
+    "lib/Db/MagicMapper/RbacMatchSql.php",
+    "lib/Db/MagicMapper/RbacPermissionCheck.php",
+    "lib/Db/MagicMapper/RbacQueryMatch.php",
+    "lib/Db/MagicMapper/RbacSqlDialect.php",
+    "lib/Db/MagicMapper/RecentLensOrder.php",
+    "lib/Db/MagicMapper/RelatedRowRbacInterface.php",
+    "lib/Db/MagicMapper/SearchLeaf.php",
+    "lib/Db/MagicMapper/SearchLeafScope.php",
+    "lib/Db/MagicMapper/SortRequest.php",
+    "lib/Db/MagicMapper/TableTermsFacet.php",
+    "lib/Db/MagicMapper/TermsFacetTable.php",
+    "lib/Db/MagicMapperInterface.php",
+    "lib/Db/ObjectEntity.php",
+    "lib/Db/PartialObjectEntity.php",
+    "lib/Db/Schema.php",
+    "lib/Db/Schema/AnnotationVocabulary.php",
+    "lib/Db/Schema/AuthorizationControlKeys.php",
+    "lib/Db/Schema/AuthorizationRulesValidator.php",
+    "lib/Db/Schema/ConfigurationEntryRules.php",
+    "lib/Db/Schema/ConfigurationValidator.php",
+    "lib/Db/Schema/DeclaredActions.php",
+    "lib/Db/Schema/NotSuppliedReasons.php",
+    "lib/Db/Schema/PresentationAnnotations.php",
+    "lib/Db/Schema/SchemaPropertyDocument.php",
+    "lib/Db/Schema/WriteOnlyPathsDeclaration.php",
+    "lib/Db/SchemaMapperInterface.php",
+    "lib/Event/AbstractObjectEntityEvent.php",
+    "lib/Event/AbstractPreWriteObjectEvent.php",
+    "lib/Event/DraftCreatedEvent.php",
+    "lib/Event/DraftDeletedEvent.php",
+    "lib/Event/DraftUpdatedEvent.php",
+    "lib/Event/MatrixRowsRequestedEvent.php",
+    "lib/Event/ObjectActivatedEvent.php",
+    "lib/Event/ObjectCreatedEvent.php",
+    "lib/Event/ObjectCreatingEvent.php",
+    "lib/Event/ObjectDeletedEvent.php",
+    "lib/Event/ObjectDeletingEvent.php",
+    "lib/Event/ObjectLockedEvent.php",
+    "lib/Event/ObjectTransitionedEvent.php",
+    "lib/Event/ObjectUnlockedEvent.php",
+    "lib/Event/ObjectUpdatedEvent.php",
+    "lib/Event/ObjectUpdatingEvent.php",
+    "lib/Exception/ObjectStateWriteException.php",
+    "lib/Kernel/Contracts/ObjectOperationsInterface.php",
+    "lib/Notifications/Service/Notification/NotificationRuleDispatcherInterface.php",
+    "lib/Search/Service/Search/PropertySearchProfile.php",
+    "lib/Service/Archival/DependantRetentionIndexInterface.php",
+    "lib/Service/Audit/PurposeGuardInterface.php",
+    "lib/Service/ConditionMatcher.php",
+    "lib/Service/Deferral/DeferredEntryObjectResolver.php",
+    "lib/Service/Deferral/DeferredEntryObjectResolverInterface.php",
+    "lib/Service/Deletion/DeletionWindowService.php",
+    "lib/Service/Edepot/TransferListRunInterface.php",
+    "lib/Service/FieldDecryptionScope.php",
+    "lib/Service/FieldEncryptionHandler.php",
+    "lib/Service/FieldEncryptionHandlerInterface.php",
+    "lib/Service/Form/FormDestinationValidator.php",
+    "lib/Service/Form/FormDestinationValidatorInterface.php",
+    "lib/Service/Lifecycle/AutoTransitionDecider.php",
+    "lib/Service/Lifecycle/AutoTransitionPass.php",
+    "lib/Service/Lifecycle/AutoTransitionQueue.php",
+    "lib/Service/Lifecycle/AutoTransitionRunner.php",
+    "lib/Service/Lifecycle/LifecycleWriteBoundary.php",
+    "lib/Service/Lifecycle/StateFieldRuleResolver.php",
+    "lib/Service/Lifecycle/StateFieldRuleResolverInterface.php",
+    "lib/Service/Lifecycle/TransitionDispatch.php",
+    "lib/Service/Lifecycle/TransitionEngine.php",
+    "lib/Service/Lifecycle/TransitionRequest.php",
+    "lib/Service/Lifecycle/TransitionSubjects.php",
+    "lib/Service/LogService.php",
+    "lib/Service/Object/AuthorizationResolutionInterface.php",
+    "lib/Service/Object/DraftListLens.php",
+    "lib/Service/Object/DraftStatusPolicy.php",
+    "lib/Service/Object/ObjectEventGate.php",
+    "lib/Service/Object/ObjectEventGateInterface.php",
+    "lib/Service/Object/ObjectReadersInterface.php",
+    "lib/Service/Object/ObjectValidatorInterface.php",
+    "lib/Service/Object/ObjectVersionHandler.php",
+    "lib/Service/Object/PermissionCheckInterface.php",
+    "lib/Service/Object/PermissionEnforcementInterface.php",
+    "lib/Service/Object/PermissionExplanationInterface.php",
+    "lib/Service/Object/PermissionHandlerInterface.php",
+    "lib/Service/Object/SaveObject/ObjectSlugTargetInterface.php",
+    "lib/Service/Object/TransitionAuthorizationInterface.php",
+    "lib/Service/PropertyAccessCollaborators.php",
+    "lib/Service/PropertyRbacHandler.php",
+    "lib/Service/PropertyRbacHandlerInterface.php",
+    "lib/Service/Query/PropertyReadGuard.php",
+    "lib/Service/Query/RelatedRowAccess.php",
+    "lib/Service/Query/RelatedRowLookups.php",
+    "lib/Service/Query/RelatedRowQueryApplier.php",
+    "lib/Service/Query/RelatedRowSource.php",
+    "lib/Service/Rbac/AccessDeclarationValidators.php",
+    "lib/Service/Rbac/DepartmentMatrixCompiler.php",
+    "lib/Service/Rbac/DepartmentMatrixPersonValues.php",
+    "lib/Service/Rbac/DepartmentMatrixValidator.php",
+    "lib/Service/Rbac/ExplicitReveal.php",
+    "lib/Service/Rbac/ExplicitRevealChangeMask.php",
+    "lib/Service/Rbac/ExplicitRevealInterface.php",
+    "lib/Service/Rbac/ExplicitRevealMasks.php",
+    "lib/Service/Rbac/ExplicitRevealTrailMasker.php",
+    "lib/Service/Rbac/HierarchyAnnotationValidator.php",
+    "lib/Service/Rbac/HierarchyDescender.php",
+    "lib/Service/Rbac/HierarchyGrantExpander.php",
+    "lib/Service/Rbac/MatrixRowWhere.php",
+    "lib/Service/Rbac/MatrixRowsFromApps.php",
+    "lib/Service/Rbac/McpScope.php",
+    "lib/Service/Rbac/MemberOfResolver.php",
+    "lib/Service/Rbac/ObjectGrantResolver.php",
+    "lib/Service/Rbac/PermissionCatalogue.php",
+    "lib/Service/Rbac/PermissionCatalogueInterface.php",
+    "lib/Service/Rbac/RbacCollaborators.php",
+    "lib/Service/Rbac/ReadRuleTenancy.php",
+    "lib/Service/Rbac/RecordMetadataConditions.php",
+    "lib/Service/Rbac/RuleColumns.php",
+    "lib/Service/Rbac/SchemaManageGate.php",
+    "lib/Service/Rbac/SchemaManageGateInterface.php",
+    "lib/Service/Rbac/SchemaRegisterLookup.php",
+    "lib/Service/Rbac/TokenGrantNarrower.php",
+    "lib/Service/RetentionServiceInterface.php",
+    "lib/Service/Schema/SchemaBatchMigratorInterface.php",
+    "lib/Service/Schema/SchemaMigrationService.php",
+    "lib/Service/Schema/SchemaRevalidationService.php",
+    "lib/Service/Schema/SchemaRunBatch.php",
+    "lib/Service/Schema/SchemaRunPopulation.php",
+    "lib/Service/TranslationProjectionServiceInterface.php"
+   ],
+   "most_outgoing_inside": [
+    "lib/Db/MagicMapper.php (50 references inside the set)",
+    "lib/Db/MagicMapper/MagicRbacHandler.php (16 references inside the set)",
+    "lib/Db/MagicMapperInterface.php (14 references inside the set)",
+    "lib/Db/MagicMapper/MagicSearchHandler.php (13 references inside the set)",
+    "lib/BackgroundJob/JobHandles.php (10 references inside the set)",
+    "lib/Service/Lifecycle/TransitionEngine.php (10 references inside the set)",
+    "lib/Service/Object/ObjectEventGate.php (9 references inside the set)",
+    "lib/Service/Schema/SchemaRevalidationService.php (7 references inside the set)",
+    "lib/Db/Schema.php (7 references inside the set)",
+    "lib/Service/Schema/SchemaMigrationService.php (6 references inside the set)"
+   ],
+   "upward_edges_inside": [
+    "lib/Db/MagicMapper.php -> lib/BackgroundJob/JobHandles.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Audit/PurposeGuardInterface.php",
+    "lib/Db/MagicMapper.php -> lib/Service/ConditionMatcher.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Object/DraftStatusPolicy.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Object/ObjectEventGate.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Object/SaveObject/ObjectSlugTargetInterface.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Query/PropertyReadGuard.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Query/RelatedRowAccess.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Query/RelatedRowLookups.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Query/RelatedRowQueryApplier.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Rbac/ExplicitRevealInterface.php",
+    "lib/Db/MagicMapper/MagicBulkHandler.php -> lib/Service/Object/ObjectVersionHandler.php",
+    "lib/Db/MagicMapper/MagicFacetHandler.php -> lib/Service/PropertyRbacHandlerInterface.php",
+    "lib/Db/MagicMapper/MagicFacetHandler.php -> lib/Service/Rbac/ExplicitRevealMasks.php",
+    "lib/Db/MagicMapper/MagicFlaggedEncryption.php -> lib/Service/FieldEncryptionHandlerInterface.php",
+    "lib/Db/MagicMapper/MagicFlaggedEncryption.php -> lib/Service/PropertyAccessCollaborators.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/ConditionMatcher.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Object/DraftStatusPolicy.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Object/PermissionHandlerInterface.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/RbacCollaborators.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/ReadRuleTenancy.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/MagicRowMetadata.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/MagicSchemaColumns.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Object/DraftListLens.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Query/RelatedRowQueryApplier.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Rbac/ExplicitRevealInterface.php",
+    "lib/Db/MagicMapper/PurposeBoundTables.php -> lib/Service/Audit/PurposeGuardInterface.php",
+    "lib/Db/MagicMapper/RbacAccessCall.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/RbacMatchSql.php -> lib/Service/ConditionMatcher.php",
+    "lib/Db/MagicMapper/RbacMatchSql.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/RbacQueryMatch.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/ObjectEntity.php -> lib/Service/Deletion/DeletionWindowService.php",
+    "lib/Db/Schema/AnnotationVocabulary.php -> lib/Service/Rbac/AccessDeclarationValidators.php",
+    "lib/Db/Schema/AuthorizationControlKeys.php -> lib/Service/Rbac/ExplicitRevealInterface.php",
+    "lib/Db/Schema/AuthorizationControlKeys.php -> lib/Service/Rbac/PermissionCatalogueInterface.php",
+    "lib/Db/Schema/AuthorizationRulesValidator.php -> lib/Service/Rbac/PermissionCatalogueInterface.php",
+    "lib/Db/Schema/DeclaredActions.php -> lib/Service/Rbac/PermissionCatalogueInterface.php",
+    "lib/Event/AbstractObjectEntityEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/MatrixRowsRequestedEvent.php -> lib/Db/Schema.php",
+    "lib/Event/ObjectActivatedEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/ObjectTransitionedEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/ObjectUpdatedEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/ObjectUpdatingEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Exception/ObjectStateWriteException.php -> lib/Db/ObjectEntity.php",
+    "lib/Kernel/Contracts/ObjectOperationsInterface.php -> lib/Db/ObjectEntity.php",
+    "lib/Kernel/Contracts/ObjectOperationsInterface.php -> lib/Db/Schema.php",
+    "lib/Service/Lifecycle/AutoTransitionQueue.php -> lib/BackgroundJob/JobHandles.php"
+   ]
+  },
+  "set_sizes": [
+   190,
+   11,
+   10,
+   7,
+   7,
+   6,
+   5,
+   5,
+   5,
+   4
+  ]
+ },
+ "functional_definition": "sigrid.components.yaml",
+ "layering": {
+  "counts": {
+   "downward": 6401,
+   "same level": 9389,
+   "unlayered": 729,
+   "upward": 249
+  },
+  "upward": {
+   "persistence -> entry point": [
+    "lib/Db/MagicMapper.php -> lib/BackgroundJob/JobHandles.php"
+   ],
+   "persistence -> service": [
+    "lib/Db/AuditFlowAttribution.php -> lib/Service/Flow/FlowRunContextInterface.php",
+    "lib/Db/AuditTrailMapper.php -> lib/Service/Audit/AuditAggregationServiceInterface.php",
+    "lib/Db/AuditTrailMapper.php -> lib/Service/Audit/AuditSinkShipperInterface.php",
+    "lib/Db/AuditTrailMapper.php -> lib/Service/Audit/AuditTrailCollaborators.php",
+    "lib/Db/AuditTrailMapper.php -> lib/Service/Audit/PurposeGuardInterface.php",
+    "lib/Db/AuditTrailMapper.php -> lib/Service/Lifecycle/AutoTransitionPassInterface.php",
+    "lib/Db/AuditTrailMapper.php -> lib/Service/WriteCause.php",
+    "lib/Db/ConfigurationMapper.php -> lib/Service/OrganisationServiceInterface.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Audit/PurposeGuardInterface.php",
+    "lib/Db/MagicMapper.php -> lib/Service/ConditionMatcher.php",
+    "lib/Db/MagicMapper.php -> lib/Service/DateTimeNormalizerInterface.php",
+    "lib/Db/MagicMapper.php -> lib/Service/LanguageServiceInterface.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Object/DraftStatusPolicy.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Object/ObjectEventGate.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Object/SaveObject/ObjectSlugTargetInterface.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Object/SchemaTypeConverterInterface.php",
+    "lib/Db/MagicMapper.php -> lib/Service/OrganisationContext.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Query/PropertyReadGuard.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Query/RelatedRowAccess.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Query/RelatedRowLookups.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Query/RelatedRowQueryApplier.php",
+    "lib/Db/MagicMapper.php -> lib/Service/Rbac/ExplicitRevealInterface.php",
+    "lib/Db/MagicMapper.php -> lib/Service/SystemOperationContext.php",
+    "lib/Db/MagicMapper.php -> lib/Service/WritePhase.php",
+    "lib/Db/MagicMapper/MagicBulkHandler.php -> lib/Service/DateTimeNormalizerInterface.php",
+    "lib/Db/MagicMapper/MagicBulkHandler.php -> lib/Service/Object/ObjectVersionHandler.php",
+    "lib/Db/MagicMapper/MagicFacetHandler.php -> lib/Service/PropertyRbacHandlerInterface.php",
+    "lib/Db/MagicMapper/MagicFacetHandler.php -> lib/Service/Rbac/ExplicitRevealMasks.php",
+    "lib/Db/MagicMapper/MagicFlaggedEncryption.php -> lib/Service/FieldEncryptionHandlerInterface.php",
+    "lib/Db/MagicMapper/MagicFlaggedEncryption.php -> lib/Service/PropertyAccessCollaborators.php",
+    "lib/Db/MagicMapper/MagicOrganizationHandler.php -> lib/Service/AnonymousEvaluationContext.php",
+    "lib/Db/MagicMapper/MagicOrganizationHandler.php -> lib/Service/OrganisationContext.php",
+    "lib/Db/MagicMapper/MagicOrganizationHandler.php -> lib/Service/OrganisationServiceInterface.php",
+    "lib/Db/MagicMapper/MagicOrganizationHandler.php -> lib/Service/SharedMasterDataServiceInterface.php",
+    "lib/Db/MagicMapper/MagicOrganizationHandler.php -> lib/Service/SystemOperationContext.php",
+    "lib/Db/MagicMapper/MagicOrganizationHandler.php -> lib/Service/TenancyCollaborators.php",
+    "lib/Db/MagicMapper/MagicPropertyDate.php -> lib/Service/DateTimeNormalizerInterface.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/AnonymousEvaluationContext.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/ConditionMatcher.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Object/DraftStatusPolicy.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Object/PermissionHandlerInterface.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/OrganisationContext.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/OrganisationService.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/OrganisationServiceInterface.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/DenyEnforcementModeInterface.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/DenyResolverInterface.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/ObjectGrantResolverInterface.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/ObjectScopeResolverInterface.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/RbacCollaborators.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/RbacFallbacks.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/ReadRuleTenancy.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/MagicRbacHandler.php -> lib/Service/SystemOperationContext.php",
+    "lib/Db/MagicMapper/MagicRowMetadata.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/MagicSchemaColumns.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Search/Service/Search/PropertySearchProfile.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/DateTimeNormalizerInterface.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/LanguageServiceInterface.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Object/DraftListLens.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Object/SchemaTypeConverterInterface.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/OrganisationContext.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Query/RelatedRowQueryApplier.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Rbac/ExplicitRevealInterface.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Search/SearchGrammar.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Search/SearchTermParserInterface.php",
+    "lib/Db/MagicMapper/MagicSearchHandler.php -> lib/Service/Search/SearchTermSqlCompilerInterface.php",
+    "lib/Db/MagicMapper/MagicStatisticsHandler.php -> lib/Service/DateTimeNormalizerInterface.php",
+    "lib/Db/MagicMapper/MagicStatisticsHandler.php -> lib/Service/Object/SchemaTypeConverterInterface.php",
+    "lib/Db/MagicMapper/PurposeBoundTables.php -> lib/Service/Audit/PurposeGuardInterface.php",
+    "lib/Db/MagicMapper/PurposeBoundTables.php -> lib/Service/Audit/PurposeRefusedException.php",
+    "lib/Db/MagicMapper/RbacAccessCall.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/RbacMatchSql.php -> lib/Service/ConditionMatcher.php",
+    "lib/Db/MagicMapper/RbacMatchSql.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/RbacQueryMatch.php -> lib/Service/Rbac/RuleColumns.php",
+    "lib/Db/MagicMapper/RbacResolvers.php -> lib/Service/Rbac/DenyResolverInterface.php",
+    "lib/Db/MagicMapper/RbacResolvers.php -> lib/Service/Rbac/ObjectGrantResolverInterface.php",
+    "lib/Db/MagicMapper/RbacResolvers.php -> lib/Service/Rbac/ObjectScopeResolverInterface.php",
+    "lib/Db/MapperWiring.php -> lib/Service/ObjectAction/ObjectActionValidatorInterface.php",
+    "lib/Db/MapperWiring.php -> lib/Service/Schemas/PropertyValidatorHandlerInterface.php",
+    "lib/Db/ObjectEntity.php -> lib/Service/Deletion/DeletionWindowService.php",
+    "lib/Db/RegisterMapper.php -> lib/Service/Rbac/AccessDeclarationValidators.php",
+    "lib/Db/RegisterMapper.php -> lib/Service/Rbac/DenyResolverInterface.php",
+    "lib/Db/RegisterMapper.php -> lib/Service/Rbac/PermissionCatalogueInterface.php",
+    "lib/Db/RegisterMapper.php -> lib/Service/Rbac/RbacChecks.php",
+    "lib/Db/Schema.php -> lib/Service/Schemas/PropertyValidatorHandlerInterface.php",
+    "lib/Db/Schema.php -> lib/Service/Schemas/UniqueConstraintEvaluator.php",
+    "lib/Db/Schema/AnnotationVocabulary.php -> lib/Service/Rbac/AccessDeclarationValidators.php",
+    "lib/Db/Schema/AuthorizationControlKeys.php -> lib/Service/Rbac/ExplicitRevealInterface.php",
+    "lib/Db/Schema/AuthorizationControlKeys.php -> lib/Service/Rbac/ObjectScopeResolverInterface.php",
+    "lib/Db/Schema/AuthorizationControlKeys.php -> lib/Service/Rbac/PermissionCatalogueInterface.php",
+    "lib/Db/Schema/AuthorizationRulesValidator.php -> lib/Service/Rbac/PermissionCatalogueInterface.php",
+    "lib/Db/Schema/ConfigurationValueRules.php -> lib/Service/Calendar/CalendarDateDeclarationCheck.php",
+    "lib/Db/Schema/DeclaredActions.php -> lib/Service/Rbac/PermissionCatalogueInterface.php",
+    "lib/Db/Schema/LinkedTypesRule.php -> lib/Service/Integration/IntegrationIdIndexInterface.php",
+    "lib/Db/Schema/PropertyAuthorization.php -> lib/Service/Schemas/ScopedPropertyDeclaration.php",
+    "lib/Db/SchemaMapper.php -> lib/Service/ObjectAction/ObjectActionValidatorInterface.php",
+    "lib/Db/SchemaMapper.php -> lib/Service/Schemas/PropertyValidatorHandlerInterface.php",
+    "lib/Db/SchemaMapper.php -> lib/Service/Schemas/ScopedPropertyDeclaration.php",
+    "lib/Db/SchemaMapper.php -> lib/Service/Schemas/ScopedPropertyException.php",
+    "lib/Db/SchemaMapper.php -> lib/Service/Schemas/ScopedPropertyGovernance.php",
+    "lib/Db/SchemaMapper.php -> lib/Service/WritePhase.php",
+    "lib/Db/SchemaMapper/AccessDeclarationChecks.php -> lib/Service/Rbac/AccessDeclarationValidators.php",
+    "lib/Db/SchemaMapper/AccessDeclarationChecks.php -> lib/Service/Rbac/DepartmentMatrixCompiler.php",
+    "lib/Db/SchemaMapper/AccessDeclarationChecks.php -> lib/Service/Rbac/DepartmentMatrixValidator.php",
+    "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php -> lib/Search/Service/SearchAnnotationValidators.php",
+    "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php -> lib/Service/Party/PartyAnnotationValidator.php",
+    "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php -> lib/Service/Quality/MasterDataAnnotationValidators.php",
+    "lib/Db/SchemaMapper/AdvisoryAnnotationChecks.php -> lib/Service/Schemas/SchemaAnnotationValidators.php",
+    "lib/Db/SchemaMapper/AuthorizationBlockCheck.php -> lib/Service/Rbac/AccessDeclarationValidators.php",
+    "lib/Db/SchemaMapper/AuthorizationBlockCheck.php -> lib/Service/Rbac/DenyResolverInterface.php",
+    "lib/Db/SchemaMapper/AuthorizationBlockCheck.php -> lib/Service/Rbac/PermissionCatalogueInterface.php",
+    "lib/Db/SchemaMapper/AuthorizationBlockCheck.php -> lib/Service/Rbac/RbacChecks.php",
+    "lib/Db/SchemaMapper/CalculationAnnotationCheck.php -> lib/Service/Calculation/CalculationDeclarationException.php",
+    "lib/Db/SchemaMapper/CalculationAnnotationCheck.php -> lib/Service/Schemas/SchemaDeclarationValidators.php",
+    "lib/Db/SchemaMapper/DeclaredActionCheck.php -> lib/Service/ObjectAction/ObjectActionDeclarations.php",
+    "lib/Db/SchemaMapper/DeclaredActionCheck.php -> lib/Service/ObjectAction/ObjectActionDefinitionInterface.php",
+    "lib/Db/SchemaMapper/DeclaredActionCheck.php -> lib/Service/ObjectAction/ObjectActionValidatorInterface.php",
+    "lib/Db/SchemaMapper/ExchangeAnnotationRefusals.php -> lib/Mcp/Service/Mcp/McpAnnotationValidators.php",
+    "lib/Db/SchemaMapper/ExchangeAnnotationRefusals.php -> lib/Service/Schemas/SchemaDeclarationValidators.php",
+    "lib/Db/SchemaMapper/LifecycleAnnotationCheck.php -> lib/Service/Schemas/SchemaDeclarationValidators.php",
+    "lib/Db/SchemaMapper/NotificationAnnotationCheck.php -> lib/Notifications/Service/Notification/NotificationAnnotationValidators.php",
+    "lib/Db/SchemaMapper/NotificationAnnotationCheck.php -> lib/Notifications/Service/Notification/NotificationContentValidator.php",
+    "lib/Db/SchemaMapper/NotificationAnnotationCheck.php -> lib/Notifications/Service/Notification/NotificationDeclarationException.php",
+    "lib/Db/SchemaMapper/PropertyDeclarationRefusals.php -> lib/Service/BulkJob/ReversibilityDeclarationException.php",
+    "lib/Db/SchemaMapper/PropertyDeclarationRefusals.php -> lib/Service/Rules/DependentValueDeclarationException.php",
+    "lib/Db/SchemaMapper/PropertyDeclarationRefusals.php -> lib/Service/Schemas/ExtendingFormDeclaration.php",
+    "lib/Db/SchemaMapper/PropertyDeclarationRefusals.php -> lib/Service/Schemas/PropertyVocabularyException.php",
+    "lib/Db/SchemaMapper/PropertyDeclarationRefusals.php -> lib/Service/Schemas/SchemaDeclarationValidators.php",
+    "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Search/Service/SearchAnnotationValidators.php",
+    "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Service/Archival/ElementMappingValidatorInterface.php",
+    "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Service/ExternalLink/ExternalLinkResolverInterface.php",
+    "lib/Db/SchemaMapper/RecordAnnotationRefusals.php -> lib/Service/Schemas/SchemaDeclarationValidators.php",
+    "lib/Db/SchemaMapper/ReferenceLoopCheck.php -> lib/Service/ObjectAction/ObjectActionDeclarations.php",
+    "lib/Db/SchemaMapper/RelationDeclarationCheck.php -> lib/Service/Relation/RelationAnnotationValidatorInterface.php",
+    "lib/Db/SchemaMapper/RelationDeclarationCheck.php -> lib/Service/Relation/RelationDeclarationException.php",
+    "lib/Db/SchemaMapper/RelationDeclarationCheck.php -> lib/Service/Schemas/SchemaDeclarationValidators.php",
+    "lib/Db/SchemaMapper/SubjectDeclarationRefusals.php -> lib/Service/Consent/ConsentDeclarationException.php",
+    "lib/Db/SchemaMapper/SubjectDeclarationRefusals.php -> lib/Service/Decision/ReviewDeclarationException.php",
+    "lib/Db/SchemaMapper/SubjectDeclarationRefusals.php -> lib/Service/Schemas/SchemaDeclarationValidators.php",
+    "lib/Db/SourceMapper.php -> lib/Service/OrganisationServiceInterface.php",
+    "lib/Db/SyncRecordMapper.php -> lib/Service/Sync/SyncRecordStatus.php",
+    "lib/Db/Tenancy/EntityRbacTrait.php -> lib/Service/AnonymousEvaluationContext.php",
+    "lib/Db/Tenancy/EntityRbacTrait.php -> lib/Service/SystemOperationContext.php",
+    "lib/Db/Tenancy/OrganisationWriteGuardTrait.php -> lib/Service/SharedMasterDataServiceInterface.php",
+    "lib/Db/Tenancy/TenancyIdentityTrait.php -> lib/Service/SharedMasterDataServiceInterface.php",
+    "lib/Db/Tenancy/TenancyIdentityTrait.php -> lib/Service/TenancyCollaborators.php",
+    "lib/Db/Tenancy/TenancyIdentityTrait.php -> lib/Service/TenantLogRedactorInterface.php",
+    "lib/Db/WebhookMapper.php -> lib/Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php",
+    "lib/Files/Db/FileMapper.php -> lib/Files/Service/File/ShareUrlBuilder.php",
+    "lib/Mcp/Db/AgentMapper.php -> lib/Service/OrganisationServiceInterface.php",
+    "lib/Search/Db/ViewMapper.php -> lib/Service/Rbac/RbacChecks.php",
+    "lib/Search/Db/ViewMapper.php -> lib/Service/Rbac/ViewerReach.php",
+    "lib/Search/Db/ViewMapperInterface.php -> lib/Service/Rbac/ViewerReach.php"
+   ],
+   "service -> entry point": [
+    "lib/Notifications/Service/Notification/NcNotificationSender.php -> lib/Notifications/BackgroundJob/WebPushDispatchJob.php",
+    "lib/Service/Archival/DestructionService.php -> lib/BackgroundJob/DestructionExecutionJobInterface.php",
+    "lib/Service/Archival/LegalHoldService.php -> lib/BackgroundJob/JobHandles.php",
+    "lib/Service/Audit/AuditTrailPageService.php -> lib/BackgroundJob/JobHandles.php",
+    "lib/Service/BulkJob/BulkJobService.php -> lib/BackgroundJob/JobHandles.php",
+    "lib/Service/Configuration/SchemaImportInstaller.php -> lib/Listener/SchemaFlowImportListenerInterface.php",
+    "lib/Service/Dmn/DecisionTableBulkGuard.php -> lib/Listener/DecisionTableValidationListenerInterface.php",
+    "lib/Service/Flow/FlowPlaceClaims.php -> lib/BackgroundJob/FlowRunWorker.php",
+    "lib/Service/Flow/Timer/FlowTimerDefinitionStore.php -> lib/Repair/FlowTimerRegisterPathInterface.php",
+    "lib/Service/Gdpr/Export/SubjectExportService.php -> lib/BackgroundJob/JobHandles.php",
+    "lib/Service/Hinge/IntakeSourceRegistry.php -> lib/Repair/IntakeSourceRegisterSlugsInterface.php",
+    "lib/Service/ImportService.php -> lib/Listener/NotifyPushBatch.php",
+    "lib/Service/Integration/BuiltinIntegrationServices.php -> lib/Controller/AnalyticsSeriesController.php",
+    "lib/Service/Integration/BuiltinIntegrationServices.php -> lib/Controller/CaseTokenController.php",
+    "lib/Service/Integration/IntegrationWiring.php -> lib/Controller/IntegrationControllersRegistrar.php",
+    "lib/Service/Integration/IntegrationWiring.php -> lib/Repair/LogDanglingLinkedTypes.php",
+    "lib/Service/Lifecycle/AutoTransitionQueue.php -> lib/BackgroundJob/JobHandles.php",
+    "lib/Service/Object/UpsertOnKeyHandler.php -> lib/Listener/UniqueConstraintListenerInterface.php",
+    "lib/Service/Operations/OperationsJobsService.php -> lib/BackgroundJob/JobHandles.php",
+    "lib/Service/Operations/OperationsJobsService.php -> lib/Search/BackgroundJob/SearchJobHandles.php",
+    "lib/Service/OperationsConsoleService.php -> lib/BackgroundJob/JobHandles.php",
+    "lib/Service/OperationsConsoleService.php -> lib/BackgroundJob/RecordsItsRuns.php",
+    "lib/Service/WebhookService.php -> lib/BackgroundJob/WebhookDeliveryJob.php"
+   ],
+   "shared type -> entry point": [
+    "lib/Event/ObjectEventSubscription.php -> lib/Listener/ListenerClassesInterface.php"
+   ],
+   "shared type -> persistence": [
+    "lib/ContextChat/Support/ContentProviderSources.php -> lib/Db/MagicMapperInterface.php",
+    "lib/ContextChat/Support/ContentProviderSources.php -> lib/Db/RegisterMapperInterface.php",
+    "lib/ContextChat/Support/ContentProviderSources.php -> lib/Db/SchemaMapperInterface.php",
+    "lib/Event/AbstractAgentEvent.php -> lib/Mcp/Db/Agent.php",
+    "lib/Event/AbstractApplicationEvent.php -> lib/Db/Application.php",
+    "lib/Event/AbstractConfigurationEvent.php -> lib/Db/Configuration.php",
+    "lib/Event/AbstractConversationEvent.php -> lib/Mcp/Db/Conversation.php",
+    "lib/Event/AbstractObjectEntityEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/AbstractOrganisationEvent.php -> lib/Db/Organisation.php",
+    "lib/Event/AbstractPersonLinkEvent.php -> lib/Db/ContactLink.php",
+    "lib/Event/AbstractRegisterEvent.php -> lib/Db/Register.php",
+    "lib/Event/AbstractSchemaEvent.php -> lib/Db/Schema.php",
+    "lib/Event/AbstractSourceEvent.php -> lib/Db/Source.php",
+    "lib/Event/AbstractTaskEvent.php -> lib/Db/Task.php",
+    "lib/Event/AbstractTaskSequenceEvent.php -> lib/Db/TaskSequence.php",
+    "lib/Event/AbstractViewEvent.php -> lib/Search/Db/View.php",
+    "lib/Event/ActionEvaluatedEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/ActionEvaluatedEvent.php -> lib/Db/Schema.php",
+    "lib/Event/AgentUpdatedEvent.php -> lib/Mcp/Db/Agent.php",
+    "lib/Event/ApplicationUpdatedEvent.php -> lib/Db/Application.php",
+    "lib/Event/CaseItemTransitionedEvent.php -> lib/Db/CaseItem.php",
+    "lib/Event/ConfigurationUpdatedEvent.php -> lib/Db/Configuration.php",
+    "lib/Event/ConversationUpdatedEvent.php -> lib/Mcp/Db/Conversation.php",
+    "lib/Event/CustomScopeEvaluatedEvent.php -> lib/Db/Schema.php",
+    "lib/Event/CustomScopeEvaluatingEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/CustomScopeEvaluatingEvent.php -> lib/Db/Schema.php",
+    "lib/Event/DecisionChangeRequestedEvent.php -> lib/Db/Decision.php",
+    "lib/Event/DecisionVisibilityRequestedEvent.php -> lib/Db/Decision.php",
+    "lib/Event/EntityRelationDecisionUpdatedEvent.php -> lib/Db/EntityRelation.php",
+    "lib/Event/EvaluatedSchemaActionAccessors.php -> lib/Db/Schema.php",
+    "lib/Event/FlowTimerFiredEvent.php -> lib/Db/FlowTimer.php",
+    "lib/Event/MatrixRowsRequestedEvent.php -> lib/Db/Schema.php",
+    "lib/Event/ObjectActivatedEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/ObjectRevertedEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/ObjectTransitionedEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/ObjectUpdatedEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/ObjectUpdatingEvent.php -> lib/Db/ObjectEntity.php",
+    "lib/Event/OrganisationUpdatedEvent.php -> lib/Db/Organisation.php",
+    "lib/Event/RegisterUpdatedEvent.php -> lib/Db/Register.php",
+    "lib/Event/SchemaUpdatedEvent.php -> lib/Db/Schema.php",
+    "lib/Event/SourceUpdatedEvent.php -> lib/Db/Source.php",
+    "lib/Event/TaskSequenceCompletedEvent.php -> lib/Db/Task.php",
+    "lib/Event/TaskSequenceCompletedEvent.php -> lib/Db/TaskSequence.php",
+    "lib/Event/TaskSequenceUndecidedEvent.php -> lib/Db/Task.php",
+    "lib/Event/TaskSequenceUndecidedEvent.php -> lib/Db/TaskSequence.php",
+    "lib/Event/TaskTerminalEvent.php -> lib/Db/Task.php",
+    "lib/Event/TaskTransitionedEvent.php -> lib/Db/Task.php",
+    "lib/Event/ViewAlertCrossedEvent.php -> lib/Search/Db/View.php",
+    "lib/Event/ViewUpdatedEvent.php -> lib/Search/Db/View.php",
+    "lib/Exception/LockedException.php -> lib/Db/ObjectEntity.php",
+    "lib/Exception/ObjectStateWriteException.php -> lib/Db/ObjectEntity.php",
+    "lib/Kernel/Contracts/ObjectOperationsInterface.php -> lib/Db/ObjectEntity.php",
+    "lib/Kernel/Contracts/ObjectOperationsInterface.php -> lib/Db/Register.php",
+    "lib/Kernel/Contracts/ObjectOperationsInterface.php -> lib/Db/Schema.php"
+   ],
+   "shared type -> service": [
+    "lib/BulkAction/Support/ApplyRuleServices.php -> lib/Service/Calculation/CalculationEvaluatorInterface.php",
+    "lib/BulkAction/Support/ApplyRuleServices.php -> lib/Service/Rules/RuleInventoryServiceInterface.php",
+    "lib/Contacts/Support/ContactsMenuSources.php -> lib/Service/DeepLinkResolverInterface.php",
+    "lib/ContextChat/Support/ContentProviderLinks.php -> lib/Service/DeepLinkResolverInterface.php",
+    "lib/Dto/BulkSaveOutcome.php -> lib/Service/Object/BatchOperationStatusInterface.php",
+    "lib/Dto/BulkSaveOutcomes.php -> lib/Service/Object/BatchOperationStatusInterface.php",
+    "lib/Event/AbstractDecisionRequestEvent.php -> lib/Service/Decision/ReviewPolicy.php",
+    "lib/Event/BulkActionRegistrationEvent.php -> lib/Service/BulkActionRegistryInterface.php",
+    "lib/Event/DecisionChangeRequestedEvent.php -> lib/Service/Decision/ReviewPolicy.php",
+    "lib/Event/DecisionVisibilityRequestedEvent.php -> lib/Service/Decision/ReviewPolicy.php",
+    "lib/Event/DeepLinkRegistrationEvent.php -> lib/Service/DeepLinkRegistryServiceInterface.php",
+    "lib/Event/FormDestinationDependentsEvent.php -> lib/Service/Form/FormDependent.php",
+    "lib/Event/RegisterLeafProvidersEvent.php -> lib/Service/Integration/IntegrationProvider.php",
+    "lib/Event/RegisterLeafProvidersEvent.php -> lib/Service/Integration/LeafDescriptor.php",
+    "lib/Event/ToolRegistrationEvent.php -> lib/Mcp/Service/ToolRegistryInterface.php",
+    "lib/Event/ViewAlertCrossedEvent.php -> lib/Service/View/ViewAlert.php",
+    "lib/Exception/OasValidationException.php -> lib/Service/Oas/OasValidationReport.php"
+   ]
+  }
+ },
+ "loc": 394863,
+ "modules": 5387,
+ "placed_by_directory": [
+  "lib/BulkAction/Support/ApplyRuleServices.php",
+  "lib/Repair/TaskFixtureMappers.php",
+  "lib/Search/Service/Vectorization/Strategies/VectorizationStrategyInterface.php",
+  "lib/Service/CaseTypeAuthorizationService.php"
+ ],
+ "references": 16768,
+ "two_way_pairs": [
+  {
+   "lighter": "Processes -> Core",
+   "lighter_targets": [
+    "lib/Db/TypedFieldsJsonTrait.php",
+    "lib/Db/AuditTrailMapperInterface.php",
+    "lib/Db/MagicMapperInterface.php",
+    "lib/Service/WriteCause.php",
+    "lib/Db/EntityRelation.php"
+   ],
+   "pair": [
+    "Core",
+    "Processes"
+   ],
+   "refs": [
+    250,
+    234
+   ]
+  },
+  {
+   "lighter": "Core -> Integrations",
+   "lighter_targets": [
+    "lib/Db/AccessLink.php",
+    "lib/Db/Source.php",
+    "lib/Service/LinkTarget.php",
+    "lib/Service/Credential/CredentialStore.php",
+    "lib/Db/WebhookLogMapperInterface.php"
+   ],
+   "pair": [
+    "Core",
+    "Integrations"
+   ],
+   "refs": [
+    189,
+    313
+   ]
+  },
+  {
+   "lighter": "Core -> Compliance",
+   "lighter_targets": [
+    "lib/Db/AuditTrail.php",
+    "lib/Service/AuthorizationAuditService.php",
+    "lib/Service/Audit/PurposeGuardInterface.php",
+    "lib/Service/Edepot/TransferRecordServiceInterface.php",
+    "lib/Service/RetentionServiceInterface.php"
+   ],
+   "pair": [
+    "Compliance",
+    "Core"
+   ],
+   "refs": [
+    193,
+    156
+   ]
+  },
+  {
+   "lighter": "Core -> Configuration",
+   "lighter_targets": [
+    "lib/Service/ConfigurationServiceInterface.php",
+    "lib/Service/LanguageService.php",
+    "lib/Service/Export/ExportGateInterface.php",
+    "lib/Service/Reference/ObjectPreviewFormatter.php",
+    "lib/Service/TranslationStatusService.php"
+   ],
+   "pair": [
+    "Configuration",
+    "Core"
+   ],
+   "refs": [
+    534,
+    108
+   ]
+  },
+  {
+   "lighter": "Kernel -> Core",
+   "lighter_targets": [
+    "lib/Event/AbstractObjectEntityEvent.php",
+    "lib/Event/AbstractSchemaEvent.php",
+    "lib/Event/AbstractPersonLinkEvent.php",
+    "lib/Service/Object/BatchOperationStatusInterface.php",
+    "lib/Event/AbstractAgentEvent.php"
+   ],
+   "pair": [
+    "Core",
+    "Kernel"
+   ],
+   "refs": [
+    1575,
+    80
+   ]
+  },
+  {
+   "lighter": "Integrations -> Processes",
+   "lighter_targets": [
+    "lib/Service/CalendarEventService.php",
+    "lib/Db/Flow.php",
+    "lib/Db/FormLinkMapperInterface.php",
+    "lib/Service/Flow/FlowServiceInterface.php",
+    "lib/Service/FormLinkServiceInterface.php"
+   ],
+   "pair": [
+    "Integrations",
+    "Processes"
+   ],
+   "refs": [
+    53,
+    77
+   ]
+  },
+  {
+   "lighter": "Files -> Core",
+   "lighter_targets": [
+    "lib/Db/EntityRelation.php",
+    "lib/Db/AuditTrailMapperInterface.php",
+    "lib/Service/Object/FileWriteGuardInterface.php",
+    "lib/Controller/Support/ObjectLinkRoute.php",
+    "lib/Service/SettingsServiceInterface.php"
+   ],
+   "pair": [
+    "Core",
+    "Files"
+   ],
+   "refs": [
+    53,
+    43
+   ]
+  },
+  {
+   "lighter": "Core -> Search",
+   "lighter_targets": [
+    "lib/Search/Db/ViewMapperInterface.php",
+    "lib/Search/Service/Aggregation/AggregationQuery.php",
+    "lib/Search/Service/Search/PropertySearchProfile.php",
+    "lib/Search/Service/Aggregation/TimeseriesRequestValidatorInterface.php",
+    "lib/Db/SearchTrailCleanupInterface.php"
+   ],
+   "pair": [
+    "Core",
+    "Search"
+   ],
+   "refs": [
+    40,
+    61
+   ]
+  },
+  {
+   "lighter": "Notifications -> Processes",
+   "lighter_targets": [
+    "lib/Db/Task.php",
+    "lib/Service/Interaction/WatcherServiceInterface.php",
+    "lib/Service/Task/TaskInboxServiceInterface.php",
+    "lib/Db/TaskMapper.php",
+    "lib/Service/Party/PartySendRefusalInterface.php"
+   ],
+   "pair": [
+    "Notifications",
+    "Processes"
+   ],
+   "refs": [
+    21,
+    41
+   ]
+  },
+  {
+   "lighter": "Compliance -> Configuration",
+   "lighter_targets": [
+    "lib/Service/Settings/ArchivalSettingsReaderInterface.php",
+    "lib/Db/HydrateBySettersTrait.php",
+    "lib/Service/Settings/FileSettingsHandler.php",
+    "lib/BackgroundJob/RecordedQueuedJob.php",
+    "lib/Service/Operations/JobRunRecorderInterface.php"
+   ],
+   "pair": [
+    "Compliance",
+    "Configuration"
+   ],
+   "refs": [
+    20,
+    152
+   ]
+  },
+  {
+   "lighter": "Processes -> Configuration",
+   "lighter_targets": [
+    "lib/Db/TaskSequence.php",
+    "lib/Db/Translation.php",
+    "lib/Command/Support/RematerialiseEvaluation.php",
+    "lib/Command/Support/RematerialiseStorage.php",
+    "lib/Service/ExampleSet/ExampleSetDateValue.php"
+   ],
+   "pair": [
+    "Configuration",
+    "Processes"
+   ],
+   "refs": [
+    380,
+    19
+   ]
+  },
+  {
+   "lighter": "Core -> Notifications",
+   "lighter_targets": [
+    "lib/Notifications/Service/TimelineVisibilityServiceInterface.php",
+    "lib/Notifications/Service/Notification/NotificationClearingServiceInterface.php",
+    "lib/Notifications/Service/Notification/NotificationDeclarationException.php",
+    "lib/Db/FeedbackMapperInterface.php",
+    "lib/Notifications/Service/PresenceServiceInterface.php"
+   ],
+   "pair": [
+    "Core",
+    "Notifications"
+   ],
+   "refs": [
+    19,
+    23
+   ]
+  },
+  {
+   "lighter": "Platform -> Configuration",
+   "lighter_targets": [
+    "lib/Service/Configuration/DescriptorConfigIdsInterface.php",
+    "lib/Db/Translation.php",
+    "lib/Service/Configuration/ConfigurationServiceRegistrar.php",
+    "lib/Service/Operations/MaintenanceModeHoldInterface.php",
+    "lib/Service/Reference/ObjectPreviewFormatterInterface.php"
+   ],
+   "pair": [
+    "Configuration",
+    "Platform"
+   ],
+   "refs": [
+    30,
+    18
+   ]
+  },
+  {
+   "lighter": "Integrations -> Configuration",
+   "lighter_targets": [
+    "lib/Db/Application.php",
+    "lib/Db/HydrateBySettersTrait.php",
+    "lib/Db/Configuration.php",
+    "lib/Service/Mcp/McpAgentScope.php",
+    "lib/Service/Capability/ToolReachLevels.php"
+   ],
+   "pair": [
+    "Configuration",
+    "Integrations"
+   ],
+   "refs": [
+    147,
+    16
+   ]
+  },
+  {
+   "lighter": "Processes -> Platform",
+   "lighter_targets": [
+    "lib/Settings/OpenRegisterAdmin.php",
+    "lib/Service/TranslationProjectionServiceInterface.php",
+    "lib/Db/TranslationMapperInterface.php",
+    "lib/Service/TranslationStatusServiceInterface.php",
+    "lib/Listener/NotifyPushListener.php"
+   ],
+   "pair": [
+    "Platform",
+    "Processes"
+   ],
+   "refs": [
+    24,
+    16
+   ]
+  },
+  {
+   "lighter": "Compliance -> Integrations",
+   "lighter_targets": [
+    "lib/Db/JsonFieldsTrait.php",
+    "lib/Service/Connection/ConnectionReporter.php",
+    "lib/Service/Connection/ConnectionReporterInterface.php",
+    "lib/Db/CalendarLinkMapperInterface.php",
+    "lib/Service/Credential/OAuth2CredentialSweepInterface.php"
+   ],
+   "pair": [
+    "Compliance",
+    "Integrations"
+   ],
+   "refs": [
+    14,
+    15
+   ]
+  },
+  {
+   "lighter": "Compliance -> Processes",
+   "lighter_targets": [
+    "lib/Service/Lifecycle/AutoTransitionPassInterface.php",
+    "lib/Service/Lifecycle/TransitionEngine.php",
+    "lib/Service/Deferral/DeferredEntryObjectResolverInterface.php",
+    "lib/Service/BulkJob/BulkJobServiceInterface.php",
+    "lib/Db/BulkJobMapperInterface.php"
+   ],
+   "pair": [
+    "Compliance",
+    "Processes"
+   ],
+   "refs": [
+    13,
+    30
+   ]
+  },
+  {
+   "lighter": "Notifications -> Integrations",
+   "lighter_targets": [
+    "lib/Mcp/Db/Conversation.php",
+    "lib/Service/EmailLinkServiceInterface.php",
+    "lib/Db/EmailLink.php",
+    "lib/Db/EmailLinkMapperInterface.php",
+    "lib/Db/ContactLink.php"
+   ],
+   "pair": [
+    "Integrations",
+    "Notifications"
+   ],
+   "refs": [
+    22,
+    12
+   ]
+  },
+  {
+   "lighter": "Core -> Platform",
+   "lighter_targets": [
+    "lib/Db/TranslationMapperInterface.php",
+    "lib/Service/LanguageServiceInterface.php",
+    "lib/Listener/NotifyPushListener.php",
+    "lib/Service/TranslationStatusServiceInterface.php",
+    "lib/Db/FeedbackMapper.php"
+   ],
+   "pair": [
+    "Core",
+    "Platform"
+   ],
+   "refs": [
+    12,
+    57
+   ]
+  },
+  {
+   "lighter": "Kernel -> Processes",
+   "lighter_targets": [
+    "lib/Db/Task.php",
+    "lib/Service/Decision/ReviewPolicy.php",
+    "lib/Db/Decision.php",
+    "lib/BulkAction/BulkActionInterface.php",
+    "lib/Db/CaseItem.php"
+   ],
+   "pair": [
+    "Kernel",
+    "Processes"
+   ],
+   "refs": [
+    12,
+    791
+   ]
+  },
+  {
+   "lighter": "Kernel -> Integrations",
+   "lighter_targets": [
+    "lib/Db/JsonFieldsTrait.php",
+    "lib/Mcp/Db/Agent.php",
+    "lib/Mcp/Db/Conversation.php",
+    "lib/Service/Integration/LeafDescriptor.php",
+    "lib/Service/Integration/IntegrationProvider.php"
+   ],
+   "pair": [
+    "Integrations",
+    "Kernel"
+   ],
+   "refs": [
+    313,
+    10
+   ]
+  },
+  {
+   "lighter": "Kernel -> Configuration",
+   "lighter_targets": [
+    "lib/Db/Configuration.php",
+    "lib/Db/TaskSequence.php",
+    "lib/Db/Application.php"
+   ],
+   "pair": [
+    "Configuration",
+    "Kernel"
+   ],
+   "refs": [
+    299,
+    7
+   ]
+  },
+  {
+   "lighter": "Notifications -> Platform",
+   "lighter_targets": [
+    "lib/AppInfo/Application.php",
+    "lib/Db/Feedback.php",
+    "lib/Settings/OpenRegisterAdmin.php"
+   ],
+   "pair": [
+    "Notifications",
+    "Platform"
+   ],
+   "refs": [
+    7,
+    9
+   ]
+  },
+  {
+   "lighter": "Notifications -> Configuration",
+   "lighter_targets": [
+    "lib/Service/Notification/ReferencedAddressNotifierInterface.php",
+    "lib/Service/Notification/NotificationsAnnotationInstallerInterface.php",
+    "lib/Service/ExampleSet/ExampleSetEngineRows.php",
+    "lib/Service/ExampleSet/ExampleSetRow.php",
+    "lib/Db/Configuration.php"
+   ],
+   "pair": [
+    "Configuration",
+    "Notifications"
+   ],
+   "refs": [
+    15,
+    6
+   ]
+  },
+  {
+   "lighter": "Search -> Compliance",
+   "lighter_targets": [
+    "lib/Db/SearchTrail.php",
+    "lib/BackgroundJob/Support/ActorForwardingServices.php",
+    "lib/Db/AuditTrail.php"
+   ],
+   "pair": [
+    "Compliance",
+    "Search"
+   ],
+   "refs": [
+    16,
+    5
+   ]
+  },
+  {
+   "lighter": "Search -> Processes",
+   "lighter_targets": [
+    "lib/Service/Deferral/DeferredEntryObjectResolverInterface.php",
+    "lib/Service/Deferral/DeferredListenerContext.php",
+    "lib/Db/Task.php",
+    "lib/Service/Deferral/ListenerDeferralInterface.php"
+   ],
+   "pair": [
+    "Processes",
+    "Search"
+   ],
+   "refs": [
+    9,
+    5
+   ]
+  },
+  {
+   "lighter": "Configuration -> Search",
+   "lighter_targets": [
+    "lib/Search/Service/VectorizationServiceInterface.php",
+    "lib/Service/SearchTrailServiceInterface.php",
+    "lib/Search/Service/ExampleSet/ExampleSetViewRowsInterface.php",
+    "lib/Search/BackgroundJob/SearchJobHandles.php"
+   ],
+   "pair": [
+    "Configuration",
+    "Search"
+   ],
+   "refs": [
+    4,
+    10
+   ]
+  },
+  {
+   "lighter": "Platform -> Files",
+   "lighter_targets": [
+    "lib/Files/FilesRegistrar.php",
+    "lib/Files/Service/File/RegisterFolderProvisionerInterface.php",
+    "lib/Files/Service/RiskLevelServiceInterface.php"
+   ],
+   "pair": [
+    "Files",
+    "Platform"
+   ],
+   "refs": [
+    5,
+    3
+   ]
+  },
+  {
+   "lighter": "Files -> Integrations",
+   "lighter_targets": [
+    "lib/Db/Source.php",
+    "lib/Db/AccessLink.php",
+    "lib/Service/Security/SafeFetchUrl.php"
+   ],
+   "pair": [
+    "Files",
+    "Integrations"
+   ],
+   "refs": [
+    3,
+    3
+   ]
+  },
+  {
+   "lighter": "Files -> Configuration",
+   "lighter_targets": [
+    "lib/Db/StoredEntity.php"
+   ],
+   "pair": [
+    "Configuration",
+    "Files"
+   ],
+   "refs": [
+    9,
+    2
+   ]
+  },
+  {
+   "lighter": "Platform -> Search",
+   "lighter_targets": [
+    "lib/Search/SearchProviderRegistrar.php",
+    "lib/Search/SearchRegistrar.php"
+   ],
+   "pair": [
+    "Platform",
+    "Search"
+   ],
+   "refs": [
+    2,
+    3
+   ]
+  },
+  {
+   "lighter": "Integrations -> Platform",
+   "lighter_targets": [
+    "lib/Db/TranslationSourceLanguageBackfillInterface.php",
+    "lib/AppInfo/Application.php"
+   ],
+   "pair": [
+    "Integrations",
+    "Platform"
+   ],
+   "refs": [
+    2,
+    31
+   ]
+  },
+  {
+   "lighter": "Kernel -> Search",
+   "lighter_targets": [
+    "lib/Search/Db/View.php"
+   ],
+   "pair": [
+    "Kernel",
+    "Search"
+   ],
+   "refs": [
+    2,
+    99
+   ]
+  },
+  {
+   "lighter": "Integrations -> Search",
+   "lighter_targets": [
+    "lib/Search/Db/View.php",
+    "lib/Search/Service/Vectorization/VectorEmbeddingsInterface.php"
+   ],
+   "pair": [
+    "Integrations",
+    "Search"
+   ],
+   "refs": [
+    2,
+    10
+   ]
+  },
+  {
+   "lighter": "Search -> Files",
+   "lighter_targets": [
+    "lib/Files/Service/File/Pdf/Fallback/NcOfficeConverterInterface.php"
+   ],
+   "pair": [
+    "Files",
+    "Search"
+   ],
+   "refs": [
+    8,
+    1
+   ]
+  },
+  {
+   "lighter": "Kernel -> Platform",
+   "lighter_targets": [
+    "lib/Exception/ReferenceCycle.php"
+   ],
+   "pair": [
+    "Kernel",
+    "Platform"
+   ],
+   "refs": [
+    1,
+    44
+   ]
+  }
+ ],
+ "views": {
+  "directories under lib/": {
+   "communication_lines": 194,
+   "components": 38,
+   "hidden_share": 0.8874,
+   "hidden_stars_estimate": "<4",
+   "largest_component": "Service",
+   "largest_share": 0.5436,
+   "loc_per_component": {
+    "Activity": 224,
+    "AppHost": 5995,
+    "AppInfo": 221,
+    "BackgroundJob": 6138,
+    "BulkAction": 817,
+    "Calendar": 503,
+    "Capabilities": 151,
+    "Command": 4457,
+    "Contacts": 154,
+    "ContextChat": 226,
+    "Contract": 210,
+    "Controller": 41991,
+    "Dashboard": 40,
+    "Dav": 136,
+    "Db": 43727,
+    "Dto": 230,
+    "Event": 1862,
+    "Exception": 1960,
+    "Federation": 49,
+    "Files": 15689,
+    "Formats": 333,
+    "Kernel": 887,
+    "Lifecycle": 109,
+    "Listener": 8933,
+    "Mcp": 8058,
+    "Middleware": 1373,
+    "Notification": 720,
+    "Notifications": 16419,
+    "Push": 7,
+    "Reference": 62,
+    "Repair": 4564,
+    "Search": 12910,
+    "Sections": 25,
+    "Service": 214638,
+    "Settings": 188,
+    "Support": 521,
+    "Twig": 163,
+    "WorkflowEngine": 173
+   },
+   "violation_degree": 0.0646,
+   "violation_stars_estimate": 4,
+   "violations": {
+    "cyclic": 39,
+    "indirect-cyclic": 23,
+    "transitive": 12
+   }
+  },
+  "functional areas": {
+   "communication_lines": 81,
+   "components": 10,
+   "hidden_share": 0.6449,
+   "hidden_stars_estimate": "<4",
+   "largest_component": "Core",
+   "largest_share": 0.333,
+   "loc_per_component": {
+    "Compliance": 29319,
+    "Configuration": 48165,
+    "Core": 131485,
+    "Files": 15809,
+    "Integrations": 50105,
+    "Kernel": 7374,
+    "Notifications": 17445,
+    "Platform": 6717,
+    "Processes": 74739,
+    "Search": 13705
+   },
+   "violation_degree": 0.194,
+   "violation_stars_estimate": "<4",
+   "violations": {
+    "cyclic": 37,
+    "indirect-cyclic": 11,
+    "transitive": 5
+   }
+  }
+ }
+}

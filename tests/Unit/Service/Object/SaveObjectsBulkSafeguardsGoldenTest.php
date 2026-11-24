@@ -509,7 +509,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 	 */
 	private function permissionHandler(array $deny): PermissionHandler {
 		$handler = $this->createMock(originalClassName: PermissionHandler::class);
-		$handler->method('hasPermission')->willReturnCallback(
+		$handler->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (...$args) use ($deny): bool {
 				$this->calls[] = 'hasPermission '.json_encode(
 					[$args[0]->getId(), $args[1], ($args[2] ?? null), ($args[3] ?? null), ($args[4] ?? true), ($args[5] ?? null)?->getUuid()]
@@ -518,7 +518,7 @@ class SaveObjectsBulkSafeguardsGoldenTest extends TestCase {
 
 				return in_array($args[1], $deny, true) === false && in_array($key, $deny, true) === false;
 			}
-		);
+		));
 
 		return $handler;
 	}//end permissionHandler()

@@ -19,9 +19,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
+use OCA\OpenRegister\Kernel\Contracts\BackendStatement;
+
 use OCA\OpenRegister\Exception\AnalyzeRequestRejectedException;
-use OCA\OpenRegister\Service\Connection\ConnectionReporter;
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -48,6 +50,13 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * App id of the AppAPI app required for ExApp detection.
 	 */
 	private const APP_API = 'app_api';
+
+	/**
+	 * The file-settings key the anonymisation block is stored under
+	 * (FileSettingsHandler::ANONYMISATION_KEY; read here through the
+	 * FileSettingsReaderInterface port, so the value is restated).
+	 */
+	private const ANONYMISATION_SETTINGS_KEY = 'anonymisation';
 
 	/**
 	 * App id of the full OpenAnonymiser ExApp (preferred variant).
@@ -104,9 +113,9 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	/**
 	 * Reads the stored entity-recognition settings.
 	 *
-	 * @var FileSettingsHandler
+	 * @var FileSettingsReaderInterface
 	 */
-	private readonly FileSettingsHandler $fileSettingsHandler;
+	private readonly FileSettingsReaderInterface $fileSettingsHandler;
 
 	/**
 	 * Logger.
@@ -118,9 +127,9 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	/**
 	 * Reports an OpenAnonymiser connection test to integriq's connection registry.
 	 *
-	 * @var ConnectionReporter
+	 * @var ConnectionStatusReporterInterface
 	 */
-	private readonly ConnectionReporter $connectionReporter;
+	private readonly ConnectionStatusReporterInterface $connectionReporter;
 
 	/**
 	 * The next step an unconfigured OpenAnonymiser connection reports, by probe error.
@@ -137,7 +146,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * Constructor.
 	 *
 	 * @param AnonymisationBackendPlatform      $platform      App manager, app config, cache factory and HTTP clients.
-	 * @param AnonymisationBackendCollaborators $collaborators File settings, logger and connection reporter.
+	 * @param AnonymisationBackendCollaborators $collaborators File settings, logger, connection reporter and pattern version.
 	 */
 	public function __construct(
 		AnonymisationBackendPlatform $platform,
@@ -158,7 +167,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 		}
 
 		$this->probeCache = new ProbeResultCache(cache: $cache, appConfig: $this->appConfig);
-		$this->detectorVersions = new DetectorVersionReader(appManager: $this->appManager);
+		$this->detectorVersions = new DetectorVersionReader(appManager: $this->appManager, patterns: $collaborators->patterns);
 		$this->detectorHistory  = new DetectorVersionHistory(appConfig: $this->appConfig);
 	}//end __construct()
 
@@ -635,13 +644,19 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	 * @param ProbeResult $probe The probe result for the method.
 	 *
 	 * @return BackendInfo The availability/configuration record.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-precision-and-recall-are-measured-over-a-named-corpus-and-published-with-the-detector-version-req-adi-002
 	 */
 	private function buildBackendInfo(string $method, ProbeResult $probe): BackendInfo {
+		$detector = $this->detectorFor(method: $method, probe: $probe);
+
 		return new BackendInfo(
 			name: $method,
 			configured: $this->isConfigured(method: $method, probe: $probe),
 			probe: $probe,
-			detector: $this->detectorFor(method: $method, probe: $probe),
+			detector: $detector,
+			statement: $this->statementFor(backend: $method),
+			evaluation: (new DetectorEvaluationStore(appConfig: $this->appConfig))->reportFor(method: $method, current: $detector),
 		);
 	}//end buildBackendInfo()
 
@@ -673,6 +688,32 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 	}//end detectorFor()
 
 	/**
+	 * What a backend does with the text it is sent: the product's statement for
+	 * the pattern backend and the internal ExApp, else the administrator's, or
+	 * `unknown` until one is stored.
+	 *
+	 * @param string $backend The backend method.
+	 *
+	 * @return BackendStatement
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+	 */
+	private function statementFor(string $backend): BackendStatement {
+		$settings = $this->fileSettingsHandler->getFileSettingsOnly();
+		$anonymisation = ($settings[self::ANONYMISATION_SETTINGS_KEY] ?? null);
+		$statements = [];
+		if (is_array($anonymisation) === true && is_array($anonymisation[BackendStatement::SETTINGS_KEY] ?? null) === true) {
+			$statements = $anonymisation[BackendStatement::SETTINGS_KEY];
+		}
+
+		return BackendStatement::forBackend(
+			backend: $backend,
+			openAnonymiserSource: (string) ($settings['openAnonymiserSource'] ?? 'internal'),
+			stored: ($statements[$backend] ?? null)
+		);
+	}//end statementFor()
+
+	/**
 	 * Build the hybrid BackendInfo from the composed atomic records.
 	 *
 	 * @param array<string, BackendInfo> $backends The already-built atomic records.
@@ -694,6 +735,7 @@ class AnonymisationBackendService implements AnonymisationBackendServiceInterfac
 			configured: $configured,
 			probe: $probe,
 			detector: $this->detectorFor(method: BackendState::METHOD_HYBRID, probe: $probe),
+			statement: $this->statementFor(backend: BackendState::METHOD_HYBRID),
 		);
 	}//end buildHybridInfo()
 

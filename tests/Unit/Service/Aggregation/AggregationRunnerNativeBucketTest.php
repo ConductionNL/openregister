@@ -34,8 +34,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -128,7 +133,9 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'hour']
+				layout: new AggregationLayout(
+					dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'hour']
+				)
 			)
 		);
 
@@ -153,7 +160,9 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-21T01:00:00Z', 'gap' => 'minute']
+				layout: new AggregationLayout(
+					dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-21T01:00:00Z', 'gap' => 'minute']
+				)
 			)
 		);
 
@@ -195,7 +204,9 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-21T01:00:00Z', 'gap' => 'minute']
+				layout: new AggregationLayout(
+					dateBucket: ['field' => 'created', 'start' => '2026-05-21T00:00:00Z', 'end' => '2026-05-21T01:00:00Z', 'gap' => 'minute']
+				)
 			)
 		);
 
@@ -249,7 +260,9 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+				layout: new AggregationLayout(
+					dateBucket: ['field' => 'created', 'start' => '2026-05-01T00:00:00Z', 'end' => '2026-05-22T00:00:00Z', 'gap' => 'day']
+				)
 			)
 		);
 
@@ -365,12 +378,14 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 	private function dayBucketQuery(): AggregationQuery {
 		return AggregationQuery::create(
 			metric: 'count',
-			dateBucket: [
+			layout: new AggregationLayout(
+				dateBucket: [
 				'field' => 'created',
 				'start' => '2026-05-01T00:00:00Z',
 				'end' => '2026-05-22T00:00:00Z',
 				'gap' => 'day',
 			]
+			)
 		);
 
 	}//end dayBucketQuery()
@@ -391,16 +406,24 @@ class AggregationRunnerNativeBucketTest extends TestCase {
 
 	private function makeRunner(): AggregationRunner {
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
-			placeholders: $this->placeholderResolver,
-			db: $this->db,
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->schemaMapper, tables: $this->magicMapper),
+				db: $this->db
+			),
 			cache: $this->cache,
-			permissionHandler: $this->permissionHandler,
-			userSession: $this->userSession,
-			organisationService: $this->organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $this->createMock(TranslationHandler::class),
-			languageService: $this->createMock(LanguageService::class),
+			access: new AggregationAccess(
+				permissionHandler: $this->permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $this->userSession,
+				organisationService: $this->organisationService,
+				placeholders: $this->placeholderResolver
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $this->createMock(TranslationHandler::class),
+				languageService: $this->createMock(LanguageService::class)
+			)
 		);
 
 	}//end makeRunner()

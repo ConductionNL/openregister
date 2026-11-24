@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use OCP\Files\File;
 use OCP\Files\IMimeTypeDetector;
 use OCP\ITempManager;
@@ -54,15 +54,15 @@ class ArchiveMemberEnumerator {
 	/**
 	 * Constructor.
 	 *
-	 * @param IMimeTypeDetector   $mimes    Detects a member's MIME type from its name.
-	 * @param ITempManager        $temp     Temporary files for the archive and a nested zip.
-	 * @param FileSettingsHandler $settings The file settings holding the bounds.
-	 * @param LoggerInterface     $logger   The logger.
+	 * @param IMimeTypeDetector           $mimes    Detects a member's MIME type from its name.
+	 * @param ITempManager                $temp     Temporary files for the archive and a nested zip.
+	 * @param FileSettingsReaderInterface $settings The file settings holding the bounds.
+	 * @param LoggerInterface             $logger   The logger.
 	 */
 	public function __construct(
 		private readonly IMimeTypeDetector $mimes,
 		private readonly ITempManager $temp,
-		private readonly FileSettingsHandler $settings,
+		private readonly FileSettingsReaderInterface $settings,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

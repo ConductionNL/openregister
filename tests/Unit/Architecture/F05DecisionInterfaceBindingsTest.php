@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
@@ -51,8 +51,8 @@ final class F05DecisionInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		DecisionVisibility::class => [DecisionVisibilityInterface::class, ContractBindings::class],
-		RelationDecisionService::class => [RelationDecisionServiceInterface::class, ContractBindings::class],
+		DecisionVisibility::class => [DecisionVisibilityInterface::class, ProcessesServiceBindings::class],
+		RelationDecisionService::class => [RelationDecisionServiceInterface::class, ProcessesServiceBindings::class],
 	];
 
 	/**

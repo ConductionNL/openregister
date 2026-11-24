@@ -102,7 +102,6 @@ class SettingsServiceGapTest extends TestCase {
 			$this->logger,
 			$db,
 			null,
-			'openregister',
 			null,
 			$this->searchBackendHandler,
 			$this->llmSettingsHandler,

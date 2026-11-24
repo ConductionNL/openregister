@@ -29,7 +29,6 @@ use JsonSerializable;
  *
  * Implemented by \OCA\OpenRegister\Db\Register. The column accessors are
  * served by Nextcloud's Entity::__call, so they are listed as tags here.
- * getManagedByConfiguration() stays on the entity: it returns a Db\Configuration.
  *
  * @method int getId()
  * @method string|null getUuid()

@@ -27,6 +27,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
+use OCA\OpenRegister\Service\RunningNumbers;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -80,7 +81,7 @@ class GeneratedIdentifierListenerRefusalGoldenTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->listener = new GeneratedIdentifierListener(
 			$this->schemaMapper,
-			$this->sequences,
+			new RunningNumbers($this->sequences),
 			$this->logger,
 			new ObjectEventGate($this->createMock(IEventDispatcher::class))
 		);

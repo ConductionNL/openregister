@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\ObjectStreamingSaveInterface;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
@@ -66,16 +66,16 @@ final class D2InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{0: class-string, 1: array<class-string, class-string>, 2: string}>
 	 */
 	private const CLASSES = [
-		AggregationRunner::class => [AggregationRunnerInterface::class, ContractBindings::BINDINGS, 'Service'],
-		BatchOperationStatus::class => [BatchOperationStatusInterface::class, ContractBindings::BINDINGS, 'Service'],
-		FacetCacheVersion::class => [FacetCacheVersionInterface::class, ContractBindings::BINDINGS, 'Service'],
-		ObjectEventGate::class => [ObjectEventGateInterface::class, ContractBindings::BINDINGS, 'Service'],
-		ObjectService::class => [ObjectStreamingSaveInterface::class, ContractBindings::BINDINGS, 'Service'],
-		ObjectSlugBackfillService::class => [ObjectSlugBackfillServiceInterface::class, ContractBindings::BINDINGS, 'Service'],
-		QueryHandler::class => [QueryHandlerInterface::class, ContractBindings::BINDINGS, 'Service'],
-		RenderObject::class => [RenderObjectInterface::class, ContractBindings::BINDINGS, 'Service'],
-		SchemaTypeConverter::class => [SchemaTypeConverterInterface::class, ContractBindings::BINDINGS, 'Service'],
-		TranslationHandler::class => [TranslationHandlerInterface::class, ContractBindings::BINDINGS, 'Service'],
+		AggregationRunner::class => [AggregationRunnerInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
+		BatchOperationStatus::class => [BatchOperationStatusInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
+		FacetCacheVersion::class => [FacetCacheVersionInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
+		ObjectEventGate::class => [ObjectEventGateInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
+		ObjectService::class => [ObjectStreamingSaveInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
+		ObjectSlugBackfillService::class => [ObjectSlugBackfillServiceInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
+		QueryHandler::class => [QueryHandlerInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
+		RenderObject::class => [RenderObjectInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
+		SchemaTypeConverter::class => [SchemaTypeConverterInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
+		TranslationHandler::class => [TranslationHandlerInterface::class, CoreServiceBindings::BINDINGS, 'Service'],
 	];
 
 	/**

@@ -87,6 +87,15 @@
     "pg raw array list": [
         "(COALESCE(\"tags\", '[]')::jsonb @> '[\"x\"]'::jsonb OR COALESCE(\"tags\", '[]')::jsonb @> '[\"y\"]'::jsonb)"
     ],
+    "pg raw array contains": [
+        "COALESCE(\"tags\", '[]')::jsonb @> '[{\"system\":\"decos\",\"identifier\":\"Z-1\",\"public\":true}]'::jsonb"
+    ],
+    "pg raw array contains list": [
+        "1 = 0"
+    ],
+    "pg raw array contains nested": [
+        "1 = 0"
+    ],
     "pg raw object": [
         "\"owner\" = 'abc'"
     ],
@@ -222,6 +231,15 @@
     ],
     "mysql raw array list": [
         "(COALESCE(`tags`, '[]')::jsonb @> '[\"x\"]'::jsonb OR COALESCE(`tags`, '[]')::jsonb @> '[\"y\"]'::jsonb)"
+    ],
+    "mysql raw array contains": [
+        "JSON_CONTAINS(COALESCE(`tags`, '[]'), '[{\"system\":\"decos\",\"identifier\":\"Z-1\",\"public\":true}]')"
+    ],
+    "mysql raw array contains list": [
+        "1 = 0"
+    ],
+    "mysql raw array contains nested": [
+        "1 = 0"
     ],
     "mysql raw object": [
         "`owner` = 'abc'"

@@ -23,6 +23,7 @@ use Exception;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\Schema\VocabularyEntries;
 use Throwable;
 
 /**
@@ -115,7 +116,7 @@ class PersonLinkService implements PersonLinkServiceInterface {
 			return [];
 		}
 
-		return $schema->getLinkRoles();
+		return (new VocabularyEntries())->configuredVocabulary(configuration: $schema->getConfiguration(), config: 'linkRoles');
 	}//end roleVocabulary()
 
 	/**

@@ -22,37 +22,13 @@
 
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
 
-use OCP\IUser;
-
 /**
- * On whose behalf one object save is written, and who owns a row it creates.
+ * The published SaveActor, under the name openregister used before it was published.
+ *
+ * @deprecated Use \OCA\OpenRegister\Contract\SaveActor, the published contract (task 7.2).
+ *             This name keeps every construction, instanceof and type hint working.
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-final class SaveActor {
-
-	/**
-	 * Constructor.
-	 *
-	 * @param IUser|null  $currentUser Explicit acting user for `@self.folder` access checks; null resolves
-	 *                                 `IUserSession::getUser()`. Non-HTTP callers (cron, import pipelines,
-	 *                                 event listeners) MUST pass one to avoid the default-deny fall-through
-	 *                                 on every folder-bound save.
-	 * @param string|null $owner       An explicit owner for a NEW object (a draft's scope value such as
-	 *                                 `portal:<subjectRef>`, decision 195). Service-level only: no controller
-	 *                                 forwards it. An update keeps the stored owner.
-	 * @param bool        $unowned     Stamp the SYSTEM identity as owner even when a user session exists, for
-	 *                                 a genuinely anonymous write (a citizen submitting a public form). No
-	 *                                 controller forwards it, so no REST request can ask to be anonymised.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Attributed writes are the default.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function __construct(
-		public readonly ?IUser $currentUser=null,
-		public readonly ?string $owner=null,
-		public readonly bool $unowned=false,
-	) {
-	}//end __construct()
+final class SaveActor extends \OCA\OpenRegister\Contract\SaveActor {
 }//end class

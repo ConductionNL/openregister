@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ViewFinderInterface;
 
 /**
  * The backing view, and the catalog its source register, schema and table come from.
@@ -33,11 +33,11 @@ final readonly class ViewSourceMappers {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param ViewMapperInterface    $viewMapper Reads the backing view.
+	 * @param ViewFinderInterface    $viewMapper Reads the backing view.
 	 * @param SchemaCatalogInterface $catalog    Resolves the source register and schema and searches its table.
 	 */
 	public function __construct(
-		public ViewMapperInterface $viewMapper,
+		public ViewFinderInterface $viewMapper,
 		public SchemaCatalogInterface $catalog,
 	) {
 	}//end __construct()

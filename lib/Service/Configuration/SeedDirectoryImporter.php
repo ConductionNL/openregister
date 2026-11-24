@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Configuration;
 
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\Configuration\SeedDirectoryInterface;
 use OCA\OpenRegister\Service\AppConfigurationImporterInterface;
 use OCA\OpenRegister\Service\CauseFrame;
 use OCA\OpenRegister\Service\WriteCause;
@@ -46,14 +47,12 @@ use Throwable;
  * and named without being read; a file that does not parse is named and the
  * others still import. Every run stores its report and the directory's digest.
  *
+ * CONFIG_KEY, the `config.php` key naming the directory, is inherited from
+ * SeedDirectoryInterface.
+ *
  * @spec openspec/changes/seed-from-a-mounted-directory/specs/data-import-export/spec.md
  */
-class SeedDirectoryImporter {
-
-	/**
-	 * The `config.php` key naming the directory.
-	 */
-	public const CONFIG_KEY = 'openregister.seed_directory';
+class SeedDirectoryImporter implements SeedDirectoryInterface {
 
 	/**
 	 * The largest file imported, in bytes (50 MB).

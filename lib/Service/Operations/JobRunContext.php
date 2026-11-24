@@ -24,8 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Operations;
 
-use OCA\OpenRegister\Db\JobRun;
-
 /**
  * The cause, the actor, the argument and the details a run row carries.
  *
@@ -37,15 +35,29 @@ use OCA\OpenRegister\Db\JobRun;
 final readonly class JobRunContext {
 
 	/**
+	 * The run came from the cron schedule.
+	 *
+	 * @var string
+	 */
+	public const CAUSE_SCHEDULE = 'schedule';
+
+	/**
+	 * The run came from an administrator, and `actor` names them.
+	 *
+	 * @var string
+	 */
+	public const CAUSE_MANUAL = 'manual';
+
+	/**
 	 * Describe the run.
 	 *
-	 * @param string                    $cause    One of the JobRun CAUSE_ constants.
+	 * @param string                    $cause    One of the CAUSE_ constants.
 	 * @param string|null               $actor    The uid that caused the run, when a person did.
 	 * @param mixed                     $argument The job argument, digested into the row.
 	 * @param array<string, mixed>|null $details  What the act concerned.
 	 */
 	public function __construct(
-		public string $cause = JobRun::CAUSE_SCHEDULE,
+		public string $cause = self::CAUSE_SCHEDULE,
 		public ?string $actor = null,
 		public mixed $argument = null,
 		public ?array $details = null,

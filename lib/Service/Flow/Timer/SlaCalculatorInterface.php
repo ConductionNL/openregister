@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\TimerUnits;
 
 /**
  * The unit and roll vocabulary and the SLA operations of {@see SlaCalculator}.
@@ -36,18 +37,18 @@ interface SlaCalculatorInterface {
 	/**
 	 * The unit vocabulary, shared by the SLA and the escalation offsets.
 	 */
-	public const UNIT_HOURS = 'hours';
+	public const UNIT_HOURS = TimerUnits::UNIT_HOURS;
 
-	public const UNIT_BUSINESS_DAYS = 'businessDays';
+	public const UNIT_BUSINESS_DAYS = TimerUnits::UNIT_BUSINESS_DAYS;
 
-	public const UNIT_CALENDAR_DAYS = 'calendarDays';
+	public const UNIT_CALENDAR_DAYS = TimerUnits::UNIT_CALENDAR_DAYS;
 
 	/**
 	 * Every accepted unit.
 	 *
 	 * @var array<int, string>
 	 */
-	public const UNITS = [self::UNIT_HOURS, self::UNIT_BUSINESS_DAYS, self::UNIT_CALENDAR_DAYS];
+	public const UNITS = TimerUnits::UNITS;
 
 	/**
 	 * The end date is left where the budget put it. THE DEFAULT, and it is the

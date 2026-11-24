@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\History\StateHistoryProjector;
 use OCA\OpenRegister\Service\History\StateHistoryRecorderInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -49,7 +49,7 @@ final class F05HistoryInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		StateHistoryProjector::class => [StateHistoryRecorderInterface::class, ContractBindings::class],
+		StateHistoryProjector::class => [StateHistoryRecorderInterface::class, CoreServiceBindings::class],
 	];
 
 	/**

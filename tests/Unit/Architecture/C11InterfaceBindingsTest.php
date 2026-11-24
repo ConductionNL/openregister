@@ -23,6 +23,8 @@ use OCA\OpenRegister\Mcp\Service\ChatService;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Service\ToolRegistry;
 use OCA\OpenRegister\Mcp\Service\ToolRegistryInterface;
+use OCA\OpenRegister\Notifications\Db\MessageMapper;
+use OCA\OpenRegister\Notifications\Db\MessageMapperInterface;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
@@ -39,7 +41,8 @@ use ReflectionFunction;
 final class C11InterfaceBindingsTest extends TestCase {
 
 	/**
-	 * Interface => class, as bound before the move.
+	 * Interface => class, as bound before the move, plus the chat message
+	 * mapper of MCP conversations (bound by Notifications until it counted to Integrations).
 	 *
 	 * @var array<class-string, class-string>
 	 */
@@ -48,6 +51,7 @@ final class C11InterfaceBindingsTest extends TestCase {
 		ChatServiceInterface::class                   => ChatService::class,
 		ContextChatSubmissionListenerInterface::class => ContextChatSubmissionListener::class,
 		ConversationMapperInterface::class            => ConversationMapper::class,
+		MessageMapperInterface::class                 => MessageMapper::class,
 		ToolRegistryInterface::class                  => ToolRegistry::class,
 	];
 

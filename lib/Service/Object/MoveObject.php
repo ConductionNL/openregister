@@ -44,14 +44,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrail\NamedActor;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
-use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEventOptions;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use Opis\JsonSchema\ValidationResult;
 use Throwable;
 
@@ -555,8 +553,8 @@ class MoveObject implements MoveObjectInterface {
 		}
 
 		try {
-			$this->recording->auditTrail->recordObjectEvent(
-				event: new ObjectAuditEvent(
+			$this->recording->auditTrail->writeObjectEvent(
+				entry: new ObjectAuditEntry(
 					object: $object,
 					action: self::ACTION,
 					context: [
@@ -564,7 +562,7 @@ class MoveObject implements MoveObjectInterface {
 						'to' => $move->target->ids(),
 						'strandedSourceRow' => $stranded,
 					],
-					options: new ObjectAuditEventOptions(actor: new NamedActor(id: $actorId))
+					actorId: $actorId
 				)
 			);
 		} catch (Throwable $e) {

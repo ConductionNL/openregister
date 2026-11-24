@@ -41,7 +41,9 @@ use OCA\OpenRegister\Db\CalendarFeedToken;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\IDateTimeZone;
 use OCP\IUser;
@@ -56,7 +58,7 @@ use Throwable;
  *
  * @spec openspec/specs/calendar-provider/spec.md#requirement-schema-calendar-configuration
  */
-class ObjectCalendarFeedService {
+class ObjectCalendarFeedService implements ObjectDateEventsSourceInterface {
 
 	/**
 	 * The most objects one feed read walks. A calendar client that needs more
@@ -383,7 +385,7 @@ class ObjectCalendarFeedService {
 			query: $query,
 			_rbac: true,
 			_multitenancy: true,
-			views: $views
+			options: new SearchOptions(views: $views)
 		);
 
 		if (is_array($results) === false) {
@@ -476,6 +478,26 @@ class ObjectCalendarFeedService {
 
 		return ObjectDateDeclaration::allFromConfig(calendarConfig: $config);
 	}//end declarationsOn()
+
+	/**
+	 * Whether a schema's calendar configuration declares date kinds.
+	 *
+	 * The platform calendar asks this before it renders a schema through this
+	 * generator; an unreadable declaration throws, as it does for the feed.
+	 *
+	 * @param array<string, mixed> $calendarConfig The schema's calendar provider configuration.
+	 *
+	 * @return boolean True when at least one date kind is declared.
+	 *
+	 * @throws Throwable When the declaration cannot be read.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectDateDeclaration::allFromConfig is the declaration's named constructor.
+	 *
+	 * @spec openspec/specs/calendar-provider/spec.md#requirement-a-date-property-declares-what-kind-of-date-it-is-req-odf-002
+	 */
+	public function declaresDates(array $calendarConfig): bool {
+		return ObjectDateDeclaration::allFromConfig(calendarConfig: $calendarConfig) !== [];
+	}//end declaresDates()
 
 	/**
 	 * The time zone a timed event publishes in.

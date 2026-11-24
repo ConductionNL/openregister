@@ -35,6 +35,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Rbac;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\Schema\DeclaredActions;
 use OCA\OpenRegister\Event\MatrixRowsRequestedEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
@@ -231,7 +232,8 @@ class MatrixRowsFromApps {
 	 */
 	private function readable(array $rows, AppRowsRun $run): array {
 		$shape = new MatrixShape(properties: ($run->schema->getProperties() ?? []), field: $run->field);
-		$validator = $this->validator->withDeclaredActions(declaredActions: $run->schema->declaredActionNames());
+		$declared  = (new DeclaredActions())->names(configuration: $run->schema->getConfiguration());
+		$validator = $this->validator->withDeclaredActions(declaredActions: $declared);
 		$kept = [];
 		foreach ($rows as $row) {
 			if ($this->grantsAReservedGroup(row: $row, run: $run) === false

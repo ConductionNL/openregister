@@ -55,7 +55,7 @@ class SyncDataJob extends TimedJob {
 	/**
 	 * Source persistence
 	 *
-	 * @var SourceMapperInterface
+	 * @var SourceMapperInterface<Source>
 	 */
 	private readonly SourceMapperInterface $sourceMapper;
 

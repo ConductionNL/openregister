@@ -28,7 +28,6 @@ namespace OCA\OpenRegister\Controller;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Exception;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\BulkControllerServices;
 use OCA\OpenRegister\Controller\Support\BulkSaveBatch;
 use OCA\OpenRegister\Controller\Support\BulkSaveCounts;
@@ -49,12 +48,15 @@ use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
+use OCA\OpenRegister\Service\Schemas\RowSchemaRefsInRegister;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -64,6 +66,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
 
 /**
  * Bulk operations controller for OpenRegister
@@ -153,7 +156,7 @@ class BulkController extends Controller {
 		IRequest $request,
 		BulkControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->store = $services->store;
 		$this->objectService = $services->store->objectService;
 		$this->registerMapper = $services->store->registerMapper;
@@ -241,6 +244,19 @@ class BulkController extends Controller {
 	}//end refusedRowSchemas()
 
 	/**
+	 * The pass that pins a mixed-schema row's slug to the register's own schema.
+	 *
+	 * @return RowSchemaRefsInRegister The pass.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function rowSchemaRefs(): RowSchemaRefsInRegister {
+		return new RowSchemaRefsInRegister(
+			lookup: new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper)
+		);
+	}//end rowSchemaRefs()
+
+	/**
 	 * The schema manage gate, built from this controller's collaborators when none was injected.
 	 *
 	 * @return SchemaManageGateInterface The gate.
@@ -321,6 +337,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
+	#[Sheddable]
 	public function delete(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
@@ -718,6 +735,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
+	#[Sheddable]
 	public function save(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
@@ -777,6 +795,13 @@ class BulkController extends Controller {
 				data: ['error' => 'Invalid input. "objects" array is required.'],
 				statusCode: Http::STATUS_BAD_REQUEST
 			);
+		}
+
+		// A mixed-schema row's slug is pinned to the register's own schema once, so the
+		// rights check below and the save read the same schema.
+		if ($isMixedSchema === true) {
+			$objects = $this->rowSchemaRefs()->scope(objects: $objects, register: $resolved['register']);
+			$data['objects'] = $objects;
 		}
 
 		$refused = $this->refusedRowSchemas(isMixedSchema: $isMixedSchema, objects: $objects);
@@ -852,6 +877,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
+	#[Sheddable]
 	public function deleteSchema(string $register, string $schema): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -992,6 +1018,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
 	 */
+	#[Sheddable]
 	public function deleteSchemaObjects(string $register, string $schema): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -1060,6 +1087,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
 	 */
+	#[Sheddable]
 	public function deleteRegister(string $register): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -1131,6 +1159,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
+	#[Sheddable]
 	public function runSchemaValidation(string $schema): JSONResponse {
 		try {
 			// Validate input.

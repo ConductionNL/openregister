@@ -48,6 +48,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\CoversClass;
+use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -323,5 +324,12 @@ class ChangeGateListenerTest extends TestCase {
 		$draft->setDraftKey($key);
 		$draft->setName($name);
 		return $draft;
+	}
+
+	public function testItsHeldChangeCodesAreTheCodesTheObjectApiAnswers(): void {
+		$this->assertSame('change-pending', HeldChangeCodes::PENDING);
+		$this->assertSame('change-pending-open', HeldChangeCodes::PENDING_OPEN);
+		$this->assertSame(HeldChangeCodes::PENDING, ChangeGateListener::CODE_PENDING);
+		$this->assertSame(HeldChangeCodes::PENDING_OPEN, ChangeGateListener::CODE_OPEN);
 	}
 }

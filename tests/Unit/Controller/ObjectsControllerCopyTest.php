@@ -27,7 +27,7 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
@@ -225,7 +226,7 @@ class ObjectsControllerCopyTest extends TestCase {
 
 		$permissions = $this->createMock(PermissionHandler::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			static fn (Schema $schema, string $action): bool => in_array($action, $rights, true)
+			static fn (PermissionAsk $ask): bool => in_array($ask->action, $rights, true)
 		);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($permissions);
@@ -244,7 +245,7 @@ class ObjectsControllerCopyTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			windowService: $this->createMock(DeletionWindowService::class)
 		);

@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\OrganisationUsageService;
 use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
 use OCA\OpenRegister\Service\TenantLifecycleService;
@@ -50,8 +50,8 @@ final class F01TenancyInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		OrganisationUsageService::class => [OrganisationUsageServiceInterface::class, ContractBindings::class],
-		TenantLifecycleService::class => [TenantLifecycleServiceInterface::class, ContractBindings::class],
+		OrganisationUsageService::class => [OrganisationUsageServiceInterface::class, CoreServiceBindings::class],
+		TenantLifecycleService::class => [TenantLifecycleServiceInterface::class, CoreServiceBindings::class],
 	];
 
 	/**

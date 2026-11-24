@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Service\StoreListing;
 use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -99,7 +100,7 @@ class GenericStoreServiceFetchGoldenTest extends TestCase {
 		};
 
 		$service = new GenericStoreService(registry: new StoreRegistryAccess($clients, $config), logger: $logger);
-		$result  = $service->search(descriptor: new StoreDescriptor(appId: 'openbuild', schema: 'application-template', defaultRegister: 'openbuild'));
+		$result  = $service->search(descriptor: new StoreDescriptor(listing: new StoreListing(appId: 'openbuild', schema: 'application-template', defaultRegister: 'openbuild')));
 
 		$slugs   = array_map(static fn (array $card): string => (string)$card['slug'], $result['cards']);
 		$outcome = $result['outcome'] . ' ' . ($slugs === [] ? '-' : implode(',', $slugs)) . ($warnings === [] ? '' : ' warned');

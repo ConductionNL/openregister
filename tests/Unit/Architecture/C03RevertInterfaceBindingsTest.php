@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\SchemaChangelogMapperInterface;
 use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunEntryMapperInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCA\OpenRegister\Service\Object\RevertHandlerInterface;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
@@ -55,7 +56,7 @@ final class C03RevertInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		RevertHandler::class => [RevertHandlerInterface::class, ContractBindings::class],
+		RevertHandler::class => [RevertHandlerInterface::class, CoreServiceBindings::class],
 		SchemaChangelogMapper::class => [SchemaChangelogMapperInterface::class, DbRegistrar::class],
 		SchemaRunEntryMapper::class => [SchemaRunEntryMapperInterface::class, DbRegistrar::class],
 		ShippedBaselineResetService::class => [ShippedBaselineResetServiceInterface::class, ContractBindings::class],

@@ -119,6 +119,7 @@ class ApiCallRecordMapper extends QBMapper implements ApiCallRecordMapperInterfa
 		$record->setRoute($key->route);
 		$record->setMethod($key->method);
 		$record->setApiVersion($key->apiVersion);
+		$record->setClient($key->client);
 		$record->setCallCount(1);
 		$record->setFirstSeen($moment);
 		$record->setLastSeen($moment);
@@ -307,7 +308,8 @@ class ApiCallRecordMapper extends QBMapper implements ApiCallRecordMapperInterfa
 			->where($qb->expr()->eq('principal', $qb->createNamedParameter($key->principal)))
 			->andWhere($qb->expr()->eq('route', $qb->createNamedParameter($key->route)))
 			->andWhere($qb->expr()->eq('method', $qb->createNamedParameter($key->method)))
-			->andWhere($qb->expr()->eq('api_version', $qb->createNamedParameter($key->apiVersion)));
+			->andWhere($qb->expr()->eq('api_version', $qb->createNamedParameter($key->apiVersion)))
+			->andWhere($qb->expr()->eq('client', $qb->createNamedParameter($key->client)));
 
 		return (int)$qb->executeStatement();
 

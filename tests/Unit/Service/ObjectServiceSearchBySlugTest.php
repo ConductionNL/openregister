@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -194,8 +195,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 			->willReturn([]);
 
 		$result = $this->service->searchObjectsBySlug(
-			'openbuild',
-			'application',
+			new RegisterSchemaSlugs(register: 'openbuild', schema: 'application'),
 			['status' => 'published']
 		);
 
@@ -226,8 +226,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		);
 
 		$this->service->searchObjectsBySlug(
-			'ghost-register',
-			'application',
+			new RegisterSchemaSlugs(register: 'ghost-register', schema: 'application'),
 			[]
 		);
 
@@ -276,8 +275,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		);
 
 		$this->service->searchObjectsBySlug(
-			'openbuild',
-			'ghost-schema',
+			new RegisterSchemaSlugs(register: 'openbuild', schema: 'ghost-schema'),
 			[]
 		);
 
@@ -323,8 +321,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		);
 
 		$this->service->searchObjectsBySlug(
-			'document',
-			'anonymizationLink',
+			new RegisterSchemaSlugs(register: 'document', schema: 'anonymizationLink'),
 			[]
 		);
 
@@ -383,7 +380,7 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 				}
 			);
 
-		$this->service->searchObjectsBySlug('document', 'anonymizationLink', []);
+		$this->service->searchObjectsBySlug(target: new RegisterSchemaSlugs(register: 'document', schema: 'anonymizationLink'), filters: []);
 
 		$this->assertSame(
 			expected: ['register' => 6, 'schema' => 9177],

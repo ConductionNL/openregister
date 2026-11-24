@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit\VerwerkingsactiviteitFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\Core\RetainingActivityInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -88,7 +89,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.LongVariable)
  */
-class Verwerkingsactiviteit extends Entity implements JsonSerializable {
+class Verwerkingsactiviteit extends Entity implements JsonSerializable, RetainingActivityInterface {
 	use StatusVocabularyTrait;
 	// Serialises as the canonical AVG Art 30 JSON shape: every registered field, in registration order.
 	use TypedFieldsJsonTrait;

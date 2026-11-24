@@ -47,7 +47,7 @@ use OCA\OpenRegister\Service\Geo\GeocodeOptions;
 use OCA\OpenRegister\Service\Geo\PdokGeocoder;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -93,7 +93,7 @@ class ObjectsControllerGeoTest extends TestCase {
 				$this->createMock(IGroupManager::class),
 				$this->createMock(ExportService::class),
 				$this->createMock(ImportService::class),
-				$this->createMock(WebhookService::class),
+				$this->createMock(originalClassName: IEventDispatcher::class),
 				$this->createMock(LoggerInterface::class),
 				null,
 				null,
@@ -247,7 +247,7 @@ class ObjectsControllerGeoTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 			// No geo feature builder wired -> 501.
 		);
@@ -288,7 +288,7 @@ class ObjectsControllerGeoTest extends TestCase {
 				$this->createMock(IGroupManager::class),
 				$this->createMock(ExportService::class),
 				$this->createMock(ImportService::class),
-				$this->createMock(WebhookService::class),
+				$this->createMock(originalClassName: IEventDispatcher::class),
 				$this->createMock(LoggerInterface::class),
 				$parser,
 				$applier
@@ -327,7 +327,7 @@ class ObjectsControllerGeoTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class),
 			null,
 			null,

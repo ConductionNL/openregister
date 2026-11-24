@@ -204,3 +204,45 @@ A journey MAY declare `mode: update` with a target schema. It SHALL then be star
 - **WHEN** a client submits `status: afgehandeld` through the run
 - **THEN** the answer is refused and `status` keeps its value
 - @e2e exclude {specified only; covered by JourneyRunServiceTest in task 6.2}
+
+### Requirement: A journey write MAY repeat per list item, each item to its own target (REQ-FJR-009)
+
+Filed by buildiq `forms-multi-product-request` (REQ-BQMP-001, REQ-BQMP-002). A
+`writes[]` entry MAY carry `forEach`, an earlier list answer; the run SHALL
+commit it once per item in list order, `item.<key>` reading the item's fields.
+`targetBy` and `targets` SHALL send each item to `{register, schema, typeValue}`
+of its own value. Save SHALL refuse an unmapped value or a mapping property one
+target lacks, naming value and property.
+
+#### Scenario: Two products, each on its own case type, under one bundle
+
+- **GIVEN** a journey whose last step declares a bundle write to `aanvraagbundel` and a write with `forEach: producten`, `targetBy: product` and targets `parkeervergunning` → schema `zaak`, type `PV` and `afvalcontainer` → schema `zaak`, type `AC`
+- **WHEN** a resident submits `producten` with one parking permit and one waste container
+- **THEN** one `aanvraagbundel` object and two `zaak` objects exist, each `zaak` holds the bundle's id, one has type `PV` and the other `AC`
+- **AND** the response reports both items with their written ids
+
+#### Scenario: A product without a target is refused at save
+
+- **GIVEN** a product list whose values are `parkeervergunning` and `afvalcontainer` and a repeating write whose `targets` maps only `parkeervergunning`
+- **WHEN** the journey is saved
+- **THEN** the save is refused with a finding naming `afvalcontainer`
+
+#### Scenario: A field missing on one target is named
+
+- **GIVEN** a repeating write whose mapping writes `kenteken`, and the target schema for `afvalcontainer` without that property
+- **WHEN** the journey is saved
+- **THEN** the save is refused with a finding naming `afvalcontainer` and `kenteken`
+
+### Requirement: Repeated items MAY hang under one bundle and MUST commit and retry per item (REQ-FJR-010)
+
+Filed by buildiq `forms-multi-product-request` (REQ-BQMP-003). One non-repeating
+entry MAY carry `bundle: true`; it SHALL commit first, items MAY reference it with
+`{ "$write": "<as>" }`, and a refused bundle SHALL write no item. Each item SHALL
+commit all or none on its own. The response SHALL report each item's outcome by
+list index. A resubmit SHALL write only items without a committed object.
+
+#### Scenario: A failed item is retried without duplicating the others
+
+- **GIVEN** a submitted step whose first item was written and whose second item was refused
+- **WHEN** the filer corrects the second item and submits the step again
+- **THEN** the second item is written, the first item still exists exactly once, and the bundle exists exactly once

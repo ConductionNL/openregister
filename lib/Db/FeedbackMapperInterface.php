@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use OCA\OpenRegister\Mcp\Db\Conversation;
-use OCA\OpenRegister\Notifications\Db\Message;
 use OCP\AppFramework\Db\Entity;
 
 /**

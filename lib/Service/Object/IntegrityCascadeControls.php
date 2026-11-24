@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
-use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\CascadeRetentionCheckInterface;
 
 /**
  * What a referential-integrity cascade is checked against and recorded in.
@@ -34,14 +34,14 @@ final class IntegrityCascadeControls {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param AuditTrailMapperInterface $auditTrailMapper Audit trail mapper for integrity action logging.
-	 * @param ArchivalRetentionGuard    $archivalGuard    Decides whether a cascade target is legally retained.
+	 * @param AuditTrailMapperInterface      $auditTrailMapper Audit trail mapper for integrity action logging.
+	 * @param CascadeRetentionCheckInterface $archivalGuard Decides whether a cascade target is legally retained.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly AuditTrailMapperInterface $auditTrailMapper,
-		public readonly ArchivalRetentionGuard $archivalGuard,
+		public readonly CascadeRetentionCheckInterface $archivalGuard,
 	) {
 	}//end __construct()
 }//end class

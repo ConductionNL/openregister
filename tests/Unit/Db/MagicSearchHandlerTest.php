@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\MagicMapper\ConditionSqlRun;
 use OCA\OpenRegister\Db\MagicMapper\MagicReadTable;
 use OCA\OpenRegister\Db\MagicMapper\TableSearch;
 use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 
 /**
  * Unit tests for MagicSearchHandler comparison-operator filter support.
@@ -63,7 +64,8 @@ class MagicSearchHandlerTest extends TestCase {
 			organizationHandler: $this->organizationHandler,
 			schemaTypeConverter: new SchemaTypeConverter(),
 			dateTimeNormalizer: new DateTimeNormalizer($this->logger),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class),
+			searchProfile: new PropertySearchProfile()
 		);
 	}//end setUp()
 

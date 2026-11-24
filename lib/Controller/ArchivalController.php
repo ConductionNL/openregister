@@ -32,7 +32,6 @@
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
 use OCA\OpenRegister\Controller\Support\ArchivalNominationSubject;
 use OCA\OpenRegister\Controller\Support\ArchivalReviewAnswer;
@@ -44,6 +43,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListConflictRefresh;
@@ -65,6 +65,9 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use OCA\OpenRegister\Service\Archival\ReviewerAssignment;
+use OCA\OpenRegister\Service\Archival\PendingReviewQuery;
+use DateTimeImmutable;
 
 /**
  * Controller for archival destruction workflows.
@@ -205,7 +208,7 @@ class ArchivalController extends Controller {
 		IRequest $request,
 		ArchivalControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->lists = $services->mappers->lists;
 		$this->reviews = $services->decisions->reviews;
 		$this->outcomes = $services->decisions->outcomes;
@@ -822,8 +825,7 @@ class ArchivalController extends Controller {
 		try {
 			$listData = $this->reviews->assignReviewer(
 				listData: $target->listData,
-				entryUuid: $entryId,
-				reviewer: $reviewer
+				assignment: new ReviewerAssignment(entryUuid: $entryId, reviewer: $reviewer, assignedAt: new DateTimeImmutable())
 			);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(
@@ -1151,8 +1153,7 @@ class ArchivalController extends Controller {
 				$pending,
 				$this->reviews->pendingEntries(
 					listData: ($list->getObject() ?? []),
-					listUuid: (string)$list->getUuid(),
-					reviewer: $userId
+					query: new PendingReviewQuery(listUuid: (string)$list->getUuid(), reviewer: $userId, waitingSince: null)
 				)
 			);
 		}

@@ -18,7 +18,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Files\Service\UploadService;
-use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\ExportService;
@@ -63,7 +63,6 @@ use stdClass;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Rbac\ReadRuleTenancy
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
- * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationCollaborators
  */
 class RegistersControllerRollbackGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/registers-rollback-golden.json';
@@ -142,7 +141,7 @@ class RegistersControllerRollbackGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($this->user(uid: $uid));
 
-		$recorder = $this->createMock(AppImportJobRecorder::class);
+		$recorder = $this->createMock(AppImportJobOwnersInterface::class);
 		$recorder->method('appForJob')->willReturnCallback(function (string $importJobId) use ($case): ?string {
 			$this->calls[] = ['appForJob', $importJobId];
 			return $case['app'] ?? null;
@@ -179,7 +178,6 @@ class RegistersControllerRollbackGoldenTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		return RegistersControllerFactory::create(
-			'openregister',
 			$request,
 			$this->createMock(RegisterService::class),
 			$this->createMock(MagicMapper::class),

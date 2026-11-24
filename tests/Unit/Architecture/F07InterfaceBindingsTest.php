@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Object\MoveObject;
 use OCA\OpenRegister\Service\Object\MoveObjectInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
@@ -55,10 +55,10 @@ final class F07InterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string, string}>
 	 */
 	private const CLASSES = [
-		MoveObject::class => [MoveObjectInterface::class, ContractBindings::class, 'Service/'],
-		ObjectSlugHandler::class => [ObjectSlugTargetInterface::class, ContractBindings::class, 'Service/'],
-		SchemaTypeConverter::class => [SchemaTypeConverterInterface::class, ContractBindings::class, 'Service/'],
-		UpsertOnKeyHandler::class => [UpsertOnKeyHandlerInterface::class, ContractBindings::class, 'Service/'],
+		MoveObject::class => [MoveObjectInterface::class, CoreServiceBindings::class, 'Service/'],
+		ObjectSlugHandler::class => [ObjectSlugTargetInterface::class, CoreServiceBindings::class, 'Service/'],
+		SchemaTypeConverter::class => [SchemaTypeConverterInterface::class, CoreServiceBindings::class, 'Service/'],
+		UpsertOnKeyHandler::class => [UpsertOnKeyHandlerInterface::class, CoreServiceBindings::class, 'Service/'],
 	];
 
 	/**

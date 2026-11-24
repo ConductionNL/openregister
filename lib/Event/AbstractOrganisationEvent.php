@@ -22,7 +22,8 @@
 
 namespace OCA\OpenRegister\Event;
 
-use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Kernel\Contracts\OrganisationInterface;
+use OCP\AppFramework\Db\Entity;
 use OCP\EventDispatcher\Event;
 
 /**
@@ -32,22 +33,22 @@ abstract class AbstractOrganisationEvent extends Event {
 	/**
 	 * Constructor for AbstractOrganisationEvent.
 	 *
-	 * @param Organisation $organisation The entity the event is about.
+	 * @param OrganisationInterface&Entity $organisation The entity the event is about.
 	 *
 	 * @return void
 	 */
-	public function __construct(private readonly Organisation $organisation) {
+	public function __construct(private readonly OrganisationInterface $organisation) {
 		parent::__construct();
 	}//end __construct()
 
 	/**
 	 * Get the entity the event is about.
 	 *
-	 * @return Organisation The entity.
+	 * @return OrganisationInterface&Entity The entity.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
 	 */
-	public function getOrganisation(): Organisation {
+	public function getOrganisation(): OrganisationInterface {
 		return $this->organisation;
 	}//end getOrganisation()
 }//end class

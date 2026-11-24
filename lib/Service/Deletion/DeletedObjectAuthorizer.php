@@ -27,11 +27,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
-use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Rbac\CallerContext;
 
@@ -123,12 +124,10 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 
 		try {
 			return $this->permissionHandler->hasPermission(
-				schema: $schema,
-				action: $action,
-				userId: $user->getUID(),
-				objectOwner: $object->getOwner(),
-				_rbac: true,
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: $action))
+					->askedBy(userId: $user->getUID(), objectOwner: $object->getOwner())
+					->about(object: $object, register: null),
+				_rbac: true
 			);
 		} catch (\Throwable $e) {
 			return false;
@@ -145,13 +144,13 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	 * the same line the readable audit trail draws: an entry whose object is
 	 * gone stays on the admin surface (openregister#4078).
 	 *
-	 * @param AuditTrail $record The destruction record.
+	 * @param AuditRecordInterface $record The destruction record.
 	 *
 	 * @return bool True when the caller may read it.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function userMayReadDestructionRecord(AuditTrail $record): bool {
+	public function userMayReadDestructionRecord(AuditRecordInterface $record): bool {
 		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return false;
@@ -172,9 +171,9 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 	 * A record the caller may not read is left out rather than refused, so the
 	 * answer does not reveal that it exists.
 	 *
-	 * @param array<int, AuditTrail> $records The destruction records of one object.
+	 * @param array<int, AuditRecordInterface> $records The destruction records of one object.
 	 *
-	 * @return array<int, AuditTrail> The readable ones.
+	 * @return array<int, AuditRecordInterface> The readable ones.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
@@ -182,7 +181,7 @@ class DeletedObjectAuthorizer implements DeletedObjectAuthorizerInterface {
 		return array_values(
 			array_filter(
 				$records,
-				fn (AuditTrail $record): bool => $this->userMayReadDestructionRecord(record: $record)
+				fn (AuditRecordInterface $record): bool => $this->userMayReadDestructionRecord(record: $record)
 			)
 		);
 	}//end readableDestructionRecords()

@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\QueryHandler;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
@@ -136,7 +137,7 @@ class ProcessingLogListReadTest extends TestCase {
 		);
 		$container->method('get')->willReturnCallback(
 			static fn (string $id) => match ($id) {
-				ReadHistoryService::class => $history,
+				ProcessingReadsInterface::class => $history,
 				ProcessingLogService::class => $processingLog,
 			}
 		);

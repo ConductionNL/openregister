@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Repair\FlowTimerRegisterPathInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\IntakeSourceRegisterAddressInterface;
 use OCA\OpenRegister\Repair\IntakeSourceRegisterSlugsInterface;
 use OCA\OpenRegister\Repair\SeedFlowTimerRegister;
 use OCA\OpenRegister\Repair\SeedIntakeSourceRegister;
@@ -83,6 +84,9 @@ final class E18ConstantHoldersInterfaceBindingsTest extends TestCase {
 		$this->assertSame('intake-sources', IntakeSourceRegisterSlugsInterface::REGISTER_SLUG);
 		$this->assertSame('intake-source', IntakeSourceRegisterSlugsInterface::SCHEMA_SLUG);
 		$this->assertSame(IntakeSourceRegisterSlugsInterface::REGISTER_SLUG, SeedIntakeSourceRegister::REGISTER_SLUG);
+		$this->assertSame(IntakeSourceRegisterAddressInterface::REGISTER_SLUG, IntakeSourceRegisterSlugsInterface::REGISTER_SLUG);
+		$this->assertSame(IntakeSourceRegisterAddressInterface::SCHEMA_SLUG, SeedIntakeSourceRegister::SCHEMA_SLUG);
+		$this->assertContains(IntakeSourceRegisterAddressInterface::class, class_implements(SeedIntakeSourceRegister::class));
 		$this->assertSame('/lib/Settings/flow_timer_register.json', FlowTimerRegisterPathInterface::REGISTER_PATH);
 		$this->assertSame(FlowTimerRegisterPathInterface::REGISTER_PATH, SeedFlowTimerRegister::REGISTER_PATH);
 	}//end testTheConstantsKeepTheirValues()

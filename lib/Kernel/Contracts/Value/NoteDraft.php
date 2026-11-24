@@ -31,6 +31,13 @@ namespace OCA\OpenRegister\Kernel\Contracts\Value;
  */
 final class NoteDraft {
 	/**
+	 * The visibility that lets a note reach a citizen on the public timeline.
+	 *
+	 * @var string
+	 */
+	public const PUBLIC_VISIBILITY = 'public';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string      $objectUuid The object the note is written on.

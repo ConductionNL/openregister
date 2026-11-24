@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicMapperRuntime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -47,7 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
-use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -91,8 +92,8 @@ class MagicMapperRecentLensTest extends TestCase {
 			ConditionMatcher::class => $this->createMock(ConditionMatcher::class),
 			SchemaTypeConverterInterface::class => $this->createMock(SchemaTypeConverter::class),
 		];
-		$services[PurposeGuardInterface::class] = $this->createMock(PurposeGuard::class);
-		$services[PurposeGuardInterface::class]->method('allows')->willReturn(true);
+		$services[ReadPurposeGuardInterface::class] = $this->createMock(PurposeGuard::class);
+		$services[ReadPurposeGuardInterface::class]->method('allows')->willReturn(true);
 		$container->method('get')->willReturnCallback(static fn (string $id) => ($services[$id] ?? null));
 
 		$pairs = $this->pairs();
@@ -128,7 +129,8 @@ class MagicMapperRecentLensTest extends TestCase {
 
 		$rows = ['zaak' => ['uuid-a', 'uuid-c', 'uuid-e'], 'taak' => ['uuid-b', 'uuid-d']];
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query, Register $register, Schema $schema) use ($rows): array {
+			function (RegisterSchema $table, array $query) use ($rows): array {
+				[$register, $schema] = [$table->register, $table->schema];
 				$this->tableQueries[] = $query;
 				return array_map(fn (string $uuid): ObjectEntity => $this->object(uuid: $uuid), $rows[$schema->getSlug()]);
 			}

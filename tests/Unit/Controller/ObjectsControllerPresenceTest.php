@@ -35,8 +35,9 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Notifications\Service\PresenceService;
-use OCA\OpenRegister\Notifications\Service\PresenceServiceInterface;
-use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
+use OCA\OpenRegister\Notifications\Service\ObjectPresenceTracker;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -73,8 +74,8 @@ class ObjectsControllerPresenceTest extends TestCase {
 
 		$this->container->method('get')->willReturnCallback(
 			function (string $id) {
-				if ($id === PresenceServiceInterface::class) {
-					return $this->presence;
+				if ($id === ObjectPresenceInterface::class) {
+					return new ObjectPresenceTracker(presence: $this->presence);
 				}
 
 				if ($id === 'userId') {
@@ -99,7 +100,7 @@ class ObjectsControllerPresenceTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()
@@ -203,7 +204,7 @@ class ObjectsControllerPresenceTest extends TestCase {
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame([['userId' => 'bob']], $response->getData()['present']);
-		$this->assertSame(PresenceService::BEAT_SECONDS, $response->getData()['beatSeconds']);
+		$this->assertSame(ObjectPresenceInterface::BEAT_SECONDS, $response->getData()['beatSeconds']);
 	}//end testARenewedBeatAnswersTheOthersAndTheIntervalWithoutPushing()
 
 	/**

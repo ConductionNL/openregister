@@ -30,6 +30,7 @@ use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationInterface;
 use OCA\OpenRegister\Service\SequenceScope;
+use OCA\OpenRegister\Service\RunningNumbers;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -42,6 +43,7 @@ use Psr\Log\LoggerInterface;
  * draws each from its own sequence.
  *
  * @covers \OCA\OpenRegister\Listener\GeneratedIdentifierListener
+ * @uses   \OCA\OpenRegister\Service\RunningNumbers
  * @uses   \OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration
  * @uses   \OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationReader
  * @uses   \OCA\OpenRegister\Service\Object\ObjectEventGate
@@ -81,7 +83,7 @@ final class GeneratedIdentifierReservedTest extends TestCase {
 		$this->schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$this->listener     = new GeneratedIdentifierListener(
 			$this->schemaMapper,
-			$this->sequences,
+			new RunningNumbers($this->sequences),
 			$this->createMock(originalClassName: LoggerInterface::class),
 			new ObjectEventGate($this->createMock(originalClassName: IEventDispatcher::class))
 		);

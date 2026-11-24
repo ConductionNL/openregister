@@ -54,7 +54,7 @@ namespace OCA\OpenRegister\Service\Object;
 use DateTimeInterface;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\SchemaProperty;
-use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Kernel\Contracts\Core\AuditRecordInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
 /**
@@ -91,7 +91,7 @@ class ConflictReport implements ConflictReportInterface {
 	 * The conflicting properties, with the three readings each.
 	 *
 	 * @param RefusedWrite           $write       The stored object, its schema and what the caller sent.
-	 * @param array<int, AuditTrail> $intervening The changes since the caller read, newest first.
+	 * @param array<int, AuditRecordInterface> $intervening The changes since the caller read, newest first.
 	 *
 	 * @return array<string, mixed> The 409 body.
 	 *
@@ -187,13 +187,13 @@ class ConflictReport implements ConflictReportInterface {
 	/**
 	 * Who made the first intervening write, and when; both null without one.
 	 *
-	 * @param AuditTrail|null $entry The first intervening write.
+	 * @param AuditRecordInterface|null $entry The first intervening write.
 	 *
 	 * @return array{changedBy: string|null, changedAt: string|null} The cause
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
-	private function causeOf(?AuditTrail $entry): array {
+	private function causeOf(?AuditRecordInterface $entry): array {
 		if ($entry === null) {
 			return ['changedBy' => null, 'changedAt' => null];
 		}
@@ -252,7 +252,7 @@ class ConflictReport implements ConflictReportInterface {
 	 * assignment wins and the value kept is the `old` of the EARLIEST change:
 	 * that is the one the caller was looking at.
 	 *
-	 * @param array<int, AuditTrail> $intervening The changes since the read.
+	 * @param array<int, AuditRecordInterface> $intervening The changes since the read.
 	 *
 	 * @return array<string, mixed> Property to the value the caller read.
 	 *
@@ -284,11 +284,11 @@ class ConflictReport implements ConflictReportInterface {
 	/**
 	 * Who made a change, by display name where there is one.
 	 *
-	 * @param AuditTrail $entry The entry.
+	 * @param AuditRecordInterface $entry The entry.
 	 *
 	 * @return string The actor.
 	 */
-	private function actorOf(AuditTrail $entry): string {
+	private function actorOf(AuditRecordInterface $entry): string {
 		$name = trim((string)$entry->getUserName());
 		if ($name !== '') {
 			return $name;

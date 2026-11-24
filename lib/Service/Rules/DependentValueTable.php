@@ -219,13 +219,18 @@ final class DependentValueTable implements DependentValueTableInterface {
 	 * @return string The sentence.
 	 */
 	private function message(array $found): string {
+		$allowed = implode(', ', $found['allowed'][$found['controllingValue']]);
+		if ($allowed === '') {
+			$allowed = 'none';
+		}
+
 		return sprintf(
 			'"%s" cannot be "%s" while "%s" is "%s". Allowed: %s.',
 			$found['property'],
 			$found['value'],
 			$found['controlledBy'],
 			$found['controllingValue'],
-			implode(', ', $found['allowed'][$found['controllingValue']])
+			$allowed
 		);
 	}//end message()
 

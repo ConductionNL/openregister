@@ -155,6 +155,10 @@ use JsonSerializable;
  * @method void setUpdated(?DateTime $updated)
  * @method string|null getCreatedBy()
  * @method void setCreatedBy(?string $createdBy)
+ * @method string|null getRequiredMandate()
+ * @method void setRequiredMandate(?string $requiredMandate)
+ * @method array|null getMandateEvidence()
+ * @method void setMandateEvidence(?array $mandateEvidence)
  */
 interface TaskInterface extends JsonSerializable {
 
@@ -193,6 +197,13 @@ interface TaskInterface extends JsonSerializable {
 	 * @var string
 	 */
 	public const EXTERNAL_PARTY_PREFIX = 'party:';
+
+	/**
+	 * Outcomes that reject or return the work, matched trimmed and lowercased.
+	 *
+	 * @var array<int, string>
+	 */
+	public const REJECTING_OUTCOMES = ['rejected', 'returned', 'declined', 'denied'];
 
 	/**
 	 * The performer types known to this release.

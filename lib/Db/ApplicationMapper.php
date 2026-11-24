@@ -61,6 +61,7 @@ use OCP\IUserSession;
  * @method list<Application> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Application>
+ * @implements ApplicationMapperInterface<Application>
  *
  * @psalm-suppress PossiblyUnusedMethod
  *

@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
+use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectCalendarLinkInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Service\CalendarEvent\UserCalendarSelector;
 use OCA\OpenRegister\Service\CalendarEvent\VeventCodec;
@@ -51,7 +53,7 @@ use OCA\OpenRegister\Service\CalendarEvent\CalendarObjectAddress;
  *
  * @spec openspec/specs/calendar-integration/spec.md
  */
-class CalendarEventService implements ObjectCalendarEventsInterface {
+class CalendarEventService implements ObjectCalendarEventsInterface, ObjectCalendarLinkInterface, UserCalendarEventsInterface {
 
 	/**
 	 * CalDAV backend.

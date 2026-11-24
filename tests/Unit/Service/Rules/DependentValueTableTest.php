@@ -291,4 +291,40 @@ class DependentValueTableTest extends TestCase {
 			)
 		);
 	}//end testAnAbsentDependentValueIsNotRefused()
+
+	/**
+	 * A controlling value paired with an empty list allows no value: the table
+	 * is accepted at schema save, any value is refused on object save, and an
+	 * empty dependent value still saves.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function testAnEmptyListAllowsNoValue(): void {
+		$properties = $this->properties(
+			[
+				'controlledBy' => 'zaaktype',
+				'allowed' => [
+					'bezwaar' => ['gegrond', 'ongegrond'],
+					'melding' => [],
+				],
+			]
+		);
+		$table = new DependentValueTable();
+
+		$this->assertSame([], $this->codesFor($properties));
+
+		$violations = $table->violations(
+			properties: $properties,
+			write: new DependentValueWrite(data: ['zaaktype' => 'melding', 'resultaat' => 'gegrond'], stored: [])
+		);
+		$this->assertCount(1, $violations);
+		$this->assertStringContainsString('Allowed: none', $violations[0]['message']);
+
+		$this->assertSame(
+			[],
+			$table->violations(properties: $properties, write: new DependentValueWrite(data: ['zaaktype' => 'melding'], stored: []))
+		);
+	}//end testAnEmptyListAllowsNoValue()
 }//end class

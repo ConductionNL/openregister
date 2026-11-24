@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
+use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsServices;
 use OCA\OpenRegister\AppHost\Service\AppHostSettingsService;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -122,7 +123,7 @@ class AppHostSettingsSecretAuditTest extends TestCase {
 			}
 		);
 		$auditor = new SettingsChangeAuditor(
-			mapper: $mapper,
+			trail: new AuditEntryWriter(mapper: $mapper),
 			userSession: $this->createMock(IUserSession::class),
 			logger: $this->createMock(LoggerInterface::class)
 		);

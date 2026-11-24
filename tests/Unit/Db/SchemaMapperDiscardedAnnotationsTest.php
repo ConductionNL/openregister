@@ -109,7 +109,6 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  * @uses \OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
- * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck
@@ -205,6 +204,14 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators
  * @uses \OCA\OpenRegister\Service\Survivorship\MdmAnnotationChecks
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\NamedConditionCheck
+ * @uses \OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration
+ * @uses \OCA\OpenRegister\Service\Rules\DeclaredRuleDescriptors
+ * @uses \OCA\OpenRegister\Service\Rules\NamedConditionGraph
+ * @uses \OCA\OpenRegister\Service\Rules\NamedConditionLibrary
+ * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
+ * @uses \OCA\OpenRegister\Service\Search\SearchResultDeclaration
  *
  * A schema save that ignores advisory annotations lists them, one entry per family,
  * still logs each one, and still saves (aggregation-dialect-repair, Fix 4).

@@ -62,6 +62,8 @@ final class TaskFieldTypes {
 		'routingFallback' => 'string',
 		'onBehalfOf' => 'string',
 		'mandate' => 'string',
+		'requiredMandate' => 'string',
+		'mandateEvidence' => 'json',
 		'requester' => 'string',
 		'watchers' => 'json',
 		'startAt' => 'datetime',

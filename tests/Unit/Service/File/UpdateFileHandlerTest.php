@@ -17,7 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileOverwrite;
-use OCA\OpenRegister\Files\Service\File\FileOwnershipHandler;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileAccountInterface;
 use OCA\OpenRegister\Service\File\FileChecksum;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -63,7 +63,7 @@ class UpdateFileHandlerTest extends TestCase {
 	private $fileValidHandler;
 
 	/**
-	 * @var FileOwnershipHandler&MockObject
+	 * @var FileAccountInterface&MockObject
 	 */
 	private $fileOwnershipHandler;
 
@@ -100,7 +100,7 @@ class UpdateFileHandlerTest extends TestCase {
 		$this->rootFolder = $this->createMock(IRootFolder::class);
 		$this->folderMgmtHandler = $this->createMock(FolderManagementHandler::class);
 		$this->fileValidHandler = $this->createMock(FileValidationHandler::class);
-		$this->fileOwnershipHandler = $this->createMock(FileOwnershipHandler::class);
+		$this->fileOwnershipHandler = $this->createMock(FileAccountInterface::class);
 		$this->readFileHandler = $this->createMock(ReadFileHandler::class);
 		$this->systemTagManager = $this->createMock(ISystemTagManager::class);
 		$this->systemTagMapper = $this->createMock(ISystemTagObjectMapper::class);

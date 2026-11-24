@@ -31,6 +31,7 @@ use OCA\OpenRegister\Files\Db\AnonymisationLog;
 use OCA\OpenRegister\Files\Db\AnonymisationLogMapper;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
+use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
 use OCA\OpenRegister\Service\File\AnonymiqRegionDetector;
 use OCA\OpenRegister\Service\File\ImageBurner;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
@@ -629,4 +630,18 @@ final class ImageRedactionServiceTest extends TestCase {
 			$regions[0]->toArray()
 		);
 	}//end testDecidedRegionsLeaveOutSkippedAndTextOnlyRelations()
+
+	/**
+	 * The seam detects exactly the image types the anonymisation pipeline names, with today's values.
+	 *
+	 * @return void
+	 */
+	public function testTheStandaloneTypesAreThePipelineImageTypes(): void {
+		$this->assertSame(['image/png', 'image/jpeg', 'image/tiff', 'image/webp'], ImageRedactionService::STANDALONE_TYPES);
+		$this->assertSame(PipelineSteps::IMAGE_TYPES, ImageRedactionService::STANDALONE_TYPES);
+		$this->assertSame(
+			[...PipelineSteps::IMAGE_TYPES, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text'],
+			(new PipelineSteps())->mimeTypes(PipelineSteps::IMAGE_BURNER)
+		);
+	}//end testTheStandaloneTypesAreThePipelineImageTypes()
 }//end class

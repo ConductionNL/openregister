@@ -28,8 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Quality;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Kernel\Contracts\Search\FileScopeInterface;
 
 /**
  * The readable files of one near-duplicate scope.
@@ -42,19 +41,12 @@ final class NearDuplicateScope {
 	public const MAX_FILES = 5000;
 
 	/**
-	 * The mime type of a folder in the file cache.
-	 */
-	private const FOLDER_MIME = 'httpd/unix-directory';
-
-	/**
 	 * Constructor.
 	 *
-	 * @param FileMapperInterface $files     The file cache: an object's files, a folder's children.
-	 * @param FileReadScope       $readScope Whether the caller may read a file.
+	 * @param FileScopeInterface $files An object's files, a folder's files, and whether the caller may read one.
 	 */
 	public function __construct(
-		private readonly FileMapperInterface $files,
-		private readonly FileReadScope $readScope,
+		private readonly FileScopeInterface $files,
 	) {
 	}//end __construct()
 
@@ -88,7 +80,7 @@ final class NearDuplicateScope {
 
 		$readable = [];
 		foreach ($candidates as $fileId) {
-			if ($this->readScope->mayReadFile(fileId: $fileId) === true) {
+			if ($this->files->mayReadFile(fileId: $fileId) === true) {
 				$readable[] = $fileId;
 			}
 		}
@@ -109,18 +101,13 @@ final class NearDuplicateScope {
 		$ids = $fileIds;
 		if ($objectIds !== []) {
 			$ids = [];
-			foreach ($this->files->getFileIdsForObjects(uuids: $objectIds) as $objectFileIds) {
+			foreach ($this->files->fileIdsOfObjects(uuids: $objectIds) as $objectFileIds) {
 				array_push($ids, ...$objectFileIds);
 			}
 		}
 
 		if ($folderId !== null) {
-			$ids = [];
-			foreach ($this->files->getFiles(node: $folderId) as $row) {
-				if (($row['mimetype'] ?? '') !== self::FOLDER_MIME) {
-					$ids[] = (int) $row['fileid'];
-				}
-			}
+			$ids = $this->files->fileIdsInFolder(folderId: $folderId);
 		}
 
 		$ids = array_values(array_unique(array_map('intval', $ids)));

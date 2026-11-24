@@ -19,11 +19,11 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Listener\ChangeGateListener;
+use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WebhookService;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http;
@@ -54,7 +54,7 @@ class ObjectsControllerHeldChangeTest extends TestCase {
 			new HookStoppedException(
 				message: 'This change waits for approval through chain "bank-details".',
 				errors: [
-					'code' => ChangeGateListener::CODE_PENDING,
+					'code' => HeldChangeCodes::PENDING,
 					'status' => 202,
 					'message' => 'This change waits for approval through chain "bank-details".',
 					'pendingChange' => 'pending-1',
@@ -82,7 +82,7 @@ class ObjectsControllerHeldChangeTest extends TestCase {
 	 * @return void
 	 */
 	public function testASecondGatedWriteAnswersConflict(): void {
-		$errors = ['code' => ChangeGateListener::CODE_OPEN, 'status' => 409, 'pendingChange' => 'pending-1'];
+		$errors = ['code' => HeldChangeCodes::PENDING_OPEN, 'status' => 409, 'pendingChange' => 'pending-1'];
 
 		$response = $this->refusal(new HookStoppedException(message: 'Already waiting (pending-1).', errors: $errors));
 
@@ -128,7 +128,7 @@ class ObjectsControllerHeldChangeTest extends TestCase {
 			$this->createMock(IGroupManager::class),
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$this->createMock(originalClassName: IEventDispatcher::class),
 			$this->createMock(LoggerInterface::class)
 		);
 

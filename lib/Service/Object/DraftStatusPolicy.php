@@ -39,7 +39,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 
 /**
  * Set, keep, leave and hide drafts.
@@ -352,7 +351,7 @@ class DraftStatusPolicy {
 	 *
 	 * @return array<string, string> Property => reason, in ValidateObject's notSupplied shape.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::isServerFilled() reads a schema property; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ServerFilledProperty::isServerFilled() reads a schema property; there is no instance to inject.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
@@ -363,7 +362,7 @@ class DraftStatusPolicy {
 				continue;
 			}
 
-			if (FormDestinationValidator::isServerFilled(property: $property) === true) {
+			if (ServerFilledProperty::isServerFilled(property: $property) === true) {
 				$excused[(string)$name] = 'server-set';
 			}
 		}

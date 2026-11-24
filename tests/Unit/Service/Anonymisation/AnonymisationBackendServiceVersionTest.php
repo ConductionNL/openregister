@@ -47,6 +47,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendCollaborators
  * @uses   \OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendPlatform
  * @uses   \OCA\OpenRegister\Service\Anonymisation\BackendState
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\BackendStatement
  * @uses   \OCA\OpenRegister\Service\Anonymisation\DetectorVersion
  * @uses   \OCA\OpenRegister\Service\Anonymisation\DetectorVersionHistory
  * @uses   \OCA\OpenRegister\Service\Anonymisation\ProbeResult
@@ -72,7 +73,7 @@ final class AnonymisationBackendServiceVersionTest extends TestCase {
 
 		$service = new AnonymisationBackendService(
 			new AnonymisationBackendPlatform($apps, $this->inMemoryAppConfig(), $caches, $this->createMock(IClientService::class)),
-			new AnonymisationBackendCollaborators($settings, $this->createMock(LoggerInterface::class), $this->createMock(ConnectionReporter::class))
+			new AnonymisationBackendCollaborators($settings, $this->createMock(LoggerInterface::class), $this->createMock(ConnectionReporter::class), new \OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion())
 		);
 
 		return $service->getState()->jsonSerialize();

@@ -275,7 +275,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -299,13 +299,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -564,7 +564,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -588,13 +588,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -937,7 +937,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -959,13 +959,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -1308,7 +1308,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -1330,13 +1330,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -1683,7 +1683,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -1707,13 +1707,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -2088,7 +2088,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -2110,13 +2110,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -2371,7 +2371,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -2597,7 +2597,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -2621,13 +2621,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -2901,7 +2901,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -2926,13 +2926,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -3266,7 +3266,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -3288,13 +3288,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -3589,7 +3589,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -3613,13 +3613,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -3925,7 +3925,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -3950,13 +3950,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -4217,7 +4217,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -4241,13 +4241,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -4595,7 +4595,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -4617,13 +4617,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -4958,7 +4958,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -4980,13 +4980,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -5283,7 +5283,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -5307,13 +5307,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -5664,7 +5664,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -5686,13 +5686,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -5987,7 +5987,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -6011,13 +6011,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -6633,7 +6633,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -6657,13 +6657,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -6922,7 +6922,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -6946,13 +6946,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -7390,7 +7390,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -7414,13 +7414,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -7746,7 +7746,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -7768,13 +7768,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -8077,7 +8077,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -8099,13 +8099,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -8346,7 +8346,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -8564,7 +8564,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -8588,13 +8588,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -9229,7 +9229,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -9253,13 +9253,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -9602,7 +9602,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -9627,13 +9627,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -9876,7 +9876,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -9900,13 +9900,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -10315,7 +10315,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -10337,13 +10337,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -10680,7 +10680,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -10702,13 +10702,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [
@@ -11076,7 +11076,7 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\ContactMatchingService"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ContactMatchCacheInterface"
                 ]
             ],
             [
@@ -11100,13 +11100,13 @@
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\Reference\\ObjectPreviewFormatter"
+                    "OCA\\OpenRegister\\Kernel\\Contracts\\Core\\ObjectPreviewCacheInterface"
                 ]
             ],
             [
                 "container.get",
                 [
-                    "OCA\\OpenRegister\\Service\\DeepLinkRegistryService"
+                    "OCA\\OpenRegister\\Service\\DeepLinkResolverInterface"
                 ]
             ],
             [

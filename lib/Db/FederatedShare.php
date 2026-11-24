@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\FederatedShare\FederatedShareFieldTypes;
+use OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -70,8 +71,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  * @method DateTime|null getExpiresAt()
  * @method void setExpiresAt(?DateTime $expiresAt)
+ * @method array|null getCrosses()
+ * @method void setCrosses(?array $crosses)
  */
-class FederatedShare extends Entity implements JsonSerializable {
+class FederatedShare extends Entity implements JsonSerializable, FederatedShareInterface {
 	use JsonFieldsTrait;
 	use OrganisationFieldTrait;
 	use HydrateEmptyJsonAsNullTrait;
@@ -201,6 +204,15 @@ class FederatedShare extends Entity implements JsonSerializable {
 	 * @var DateTime|null
 	 */
 	protected ?DateTime $expiresAt = null;
+
+	/**
+	 * What crosses to the recipient: a subset of `data`, `files`, `timeline`.
+	 * Null on a share made before the declaration existed, which serves the
+	 * narrowest (see ShareCrosses).
+	 *
+	 * @var array|null
+	 */
+	protected ?array $crosses = null;
 
 	/**
 	 * Constructor: registers field types.

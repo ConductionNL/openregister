@@ -1,0 +1,85 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SearchSideBar.buildFacetConfiguration builds the request for every kind of facet 1`] = `
+{
+  "config": {
+    "_facets": {
+      "@self": {
+        "created": {
+          "interval": "month",
+          "type": "date_histogram",
+        },
+        "gone": {
+          "type": "terms",
+        },
+        "owner": {
+          "type": "terms",
+        },
+        "register": {
+          "type": "terms",
+        },
+      },
+      "born": {
+        "interval": "month",
+        "type": "date_histogram",
+      },
+      "missing": {
+        "type": "terms",
+      },
+      "size": {
+        "type": "terms",
+      },
+      "status": {
+        "type": "terms",
+      },
+    },
+  },
+  "order": [
+    "@self",
+    "status",
+    "born",
+    "size",
+    "missing",
+  ],
+  "selfOrder": [
+    "created",
+    "owner",
+    "register",
+    "gone",
+  ],
+}
+`;
+
+exports[`SearchSideBar.buildFacetConfiguration builds the request for no facetable fields 1`] = `
+{
+  "config": {
+    "_facets": {
+      "@self": {
+        "created": {
+          "type": "terms",
+        },
+      },
+      "status": {
+        "type": "terms",
+      },
+    },
+  },
+  "order": [
+    "@self",
+    "status",
+  ],
+  "selfOrder": [
+    "created",
+  ],
+}
+`;
+
+exports[`SearchSideBar.buildFacetConfiguration builds the request for nothing enabled 1`] = `
+{
+  "config": {
+    "_facets": {},
+  },
+  "order": [],
+  "selfOrder": [],
+}
+`;

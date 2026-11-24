@@ -17,12 +17,14 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Search\Db\ViewMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
+use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\CascadingHandler;
@@ -261,10 +263,11 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 				query: $setup['query'],
 				_rbac: ($setup['rbac'] ?? true),
 				_multitenancy: ($setup['multi'] ?? true),
-				deleted: ($setup['deleted'] ?? false),
-				ids: ($setup['ids'] ?? null),
-				uses: ($setup['uses'] ?? null),
-				views: ($setup['views'] ?? null)
+				options: new SearchOptions(
+					selection: new ObjectSelection(ids: ($setup['ids'] ?? null), uses: ($setup['uses'] ?? null)),
+					views: ($setup['views'] ?? null),
+					deleted: ($setup['deleted'] ?? false)
+				)
 			);
 		} catch (\Throwable $e) {
 			$returned = ['exception' => [get_class($e), $e->getMessage()]];
@@ -281,12 +284,12 @@ class ObjectServiceSearchPaginatedGoldenTest extends TestCase {
 	private function service(): ObjectService {
 		// The list-read hook resolves the read registration from the container; a stub keeps it silent.
 		$container = $this->createMock(IAppContainer::class);
-		$container->method('get')->willReturn($this->createStub(ReadHistoryService::class));
+		$container->method('get')->willReturn($this->createStub(ProcessingReadsInterface::class));
 
 		$queryHandler = $this->createMock(QueryHandler::class);
 		$queryHandler->method('searchObjectsPaginatedDatabase')->willReturnCallback(
-			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true, bool $deleted = false, ?array $ids = null, ?string $uses = null): array {
-				$this->calls[] = ['database' => $query, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'deleted' => $deleted, 'ids' => $ids, 'uses' => $uses];
+			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true, ObjectSelection $selection = new ObjectSelection()): array {
+				$this->calls[] = ['database' => $query, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy, 'ids' => $selection->ids, 'uses' => $selection->uses];
 				return ($this->setup['result'] ?? ['results' => [['id' => 1]], 'total' => 1, 'page' => 1]);
 			}
 		);

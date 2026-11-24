@@ -44,12 +44,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\Sharing;
 
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Sharing\AccessLinkReaderFilters;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
-use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
@@ -129,7 +129,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
 	 */
 	public function subjectObject(AccessLinkInterface $link): ?ObjectEntity {
-		if ($link->getSubjectType() === AccessLink::SUBJECT_VIEW) {
+		if ($link->getSubjectType() === AccessLinkInterface::SUBJECT_VIEW) {
 			return null;
 		}
 
@@ -138,9 +138,9 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 			return null;
 		}
 
-		if ($link->getSubjectType() === AccessLink::SUBJECT_FILE) {
+		if ($link->getSubjectType() === AccessLinkInterface::SUBJECT_FILE) {
 			$uuid = $this->sources->subjects->objectUuid(
-				subjectType: AccessLink::SUBJECT_FILE,
+				subjectType: AccessLinkInterface::SUBJECT_FILE,
 				subjectId: (string)$link->getSubjectId()
 			);
 			if ($uuid === null) {
@@ -192,7 +192,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
 	 */
 	public function read(AccessLinkInterface $link, ?ObjectEntityInterface $object = null): ?array {
-		if ($link->getSubjectType() === AccessLink::SUBJECT_VIEW) {
+		if ($link->getSubjectType() === AccessLinkInterface::SUBJECT_VIEW) {
 			return $this->readView(link: $link);
 		}
 
@@ -206,7 +206,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 
 		$body = ['subject' => $this->project(object: $object)];
 
-		if ($link->getSubjectType() === AccessLink::SUBJECT_FILE) {
+		if ($link->getSubjectType() === AccessLinkInterface::SUBJECT_FILE) {
 			$body['file'] = $this->fileDescriptor(
 				object: $object,
 				fileId: (string)$this->sources->subjects->fileId(subjectId: (string)$link->getSubjectId())
@@ -254,8 +254,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 					query: ['_limit' => self::MAX_VIEW_OBJECTS],
 					_rbac: true,
 					_multitenancy: true,
-					views: [$viewId],
-					_viewScopeRequired: true
+					options: new SearchOptions(views: [$viewId], viewScopeRequired: true)
 				)
 			);
 		} catch (Throwable $missing) {
@@ -289,10 +288,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	 * @return IUser|null
 	 */
 	private function minterOf(AccessLinkInterface $link): ?IUser {
-		$uid = '';
-		if ($link instanceof AccessLink) {
-			$uid = trim((string)$link->getCreatedBy());
-		}
+		$uid = trim((string)$link->getCreatedBy());
 
 		$minter = null;
 		if ($uid !== '') {

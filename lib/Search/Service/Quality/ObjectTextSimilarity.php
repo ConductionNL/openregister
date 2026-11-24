@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Service\Quality;
 
 use OCA\OpenRegister\Db\TextSignatureMapper;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Search\FileScopeInterface;
 use OCA\OpenRegister\Service\Quality\TextSignature;
 
 /**
@@ -49,12 +49,12 @@ final class ObjectTextSimilarity {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileMapperInterface $files      Which files are attached to an object.
+	 * @param FileScopeInterface  $files      Which files are attached to an object.
 	 * @param TextSignatureMapper $signatures The stored signatures.
 	 * @param TextSignature       $signer     Estimates the similarity of two signatures.
 	 */
 	public function __construct(
-		private readonly FileMapperInterface $files,
+		private readonly FileScopeInterface $files,
 		private readonly TextSignatureMapper $signatures,
 		private readonly TextSignature $signer=new TextSignature(),
 	) {
@@ -90,7 +90,7 @@ final class ObjectTextSimilarity {
 			return [];
 		}
 
-		$fileIdsByObject = $this->files->getFileIdsForObjects(uuids: $uuids);
+		$fileIdsByObject = $this->files->fileIdsOfObjects(uuids: $uuids);
 		$allFileIds      = [];
 		foreach ($fileIdsByObject as $fileIds) {
 			array_push($allFileIds, ...array_map('intval', $fileIds));

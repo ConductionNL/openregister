@@ -41,6 +41,8 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Contract\SearchOptions;
+use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Notifications\Service\Timeline\PublicTimeline;
@@ -296,7 +298,7 @@ class AccessLinkReaderTest extends TestCase {
 		$this->objects->expects($this->once())->method('runAs')->with($minter, $this->anything());
 		$this->objects->expects($this->once())
 			->method('searchObjects')
-			->with($this->anything(), true, true, null, null, ['view-uuid'])
+			->with($this->anything(), true, true, $this->equalTo(new SearchOptions(views: ['view-uuid'], viewScopeRequired: true)))
 			->willReturn([$this->object(), $this->object()]);
 		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
 
@@ -306,6 +308,40 @@ class AccessLinkReaderTest extends TestCase {
 		$this->assertSame(2, $body['total']);
 		$this->assertSame('Bezwaar', $body['results'][0]['onderwerp']);
 		$this->assertArrayNotHasKey('owner', $body['results'][0]['@self']);
+	}
+
+	public function testAViewLinkKnownOnlyByItsKernelContractReadsAsItsMinter(): void {
+		$minter = $this->minter();
+		$this->objects->expects($this->once())->method('runAs')->with($minter, $this->anything());
+		$this->objects->method('searchObjects')->willReturn([$this->object()]);
+		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
+		$link = new class implements AccessLinkInterface {
+			public function getSubjectType(): ?string {
+				return AccessLinkInterface::SUBJECT_VIEW;
+			}
+
+			public function getSubjectId(): ?string {
+				return 'view-uuid';
+			}
+
+			public function getCreatedBy(): ?string {
+				return 'owner';
+			}
+		};
+
+		$body = $this->reader->read(link: $link);
+
+		$this->assertIsArray($body);
+		$this->assertSame(1, $body['total']);
+	}
+
+	public function testTheEntityNamesTheSubjectKindsOfItsKernelContract(): void {
+		$this->assertSame(
+			[AccessLinkInterface::SUBJECT_OBJECT, AccessLinkInterface::SUBJECT_VIEW, AccessLinkInterface::SUBJECT_FILE],
+			AccessLink::SUBJECT_TYPES
+		);
+		$this->assertSame(['object', 'view', 'file'], AccessLink::SUBJECT_TYPES);
+		$this->assertSame('owner', $this->link(subjectType: AccessLink::SUBJECT_VIEW)->getCreatedBy());
 	}
 
 	public function testAViewThatNoLongerResolvesServesNothing(): void {

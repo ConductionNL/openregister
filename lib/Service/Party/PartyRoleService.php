@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\Schema\VocabularyEntries;
 use OCA\OpenRegister\Service\PersonLinkEvents;
 use Throwable;
 
@@ -111,8 +112,8 @@ class PartyRoleService implements PartyRoleServiceInterface {
 			'results' => $results,
 			'total' => count($results),
 			'byRole' => $byRole,
-			'kinds' => ($schema?->getPartyKinds() ?? []),
-			'roles' => ($schema?->getLinkRoles() ?? []),
+			'kinds' => (new VocabularyEntries())->configuredVocabulary(configuration: $schema?->getConfiguration(), config: 'partyKinds'),
+			'roles' => (new VocabularyEntries())->configuredVocabulary(configuration: $schema?->getConfiguration(), config: 'linkRoles'),
 			'primary' => $primary,
 		];
 	}//end listForObject()
@@ -370,7 +371,7 @@ class PartyRoleService implements PartyRoleServiceInterface {
 			return [];
 		}
 
-		return $schema->getPartyKinds();
+		return (new VocabularyEntries())->configuredVocabulary(configuration: $schema->getConfiguration(), config: 'partyKinds');
 	}//end declaredKinds()
 
 	/**

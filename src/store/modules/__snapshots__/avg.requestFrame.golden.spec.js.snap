@@ -1,0 +1,1673 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`avg.applyRedaction clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.applyRedaction on a bare refusal 1`] = `
+{
+  "error": "Redaction failed",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.applyRedaction]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.applyRedaction on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.applyRedaction]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.applyRedaction on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.applyRedaction]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.archiveActivity clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "delete",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.archiveActivity on a bare refusal 1`] = `
+{
+  "error": "Failed to archive processing activity",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.archiveActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "delete",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.archiveActivity on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.archiveActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "delete",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.archiveActivity on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.archiveActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "delete",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.collectEvidence clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.collectEvidence on a bare refusal 1`] = `
+{
+  "error": "Evidence harvest failed",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.collectEvidence]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.collectEvidence on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.collectEvidence]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.collectEvidence on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.collectEvidence]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.createActivity clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.createActivity on a bare refusal 1`] = `
+{
+  "error": "Failed to create processing activity",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.createActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.createActivity on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.createActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.createActivity on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.createActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.downloadBundle clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.downloadBundle on a bare refusal 1`] = `
+{
+  "error": "Download failed",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.downloadBundle]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.downloadBundle on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.downloadBundle]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.downloadBundle on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.downloadBundle]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.escalateRegulator clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.escalateRegulator on a bare refusal 1`] = `
+{
+  "error": "Regulator escalation failed",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.escalateRegulator]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.escalateRegulator on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.escalateRegulator]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.escalateRegulator on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.escalateRegulator]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchAccountability clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.fetchAccountability on a bare refusal 1`] = `
+{
+  "error": "Failed to fetch accountability document",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchAccountability]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchAccountability on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchAccountability]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchAccountability on a serverError refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchAccountability]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchActivePolicyPack clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.fetchActivePolicyPack on a bare refusal 1`] = `
+{
+  "error": "Failed to fetch policy pack",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchActivePolicyPack]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchActivePolicyPack on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchActivePolicyPack]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchActivePolicyPack on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchActivePolicyPack]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchActivities clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.fetchActivities on a bare refusal 1`] = `
+{
+  "error": "Failed to fetch processing activities",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchActivities]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchActivities on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchActivities]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchActivities on a serverError refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchActivities]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchActivity clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.fetchActivity on a bare refusal 1`] = `
+{
+  "error": "Failed to fetch processing activity",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchActivity on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchActivity on a serverError refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchCase clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.fetchCase on a bare refusal 1`] = `
+{
+  "error": "Failed to fetch case",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchCase]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchCase on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchCase]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchCase on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchCase]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchCases clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.fetchCases on a bare refusal 1`] = `
+{
+  "error": "Failed to fetch cases",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchCases]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchCases on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchCases]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchCases on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchCases]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchCompliance clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.fetchCompliance on a bare refusal 1`] = `
+{
+  "error": "Failed to fetch compliance report",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchCompliance]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchCompliance on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchCompliance]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.fetchCompliance on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.fetchCompliance]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.generateBundle clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.generateBundle on a bare refusal 1`] = `
+{
+  "error": "Bundle generation failed",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.generateBundle]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.generateBundle on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.generateBundle]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.generateBundle on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.generateBundle]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runAccess clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.runAccess on a bare refusal 1`] = `
+{
+  "error": "Failed to run access",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runAccess]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runAccess on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runAccess]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runAccess on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runAccess]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runErasure clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.runErasure on a bare refusal 1`] = `
+{
+  "error": "Failed to run erasure",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runErasure]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runErasure on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runErasure]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runErasure on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runErasure]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runPortability clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.runPortability on a bare refusal 1`] = `
+{
+  "error": "Failed to run portability",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runPortability]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runPortability on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runPortability]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runPortability on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runPortability]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "get",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runRectification clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.runRectification on a bare refusal 1`] = `
+{
+  "error": "Failed to run rectification",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runRectification]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runRectification on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runRectification]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.runRectification on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.runRectification]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.transitionCase clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.transitionCase on a bare refusal 1`] = `
+{
+  "error": "Transition refused",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.transitionCase]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.transitionCase on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.transitionCase]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.transitionCase on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.transitionCase]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.updateActivity clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "put",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.updateActivity on a bare refusal 1`] = `
+{
+  "error": "Failed to update processing activity",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.updateActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "put",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.updateActivity on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.updateActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "put",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.updateActivity on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.updateActivity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "put",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.updateCase clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "put",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.updateCase on a bare refusal 1`] = `
+{
+  "error": "Failed to update case",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.updateCase]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "put",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.updateCase on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.updateCase]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "put",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.updateCase on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.updateCase]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "put",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.verifyIdentity clears the loading flag after an answer 1`] = `
+{
+  "loading": false,
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+}
+`;
+
+exports[`avg.verifyIdentity on a bare refusal 1`] = `
+{
+  "error": "Identity verification failed",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.verifyIdentity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.verifyIdentity on a messageOnly refusal 1`] = `
+{
+  "error": "Exception text",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.verifyIdentity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;
+
+exports[`avg.verifyIdentity on a serverError refusal 1`] = `
+{
+  "error": "Server says no",
+  "loading": false,
+  "logged": [
+    [
+      "[avg.verifyIdentity]",
+      true,
+    ],
+  ],
+  "seen": [
+    [
+      "post",
+      true,
+      null,
+    ],
+  ],
+  "thrown": true,
+}
+`;

@@ -84,3 +84,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  # Keeps the digest pins of the container base images current.
+  - package-ecosystem: "docker"
+    directories:
+      - "/"
+      - "/docker/dolphin"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 2

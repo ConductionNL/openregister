@@ -33,7 +33,7 @@ use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Rules\DependentValueTableInterface;
 use OCA\OpenRegister\Service\Rules\DependentValueWrite;
-use OCA\OpenRegister\Service\Object\ObjectSaveCheck;
+use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
 use OCA\OpenRegister\Listener\Support\EventSchemaLookup;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -59,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/specs/object-lifecycle/spec.md
  */
-class DependentValueListener implements IEventListener, ObjectSaveCheck {
+class DependentValueListener implements IEventListener, DependentValueCheckInterface {
 
 	/**
 	 * The error code a refused dependent value carries, so a client can branch on it.

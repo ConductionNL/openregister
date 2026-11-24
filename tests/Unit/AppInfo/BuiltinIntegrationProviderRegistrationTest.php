@@ -49,7 +49,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IL10N',
 		],
 		'OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider' => [
-			'OCA\OpenRegister\Service\TaskService',
+			'OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface',
 			'OCA\OpenRegister\Db\RegisterMapperInterface',
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
@@ -84,6 +84,20 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'Psr\Log\LoggerInterface',
+		],
+		'OCA\OpenRegister\Service\Integration\Providers\ExternalRegisterProvider' => [
+			'OCA\OpenRegister\Service\Integration\ExternalRegisterLookupInterface',
+			'OCP\IL10N',
+		],
+		'OCA\OpenRegister\Service\Integration\ExternalRegisterLookup' => [
+			'OCA\OpenRegister\Db\RegisterMapperInterface',
+			'OCA\OpenRegister\Db\SchemaMapperInterface',
+			'OCA\OpenRegister\Kernel\Contracts\SchemaReadCheckInterface',
+			'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
+			'OCA\OpenRegister\Service\Integration\ExternalRegisterDegrade',
+			'OCP\ICacheFactory',
+			'OCP\AppFramework\Utility\ITimeFactory',
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider' => [
@@ -192,14 +206,6 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCP\IDBConnection',
 			'OCA\OpenRegister\Service\LinkServiceRuntime',
 		],
-		'OCA\OpenRegister\Service\FlowLinkService' => [
-			'OCA\OpenRegister\Db\FlowLinkMapperInterface',
-			'OCP\IDBConnection',
-			'OCP\App\IAppManager',
-			'OCP\IUserSession',
-			'OCP\IGroupManager',
-			'Psr\Log\LoggerInterface',
-		],
 		'OCA\OpenRegister\Service\Integration\Providers\MapsProvider' => [
 			'OCP\IDBConnection',
 			'OCP\App\IAppManager',
@@ -297,6 +303,12 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Db\SchemaRunEntryMapperInterface',
 			'OCA\OpenRegister\Db\SchemaMapperInterface',
 			'OCA\OpenRegister\Service\ObjectService',
+		],
+		'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider' => [
+			'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface',
+			'OCA\OpenRegister\Db\MappingMapperInterface',
+			'OCA\OpenRegister\Service\MappingService',
+			'Psr\Log\LoggerInterface',
 		],
 	];
 

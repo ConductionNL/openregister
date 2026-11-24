@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 
@@ -164,7 +165,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	}
 
 	public function testInstallWritesTheCastAndEveryFragmentAndProvesIt(): void {
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame([], $report['refusals']);
 		$this->assertTrue($report['ok'], json_encode($report));
@@ -189,14 +190,14 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 
 	public function testAReadErrorOnAKeptObjectWritesNothingAndKeepsTheRecordedId(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$before  = json_decode($this->config['example_set_demo'], true);
 		$caseId  = $before['objects']['cases/case-1']['id'];
 		$creates = $this->store->creates;
 
 		// The database cannot be read right now: the object is on the instance, but the read says nothing.
 		$this->store->unreadable = [$caseId];
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertSame($creates, $this->store->creates, 'nothing is written again');
 		$after = json_decode($this->config['example_set_demo'], true);
@@ -207,20 +208,20 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 
 		// Once it can be read again the next install finds it and writes nothing.
 		$this->store->unreadable = [];
-		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertTrue($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
 		$this->assertSame($creates, $this->store->creates);
 	}
 
 	public function testTheRecordIsALazyValueAndAnEarlierNonLazyRecordIsStillFound(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($this->lazyKeys['example_set_demo'], 'the record stays out of every request');
 
 		// A record an earlier version stored as a non-lazy value is read, and is lazy again after the next write.
 		$this->lazyKeys['example_set_demo'] = false;
 		$creates = $this->store->creates;
-		$this->assertSame(['sanne.devries' => 'kept', 'esra.demir' => 'kept'], $this->installer->install(plan: $plan, today: $this->today())['users']);
+		$this->assertSame(['sanne.devries' => 'kept', 'esra.demir' => 'kept'], $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['users']);
 		$this->assertSame($creates, $this->store->creates, 'the old record is found, so nothing is written twice');
 
 		$this->remover->remove(set: 'demo');
@@ -232,23 +233,23 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->store->seed(register: 'cases', schema: 'caseType', data: ['identifier' => 'woo']);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$check = $this->installer->check(plan: $plan, today: $this->today());
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertCount(1, $check['refusals']);
 		$this->assertStringContainsString('2 cases caseType rows with identifier "woo"; a lookup needs exactly one', $check['refusals'][0]);
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(1, $report['refusals']);
 		$this->assertSame(0, $this->store->creates, 'a refused set writes nothing');
 	}
 
 	public function testASecondInstallWritesNothingAndSaysAlreadyThere(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$creates = $this->store->creates;
 		$users   = $this->accounts->userCreates;
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$this->assertTrue($report['ok']);
 		$this->assertSame($creates, $this->store->creates);
@@ -276,8 +277,8 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	 */
 	public function testEveryWriteOfAnInstallAndARefreshIsCausedByTheSet(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
-		$this->installer->install(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days'));
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
+		$this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $this->today()->modify('+5 days')));
 
 		$this->assertGreaterThan(expected: 3, actual: count($this->store->causes));
 		foreach ($this->store->causes as $cause) {
@@ -289,7 +290,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 
 	public function testARefreshRewritesTheDeclaredObjectsToTodaysValues(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 
 		$case   = $this->store->find(table: new RegisterSchemaRef(register: 'cases', schema: 'case'), filters: ['start' => '2026-10-11'])[0];
 		$extra  = ($case + ['remark' => 'added on the instance']);
@@ -298,10 +299,10 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$updates = $this->store->updates;
 
 		$later  = $this->today()->modify('+5 days');
-		$plain  = $this->installer->install(plan: $plan, today: $later);
+		$plain  = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $later));
 		$this->assertSame('2026-10-11', $this->store->row(ref: new ObjectRef(register: 'cases', schema: 'case', id: $case['id']))['start'], 'a plain install keeps the stored value');
 
-		$report = $this->installer->install(plan: ($plan + ['refresh' => true]), today: $later);
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: ($plan + ['refresh' => true]), today: $later));
 
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertTrue($plain['ok']);
@@ -318,7 +319,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	public function testAForeignAccountRefusesTheInstallBeforeAnyWrite(): void {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Somebody', 'email' => '', 'password' => 'theirs'];
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertCount(1, $report['refusals']);
 		$this->assertStringContainsString('"sanne.devries" exists and this set did not create it', $report['refusals'][0]);
@@ -332,7 +333,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->accounts->users['sanne.devries'] = ['displayName' => 'Sanne', 'email' => '', 'password' => 'theirs'];
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$report = $this->installer->install(plan: $plan, adopt: ['sanne.devries'], today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, adopt: ['sanne.devries'], today: $this->today()));
 		$this->assertTrue($report['ok']);
 		$this->assertSame('adopted', $report['users']['sanne.devries']);
 
@@ -345,7 +346,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	public function testAnUnresolvedPlaceholderNamesFileKeyAndPlaceholderAndWritesNothing(): void {
 		$this->app(app: 'cases', fragment: ['objects' => [['key' => 'case-9', 'register' => 'cases', 'schema' => 'case', 'data' => ['who' => '{{cast:nobody.uid}}']]]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(
 			['cases/lib/Settings/example-sets/demo.json: object "case-9" (cases case): cannot resolve {{cast:nobody.uid}}'],
@@ -357,7 +358,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	public function testAValueTheSchemaRefusesFailsTheCheckAndWritesNothing(): void {
 		$this->store->refusedFields['cases case'] = ['start'];
 
-		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$result = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertSame(['brp person' => 1, 'cases case' => 2], $result['checked']);
 		$this->assertSame([], $result['checkedChanges']);
@@ -371,7 +372,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$file['cast']['people'][0]['bsn'] = '123456789';
 		$this->app(app: 'openregister', fragment: $file);
 
-		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$result = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertStringContainsString('BSN 123456789 fails the eleven test', implode("\n", $result['refusals']));
 	}
@@ -379,7 +380,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	public function testAKeyTheSchemaDoesNotKeepIsNamedAsLost(): void {
 		$this->store->droppedFields['brp person'] = ['number'];
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertFalse($report['ok']);
 		$this->assertSame(['brp person openregister/brp-sanne: number'], $report['lost']);
@@ -389,7 +390,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$foreign = $this->store->seed(register: 'cases', schema: 'case', data: ['title' => 'not ours']);
 		$this->accounts->groups['cases-handlers'] = ['someone'];
 		$this->accounts->users['someone']         = ['displayName' => 'Someone', 'email' => '', 'password' => 'x'];
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$report = $this->remover->remove(set: 'demo');
 
@@ -425,7 +426,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 	}
 
 	public function testWhatRemoveCannotDeleteStaysInTheRecord(): void {
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$stuck                     = $this->store->ids(register: 'brp', schema: 'person')[0];
 		$this->store->undeletable  = [$stuck];
 
@@ -433,5 +434,82 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 
 		$this->assertSame(['brp person openregister/brp-sanne ('.$stuck.'): the register refused it'], $report['failed']);
 		$this->assertSame(['openregister/brp-sanne'], array_keys($this->record->read(set: 'demo')['objects']));
+	}
+
+	/**
+	 * A catalogue fragment whose publication looks up a theme in an app the instance may not have.
+	 *
+	 * @param bool   $optional Whether the publication is marked optional.
+	 * @param string $register The register the lookup reads.
+	 *
+	 * @return void
+	 */
+	private function publicationFragment(bool $optional, string $register = 'catalogi'): void {
+		$publication = [
+			'key'      => 'publication-1',
+			'register' => 'cases',
+			'schema'   => 'case',
+			'lookups'  => ['theme' => ['register' => $register, 'schema' => 'theme', 'where' => ['slug' => 'wonen']]],
+			'data'     => ['type' => '{{lookup:theme}}'],
+		];
+		if ($optional === true) {
+			$publication['optional'] = true;
+		}
+
+		$this->app(app: 'catalogue', fragment: ['objects' => [$publication]]);
+	}//end publicationFragment()
+
+	public function testAnOptionalEntryWhoseAppIsAbsentIsSkippedAndTheSetInstalls(): void {
+		$this->publicationFragment(optional: true);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
+		$this->assertSame([], $check['refusals']);
+		$this->assertCount(1, $check['skipped']);
+		$this->assertStringContainsString('lookup "theme" found no catalogi theme with slug "wonen"', $check['skipped'][0]);
+
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
+		$this->assertTrue($report['ok'], json_encode($report));
+		$this->assertSame(3, $this->store->creates, 'the rest of the set is written, the skipped entry is not');
+		$this->assertCount(1, $report['skipped']);
+		$this->assertStringContainsString('object "publication-1"', $report['skipped'][0]);
+		$this->assertArrayNotHasKey('catalogue/publication-1', json_decode($this->config['example_set_demo'], true)['objects']);
+	}
+
+	public function testAnOptionalEntryWhoseLookupFindsNothingIsSkipped(): void {
+		$this->store->offer(register: 'catalogi', schema: 'theme');
+		$this->publicationFragment(optional: true);
+
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
+
+		$this->assertSame([], $check['refusals']);
+		$this->assertCount(1, $check['skipped']);
+	}
+
+	public function testAnEntryNotMarkedOptionalStillRefusesTheSet(): void {
+		$this->publicationFragment(optional: false);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
+
+		$this->assertSame([], $check['skipped']);
+		$this->assertCount(1, $check['refusals']);
+		$this->assertStringContainsString('lookup "theme" found no catalogi theme with slug "wonen"', $check['refusals'][0]);
+		$this->assertFalse($this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['ok']);
+		$this->assertSame(0, $this->store->creates, 'a refused check writes nothing');
+	}
+
+	public function testAnOptionalEntryWithTwoMatchesIsStillRefused(): void {
+		// Optional covers "nothing there", not "more than one there": an ambiguous lookup still refuses.
+		$this->store->offer(register: 'catalogi', schema: 'theme');
+		$this->store->seed(register: 'catalogi', schema: 'theme', data: ['slug' => 'wonen']);
+		$this->store->seed(register: 'catalogi', schema: 'theme', data: ['slug' => 'wonen']);
+		$this->publicationFragment(optional: true);
+
+		$check = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
+
+		$this->assertSame([], $check['skipped']);
+		$this->assertCount(1, $check['refusals']);
+		$this->assertStringContainsString('a lookup needs exactly one', $check['refusals'][0]);
 	}
 }

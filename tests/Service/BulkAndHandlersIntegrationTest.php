@@ -164,9 +164,8 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 	public function testBulkSaveSingleObject(): void {
 		$uuid = Uuid::v4()->toRfc4122();
 		$saved = $this->objectMapper->saveObjectsToRegisterSchemaTable(
-			[['uuid' => $uuid, 'naam' => 'Bulk Test 1']],
-			$this->testRegister,
-			$this->testSchema
+			new RegisterSchema($this->testRegister, $this->testSchema),
+			[['uuid' => $uuid, 'naam' => 'Bulk Test 1']]
 		);
 
 		$this->assertSame([$uuid], $saved);
@@ -187,9 +186,8 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		}
 
 		$saved = $this->objectMapper->saveObjectsToRegisterSchemaTable(
-			$objects,
-			$this->testRegister,
-			$this->testSchema
+			new RegisterSchema($this->testRegister, $this->testSchema),
+			$objects
 		);
 
 		$this->assertCount(5, $saved);
@@ -203,9 +201,8 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 	 */
 	public function testBulkSaveEmptyArrayReturnsEmpty(): void {
 		$saved = $this->objectMapper->saveObjectsToRegisterSchemaTable(
-			[],
-			$this->testRegister,
-			$this->testSchema
+			new RegisterSchema($this->testRegister, $this->testSchema),
+			[]
 		);
 
 		$this->assertSame([], $saved);
@@ -223,9 +220,8 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 	public function testBulkSavedObjectIsReadableAgain(): void {
 		$uuid = Uuid::v4()->toRfc4122();
 		$this->objectMapper->saveObjectsToRegisterSchemaTable(
-			[['uuid' => $uuid, 'naam' => 'DB Verify Test', 'title' => 'Check DB']],
-			$this->testRegister,
-			$this->testSchema
+			new RegisterSchema($this->testRegister, $this->testSchema),
+			[['uuid' => $uuid, 'naam' => 'DB Verify Test', 'title' => 'Check DB']]
 		);
 
 		$stored = $this->objectMapper->findInRegisterSchemaTable(
@@ -249,19 +245,17 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 	public function testBulkSaveMixedInsertAndUpdate(): void {
 		$existing = Uuid::v4()->toRfc4122();
 		$this->objectMapper->saveObjectsToRegisterSchemaTable(
-			[['uuid' => $existing, 'naam' => 'First Object']],
-			$this->testRegister,
-			$this->testSchema
+			new RegisterSchema($this->testRegister, $this->testSchema),
+			[['uuid' => $existing, 'naam' => 'First Object']]
 		);
 
 		$fresh = Uuid::v4()->toRfc4122();
 		$saved = $this->objectMapper->saveObjectsToRegisterSchemaTable(
+			new RegisterSchema($this->testRegister, $this->testSchema),
 			[
 				['uuid' => $fresh, 'naam' => 'New Object'],
 				['uuid' => $existing, 'naam' => 'Updated First Object'],
-			],
-			$this->testRegister,
-			$this->testSchema
+			]
 		);
 
 		$this->assertSame([$fresh, $existing], $saved);

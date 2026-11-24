@@ -22,7 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
+use OCA\OpenRegister\Service\ServiceRegistrar;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObjectInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectRelatedUpdateGuardInterface;
@@ -53,7 +54,7 @@ final class A05InterfaceBindingsTest extends TestCase {
 	 * @var list<string>
 	 */
 	private const WHOLE_INTERFACE_USERS = [
-		'Service/ContractBindings.php',
+		'Service/CoreServiceBindings.php',
 		'Service/Object/BulkSaveStores.php',
 		'Service/Object/CascadingHandler.php',
 		'Service/Object/Collaborators/ObjectSaveServices.php',
@@ -90,7 +91,7 @@ final class A05InterfaceBindingsTest extends TestCase {
 	}//end testTheWholeInterfaceExtendsTheRole()
 
 	/**
-	 * ContractBindings aliases the role to SaveObject and registers the alias.
+	 * The Core map aliases the role to SaveObject and ServiceRegistrar registers the alias.
 	 *
 	 * @param class-string $role The role interface.
 	 *
@@ -98,10 +99,10 @@ final class A05InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('roles')]
 	public function testTheRoleIsBoundToSaveObject(string $role): void {
-		$this->assertSame(SaveObject::class, ContractBindings::BINDINGS[$role] ?? null);
+		$this->assertSame(SaveObject::class, CoreServiceBindings::BINDINGS[$role] ?? null);
 
 		$context = new RecordingRegistrationContext();
-		ContractBindings::register(context: $context);
+		ServiceRegistrar::register(context: $context);
 		$aliases = array_column($context->aliases, 'target', 'alias');
 		$this->assertSame(SaveObject::class, $aliases[$role] ?? null);
 	}//end testTheRoleIsBoundToSaveObject()

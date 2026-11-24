@@ -31,9 +31,7 @@ use Closure;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\OpenRegister\Db\AutomationRecord;
 use OCA\OpenRegister\Notifications\Db\DuplicateDispatchException;
-use OCA\OpenRegister\Service\AutomationRecordWriter;
 use OCA\OpenRegister\Notifications\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Notifications\Db\HistoryDelivery;
 use OCA\OpenRegister\Notifications\Db\HistoryEntry;
@@ -41,6 +39,8 @@ use OCA\OpenRegister\Notifications\Db\HistoryNotice;
 use OCA\OpenRegister\Notifications\Db\HistoryTarget;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRun;
+use OCA\OpenRegister\Kernel\Contracts\TaskInterface;
 use OCA\OpenRegister\Notifications\Db\QueuedNotification;
 use OCA\OpenRegister\Notifications\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Register;
@@ -49,7 +49,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Notifications\Service\Party\PartyMessage;
 use OCA\OpenRegister\Notifications\Service\Party\PartyNotificationService;
-use OCA\OpenRegister\Service\Task\TaskStateRules;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
@@ -229,7 +228,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$this->lazyActionLinks ??= new ActionLinkResolver(
 			routes: $routes,
 			tasks: new TaskActionLinks(
-				isRejecting: static fn (string $outcome): bool => TaskStateRules::isRejectingOutcome(outcome: $outcome),
+				isRejecting: static fn (string $outcome): bool => in_array(strtolower(trim($outcome)), TaskInterface::REJECTING_OUTCOMES, true),
 				urlGenerator: $this->urlGenerator
 			),
 			objects: new ObjectDetailLinks(
@@ -410,23 +409,25 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 			return;
 		}
 
-		$record = AutomationRecordWriter::draft(
-			kind: AutomationRecord::KIND_NOTIFICATION,
-			key: ($firing->spec['key'] ?? null),
-			name: $firing->ruleId,
-			object: $firing->object
-		);
-		$record->setEventId(self::storedId(value: $firing->eventId));
-		$record->setOutcome($firing->tally->outcome());
-		$record->setReason($firing->tally->reason());
+		$outcome = $firing->tally->outcome();
+		$reason  = $firing->tally->reason();
 		if ($failure !== null) {
-			$record->setOutcome(NotificationRunTally::FAILED);
-			$record->setReason(null);
-			$record->setMessage($failure);
+			$outcome = NotificationRunTally::FAILED;
+			$reason  = null;
 		}
 
-		$record->setChannels((string)json_encode($firing->tally->counts()));
-		$this->ledger->runRecords->write($record);
+		$this->ledger->runRecords->recordNotificationRun(
+			new NotificationRun(
+				key: ($firing->spec['key'] ?? null),
+				name: $firing->ruleId,
+				object: $firing->object,
+				eventId: self::storedId(value: $firing->eventId),
+				outcome: $outcome,
+				reason: $reason,
+				message: $failure,
+				channels: (string)json_encode($firing->tally->counts())
+			)
+		);
 	}//end recordRun()
 
 	/**

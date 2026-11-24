@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use Exception;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\StoredViewQueriesInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -69,11 +69,11 @@ class ViewScopeApplier {
 	/**
 	 * Constructor.
 	 *
-	 * @param ViewMapperInterface      $viewMapper Mapper for view operations.
-	 * @param LoggerInterface $logger     Logger for debug and failure reporting.
+	 * @param StoredViewQueriesInterface $viewQueries The stored query of a view.
+	 * @param LoggerInterface            $logger      Logger for debug and failure reporting.
 	 */
 	public function __construct(
-		private readonly ViewMapperInterface $viewMapper,
+		private readonly StoredViewQueriesInterface $viewQueries,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -194,12 +194,7 @@ class ViewScopeApplier {
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function storedQuery(int|string $viewId, ViewScopeRun $run): ?array {
-		$view = $this->viewMapper->find(
-			$viewId,
-			_rbac: ($run->required === false),
-			_multitenancy: ($run->required === false)
-		);
-		$viewQuery = $view->getQuery();
+		$viewQuery = $this->viewQueries->queryOf(viewId: $viewId, guarded: ($run->required === false));
 
 		if ($run->required === true && $this->bounds(viewQuery: $viewQuery) === false) {
 			// A view that sets no register and no schema is not a bound. Applying

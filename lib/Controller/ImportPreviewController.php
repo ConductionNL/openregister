@@ -34,8 +34,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Import\ImportCommit;
-use OCA\OpenRegister\AppInfo\Application;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ConfigurationJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
@@ -43,6 +42,7 @@ use OCA\OpenRegister\Db\ImportPreviewRowMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Import\ConflictPolicyNames;
 use OCA\OpenRegister\Service\Import\ImportFailedRowsCsv;
 use OCA\OpenRegister\Service\Import\ImportPreviewRefusedException;
@@ -150,7 +150,7 @@ class ImportPreviewController extends Controller {
 		IRequest $request,
 		ImportPreviewControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->service = $services->domain->service;
 		$this->previewMapper = $services->mappers->previewMapper;
 		$this->rowMapper = $services->mappers->rowMapper;
@@ -478,10 +478,10 @@ class ImportPreviewController extends Controller {
 
 			if ($async === true) {
 				$this->jobList->add(
-					JobHandles::IMPORT_PREVIEW_RUNNER,
+					ConfigurationJobHandlesInterface::IMPORT_PREVIEW_RUNNER,
 					[
 						'preview_id' => (int)$preview->getId(),
-						'phase' => JobHandles::IMPORT_PREVIEW_PHASE_COMMIT,
+						'phase' => ConfigurationJobHandlesInterface::IMPORT_PREVIEW_PHASE_COMMIT,
 						'source_hash' => $sourceHash,
 					]
 				);
@@ -527,10 +527,10 @@ class ImportPreviewController extends Controller {
 		$this->previewMapper->persist(preview: $preview);
 
 		$this->jobList->add(
-			JobHandles::IMPORT_PREVIEW_RUNNER,
+			ConfigurationJobHandlesInterface::IMPORT_PREVIEW_RUNNER,
 			[
 				'preview_id' => (int)$preview->getId(),
-				'phase' => JobHandles::IMPORT_PREVIEW_PHASE_PREVIEW,
+				'phase' => ConfigurationJobHandlesInterface::IMPORT_PREVIEW_PHASE_PREVIEW,
 			]
 		);
 

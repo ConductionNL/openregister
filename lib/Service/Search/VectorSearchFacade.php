@@ -96,6 +96,40 @@ class VectorSearchFacade {
 	}//end isAvailable()
 
 	/**
+	 * The id of the model embeddings are made with now: `<provider>:<model>`.
+	 *
+	 * Vectors from two models cannot be compared, so a consumer that caches
+	 * embeddings (hermiq's tool search) keys its cache on this. The model is the
+	 * one the embedding service uses for the configured provider, its default
+	 * included. Empty while no embedding provider is available.
+	 *
+	 * @return string The model id, or '' when vector search is unavailable.
+	 *
+	 * @spec openspec/changes/search-file-text-and-vector-facade
+	 */
+	public function embeddingModelId(): string {
+		if ($this->isAvailable() === false) {
+			return '';
+		}
+
+		try {
+			$llm = $this->settings->getLLMSettingsOnly();
+		} catch (Throwable $e) {
+			return '';
+		}
+
+		$provider = (string)$llm['embeddingProvider'];
+		$model    = match ($provider) {
+			'fireworks' => $llm['fireworksConfig']['embeddingModel'] ?? 'thenlper/gte-base',
+			'ollama' => $llm['ollamaConfig']['model'] ?? 'nomic-embed-text',
+			'openai' => $llm['openaiConfig']['model'] ?? 'text-embedding-ada-002',
+			default => 'text-embedding-ada-002',
+		};
+
+		return $provider . ':' . (string)$model;
+	}//end embeddingModelId()
+
+	/**
 	 * The passages most similar to a query, as the caller.
 	 *
 	 * @param string                 $query The question.

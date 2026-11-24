@@ -22,7 +22,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
 use OCA\OpenRegister\Service\Object\BulkRowChecks;
 use OCA\OpenRegister\Service\Object\BulkRowRules;
 use OCA\OpenRegister\Service\Object\BulkSaveReporting;
@@ -202,7 +202,7 @@ class SaveObjectsPipelineGoldenTest extends TestCase {
 	 */
 	private function refuseDecisionTables(SaveObjects $handler, ?array $refusals): array {
 		if ($refusals !== null) {
-			$guard = $this->createMock(DecisionTableBulkGuard::class);
+			$guard = $this->createMock(BulkRowRefusalsInterface::class);
 			$guard->method('refusals')->willReturnCallback(
 				function (...$args) use ($refusals): array {
 					$this->calls[] = 'refusals '.json_encode([array_keys($args[0]), $args[1], $args[2]]);

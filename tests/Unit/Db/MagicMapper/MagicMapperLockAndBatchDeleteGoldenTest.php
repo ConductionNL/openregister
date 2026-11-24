@@ -100,6 +100,7 @@ class MagicMapperLockAndBatchDeleteGoldenTest extends TestCase {
 		$expr = $this->createMock(IExpressionBuilder::class);
 		$expr->method('in')->willReturnCallback(static fn ($col): string => 'in:'.$col);
 		$expr->method('isNull')->willReturnCallback(static fn ($col): string => 'isNull:'.$col);
+		$expr->method('eq')->willReturnCallback(static fn ($col): string => 'eq:'.$col);
 		$qb = $this->createMock(IQueryBuilder::class);
 		$qb->method('expr')->willReturn($expr);
 		$qb->method('createNamedParameter')->willReturnCallback(
@@ -129,13 +130,20 @@ class MagicMapperLockAndBatchDeleteGoldenTest extends TestCase {
 			);
 		}
 
+		$lastSet = null;
 		$qb->method('set')->willReturnCallback(
-			function (string $column) use ($qb): IQueryBuilder {
+			function (string $column) use ($qb, &$lastSet): IQueryBuilder {
 				$this->trace[] = 'set '.$column;
+				$lastSet = $column;
 				return $qb;
 			}
 		);
-		$qb->method('executeStatement')->willReturn(2);
+		// The lock claim changes exactly its one row; the batch deletes report two.
+		$qb->method('executeStatement')->willReturnCallback(
+			static function () use (&$lastSet): int {
+				return ($lastSet === '_locked') ? 1 : 2;
+			}
+		);
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturn($qb);
 
@@ -165,7 +173,7 @@ class MagicMapperLockAndBatchDeleteGoldenTest extends TestCase {
 
 		$this->assertSame('anna', $locked->getLocked()['user']);
 		$this->assertSame('p-1', $locked->getLocked()['process']);
-		$this->assertSame(['update 1/2 locked=true', 'event ObjectLockedEvent'], $this->trace);
+		$this->assertSame(['update openregister_table_1_2', 'set _locked', 'where eq:_uuid', "andWhere (_locked IS NULL OR _locked IN ('null', '[]', '{}'))", 'update 1/2 locked=true', 'event ObjectLockedEvent'], $this->trace);
 	}//end testALockIsWrittenAndAnnounced()
 
 	public function testALockWithoutAProcessIsTaggedByTheMapper(): void {
@@ -255,7 +263,7 @@ class MagicMapperLockAndBatchDeleteGoldenTest extends TestCase {
 		$this->assertSame(ObjectEntity::LOCK_KIND_RUN, $locked->getLocked()['kind']);
 		$this->assertSame('run-1', $locked->getLockedByRun());
 		$this->assertSame('flow-1', $locked->getLocked()['process']);
-		$this->assertSame(['update 1/2 locked=true', 'event ObjectLockedEvent'], $this->trace);
+		$this->assertSame(['update openregister_table_1_2', 'set _locked', 'where eq:_uuid', "andWhere (_locked IS NULL OR _locked IN ('null', '[]', '{}'))", 'update 1/2 locked=true', 'event ObjectLockedEvent'], $this->trace);
 	}//end testARunUuidIsForwardedIntoTheLock()
 
 	/**

@@ -23,14 +23,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\Translation\LanguageCoverageCheck;
+use OCA\OpenRegister\Kernel\Contracts\Core\TranslationRowStatusInterface;
 use OCP\AppFramework\Db\Entity;
 
 /**
  * The translations-sidecar queries that callers outside lib/Db use.
  *
- * Bound to TranslationMapper in DbRegistrar.
+ * Bound to TranslationMapper in ConfigurationMapperRegistrar.
  */
-interface TranslationMapperInterface {
+interface TranslationMapperInterface extends TranslationRowStatusInterface {
 
 	/**
 	 * Delete one translation row (QBMapper).

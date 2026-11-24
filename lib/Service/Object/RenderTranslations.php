@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
-use OCA\OpenRegister\Db\TranslationMapperInterface;
-use OCA\OpenRegister\Service\LanguageService;
-use OCA\OpenRegister\Service\TranslationStatusService;
+use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\TranslationCompletenessInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\TranslationRowStatusInterface;
 
 /**
  * What a render resolves translatable properties and languages with.
@@ -35,18 +35,18 @@ final class RenderTranslations {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param TranslationHandler              $translationHandler       Resolves translatable properties.
-	 * @param TranslationStatusService        $translationStatusService Per-object translation status.
-	 * @param TranslationMapperInterface      $translationMapper        The translation store.
-	 * @param LanguageService                 $languageService          Source-language resolution.
+	 * @param TranslationHandler               $translationHandler       Resolves translatable properties.
+	 * @param TranslationCompletenessInterface $translationStatusService Per-object translation completeness.
+	 * @param TranslationRowStatusInterface    $translationMapper        The status of a stored translation.
+	 * @param RequestLanguagesInterface        $languageService          The request's negotiated languages.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
 	public function __construct(
 		public readonly TranslationHandler $translationHandler,
-		public readonly TranslationStatusService $translationStatusService,
-		public readonly TranslationMapperInterface $translationMapper,
-		public readonly LanguageService $languageService,
+		public readonly TranslationCompletenessInterface $translationStatusService,
+		public readonly TranslationRowStatusInterface $translationMapper,
+		public readonly RequestLanguagesInterface $languageService,
 	) {
 	}//end __construct()
 }//end class

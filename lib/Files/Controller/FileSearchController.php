@@ -23,10 +23,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Files\Controller\Support\FileSearchControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Files\Service\File\FileReadScope;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\KeywordChunkSearch;
 use OCA\OpenRegister\Search\Service\VectorizationServiceInterface;
 use OCP\AppFramework\Controller;
@@ -87,7 +87,7 @@ class FileSearchController extends Controller {
 		IRequest $request,
 		FileSearchControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->vectorService = $services->vectorService;
 		$this->chunkMapper = $services->chunkMapper;
 		$this->readScope = $services->readScope;
@@ -118,13 +118,7 @@ class FileSearchController extends Controller {
 			$limit = (int)$this->request->getParam('limit', 10);
 
 			if (empty($query) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'message' => 'Query parameter is required',
-					],
-					statusCode: 400
-				);
+				return $this->queryRequired();
 			}
 
 			// File-only scope: `entity_type` (snake_case) is the key
@@ -148,22 +142,7 @@ class FileSearchController extends Controller {
 				]
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[FileSearchController] Semantic search failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'message' => 'Semantic search failed: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->searchFailed(failure: 'Semantic search failed', e: $e);
 		}//end try
 	}//end semanticSearch()
 
@@ -190,13 +169,7 @@ class FileSearchController extends Controller {
 			$semanticWeight = (float)$this->request->getParam('semantic_weight', 0.5);
 
 			if (empty($query) === true) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'message' => 'Query parameter is required',
-					],
-					statusCode: 400
-				);
+				return $this->queryRequired();
 			}
 
 			// Real keyword arm: ranked ts_rank results over file chunks,
@@ -237,22 +210,49 @@ class FileSearchController extends Controller {
 				]
 			);
 		} catch (\Exception $e) {
-			$this->logger->error(
-				message: '[FileSearchController] Hybrid search failed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'error' => $e->getMessage(),
-				]
-			);
-
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'message' => 'Hybrid search failed: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->searchFailed(failure: 'Hybrid search failed', e: $e);
 		}//end try
 	}//end hybridSearch()
+
+	/**
+	 * The 400 for a search without a query.
+	 *
+	 * @return JSONResponse
+	 */
+	private function queryRequired(): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'success' => false,
+				'message' => 'Query parameter is required',
+			],
+			statusCode: 400
+		);
+	}//end queryRequired()
+
+	/**
+	 * Log a failed search and answer 500.
+	 *
+	 * @param string     $failure What failed, as the log and the response name it.
+	 * @param \Exception $e       The failure.
+	 *
+	 * @return JSONResponse The 500 response.
+	 */
+	private function searchFailed(string $failure, \Exception $e): JSONResponse {
+		$this->logger->error(
+			message: '[FileSearchController] '.$failure,
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'error' => $e->getMessage(),
+			]
+		);
+
+		return new JSONResponse(
+			data: [
+				'success' => false,
+				'message' => $failure.': '.$e->getMessage(),
+			],
+			statusCode: 500
+		);
+	}//end searchFailed()
 }//end class

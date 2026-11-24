@@ -22,12 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\ContentReportControllerServices;
 use OCA\OpenRegister\Db\ContentReport;
 use OCA\OpenRegister\Db\ContentReportMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\ContentReportServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -35,6 +35,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
+use OCA\OpenRegister\Service\Audit\ContentReportFiling;
 
 /**
  * Filing is open, reading a copy is not.
@@ -86,7 +87,7 @@ class ContentReportController extends Controller {
 		IRequest $request,
 		ContentReportControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->reports = $services->reports;
 		$this->service = $services->service;
 		$this->objects = $services->objects;
@@ -138,7 +139,7 @@ class ContentReportController extends Controller {
 		}
 
 		try {
-			$report = $this->service->file(object: $object, reason: $reason, reporter: $user->getUID());
+			$report = $this->service->file(filing: new ContentReportFiling(object: $object, reason: $reason, reporter: $user->getUID()));
 		} catch (Throwable $writeFailed) {
 			return new JSONResponse(
 				data: ['error' => $writeFailed->getMessage()],

@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasks;
@@ -51,7 +51,7 @@ final class F10ExplicitRevealInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		ExplicitReveal::class => [ExplicitRevealInterface::class, ContractBindings::class],
+		ExplicitReveal::class => [ExplicitRevealInterface::class, CoreServiceBindings::class],
 	];
 
 	/**

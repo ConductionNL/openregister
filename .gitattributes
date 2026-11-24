@@ -23,7 +23,8 @@ bin/console text eol=lf
 # the point, a modified copy of a specification we said we had not modified.
 lib/Service/Flow/Bpmn/schema/*.xsd -text
 
-.github export-ignore
+# .github stays in the source archive: supply-chain scanners read the
+# workflows from it. The release package leaves .github out on its own.
 .travis.yml export-ignore
 LICENSE export-ignore
 README.md export-ignore

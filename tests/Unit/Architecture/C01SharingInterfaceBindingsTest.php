@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\IntegrationsMapperRegistrar;
 use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Service\Calendar\AppointmentAttendeeService;
@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\Calendar\CalendarFeedTokenServiceInterface;
 use OCA\OpenRegister\Service\CaseTokenService;
 use OCA\OpenRegister\Service\CaseTokenServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
@@ -61,12 +63,12 @@ final class C01SharingInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AccessLinkMintGuard::class => [AccessLinkMintGuardInterface::class, ContractBindings::class],
-		AccessLinkService::class => [AccessLinkServiceInterface::class, ContractBindings::class],
-		AppointmentAttendeeService::class => [AppointmentAttendeeServiceInterface::class, ContractBindings::class],
-		CalendarFeedTokenService::class => [CalendarFeedTokenServiceInterface::class, ContractBindings::class],
+		AccessLinkMintGuard::class => [AccessLinkMintGuardInterface::class, CoreServiceBindings::class],
+		AccessLinkService::class => [AccessLinkServiceInterface::class, CoreServiceBindings::class],
+		AppointmentAttendeeService::class => [AppointmentAttendeeServiceInterface::class, ProcessesServiceBindings::class],
+		CalendarFeedTokenService::class => [CalendarFeedTokenServiceInterface::class, ProcessesServiceBindings::class],
 		CaseTokenService::class => [CaseTokenServiceInterface::class, ContractBindings::class],
-		FederatedShareMapper::class => [FederatedShareMapperInterface::class, DbRegistrar::class],
+		FederatedShareMapper::class => [FederatedShareMapperInterface::class, IntegrationsMapperRegistrar::class],
 		FederationShareService::class => [FederationShareServiceInterface::class, ContractBindings::class],
 	];
 
