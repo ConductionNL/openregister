@@ -1260,6 +1260,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // FileSidebar — list OR objects connected to a Files entry + show extraction state.
         ['name' => 'fileSidebar#getObjectsForFile',    'url' => '/api/files/{fileId}/objects',           'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
         ['name' => 'fileSidebar#getExtractionStatus',  'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
+        ['name' => 'fileSidebar#getThread',            'url' => '/api/files/{fileId}/thread',            'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
 
         // Action registry CRUD + utilities.
 
@@ -1469,6 +1470,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
         ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
         ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        ['name' => 'operationsQuery#run', 'url' => '/api/operations/query', 'verb' => 'POST'],
+        ['name' => 'operationsQuery#export', 'url' => '/api/operations/query/export', 'verb' => 'POST'],
         // Dependency breakers (operate-load-shedding D-7): administrator-only.
         ['name' => 'operationsDependencies#index', 'url' => '/api/operations/dependencies', 'verb' => 'GET'],
         ['name' => 'operationsDependencies#reset', 'url' => '/api/operations/dependencies/{key}/reset', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
@@ -1842,6 +1845,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // One named part of one schema back to what its app shipped (admin; shipped-baseline-reset-is-reachable).
         ['name' => 'shippedBaseline#preview', 'url' => '/api/schemas/{id}/shipped-baseline/reset', 'verb' => 'GET'],
         ['name' => 'shippedBaseline#reset', 'url' => '/api/schemas/{id}/shipped-baseline/reset', 'verb' => 'POST'],
+        // A part an app upgrade kept local: list them, accept what the app shipped (admin; local-changes-to-app-shipped-configuration 3.3b).
+        ['name' => 'shippedConflict#conflicts', 'url' => '/api/schemas/{id}/shipped-baseline/conflicts', 'verb' => 'GET'],
+        ['name' => 'shippedConflict#accept', 'url' => '/api/schemas/{id}/shipped-baseline/conflicts/accept', 'verb' => 'POST'],
         ['name' => 'schemaMigration#rollback', 'url' => '/api/schemas/{id}/runs/{run}/rollback', 'verb' => 'POST', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
 
         // Property type conversion — the supported conversions are published,
