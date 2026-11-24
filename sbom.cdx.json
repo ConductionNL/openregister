@@ -1250,10 +1250,10 @@
       ]
     },
     {
-      "bom-ref": "opis/json-schema-2.6.1.0",
+      "bom-ref": "opis/json-schema-2.6.2.0",
       "type": "library",
       "name": "json-schema",
-      "version": "2.6.1",
+      "version": "2.6.2",
       "group": "opis",
       "description": "Json Schema Validator for PHP",
       "author": "Sorin Sarca, Marius Sarca",
@@ -1264,17 +1264,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/opis/json-schema@2.6.1",
+      "purl": "pkg:composer/opis/json-schema@2.6.2",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/opis/json-schema/zipball/7d8685a78db131eb6a1571cc7b4db8f4b59e8628",
-          "comment": "dist reference: 7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "url": "https://api.github.com/repos/opis/json-schema/zipball/b87b424da3fbeaab09567910fda48dc88d9dcbd8",
+          "comment": "dist reference: b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "type": "vcs",
           "url": "https://github.com/opis/json-schema.git",
-          "comment": "source reference: 7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "comment": "source reference: b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "type": "website",
@@ -1288,18 +1288,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/opis/json-schema/tree/2.6.1",
+          "url": "https://github.com/opis/json-schema/tree/2.6.2",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "value": "b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "value": "b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "name": "cdx:composer:package:type",
@@ -22089,6 +22089,39 @@
     },
     {
       "type": "library",
+      "name": "leaflet-draw",
+      "version": "1.0.4",
+      "bom-ref": "openregister@1.0.0|leaflet-draw@1.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/leaflet-draw@1.0.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/leaflet-draw/-/leaflet-draw-1.0.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "aec43ab1a40ee524f9023e97445ca5af9cef6ab5a0cd69eb838eb3435304384207b29a5d0bff219cdf2a32816f002b0fbd38a802ecacc9afd356da20d79b7201"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/leaflet-draw"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "leaflet.markercluster",
       "version": "1.5.3",
       "bom-ref": "openregister@1.0.0|leaflet.markercluster@1.5.3",
@@ -32306,7 +32339,7 @@
       ]
     },
     {
-      "ref": "opis/json-schema-2.6.1.0",
+      "ref": "opis/json-schema-2.6.2.0",
       "dependsOn": [
         "opis/string-2.1.0.0",
         "opis/uri-1.1.0.0"
@@ -32558,7 +32591,7 @@
         "guzzlehttp/guzzle-7.16.5.0",
         "jwadhams/json-logic-php-1.5.1.0",
         "minishlink/web-push-11.0.0.0",
-        "opis/json-schema-2.6.1.0",
+        "opis/json-schema-2.6.2.0",
         "phpoffice/phpspreadsheet-5.11.0.0",
         "phpseclib/phpseclib-4.0.3.0",
         "react/async-4.3.0.0",

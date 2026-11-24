@@ -126,3 +126,21 @@ describe('readFileAsDataUri', () => {
 		)
 	})
 })
+
+describe('editorFor — geometry properties (geometry-on-a-map 3.2)', () => {
+	it.each(['geo:point', 'geo:linestring', 'geo:polygon', 'geo:multipolygon', 'geo:geometry'])(
+		'gives a %s property the geometry editor',
+		(format) => {
+			expect(editorFor({ type: 'object', format })).toBe('geometry')
+		},
+	)
+
+	it('gives a property typed geo:polygon the geometry editor too', () => {
+		expect(editorFor({ type: 'geo:polygon' })).toBe('geometry')
+	})
+
+	it('keeps a plain object property on the text editor and out of the list cells', () => {
+		expect(editorFor({ type: 'object' })).toBe('text')
+		expect(isInlineEditable({ type: 'object', format: 'geo:point' })).toBe(false)
+	})
+})
