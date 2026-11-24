@@ -9,3 +9,4 @@ A product or access-control question that FINISH-ORDER.md DECISIONS does not ans
 
 ## Queue
 - 19:06Z help-opencatalogi-1 opencatalogi#2969 merge: publication-required-at-publish 1.3/1.4/2.1/2.2; local green (PHPUnit same failing set as development, l10n clean, static analysis clean on touched files), but hydra diff-check.sh was refused by the cloud permission check, so run it and merge
+- 2026-11-24T19:19Z b-larpinq ConductionNL/larpinq#1177 merge: registration-cancel-transfer-refund 2.3 (shillinq refund/credit commands, closes larpinq#1163), local green at 580b1472 (diff-check GREEN, PHPUnit 1436/0, phpstan OK, lint 0 errors; psalm needs PHP>=8.3.16), up to date with development, mergeable; squash merge refused by this session's permission check
