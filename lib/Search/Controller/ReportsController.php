@@ -42,6 +42,7 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCA\OpenRegister\Search\Controller\Support\ReportRenderRequest;
 use OCA\OpenRegister\Search\Controller\Support\ReportsControllerServices;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -100,6 +101,7 @@ class ReportsController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-9
 	 */
+	#[Sheddable]
 	public function render(string $id) {
 		$format = (string)($this->request->getParam(key: 'format', default: 'xlsx'));
 		$request = new ReportRenderRequest(identifier: $id, format: strtolower($format));
@@ -223,6 +225,7 @@ class ReportsController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-10
 	 */
+	#[Sheddable]
 	public function preview(string $id) {
 		try {
 			$dashboard = $this->loadDashboard(identifier: $id);

@@ -3375,7 +3375,9 @@
         "Object \"%1$s\" assigned to you": "Réad \"%1$s\" sannta duit",
         "Audit trail export ready": "Tá easpórtáil an loirg iniúchta réidh",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Sábháladh d'easpórtáil den lorg iniúchta le %1$s iontráil i %2$s%3$s.",
-        "Open Files": "Oscail Comhaid"
+        "Open Files": "Oscail Comhaid",
+        "Its ancestor %1$s has appraisal %2$s": "Tá measúnú %2$s ag a shinsear %1$s",
+        "Its ancestor %s could not be read": "Níorbh fhéidir a shinsear %s a léamh"
     },
     "pluralForm": "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);",
     "plurals": {

@@ -19,6 +19,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts\Compliance;
 
+use OCA\OpenRegister\Kernel\Contracts\ConnectionStatusReportInterface;
+
 /**
  * Reports one connection's status.
  *
@@ -26,7 +28,7 @@ namespace OCA\OpenRegister\Kernel\Contracts\Compliance;
  * found; the connection reporter (Integrations) sends it on and is bound to
  * this contract.
  */
-interface ConnectionStatusReporterInterface {
+interface ConnectionStatusReporterInterface extends ConnectionStatusReportInterface {
 
 	/**
 	 * Report a connection's status to integriq.
