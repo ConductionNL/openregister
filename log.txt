@@ -4080,3 +4080,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T14:10:08Z integrator-20261124T132815-bec0364d NORESULT tree c9e6747759: checker floor not measured (exit 2)
 2026-11-24T14:15:00Z integrator-20261124T132815-bec0364d NORESULT tree c9e6747759: checker floor not measured (exit 2)
 2026-11-24T14:17:59Z session-20261124T141759-5e9a3d20 builder opencatalogi: ended on overlap guard (parallel session active, #2933 lift-embargo open 14:13Z); closed own duplicate #2934 (contained in #2924/#2926)
+2026-11-24T14:21:55Z session-20261124T142155-36a681b2 cloud builder larpinq: #1157 open and locally green (ticks 6 written-e2e tasks, archives capability-rows-missing-requirements, communication-mail-participants, events-casting-and-crew-roles, registration-payments-through-shillinq, larpinq-mcp-adoption); merge PUT refused by this session's permission check, left for the next run or coordinator; psalm not run (php8.4 PPA install failed)
