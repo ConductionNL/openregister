@@ -47,6 +47,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -199,13 +200,13 @@ final class PermissionHandlerTokenRowConditionTest extends TestCase {
 		$schema->setSlug('zaak');
 		$schema->setAuthorization(['read' => ['medewerkers'], 'update' => ['medewerkers']]);
 
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'read', userId: 'beheerder', object: $this->object(leverancier: 'lev-99')));
-		$this->assertTrue($handler->hasPermission(schema: $schema, action: 'read', userId: 'beheerder', object: $this->object(leverancier: 'lev-42')));
-		$this->assertFalse($handler->hasPermission(schema: $schema, action: 'update', userId: 'beheerder', object: $this->object(leverancier: 'lev-42')));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'beheerder', objectOwner: null)->about(object: $this->object(leverancier: 'lev-99'), register: null)));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'read'))->askedBy(userId: 'beheerder', objectOwner: null)->about(object: $this->object(leverancier: 'lev-42'), register: null)));
+		$this->assertFalse($handler->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'beheerder', objectOwner: null)->about(object: $this->object(leverancier: 'lev-42'), register: null)));
 
 		$untokened = $this->handler(source: new TokenGrantSource());
 		$this->assertTrue(
-			$untokened->hasPermission(schema: $schema, action: 'update', userId: 'beheerder', object: $this->object(leverancier: 'lev-99')),
+			$untokened->hasPermission(ask: (new PermissionAsk(schema: $schema, action: 'update'))->askedBy(userId: 'beheerder', objectOwner: null)->about(object: $this->object(leverancier: 'lev-99'), register: null)),
 			'without a token the administrator is unaffected'
 		);
 	}//end testHasPermissionRefusesTheAdministratorAnotherSuppliersObject()

@@ -76,7 +76,6 @@ class WebhooksControllerAllowlistTest extends TestCase {
 		}
 
 		return WebhooksControllerFactory::create(
-			appName: 'openregister',
 			request: $this->request,
 			webhookMapper: $this->webhookMapper,
 			webhookLogMapper: $this->createMock(WebhookLogMapper::class),
