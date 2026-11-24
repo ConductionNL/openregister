@@ -43,6 +43,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
 use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use OCA\OpenRegister\Service\CauseFrame;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\WriteCause;
@@ -54,6 +55,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 #[CoversClass(ObjectFileAccess::class)]
+#[UsesClass(PermissionAsk::class)]
 #[UsesClass(ObjectEntity::class)]
 #[UsesClass(ObjectFileAccessDeniedException::class)]
 #[UsesClass(FileVerbCheck::class)]
@@ -224,7 +226,16 @@ class ObjectFileAccessFailClosedTest extends TestCase {
 		$this->authorization(authorization: null, declared: ['matrix' => ['rows' => 'not-a-list']]);
 		$object = self::object();
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, 'update', null, 'ann', true, $object)
+			->with(
+				$this->callback(
+					static fn (PermissionAsk $ask): bool => $ask->schema === $schema
+						&& $ask->action === 'update'
+						&& $ask->userId === null
+						&& $ask->objectOwner === 'ann'
+						&& $ask->object === $object
+				),
+				true
+			)
 			->willReturn(true);
 
 		$this->assertTrue($this->access->mayChangeFiles(object: $object));
@@ -234,7 +245,12 @@ class ObjectFileAccessFailClosedTest extends TestCase {
 		$schema = $this->schemaSeven();
 		$this->authorization(authorization: ['addFiles' => ['editors']], declared: null);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($schema, ObjectFileAccess::ADD_FILES)
+			->with(
+				$this->callback(
+					static fn (PermissionAsk $ask): bool => $ask->schema === $schema
+						&& $ask->action === ObjectFileAccess::ADD_FILES
+				)
+			)
 			->willThrowException(new RuntimeException('group backend down'));
 
 		$this->assertFalse($this->access->mayChangeFiles(object: self::object()));

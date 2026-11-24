@@ -101,6 +101,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\GraphQL {
 	use OCA\OpenRegister\Db\SchemaMapperInterface;
 	use OCA\OpenRegister\Notifications\Service\GraphQL\EventStreamFilter;
 	use OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService;
+	use OCA\OpenRegister\Service\Object\PermissionAsk;
 	use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 	use PHPUnit\Framework\MockObject\MockObject;
 	use PHPUnit\Framework\TestCase;
@@ -158,6 +159,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\GraphQL {
 	 * @covers \OCA\OpenRegister\Notifications\Service\GraphQL\SubscriptionService
 	 * @uses   \OCA\OpenRegister\Notifications\Service\GraphQL\EventStreamFilter
 	 * @uses   \OCA\OpenRegister\Db\ObjectEntity
+	 * @uses   \OCA\OpenRegister\Service\Object\PermissionAsk
 	 * @uses   \OCA\OpenRegister\Db\Schema
 	 */
 	final class SubscriptionServiceCoverageTest extends TestCase {
@@ -352,7 +354,7 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications\Service\GraphQL {
 				);
 			$this->permissions->expects($this->exactly(2))
 				->method('hasPermission')
-				->willReturnCallback(static fn (Schema $schema, string $action): bool => $schema === $readable && $action === 'read');
+				->willReturnCallback(static fn (PermissionAsk $ask): bool => $ask->schema === $readable && $ask->action === 'read');
 
 			$events = $this->service->eventsMatching(new EventStreamFilter('e1'));
 

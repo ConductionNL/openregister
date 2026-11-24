@@ -134,7 +134,6 @@ final class DsarCaseControllerActionsTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return DsarCaseControllerFactory::create(
-			'openregister',
 			$request,
 			$this->objects,
 			$this->accessor,
