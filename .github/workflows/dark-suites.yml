@@ -70,7 +70,7 @@ jobs:
 
     steps:
       - name: Checkout Nextcloud server
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           repository: nextcloud/server
@@ -81,7 +81,7 @@ jobs:
         run: git -C server submodule update --init 3rdparty
 
       - name: Checkout app
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           path: server/apps/openregister
