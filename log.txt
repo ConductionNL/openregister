@@ -4409,3 +4409,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T20:30:41Z integrator-20261124T184854-1c90b6ab MERGED-TREE 65ae63f8d0: 8 PRs, main now 46dd353489 = tested tree
 2026-11-24T20:35:59Z precheck-20261124T190315-cdf396fd AUTOPARK openregister#10627 b3283ac8 sbom: package-lock.json changed without sbom.cdx.json (tree 754eb56579)
+2026-11-24T20:36:34Z or-fix-4 active: fixing conflicting PRs 10494 (done fef09982), 10504, 10514, 10554, 10614
