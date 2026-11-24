@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Form\JourneyDefinition;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use Throwable;
 
@@ -219,11 +220,12 @@ class LinkJourneyGuard {
 	 */
 	private function mayUpdate(ObjectEntity $object): bool {
 		try {
+			$schema = $this->schemas->find(id: (string)$object->getSchema(), _multitenancy: false);
+
 			return $this->permissions->hasPermission(
-				schema: $this->schemas->find(id: (string)$object->getSchema(), _multitenancy: false),
-				action: 'update',
-				objectOwner: $object->getOwner(),
-				object: $object
+				ask: (new PermissionAsk(schema: $schema, action: 'update'))
+					->askedBy(userId: null, objectOwner: $object->getOwner())
+					->about(object: $object, register: null)
 			);
 		} catch (Throwable) {
 			return false;

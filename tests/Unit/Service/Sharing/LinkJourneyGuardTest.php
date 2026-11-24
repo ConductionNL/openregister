@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Sharing\LinkJourneyGuard;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -126,12 +127,15 @@ class LinkJourneyGuardTest extends TestCase {
 	public function testAnUpdaterMayMintAnEditLinkForAFittingJourney(): void {
 		$this->journeyBody = $this->updateJourney();
 		$this->permissions->expects($this->once())->method('hasPermission')->with(
-			$this->callback(static fn (Schema $schema): bool => $schema->getId() === 12),
-			'update',
-			null,
-			'alice',
-			true,
-			$this->callback(static fn (ObjectEntity $object): bool => $object->getUuid() === self::OBJECT)
+			$this->callback(static function (PermissionAsk $ask): bool {
+				$check = $ask->check();
+
+				return $check->schema->getId() === 12
+					&& $check->action === 'update'
+					&& $check->userId === null
+					&& $check->objectOwner === 'alice'
+					&& $check->object?->getUuid() === self::OBJECT;
+			})
 		)->willReturn(true);
 
 		$this->assertNull($this->guard()->mintRefusal(objectUuid: self::OBJECT, journeyId: self::JOURNEY));
