@@ -128,7 +128,7 @@ class ImportPreviewProposeBaseTest extends TestCase {
 			$this->createMock(IJobList::class),
 			$session,
 			$groups,
-			new BaseImportPlanner(reader: new BaseSetReader(new BaserowBaseReader()), proposer: new BaseSchemaProposer())
+			basePlanner: new BaseImportPlanner(reader: new BaseSetReader(new BaserowBaseReader()), proposer: new BaseSchemaProposer())
 		);
 	}//end controller()
 }//end class
