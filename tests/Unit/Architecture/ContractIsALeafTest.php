@@ -56,6 +56,7 @@ class ContractIsALeafTest extends TestCase {
 		'RegisterSchemaSlugs.php',
 		'RegisterSlugResolution.php',
 		'RegisterSlugResolverInterface.php',
+		'ReplyThreadResolutionInterface.php',
 		'SaveActor.php',
 		'SavePolicy.php',
 		'SearchOptions.php',
