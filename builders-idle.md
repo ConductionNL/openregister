@@ -353,3 +353,4 @@
 2026-11-24T20:19Z help-opencatalogi-1 built published-file-carries-its-facts 2.3 #2975 (merged; e2e written); left 2.2b (OpenRegister redaction-release-safeguards not on main), 2.4 live
 2026-11-24T20:20:39Z help-portaliq-1 skipped all: no unstarted portaliq change with buildable code (development 983f6e87). portal-public-search waits on openregister rbac-default-authenticated (security), docusaurus-plugin-portaliq needs a new repository, supplier-portal T10/T11/T14 is the procest auth edge plus a security review, home-and-theme 6.x are delivery steps; every other change has a branch or only live checks left
 2026-11-24T20:21Z help-opencatalogi-1 wrote woo-review-surface e2e 2.2/3.3 #2976 (merged; runs in nightly); left 3.4 live, 5.3 needs Nextcloud tree
+2026-11-24T20:24Z help-opencatalogi-1 built publication-relations-place-and-source-ids 3.1 as dossiq#6902 (merged), ticked 1.4 (e2e written) #2977; only 6.x verification left
