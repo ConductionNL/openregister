@@ -37,7 +37,8 @@ final class AuditEntry {
 	 * @param string               $userName   The acting user's display name.
 	 * @param array<string, mixed> $changed    What changed.
 	 * @param DateTimeImmutable    $created    When it happened.
-	 * @param string|null          $objectUuid The uuid of what it happened to, when there is one.
+	 * @param string|null          $objectUuid     The uuid of what it happened to, when there is one.
+	 * @param string|null          $organisationId The active organisation it happened in, when one is recorded.
 	 */
 	public function __construct(
 		public readonly string $uuid,
@@ -47,6 +48,7 @@ final class AuditEntry {
 		public readonly array $changed,
 		public readonly DateTimeImmutable $created,
 		public readonly ?string $objectUuid = null,
+		public readonly ?string $organisationId = null,
 	) {
 	}//end __construct()
 }//end class

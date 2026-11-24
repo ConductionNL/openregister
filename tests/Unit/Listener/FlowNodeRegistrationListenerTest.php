@@ -67,6 +67,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
@@ -74,6 +75,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
@@ -143,7 +145,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 					itemLoop: new ItemLoopFlowNodes(merge: $mock(MergeNode::class), loop: $mock(LoopNode::class)),
 					handOff: new HandOffFlowNodes(subFlow: $mock(SubFlowNode::class), router: $mock(RouterNode::class)),
 				), objects: new ObjectFlowNodes(
-					objectChange: new ObjectChangeFlowNodes(objectWrite: $mock(ObjectWriteNode::class), transition: $mock(TransitionNode::class)),
+					objectChange: new ObjectChangeFlowNodes(objectWrite: $mock(ObjectWriteNode::class), transition: $mock(TransitionNode::class), tagObject: $mock(TagObjectNode::class)),
 					objectLookup: new ObjectLookupFlowNodes(linkObject: $mock(LinkObjectNode::class), objectRead: $mock(ObjectReadNode::class), auditTrail: $mock(AuditTrailNode::class)),
 				)),
 			),
@@ -173,6 +175,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 					triggerObject: $mock(TriggerObjectNode::class),
 					triggerSchedule: $mock(TriggerScheduleNode::class),
 					triggerManual: $mock(TriggerManualNode::class),
+					triggerCalendar: $mock(TriggerCalendarNode::class),
 				),
 			),
 		);
@@ -199,7 +202,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
-		$this->assertCount(33, $registered, 'all thirty-three built-ins are registered');
+		$this->assertCount(35, $registered, 'all thirty-five built-ins are registered');
 		$classes = array_map(static fn (IFlowNode $node): string => get_parent_class($node) ?: get_class($node), $registered);
 		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class, CaseOpenNode::class, CaseAdvanceNode::class, ActionInputsNode::class, TransitionNode::class, LinkObjectNode::class] as $waiter) {
 			$this->assertContains($waiter, $classes, "$waiter is registered");
