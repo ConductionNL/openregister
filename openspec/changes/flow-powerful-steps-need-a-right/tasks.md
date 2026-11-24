@@ -15,7 +15,8 @@
 - [x] 3.1 `GenericActionAuthService::addMissing()` and a repair step adding declared node rights as `["admin"]` without overwriting. Verify: repair test on an existing matrix with a customised `flow.create`.
 - [x] 3.2 `GET` and `PUT /api/settings/action-rights` for administrators, with the node map and a refusal for unknown actions. Verify: `ActionRightsControllerTest` for 200, 403 for a non-administrator, 400 naming an unknown action.
 - [x] 3.3 `actions` on `GET /api/permissions`. Verify: `PermissionsControllerTest` asserts a node right with its node types.
-- [ ] 3.4 `ActionRights.vue` settings section with texts in en and nl. Verify: component test for granting a right to a group.
+- [x] 3.4 `ActionRights.vue` settings section with texts in en and nl. Verify: component test for granting a right to a group.
+  - `src/views/settings/sections/ActionRights.vue`, under the read-entry section in the admin settings: the rights by area (flows, flow steps, objects, other), each with its description, the step types that need it and a group picker; "Every signed-in user" is the matrix's `@authenticated` grant, and a group the instance no longer has stays under its id so a save never drops it unseen. Save sends `PUT /api/settings/action-rights` with the groups of every right and no node map, so the administrator's step overrides stay. The texts are in all 37 bundles, not only en and nl, so parity holds. Tests: `ActionRights.spec.js` (9), granting `flow.node.send-email` to a group among them; mutation-checked by dropping the granted group from the request.
 
 ## 4. Tests and docs
 
