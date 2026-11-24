@@ -4488,3 +4488,4 @@
 10499 778a756508b9f0be5acd28714d38ac9f739a066f REVERIFY or-fix-9: merged main, fixed component-map.csv conflict (union, yaml regenerated); review needed
 10314 9525e5684bb9f3eaa75e9faf704b5e7bee81d5ce REVERIFY or-fix-4: merged main cac830e0 (component-map.csv conflict, yaml regenerated); phpstan only main-inherited ApiCallerMiddleware:127, Architecture/Controller/Db/Middleware/Migration/ApiCaller green beyond inherited reds; review needed
 10529 38a5fc62faf1a827110f65bdc2e6f5152260fa93 REVERIFY or-fix-9: merged main, fixed component-map.csv conflict (union, yaml regenerated); review needed
+10526 69b7636c4cd4db801bfc6a2988ed2cc73106d828 REVERIFY or-fix-6: merged main (component-map.csv conflict unioned, yaml regenerated), no code changes; Architecture, Contract, Controller, Service/File|Settings|TextExtraction, Db, Files green except inherited AreaMapperRegistrars and ReservedColumnNames; review needed
