@@ -98,6 +98,8 @@ use stdClass;
  * @method void setDeck(?array $deck)
  * @method array|null getDraft()
  * @method void setDraft(?array $draft)
+ * @method array|null getFormerSlugs()
+ * @method void setFormerSlugs(?array $formerSlugs)
  */
 interface SchemaInterface extends JsonSerializable {
 

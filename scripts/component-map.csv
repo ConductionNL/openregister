@@ -3170,6 +3170,7 @@ Service/Schema/SchemaMigrationService.php,252,Service,Service,Service/Schema/Sch
 Service/Schema/SchemaObjectReader.php,65,Service,Service,Service/Schema/SchemaObjectReader.php,0,,Core
 Service/Schema/SchemaRevalidationService.php,112,Service,Service,Service/Schema/SchemaRevalidationService.php,0,177,Core
 Service/Schema/SchemaRunPopulation.php,49,Service,Service,Service/Schema/SchemaRunPopulation.php,0,,Core
+Service/Schema/SchemaSlugRename.php,247,Service,Service,Service/Schema/SchemaSlugRename.php,0,,Core
 Service/Schema/SchemaVersioningService.php,124,Service,Service,Service/Schema/SchemaVersioningService.php,0,232,Core
 Service/SchemaApplicationMigrator.php,85,Service,Configuration,Configuration/Service/SchemaApplicationMigrator.php,4,,Configuration
 Service/SchemaDeletionService.php,403,Service,Compliance,Compliance/Service/SchemaDeletionService.php,19,54,Compliance
@@ -4402,6 +4403,7 @@ Service/Import/ImportFailedRowsCsv.php,,Service,,,,,Configuration
 Service/Import/ImportRunRetention.php,,Service,,,,,Configuration
 BackgroundJob/ImportRunRetentionJob.php,,BackgroundJob,,,,,Configuration
 Migration/Version1Date20261114130000.php,,Migration,,,,,Platform
+Migration/Version1Date20261121180000.php,,Migration,,,,,Platform
 Db/QualityAudit.php,,Db,,,,,Compliance
 Db/QualityAuditRun.php,,Db,,,,,Compliance
 Db/QualityAuditFailure.php,,Db,,,,,Compliance

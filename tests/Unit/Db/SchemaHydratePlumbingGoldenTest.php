@@ -82,6 +82,7 @@ class SchemaHydratePlumbingGoldenTest extends TestCase {
 				'talk'               => 'json',
 				'deck'               => 'json',
 				'draft'              => 'json',
+				'formerSlugs'        => 'json',
 			],
 			(new Schema())->getFieldTypes()
 		);
