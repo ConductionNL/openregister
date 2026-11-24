@@ -526,6 +526,49 @@ class ArchivalNominationServiceTest extends TestCase {
 	}
 
 	/**
+	 * A selectielijst row or result type that says `anonymiseren` nominates the
+	 * record for anonymising, not for destruction (REQ-AAO-001), and the
+	 * record then reaches a list as an anonymisation, not a destruction.
+	 *
+	 * @return void
+	 */
+	public function testARowThatSaysAnonymiserenNominatesForAnonymising(): void {
+		$this->retentionService->method('lookupSelectielijstEntry')->willReturn(
+			['categorie' => '11.1.2', 'archiefnominatie' => 'anonymiseren', 'bewaartermijn' => 'P7Y']
+		);
+		$this->retentionService->method('calculateArchiveActionDate')->willReturn('2033-03-01');
+
+		$object = $this->object();
+		$nomination = $this->service->nominate(object: $object, schema: $this->schema(['enabled' => true, 'classification' => '11.1.2']));
+
+		$this->assertSame(ArchivalNominationService::STATUS_NOMINATED, $nomination['status']);
+		$this->assertSame('anonymiseren', $object->getRetention()['archiefnominatie']);
+		$this->assertSame('2033-03-01', $object->getRetention()['archiefactiedatum']);
+		$this->assertSame(Appraisal::ANONYMISE, RetentionService::listActionOf($object->getRetention()));
+		$this->assertNotContains($object->getRetention()['archiefnominatie'], Appraisal::DESTROY_ALIASES, 'never a destroy nomination');
+	}
+
+	/**
+	 * An annotation that names `anonymiseren` as its action is believed like the other three.
+	 *
+	 * @return void
+	 */
+	public function testAnAnnotationNamingAnonymiserenIsBelieved(): void {
+		$this->retentionService->method('lookupSelectielijstEntry')->willReturn(null);
+		$this->retentionService->method('calculateArchiveActionDate')->willReturn('2036-03-01');
+
+		$object = $this->object();
+		$nomination = $this->service->nominate(
+			object: $object,
+			schema: $this->schema([], ['x-openregister-archival' => ['retention' => ['default' => 'P10Y'], 'action' => 'anonymiseren']])
+		);
+
+		$this->assertSame(ArchivalNominationService::STATUS_NOMINATED, $nomination['status']);
+		$this->assertSame(Appraisal::ANONYMISE, $object->getRetention()['archiefnominatie']);
+		$this->assertSame('2036-03-01', $object->getRetention()['archiefactiedatum']);
+	}
+
+	/**
 	 * "Not applicable" and "we looked in one of the two places" read identically
 	 * from the outside, and the second is the bug. So the answer names both.
 	 *

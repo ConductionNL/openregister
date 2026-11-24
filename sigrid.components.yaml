@@ -1995,6 +1995,8 @@ components:
       - ".*/lib/Controller/Support/VerwerkingsactiviteitenControllerServices[.]php"
       - ".*/lib/Db/(AuditFlowAttributionInterface|AuditTrail|AuditTrailFilterTerm|AuditTrailMapper|AuditTrailPageQuery|AuditTrailPageQueryInterface|AuditTrailPayloadHelper|ComplianceMapperBindings|ComplianceMapperRegistrar|ContentReport|ContentReportMapper|ContentReportMapperInterface|ErasurePreview|ErasurePreviewMapper|ErasurePreviewMapperInterface|GdprEntity|GdprEntityMapper|GdprEntityMapperInterface|NewRowStamps|ProcessingLogEntry|ProcessingLogMapper|ProcessingLogMapperInterface|ProcessingPurpose|ProcessingPurposeMapper|ProcessingPurposeMapperInterface|QualityAudit|QualityAuditFailure|QualityAuditMapper|QualityAuditMapperInterface|QualityAuditRun|QualityAuditRunMapper|QualityAuditRunMapperInterface|SearchTrail|SearchTrailCleanupInterface|SearchTrailCriteria|SearchTrailMapper|SearchTrailMapperInterface|SearchTrailOutcome|StatusVocabularyTrait|SubjectExport|SubjectExportMapper|SubjectExportMapperInterface|TrailRetentionTrait|Verwerkingsactiviteit|VerwerkingsactiviteitMapper|VerwerkingsactiviteitMapperInterface)[.]php"
       - ".*/lib/Db/AuditTrail/AuditActionStatistics[.]php"
+      - ".*/lib/Db/AuditTrail/AuditDiffStore[.]php"
+      - ".*/lib/Db/AuditTrail/AuditDiffStoreInterface[.]php"
       - ".*/lib/Db/AuditTrail/AuditPageRequest[.]php"
       - ".*/lib/Db/AuditTrail/AuditTrailCriteria[.]php"
       - ".*/lib/Db/AuditTrail/AuditTrailFieldTypes[.]php"
