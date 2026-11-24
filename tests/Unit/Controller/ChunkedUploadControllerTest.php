@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\File\ChunkedUploadService;
 use OCA\OpenRegister\Service\FileReaderInterface;
 use OCA\OpenRegister\Service\FileWriterInterface;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -129,7 +130,7 @@ class ChunkedUploadControllerTest extends TestCase {
 		$schemas->method('find')->willReturn(new Schema());
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
 		$permissions->method('hasPermission')->willReturnCallback(
-			fn (...$args): bool => (($args['action'] ?? $args[1] ?? null) === 'update' && $this->mayUpdate === true)
+			fn (PermissionAsk $ask): bool => ($ask->action === 'update' && $this->mayUpdate === true)
 		);
 
 		$user = $this->createMock(IUser::class);
