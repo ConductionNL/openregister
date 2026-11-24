@@ -326,9 +326,40 @@ class JsonLdContextService implements JsonLdContextServiceInterface {
 			$context[$name] = $term;
 		}
 
+		$context = self::withCatalogueTerms(context: $context, schema: $schema);
+
 		$this->contextCache[$cacheKey] = $context;
 		return $context;
 	}//end buildSchemaContext()
+
+	/**
+	 * The catalogue terms, for a schema that carries a catalogue block: the
+	 * maintainer as `dcat:contactPoint`, the update frequency as
+	 * `dct:accrualPeriodicity`, so a DCAT harvester reads them.
+	 *
+	 * Added only where the context has no term of that name yet: a schema
+	 * property called `maintainer` keeps its own term. A schema without a
+	 * catalogue block gets the context it had before.
+	 *
+	 * @param array<string, mixed> $context The context so far.
+	 * @param Schema               $schema  The schema.
+	 *
+	 * @return array<string, mixed> The context.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-catalogue-metadata-travels-with-the-register
+	 */
+	private static function withCatalogueTerms(array $context, Schema $schema): array {
+		if ($schema->getCatalogue() === null) {
+			return $context;
+		}
+
+		return $context + [
+			'dcat'            => 'http://www.w3.org/ns/dcat#',
+			'dct'             => 'http://purl.org/dc/terms/',
+			'maintainer'      => 'dcat:contactPoint',
+			'updateFrequency' => 'dct:accrualPeriodicity',
+		];
+	}//end withCatalogueTerms()
 
 	/**
 	 * One context term per named schema property (mapped IRI or fragment term).

@@ -435,6 +435,8 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 			'no retention'          => [null, 'u-1', [], 'not_nominated_for_destruction'],
 			'retain'                => [['archiefnominatie' => 'bewaren'] + $due, 'u-1', [], 'not_nominated_for_destruction'],
 			'english destroy'       => [['archiefnominatie' => 'destroy'] + $due, 'u-1', [], null],
+			'anonymise is no destroy' => [['archiefnominatie' => 'anonymiseren'] + $due, 'u-1', [], 'not_nominated_for_destruction'],
+			'english anonymise'     => [['archiefnominatie' => 'anonymise'] + $due, 'u-1', [], 'not_nominated_for_destruction'],
 			'semi static'           => [$due + ['archiefstatus' => 'semi_statisch'], 'u-1', [], 'record_not_live'],
 			'transferred'           => [$due + ['archiefstatus' => 'overgebracht'], 'u-1', [], 'record_not_live'],
 			'blank state is live'   => [$due + ['archiefstatus' => '  '], 'u-1', [], null],
@@ -464,6 +466,55 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 	public function testDestructionRefusal(?array $retention, string $uuid, array $excluded, ?string $expected): void {
 		$this->assertSame($expected, $this->service->destructionRefusalIn($this->object($retention, [], $uuid), new DisposalSweep('2030-06-01', $excluded)));
 	}//end testDestructionRefusal()
+
+	/**
+	 * Anonymisation cases: retention, uuid, excluded uuids, expected refusal.
+	 *
+	 * @return array<string, array{0: array|null, 1: string, 2: list<string>, 3: string|null}>
+	 */
+	public static function anonymisationCases(): array {
+		$due = ['archiefnominatie' => 'anonymiseren', 'archiefactiedatum' => '2030-06-01'];
+		return [
+			'no retention'      => [null, 'u-1', [], 'not_nominated_for_anonymising'],
+			'destroy is no anonymise' => [['archiefnominatie' => 'vernietigen'] + $due, 'u-1', [], 'not_nominated_for_anonymising'],
+			'retain'            => [['archiefnominatie' => 'blijvend_bewaren'] + $due, 'u-1', [], 'not_nominated_for_anonymising'],
+			'dutch anonymise'   => [$due, 'u-1', [], null],
+			'english anonymise' => [['archiefnominatie' => 'anonymise'] + $due, 'u-1', [], null],
+			'us spelling'       => [['archiefnominatie' => 'anonymize'] + $due, 'u-1', [], null],
+			'transferred'       => [$due + ['archiefstatus' => 'overgebracht'], 'u-1', [], 'record_not_live'],
+			'not due'           => [['archiefactiedatum' => '2030-06-02'] + $due, 'u-1', [], 'action_date_not_reached'],
+			'legal hold'        => [$due + ['legalHold' => ['active' => true]], 'u-1', [], 'legal_hold'],
+			'already listed'    => [$due, 'u-1', ['u-1'], 'already_on_a_list'],
+		];
+	}//end anonymisationCases()
+
+	/**
+	 * Every anonymisation refusal reason: the destruction rules over an anonymise nomination.
+	 *
+	 * @param array|null   $retention Retention
+	 * @param string       $uuid      UUID
+	 * @param list<string> $excluded  Excluded UUIDs
+	 * @param string|null  $expected  Expected refusal
+	 *
+	 * @dataProvider anonymisationCases
+	 *
+	 * @return void
+	 */
+	public function testAnonymisationRefusal(?array $retention, string $uuid, array $excluded, ?string $expected): void {
+		$this->assertSame($expected, $this->service->anonymisationRefusalIn($this->object($retention, [], $uuid), new DisposalSweep('2030-06-01', $excluded)));
+	}//end testAnonymisationRefusal()
+
+	/**
+	 * The action a list entry carries follows the nomination's spelling-independent meaning.
+	 *
+	 * @return void
+	 */
+	public function testListActionOf(): void {
+		$this->assertSame('anonymise', RetentionService::listActionOf(['archiefnominatie' => 'anonymiseren']));
+		$this->assertSame('anonymise', RetentionService::listActionOf(['archiefnominatie' => 'anonymize']));
+		$this->assertSame('destroy', RetentionService::listActionOf(['archiefnominatie' => 'vernietigen']));
+		$this->assertSame('destroy', RetentionService::listActionOf([]));
+	}//end testListActionOf()
 
 	/**
 	 * Transfer eligibility: which objects the sweep accepts.
@@ -496,6 +547,33 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 		$found = array_map(fn (ObjectEntity $object) => $object->getUuid(), $this->service->findEligibleForTransfer(['excluded']));
 		$this->assertSame(['ok', 'semi', 'bewaren'], $found);
 	}//end testFindEligibleForTransfer()
+
+	/**
+	 * Anonymisation eligibility: the sweep takes the due anonymise nominations and nothing it would destroy.
+	 *
+	 * @return void
+	 */
+	public function testFindEligibleForAnonymisation(): void {
+		$past    = ['archiefnominatie' => 'anonymiseren', 'archiefactiedatum' => '2000-01-01'];
+		$objects = [
+			'ok'       => $this->object($past, [], 'ok'),
+			'english'  => $this->object(['archiefnominatie' => 'anonymise'] + $past, [], 'english'),
+			'destroy'  => $this->object(['archiefnominatie' => 'vernietigen'] + $past, [], 'destroy'),
+			'future'   => $this->object(['archiefactiedatum' => '2999-01-01'] + $past, [], 'future'),
+			'hold'     => $this->object($past + ['legalHold' => ['active' => true]], [], 'hold'),
+			'excluded' => $this->object($past, [], 'excluded'),
+		];
+		$this->rowScanner->method('scan')->willReturnCallback(
+			fn (callable $accept, ?int $maxMatches) => [
+				'objects'   => array_values(array_filter($objects, $accept)),
+				'scanned'   => count($objects),
+				'truncated' => false,
+			]
+		);
+
+		$found = array_map(fn (ObjectEntity $object) => $object->getUuid(), $this->service->findEligibleForAnonymisation(['excluded']));
+		$this->assertSame(['ok', 'english'], $found);
+	}//end testFindEligibleForAnonymisation()
 
 	/**
 	 * The pending-list exclusion set.
@@ -563,16 +641,16 @@ class RetentionServiceRulesGoldenTest extends TestCase {
 		$plain->setRegister('3');
 		$wooFlag   = $this->object(null, ['woo_gepubliceerd' => true], 'w1');
 		$wooStatus = $this->object(null, ['publicatiestatus' => 'gepubliceerd', 'woo_gepubliceerd' => 'true'], 'w2');
-		$wooMeta   = $this->object(['wooPublished' => true], [], 'w3');
+		$wooMeta   = $this->object(['wooPublished' => true, 'archiefnominatie' => 'anonymiseren'], [], 'w3');
 		$deleted   = $this->object(['wooPublished' => 1], ['publicatiestatus' => 'concept'], 'd');
 		$deleted->setDeleted(['deletedBy' => 'x']);
 
 		$expectedEntries = [
-			['uuid' => 'p', 'title' => 'Dossier', 'schema' => '5', 'register' => '3', 'archiefactiedatum' => '2030-01-01', 'classification' => '1.1', 'softDeleted' => false, 'wooGepubliceerd' => false, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
-			['uuid' => 'w1', 'title' => 'w1', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
-			['uuid' => 'w2', 'title' => 'w2', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
-			['uuid' => 'w3', 'title' => 'w3', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
-			['uuid' => 'd', 'title' => 'd', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'softDeleted' => true, 'wooGepubliceerd' => false, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
+			['uuid' => 'p', 'title' => 'Dossier', 'schema' => '5', 'register' => '3', 'archiefactiedatum' => '2030-01-01', 'classification' => '1.1', 'action' => 'destroy', 'softDeleted' => false, 'wooGepubliceerd' => false, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
+			['uuid' => 'w1', 'title' => 'w1', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'action' => 'destroy', 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
+			['uuid' => 'w2', 'title' => 'w2', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'action' => 'destroy', 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
+			['uuid' => 'w3', 'title' => 'w3', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'action' => 'anonymise', 'softDeleted' => false, 'wooGepubliceerd' => true, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
+			['uuid' => 'd', 'title' => 'd', 'schema' => null, 'register' => null, 'archiefactiedatum' => null, 'classification' => null, 'action' => 'destroy', 'softDeleted' => true, 'wooGepubliceerd' => false, 'reviewer' => null, 'linkConflicts' => [], 'linkConflictsTruncated' => false],
 		];
 		foreach (['system', 'archivaris'] as $createdBy) {
 			$list = $this->service->createDestructionList([$plain, $wooFlag, $wooStatus, $wooMeta, $deleted]);

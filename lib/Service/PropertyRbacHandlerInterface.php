@@ -149,6 +149,18 @@ interface PropertyRbacHandlerInterface {
 	public function getUnauthorizedProperties(PropertyWriteCheck $write): array;
 
 	/**
+	 * The properties the current user may read but may not change, for one object.
+	 *
+	 * @param Schema               $schema The object's schema.
+	 * @param array<string, mixed> $object The object data, for a rule's `match` condition.
+	 *
+	 * @return array<int, string> The read-only property names, in schema order.
+	 *
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md#requirement-the-client-knows-which-fields-it-may-not-change
+	 */
+	public function readOnlyProperties(Schema $schema, array $object = []): array;
+
+	/**
 	 * The lifecycle state's field rules for one object.
 	 *
 	 * @param Schema $schema Schema containing the lifecycle annotation

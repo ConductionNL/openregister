@@ -67,6 +67,7 @@ use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolver;
 use OCA\OpenRegister\Service\Archival\SelectielijstReferenceResolverInterface;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
+use OCA\OpenRegister\Service\Audit\AuditResealInterface;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
 use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
@@ -184,6 +185,7 @@ final class ComplianceServiceBindings {
 		AuditSinkStatusInterface::class                => AuditSinkStatus::class,
 		AuditTrailPageServiceInterface::class          => AuditTrailPageService::class,
 		AuditHashServiceInterface::class               => AuditHashService::class,
+		AuditResealInterface::class                    => AuditHashService::class,
 		AuditQueryServiceInterface::class              => AuditQueryService::class,
 		DestructionListCreatorInterface::class         => DestructionListCreator::class,
 		DestructionServiceInterface::class             => DestructionService::class,
