@@ -39,9 +39,15 @@ use OCA\OpenRegister\Db\DraftVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskSequenceRejectedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Core\HeldChangeCodes;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Listener\Support\ApprovalChainSequences;
 use OCA\OpenRegister\Service\Object\DraftService;
 use OCA\OpenRegister\Service\Task\ChangeGateDeclaration;
@@ -93,6 +99,16 @@ class ChangeGateListener implements IEventListener {
 	public const KEY_PREFIX = 'pending-';
 
 	/**
+	 * The records whose approved change is being applied right now, by uuid.
+	 *
+	 * Static, so the write the promotion makes passes this gate whichever
+	 * instance of the listener the dispatcher hands the pre-write event to.
+	 *
+	 * @var array<string, true>
+	 */
+	private static array $releasing = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapperInterface $schemas       Resolves the written object's schema.
@@ -102,6 +118,7 @@ class ChangeGateListener implements IEventListener {
 	 * @param IGroupManager         $groups        The submitter's groups, for the exemption.
 	 * @param LoggerInterface       $logger        Logs a gate that fails closed.
 	 * @param ApprovalChainSequences|null $sequences The chain's task sequence, started for each held change.
+	 * @param ObjectOperationsInterface|null $objects The object write path an approved change is applied through.
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemas,
@@ -111,6 +128,7 @@ class ChangeGateListener implements IEventListener {
 		private readonly IGroupManager $groups,
 		private readonly LoggerInterface $logger,
 		private readonly ?ApprovalChainSequences $sequences = null,
+		private readonly ?ObjectOperationsInterface $objects = null,
 	) {
 
 	}//end __construct()
@@ -125,6 +143,16 @@ class ChangeGateListener implements IEventListener {
 	 * @spec openspec/changes/records-change-held-for-approval/specs/approval-workflow/spec.md#requirement-an-approval-chain-can-hold-a-change-until-it-is-approved
 	 */
 	public function handle(Event $event): void {
+		if ($event instanceof TaskSequenceCompletedEvent) {
+			$this->decide(sequence: $event->getSequence(), approved: true, decider: $event->getDecider());
+			return;
+		}
+
+		if ($event instanceof TaskSequenceRejectedEvent) {
+			$this->decide(sequence: $event->getSequence(), approved: false, decider: null);
+			return;
+		}
+
 		if ($event instanceof ObjectCreatingEvent && $event->isPropagationStopped() === false) {
 			$this->gateWrite(event: $event, operation: ChangeGateDeclaration::ON_CREATE, written: $event->getObject(), stored: null);
 			return;
@@ -159,6 +187,11 @@ class ChangeGateListener implements IEventListener {
 		ObjectEntity $written,
 		?ObjectEntity $stored
 	): void {
+		// The approved change being applied is not held again by its own gate.
+		if (isset(self::$releasing[(string)($stored ?? $written)->getUuid()]) === true) {
+			return;
+		}
+
 		$changes = self::changedFields(written: $written, stored: $stored);
 		if ($changes === []) {
 			return;
@@ -391,6 +424,147 @@ class ChangeGateListener implements IEventListener {
 
 		return $gated;
 	}//end changeGatesOf()
+
+	/**
+	 * Apply or discard the pending change a decided approval sequence held.
+	 *
+	 * Only a sequence of a chain that declares a change gate, anchored on a
+	 * record with an open pending change of that chain, is acted on. A rejection
+	 * discards the pending change; the rejecting decision and its comment stay on
+	 * the task's own audit trail. An approval applies it when the chain declares
+	 * `onApprove: applyChange`.
+	 *
+	 * @param TaskSequence $sequence The closed sequence.
+	 * @param bool                  $approved Whether it completed approvingly.
+	 * @param string|null           $decider  Who took the final decision.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/specs/approval-workflow/spec.md#requirement-approval-applies-the-change-and-rejection-discards-it
+	 */
+	private function decide(TaskSequence $sequence, bool $approved, ?string $decider): void {
+		$held = $this->heldChangeOf(sequence: $sequence);
+		if ($held === null) {
+			return;
+		}
+
+		if ($approved === false) {
+			$this->draftVersions->delete($held['draft']);
+			$this->logger->info(
+				message: '[ChangeGateListener] the pending change {key} of {object} was rejected and discarded.',
+				context: ['key' => (string)$held['draft']->getDraftKey(), 'object' => $held['anchor']]
+			);
+			return;
+		}
+
+		if (($held['spec']['onApprove'] ?? null) !== 'applyChange') {
+			return;
+		}
+
+		$this->applyChange(held: $held, decider: $decider);
+	}//end decide()
+
+	/**
+	 * The schema chain, the record and the open pending change a sequence decides; null when it decides none.
+	 *
+	 * @param TaskSequence $sequence The closed sequence.
+	 *
+	 * @return array{schema: Schema, spec: array<string, mixed>, anchor: string, draft: DraftVersion}|null
+	 */
+	private function heldChangeOf(TaskSequence $sequence): ?array {
+		$anchor   = (string)$sequence->getAnchorObjectUuid();
+		$chainKey = (string)$sequence->getChainKey();
+		if ($anchor === '' || $chainKey === '' || $sequence->getSchemaId() === null) {
+			return null;
+		}
+
+		try {
+			$schema = $this->schemas->find(id: $sequence->getSchemaId(), _rbac: false, _multitenancy: false);
+		} catch (\Throwable) {
+			return null;
+		}
+
+		$spec = ((($schema->getConfiguration() ?? [])['x-openregister-approval-chains'] ?? [])[$chainKey] ?? null);
+		if (is_array($spec) === false || ChangeGateDeclaration::declaredIn(chain: $spec) === false) {
+			return null;
+		}
+
+		$draft = $this->openPendingChange(objectUuid: $anchor, chainKey: $chainKey);
+		if ($draft === null) {
+			return null;
+		}
+
+		return ['schema' => $schema, 'spec' => $spec, 'anchor' => $anchor, 'draft' => $draft];
+	}//end heldChangeOf()
+
+	/**
+	 * Apply an approved pending change through the normal save path, then remove it.
+	 *
+	 * The save runs the full validation, so a change that no longer fits the
+	 * record is refused: it is logged naming the approver and discarded, so the
+	 * record is not left blocked by a change nobody can apply. The approval is
+	 * the authorization of this write, so the save does not ask the approver's
+	 * own rights again; this gate lets it through by the record's uuid.
+	 *
+	 * @param array{schema: Schema, spec: array<string, mixed>, anchor: string, draft: DraftVersion} $held    The decided change.
+	 * @param string|null                                                                         $decider The approver.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-change-held-for-approval/specs/approval-workflow/spec.md#requirement-approval-applies-the-change-and-rejection-discards-it
+	 */
+	private function applyChange(array $held, ?string $decider): void {
+		if ($this->objects === null) {
+			$this->logger->warning(message: '[ChangeGateListener] an approved change cannot be applied: no object write path is wired.');
+			return;
+		}
+
+		$draft  = $held['draft'];
+		$anchor = $held['anchor'];
+		$live   = $this->liveRecord(uuid: $anchor);
+		$data   = ($draft->getDelta() ?? []);
+		if ($live !== null) {
+			$data = $this->drafts->merged(object: $live, draft: $draft);
+		}
+
+		$register = (string)($draft->getObjectRegister() ?? $live?->getRegister() ?? '');
+		self::$releasing[$anchor] = true;
+		try {
+			$this->objects->saveObject(
+				object: $data,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $register, schema: (string)$held['schema']->getId()),
+					uuid: $anchor
+				),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $refused) {
+			$this->logger->warning(
+				message: '[ChangeGateListener] the approved change {key} of {object} was refused on apply and discarded; approver {approver}: {reason}',
+				context: ['key' => (string)$draft->getDraftKey(), 'object' => $anchor, 'approver' => (string)$decider, 'reason' => $refused->getMessage()]
+			);
+		} finally {
+			unset(self::$releasing[$anchor]);
+		}
+
+		$this->draftVersions->delete($draft);
+	}//end applyChange()
+
+	/**
+	 * The stored record a pending change waits beside, or null for a held create.
+	 *
+	 * @param string $uuid The record's uuid.
+	 *
+	 * @return ObjectEntity|null
+	 */
+	private function liveRecord(string $uuid): ?ObjectEntity {
+		try {
+			return $this->objects?->find(id: $uuid, _rbac: false, _multitenancy: false);
+		} catch (\Throwable) {
+			return null;
+		}
+	}//end liveRecord()
 
 	/**
 	 * The written object's schema, or null when it names none that exists.
