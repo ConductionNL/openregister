@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Reference;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
 use OCP\IL10N;
 use OCP\Teams\ITeamResourceProvider;
@@ -213,7 +214,13 @@ final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 	 */
 	public function getTeamsForResource(string $resourceId): array {
 		try {
-			$object = $this->objects->find(id: $resourceId, _rbac: true, _multitenancy: true);
+			// Resolving team membership is a lookup, not a person opening the record: no audit read row.
+			$object = $this->objects->find(
+				id: $resourceId,
+				options: new ObjectFindOptions(audit: false),
+				_rbac: true,
+				_multitenancy: true
+			);
 			if ($object === null || $object->getSchema() === null) {
 				return [];
 			}

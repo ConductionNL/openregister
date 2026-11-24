@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Reference\ObjectTeamResourceProvider;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
 use OCP\IL10N;
@@ -401,7 +402,12 @@ final class ObjectTeamResourceProviderTest extends TestCase {
 		$object->setSchema('3');
 		$object->setObject(['afdeling' => ['wijkteam', 'vergunningen'], 'team' => 'ignored']);
 		$this->objects->expects($this->atLeastOnce())->method('find')
-			->with('zaak-1', null, true, true)
+			->with(
+				'zaak-1',
+				$this->callback(static fn ($options): bool => $options instanceof ObjectFindOptions && $options->audit === false),
+				true,
+				true
+			)
 			->willReturn($object);
 
 		$this->assertSame(['wijkteam', 'vergunningen'], $this->provider->getTeamsForResource(resourceId: 'zaak-1'));
