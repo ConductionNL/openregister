@@ -51,6 +51,7 @@ use OCA\OpenRegister\Search\Service\Aggregation\AggregateChartData;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportEnvelope;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportPeriods;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationRef;
 use OCA\OpenRegister\Service\Aggregation\NamedAggregationOptions;
@@ -434,8 +435,10 @@ class AggregationController extends Controller {
 				metric: $primary['metric'],
 				field: $primary['field'],
 				filter: $run->filter,
-				groupBy: $groupBy,
-				metrics: $metrics
+				layout: new AggregationLayout(
+					groupBy: $groupBy,
+					metrics: $metrics
+				)
 			);
 		} catch (InvalidArgumentException $e) {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);

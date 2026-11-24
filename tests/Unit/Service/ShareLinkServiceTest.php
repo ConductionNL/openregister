@@ -55,6 +55,7 @@ use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\ShareLinkService;
 use OCA\OpenRegister\Service\ShareDraft;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\Files\FileInfo;
 use OCP\Files\Folder;
 use OCP\Files\Node;
@@ -317,12 +318,12 @@ class ShareLinkServiceTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn(new Schema());
 		$permissions = $this->createMock(PermissionHandlerInterface::class);
-		$permissions->method('hasPermission')->willReturnCallback(
+		$permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function (Schema $schema, string $action) use ($mayUpdate): bool {
 				$this->assertSame('update', $action);
 				return $mayUpdate;
 			}
-		);
+		));
 		$this->auditor = $this->createMock(GrantChangeAuditor::class);
 
 		return [
