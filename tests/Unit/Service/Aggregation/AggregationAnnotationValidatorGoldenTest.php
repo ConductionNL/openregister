@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaAggregationValidator
  * @uses \OCA\OpenRegister\Search\Service\Aggregation\GroupByMember
  * @uses \OCA\OpenRegister\Search\Service\Aggregation\JoinClause
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget
  */
 class AggregationAnnotationValidatorGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/aggregation-annotation-golden.json';

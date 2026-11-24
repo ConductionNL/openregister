@@ -53,5 +53,6 @@ final class FederatedShareFieldTypes {
 		'created' => 'datetime',
 		'updated' => 'datetime',
 		'expiresAt' => 'datetime',
+		'crosses' => 'json',
 	];
 }//end class

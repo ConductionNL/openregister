@@ -38,6 +38,7 @@ use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Share\Events\BeforeShareCreatedEvent;
+use OCP\User\Events\PostLoginEvent;
 use OCP\User\Events\UserLoggedInEvent;
 
 /**
@@ -72,6 +73,21 @@ final class CoreListenerRegistrar {
 	public static function identityClaims(IRegistrationContext $context): void {
 		$context->registerEventListener(UserLoggedInEvent::class, IdentityClaimsLoginListener::class);
 	}//end identityClaims()
+
+	/**
+	 * A service account signs in with its tokens only: any other sign-in is
+	 * cancelled (REQ-SAT-004). PostLoginEvent is the one event every sign-in
+	 * path dispatches, with whether a token was used.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function serviceAccountLogin(IRegistrationContext $context): void {
+		$context->registerEventListener(PostLoginEvent::class, ServiceAccountLoginListener::class);
+	}//end serviceAccountLogin()
 
 	/**
 	 * A share made from the platform's own sharing surface on an object's folder
