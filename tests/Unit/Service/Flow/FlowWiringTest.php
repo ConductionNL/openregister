@@ -468,7 +468,6 @@ final class FlowWiringTest extends TestCase {
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
-				TriggerCalendarNodeInterface::class        => TriggerCalendarNode::class,
 				TriggerWebhookNodeInterface::class         => TriggerWebhookNode::class,
 				CodeNodeInterface::class                   => CodeNode::class,
 				CodeRunnerClientInterface::class           => CodeRunnerClient::class,
@@ -497,6 +496,7 @@ final class FlowWiringTest extends TestCase {
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 				SaveBoundaryInterface::class               => AutoTransitionPass::class,
 				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
+				\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
 			],
 			actual: $this->aliases
 		);

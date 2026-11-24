@@ -224,11 +224,16 @@ schedule itself is picked up today.
 it). A flow with a manual trigger says "a person starts this"; a flow with no
 trigger at all just looks unfinished.
 
-**`openregister.trigger-calendar`** starts a run when a date on a record comes
-due: the record's `dateProperty` (format `date` or `date-time`) plus an ISO 8601
-`offset` such as `-P30D`, optionally counted in a `workingCalendar`'s working
-time. A record starts at most one run per date value; moments already past when
-the trigger is switched on are skipped. Runs act as `runAs`.
+**`openregister.trigger-calendar`** starts the flow at a moment counted from a
+date on each record: a contract's end date minus thirty days, a permit's expiry,
+an appointment plus a week. It names the `register` and `schema` whose records
+carry the date and the `dateProperty`, which must be a property of that schema
+with the format `date` or `date-time`. `offset` is an ISO 8601 duration from that
+date, optionally negative (`-P30D`, `P1W`, `P0D` for the date itself). The
+optional `workingCalendar` names a calendar by its slug to count the offset in
+working time. `runAs` is required and must be an existing account, as for a
+scheduled run. The record is the run's subject. Publishing refuses a trigger
+that could never fire as written.
 
 **`openregister.trigger-webhook`** starts a run when another system posts a
 signed JSON body to the flow's own address. Saving the flow issues the `token`

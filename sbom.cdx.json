@@ -105,10 +105,10 @@
   },
   "components": [
     {
-      "bom-ref": "adbario/php-dot-notation-3.5.0.0",
+      "bom-ref": "adbario/php-dot-notation-3.6.0.0",
       "type": "library",
       "name": "php-dot-notation",
-      "version": "3.5.0",
+      "version": "3.6.0",
       "group": "adbario",
       "description": "PHP dot notation access to arrays",
       "author": "Riku Särkinen",
@@ -119,17 +119,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/adbario/php-dot-notation@3.5.0",
+      "purl": "pkg:composer/adbario/php-dot-notation@3.6.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/adbario/php-dot-notation/zipball/aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0",
-          "comment": "dist reference: aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "url": "https://api.github.com/repos/adbario/php-dot-notation/zipball/b59a609293b22fdb8a7d9fcb4b9b283176463d40",
+          "comment": "dist reference: b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "type": "vcs",
           "url": "https://github.com/adbario/php-dot-notation.git",
-          "comment": "source reference: aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "comment": "source reference: b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "type": "website",
@@ -143,18 +143,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/adbario/php-dot-notation/tree/3.5.0",
+          "url": "https://github.com/adbario/php-dot-notation/tree/3.6.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "value": "b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "aa09db5a7a365a8d2d8dd7edfa3cd501d1a8acb0"
+          "value": "b59a609293b22fdb8a7d9fcb4b9b283176463d40"
         },
         {
           "name": "cdx:composer:package:type",
@@ -521,10 +521,10 @@
       ]
     },
     {
-      "bom-ref": "guzzlehttp/guzzle-7.15.5.0",
+      "bom-ref": "guzzlehttp/guzzle-7.16.5.0",
       "type": "library",
       "name": "guzzle",
-      "version": "7.15.5",
+      "version": "7.16.5",
       "group": "guzzlehttp",
       "description": "Guzzle is a PHP HTTP client library",
       "author": "Graham Campbell, Michael Dowling, Jeremy Lindblom, George Mponos, Tobias Nyholm, Márk Sági-Kazár, Tobias Schultze",
@@ -535,17 +535,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/guzzlehttp/guzzle@7.15.5",
+      "purl": "pkg:composer/guzzlehttp/guzzle@7.16.5",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/guzzle/guzzle/zipball/ee80339fd9177ba44c49cdb653ff02a4d1106b9a",
-          "comment": "dist reference: ee80339fd9177ba44c49cdb653ff02a4d1106b9a"
+          "url": "https://api.github.com/repos/guzzle/guzzle/zipball/b0605f32e77a13cf98bc5e75b1d71877b6814e17",
+          "comment": "dist reference: b0605f32e77a13cf98bc5e75b1d71877b6814e17"
         },
         {
           "type": "vcs",
           "url": "https://github.com/guzzle/guzzle.git",
-          "comment": "source reference: ee80339fd9177ba44c49cdb653ff02a4d1106b9a"
+          "comment": "source reference: b0605f32e77a13cf98bc5e75b1d71877b6814e17"
         },
         {
           "type": "issue-tracker",
@@ -554,18 +554,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/guzzle/guzzle/tree/7.15.5",
+          "url": "https://github.com/guzzle/guzzle/tree/7.16.5",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "ee80339fd9177ba44c49cdb653ff02a4d1106b9a"
+          "value": "b0605f32e77a13cf98bc5e75b1d71877b6814e17"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "ee80339fd9177ba44c49cdb653ff02a4d1106b9a"
+          "value": "b0605f32e77a13cf98bc5e75b1d71877b6814e17"
         },
         {
           "name": "cdx:composer:package:type",
@@ -574,10 +574,10 @@
       ]
     },
     {
-      "bom-ref": "guzzlehttp/promises-2.5.3.0",
+      "bom-ref": "guzzlehttp/promises-2.6.2.0",
       "type": "library",
       "name": "promises",
-      "version": "2.5.3",
+      "version": "2.6.2",
       "group": "guzzlehttp",
       "description": "Guzzle promises library",
       "author": "Graham Campbell, Michael Dowling, Tobias Nyholm, Tobias Schultze",
@@ -588,17 +588,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/guzzlehttp/promises@2.5.3",
+      "purl": "pkg:composer/guzzlehttp/promises@2.6.2",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/guzzle/promises/zipball/cde49999552d185d64715fe9c1f77a2aadd2f9f1",
-          "comment": "dist reference: cde49999552d185d64715fe9c1f77a2aadd2f9f1"
+          "url": "https://api.github.com/repos/guzzle/promises/zipball/72e93ed2b1f3d8c09d1460c950bd5726face7ccd",
+          "comment": "dist reference: 72e93ed2b1f3d8c09d1460c950bd5726face7ccd"
         },
         {
           "type": "vcs",
           "url": "https://github.com/guzzle/promises.git",
-          "comment": "source reference: cde49999552d185d64715fe9c1f77a2aadd2f9f1"
+          "comment": "source reference: 72e93ed2b1f3d8c09d1460c950bd5726face7ccd"
         },
         {
           "type": "issue-tracker",
@@ -607,18 +607,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/guzzle/promises/tree/2.5.3",
+          "url": "https://github.com/guzzle/promises/tree/2.6.2",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "cde49999552d185d64715fe9c1f77a2aadd2f9f1"
+          "value": "72e93ed2b1f3d8c09d1460c950bd5726face7ccd"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "cde49999552d185d64715fe9c1f77a2aadd2f9f1"
+          "value": "72e93ed2b1f3d8c09d1460c950bd5726face7ccd"
         },
         {
           "name": "cdx:composer:package:type",
@@ -627,10 +627,10 @@
       ]
     },
     {
-      "bom-ref": "guzzlehttp/psr7-2.13.2.0",
+      "bom-ref": "guzzlehttp/psr7-2.13.5.0",
       "type": "library",
       "name": "psr7",
-      "version": "2.13.2",
+      "version": "2.13.5",
       "group": "guzzlehttp",
       "description": "PSR-7 message implementation that also provides common utility methods",
       "author": "Graham Campbell, Michael Dowling, George Mponos, Tobias Nyholm, Márk Sági-Kazár, Tobias Schultze, Márk Sági-Kazár",
@@ -641,17 +641,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/guzzlehttp/psr7@2.13.2",
+      "purl": "pkg:composer/guzzlehttp/psr7@2.13.5",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/guzzle/psr7/zipball/adee536f95101929f262b8c59e8a61472f347d58",
-          "comment": "dist reference: adee536f95101929f262b8c59e8a61472f347d58"
+          "url": "https://api.github.com/repos/guzzle/psr7/zipball/5aa00c5418afbe3f435910af0e98cb03d659c49d",
+          "comment": "dist reference: 5aa00c5418afbe3f435910af0e98cb03d659c49d"
         },
         {
           "type": "vcs",
           "url": "https://github.com/guzzle/psr7.git",
-          "comment": "source reference: adee536f95101929f262b8c59e8a61472f347d58"
+          "comment": "source reference: 5aa00c5418afbe3f435910af0e98cb03d659c49d"
         },
         {
           "type": "issue-tracker",
@@ -660,18 +660,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/guzzle/psr7/tree/2.13.2",
+          "url": "https://github.com/guzzle/psr7/tree/2.13.5",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "adee536f95101929f262b8c59e8a61472f347d58"
+          "value": "5aa00c5418afbe3f435910af0e98cb03d659c49d"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "adee536f95101929f262b8c59e8a61472f347d58"
+          "value": "5aa00c5418afbe3f435910af0e98cb03d659c49d"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3390,10 +3390,10 @@
       ]
     },
     {
-      "bom-ref": "theodo-group/llphant-1.0.10.0",
+      "bom-ref": "theodo-group/llphant-1.10.12.0",
       "type": "library",
       "name": "llphant",
-      "version": "1.0.10",
+      "version": "1.10.12",
       "group": "theodo-group",
       "description": "LLPhant is a library to help you build Generative AI applications.",
       "author": "Maxime Thoonsen",
@@ -3404,21 +3404,21 @@
           }
         }
       ],
-      "purl": "pkg:composer/theodo-group/llphant@1.0.10",
+      "purl": "pkg:composer/theodo-group/llphant@1.10.12",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/d0a94b301dad628765a7e543abef9016f81ee387",
-          "comment": "dist reference: d0a94b301dad628765a7e543abef9016f81ee387"
+          "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/9f03e7de0cf1b3957d0a3d93954028884d3c11ab",
+          "comment": "dist reference: 9f03e7de0cf1b3957d0a3d93954028884d3c11ab"
         },
         {
           "type": "vcs",
           "url": "https://github.com/LLPhant/LLPhant.git",
-          "comment": "source reference: d0a94b301dad628765a7e543abef9016f81ee387"
+          "comment": "source reference: 9f03e7de0cf1b3957d0a3d93954028884d3c11ab"
         },
         {
           "type": "vcs",
-          "url": "https://github.com/LLPhant/LLPhant/tree/1.0.10",
+          "url": "https://github.com/LLPhant/LLPhant/tree/1.10.12",
           "comment": "as detected from Composer manifest 'support.source'"
         },
         {
@@ -3430,11 +3430,11 @@
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "d0a94b301dad628765a7e543abef9016f81ee387"
+          "value": "9f03e7de0cf1b3957d0a3d93954028884d3c11ab"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "d0a94b301dad628765a7e543abef9016f81ee387"
+          "value": "9f03e7de0cf1b3957d0a3d93954028884d3c11ab"
         },
         {
           "name": "cdx:composer:package:type",
@@ -4665,8 +4665,8 @@
       "type": "library",
       "name": "nextcloud-vue",
       "group": "@conduction",
-      "version": "2.180.0",
-      "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0",
+      "version": "2.203.0",
+      "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0",
       "licenses": [
         {
           "license": {
@@ -4674,15 +4674,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.180.0",
+      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.203.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.180.0.tgz",
+          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.203.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "6deed18686d29c1328f786009a99a14fab4cf52e8a8aa2ea6f0035c1d4eaa77f5d064ff23fe6142873a61e9201ac1ac40e28e56cfc9ae96ce536608df4ed7493"
+              "content": "b5e3f0e39ab553281a32e5e0ad40505c8d99e92fa5452897eb44caea62ac1b57e97de44bd5382723b84429504c894a9d480eae59a3229fcf35b20a4452224364"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -5127,6 +5127,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/aix-ppc64"
         }
@@ -5161,6 +5165,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-arm64"
@@ -5197,6 +5205,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-arm"
         }
@@ -5231,6 +5243,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-x64"
@@ -5267,6 +5283,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/darwin-arm64"
         }
@@ -5301,6 +5321,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/darwin-x64"
@@ -5337,6 +5361,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/freebsd-arm64"
         }
@@ -5371,6 +5399,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/freebsd-x64"
@@ -5407,6 +5439,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-arm64"
         }
@@ -5441,6 +5477,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-arm"
@@ -5477,6 +5517,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-ia32"
         }
@@ -5511,6 +5555,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-loong64"
@@ -5547,6 +5595,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-mips64el"
         }
@@ -5581,6 +5633,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-ppc64"
@@ -5617,6 +5673,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-riscv64"
         }
@@ -5651,6 +5711,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-s390x"
@@ -5687,6 +5751,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-x64"
         }
@@ -5721,6 +5789,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/netbsd-arm64"
@@ -5757,6 +5829,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/netbsd-x64"
         }
@@ -5791,6 +5867,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openbsd-arm64"
@@ -5827,6 +5907,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openbsd-x64"
         }
@@ -5861,6 +5945,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openharmony-arm64"
@@ -5897,6 +5985,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/sunos-x64"
         }
@@ -5931,6 +6023,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-arm64"
@@ -5967,6 +6063,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-ia32"
         }
@@ -6001,6 +6101,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-x64"
@@ -7836,6 +7940,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@napi-rs/lzma-linux-x64-gnu"
@@ -10101,6 +10209,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-android-arm-eabi"
         }
@@ -10135,6 +10247,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-android-arm64"
@@ -10171,6 +10287,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-darwin-arm64"
         }
@@ -10205,6 +10325,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-darwin-x64"
@@ -10241,6 +10365,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-freebsd-arm64"
         }
@@ -10275,6 +10403,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-freebsd-x64"
@@ -10311,6 +10443,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm-gnueabihf"
         }
@@ -10345,6 +10481,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm-musleabihf"
@@ -10381,6 +10521,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm64-gnu"
         }
@@ -10415,6 +10559,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm64-musl"
@@ -10451,6 +10599,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-loong64-gnu"
         }
@@ -10485,6 +10637,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-loong64-musl"
@@ -10521,6 +10677,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-ppc64-gnu"
         }
@@ -10555,6 +10715,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-ppc64-musl"
@@ -10591,6 +10755,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-riscv64-gnu"
         }
@@ -10625,6 +10793,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-riscv64-musl"
@@ -10661,6 +10833,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-s390x-gnu"
         }
@@ -10695,6 +10871,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-x64-gnu"
@@ -10731,6 +10911,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-x64-musl"
         }
@@ -10765,6 +10949,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-openbsd-x64"
@@ -10801,6 +10989,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-openharmony-arm64"
         }
@@ -10835,6 +11027,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-arm64-msvc"
@@ -10871,6 +11067,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-ia32-msvc"
         }
@@ -10906,6 +11106,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-x64-gnu"
         }
@@ -10940,6 +11144,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-x64-msvc"
@@ -19422,6 +19630,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/fsevents"
         }
@@ -21872,6 +22084,39 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/layerr"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "leaflet-draw",
+      "version": "1.0.4",
+      "bom-ref": "openregister@1.0.0|leaflet-draw@1.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/leaflet-draw@1.0.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/leaflet-draw/-/leaflet-draw-1.0.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "aec43ab1a40ee524f9023e97445ca5af9cef6ab5a0cd69eb838eb3435304384207b29a5d0bff219cdf2a32816f002b0fbd38a802ecacc9afd356da20d79b7201"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/leaflet-draw"
         }
       ]
     },
@@ -31972,7 +32217,7 @@
   ],
   "dependencies": [
     {
-      "ref": "adbario/php-dot-notation-3.5.0.0"
+      "ref": "adbario/php-dot-notation-3.6.0.0"
     },
     {
       "ref": "brick/math-1.0.0.0"
@@ -32011,23 +32256,23 @@
       ]
     },
     {
-      "ref": "guzzlehttp/guzzle-7.15.5.0",
+      "ref": "guzzlehttp/guzzle-7.16.5.0",
       "dependsOn": [
-        "guzzlehttp/promises-2.5.3.0",
-        "guzzlehttp/psr7-2.13.2.0",
+        "guzzlehttp/promises-2.6.2.0",
+        "guzzlehttp/psr7-2.13.5.0",
         "psr/http-client-1.0.3.0",
         "symfony/deprecation-contracts-3.8.1.0",
         "symfony/polyfill-php80-1.43.0.0"
       ]
     },
     {
-      "ref": "guzzlehttp/promises-2.5.3.0",
+      "ref": "guzzlehttp/promises-2.6.2.0",
       "dependsOn": [
         "symfony/deprecation-contracts-3.8.1.0"
       ]
     },
     {
-      "ref": "guzzlehttp/psr7-2.13.2.0",
+      "ref": "guzzlehttp/psr7-2.13.5.0",
       "dependsOn": [
         "psr/http-factory-1.1.0.0",
         "psr/http-message-2.0.0.0",
@@ -32273,10 +32518,10 @@
       ]
     },
     {
-      "ref": "theodo-group/llphant-1.0.10.0",
+      "ref": "theodo-group/llphant-1.10.12.0",
       "dependsOn": [
-        "guzzlehttp/guzzle-7.15.5.0",
-        "guzzlehttp/psr7-2.13.2.0",
+        "guzzlehttp/guzzle-7.16.5.0",
+        "guzzlehttp/psr7-2.13.5.0",
         "openai-php/client-0.19.2.0",
         "php-http/multipart-stream-builder-1.4.2.0",
         "psr/http-client-1.0.3.0",
@@ -32315,7 +32560,7 @@
     {
       "ref": "zbateson/mail-mime-parser-3.0.9.0",
       "dependsOn": [
-        "guzzlehttp/psr7-2.13.2.0",
+        "guzzlehttp/psr7-2.13.5.0",
         "php-di/php-di-7.1.1.0",
         "psr/log-3.0.2.0",
         "zbateson/mb-wrapper-2.0.1.0",
@@ -32332,18 +32577,18 @@
     {
       "ref": "zbateson/stream-decorators-2.1.1.0",
       "dependsOn": [
-        "guzzlehttp/psr7-2.13.2.0",
+        "guzzlehttp/psr7-2.13.5.0",
         "zbateson/mb-wrapper-2.0.1.0"
       ]
     },
     {
       "ref": "conductionnl/openregister-1.0.0.0",
       "dependsOn": [
-        "adbario/php-dot-notation-3.5.0.0",
+        "adbario/php-dot-notation-3.6.0.0",
         "ddn/sapp-dev-feat/chained-filter-text-replace",
         "dragonmantank/cron-expression-3.6.1.0",
         "elasticsearch/elasticsearch-9.5.0.0",
-        "guzzlehttp/guzzle-7.15.5.0",
+        "guzzlehttp/guzzle-7.16.5.0",
         "jwadhams/json-logic-php-1.5.1.0",
         "minishlink/web-push-11.0.0.0",
         "opis/json-schema-2.6.1.0",
@@ -32357,7 +32602,7 @@
         "symfony/uid-6.4.32.0",
         "symfony/workflow-6.4.37.0",
         "symfony/yaml-7.4.23.0",
-        "theodo-group/llphant-1.0.10.0",
+        "theodo-group/llphant-1.10.12.0",
         "twig/twig-3.30.0.0",
         "web-token/jwt-library-4.2.7.0",
         "webonyx/graphql-php-15.39.0.0",

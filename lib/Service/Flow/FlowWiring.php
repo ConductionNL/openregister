@@ -88,8 +88,6 @@ use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode;
-use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
@@ -185,7 +183,6 @@ final class FlowWiring {
 		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
 		FlowRunSignalInterface::class => FlowRunSignalService::class,
 		LockObjectNodeInterface::class => LockObjectNode::class,
-		TriggerCalendarNodeInterface::class => TriggerCalendarNode::class,
 		TriggerWebhookNodeInterface::class => TriggerWebhookNode::class,
 		CodeNodeInterface::class => CodeNode::class,
 		CodeRunnerClientInterface::class => CodeRunnerClient::class,
@@ -214,6 +211,7 @@ final class FlowWiring {
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
 		SaveBoundaryInterface::class => AutoTransitionPass::class,
 		ElevationAttributionInterface::class => ObjectActionElevationAttribution::class,
+		\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
 	];
 
 	/**
