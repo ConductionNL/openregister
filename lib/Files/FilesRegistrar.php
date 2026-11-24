@@ -82,16 +82,6 @@ use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Service\FileServiceInterface;
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
-use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
-use OCA\OpenRegister\Files\Service\File\ManagedFiles;
-use OCA\OpenRegister\Files\Service\FileSettingRules;
-use OCA\OpenRegister\Kernel\Contracts\Files\CallerFileRightsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\EntityMentionDecisionsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\FileSettingRulesInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\ManagedFilesInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\OfficeDocumentConversionInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\RegisterFolderProvisioningInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 
@@ -105,45 +95,39 @@ final class FilesRegistrar
      * conversion API, so whichever office server registered a provider does the work.
      */
     public const BINDINGS = [
-        AccessLinkReaderInterface::class           => AccessLinkReader::class,
-        CallerFileRightsInterface::class           => CallerFileAccess::class,
-        ChunkIndexOverviewInterface::class         => ChunkMapper::class,
-        ChunkMapperInterface::class                => ChunkMapper::class,
-        ChunkSourceReaderInterface::class          => ChunkMapper::class,
-        ChunkStoreInterface::class                 => ChunkMapper::class,
-        DetectionPatternsVersionInterface::class   => PatternSetVersion::class,
-        DocumentProcessingHandlerInterface::class  => DocumentProcessingHandler::class,
-        EntityMentionDecisionsInterface::class     => EntityRelationMapperInterface::class,
-        FileAccountInterface::class                => FileOwnershipHandler::class,
-        FileAuditHandlerInterface::class           => FileAuditHandler::class,
-        FileMapperInterface::class                 => FileMapper::class,
-        FileOwnerLookupInterface::class            => FileMapper::class,
-        FileSizeTotalsInterface::class             => FileMapper::class,
-        FileOwnershipHandlerInterface::class       => FileOwnershipHandler::class,
-        AntivirusScannerInterface::class           => AntivirusScannerAdapter::class,
-        FileReadRestrictionInterface::class        => FileRestrictionGuard::class,
-        FileRestrictionGuardInterface::class       => FileRestrictionGuard::class,
-        FileScopeInterface::class                  => FileScopeReader::class,
-        FileSettingRulesInterface::class           => FileSettingRules::class,
-        FileSharingHandlerInterface::class         => FileSharingHandler::class,
-        FileTagCatalogueInterface::class           => FileServiceInterface::class,
-        ManagedFilesInterface::class               => ManagedFiles::class,
-        NcOfficeConverterInterface::class          => ConversionManagerConverter::class,
-        NoteServiceInterface::class                => NoteService::class,
-        ObjectFileRightsInterface::class           => ObjectFileAccess::class,
-        ObjectFileRecordsInterface::class          => FileMapper::class,
-        ObjectFilesArchiveInterface::class         => ObjectFilesArchive::class,
-        OfficeDocumentConversionInterface::class   => ConversionManagerConverter::class,
-        ReadableFileHitsInterface::class           => FileReadScope::class,
-        RegisterFolderProvisionerInterface::class  => RegisterFolderProvisioner::class,
-        RegisterFolderProvisioningInterface::class => RegisterFolderProvisioner::class,
-        RegisterFolderRecordsInterface::class      => RegisterFolderRecorder::class,
-        RiskLevelServiceInterface::class           => RiskLevelService::class,
-        ShareLinkUrlInterface::class               => ShareUrlBuilder::class,
-        ShareUrlBuilderInterface::class            => ShareUrlBuilder::class,
-        TaggingHandlerInterface::class             => TaggingHandler::class,
-        TextExtractionServiceInterface::class      => TextExtractionService::class,
-        UploadServiceInterface::class              => UploadService::class,
+        AccessLinkReaderInterface::class          => AccessLinkReader::class,
+        ChunkIndexOverviewInterface::class        => ChunkMapper::class,
+        ChunkMapperInterface::class               => ChunkMapper::class,
+        ChunkSourceReaderInterface::class         => ChunkMapper::class,
+        ChunkStoreInterface::class                => ChunkMapper::class,
+        DetectionPatternsVersionInterface::class  => PatternSetVersion::class,
+        DocumentProcessingHandlerInterface::class => DocumentProcessingHandler::class,
+        FileAccountInterface::class               => FileOwnershipHandler::class,
+        FileAuditHandlerInterface::class          => FileAuditHandler::class,
+        FileMapperInterface::class                => FileMapper::class,
+        FileOwnerLookupInterface::class           => FileMapper::class,
+        FileSizeTotalsInterface::class            => FileMapper::class,
+        FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
+        AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
+        FileReadRestrictionInterface::class       => FileRestrictionGuard::class,
+        FileRestrictionGuardInterface::class      => FileRestrictionGuard::class,
+        FileScopeInterface::class                 => FileScopeReader::class,
+        FileSharingHandlerInterface::class        => FileSharingHandler::class,
+        FileTagCatalogueInterface::class          => FileServiceInterface::class,
+        NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
+        NoteServiceInterface::class               => NoteService::class,
+        ObjectFileRightsInterface::class          => ObjectFileAccess::class,
+        ObjectFileRecordsInterface::class         => FileMapper::class,
+        ObjectFilesArchiveInterface::class        => ObjectFilesArchive::class,
+        ReadableFileHitsInterface::class          => FileReadScope::class,
+        RegisterFolderProvisionerInterface::class => RegisterFolderProvisioner::class,
+        RegisterFolderRecordsInterface::class     => RegisterFolderRecorder::class,
+        RiskLevelServiceInterface::class          => RiskLevelService::class,
+        ShareLinkUrlInterface::class              => ShareUrlBuilder::class,
+        ShareUrlBuilderInterface::class           => ShareUrlBuilder::class,
+        TaggingHandlerInterface::class            => TaggingHandler::class,
+        TextExtractionServiceInterface::class     => TextExtractionService::class,
+        UploadServiceInterface::class             => UploadService::class,
     ];
 
     /**

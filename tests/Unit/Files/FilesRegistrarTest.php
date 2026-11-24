@@ -20,19 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Files;
 
-use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Files\Db\RegisterFolderRecorder;
-use OCA\OpenRegister\Files\Service\File\CallerFileAccess;
-use OCA\OpenRegister\Files\Service\File\ManagedFiles;
-use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
-use OCA\OpenRegister\Files\Service\File\RegisterFolderProvisionerInterface;
-use OCA\OpenRegister\Files\Service\FileSettingRules;
-use OCA\OpenRegister\Kernel\Contracts\Files\CallerFileRightsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\EntityMentionDecisionsInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\FileSettingRulesInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\ManagedFilesInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\OfficeDocumentConversionInterface;
-use OCA\OpenRegister\Kernel\Contracts\Files\RegisterFolderProvisioningInterface;
 use OCA\OpenRegister\Files\FilesRegistrar;
 use OCA\OpenRegister\Files\Service\NoteService;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
@@ -75,7 +63,7 @@ class FilesRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(39, $expected);
+        $this->assertCount(33, $expected);
         $this->assertSame(ObjectFileAccess::class, FilesRegistrar::BINDINGS[ObjectFileRightsInterface::class]);
         $this->assertSame(expected: $expected, actual: $context->aliases);
     }//end testEveryInterfaceIsBoundToItsImplementation()
@@ -108,24 +96,6 @@ class FilesRegistrarTest extends TestCase
         $this->assertTrue(is_subclass_of(ShareUrlBuilderInterface::class, ShareLinkUrlInterface::class));
         $this->assertTrue(is_subclass_of(PreviewSize::class, PreviewDimensionsInterface::class));
     }//end testTheCorePortsTheFileHandlersAskAreAnsweredHere()
-
-    /**
-     * Each Files-owned port is answered by the Files class or interface that already does the work.
-     *
-     * @return void
-     */
-    public function testTheFilesPortsAreAnsweredByTheirFilesImplementations(): void
-    {
-        $this->assertSame(EntityRelationMapperInterface::class, FilesRegistrar::BINDINGS[EntityMentionDecisionsInterface::class]);
-        $this->assertSame(CallerFileAccess::class, FilesRegistrar::BINDINGS[CallerFileRightsInterface::class]);
-        $this->assertSame(ManagedFiles::class, FilesRegistrar::BINDINGS[ManagedFilesInterface::class]);
-        $this->assertSame(FileSettingRules::class, FilesRegistrar::BINDINGS[FileSettingRulesInterface::class]);
-        $this->assertSame(FilesRegistrar::BINDINGS[RegisterFolderProvisionerInterface::class], FilesRegistrar::BINDINGS[RegisterFolderProvisioningInterface::class]);
-        $this->assertSame(FilesRegistrar::BINDINGS[NcOfficeConverterInterface::class], FilesRegistrar::BINDINGS[OfficeDocumentConversionInterface::class]);
-        $this->assertTrue(is_subclass_of(EntityRelationMapperInterface::class, EntityMentionDecisionsInterface::class));
-        $this->assertTrue(is_subclass_of(RegisterFolderProvisionerInterface::class, RegisterFolderProvisioningInterface::class));
-        $this->assertTrue(is_subclass_of(NcOfficeConverterInterface::class, OfficeDocumentConversionInterface::class));
-    }//end testTheFilesPortsAreAnsweredByTheirFilesImplementations()
 
     public function testNoteServiceHasAFactory(): void
     {

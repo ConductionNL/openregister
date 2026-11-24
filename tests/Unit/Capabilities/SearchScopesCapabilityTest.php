@@ -33,6 +33,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * @covers \OCA\OpenRegister\Capabilities\SearchScopesCapability
@@ -147,9 +148,9 @@ final class SearchScopesCapabilityTest extends TestCase {
 		$this->signIn('alice');
 		$asked = [];
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			function (Schema $schema, string $action, ?string $userId = null) use (&$asked): bool {
-				$asked[] = [$schema->getId(), $action, $userId];
-				return $schema->getId() !== 3;
+			function (PermissionAsk $ask) use (&$asked): bool {
+				$asked[] = [$ask->schema->getId(), $ask->action, $ask->userId];
+				return $ask->schema->getId() !== 3;
 			}
 		);
 
@@ -207,8 +208,8 @@ final class SearchScopesCapabilityTest extends TestCase {
 	public function testAReadCheckThatThrowsKeepsTheSchemaOut(): void {
 		$this->signIn('bob');
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			static function (Schema $schema): bool {
-				if ($schema->getId() === 2) {
+			static function (PermissionAsk $ask): bool {
+				if ($ask->schema->getId() === 2) {
 					throw new \RuntimeException('unresolvable');
 				}
 
