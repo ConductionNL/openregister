@@ -513,6 +513,11 @@ class MagicSearchHandler {
 			table: new MagicReadTable(schema: $schema, registerId: $register->getId(), tableName: $tableName)
 		);
 
+		// A `_roots=true` read of a hierarchy: the roots, plus the readable
+		// records whose parent the caller may not read (records-tree-view).
+		// Applied before the count branch, so the total matches the page.
+		$hiddenParents = $this->applyRootScope(qb: $queryBuilder, query: $query, tableSearch: $tableSearch);
+
 		// Check if fuzzy search is enabled for relevance scoring.
 		$fuzzyEnabled = false;
 		$searchTerm = null;
@@ -571,9 +576,145 @@ class MagicSearchHandler {
 		$this->applyViewedAt(objects: $objects, recentViews: ($query['_recentViews'] ?? null));
 		// `@self.childCount` on a `_childCount=true` page of a hierarchy (records-tree-view).
 		$this->applyChildCounts(objects: $objects, query: $query, tableSearch: $tableSearch);
+		$this->markHiddenParents(objects: $objects, hiddenParents: $hiddenParents, tableSearch: $tableSearch);
 
 		return $objects;
 	}//end searchTable()
+
+	/**
+	 * Narrow a `_roots=true` read of a hierarchy to its top level.
+	 *
+	 * The top level is every record with no parent, and every readable record
+	 * whose parent the caller may not read: such a record would otherwise sit
+	 * under no node the caller can open (design D-4). Which parents are hidden
+	 * is read through buildFilteredQuery(), the access path the list takes, so
+	 * "hidden" means exactly "not listable by this caller". A failed read is
+	 * logged and leaves only the records with no parent.
+	 *
+	 * @param IQueryBuilder        $qb          The page query.
+	 * @param array<string, mixed> $query       The page's query.
+	 * @param TableSearch          $tableSearch The table read.
+	 *
+	 * @return array<int, string>|null The hidden parent uuids, or null when this is no root read.
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-record-under-an-unreadable-parent-stays-visible
+	 */
+	private function applyRootScope(IQueryBuilder $qb, array $query, TableSearch $tableSearch): ?array {
+		if ($this->isExplicitlyTrue(value: ($query['_roots'] ?? null)) === false) {
+			return null;
+		}
+
+		$schema = $tableSearch->table->schema;
+		$parent = AccessDeclarationValidators::hierarchyParentOf(schema: $schema);
+		if ($parent === null) {
+			return null;
+		}
+
+		$column = 't.' . $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $parent), isPostgres: $this->isPostgresPlatform());
+		try {
+			$hidden = $this->hiddenParentsOf(
+				column: $column,
+				query: array_intersect_key($query, array_flip(self::CHILD_COUNT_CONTEXT)),
+				table: new MagicReadTable(schema: $schema, registerId: $tableSearch->table->register->getId(), tableName: $tableSearch->tableName)
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[MagicSearchHandler] Hidden parents could not be read; the root page holds only records without a parent',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'table' => $tableSearch->tableName, 'exception' => $e->getMessage()]
+			);
+			$hidden = [];
+		}
+
+		$top = [$qb->expr()->isNull($qb->createFunction($column))];
+		if ($hidden !== []) {
+			$top[] = $qb->expr()->in($qb->createFunction($column), $qb->createNamedParameter($hidden, IQueryBuilder::PARAM_STR_ARRAY));
+		}
+
+		$qb->andWhere($qb->expr()->orX(...$top));
+
+		return $hidden;
+	}//end applyRootScope()
+
+	/**
+	 * The parents that readable records name but the caller may not read.
+	 *
+	 * Two reads on the list's access path: the distinct parents the readable
+	 * records point at, then which of those are themselves readable.
+	 *
+	 * @param string               $column The quoted parent column, `t.`-prefixed.
+	 * @param array<string, mixed> $query  The access and lifecycle parameters.
+	 * @param MagicReadTable       $table  The table.
+	 *
+	 * @return array<int, string> The hidden parent uuids.
+	 */
+	private function hiddenParentsOf(string $column, array $query, MagicReadTable $table): array {
+		$named = $this->buildFilteredQuery(query: $query, table: $table);
+		$named->select($named->createFunction($column . ' AS parent_uuid'))
+			->andWhere($named->expr()->isNotNull($named->createFunction($column)))
+			->groupBy($named->createFunction($column));
+		$result     = $named->executeQuery();
+		$referenced = [];
+		foreach ($result->fetchAll() as $row) {
+			$uuid = (string)$row['parent_uuid'];
+			if ($uuid !== '') {
+				$referenced[$uuid] = true;
+			}
+		}
+
+		$result->closeCursor();
+		if ($referenced === []) {
+			return [];
+		}
+
+		$readable = [];
+		foreach (array_chunk(array_keys($referenced), 1000) as $chunk) {
+			$visible = $this->buildFilteredQuery(query: $query, table: $table);
+			$visible->select('t._uuid')
+				->andWhere($visible->expr()->in('t._uuid', $visible->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)));
+			$rows = $visible->executeQuery();
+			foreach ($rows->fetchAll() as $row) {
+				$readable[(string)$row['_uuid']] = true;
+			}
+
+			$rows->closeCursor();
+		}
+
+		return array_values(array_map('strval', array_keys(array_diff_key($referenced, $readable))));
+	}//end hiddenParentsOf()
+
+	/**
+	 * Mark the objects of a root page whose parent is hidden from the caller.
+	 *
+	 * @param array<int, ObjectEntity>  $objects       The page.
+	 * @param array<int, string>|null   $hiddenParents The hidden parents, null when this was no root read.
+	 * @param TableSearch               $tableSearch   The table read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-record-under-an-unreadable-parent-stays-visible
+	 */
+	private function markHiddenParents(array $objects, ?array $hiddenParents, TableSearch $tableSearch): void {
+		if ($hiddenParents === null || $hiddenParents === [] || $objects === []) {
+			return;
+		}
+
+		$parent = AccessDeclarationValidators::hierarchyParentOf(schema: $tableSearch->table->schema);
+		if ($parent === null) {
+			return;
+		}
+
+		$hidden = array_flip($hiddenParents);
+		foreach ($objects as $object) {
+			$value = ($object->getObject()[$parent] ?? null);
+			if (is_array($value) === true) {
+				$value = ($value['value'] ?? ($value['id'] ?? null));
+			}
+
+			if (is_string($value) === true && isset($hidden[$value]) === true) {
+				$object->setParentHidden(true);
+			}
+		}
+	}//end markHiddenParents()
 
 	/**
 	 * The access and lifecycle parameters a child count takes over from the page's query.
@@ -980,6 +1121,62 @@ class MagicSearchHandler {
 			schema: $run->table->schema
 		);
 	}//end applyRelatedRowFilters()
+
+	/**
+	 * The filtered query of a facet over a field of a referenced object, grouped per value.
+	 *
+	 * `_facets[_ref][<property>][<field>]`: the same filtered query the list
+	 * runs, joined to the object `<property>` points to under that schema's own
+	 * access predicate and organisation scope, counting each queried object
+	 * once per value.
+	 *
+	 * @param array          $query    The request query, without `_facets`.
+	 * @param MagicReadTable $table    The queried table.
+	 * @param string         $property The reference property.
+	 * @param string         $field    The field of the referenced schema.
+	 *
+	 * @return IQueryBuilder|null The grouped query (`facet_value`, `doc_count`), or null to omit the facet.
+	 *
+	 * @throws InvalidArgumentException When the property or field is unusable, or the register is unknown.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public function referenceFacetQuery(array $query, MagicReadTable $table, string $property, string $field): ?IQueryBuilder {
+		$registerId = ($table->registerId ?? $this->registerIdFromQuery(query: $query));
+		if ($registerId === null) {
+			throw new InvalidArgumentException(
+				'A facet through a reference needs to know which register to look the referenced schema up in.'
+			);
+		}
+
+		$qb       = $this->buildFilteredQuery(query: $query, table: $table);
+		$register = new Register();
+		$register->setId($registerId);
+
+		$expression = $this->relatedRows->joinReferenceForFacet(
+			target: new RelatedRowFilterTarget(
+				qb: $qb,
+				register: $register,
+				organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
+					query: $query,
+					related: new MagicReadTable(schema: $related, registerId: $relatedRegisterId)
+				)
+			),
+			schema: $table->schema,
+			property: $property,
+			field: $field
+		);
+		if ($expression === null) {
+			return null;
+		}
+
+		$value = $qb->createFunction($expression);
+		$qb->selectAlias($value, 'facet_value')
+			->addSelect($qb->createFunction('COUNT(DISTINCT t._uuid) AS doc_count'))
+			->groupBy($value);
+
+		return $qb;
+	}//end referenceFacetQuery()
 
 	/**
 	 * Refuse a query carrying `_related`, `_referenced`, `_ref` or `_element` where it cannot be honoured.
@@ -3302,6 +3499,7 @@ class MagicSearchHandler {
 			'_recentLens',
 			'_count',
 			'_childCount',
+			'_roots',
 			'_includeDeleted',
 			'_deleted',
 			'_archived',
@@ -5433,7 +5631,7 @@ class MagicSearchHandler {
 				);
 				// The raw column breaks ties between two values that lower-case
 				// alike, so the order is total and paging stable (REQ-CIO-001).
-				$qb->addOrderBy($column, $direction);
+				$qb->addOrderBy($qb->createFunction($column), $direction);
 				$orderApplied = true;
 			} elseif (($properties[$field] ?? null) !== null) {
 				// Schema property field sorting.
@@ -5451,7 +5649,7 @@ class MagicSearchHandler {
 				// ties for a total, stable order (REQ-CIO-001). A non-string
 				// property keeps its single native order term.
 				if ($this->isTextProperty(propertyConfig: $properties[$field]) === true) {
-					$qb->addOrderBy($qb->getColumnName($columnName, 't'), $direction);
+					$qb->addOrderBy('t.'.$columnName, $direction);
 				}
 
 				$orderApplied = true;
@@ -5739,7 +5937,7 @@ class MagicSearchHandler {
 	private function addMetadataOrder(IQueryBuilder $qb, string $column, string $direction): void {
 		$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $column), $direction);
 		if (in_array($column, self::STRING_METADATA_SORT_COLUMNS, true) === true) {
-			$qb->addOrderBy($qb->getColumnName($column, 't'), $direction);
+			$qb->addOrderBy('t.'.$column, $direction);
 		}
 	}//end addMetadataOrder()
 

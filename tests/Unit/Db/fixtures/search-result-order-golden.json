@@ -28,41 +28,41 @@
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "sqlite / self fields / search + history": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "sqlite / self fields / history only": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "sqlite / self fields / pg_trgm without search": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "sqlite / self fields / search without pg_trgm": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "sqlite / metadata / plain": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -70,7 +70,7 @@
     "sqlite / metadata / search + history": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -78,7 +78,7 @@
     "sqlite / metadata / history only": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -86,7 +86,7 @@
     "sqlite / metadata / pg_trgm without search": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -94,14 +94,14 @@
     "sqlite / metadata / search without pg_trgm": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
     ],
     "sqlite / properties / plain": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -110,7 +110,7 @@
     ],
     "sqlite / properties / search + history": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order COALESCE(\"t\".\"when\", \"t\".\"_created\") ASC",
         "order t.flag ASC",
@@ -119,7 +119,7 @@
     ],
     "sqlite / properties / history only": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -128,7 +128,7 @@
     ],
     "sqlite / properties / pg_trgm without search": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -137,7 +137,7 @@
     ],
     "sqlite / properties / search without pg_trgm": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -148,35 +148,35 @@
         "order LOWER(CASE WHEN json_valid(\"t\".\"label\") THEN CASE WHEN json_type(\"t\".\"label\") = 'object' THEN COALESCE((SELECT value FROM json_each(\"t\".\"label\") LIMIT 1), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "sqlite / translatable / search + history": [
         "order LOWER(CASE WHEN json_valid(\"t\".\"label\") THEN CASE WHEN json_type(\"t\".\"label\") = 'object' THEN COALESCE(json_extract(\"t\".\"label\", '$.\"nl\"'), json_extract(\"t\".\"label\", '$.\"en\"'), (SELECT value FROM json_each(\"t\".\"label\") LIMIT 1), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "sqlite / translatable / history only": [
         "order LOWER(CASE WHEN json_valid(\"t\".\"label\") THEN CASE WHEN json_type(\"t\".\"label\") = 'object' THEN COALESCE(json_extract(\"t\".\"label\", '$.\"en\"'), (SELECT value FROM json_each(\"t\".\"label\") LIMIT 1), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "sqlite / translatable / pg_trgm without search": [
         "order LOWER(CASE WHEN json_valid(\"t\".\"label\") THEN CASE WHEN json_type(\"t\".\"label\") = 'object' THEN COALESCE((SELECT value FROM json_each(\"t\".\"label\") LIMIT 1), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "sqlite / translatable / search without pg_trgm": [
         "order LOWER(CASE WHEN json_valid(\"t\".\"label\") THEN CASE WHEN json_type(\"t\".\"label\") = 'object' THEN COALESCE((SELECT value FROM json_each(\"t\".\"label\") LIMIT 1), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "sqlite / unknown / plain": [],
@@ -213,41 +213,41 @@
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "mysql / self fields / search + history": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "mysql / self fields / history only": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "mysql / self fields / pg_trgm without search": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "mysql / self fields / search without pg_trgm": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "mysql / metadata / plain": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -255,7 +255,7 @@
     "mysql / metadata / search + history": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -263,7 +263,7 @@
     "mysql / metadata / history only": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -271,7 +271,7 @@
     "mysql / metadata / pg_trgm without search": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -279,14 +279,14 @@
     "mysql / metadata / search without pg_trgm": [
         "order t._created DESC",
         "order LOWER(\"t\".\"_name\") ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
     ],
     "mysql / properties / plain": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -295,7 +295,7 @@
     ],
     "mysql / properties / search + history": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order COALESCE(\"t\".\"when\", \"t\".\"_created\") ASC",
         "order t.flag ASC",
@@ -304,7 +304,7 @@
     ],
     "mysql / properties / history only": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -313,7 +313,7 @@
     ],
     "mysql / properties / pg_trgm without search": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -322,7 +322,7 @@
     ],
     "mysql / properties / search without pg_trgm": [
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -333,35 +333,35 @@
         "order LOWER(CASE WHEN JSON_VALID(\"t\".\"label\") THEN CASE WHEN JSON_TYPE(\"t\".\"label\") = 'OBJECT' THEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(\"t\".\"label\", '$.*'), '$[0]')), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "mysql / translatable / search + history": [
         "order LOWER(CASE WHEN JSON_VALID(\"t\".\"label\") THEN CASE WHEN JSON_TYPE(\"t\".\"label\") = 'OBJECT' THEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(\"t\".\"label\", '$.\"nl\"')), JSON_UNQUOTE(JSON_EXTRACT(\"t\".\"label\", '$.\"en\"')), JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(\"t\".\"label\", '$.*'), '$[0]')), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "mysql / translatable / history only": [
         "order LOWER(CASE WHEN JSON_VALID(\"t\".\"label\") THEN CASE WHEN JSON_TYPE(\"t\".\"label\") = 'OBJECT' THEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(\"t\".\"label\", '$.\"en\"')), JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(\"t\".\"label\", '$.*'), '$[0]')), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "mysql / translatable / pg_trgm without search": [
         "order LOWER(CASE WHEN JSON_VALID(\"t\".\"label\") THEN CASE WHEN JSON_TYPE(\"t\".\"label\") = 'OBJECT' THEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(\"t\".\"label\", '$.*'), '$[0]')), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "mysql / translatable / search without pg_trgm": [
         "order LOWER(CASE WHEN JSON_VALID(\"t\".\"label\") THEN CASE WHEN JSON_TYPE(\"t\".\"label\") = 'OBJECT' THEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT(\"t\".\"label\", '$.*'), '$[0]')), \"t\".\"label\") ELSE \"t\".\"label\" END ELSE \"t\".\"label\" END) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(\"t\".\"title\") ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "mysql / unknown / plain": [],
@@ -401,41 +401,41 @@
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "postgres / self fields / search + history": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "postgres / self fields / history only": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "postgres / self fields / pg_trgm without search": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "postgres / self fields / search without pg_trgm": [
         "order t._created DESC",
         "order t._last_user_activity ASC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._id ASC"
     ],
     "postgres / metadata / plain": [
         "order t._created DESC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -443,7 +443,7 @@
     "postgres / metadata / search + history": [
         "order t._created DESC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -451,7 +451,7 @@
     "postgres / metadata / history only": [
         "order t._created DESC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -459,7 +459,7 @@
     "postgres / metadata / pg_trgm without search": [
         "order t._created DESC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
@@ -467,14 +467,14 @@
     "postgres / metadata / search without pg_trgm": [
         "order t._created DESC",
         "order LOWER(CAST(\"t\".\"_name\" AS TEXT)) ASC",
-        "order \"t\".\"_name\" ASC",
+        "order t._name ASC",
         "order t._uuid ASC",
         "order t._owner DESC",
         "order t._id ASC"
     ],
     "postgres / properties / plain": [
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -483,7 +483,7 @@
     ],
     "postgres / properties / search + history": [
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order COALESCE(\"t\".\"when\", \"t\".\"_created\") ASC",
         "order t.flag ASC",
@@ -492,7 +492,7 @@
     ],
     "postgres / properties / history only": [
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -501,7 +501,7 @@
     ],
     "postgres / properties / pg_trgm without search": [
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -510,7 +510,7 @@
     ],
     "postgres / properties / search without pg_trgm": [
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t.amount DESC",
         "order t.when ASC",
         "order t.flag ASC",
@@ -521,35 +521,35 @@
         "order LOWER(CAST(CASE WHEN CAST(\"t\".\"label\" AS TEXT) LIKE '{%' THEN COALESCE(substring(CAST(\"t\".\"label\" AS TEXT) from '^\\{\\s*\"[^\"]*\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"'), CAST(\"t\".\"label\" AS TEXT)) ELSE CAST(\"t\".\"label\" AS TEXT) END AS TEXT)) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "postgres / translatable / search + history": [
         "order LOWER(CAST(CASE WHEN CAST(\"t\".\"label\" AS TEXT) LIKE '{%' THEN COALESCE(substring(CAST(\"t\".\"label\" AS TEXT) from '\"nl\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"'), substring(CAST(\"t\".\"label\" AS TEXT) from '\"en\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"'), substring(CAST(\"t\".\"label\" AS TEXT) from '^\\{\\s*\"[^\"]*\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"'), CAST(\"t\".\"label\" AS TEXT)) ELSE CAST(\"t\".\"label\" AS TEXT) END AS TEXT)) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "postgres / translatable / history only": [
         "order LOWER(CAST(CASE WHEN CAST(\"t\".\"label\" AS TEXT) LIKE '{%' THEN COALESCE(substring(CAST(\"t\".\"label\" AS TEXT) from '\"en\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"'), substring(CAST(\"t\".\"label\" AS TEXT) from '^\\{\\s*\"[^\"]*\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"'), CAST(\"t\".\"label\" AS TEXT)) ELSE CAST(\"t\".\"label\" AS TEXT) END AS TEXT)) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "postgres / translatable / pg_trgm without search": [
         "order LOWER(CAST(CASE WHEN CAST(\"t\".\"label\" AS TEXT) LIKE '{%' THEN COALESCE(substring(CAST(\"t\".\"label\" AS TEXT) from '^\\{\\s*\"[^\"]*\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"'), CAST(\"t\".\"label\" AS TEXT)) ELSE CAST(\"t\".\"label\" AS TEXT) END AS TEXT)) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "postgres / translatable / search without pg_trgm": [
         "order LOWER(CAST(CASE WHEN CAST(\"t\".\"label\" AS TEXT) LIKE '{%' THEN COALESCE(substring(CAST(\"t\".\"label\" AS TEXT) from '^\\{\\s*\"[^\"]*\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"'), CAST(\"t\".\"label\" AS TEXT)) ELSE CAST(\"t\".\"label\" AS TEXT) END AS TEXT)) DESC",
         "order \"t\".\"label\" DESC",
         "order LOWER(CAST(\"t\".\"title\" AS TEXT)) ASC",
-        "order \"t\".\"title\" ASC",
+        "order t.title ASC",
         "order t._id ASC"
     ],
     "postgres / unknown / plain": [],

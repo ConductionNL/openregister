@@ -35,11 +35,12 @@ final class RecordImportRequest {
 	/**
 	 * Constructor.
 	 *
-	 * @param string           $path     The record file.
-	 * @param string           $format   One of the RecordFileReader format constants.
-	 * @param Register         $register The register.
-	 * @param Schema           $schema   The schema.
-	 * @param ConfirmedMapping $mapping  The confirmed column mapping.
+	 * @param string           $path        The record file.
+	 * @param string           $format      One of the RecordFileReader format constants.
+	 * @param Register         $register    The register.
+	 * @param Schema           $schema      The schema.
+	 * @param ConfirmedMapping $mapping     The confirmed column mapping.
+	 * @param string|null      $progressKey The ImportProgress key to report the rows read under, or null for none.
 	 */
 	public function __construct(
 		public readonly string $path,
@@ -47,6 +48,7 @@ final class RecordImportRequest {
 		public readonly Register $register,
 		public readonly Schema $schema,
 		public readonly ConfirmedMapping $mapping,
+		public readonly ?string $progressKey = null,
 	) {
 	}//end __construct()
 }//end class
