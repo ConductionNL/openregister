@@ -2288,6 +2288,7 @@ components:
       - ".*/lib/Mcp/BuiltIn/ToolInvocationAudit[.]php"
       - ".*/lib/Mcp/BuiltIn/ToolInvocationDigest[.]php"
       - ".*/lib/Mcp/BuiltIn/ToolInvocationOutcome[.]php"
+      - ".*/lib/Mcp/BuiltIn/ToolInvocationRecorder[.]php"
       - ".*/lib/Mcp/Command/[^/]*"
       - ".*/lib/Mcp/Controller/[^/]*"
       - ".*/lib/Mcp/Controller/Support/[^/]*"
