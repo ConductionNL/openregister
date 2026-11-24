@@ -754,3 +754,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: content conflict in lib/Service/<Area>ServiceBindings.php (use block and BINDINGS const), e.g. after main f1c351de moved Compliance service interfaces into ComplianceServiceBindings.
 - Cause: the PR added one binding row to the small old map; main rewrote the map with many rows (often already containing the PR's other rows).
 - Fix: take main's side whole, re-add only the PR's rows main lacks (and their use lines, alphabetical); php -l, the area's *ServiceRegistrarTest and Architecture (#10132 95435873).
+
+## Criss-cross merge conflicts in files the PR never touched (or-fix-8)
+- Symptom: merging main gives CONFLICTs in many files outside the PR's change (ObjectsController, ObjectService, UserService tests...); `git merge-base --all origin/main pr` prints 2 or more bases.
+- Cause: an earlier main merge into the PR plus main's own history give several merge bases; the virtual base made from them conflicts. For each such file one side still equals a merge base.
+- Fix: per conflicted file, if the PR blob equals any merge base blob take main (--theirs); if main equals a base take the PR (--ours); resolve the rest by hand. Then check `git diff origin/main` on the merge equals `git diff <newest base> pr`. (#10358 81cf4d5c, #10398 06df77ae, #10188 6714145c)
