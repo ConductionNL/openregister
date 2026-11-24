@@ -3301,6 +3301,8 @@ Service/ShippedBaseline/ShippedBaselineStore.php,76,Service,Configuration,Config
 Service/ShippedBaseline/ShippedConfigurationGuard.php,329,Service,Configuration,Configuration/Service/ShippedBaseline/ShippedConfigurationGuard.php,0,,Configuration
 Service/Survey/SurveyExportShaper.php,57,Service,Work,Work/Service/Survey/SurveyExportShaper.php,0,,Processes
 Service/Survey/SurveyRecords.php,90,Service,Work,Work/Service/Survey/SurveyRecords.php,0,,Processes
+Service/Survey/SurveyResultsWithheldException.php,43,Service,Work,Work/Service/Survey/SurveyResultsWithheldException.php,0,,Processes
+Service/Survey/SurveyResults.php,176,Service,Work,Work/Service/Survey/SurveyResults.php,0,,Processes
 Service/Survey/SurveyRules.php,121,Service,Work,Work/Service/Survey/SurveyRules.php,0,,Processes
 Service/Survivorship/SourceRecordResolver.php,170,Service,Service,Service/Survivorship/SourceRecordResolver.php,0,,Core
 Service/Survivorship/SurvivorshipAnnotationValidator.php,140,Service,Service,Service/Survivorship/SurvivorshipAnnotationValidator.php,0,,Core
@@ -4670,6 +4672,7 @@ Service/Party/PartyParent.php,,Service,,,,,Processes
 Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes
 Service/AcceptLanguageHeader.php,,Service,,,,,Core
 Controller/Support/VerwerkingsactiviteitenControllerServices.php,,Controller,,,,,Compliance
+Controller/SurveyResultsController.php,201,Controller,Work,Work/Controller/SurveyResultsController.php,0,,Processes
 Files/Service/File/PipelineStepImplementers.php,,Files,,,,,Files
 Files/Service/TextExtraction/PatternSet/PatternSetVersion.php,,Files,,,,,Files
 Search/Service/StoredViewQueries.php,,Search,,,,,Search

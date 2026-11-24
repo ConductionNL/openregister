@@ -70,6 +70,13 @@ class SurveyRecords {
 	public const QUESTION_CAP = 500;
 
 	/**
+	 * The most answer sets read for one survey's results or export.
+	 *
+	 * @var int
+	 */
+	public const ANSWER_SET_CAP = 10000;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaCatalogInterface $catalog The registers, schemas and object tables.
@@ -163,6 +170,41 @@ class SurveyRecords {
 	public function hasAnswers(ObjectEntity $within, string $surveyUuid): bool {
 		return $this->rowsOf(within: $within, slug: self::ANSWER_SET, surveyUuid: $surveyUuid, limit: 1) !== [];
 	}//end hasAnswers()
+
+	/**
+	 * A survey's answer sets, each with its uuid under `id`, oldest first as stored.
+	 *
+	 * @param ObjectEntity $within     An object in the same register.
+	 * @param string       $surveyUuid The survey.
+	 *
+	 * @return array<int, array<string, mixed>> The answer sets, at most ANSWER_SET_CAP.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md#requirement-req-surv-005-who-may-read-the-answers-and-whether-they-are-named
+	 */
+	public function answerSets(ObjectEntity $within, string $surveyUuid): array {
+		$answerSets = [];
+		foreach ($this->rowsOf(within: $within, slug: self::ANSWER_SET, surveyUuid: $surveyUuid, limit: self::ANSWER_SET_CAP) as $row) {
+			$answerSets[] = array_merge((array)$row->getObject(), ['id' => (string)$row->getUuid()]);
+		}
+
+		return $answerSets;
+	}//end answerSets()
+
+	/**
+	 * A stand-in object placed in a register, for reading the survey records of that register.
+	 *
+	 * @param string $register The register id, uuid or slug.
+	 *
+	 * @return ObjectEntity An unsaved object that only names the register.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md#requirement-req-surv-005-who-may-read-the-answers-and-whether-they-are-named
+	 */
+	public static function placeIn(string $register): ObjectEntity {
+		$probe = new ObjectEntity();
+		$probe->setRegister($register);
+
+		return $probe;
+	}//end placeIn()
 
 	/**
 	 * The rows of one sibling schema that name a survey.
