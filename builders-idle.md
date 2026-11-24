@@ -340,3 +340,4 @@
 2026-11-24T20:02Z help-filinq-1 skipped learniq week-timetable-grid T5: vo.py story layer needs a new teacher (Sanne Kramer) with 20 lessons + 1 meeting incl. V4c, deterministic generator pinned by SecondarySchoolExampleSetTest/contract tests; training week-41 course days with capacity already in training.py's story
 2026-11-24T20:02Z help-filinq-1 run ends: filinq #2313 #2314 #2315 #2316, nextcloud-vue #2324, learniq #2737 #2739, openregister issue #11052
 2026-11-24T20:02Z help-opencatalogi-1 built subjects-as-first-class-records 4.1 #2972 (merged; e2e written); left 3.2 live, 5.1 needs portaliq issue links (other repo)
+2026-11-24T20:05Z help-opencatalogi-1 skipped woo-value-list-curation: its prerequisite woo-value-lists-on-the-concept-register 1.1/2.1 must import TOOI documentsoorten/talen schemes from the external TOOI source first
