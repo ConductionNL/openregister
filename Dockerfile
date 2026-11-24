@@ -41,7 +41,7 @@ RUN composer install --no-dev --no-interaction --no-progress \
         --optimize-autoloader --classmap-authoritative --ignore-platform-reqs
 
 # ── Package: the same file set as the release tarball ──
-FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc AS package
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS package
 ARG APP_ID
 # hadolint ignore=DL3018
 RUN apk add --no-cache rsync
@@ -64,7 +64,7 @@ RUN mkdir -p "/out/${APP_ID}" && rsync -a \
         /app/ "/out/${APP_ID}/"
 
 # ── OpenRegister: the newest stable release, checked against its SHA-256 ──
-FROM alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc AS openregister
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS openregister
 ARG APP_ID
 # Empty means the newest stable release at build time. Prereleases are refused.
 # Pin it for a reproducible build: --build-arg OPENREGISTER_VERSION=2.1.0
