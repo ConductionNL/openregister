@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Contract
- * @package  OCA\OpenRegister\Kernel\Contracts\Compliance
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Kernel\Contracts\Compliance;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Answers whether a request address may reach the administration surface or the API.

@@ -43,7 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
-use OCA\OpenRegister\Kernel\Contracts\Compliance\AddressAllowlistsInterface;
+use OCA\OpenRegister\Kernel\Contracts\AddressAllowlistsInterface;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
 use OCA\OpenRegister\Service\SecurityService;

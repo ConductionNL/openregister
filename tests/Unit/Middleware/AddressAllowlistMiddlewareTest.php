@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Middleware;
 
-use OCA\OpenRegister\Kernel\Contracts\Compliance\AddressAllowlistsInterface;
+use OCA\OpenRegister\Kernel\Contracts\AddressAllowlistsInterface;
 use OCA\OpenRegister\Middleware\AddressAllowlistMiddleware;
 use OCA\OpenRegister\Middleware\AddressNotAllowedException;
 use OCA\OpenRegister\Middleware\InboundCall;

@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Middleware;
 
-use OCA\OpenRegister\Kernel\Contracts\Compliance\AddressAllowlistsInterface;
+use OCA\OpenRegister\Kernel\Contracts\AddressAllowlistsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

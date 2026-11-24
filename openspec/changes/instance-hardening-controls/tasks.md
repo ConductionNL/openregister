@@ -33,7 +33,7 @@
       `AddressAllowlist` (addresses and CIDR ranges, IPv4 and IPv6), one administered list per
       surface in `HardeningPolicy` (`hardening_admin_addresses`, `hardening_api_addresses`;
       empty is unbound), `AddressAllowlistMiddleware` answering a bare 403 through the Kernel
-      contract `AddressAllowlistsInterface`, written through `PUT /api/hardening/controls`
+      contract `Kernel\Contracts\AddressAllowlistsInterface`, written through `PUT /api/hardening/controls`
       (`addressAllowlists`) with elevation, audit, and a refusal of a list that would lock out
       the address the change comes from; reported under `observed.addressAllowlists`.
 

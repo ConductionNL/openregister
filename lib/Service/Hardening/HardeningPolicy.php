@@ -46,7 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
-use OCA\OpenRegister\Kernel\Contracts\Compliance\AddressAllowlistsInterface;
+use OCA\OpenRegister\Kernel\Contracts\AddressAllowlistsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCP\IAppConfig;
 use Throwable;
