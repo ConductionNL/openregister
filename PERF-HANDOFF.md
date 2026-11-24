@@ -12,7 +12,7 @@ Budget (ADR-124): API <= 100 ms, page usable <= 300 ms warm. Every page is still
 ## dossiq
 - [ ] Cases list: type and status labels load in a second wave after the list (5 request levels). Load them with the list or from initial state.
 - [ ] ~1.6 s of script runs before the first API call on Cases: find what runs at module load and defer it.
-- [ ] #6830's body promises before/after numbers "in a comment below"; edit the body to say the A/B numbers instead: Cases usable 7992 -> 6380 ms, Inbox 6371 -> 3958 ms (with vs without the Files scripts).
+- [x] #6830's body promises before/after numbers "in a comment below"; edit the body to say the A/B numbers instead: Cases usable 7992 -> 6380 ms, Inbox 6371 -> 3958 ms (with vs without the Files scripts).
 
 ## nextcloud-vue (main)
 - [ ] All 37 l10n catalogues are bundled statically into every app; load only the reader's language (dynamic import).
