@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 258;
+	private const LISTENER_COUNT = 259;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -36,11 +36,12 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Last changed when Search started contributing the widget declaration check: one
 	 * SearchDeclarationChecksListener registration appended to the SchemaDeclarationChecksEvent
 	 * listeners; every other registration is unchanged and in the same order. Then two
-	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent). The
-	 * new-notes notification then added one AnnotationNotificationListener registration on
-	 * ObjectNoteAddedEvent.
+	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent). The platform
+	 * share provider then appended one PlatformShareRoutingListener registration on
+	 * BeforeShareCreatedEvent in AccessListenerRegistrar. The new-notes notification then added
+	 * one AnnotationNotificationListener registration on ObjectNoteAddedEvent.
 	 */
-	private const SEQUENCE_SHA256 = '94015028b558da84c3fdff41624e4f1d7a4537e84690298df1c1360e600ca725';
+	private const SEQUENCE_SHA256 = 'b972988e54117d1727ad2dbc34188e5ab54c08049126fe32437a08ee5d820c3f';
 
 	/**
 	 * The registration calls, in call order, with every argument.
