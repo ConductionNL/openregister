@@ -2779,6 +2779,7 @@ Service/Object/DraftListLens.php,59,Service,Service,Service/Object/DraftListLens
 Service/Object/DraftOwner.php,53,Service,Service,Service/Object/DraftOwner.php,2,388,Core
 Service/Object/DraftRemovalRecord.php,63,Service,Service,Service/Object/DraftRemovalRecord.php,0,,Core
 Service/Object/DraftStatusPolicy.php,126,Service,Service,Service/Object/DraftStatusPolicy.php,0,239,Core
+Service/Object/ErrorEntryIdentity.php,,Service,,,,,Core
 Service/Object/ServerFilledProperty.php,,Service,,,,,Core
 Service/Object/ExtendDotRun.php,13,Service,Service,Service/Object/ExtendDotRun.php,0,,Core
 Service/Object/FacetCacheVersion.php,128,Service,Service,Service/Object/FacetCacheVersion.php,0,,Core

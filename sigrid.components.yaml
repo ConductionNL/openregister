@@ -502,6 +502,7 @@ components:
       - ".*/lib/Service/Object/DraftStatusPolicy[.]php"
       - ".*/lib/Service/Object/DraftSubject[.]php"
       - ".*/lib/Service/Object/EntityRead[.]php"
+      - ".*/lib/Service/Object/ErrorEntryIdentity[.]php"
       - ".*/lib/Service/Object/ExactDecimalSchemaParser[.]php"
       - ".*/lib/Service/Object/ExactMultipleOfKeyword[.]php"
       - ".*/lib/Service/Object/ExactMultipleOfKeywordParser[.]php"

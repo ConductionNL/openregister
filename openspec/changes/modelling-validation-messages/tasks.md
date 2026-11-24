@@ -9,7 +9,8 @@
 - [x] 2.1 In `ValidateObject::formatValidationError()`, look up the declared message for the failed keyword and property before the generated one, with `required` resolved to the missing property. Verify: `ValidateObjectCustomMessageTest` for `pattern`, `required` and a property without a message.
 - [x] 2.2 Pick the language through `LanguageService` with the fallback order resolved language, `nl`, first declared, generated. Verify: unit tests with `Accept-Language: en`, with `?_lang=nl`, and with only `en` declared.
 - [x] 2.3 Substitute `{value}`, `{property}` and `{limit}` as plain text, value cut to 100 characters. Verify: unit test with a markup value.
-- [ ] 2.4 Keep `keyword` and `property` on each error entry of the 422 body. Verify: API test asserts both next to the custom message.
+- [x] 2.4 Keep `keyword` and `property` on each error entry of the 422 body. Verify: API test asserts both next to the custom message.
+      Built in `ValidateObject::handleValidationException()` with `ErrorEntryIdentity`; verified on the response body by `tests/Unit/Service/Object/ErrorEntryIdentityTest.php` (the HTTP probe is the live pass).
 
   - built (13 Nov): `lib/Service/Schemas/ErrorMessagesDeclaration.php` (called from `PropertyValidatorHandler::assertDeclarations()`), `lib/Service/Object/DeclaredErrorMessage.php` (used first by `ValidationErrorMessages`; the language comes from `LanguageService` through `ValidationLookups::preferredLanguage()`). Tests: `tests/Unit/Service/Schemas/ErrorMessagesDeclarationTest.php` (6), `tests/Unit/Service/Object/ValidateObjectCustomMessageTest.php` (7), red before the change. 2.4 is open: it is verified by an API test against an instance.
 
