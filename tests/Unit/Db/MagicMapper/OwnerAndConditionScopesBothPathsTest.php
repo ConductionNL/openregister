@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\ConditionUserResolvers;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
@@ -283,7 +284,7 @@ class OwnerAndConditionScopesBothPathsTest extends TestCase {
 			$object->setUuid($uuid);
 			$object->setOwner($owner);
 			$object->setObject(['behandelaar' => $handler]);
-			if ($permissions->hasPermission(schema: $schema, action: $action, userId: $uid, objectOwner: $owner, object: $object) === true) {
+			if ($permissions->hasPermission(ask: (new PermissionAsk(schema: $schema, action: $action))->askedBy(userId: $uid, objectOwner: $owner)->about(object: $object, register: null)) === true) {
 				$admitted[] = $uuid;
 			}
 		}
