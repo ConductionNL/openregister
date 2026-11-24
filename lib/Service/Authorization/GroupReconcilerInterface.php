@@ -22,10 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
+use OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface;
+
 /**
  * Running one group reconciliation sweep, as the reconciler job does. Only the method that caller calls.
  */
-interface GroupReconcilerInterface {
+interface GroupReconcilerInterface extends DeclaredGroupsReconcileInterface {
 
 	/**
 	 * Run one reconciliation sweep.
