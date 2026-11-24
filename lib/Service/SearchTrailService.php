@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\SearchTrail;
 use OCA\OpenRegister\Db\SearchTrailCriteria;
@@ -47,7 +48,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
  *
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
  */
-class SearchTrailService implements SearchTrailServiceInterface {
+class SearchTrailService implements SearchTrailServiceInterface, SearchTrailRecorderInterface {
 
 	/**
 	 * Whether self-clearing (automatic cleanup) is enabled.

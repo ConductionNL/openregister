@@ -24,9 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\PreferencesControllerServices;
 use OCA\OpenRegister\Controller\Support\PreferencesUserValues;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -59,9 +59,9 @@ class PreferencesController extends Controller {
 		IRequest $request,
 		PreferencesControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
-		$this->values   = new PreferencesUserValues(config: $services->config, appName: Application::APP_ID);
+		$this->values   = new PreferencesUserValues(config: $services->config, appName: AppIdentity::APP_ID);
 	}//end __construct()
 
 	/**

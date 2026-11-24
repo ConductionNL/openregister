@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -48,7 +48,7 @@ final class F06FlowTimerInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		FlowTimerMapper::class => [FlowTimerMapperInterface::class, DbRegistrar::class],
+		FlowTimerMapper::class => [FlowTimerMapperInterface::class, ProcessesMapperRegistrar::class],
 	];
 
 	/**

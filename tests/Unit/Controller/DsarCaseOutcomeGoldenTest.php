@@ -29,7 +29,7 @@ use OCA\OpenRegister\Service\Gdpr\Redaction\RedactionWriteService;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateProvider;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateResult;
-use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\DsarCaseControllerFactory;
 use OCP\IRequest;
@@ -92,12 +92,11 @@ class DsarCaseOutcomeGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		return DsarCaseControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(ObjectService::class),
 			$accessor,
 			$access,
-			$this->createMock(TransitionEngine::class),
+			$this->createMock(LifecycleTransitionInterface::class),
 			$this->createMock(EvidenceHarvestService::class),
 			$this->createMock(RedactionWriteService::class),
 			$this->createMock(ExportBundleService::class),

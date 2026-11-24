@@ -51,7 +51,6 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
  * @uses \OCA\OpenRegister\Db\SchemaMapper\DeclaredActionCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\ReferenceLoops
- * @uses \OCA\OpenRegister\Db\SchemaMapper\ExchangeAnnotationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\LifecycleAnnotationCheck
  * @uses \OCA\OpenRegister\Db\SchemaMapper\PropertyDeclarationRefusals
  * @uses \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals

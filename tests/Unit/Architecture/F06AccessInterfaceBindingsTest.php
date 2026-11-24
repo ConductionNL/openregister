@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\AuditFlowAttributionInterface;
 use OCA\OpenRegister\Db\CaseItemAuditMapper;
 use OCA\OpenRegister\Db\CaseItemAuditMapperInterface;
 use OCA\OpenRegister\Db\DbRegistrar;
+use OCA\OpenRegister\Db\ComplianceMapperRegistrar;
+use OCA\OpenRegister\Db\ProcessesMapperRegistrar;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -54,9 +56,9 @@ final class F06AccessInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		AuditFlowAttribution::class => [AuditFlowAttributionInterface::class, DbRegistrar::class],
-		CaseItemAuditMapper::class => [CaseItemAuditMapperInterface::class, DbRegistrar::class],
-		GdprEntityMapper::class => [GdprEntityMapperInterface::class, DbRegistrar::class],
+		AuditFlowAttribution::class => [AuditFlowAttributionInterface::class, ProcessesMapperRegistrar::class],
+		CaseItemAuditMapper::class => [CaseItemAuditMapperInterface::class, ProcessesMapperRegistrar::class],
+		GdprEntityMapper::class => [GdprEntityMapperInterface::class, ComplianceMapperRegistrar::class],
 		MagicOrganizationHandler::class => [OrganisationScopeResolverInterface::class, DbRegistrar::class],
 	];
 

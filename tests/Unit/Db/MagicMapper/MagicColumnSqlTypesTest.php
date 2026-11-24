@@ -57,6 +57,23 @@ class MagicColumnSqlTypesTest extends TestCase {
 		$this->assertSame('TEXT', $sql->type('geometry', []));
 	}//end testFixedTypesAndUnknownTypesFallingBackToText()
 
+	public function testJsonOnMariaDbIsTextThatMustHoldJson(): void {
+		$maria = new MagicColumnSql(false, true);
+		$text = 'MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin';
+
+		$this->assertSame($text, $maria->type('json', []));
+		$this->assertSame($text, $maria->type('json_ordered', []));
+		$this->assertSame(' CHECK (json_valid(`_files`))', $maria->check('json', '_files'));
+		$this->assertSame(' CHECK (json_valid(`we``ird`))', $maria->check('json_ordered', 'we`ird'));
+		$this->assertSame('TEXT', $maria->type('text', []));
+		$this->assertSame('', $maria->check('text', '_uri'));
+	}//end testJsonOnMariaDbIsTextThatMustHoldJson()
+
+	public function testOnlyMariaDbChecksAJsonColumn(): void {
+		$this->assertSame('', (new MagicColumnSql(false))->check('json', '_files'));
+		$this->assertSame('', (new MagicColumnSql(true))->check('json', '_files'));
+	}//end testOnlyMariaDbChecksAJsonColumn()
+
 	public function testQuotingEscapesTheQuoteCharacterOfThePlatform(): void {
 		$this->assertSame('`we``ird`', (new MagicColumnSql(false))->quote('we`ird'));
 		$this->assertSame('"we""ird"', (new MagicColumnSql(true))->quote('we"ird'));

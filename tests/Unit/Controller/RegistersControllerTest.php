@@ -74,7 +74,7 @@ class RegistersControllerTest extends TestCase {
 	 * @var (\OCA\OpenRegister\Service\Schemas\RegisterModelService&MockObject)|null
 	 */
 	private ?\OCA\OpenRegister\Service\Schemas\RegisterModelService $modelService = null;
-	private \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder&MockObject $appImportJobRecorder;
+	private \OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface&MockObject $appImportJobRecorder;
 
 	/**
 	 * The user the mocked session resolves to. Defaults to an admin so write
@@ -119,12 +119,12 @@ class RegistersControllerTest extends TestCase {
 		// checkRegisterManagePermission() resolves IGroupManager via the container
 		// on its no-authorization (admin-only) branch — return the stubbed one.
 		$this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
-		$this->appImportJobRecorder = $this->createMock(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class);
+		$this->appImportJobRecorder = $this->createMock(\OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface::class);
 		$this->container->method('get')->willReturnCallback(function ($id) {
 			if ($id === \OCP\IGroupManager::class) {
 				return $this->groupManager;
 			}
-			if ($id === \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class) {
+			if ($id === \OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface::class) {
 				return $this->appImportJobRecorder;
 			}
 			if ($id === \OCA\OpenRegister\Service\Schemas\RegisterModelService::class) {
@@ -134,7 +134,6 @@ class RegistersControllerTest extends TestCase {
 		});
 
 		$this->controller = RegistersControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->registerService,
 			$this->objectMapper,

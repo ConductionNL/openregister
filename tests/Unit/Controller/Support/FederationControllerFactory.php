@@ -63,7 +63,7 @@ final class FederationControllerFactory {
 			public function __construct() {
 			}
 
-			public function readable(\OCA\OpenRegister\Db\FederatedShare $share, \OCA\OpenRegister\Db\ObjectEntity $object, array $rendered): array {
+			public function readable(\OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface $share, \OCA\OpenRegister\Db\ObjectEntity $object, array $rendered): array {
 				return $rendered;
 			}
 		};

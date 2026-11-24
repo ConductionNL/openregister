@@ -25,14 +25,15 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Schemas;
 
 use Exception;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals;
+use OCA\OpenRegister\Db\SchemaMapper\ArchivalDeclarationRefusals;
+use OCA\OpenRegister\Service\Archival\InheritedAppraisal;
 use OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schemas\RetentionAnnotationValidator
- * @covers \OCA\OpenRegister\Db\SchemaMapper\RecordAnnotationRefusals
+ * @covers \OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\SchemaMapper\AnnotationFaults
  * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
@@ -50,6 +51,11 @@ class RetentionAnnotationValidatorTest extends TestCase {
 
 	private function errors(mixed $annotation): array {
 		return (new RetentionAnnotationValidator())->validate($annotation, self::PROPERTIES);
+	}
+
+	public function testItChecksTheKeyTheArchivalReaderFollows(): void {
+		$this->assertSame('inheritAppraisalFrom', RetentionAnnotationValidator::KEY);
+		$this->assertSame(InheritedAppraisal::KEY, RetentionAnnotationValidator::KEY);
 	}
 
 	public function testReferencePropertiesAreAccepted(): void {
@@ -87,11 +93,11 @@ class RetentionAnnotationValidatorTest extends TestCase {
 		$this->expectException(Exception::class);
 		$this->expectExceptionMessage("x-openregister-retention: inheritAppraisalFrom names 'title', which does not reference other objects.");
 
-		(new RecordAnnotationRefusals($this->createMock(LoggerInterface::class)))->checkRetention($schema);
+		(new ArchivalDeclarationRefusals(logger: new NullLogger()))->checkRetention($schema);
 	}
 
 	public function testTheSchemaSaveAcceptsASoundOrAbsentDeclaration(): void {
-		$refusals = new RecordAnnotationRefusals($this->createMock(LoggerInterface::class));
+		$refusals = new ArchivalDeclarationRefusals(logger: new NullLogger());
 		$schema   = new Schema();
 		$schema->setProperties(self::PROPERTIES);
 		$refusals->checkRetention($schema);

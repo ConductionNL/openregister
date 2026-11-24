@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use JsonSerializable;
 use OCA\OpenRegister\Db\JobRun\JobRunFieldTypes;
+use OCA\OpenRegister\Service\Operations\JobRunContext;
 use OCP\AppFramework\Db\Entity;
 
 /**
@@ -92,18 +93,18 @@ class JobRun extends Entity implements JsonSerializable {
 	public const OUTCOME_FAILED = 'failed';
 
 	/**
-	 * The run came from the cron schedule.
+	 * The run came from the cron schedule. The value is the job-run context's.
 	 *
 	 * @var string
 	 */
-	public const CAUSE_SCHEDULE = 'schedule';
+	public const CAUSE_SCHEDULE = JobRunContext::CAUSE_SCHEDULE;
 
 	/**
-	 * The run came from an administrator, and `actor` names them.
+	 * The run came from an administrator, and `actor` names them. The value is the job-run context's.
 	 *
 	 * @var string
 	 */
-	public const CAUSE_MANUAL = 'manual';
+	public const CAUSE_MANUAL = JobRunContext::CAUSE_MANUAL;
 
 	/**
 	 * The fully qualified class of the job that ran.

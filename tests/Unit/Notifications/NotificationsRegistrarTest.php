@@ -18,6 +18,9 @@ namespace OCA\OpenRegister\Tests\Unit\Notifications;
 
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
+use OCA\OpenRegister\Kernel\Contracts\Core\ReadNoticeClearingInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
+use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingServiceInterface;
 use OCA\OpenRegister\Notifications\Service\WebPush\HexIconService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
@@ -79,9 +82,27 @@ final class NotificationsRegistrarTest extends TestCase {
 			$expected[] = ['alias' => $contract, 'target' => $service];
 		}
 
-		$this->assertCount(27, $expected);
+		$this->assertCount(expectedCount: 24, haystack: $expected);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
+
+	/**
+	 * The Core read-notice port and the Notifications clearing contract resolve to
+	 * the same clearing service, so the read-state API clears exactly what it did.
+	 *
+	 * @return void
+	 */
+	public function testTheReadNoticePortIsTheClearingService(): void {
+		$this->assertSame(
+			expected: NotificationClearingService::class,
+			actual: NotificationsRegistrar::BINDINGS[ReadNoticeClearingInterface::class]
+		);
+		$this->assertSame(
+			expected: NotificationsRegistrar::BINDINGS[NotificationClearingServiceInterface::class],
+			actual: NotificationsRegistrar::BINDINGS[ReadNoticeClearingInterface::class]
+		);
+		$this->assertTrue(is_subclass_of(NotificationClearingServiceInterface::class, ReadNoticeClearingInterface::class));
+	}//end testTheReadNoticePortIsTheClearingService()
 
 	/**
 	 * The rule reach recorder is one shared service built on the container's

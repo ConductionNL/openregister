@@ -48,7 +48,7 @@ class ViewScopeApplierSearchMergeTest extends TestCase {
 		$viewMapper->method('find')->willReturn($view);
 
 		return new ViewScopeApplier(
-			$viewMapper,
+			new \OCA\OpenRegister\Search\Service\StoredViewQueries($viewMapper, $this->createMock(\OCA\OpenRegister\Search\Service\ViewService::class)),
 			$this->createMock(LoggerInterface::class)
 		);
 

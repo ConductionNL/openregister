@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Dmn;
 
+use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -38,7 +39,7 @@ use Psr\Container\ContainerInterface;
  *
  * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
  */
-class DecisionTableBulkGuard {
+class DecisionTableBulkGuard implements BulkRowRefusalsInterface {
 
 	/**
 	 * The single-save rule, resolved on first use.

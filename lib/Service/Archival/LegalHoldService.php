@@ -213,7 +213,7 @@ class LegalHoldService implements LegalHoldServiceInterface {
 	 * @return void
 	 */
 	private function queueBulkHold(array $job): void {
-		$this->jobList->add(\OCA\OpenRegister\BackgroundJob\JobHandles::BULK_LEGAL_HOLD, $job);
+		$this->jobList->add(\OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface::BULK_LEGAL_HOLD, $job);
 
 		$this->logger->info(
 			message: '[LegalHoldService] Bulk legal hold job queued',

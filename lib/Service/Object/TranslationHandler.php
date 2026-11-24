@@ -29,7 +29,7 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
-use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,13 +48,13 @@ class TranslationHandler implements TranslationHandlerInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param LanguageService $languageService The request-scoped language service
-	 * @param LoggerInterface $logger Logger interface
+	 * @param RequestLanguagesInterface $languageService The request-scoped language negotiation
+	 * @param LoggerInterface           $logger          Logger interface
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
-		private readonly LanguageService $languageService,
+		private readonly RequestLanguagesInterface $languageService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

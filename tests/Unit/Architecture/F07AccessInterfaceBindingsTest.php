@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 use OCA\OpenRegister\Service\Object\RunLockRegistry;
@@ -51,8 +51,8 @@ final class F07AccessInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string, string}>
 	 */
 	private const CLASSES = [
-		FileWriteGuard::class => [FileWriteGuardInterface::class, ContractBindings::class, 'Service/'],
-		RunLockRegistry::class => [RunLockReleaseInterface::class, ContractBindings::class, 'Service/'],
+		FileWriteGuard::class => [FileWriteGuardInterface::class, CoreServiceBindings::class, 'Service/'],
+		RunLockRegistry::class => [RunLockReleaseInterface::class, CoreServiceBindings::class, 'Service/'],
 	];
 
 	/**

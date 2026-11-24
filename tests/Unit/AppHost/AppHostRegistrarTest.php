@@ -19,8 +19,6 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 
 use OCA\OpenRegister\AppHost\AppContainerLocator;
 use OCA\OpenRegister\AppHost\AppHostRegistrar;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
-use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoader;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleManifestLoaderInterface;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusalReportInterface;
@@ -28,6 +26,7 @@ use OCA\OpenRegister\AppHost\Scheduling\ScheduleRefusals;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader;
 use OCA\OpenRegister\AppHost\Service\RegisterDocumentLoaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppContainerFinderInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\TwigFunctionsInstallerInterface;
 use OCA\OpenRegister\Twig\MappingTwigInstaller;
 use OCA\OpenRegister\Twig\MappingTwigInstallerInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -41,7 +40,7 @@ class AppHostRegistrarTest extends TestCase {
 	public function testRegisterAliasesEveryContractToItsServiceInOrder(): void {
 		$calls = [];
 		$context = $this->createMock(IRegistrationContext::class);
-		$context->expects($this->exactly(6))
+		$context->expects($this->exactly(count: 6))
 			->method('registerServiceAlias')
 			->willReturnCallback(
 				static function (string $alias, string $target) use (&$calls): void {
@@ -54,12 +53,12 @@ class AppHostRegistrarTest extends TestCase {
 
 		$this->assertSame(
 			[
-				[ScheduleFlowStoreInterface::class, ScheduleFlowStore::class],
 				[ScheduleManifestLoaderInterface::class, ScheduleManifestLoader::class],
 				[ScheduleRefusalReportInterface::class, ScheduleRefusals::class],
 				[RegisterDocumentLoaderInterface::class, RegisterDocumentLoader::class],
 				[AppContainerFinderInterface::class, AppContainerLocator::class],
 				[MappingTwigInstallerInterface::class, MappingTwigInstaller::class],
+				[TwigFunctionsInstallerInterface::class, MappingTwigInstaller::class],
 			],
 			$calls
 		);

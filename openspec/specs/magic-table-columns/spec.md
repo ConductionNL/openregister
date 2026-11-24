@@ -48,3 +48,33 @@ A save SHALL be refused with a validation error naming the column when a `number
 - **WHEN** an object is saved with the value 0.0000001
 - **THEN** the save SHALL be refused with a validation error naming the property, and nothing SHALL be stored
 - @e2e exclude {write preparation has no screen of its own; covered by MagicNumberColumnTest and MagicMapperNumberColumnTest}
+
+### Requirement: A JSON column does not slow every schema read of the instance (REQ-MTC-003)
+
+On MariaDB a JSON column of a magic table SHALL be `MEDIUMTEXT` in the `utf8mb4_bin` collation with a `json_valid` check on the column, never `JSON` or `LONGTEXT`. MariaDB stores `JSON` as `LONGTEXT` with that check, and Doctrine tells the two apart with a query that scans the constraints of every table once per `longtext` column, on every read Nextcloud makes of the database schema: three per migration step of any app. Measured with 1,067 magic tables: about four minutes a read before, 16 seconds after (#10612). The check SHALL close the column definition, after `NOT NULL` and `DEFAULT`, and every statement that restates a JSON column SHALL restate the check. MySQL, PostgreSQL and SQLite SHALL keep their native type.
+
+An existing `LONGTEXT` JSON column SHALL be narrowed by the upgrade, before its migrations run, one statement per table, in strict SQL mode so a value that does not fit refuses the statement instead of being cut short. The upgrade SHALL leave a table holding more than 256 MB of data, SHALL stop starting on new tables after five minutes, SHALL report what it left, and SHALL never fail because of this step; `occ openregister:tables:narrow-json` SHALL narrow whatever is left. A `LONGTEXT` column without the `json_valid` check SHALL NOT be touched.
+
+#### Scenario: a new table on MariaDB
+- **GIVEN** a schema with an `array` property on MariaDB
+- **WHEN** its magic table is created
+- **THEN** that column and the JSON metadata columns SHALL be `MEDIUMTEXT` with a `json_valid` check, and the table SHALL hold no `longtext` column
+- @e2e exclude {DDL has no screen of its own; covered by MagicColumnSqlTypesTest and MagicMapperCreateTableGoldenTest}
+
+#### Scenario: a column added to an existing table
+- **GIVEN** an existing magic table on MariaDB
+- **WHEN** a JSON column is added to it, or its nullability changes
+- **THEN** the statement SHALL declare `MEDIUMTEXT` and end with the `json_valid` check
+- @e2e exclude {DDL has no screen of its own; covered by MagicColumnAdderTest, MagicColumnNullabilityTest and MagicMapperAddJsonColumnTest}
+
+#### Scenario: an upgrade narrows the existing tables
+- **GIVEN** magic tables created with `JSON` columns on MariaDB
+- **WHEN** the app is upgraded
+- **THEN** each table under the size limit SHALL be narrowed in one statement before the migrations run, and a larger one SHALL be reported with the command that narrows it
+- @e2e exclude {upgrade repair step has no screen of its own; covered by MagicJsonColumnNarrowerTest and NarrowMagicJsonColumnsTest}
+
+#### Scenario: a value too large for the column
+- **GIVEN** a `LONGTEXT` JSON column holding a value larger than `MEDIUMTEXT` can hold
+- **WHEN** its table is narrowed
+- **THEN** the statement SHALL be refused, the table SHALL be left as it was and reported, and the other tables SHALL still be narrowed
+- @e2e exclude {DDL failure path has no screen of its own; covered by MagicJsonColumnNarrowerTest}

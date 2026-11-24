@@ -22,7 +22,7 @@
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
-use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Files\Db\Chunk;
@@ -145,14 +145,14 @@ class EntityRecognitionHandler {
 	 * @param EntityRecognitionStores   $stores       Chunk, entity and relation stores plus the DB connection.
 	 * @param EntityRecognitionBackends $backends     Settings, anonymisation backend and the lazy app container.
 	 * @param LoggerInterface           $logger       Logger.
-	 * @param FileSettingsHandler|null  $fileSettings The organisation's detection threshold (REQ-ADI-007).
+	 * @param RedactionSettingsInterface|null $fileSettings The organisation's detection threshold (REQ-ADI-007).
 	 * @param JurisdictionPatternSets   $patternSets The jurisdiction pattern sets and their merge.
 	 */
 	public function __construct(
 		private readonly EntityRecognitionStores $stores,
 		private readonly EntityRecognitionBackends $backends,
 		private readonly LoggerInterface $logger,
-		private readonly ?FileSettingsHandler $fileSettings=null,
+		private readonly ?RedactionSettingsInterface $fileSettings=null,
 		private readonly JurisdictionPatternSets $patternSets=new JurisdictionPatternSets(),
 	) {
 	}//end __construct()
@@ -172,7 +172,7 @@ class EntityRecognitionHandler {
 		}
 
 		if ($this->fileSettings === null) {
-			return FileSettingsHandler::DEFAULT_CONFIDENCE_THRESHOLD;
+			return RedactionSettingsInterface::DEFAULT_CONFIDENCE_THRESHOLD;
 		}
 
 		return $this->fileSettings->confidenceThreshold();

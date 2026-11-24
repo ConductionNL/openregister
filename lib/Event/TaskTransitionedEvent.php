@@ -49,7 +49,7 @@ class TaskTransitionedEvent extends AbstractTaskEvent {
 	 * @param string|null $actor The acting identity, when any.
 	 */
 	public function __construct(
-		Task $task,
+		private readonly Task $task,
 		private readonly ?string $previousAssignee = null,
 		private readonly ?string $previousState = null,
 		private readonly ?string $actor = null,
@@ -57,6 +57,17 @@ class TaskTransitionedEvent extends AbstractTaskEvent {
 		parent::__construct(task: $task);
 
 	}//end __construct()
+
+	/**
+	 * The task the event is about, as the Task row it was dispatched with.
+	 *
+	 * @return Task The task as persisted.
+	 *
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+	 */
+	public function getTask(): Task {
+		return $this->task;
+	}//end getTask()
 
 	/**
 	 * The NAMED transition action, as the row recorded it.

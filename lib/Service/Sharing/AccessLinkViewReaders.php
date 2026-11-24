@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Sharing;
 
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
-use OCA\OpenRegister\Search\Db\ViewMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ViewFinderInterface;
 
 /**
  * The view, register and schema mappers, each asked under the caller's own rules.
@@ -37,11 +37,11 @@ final readonly class AccessLinkViewReaders {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param ViewMapperInterface    $views   Resolves a view under the caller's own rules.
+	 * @param ViewFinderInterface    $views   Resolves a view under the caller's own rules.
 	 * @param SchemaCatalogInterface $catalog Resolves the registers and schemas a view names, same rules.
 	 */
 	public function __construct(
-		public ViewMapperInterface $views,
+		public ViewFinderInterface $views,
 		public SchemaCatalogInterface $catalog,
 	) {
 	}//end __construct()

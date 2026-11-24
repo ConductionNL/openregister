@@ -22,46 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
 
 /**
  * The methods of TranslationProjectionService that callers outside its component use.
- * Callers depend on this interface, not on the class.
+ * Callers depend on this interface, not on the class. project() and purge()
+ * are the Processes port TranslationProjectionInterface.
  */
-interface TranslationProjectionServiceInterface {
-
-	/**
-	 * Project the given object's translatable property data into the sidecar.
-	 *
-	 * Behaviour:
-	 *  - For each translatable property declared on the schema, walk
-	 *    the object's data shape `{lang: value, ...}` (or fall back to
-	 *    a single-language string treated as the register's default).
-	 *  - Upsert one row per (uuid, property, language) that has a
-	 *    non-empty value.
-	 *  - Delete any pre-existing row whose (property, language) no
-	 *    longer has a value on the object.
-	 *
-	 * Status defaults to `draft` on first projection; subsequent saves
-	 * preserve whatever status the slot already had (the projection
-	 * doesn't second-guess workflow state — that's `TranslationStatusService`'s job).
-	 *
-	 * @param ObjectEntity $object The object to project.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/register-i18n/spec.md
-	 */
-	public function project(ObjectEntity $object): void;
-
-	/**
-	 * Drop every translation row for the given object.
-	 *
-	 * @param ObjectEntity $object The object to purge translations for.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/register-i18n/spec.md
-	 */
-	public function purge(ObjectEntity $object): void;
+interface TranslationProjectionServiceInterface extends TranslationProjectionInterface {
 }//end interface

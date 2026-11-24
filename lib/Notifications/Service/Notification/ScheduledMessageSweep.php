@@ -23,8 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notifications\Service\Notification;
 
-use OCA\OpenRegister\Service\Integration\Providers\MessageDispatcherInterface;
-use OCA\OpenRegister\Service\Integration\Providers\OutboundMessage;
+use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInterface;
 use Throwable;
 
 /**
@@ -40,14 +39,14 @@ class ScheduledMessageSweep {
 	/**
 	 * Constructor.
 	 *
-	 * @param ScheduledMessageStoreInterface $store      The stored messages.
-	 * @param ScheduledMessagePolicy         $policy     The rules.
-	 * @param MessageDispatcherInterface     $dispatcher The dispatch leaf.
+	 * @param ScheduledMessageStoreInterface    $store    The stored messages.
+	 * @param ScheduledMessagePolicy            $policy   The rules.
+	 * @param ScheduledMessageDeliveryInterface $delivery Sends a claimed message through its source.
 	 */
 	public function __construct(
 		private readonly ScheduledMessageStoreInterface $store,
 		private readonly ScheduledMessagePolicy $policy,
-		private readonly MessageDispatcherInterface $dispatcher,
+		private readonly ScheduledMessageDeliveryInterface $delivery,
 	) {
 	}//end __construct()
 
@@ -101,14 +100,7 @@ class ScheduledMessageSweep {
 	private function send(array $message): string {
 		$id = (string)$message['id'];
 		try {
-			$result = $this->dispatcher->dispatch(
-				source: (string)($message['source'] ?? ''),
-				message: new OutboundMessage(
-					path: (string)($message['path'] ?? ''),
-					body: (array)($message['body'] ?? []),
-					headers: (array)($message['headers'] ?? [])
-				)
-			);
+			$result = $this->delivery->deliver(message: $message);
 		} catch (Throwable $e) {
 			$result = ['unavailable' => true, 'cause' => 'dispatch failed'];
 		}

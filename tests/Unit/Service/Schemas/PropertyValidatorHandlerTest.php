@@ -649,6 +649,17 @@ class PropertyValidatorHandlerTest extends TestCase {
 	}
 
 	/**
+	 * The closed modifier values are the Search profile's own vocabulary, read
+	 * through the Kernel contract.
+	 *
+	 * @return void
+	 */
+	public function testTheClosedModifierValuesAreTheSearchProfileVocabulary(): void {
+		$this->assertSame(PropertySearchProfile::MATCH_TYPES, PropertyValidatorHandler::CLOSED_MODIFIER_VALUES['matchType']);
+		$this->assertSame(PropertySearchProfile::INPUT_CONTROLS, PropertyValidatorHandler::CLOSED_MODIFIER_VALUES['inputControl']);
+	}
+
+	/**
 	 * Every value the vocabulary does hold is accepted, so the refusals above
 	 * refuse the wrong value rather than the key itself.
 	 *

@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(QualityAuditEvaluator::class)]
 #[UsesClass(QualityScorer::class)]
 #[UsesClass(QualityScoreRun::class)]
+#[UsesClass(ObjectEntity::class)]
 class QualityAuditEvaluatorTest extends TestCase {
 
 	/**

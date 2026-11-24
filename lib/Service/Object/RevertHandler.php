@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Exception\LockedException;
@@ -162,7 +163,10 @@ class RevertHandler implements RevertHandlerInterface {
 	 */
 	private function assertMayRevert(array $context): void {
 		$object = $context['object'];
-		if ($this->permissionHandler->hasPermission(schema: $context['schema'], action: 'update', object: $object) === false) {
+		if ($this->permissionHandler->hasPermission(
+			ask: (new PermissionAsk(schema: $context['schema'], action: 'update'))
+				->about(object: $object, register: null)
+		) === false) {
 			throw new NotAuthorizedException(message: 'You do not have permission to revert this object');
 		}
 
@@ -318,12 +322,12 @@ class RevertHandler implements RevertHandlerInterface {
 	 */
 	private function callerRunUuid(): ?string {
 		try {
-			$flowContext = $this->container->get(\OCA\OpenRegister\Service\Flow\FlowRunContext::class);
+			$flowContext = $this->container->get(CurrentFlowRunInterface::class);
 		} catch (\Throwable $unavailable) {
 			return null;
 		}
 
-		if ($flowContext instanceof \OCA\OpenRegister\Service\Flow\FlowRunContext === false) {
+		if ($flowContext instanceof CurrentFlowRunInterface === false) {
 			return null;
 		}
 

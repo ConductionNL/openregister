@@ -1,9 +1,9 @@
 <?php
 
 /**
- * The deferred lifecycle and notification jobs are named through JobHandles.
+ * The deferred lifecycle and notification jobs are named through ProcessesJobHandlesInterface.
  *
- * AutoTransitionQueue and AnnotationNotificationListener hand JobHandles
+ * AutoTransitionQueue and AnnotationNotificationListener hand ProcessesJobHandlesInterface
  * constants to the deferral service instead of the job classes. Each constant
  * must stay exactly the job's class name, or entries are queued under a name
  * nothing runs; and no lib file outside lib/BackgroundJob may name either job.
@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 use OCA\OpenRegister\BackgroundJob\ActorForwardedJob;
 use OCA\OpenRegister\BackgroundJob\AnnotationNotificationDispatchJob;
 use OCA\OpenRegister\BackgroundJob\AutoTransitionJob;
-use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
@@ -35,8 +35,8 @@ final class H20JobHandlesTest extends TestCase {
 	private const LIB = __DIR__ . '/../../../lib';
 
 	private const JOBS = [
-		JobHandles::ANNOTATION_NOTIFICATION_DISPATCH => AnnotationNotificationDispatchJob::class,
-		JobHandles::AUTO_TRANSITION => AutoTransitionJob::class,
+		ProcessesJobHandlesInterface::ANNOTATION_NOTIFICATION_DISPATCH => AnnotationNotificationDispatchJob::class,
+		ProcessesJobHandlesInterface::AUTO_TRANSITION => AutoTransitionJob::class,
 	];
 
 	/**
@@ -76,6 +76,6 @@ final class H20JobHandlesTest extends TestCase {
 			}
 		}
 
-		$this->assertSame([], $found, 'Use ' . $handle . ' through JobHandles instead.');
+		$this->assertSame([], $found, 'Use ' . $handle . ' through ProcessesJobHandlesInterface instead.');
 	}//end testNoFileOutsideBackgroundJobNamesTheJob()
 }//end class

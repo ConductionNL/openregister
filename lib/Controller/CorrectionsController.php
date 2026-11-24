@@ -27,10 +27,10 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
-use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Controller\Support\CorrectionsControllerServices;
 use OCA\OpenRegister\Exception\CorrectionRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Object\CorrectionServiceInterface;
 use OCA\OpenRegister\Service\Object\CorrectionTarget;
 use OCA\OpenRegister\Service\Object\CorrectionTargetsInterface;
@@ -87,7 +87,7 @@ class CorrectionsController extends Controller {
 		IRequest $request,
 		CorrectionsControllerServices $services,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->corrections = $services->corrections;
 		$this->targets = $services->targets;
 		$this->userSession = $services->userSession;

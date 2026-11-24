@@ -38,11 +38,12 @@ use OCA\OpenRegister\Db\FileDigestMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Files\Db\PublicShareRequest;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\PublishedDigestService;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
-use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
+use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Tests\Unit\Db\RecordingQueryBuilderTrait;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -66,6 +67,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\FileDigestMapper
  * @covers \OCA\OpenRegister\Db\FileDigest
  * @uses   \OCA\OpenRegister\Db\AuditFlowAttribution
+ * @uses   \OCA\OpenRegister\Files\Db\PublicShareRequest
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses   \OCA\OpenRegister\Db\AuditTrailPayloadHelper
@@ -151,12 +153,12 @@ class PublishedDigestTest extends TestCase {
 			$logger
 		);
 
-		$restrictions = $this->createMock(FileRestrictionGuardInterface::class);
+		$restrictions = $this->createMock(FileReadRestrictionInterface::class);
 		$restrictions->method('isRestricted')->willReturn(false);
-		$partyGuard = $this->createMock(PartyIndicatorGuard::class);
+		$partyGuard = $this->createMock(PublicationRefusalInterface::class);
 		$container = $this->createMock(IServerContainer::class);
 		$container->method('get')->willReturnCallback(
-			static fn (string $id): object => ($id === FileRestrictionGuardInterface::class ? $restrictions : $partyGuard)
+			static fn (string $id): object => ($id === FileReadRestrictionInterface::class ? $restrictions : $partyGuard)
 		);
 
 		$this->handler = new FilePublishingHandler(
@@ -176,8 +178,8 @@ class PublishedDigestTest extends TestCase {
 	 */
 	public function testPublishingRecordsTheDigest(): void {
 		$this->shares->expects($this->once())->method('publishFile')->willReturnCallback(
-			function (int $fileId): array {
-				$this->transactions[] = 'share ' . $fileId;
+			function (PublicShareRequest $request): array {
+				$this->transactions[] = 'share ' . $request->fileId;
 				return ['id' => 7, 'token' => 'tok', 'accessUrl' => 'https://x/s/tok'];
 			}
 		);

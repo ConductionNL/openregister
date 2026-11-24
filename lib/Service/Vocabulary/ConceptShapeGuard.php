@@ -32,7 +32,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Vocabulary;
 
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 
 /**
  * Validates a concept against the shape its own scheme declares.
@@ -67,7 +67,7 @@ class ConceptShapeGuard implements ConceptShapeGuardInterface {
 	 * @spec openspec/specs/skos-concept-registers/spec.md
 	 */
 	public function isConcept(Schema $schema): bool {
-		return ((string)$schema->getSlug() === VocabularyImportService::SCHEMA_CONCEPT);
+		return ((string)$schema->getSlug() === VocabularyImporterInterface::SCHEMA_CONCEPT);
 	}//end isConcept()
 
 	/**

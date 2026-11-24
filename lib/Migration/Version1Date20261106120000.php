@@ -34,14 +34,13 @@ use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Rename the reserved row_number column of the import preview rows.
  *
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
-class Version1Date20261106120000 extends SimpleMigrationStep {
+class Version1Date20261106120000 extends TargetedMigrationStep {
 	private const TABLE = 'openregister_import_preview_rows';
 
 	/**
@@ -64,7 +63,7 @@ class Version1Date20261106120000 extends SimpleMigrationStep {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
-	public function preSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
+	protected function beforeTargetedSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -84,5 +83,5 @@ class Version1Date20261106120000 extends SimpleMigrationStep {
 			)
 		);
 		$output->info('Renamed row_number to source_row on '.self::TABLE);
-	}//end preSchemaChange()
+	}//end beforeTargetedSchemaChange()
 }//end class

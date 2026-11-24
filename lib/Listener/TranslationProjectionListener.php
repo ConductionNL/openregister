@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use OCA\OpenRegister\BackgroundJob\QueuedJobClassesInterface;
+use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -45,7 +45,7 @@ use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Deferral\ListenerDeferralInterface;
 use OCA\OpenRegister\Service\Object\TranslationHandlerInterface;
-use OCA\OpenRegister\Service\TranslationProjectionServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -68,7 +68,7 @@ class TranslationProjectionListener implements IEventListener {
 	/**
 	 * Wire the translation-projection service and the deferral contract.
 	 *
-	 * @param TranslationProjectionServiceInterface $projection Projection service.
+	 * @param TranslationProjectionInterface $projection Projection service.
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup (request-cached) for the enqueue gate.
 	 * @param TranslationHandlerInterface $translationHandler Translatable-property gate.
 	 * @param ListenerDeferralInterface $deferral Actor-forwarding deferral service.
@@ -78,7 +78,7 @@ class TranslationProjectionListener implements IEventListener {
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 */
 	public function __construct(
-		private readonly TranslationProjectionServiceInterface $projection,
+		private readonly TranslationProjectionInterface $projection,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly TranslationHandlerInterface $translationHandler,
 		private readonly ListenerDeferralInterface $deferral,
@@ -128,7 +128,7 @@ class TranslationProjectionListener implements IEventListener {
 		}
 
 		$this->deferral->defer(
-			jobClass: QueuedJobClassesInterface::TRANSLATION_PROJECTION,
+			jobClass: ProcessesJobHandlesInterface::TRANSLATION_PROJECTION,
 			entry: $this->deferralEntry(object: $object),
 			chunkSize: self::CHUNK_SIZE,
 			dedupeKey: (string)$object->getUuid()
