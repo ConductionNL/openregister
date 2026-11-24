@@ -68,11 +68,9 @@ class ObjectUpdateRights implements ObjectUpdateRightsInterface {
 		$schema = $this->schemas->find((string)$object->getSchema());
 
 		return $this->permissions->hasPermission(
-			schema: $schema,
-			action: 'update',
-			userId: $userId,
-			objectOwner: $object->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: 'update'))
+				->askedBy(userId: $userId, objectOwner: $object->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end mayUpdateObject()
 }//end class

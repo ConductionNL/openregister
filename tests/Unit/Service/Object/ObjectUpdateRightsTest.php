@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Object\ObjectUpdateRights;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use PHPUnit\Framework\TestCase;
@@ -66,12 +67,15 @@ class ObjectUpdateRightsTest extends TestCase {
 		$schemas->expects($this->once())->method('find')->with('12')->willReturn($schema);
 		$permissions = $this->createMock(PermissionCheckInterface::class);
 		$permissions->expects($this->once())->method('hasPermission')->with(
-			$schema,
-			'update',
-			'sales',
-			'owner',
-			true,
-			$object
+			$this->callback(static function (PermissionAsk $ask) use ($schema, $object): bool {
+				$check = $ask->check();
+
+				return $check->schema === $schema
+					&& $check->action === 'update'
+					&& $check->userId === 'sales'
+					&& $check->objectOwner === 'owner'
+					&& $check->object === $object;
+			})
 		)->willReturn(true);
 
 		$rights = new ObjectUpdateRights(objects: $objects, schemas: $schemas, permissions: $permissions);

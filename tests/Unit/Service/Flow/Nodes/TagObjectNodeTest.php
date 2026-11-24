@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
 use OCA\OpenRegister\Service\Object\ObjectUpdateRights;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\IUser;
@@ -114,8 +115,11 @@ class TagObjectNodeTest extends TestCase {
 		});
 		$this->schemas->method('find')->with('12')->willReturn(new Schema());
 		$this->permissions->method('hasPermission')->willReturnCallback(
-			fn (Schema $schema, string $action, ?string $userId = null, ?string $objectOwner = null, bool $_rbac = true, ?ObjectEntity $object = null): bool =>
-				$action === 'update' && in_array($userId, ['sales', 'trigger'], true) && $objectOwner === 'owner' && in_array($object?->getUuid(), $this->updatable, true)
+			function (PermissionAsk $ask): bool {
+				$check = $ask->check();
+
+				return $check->action === 'update' && in_array($check->userId, ['sales', 'trigger'], true) && $check->objectOwner === 'owner' && in_array($check->object?->getUuid(), $this->updatable, true);
+			}
 		);
 	}//end setUp()
 
