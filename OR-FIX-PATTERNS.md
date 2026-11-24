@@ -744,3 +744,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: phpstan 'Unknown parameter $groupBy in call to static method AggregationQuery::create()'; tests 'Error: Unknown named parameter $groupBy'.
 - Cause: main (a16b1e9d) folded groupBy, dateBucket, metrics and cumulative into Search\Service\Aggregation\AggregationLayout: create(metric, field, filter, layout).
 - Fix: wrap those arguments in layout: new AggregationLayout(groupBy: ..., metrics: ...); callers outside Search that only group use AggregationQuery::grouped(). See #10541 a0a55797.
+
+## RecentLensLookupCallSitesTest flags a mapper find (or-fix-5)
+- Symptom: RecentLensLookupCallSitesTest::testEveryInternalFindHasADecision lists 'lib/<File>.php::<method>' for a PR's new ->find( call.
+- Cause: the sweep counts every ->find( in lib as a possible ObjectService read; a find on MagicMapperInterface (or another mapper) writes no read row.
+- Fix: when the receiver is not ObjectService, add the file/method to NOT_OBJECT_SERVICE in that test (as SharerAccessSweepJob); when it is ObjectService, wrap in WriteCause::asLookup or pass audit: false. (#10535 a02052cf)
