@@ -166,6 +166,136 @@ for and who asked. The refused ones are the interesting rows. Somebody tried to
 take the lockout down to sixty seconds on a Friday afternoon, and a
 success-only trail could never tell you.
 
+## When a dependency stops answering
+
+Open Register keeps a circuit breaker per dependency. While a dependency is
+failing, it is not called: the caller gets an immediate refusal instead of a
+request that hangs until its timeout, and the failing system is not buried
+under retries.
+
+| Breaker | Key | Guards |
+|---|---|---|
+| Outside service | `outbound:{host}`, or the connection a call names (for example `outbound:brp`) | Every outbound HTTP call |
+| Outside database | `source:{id}` | Reads from a schema backed by an outside database |
+| Language model | `llm` | Chat answers and embeddings |
+| Webhook receiver | `webhook:{host}` | Webhook deliveries |
+
+A breaker opens when, over the last 60 seconds, at least 10 calls were made, at
+least 5 failed, and at least half failed. While open it refuses every call for
+its cool-down: 30 seconds at first, doubling each time it opens again, up to 300
+seconds. After the cool-down one call goes through as a probe. If it succeeds
+the breaker closes; if it fails the breaker opens again.
+
+What counts as a failure:
+
+- outbound HTTP and webhooks: a connection error, a timeout, a 5xx, or a 429. A
+  429's `Retry-After` becomes the cool-down when it is longer. Any other 4xx is
+  the caller's problem and counts as a success;
+- an outside database: a connection error or a query error;
+- the language model: any error from the chat or embedding call.
+
+A webhook to a receiver whose breaker is open is not sent. The delivery is put
+on the retry job for after the cool-down, and its attempt count does not go up.
+A webhook that runs before a write is skipped at once, and the write continues
+as it does when that webhook fails.
+
+With a distributed memcache (Redis) configured, every PHP worker shares the
+breakers. Without one, each worker learns on its own. That still sheds most of
+the load, and the operations console says which of the two you have.
+
+## Heavy work waits while the database struggles
+
+Open Register also watches its own database. It counts its API requests, the
+ones that took longer than 2 seconds and the ones that ended in a database
+error. The database is under pressure when, over the last 60 seconds, there were
+at least 50 requests and either a fifth were slow or a tenth hit a database
+error.
+
+Under pressure, only the heavy routes are refused:
+
+- `GET /api/objects/{register}/{schema}/export`;
+- the four aggregation routes under `/api/objects/aggregations/`;
+- `POST /api/graphql`;
+- the bulk routes under `/api/bulk/` and `POST /api/bulk-jobs`;
+- report runs: `POST /api/reports/{id}/render` and `GET /api/reports/{id}/preview`.
+
+Reading and saving single records always goes through, so a caseworker keeps
+working while an export waits. The routes are marked `#[Sheddable]` in the code,
+and a unit test lists them, so the set changes only with a reviewed change.
+
+## The 503 a caller gets
+
+```http
+HTTP/1.1 503 Service Unavailable
+Retry-After: 27
+Content-Type: application/problem+json
+
+{"type": "about:blank", "title": "Dependency unavailable", "status": 503,
+ "detail": "The outside database this schema reads from is not answering. Try again in 27 seconds.",
+ "dependency": "source"}
+```
+
+`dependency` is one of `database`, `llm`, `source`, `outbound` or `webhook`. The
+body never names a host, a port, a database or a credential, because the answer
+can reach an anonymous visitor on a public route. A refusal for database
+pressure always carries `Retry-After: 30`. A record on an outside database whose
+breaker is open answers 503, never 404: it is not missing, it just cannot be
+read right now.
+
+## See and reset the breakers
+
+As an administrator:
+
+```bash
+curl -u admin:pass https://cloud.example.org/apps/openregister/api/operations/dependencies
+```
+
+The answer lists every breaker that has state, with its class, key, state
+(`closed`, `open` or `half-open`), calls and failures in the window, when it
+opened, when it next probes, and whether the state is shared. Beside it is the
+database pressure: the counts, whether shedding is on, and whether the database
+is under pressure now.
+
+When you have fixed the outage, close a breaker without waiting for the probe:
+
+```bash
+curl -X POST -u admin:pass -H 'OCS-APIRequest: true' \
+  https://cloud.example.org/apps/openregister/api/operations/dependencies/llm/reset
+```
+
+The reset lands on the audit trail as `dependency.reset`, naming you. Both
+endpoints are administrator-only; anybody else gets 403. A breaker on a declared
+connection (`llm`, or a call site's named connection such as `brp`) reports
+`unavailable` to the connection registry when it opens and `configured` when it
+closes.
+
+## Tune the thresholds
+
+The thresholds are app settings in the `openregister` app, read once per
+request. A value that cannot be read or is out of range falls back to its
+default and is logged.
+
+| Setting | Default |
+|---|---|
+| `load_shedding_breaker_min_calls` | 10 |
+| `load_shedding_breaker_min_failures` | 5 |
+| `load_shedding_breaker_failure_percent` | 50 |
+| `load_shedding_breaker_cool_down` | 30 |
+| `load_shedding_breaker_max_cool_down` | 300 |
+| `load_shedding_pressure_enabled` | true |
+| `load_shedding_pressure_min_requests` | 50 |
+| `load_shedding_pressure_slow_ms` | 2000 |
+| `load_shedding_pressure_slow_percent` | 20 |
+| `load_shedding_pressure_error_percent` | 10 |
+
+```bash
+occ config:app:set openregister load_shedding_pressure_enabled --value=false --type=boolean
+```
+
+That switch turns database-pressure shedding off for an instance that prefers
+slow answers to refusals. The dependency breakers cannot be switched off, only
+tuned.
+
 Next: [Access links](access-links.md) for sharing one record outside the
 instance, and [API generation](api-generation.md) for the capabilities answer
 that publishes the same ceilings.
