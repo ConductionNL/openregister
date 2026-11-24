@@ -218,3 +218,4 @@ openregister#10451 baeb84ac3aadb8cb7a9070b5964b0dd7adfda5b1 precheck-red alone o
 openregister#10640 ed7f06cd31dc3b2afe144000c02847936a365d95 auto-park: sbom: composer.lock changed without sbom.cdx.json
 openregister#10587 cc99fda0ca8c1d84b3031140c790e0bbca9be8b7 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Controller\FederationControllerShareManagementTest::testACreatePassesTheParameters
 openregister#11061 e6bcba7b9b8633679eb65a45d71d918628c6d435 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline
+openregister#10456 670c55fd788d76973f6f66021e39f064638e336a precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\Chat\ResponseGenerationBreakerTest::testAClosedBreakerLetsTheChatThroughAn;OCA\OpenRegister\Tests\Unit\Service\Chat\ResponseGenerationBreakerTest::testAGoodProbeAfterTheCoolDow
