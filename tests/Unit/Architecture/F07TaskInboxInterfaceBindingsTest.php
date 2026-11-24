@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskInboxServiceInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -49,7 +49,7 @@ final class F07TaskInboxInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string, string}>
 	 */
 	private const CLASSES = [
-		TaskInboxService::class => [TaskInboxServiceInterface::class, ContractBindings::class, 'Service/'],
+		TaskInboxService::class => [TaskInboxServiceInterface::class, ProcessesServiceBindings::class, 'Service/'],
 	];
 
 	/**
