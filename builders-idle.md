@@ -433,3 +433,4 @@
 2026-11-24T22:19Z help-filinq-1 skipped propose-grondslag-per-entity-type: 7.1 is owned by the OpenAnonymiser team (external service API)
 2026-11-24T22:19Z help-filinq-1 skipped archiefwet-retention-engine 1.2/1.4/4.1-seed-lint/4.5: real VNG selectielijst categories need the selectielijst manager's records-appraisal sign-off; 2.2 left open as records-appraisal decision
 2026-11-24T22:22Z help-filinq-1 helped filinq: archiefwet-retention-engine 3.3 #2322 (OR dep ConductionNL/openregister#11087 for the integrator), 4.4 docs written (screenshots left)
+2026-11-24T22:23Z help-filinq-1 skipped work-content-search OR items 2-3 of ConductionNL/openregister#11037: build on unmerged #11044 and unlock only live Playwright checks; every other filinq change with open tasks already has a branch or PR
