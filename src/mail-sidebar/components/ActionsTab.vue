@@ -14,10 +14,10 @@
 		<div v-else>
 			<div
 				v-for="schema in schemas"
-				:key="schema.id"
+				:key="keyOf(schema)"
 				class="or-action-block"
 				:class="{ 'or-action-block--busy': isBusy(schema) }">
-				<label class="or-action-label" :for="'or-action-search-' + schema.id">
+				<label class="or-action-label" :for="'or-action-search-' + keyOf(schema)">
 					{{ schema.title }}
 				</label>
 				<div
@@ -30,7 +30,7 @@
 						<input
 							type="search"
 							class="or-action-input"
-							:value="searchTerms[schema.id]"
+							:value="searchTerms[keyOf(schema)]"
 							:aria-label="schema.title"
 							disabled>
 					</div>
@@ -41,7 +41,7 @@
 							:name="String(objectName(pickedObject(schema)))"
 							:status="objectStatus(pickedObject(schema))"
 							:handler="nameOf(objectHandler(pickedObject(schema)))"
-							:term="searchTerms[schema.id]"
+							:term="searchTerms[keyOf(schema)]"
 							busy
 							:trailing="t('openregister', 'Connecting')" />
 					</div>
@@ -58,8 +58,8 @@
 					<div class="or-action-search">
 						<Magnify :size="20" class="or-action-search__icon" />
 						<input
-							:id="'or-action-search-' + schema.id"
-							v-model="searchTerms[schema.id]"
+							:id="'or-action-search-' + keyOf(schema)"
+							v-model="searchTerms[keyOf(schema)]"
 							type="search"
 							class="or-action-input"
 							:placeholder="t('openregister', 'Number or words')"
@@ -67,14 +67,14 @@
 							@focus="showResults(schema)" />
 						<ul
 							v-if="
-								visibleResults[schema.id]
-								&& (searchResults[schema.id] || []).length > 0
+								visibleResults[keyOf(schema)]
+								&& (searchResults[keyOf(schema)] || []).length > 0
 							"
 							class="or-action-results"
 							role="listbox"
 							:aria-label="t('openregister', 'Search Results')">
 							<li
-								v-for="obj in searchResults[schema.id]"
+								v-for="obj in searchResults[keyOf(schema)]"
 								:key="obj.id"
 								class="or-action-result"
 								role="option"
@@ -89,7 +89,7 @@
 									:name="String(objectName(obj))"
 									:status="objectStatus(obj)"
 									:handler="nameOf(objectHandler(obj))"
-									:term="searchTerms[schema.id]" />
+									:term="searchTerms[keyOf(schema)]" />
 							</li>
 						</ul>
 						<p
@@ -98,11 +98,11 @@
 							{{
 								t('openregister', 'No {name} matches “{term}”.', {
 									name: itemName(schema),
-									term: searchTerms[schema.id],
+									term: searchTerms[keyOf(schema)],
 								})
 							}}
 						</p>
-						<div v-if="searching[schema.id]" class="or-action-searching">
+						<div v-if="searching[keyOf(schema)]" class="or-action-searching">
 							{{ t('openregister', 'Searching...') }}
 						</div>
 					</div>
@@ -148,6 +148,7 @@ import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjec
 import ObjectRow from './ObjectRow.vue'
 import { createDialogFor } from '../createDialogs.js'
 import { displayNameOf } from '../displayNames.js'
+import { blocksOf } from '../mailBlocks.js'
 import { objectHandler, objectIdentifier, objectStatus } from '../objectRow.js'
 import { itemName } from '../sentenceName.js'
 
@@ -259,10 +260,10 @@ export default {
 		searchFor(term) {
 			const schema = this.schemas[0]
 			if (!schema) return
-			this.searchTerms[schema.id] = term
-			this.visibleResults[schema.id] = true
+			this.searchTerms[this.keyOf(schema)] = term
+			this.visibleResults[this.keyOf(schema)] = true
 			this.searchObjects(schema)
-			this.$nextTick(() => document.getElementById('or-action-search-' + schema.id)?.focus())
+			this.$nextTick(() => document.getElementById('or-action-search-' + this.keyOf(schema))?.focus())
 		},
 
 		/**
@@ -274,7 +275,7 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		pickedObject(schema) {
-			const linking = this.linking[schema.id]
+			const linking = this.linking[this.keyOf(schema)]
 			return linking && typeof linking === 'object' ? linking : null
 		},
 
@@ -286,11 +287,11 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		noMatch(schema) {
-			const term = this.searchTerms[schema.id] || ''
+			const term = this.searchTerms[this.keyOf(schema)] || ''
 			return term !== ''
-				&& this.searchedTerms[schema.id] === term
-				&& !this.searching[schema.id]
-				&& (this.searchResults[schema.id] || []).length === 0
+				&& this.searchedTerms[this.keyOf(schema)] === term
+				&& !this.searching[this.keyOf(schema)]
+				&& (this.searchResults[this.keyOf(schema)] || []).length === 0
 		},
 
 		/**
@@ -301,7 +302,7 @@ export default {
 		 * @param {object} schema
 		 */
 		isBusy(schema) {
-			return !!this.creating[schema.id] || !!this.linking[schema.id]
+			return !!this.creating[this.keyOf(schema)] || !!this.linking[this.keyOf(schema)]
 		},
 
 		/**
@@ -342,6 +343,16 @@ export default {
 		},
 
 		/**
+		 * What the panel keys a block's state by: its block key, or the schema's id.
+		 *
+		 * @param {object} schema The block or schema.
+		 * @return {string}
+		 */
+		keyOf(schema) {
+			return schema.blockKey ?? String(schema.id)
+		},
+
+		/**
 		 * Remember which register holds each schema.
 		 *
 		 * @param {Array<object>} registers The registers.
@@ -363,10 +374,9 @@ export default {
 		 * @return {void}
 		 */
 		showMailSchemas(allSchemas) {
-			this.schemas = allSchemas.filter((s) => {
-				const lt = s.configuration?.linkedTypes || []
-				return lt.includes('mail')
-			})
+			this.schemas = allSchemas
+				.filter((s) => (s.configuration?.linkedTypes || []).includes('mail'))
+				.flatMap(blocksOf)
 			for (const schema of this.schemas) {
 				this.loadInitialResults(schema)
 			}
@@ -402,11 +412,11 @@ export default {
 		 */
 		async fetchResults(register, schema, params) {
 			const response = await axios.get(this.objectsUrl(register, schema), {
-				params: { ...params, _limit: 20, _extend: 'status' },
+				params: { ...(schema.blockFilter || {}), ...params, _limit: 20, _extend: 'status' },
 				timeout: 10000,
 			})
 			const results = response.data?.results || response.data || []
-			this.searchResults[schema.id] = results
+			this.searchResults[this.keyOf(schema)] = results
 			this.resolveNames(results)
 		},
 
@@ -434,7 +444,7 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		showResults(schema) {
-			this.visibleResults[schema.id] = true
+			this.visibleResults[this.keyOf(schema)] = true
 		},
 
 		/**
@@ -442,10 +452,10 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		debounceSearch(schema) {
-			if (this.debounceTimers[schema.id]) {
-				clearTimeout(this.debounceTimers[schema.id])
+			if (this.debounceTimers[this.keyOf(schema)]) {
+				clearTimeout(this.debounceTimers[this.keyOf(schema)])
 			}
-			this.debounceTimers[schema.id] = setTimeout(() => {
+			this.debounceTimers[this.keyOf(schema)] = setTimeout(() => {
 				this.searchObjects(schema)
 			}, 300)
 		},
@@ -455,7 +465,7 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async searchObjects(schema) {
-			const term = this.searchTerms[schema.id] || ''
+			const term = this.searchTerms[this.keyOf(schema)] || ''
 			const register = this.registerCache[schema.id]
 			if (!register) return
 
@@ -465,15 +475,15 @@ export default {
 				return
 			}
 
-			this.searching[schema.id] = true
-			this.visibleResults[schema.id] = true
+			this.searching[this.keyOf(schema)] = true
+			this.visibleResults[this.keyOf(schema)] = true
 			try {
 				await this.fetchResults(register, schema, { _search: term })
-				this.searchedTerms[schema.id] = term
+				this.searchedTerms[this.keyOf(schema)] = term
 			} catch (err) {
 				console.error('[ActionsTab] Search failed:', err)
 			} finally {
-				this.searching[schema.id] = false
+				this.searching[this.keyOf(schema)] = false
 			}
 		},
 
@@ -591,11 +601,11 @@ export default {
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async openCreate(schema) {
-			if (!this.accountId || !this.messageId || this.creating[schema.id])
+			if (!this.accountId || !this.messageId || this.creating[this.keyOf(schema)])
 				return
 			if (!this.registerCache[schema.id]) return
 
-			this.creating[schema.id] = true
+			this.creating[this.keyOf(schema)] = true
 			try {
 				const envelope = await this.fetchEnvelope()
 				const values = this.buildPlaceholders(envelope)
@@ -603,9 +613,9 @@ export default {
 					schema.configuration.mailObjectTemplate,
 					values,
 				)
-				const offered = createDialogFor(this.registerCache[schema.id], schema)
+				const offered = schema.appDialog === false ? null : createDialogFor(this.registerCache[schema.id], schema)
 				if (offered) {
-					this.creating[schema.id] = false
+					this.creating[this.keyOf(schema)] = false
 					await this.createWithOfferedDialog(offered, schema, data, values)
 					return
 				}
@@ -614,7 +624,7 @@ export default {
 				showError(t('openregister', 'Could not read this email'))
 				console.error('[ActionsTab] Open create failed:', err)
 			} finally {
-				this.creating[schema.id] = false
+				this.creating[this.keyOf(schema)] = false
 			}
 		},
 
@@ -704,7 +714,7 @@ export default {
 
 			const mailRef = `${this.accountId}/${this.messageId}`
 			// The picked object itself, so the block shows it while connecting.
-			this.linking[schema.id] = obj
+			this.linking[this.keyOf(schema)] = obj
 			try {
 				const url = generateUrl(
 					'/apps/openregister/api/objects/{uuid}/_linked/mail',
@@ -720,8 +730,8 @@ export default {
 				)
 
 				// Clear search and hide results
-				this.searchTerms[schema.id] = ''
-				this.visibleResults[schema.id] = false
+				this.searchTerms[this.keyOf(schema)] = ''
+				this.visibleResults[this.keyOf(schema)] = false
 				this.loadInitialResults(schema)
 
 				this.$emit('linked', { schema, object: obj })
@@ -729,7 +739,7 @@ export default {
 				showError(t('openregister', 'Failed to connect'))
 				console.error('[ActionsTab] Link failed:', err)
 			} finally {
-				this.linking[schema.id] = false
+				this.linking[this.keyOf(schema)] = false
 			}
 		},
 	},
