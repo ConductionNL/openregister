@@ -4602,3 +4602,7 @@
 10554 a04f45980ba3e9f2bca7476705d817c176ddc5a9 REVERIFY or-fix-4: merged main, fixed component-map.csv conflict (union rows, yaml regenerated); review needed
 10614 c0da325378ddd4f0d41ee5d61e0ceb0f00c5af51 REVERIFY or-fix-4: merged main, fixed components yaml conflict (regenerated); review needed
 10260 63469ccb714accd7b5807aa1c04865f0be8bcb97 REVERIFY or-fix-0: already contained main aa1f24b9; bumped info.xml 2.2.0-dev.4 -> dev.5 (main had absorbed the bump), check-migration-version-bump OK; no code change; review needed
+10513 9fec0732ccb91acf3b84cac4436b382baebbbe1d APPROVE cloud-or-reviewer-1: fast path; since approved b6f7d6c0 only a main merge: PR-side diff identical apart from main context in components yaml, listener golden rebased (main 257 + PR's 3 = 260) and the version bump now on main; merges clean
+10529 b70d4f391b65ceb710a1b113a5044e3679f8b91d APPROVE cloud-or-reviewer-1: fast path; since approved 38a5fc62 only a main merge; PR-side +/- lines identical over the same 47 files; merges clean with main
+10537 96983b619cefa884d7029b14bf4d42d4fdccdb7e APPROVE cloud-or-reviewer-1: fast path; since approved adad2d85 only a main merge; PR-side diff identical over 98 files apart from main's context names in the regenerated components yaml and the version bump now on main; merges clean
+10553 7c86476fd072780a917afb84a87eb59ae686250f APPROVE cloud-or-reviewer-1: fast path; since approved 84efa7f9 only a main merge; PR-side diff identical over 73 files, components yaml adds the same four exception names; merges clean with main
