@@ -44,6 +44,9 @@ mkdir -p "$W" "$LOGS" "$RUN"
 say() { echo "$*"; }
 need_state() { [ -d "$ST/.git" ] || { say "no state clone; run prepare"; exit 6; }; source "$BIN/state.sh"; }
 lsr() { git -C "$C" ls-remote origin "$1" 2>/dev/null | awk 'NR==1{print $1}'; }
+# A PR head by its pull ref, else by its branch: GitHub sometimes drops refs/pull/<n>/head
+# (#10487, 24 Nov) while the branch is still there.
+lsr_pr() { local v; v=$(lsr "refs/pull/$1/head"); [ -n "$v" ] || [ -z "$2" ] || v=$(lsr "refs/heads/$2"); echo "$v"; }
 
 # Background job helper: runs "$@" detached, writes $RUN/<name>.rc when it ends.
 # Background job: runs `integrate.sh <entry>` detached, writes $RUN/<name>.rc when it ends.
@@ -147,7 +150,7 @@ phase_select() {
 	done
 	prs=$(sed '/^$/d' <<<"$prs")
 	grep -qE $'^[0-9]+\t[0-9a-f]{40}\t' <<<"$prs" || { [ -z "$prs" ] && { say "SELECT-NONE no open PRs to integrate"; : > "$W/cand.tsv"; exit 1; }; say "SELECT-APIERR ${prs:0:120}"; exit 6; }
-	refs=$(awk -F'\t' '{printf "pull/%s/head:refs/remotes/pr/%s ", $1, $1}' <<<"$prs")
+	refs=$(awk -F'\t' '{printf "+refs/heads/%s:refs/remotes/pr/%s ", $3, $1}' <<<"$prs")
 	git -C "$C" fetch -q origin main $refs || { say "SELECT-FETCHERR"; exit 6; }
 	: > "$W/cand.tsv"; q=$W/needs-review.tsv; printf '# pr\thead\tlast_approved\treason\n' > "$q"
 	while IFS=$'\t' read -r -u 3 n head ref title; do
@@ -222,12 +225,12 @@ phase_build() {
 	: > "$W/tree.tsv"; : > "$W/included.txt"
 	while IFS=$'\t' read -r -u 3 n head ref review; do
 		[ "$inc" -ge "$CAP" ] && break
-		now=$(lsr "refs/pull/$n/head")
+		now=$(lsr_pr "$n" "$ref")
 		[ "$now" = "$head" ] || { say "BUILD-MOVED #$n listed=${head:0:8} head=${now:0:8}"; continue; }
 		if ! git merge-tree --write-tree "$d0" "$head" >/dev/null 2>&1; then
 			if new=$(resolve_on_head "$n" "$head" "$ref" "$review"); then
 				say "BUILD-RESOLVED #$n ${head:0:8} -> ${new:0:8}"; head=$new
-				git fetch -q origin "pull/$n/head" 2>/dev/null
+				{ git fetch -q origin "pull/$n/head" || git fetch -q origin "refs/heads/$ref"; } 2>/dev/null
 			else
 				say "BUILD-CONFLICT-DEV #$n (conflict with main outside use lines / map entries)"; st_log "CONFLICT-DEV #$n ${head:0:8}"; continue
 			fi
@@ -504,7 +507,7 @@ push_merge() {
 	local n head ref review t tree out pending=() lines=() i
 	[ "$(lsr refs/heads/main)" = "$D0" ] || { say "DEV-MOVED before push; rebuild"; st_log "DEV-MOVED before push; rebuild"; exit 5; }
 	while IFS=$'\t' read -r n head ref review t tree; do
-		[ "$(lsr "refs/pull/$n/head")" = "$head" ] || { say "HEAD-MOVED #$n; rebuild"; st_log "HEAD-MOVED #$n before push; rebuild"; exit 5; }
+		[ "$(lsr_pr "$n" "$ref")" = "$head" ] || { say "HEAD-MOVED #$n; rebuild"; st_log "HEAD-MOVED #$n before push; rebuild"; exit 5; }
 		grep -qE "^openregister#$n $head( |$)" "$ST/parked.txt" && { say "PARKED-MEANWHILE #$n; rebuild"; exit 5; }
 		if [ "$review" = 1 ] && [ "$(verdict_at "$n" "$head")" != APPROVE ]; then say "NO-APPROVAL #$n at ${head:0:8}; stop"; st_log "STOP #$n lost its approval at ${head:0:8}"; exit 6; fi
 	done < "$W/tree.tsv"
@@ -538,7 +541,7 @@ phase_merge() {
 	while IFS=$'\t' read -r -u 3 n head ref review t tree; do
 		dev=$(lsr refs/heads/main)
 		[ "$dev" = "$expected" ] || { say "DEV-MOVED main=${dev:0:10} expected=${expected:0:10}; rebuild"; st_log "DEV-MOVED before #$n after $count merges; rebuild"; exit 5; }
-		now=$(lsr "refs/pull/$n/head")
+		now=$(lsr_pr "$n" "$ref")
 		[ "$now" = "$head" ] || { say "HEAD-MOVED #$n; rebuild"; st_log "HEAD-MOVED #$n before merge, after $count merges; rebuild"; exit 5; }
 		grep -qE "^openregister#$n $head( |$)" "$ST/parked.txt" && { say "PARKED-MEANWHILE #$n; rebuild"; exit 5; }
 		if [ "$review" = 1 ] && [ "$(verdict_at "$n" "$head")" != APPROVE ]; then say "NO-APPROVAL #$n at ${head:0:8}; stop"; st_log "STOP #$n lost its approval at ${head:0:8}"; exit 6; fi
