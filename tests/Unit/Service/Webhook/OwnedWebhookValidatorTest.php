@@ -32,6 +32,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Webhook\OwnedWebhookValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -126,7 +127,17 @@ class OwnedWebhookValidatorTest extends TestCase {
 
 	public function testAGoodSubscriptionIsAcceptedWithItsScopeAsIds(): void {
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($this->isInstanceOf(Schema::class), 'read', 'alice', null, true, null, '7')
+			->with(
+				$this->callback(
+					fn (PermissionAsk $ask): bool => $ask->schema instanceof Schema
+						&& $ask->action === 'read'
+						&& $ask->userId === 'alice'
+						&& $ask->objectOwner === null
+						&& $ask->object === null
+						&& $ask->register === '7'
+				),
+				true
+			)
 			->willReturn(true);
 
 		$checked = $this->validator->check(data: $this->good(), owner: 'alice', creating: true);

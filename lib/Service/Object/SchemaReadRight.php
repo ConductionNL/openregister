@@ -24,7 +24,7 @@ use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaReadRightInterface;
 
 /**
- * Answers {@see SchemaReadRightInterface} with PermissionCheckInterface::hasPermission(action: 'read').
+ * Answers {@see SchemaReadRightInterface} with PermissionCheckInterface::hasPermission() with a read PermissionAsk.
  *
  * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-is-limited-to-object-events-in-one-scope
  */
@@ -54,6 +54,10 @@ final class SchemaReadRight implements SchemaReadRightInterface {
 			return false;
 		}
 
-		return $this->permissions->hasPermission(schema: $schema, action: 'read', userId: $userId, register: $register);
+		return $this->permissions->hasPermission(
+			ask: (new PermissionAsk(schema: $schema, action: 'read'))
+				->askedBy(userId: $userId, objectOwner: null)
+				->about(object: null, register: $register)
+		);
 	}//end mayRead()
 }//end class

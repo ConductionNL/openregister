@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
 use OCA\OpenRegister\Service\Object\SchemaReadRight;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -30,7 +31,17 @@ class SchemaReadRightTest extends TestCase {
 		$schema      = new Schema();
 		$permissions = $this->createMock(PermissionCheckInterface::class);
 		$permissions->expects($this->exactly(2))->method('hasPermission')
-			->with($schema, 'read', 'owner', null, true, null, '4')
+			->with(
+				$this->callback(
+					fn (PermissionAsk $ask): bool => $ask->schema === $schema
+						&& $ask->action === 'read'
+						&& $ask->userId === 'owner'
+						&& $ask->objectOwner === null
+						&& $ask->object === null
+						&& $ask->register === '4'
+				),
+				true
+			)
 			->willReturnOnConsecutiveCalls(true, false);
 
 		$right = new SchemaReadRight(permissions: $permissions);

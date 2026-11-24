@@ -119,7 +119,6 @@ class WebhooksControllerOwnedTest extends TestCase {
 		$groups->method('isAdmin')->willReturnCallback(fn (string $who) => $admin && $who === $uid);
 
 		return WebhooksControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->webhookMapper,
 			$this->webhookLogMapper,
