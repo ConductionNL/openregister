@@ -34,17 +34,34 @@ class MagicRelationsTableTest extends TestCase {
 
 	private const TABLE = 'openregister_table_42_72';
 
+	/**
+	 * The table under test, on a recording connection.
+	 *
+	 * @return MagicRelationsTable
+	 */
 	private function table(): MagicRelationsTable {
 		return new MagicRelationsTable($this->recordingConnection(), self::TABLE);
 	}//end table()
 
+	/**
+	 * Append reads the live row, then writes only its relations and updated time.
+	 *
+	 * @return void
+	 */
 	public function testAppendReadsTheLiveRowAndWritesOnlyItsRelationsAndUpdated(): void {
 		$this->rowSets          = [[['_relations' => '["a"]']]];
 		$this->statementResults = [1];
 
 		$this->assertSame(1, $this->table()->append('target', 'saved'));
 		$this->assertSame(
-			['select(_relations)', 'from(' . self::TABLE . ')', "where(eq(_uuid, 'target'))", 'andWhere(isNull(_deleted))', 'setMaxResults(1)', 'executeQuery'],
+			[
+				'select(_relations)',
+				'from(' . self::TABLE . ')',
+				"where(eq(_uuid, 'target'))",
+				'andWhere(isNull(_deleted))',
+				'setMaxResults(1)',
+				'executeQuery',
+			],
 			$this->queries[0]
 		);
 		$this->assertSame('update(' . self::TABLE . ')', $this->queries[1][0]);
@@ -53,6 +70,11 @@ class MagicRelationsTableTest extends TestCase {
 		$this->assertSame(["where(eq(_uuid, 'target'))", 'andWhere(isNull(_deleted))', 'executeStatement'], array_slice($this->queries[1], 3));
 	}//end testAppendReadsTheLiveRowAndWritesOnlyItsRelationsAndUpdated()
 
+	/**
+	 * A row without relations starts a list.
+	 *
+	 * @return void
+	 */
 	public function testAppendStartsAListOnARowWithoutRelations(): void {
 		$this->rowSets = [[['_relations' => null]]];
 
@@ -61,6 +83,11 @@ class MagicRelationsTableTest extends TestCase {
 		$this->assertSame("set(_relations, '[\"saved\"]')", $this->queries[1][1]);
 	}//end testAppendStartsAListOnARowWithoutRelations()
 
+	/**
+	 * A row that already holds the UUID is not written.
+	 *
+	 * @return void
+	 */
 	public function testAppendWritesNothingWhenTheRowAlreadyHoldsTheUuid(): void {
 		$this->rowSets = [[['_relations' => '["saved"]']]];
 
@@ -68,6 +95,11 @@ class MagicRelationsTableTest extends TestCase {
 		$this->assertCount(1, $this->queries);
 	}//end testAppendWritesNothingWhenTheRowAlreadyHoldsTheUuid()
 
+	/**
+	 * A missing or deleted row is not written.
+	 *
+	 * @return void
+	 */
 	public function testAppendWritesNothingForAMissingOrDeletedRow(): void {
 		$this->rowSets = [[]];
 

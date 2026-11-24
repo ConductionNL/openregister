@@ -44,6 +44,11 @@ class InverseRelationsTest extends TestCase {
 
 	private const SECOND = '33333333-3333-4333-8333-333333333333';
 
+	/**
+	 * Each referenced object gets only its relations written, without a read or a full update.
+	 *
+	 * @return void
+	 */
 	public function testEachReferencedObjectGetsOnlyItsRelationsWrittenWithoutAReadOrAFullUpdate(): void {
 		$register = new Register();
 		$schema   = new Schema();
@@ -75,6 +80,11 @@ class InverseRelationsTest extends TestCase {
 		$this->assertSame([[self::FIRST, self::SAVED], [self::SECOND, self::SAVED]], $written);
 	}//end testEachReferencedObjectGetsOnlyItsRelationsWrittenWithoutAReadOrAFullUpdate()
 
+	/**
+	 * A relation whose property has no $ref writes nothing back.
+	 *
+	 * @return void
+	 */
 	public function testARelationWithoutARefWritesNothing(): void {
 		$schema = new Schema();
 		$schema->setProperties(['filedOver' => ['type' => 'array', 'items' => ['type' => 'string', 'format' => 'uuid']]]);
