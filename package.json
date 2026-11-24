@@ -148,7 +148,7 @@
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.5",
     "esbuild": "^0.28.0",
-    "eslint": "^10.11.0",
+    "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-webpack-plugin": "^6.0.0",
     "fast-check": "^4.10.2",
