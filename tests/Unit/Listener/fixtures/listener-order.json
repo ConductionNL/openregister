@@ -357,6 +357,9 @@
 	"OCP\\OCM\\Events\\ResourceTypeRegisterEvent": [
 		"OCA\\OpenRegister\\Listener\\OcmResourceTypeListener"
 	],
+	"OCP\\Share\\Events\\BeforeShareCreatedEvent": [
+		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener"
+	],
 	"OCP\\Share\\Events\\ShareCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
 	],
@@ -371,6 +374,12 @@
 	],
 	"OCP\\User\\Events\\BeforeUserDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\SharerViewsEndWithUserListener"
+	],
+	"OCP\\User\\Events\\OutOfOfficeEndedEvent": [
+		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
+	],
+	"OCP\\User\\Events\\OutOfOfficeStartedEvent": [
+		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
 	],
 	"OCP\\User\\Events\\UserCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
