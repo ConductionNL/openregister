@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Notifications\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\TablePdfRendererInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineWriteService;
 
@@ -40,6 +41,7 @@ final class NotesControllerServices {
 	 * @param ObjectOperationsInterface             $objectService Object service for object validation
 	 * @param TimelineVisibilityService $visibility    Visibility guard, filter and audit
 	 * @param TimelineWriteService      $timeline      Projects a note into the entry record, so it is searchable
+	 * @param TablePdfRendererInterface|null $export   Renders the PDF journal sheet; null where no PDF is served
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
 	 */
@@ -48,6 +50,7 @@ final class NotesControllerServices {
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly TimelineVisibilityService $visibility,
 		public readonly TimelineWriteService $timeline,
+		public readonly ?TablePdfRendererInterface $export = null,
 	) {
 	}//end __construct()
 }//end class
