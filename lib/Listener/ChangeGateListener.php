@@ -13,6 +13,10 @@
  * entry ({@see ChangeGateDeclaration}). A gate that is declared but cannot be
  * read fails closed, as a transition gate does.
  *
+ * The same listener decides the held change: when the chain's sequence
+ * completes it applies the change (`onApprove: applyChange`), and when it is
+ * rejected it discards it.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
