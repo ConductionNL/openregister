@@ -372,6 +372,7 @@ final class CoreServiceBindings {
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
 		ObjectActivityAuditInterface::class => ObjectActivityAudit::class,
+		\OCA\OpenRegister\Kernel\Contracts\OperatorActionAuditInterface::class => \OCA\OpenRegister\Service\Audit\OperatorActionAudit::class,
 		MandateEvidenceInterface::class => MandateEvidence::class,
 		AggregationRunnerInterface::class => AggregationRunner::class,
 		WidgetAnnotationValidatorInterface::class => WidgetAnnotationValidator::class,
@@ -382,6 +383,9 @@ final class CoreServiceBindings {
 		DeclaredGroupInventoryInterface::class => DeclaredGroupInventoryService::class,
 		GrantableRightsIndexInterface::class => GrantableRightsIndex::class,
 		GroupReconcilerInterface::class => GroupReconciler::class,
+		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface::class => GroupReconciler::class,
+		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface::class
+			=> \OCA\OpenRegister\Service\Authorization\DeclaredGroupRights::class,
 		ConsentAnnotationValidatorInterface::class => ConsentAnnotationValidator::class,
 		DateTimeNormalizerInterface::class => DateTimeNormalizer::class,
 		DatabaseIntrospectionServiceInterface::class => DatabaseIntrospectionService::class,
