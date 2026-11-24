@@ -33,7 +33,6 @@ use OCA\OpenRegister\AppHost\ObservabilityRegistrar;
 use OCA\OpenRegister\BulkAction\BulkActionRegistrar;
 use OCA\OpenRegister\Capabilities\CapabilityRegistrar;
 use OCA\OpenRegister\ContextChat\ContextChatRegistrar;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\DbRegistrar;
 use OCA\OpenRegister\Db\MapperRegistrar;
 use OCA\OpenRegister\Db\PlatformMapperRegistrar;
@@ -194,7 +193,6 @@ class Application extends App implements IBootstrap {
 
 		FlowRegistrar::register(context: $context);
 		RbacRegistrar::register(context: $context);
-		ComplianceServiceRegistrar::registerGdpr(context: $context);
 
 		// The contracts other components type-hint, bound to their services.
 		ContractBindingsRegistrar::register(context: $context);
