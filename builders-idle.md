@@ -360,3 +360,4 @@
 2026-11-24T20:28Z help-opencatalogi-1 woo-access-boundary-hardening 2.1/2.2/2.3/5.1 #2979 (PublicBoundaryTest + reviewed public-routes list; decision: record half stays in HTTP suite); left 1.3 live
 2026-11-24T20:32Z help-opencatalogi-1 helped opencatalogi: prometheus-metrics archived #2980 (6.1-6.6 written as tests/e2e/observability.spec.ts, runs in nightly)
 2026-11-24T20:37Z help-opencatalogi-1 helped opencatalogi: search 1.7 e2e written #2981, change archived #2982 (requirements already in canonical change history)
+2026-11-24T20:39Z help-opencatalogi-1 catalogs criteria decided/evidenced #2983 (seed catalogues stay in the zuiddrecht example set); left re-import idempotency test and CatalogModal on CnFormDialog
