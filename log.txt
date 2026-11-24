@@ -3956,3 +3956,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T05:32:36Z or-fix-1 start
 2026-11-24T05:51:19Z session-20261124T055011-83f69c00 cloud-or-reviewer-5: 0 reviewable; all 23 open non-draft main PRs with N%8==5 have an APPROVE or BLOCK verdict at their current head, every REVERIFY already followed by a review (10005 BLOCK stands)
 2026-11-24T05:54:58Z session-20261124T055404-c022500f cloud-or-reviewer-7: 0 reviewable; all 17 open non-draft main PRs with N%8==7 have an APPROVE or BLOCK verdict at their current head, every REVERIFY already followed by a review (10631 BLOCK stands)
+2026-11-24T05:59:11Z or-fix-2: lane 2 share (12 PRs) all clean vs main f1c351de; Architecture + touched tests green on 8 PHP PRs, jest green on 6 frontend PRs, sbom current; nothing to fix; #10982 BLOCK is a product question already on the PR
