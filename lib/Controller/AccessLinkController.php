@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Sharing\LinkAct;
 use OCA\OpenRegister\Service\Sharing\LinkFile;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectLinks;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
@@ -126,6 +127,13 @@ class AccessLinkController extends Controller {
 	private readonly AccessLinkActsInterface $acts;
 
 	/**
+	 * Lists and revokes every link on a subject the caller may publish.
+	 *
+	 * @var AccessLinkSubjectLinks
+	 */
+	private readonly AccessLinkSubjectLinks $subjectLinks;
+
+	/**
 	 * The current session, on the owner endpoints.
 	 *
 	 * @var IUserSession
@@ -161,6 +169,7 @@ class AccessLinkController extends Controller {
 		$this->reader = $services->domain->reader;
 		$this->mintGuard = $services->domain->mintGuard;
 		$this->acts = $services->domain->acts;
+		$this->subjectLinks = $services->domain->subjectLinks;
 		$this->userSession = $services->platform->userSession;
 		$this->logger = $services->platform->logger;
 		$this->rejections = self::rejectionCounter(platform: $services->platform);
@@ -477,11 +486,15 @@ class AccessLinkController extends Controller {
 	/**
 	 * GET /api/access-links
 	 *
-	 * Every link the calling principal minted, open or closed.
+	 * Every link the calling principal minted, open or closed. With
+	 * `subjectType` and `subjectId`, every link on that subject whoever minted
+	 * it, for a caller who may publish the subject; anybody else gets the same
+	 * 404 a mint for it would.
 	 *
-	 * @return JSONResponse The links.
+	 * @return JSONResponse The links, or 404.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
 	 */
 	#[NoAdminRequired]
 	public function index(): JSONResponse {
@@ -490,7 +503,18 @@ class AccessLinkController extends Controller {
 			return new JSONResponse(['results' => []]);
 		}
 
-		return new JSONResponse(['results' => $this->links->listForUser(userId: $user->getUID())]);
+		$subjectType = $this->stringParam(name: 'subjectType');
+		$subjectId = $this->stringParam(name: 'subjectId');
+		if ($subjectType === null || $subjectId === null) {
+			return new JSONResponse(['results' => $this->links->listForUser(userId: $user->getUID())]);
+		}
+
+		$rows = $this->subjectLinks->listOn(subjectType: $subjectType, subjectId: $subjectId, userId: $user->getUID());
+		if ($rows === null) {
+			return $this->notFound();
+		}
+
+		return new JSONResponse(['results' => $rows]);
 	}//end index()
 
 	/**
@@ -540,13 +564,16 @@ class AccessLinkController extends Controller {
 	 * DELETE /api/access-links/{id}
 	 *
 	 * Revoke one of the calling principal's own links. A link somebody else
-	 * minted is, to this caller, a link that does not exist.
+	 * minted is, to this caller, a link that does not exist, unless the request
+	 * names the link's subject in `subjectType` and `subjectId` and the caller
+	 * may publish that subject.
 	 *
 	 * @param int $id The link row id.
 	 *
 	 * @return JSONResponse Empty on success, or 404 when there is nothing to revoke.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
 	 */
 	#[NoAdminRequired]
 	public function revoke(int $id): JSONResponse {
@@ -555,11 +582,17 @@ class AccessLinkController extends Controller {
 			return $this->notFound();
 		}
 
-		if ($this->links->revoke(id: $id, userId: $user->getUID()) === false) {
-			return $this->notFound();
+		if ($this->links->revoke(id: $id, userId: $user->getUID()) === true
+			|| $this->subjectLinks->revokeOn(
+				id: $id,
+				subjectType: (string)$this->stringParam(name: 'subjectType'),
+				subjectId: (string)$this->stringParam(name: 'subjectId')
+			) === true
+		) {
+			return new JSONResponse([], Http::STATUS_OK);
 		}
 
-		return new JSONResponse([], Http::STATUS_OK);
+		return $this->notFound();
 	}//end revoke()
 
 	/**

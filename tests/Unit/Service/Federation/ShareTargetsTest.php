@@ -155,4 +155,34 @@ class ShareTargetsTest extends TestCase {
 
 		$this->assertFalse($this->targets->callerReadsObject(share: $this->share(fields: ['objectUri' => ''])));
 	}
+
+	public function testARegisterSharesSchemasAreResolvedInsideTheRegister(): void {
+		$register = new Register();
+		$register->setSchemas([3, 'besluit']);
+		$zaak = new Schema();
+		$besluit = new Schema();
+		$this->resolver->method('resolveRegister')->with('zaken')->willReturn($register);
+		$this->resolver->expects($this->exactly(2))->method('resolveSchemaWithin')
+			->willReturnCallback(
+				static fn (Register $within, int|string $ref): Schema => ($within === $register && $ref === 3) ? $zaak : $besluit
+			);
+
+		$this->assertSame([$zaak, $besluit], $this->targets->registerSchemas(share: $this->share(fields: ['scope' => 'register', 'schema' => null])));
+	}
+
+	public function testARegisterWithASchemaThatDoesNotResolveHasNoSchemas(): void {
+		$register = new Register();
+		$register->setSchemas([3, 4]);
+		$this->resolver->method('resolveRegister')->willReturn($register);
+		$this->resolver->method('resolveSchemaWithin')->willReturnOnConsecutiveCalls(new Schema(), $this->throwException(new DoesNotExistException('gone')));
+
+		$this->assertNull($this->targets->registerSchemas(share: $this->share(fields: [])));
+	}
+
+	public function testARegisterThatDoesNotResolveHasNoSchemas(): void {
+		$this->resolver->method('resolveRegister')->willThrowException(new DoesNotExistException('gone'));
+		$this->resolver->expects($this->never())->method('resolveSchemaWithin');
+
+		$this->assertNull($this->targets->registerSchemas(share: $this->share(fields: [])));
+	}
 }
