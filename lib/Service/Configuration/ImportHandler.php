@@ -1386,12 +1386,12 @@ class ImportHandler {
 	 * the current slugs, so an app update that still ships the old slug updates
 	 * the renamed schema and creates nothing.
 	 *
-	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md
-	 *
 	 * @param ImportedSchemaLookup $lookup            The schema data and the importing application id.
 	 * @param array                $registerSchemaIds Pre-import schema ids of the target register(s).
 	 *
 	 * @return Schema|null The schema already in scope, or null (create a new one).
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md
 	 */
 	private function resolveSchemaWithinRegisterScope(ImportedSchemaLookup $lookup, array $registerSchemaIds): ?Schema {
 		$data = $lookup->data;

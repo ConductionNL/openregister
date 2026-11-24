@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
-use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\Http\JSONResponse;
 
 /**
  * A renamed schema keeps answering to its former slug (design D-3), and the
@@ -67,16 +67,14 @@ final class FormerSlugSignal {
 	/**
 	 * Add the headers to a response.
 	 *
-	 * @template T of Response
-	 *
-	 * @param T                     $response The response.
+	 * @param JSONResponse          $response The response.
 	 * @param array<string, string> $headers  The headers from {@see self::headers()}.
 	 *
-	 * @return T The same response.
+	 * @return JSONResponse The same response.
 	 *
 	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
 	 */
-	public static function apply(Response $response, array $headers): Response {
+	public static function apply(JSONResponse $response, array $headers): JSONResponse {
 		foreach ($headers as $name => $value) {
 			$response->addHeader($name, $value);
 		}
