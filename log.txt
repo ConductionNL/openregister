@@ -4096,3 +4096,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-24T15:19:49Z integrator-20261124T145419-19cd7a29 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-24T15:20:07Z integrator-20261124T145419-19cd7a29 MERGED-TREE 914275777d: 1 PRs, main now 856b8b5dbb = tested tree
+2026-11-24T15:22:52Z session-20261124T152252-b1ec063f learniq builder: merged #2697 (today-first T1, after development merge, local green same as development) and #2700 (capability-rows 3.1 placement decision: BpvCompanyNamedGuard on checkLeerbedrijf); development 9fc58d18; run continues
