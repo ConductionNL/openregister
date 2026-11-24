@@ -426,18 +426,23 @@ sbom_park() {
 # and the file at its head must match its lockfiles (regen-sbom.sh reads the lockfiles only, never vendor/).
 # A check that cannot run is NORESULT, not a pass.
 sbom_gate() {
-	local n head names locks tree=$W/sbom-tree rc
+	local n head names locks tree=$W/sbom-tree rc touched
 	while IFS=$'\t' read -r n head _; do
 		names=$(git -C "$C" diff --name-only "$D0...$head") || { say "NORESULT tree $T10: no diff for #$n"; echo NORESULT > "$RUN/verdict"; exit 4; }
 		locks=$(grep -xE 'composer\.lock|package-lock\.json' <<<"$names" | paste -sd,)
 		[ -n "$locks" ] || continue
-		grep -qx 'sbom.cdx.json' <<<"$names" || sbom_park "$n" "$head" "sbom: $locks changed without sbom.cdx.json"
+		# As merge_gate.py: a dev-only lockfile change leaves the omit-dev SBOM unchanged, so a head that
+		# does not touch sbom.cdx.json is judged by regen-sbom.sh --check alone, not by the file list.
+		touched=no; grep -qx 'sbom.cdx.json' <<<"$names" && touched=yes
 		rm -rf "$tree"
 		git clone -q --shared --no-checkout "$C" "$tree" && git -C "$tree" checkout -q --detach "$head" \
 			|| { say "NORESULT tree $T10: cannot check out #$n for the SBOM check"; echo NORESULT > "$RUN/verdict"; exit 4; }
 		env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 bash "$BIN/regen-sbom.sh" --check "$tree" > "$RUN/sbom.out" 2>&1; rc=$?
 		rm -rf "$tree"
-		[ "$rc" -eq 1 ] && sbom_park "$n" "$head" "sbom: sbom.cdx.json does not match $locks (run hydra scripts/regen-sbom.sh)"
+		if [ "$rc" -eq 1 ]; then
+			[ "$touched" = yes ] || sbom_park "$n" "$head" "sbom: $locks changed without sbom.cdx.json"
+			sbom_park "$n" "$head" "sbom: sbom.cdx.json does not match $locks (run hydra scripts/regen-sbom.sh)"
+		fi
 		[ "$rc" -eq 0 ] || { say "NORESULT tree $T10: SBOM not checked for #$n (exit $rc): $(tail -1 "$RUN/sbom.out")"; st_log "NORESULT tree $T10: SBOM not checked for #$n (exit $rc)"; echo NORESULT > "$RUN/verdict"; exit 4; }
 		say "SBOM openregister#$n: $(tail -1 "$RUN/sbom.out")"
 	done < "$W/tree.tsv"
