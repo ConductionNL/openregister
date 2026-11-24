@@ -219,7 +219,6 @@ class GdprEntitiesControllerActiveOrganisationTest extends TestCase {
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->table());
 
 		return GdprEntitiesControllerFactory::create(
-			'openregister',
 			$request,
 			$this->entityMapper($userSession),
 			$this->createMock(EntityRelationMapper::class),

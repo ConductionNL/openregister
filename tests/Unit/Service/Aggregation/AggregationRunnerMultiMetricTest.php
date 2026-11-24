@@ -37,8 +37,13 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationCache;
+use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
+use OCA\OpenRegister\Service\Aggregation\AggregationAccess;
+use OCA\OpenRegister\Service\Aggregation\AggregationCaller;
+use OCA\OpenRegister\Service\Aggregation\AggregationPresentation;
+use OCA\OpenRegister\Service\Aggregation\AggregationSources;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
@@ -88,11 +93,13 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				groupBy: ['field' => 'status'],
-				metrics: [
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'status'],
+					metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -129,10 +136,12 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				metrics: [
+				layout: new AggregationLayout(
+					metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -154,11 +163,13 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				metrics: [
+				layout: new AggregationLayout(
+					metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
 					['metric' => 'avg', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -189,7 +200,8 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'sum',
 				field: 'amount',
-				metrics: [
+				layout: new AggregationLayout(
+					metrics: [
 					[
 						'metric' => 'sum',
 						'field' => 'amount',
@@ -204,6 +216,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 					],
 					['metric' => 'sum', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -230,8 +243,9 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			query: AggregationQuery::create(
 				metric: 'sum',
 				field: 'amount',
-				groupBy: ['status'],
-				metrics: [
+				layout: new AggregationLayout(
+					groupBy: ['status'],
+					metrics: [
 					[
 						'metric' => 'sum',
 						'field' => 'amount',
@@ -240,6 +254,7 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 					],
 					['metric' => 'count'],
 				]
+				)
 			)
 		);
 
@@ -259,11 +274,13 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				groupBy: ['field' => 'status'],
-				metrics: [
+				layout: new AggregationLayout(
+					groupBy: ['field' => 'status'],
+					metrics: [
 					['metric' => 'count'],
 					['metric' => 'sum', 'field' => 'amount'],
 				]
+				)
 			)
 		);
 
@@ -303,7 +320,9 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 			schema: $this->makeSchema(),
 			query: AggregationQuery::create(
 				metric: 'count',
-				metrics: [['metric' => 'count']]
+				layout: new AggregationLayout(
+					metrics: [['metric' => 'count']]
+				)
 			)
 		);
 
@@ -406,16 +425,24 @@ class AggregationRunnerMultiMetricTest extends TestCase {
 		$languageService->method('shouldReturnAllTranslations')->willReturn(false);
 
 		return new AggregationRunner(
-			catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
-			placeholders: new PlaceholderResolver($userSession),
-			db: $db,
+			sources: new AggregationSources(
+				catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $magicMapper),
+				db: $db
+			),
 			cache: $cache,
-			permissionHandler: $permissionHandler,
-			userSession: $userSession,
-			organisationService: $organisationService,
-			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
-			translationHandler: $translationHandler,
-			languageService: $languageService,
+			access: new AggregationAccess(
+				permissionHandler: $permissionHandler,
+				organizationHandler: $this->orgHandlerScopedTo('__no_active_org__')
+			),
+			caller: new AggregationCaller(
+				userSession: $userSession,
+				organisationService: $organisationService,
+				placeholders: new PlaceholderResolver($userSession)
+			),
+			presentation: new AggregationPresentation(
+				translationHandler: $translationHandler,
+				languageService: $languageService
+			)
 		);
 
 	}//end makeRunner()
