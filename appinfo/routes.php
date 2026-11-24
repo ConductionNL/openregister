@@ -270,6 +270,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'sources#patch', 'url' => '/api/sources/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 
         // Curated MDI glyph as an SVG image (used to render a schema's icon in unified search).
+        // BAG address lookup by postcode and house number (bag-address-lookup-by-postcode): public, throttled, read-only.
+        ['name' => 'bagAddress#index', 'url' => '/api/bag/addresses', 'verb' => 'GET'],
         ['name' => 'icon#mdi', 'url' => '/api/icon/mdi/{name}', 'verb' => 'GET', 'requirements' => ['name' => '[A-Za-z0-9-]+']],
 
         // Data sync / harvesting — manual trigger + status (data-sync-harvesting spec).
@@ -2225,6 +2227,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'archival#myPendingReviews', 'url' => '/api/archival/reviews/pending', 'verb' => 'GET'],
 		['name' => 'archival#recomputeNomination', 'url' => '/api/archival/objects/{id}/nomination/recompute', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'archivalOverview#overview', 'url' => '/api/archival/overview', 'verb' => 'GET'],
+		// appraisal-inherited-from-a-parent (REQ-AIP-003): what the next destruction run holds back.
+		['name' => 'archivalHeldBack#index', 'url' => '/api/archival/held-back', 'verb' => 'GET'],
 		['name' => 'archivalOverview#drawUp', 'url' => '/api/archival/destruction-lists/draw-up', 'verb' => 'POST'],
 
 		// The classification plan arrives as a file, versioned, and a new
