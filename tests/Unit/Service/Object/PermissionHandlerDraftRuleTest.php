@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Tests\Unit\Service\Object\Support\PermissionHandlerFactory;
@@ -194,11 +195,11 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 		$handler = $this->handlerFor(uid: 'bob');
 		foreach (['read', 'update', 'delete'] as $action) {
 			$this->assertFalse(
-				$handler->hasPermission(schema: $this->schema(), action: $action, objectOwner: 'alice', object: $this->object(status: 'draft')),
+				$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: $action))->askedBy(userId: null, objectOwner: 'alice')->about(object: $this->object(status: 'draft'), register: null)),
 				"bob may not $action alice's draft"
 			);
 			$this->assertTrue(
-				$handler->hasPermission(schema: $this->schema(), action: $action, objectOwner: 'alice', object: $this->object(status: 'active')),
+				$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: $action))->askedBy(userId: null, objectOwner: 'alice')->about(object: $this->object(status: 'active'), register: null)),
 				"bob may $action alice's definitive object"
 			);
 		}
@@ -212,7 +213,7 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 	public function testTheExplicitUserIdIsTheSubject(): void {
 		$handler = $this->handlerFor(uid: 'alice');
 		$this->assertFalse(
-			$handler->hasPermission(schema: $this->schema(), action: 'read', userId: 'bob', objectOwner: 'alice', object: $this->object(status: 'draft'))
+			$handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'read'))->askedBy(userId: 'bob', objectOwner: 'alice')->about(object: $this->object(status: 'draft'), register: null))
 		);
 	}//end testTheExplicitUserIdIsTheSubject()
 
@@ -223,8 +224,8 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 	 */
 	public function testTheOwnerKeepsTheirDraft(): void {
 		$handler = $this->handlerFor(uid: 'alice');
-		$this->assertTrue($handler->hasPermission(schema: $this->schema(), action: 'read', objectOwner: 'alice', object: $this->object(status: 'draft')));
-		$this->assertTrue($handler->hasPermission(schema: $this->schema(), action: 'delete', objectOwner: 'alice', object: $this->object(status: 'draft')));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'read'))->askedBy(userId: null, objectOwner: 'alice')->about(object: $this->object(status: 'draft'), register: null)));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'delete'))->askedBy(userId: null, objectOwner: 'alice')->about(object: $this->object(status: 'draft'), register: null)));
 	}//end testTheOwnerKeepsTheirDraft()
 
 	/**
@@ -234,7 +235,7 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 	 */
 	public function testAnAdministratorIsNotKeptFromADraft(): void {
 		$handler = $this->handlerFor(uid: 'root', groups: ['admin']);
-		$this->assertTrue($handler->hasPermission(schema: $this->schema(), action: 'read', objectOwner: 'alice', object: $this->object(status: 'draft')));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'read'))->askedBy(userId: null, objectOwner: 'alice')->about(object: $this->object(status: 'draft'), register: null)));
 	}//end testAnAdministratorIsNotKeptFromADraft()
 
 	/**
@@ -244,7 +245,7 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 	 */
 	public function testASchemaWithVisibleDraftsLetsOthersIn(): void {
 		$handler = $this->handlerFor(uid: 'bob');
-		$this->assertTrue($handler->hasPermission(schema: $this->schema(draftsVisible: true), action: 'read', objectOwner: 'alice', object: $this->object(status: 'draft')));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(draftsVisible: true), action: 'read'))->askedBy(userId: null, objectOwner: 'alice')->about(object: $this->object(status: 'draft'), register: null)));
 	}//end testASchemaWithVisibleDraftsLetsOthersIn()
 
 	/**
@@ -254,7 +255,7 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 	 */
 	public function testACheckWithoutAnObjectIsUnchanged(): void {
 		$handler = $this->handlerFor(uid: 'bob');
-		$this->assertTrue($handler->hasPermission(schema: $this->schema(), action: 'read', objectOwner: 'alice'));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'read'))->askedBy(userId: null, objectOwner: 'alice')));
 	}//end testACheckWithoutAnObjectIsUnchanged()
 
 	/**
@@ -265,9 +266,9 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 	public function testRbacOffAndTheSystemContextPass(): void {
 		$handler = $this->handlerFor(uid: 'bob');
 		$draft = $this->object(status: 'draft');
-		$this->assertTrue($handler->hasPermission(schema: $this->schema(), action: 'update', objectOwner: 'alice', _rbac: false, object: $draft));
+		$this->assertTrue($handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'update'))->askedBy(userId: null, objectOwner: 'alice')->about(object: $draft, register: null), _rbac: false));
 		$this->assertTrue(
-			SystemOperationContext::run(fn (): bool => $handler->hasPermission(schema: $this->schema(), action: 'update', objectOwner: 'alice', object: $draft))
+			SystemOperationContext::run(fn (): bool => $handler->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'update'))->askedBy(userId: null, objectOwner: 'alice')->about(object: $draft, register: null)))
 		);
 	}//end testRbacOffAndTheSystemContextPass()
 
@@ -279,10 +280,10 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 	public function testAnAnonymousWebCallerIsKeptAndTheCommandLineIsNot(): void {
 		$draft = $this->object(status: 'draft');
 		$this->assertFalse(
-			$this->handlerFor(uid: null, commandLine: false)->hasPermission(schema: $this->schema(), action: 'read', objectOwner: 'alice', object: $draft)
+			$this->handlerFor(uid: null, commandLine: false)->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'read'))->askedBy(userId: null, objectOwner: 'alice')->about(object: $draft, register: null))
 		);
 		$this->assertTrue(
-			$this->handlerFor(uid: null, commandLine: true)->hasPermission(schema: $this->schema(), action: 'read', objectOwner: 'alice', object: $draft)
+			$this->handlerFor(uid: null, commandLine: true)->hasPermission(ask: (new PermissionAsk(schema: $this->schema(), action: 'read'))->askedBy(userId: null, objectOwner: 'alice')->about(object: $draft, register: null))
 		);
 	}//end testAnAnonymousWebCallerIsKeptAndTheCommandLineIsNot()
 }//end class

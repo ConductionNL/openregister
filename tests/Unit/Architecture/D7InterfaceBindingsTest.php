@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistryInterface;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandlerInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService;
 use OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionServiceInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
@@ -116,7 +117,7 @@ final class D7InterfaceBindingsTest extends TestCase {
 		BulkJobReversal::class => [BulkJobReversalInterface::class, ContractBindings::class],
 		BulkJobService::class => [BulkJobServiceInterface::class, ContractBindings::class],
 		CalculationTrialService::class => [CalculationTrialServiceInterface::class, ContractBindings::class],
-		DatabaseIntrospectionService::class => [DatabaseIntrospectionServiceInterface::class, ContractBindings::class],
+		DatabaseIntrospectionService::class => [DatabaseIntrospectionServiceInterface::class, CoreServiceBindings::class],
 		ExampleSetRecord::class => [ExampleSetRecordInterface::class, ContractBindings::class],
 		ExampleSetRemover::class => [ExampleSetRemoverInterface::class, ContractBindings::class],
 		FavouriteService::class => [FavouriteServiceInterface::class, ContractBindings::class],
@@ -129,8 +130,8 @@ final class D7InterfaceBindingsTest extends TestCase {
 		GitLabHandler::class => [GitLabHandlerInterface::class, ContractBindings::class],
 		HandoffService::class => [HandoffServiceInterface::class, ContractBindings::class],
 		ImportPreviewService::class => [ImportPreviewServiceInterface::class, ContractBindings::class],
-		JsonLdContextService::class => [JsonLdContextServiceInterface::class, ContractBindings::class],
-		JsonLdSerializer::class => [JsonLdSerializerInterface::class, ContractBindings::class],
+		JsonLdContextService::class => [JsonLdContextServiceInterface::class, CoreServiceBindings::class],
+		JsonLdSerializer::class => [JsonLdSerializerInterface::class, CoreServiceBindings::class],
 		LifecycleActionExecutor::class => [LifecycleActionExecutorInterface::class, ContractBindings::class],
 		LifecycleConditionEvaluator::class => [LifecycleConditionEvaluatorInterface::class, ContractBindings::class],
 		ReferencedCalculationRefresher::class => [ReferencedCalculationRefresherInterface::class, ContractBindings::class],

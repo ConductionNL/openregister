@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\ObjectAction\ObjectActionSelfAssign;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionWriters;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionTarget;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use OCP\AppFramework\Http;
 use OCP\IL10N;
 use OCP\IUser;
@@ -77,9 +78,9 @@ class ObjectActionRunnerTest extends TestCase {
 		parent::setUp();
 
 		$this->permissions = $this->createMock(PermissionHandler::class);
-		$this->permissions->method('hasPermission')->willReturnCallback(
+		$this->permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			fn ($schema, string $action): bool => ($this->rights[$action] ?? true)
-		);
+		));
 		$this->steps = $this->createMock(ObjectActionStepsFlow::class);
 		$this->steps->method('flowFor')->willReturn('steps-flow');
 		$this->audit = $this->createMock(ObjectActionAudit::class);
@@ -334,12 +335,12 @@ class ObjectActionRunnerTest extends TestCase {
 		$asked = [];
 		$this->rights = [];
 		$this->permissions = $this->createMock(PermissionHandler::class);
-		$this->permissions->method('hasPermission')->willReturnCallback(
+		$this->permissions->method('hasPermission')->willReturnCallback(PermissionAskArgs::spread(
 			function ($schema, string $action) use (&$asked): bool {
 				$asked[] = $action;
 				return true;
 			}
-		);
+		));
 
 		$answer = $this->runner()->run(new ObjectActionTarget($this->object(), $schema, '', ''), new ObjectActionRequest('reopen', ['reason' => 'x']));
 

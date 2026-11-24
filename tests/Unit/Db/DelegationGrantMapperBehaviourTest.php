@@ -87,7 +87,7 @@ class DelegationGrantMapperBehaviourTest extends TestCase {
 		$asked = ['register' => 'r', 'schemas' => ['a' => 1, 'b' => 2]];
 		$mapper = $this->mapper([[self::row(9, $stored)]]);
 
-		$found = $mapper->findOutstandingRequest('alice', 'bob', $asked);
+		$found = $mapper->findOutstandingRequest(self::wanted('alice', 'bob', $asked));
 		$this->assertSame('g9', $found?->getUuid());
 		$this->assertContains('#1 param :p3 = ["requested","pending"], 102', $this->queryLog);
 		$this->assertContains('#1 setMaxResults(1)', $this->queryLog);
@@ -95,17 +95,17 @@ class DelegationGrantMapperBehaviourTest extends TestCase {
 
 	public function testFindOutstandingRequestIgnoresADifferentScope(): void {
 		$mapper = $this->mapper([[self::row(9, ['register' => 'r'])]]);
-		$this->assertNull($mapper->findOutstandingRequest('alice', 'bob', ['register' => 'other']));
+		$this->assertNull($mapper->findOutstandingRequest(self::wanted('alice', 'bob', ['register' => 'other'])));
 	}
 
 	public function testFindOutstandingRequestTreatsAMissingScopeAsEmpty(): void {
 		$mapper = $this->mapper([[self::row(4)]]);
-		$this->assertSame('g4', $mapper->findOutstandingRequest('alice', 'bob', [])?->getUuid());
+		$this->assertSame('g4', $mapper->findOutstandingRequest(self::wanted('alice', 'bob', []))?->getUuid());
 	}
 
 	public function testFindOutstandingRequestReturnsNullWhenNothingIsOpen(): void {
 		$mapper = $this->mapper([[]]);
-		$this->assertNull($mapper->findOutstandingRequest('alice', 'bob', []));
+		$this->assertNull($mapper->findOutstandingRequest(self::wanted('alice', 'bob', [])));
 	}
 
 	public function testFindAwaitingAnswerByOnlyAsksForOpenStatuses(): void {
@@ -215,5 +215,13 @@ class DelegationGrantMapperBehaviourTest extends TestCase {
 		$this->assertSame([], $json['scope']);
 		$this->assertNull($json['requestedAt']);
 		$this->assertNull($json['revokedAt']);
+	}
+
+	private static function wanted(string $principal, string $actingAs, array $scope): DelegationGrant {
+		$wanted = new DelegationGrant();
+		$wanted->setPrincipal($principal);
+		$wanted->setActingAs($actingAs);
+		$wanted->setScope($scope);
+		return $wanted;
 	}
 }

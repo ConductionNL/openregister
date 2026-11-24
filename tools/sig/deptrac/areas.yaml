@@ -21,7 +21,7 @@ deptrac:
             - type: directory
               value: 'lib/Contract/[^/]*$'
             - type: directory
-              value: 'lib/Db/(EmptyJsonHydration|FreezeTerms|HydrationKey|JsonArrayColumn|JsonFieldsTrait|LinkedItemsTrait|LockTerms|ManagedByConfigurationTrait|ObjectEntity|Register|RegisterMapperInterface|Schema|SchemaMapperInterface|SoftDeletion)[.]php$'
+              value: 'lib/Db/(EmptyJsonHydration|FreezeTerms|HydrationKey|JsonArrayColumn|JsonFieldsTrait|LinkedItemsTrait|LockTerms|ManagedByConfigurationTrait|ObjectEntity|Register|RegisterMapperInterface|RegisterSchema|Schema|SchemaMapperInterface|SoftDeletion)[.]php$'
             - type: directory
               value: 'lib/Db/ObjectEntity/[^/]*$'
             - type: directory
@@ -47,37 +47,27 @@ deptrac:
             - type: directory
               value: 'lib/Db/Schema/TopLevelAnnotationFold[.]php$'
             - type: directory
-              value: 'lib/Dto/[^/]*$'
+              value: 'lib/Dto/DeepLinkRegistration[.]php$'
             - type: directory
-              value: 'lib/Event/(AbstractAgentEvent|AbstractApplicationEvent|AbstractConfigurationEvent|AbstractConversationEvent|AbstractDecisionRequestEvent|AbstractObjectEntityEvent|AbstractObjectFileEvent|AbstractOrganisationEvent|AbstractPersonLinkEvent|AbstractPreWriteObjectEvent|AbstractReferenceValidationEvent|AbstractRegisterEvent|AbstractRegistrySubscriptionEvent|AbstractSchemaEvent|AbstractSourceEvent|AbstractTaskEvent|AbstractTaskSequenceEvent|AbstractViewEvent|ActionEvaluatedEvent|AgentCreatedEvent|AgentDeletedEvent|AgentRunDispatch|AgentRunInstruction|AgentRunRequestedEvent|AgentUpdatedEvent|AppWebhookEvents|ApplicationCreatedEvent|ApplicationDeletedEvent|ApplicationUpdatedEvent|CaseItemTransitionedEvent|ConfigurationCreatedEvent|ConfigurationDeletedEvent|ConfigurationUpdatedEvent|ConversationCreatedEvent|ConversationDeletedEvent|ConversationUpdatedEvent|CredentialRelinkRequiredEvent|CustomScopeAccessors|CustomScopeEvaluatedEvent|CustomScopeEvaluatingEvent|DecisionChangeRequestedEvent|DecisionVisibilityRequestedEvent|DeepLinkCollectorInterface|DeepLinkRegistrationEvent|DraftCreatedEvent|DraftDeletedEvent|DraftUpdatedEvent|EntityRelationDecisionUpdatedEvent|EvaluatedSchemaActionAccessors|FileCopiedEvent|FileLockedEvent|FileMovedEvent|FileRenamedEvent|FileRestrictionAdmitEvent|FileUnlockedEvent|FileVersionRestoredEvent|FlowEmailItem|FlowEmailMessage|FlowEmailOrigin|FlowEmailSentEvent|FlowRunTerminalEvent|FlowTimerFiredEvent|FormDestinationDependentsEvent|HandoffExecutedEvent|HandoffExecutedSource|HandoffExecutedTarget|IdentityClaimsCollectingEvent|MatrixRowsRequestedEvent|ObjectActivatedEvent|ObjectCreatedEvent|ObjectCreatingEvent|ObjectDeletedEvent|ObjectDeletingEvent|ObjectEventSubscription|ObjectLockedEvent|ObjectNoteAddedEvent|ObjectRevertedEvent|ObjectTransitionedEvent|ObjectUnlockedEvent|ObjectUpdatedEvent|ObjectUpdatingEvent|ObjectsMergedEvent|OrganisationCreatedEvent|OrganisationDeletedEvent|OrganisationUpdatedEvent|PermissionVerb|PermissionsDeclaringEvent|PersonLinkUpdatedEvent|PersonLinkedEvent|PersonUnlinkedEvent|ReferenceValidatedEvent|ReferenceValidationFailedEvent|RegisterCreatedEvent|RegisterDeletedEvent|RegisterFlowTriggersEvent|RegisterUpdatedEvent|RegistrySubscriptionEndedEvent|RegistrySubscriptionRequestedEvent|SchemaCreatedEvent|SchemaDeletedEvent|SchemaUpdatedEvent|SourceCreatedEvent|SourceDeletedEvent|SourceUpdatedEvent|TaskTerminalEvent|UserProfileUpdatedEvent|ViewAlertCrossedEvent|ViewCreatedEvent|ViewDeletedEvent|ViewUpdatedEvent|WriteVetoState)[.]php$'
+              value: 'lib/Dto/DeletionAnalysis[.]php$'
             - type: directory
-              value: 'lib/Exception/(ActionParameterTypeException|AnalyzeRequestRejectedException|AppendOnlyException|ArchivalImmutableException|ArchiveNotOfferedException|AuthenticationException|AuthorizationBlockException|AuthorizationUnresolvableException|BpmnImportRefused|BpmnSchemaInvalid|BreakingSchemaChangeException|BrokenReference|BuiltinPackSlugLockedException|BulkJobRefusedException|CalendarDateKindException|CaseAccessDeniedException|CaseCascadeBoundException|CasePlanExistsException|CaseTransitionException|CaseValidationException|ChunkMatcherException|CircularReferenceException|CodedValueException|ConditionGroupException|ConfidenceThresholdOutOfRangeException|ConsistencyCheckWouldWriteException|CorrectionRefusedException|CustomValidationException|DatabaseConstraintException|DatabaseConstraintMessages|DatabaseErrorChain|DecisionConflictException|DraftActivationRefusedException|DraftAlreadyLeftException|DuplicateBlockedException|EmlParseException|EncryptedFieldFilterException|EncryptedFieldSortException|ExplicitRevealQueryException|ExportTooLargeException|FieldDecryptionException|FlowRunExpired|FlowRunRefused|FlowSignalRefused|FlowTimerStateException|FlowTimerValidationException|FolderAccessDeniedException|FormSubmitRefusedException|GrantExceedsGranterException|HandoffException|HookStoppedException|InvalidAuthorizationRuleException|InvalidNoteParentException|InvalidPackDefinitionException|InvalidTransitionInputException|InvalidViewAlertException|JobRunRefusedException|LifecycleProviderException|LifecycleSubjectNotFoundException|LockedException|ManualEntityException|MergeDecisionException|MergeNotFullyReadableException|MigrationPackRefusedException|MigrationPackRequestException|NoVtodoCalendarException|NotAuthorizedException|NotImplementedException|NoteEditForbiddenException|NoteLockedException|NoteWriteRefusedException|OasValidationException|ObjectExistsException|ObjectFileAccessDeniedException|ObjectFolderConflictException|ObjectLookupFailedException|ObjectStateMarker|ObjectStateWriteException|OfficeOpenRefusedException|OfficeServerRequiredException|OrganisationSlugConflictException|PackChangedException|PackSlugExistsException|PdfAnonymisationException|PortalPartyNotFoundException|PortalSubjectException|PropertyAlreadySetException|ProviderUnavailableException|ReadOnlyTypeException|RecordTemplateRefused|ReferenceCycle|ReferenceValidationException|ReferentialIntegrityException|RegisterNotFoundException|RelatedRowFilterNotSupportedException|RepairRefusedException|RuleRefusedException|SanitizationException|SchemaImportException|SchemaNotFoundException|SchemaNotInRegisterException|SchemaRunConcurrencyException|SearchTermSyntaxException|SharedMasterDataWriteException|SlugBackfillWriteException|SystemContextUnavailableException|TaskAccessDeniedException|TaskCompleteViaAppException|TaskConflictException|TaskFormRefusedException|TaskSeparationOfDutiesException|TaskSubjectNotFoundException|TaskSubjectWriteRefusedException|TaskValidationException|TranslationTargetConflictException|UniqueHintException|UnknownMaskFormException|UnknownMetadataFieldException|UnknownPatternSetException|ValidationException|ViewAlertRecipientException)[.]php$'
+              value: 'lib/Dto/DeletionEffects[.]php$'
+            - type: directory
+              value: 'lib/Event/(AbstractAgentEvent|AbstractApplicationEvent|AbstractConfigurationEvent|AbstractConversationEvent|AbstractObjectEntityEvent|AbstractPreWriteObjectEvent|AbstractRegisterEvent|AbstractSchemaEvent|AbstractSourceEvent|AbstractViewEvent|AgentCreatedEvent|AgentDeletedEvent|AgentUpdatedEvent|AppWebhookEvents|ApplicationCreatedEvent|ApplicationDeletedEvent|ApplicationUpdatedEvent|ConfigurationCreatedEvent|ConfigurationDeletedEvent|ConfigurationUpdatedEvent|ConversationCreatedEvent|ConversationDeletedEvent|ConversationUpdatedEvent|DeepLinkCollectorInterface|DraftCreatedEvent|DraftDeletedEvent|DraftUpdatedEvent|FlowRunTerminalEvent|ObjectCreatedEvent|ObjectCreatingEvent|ObjectDeletedEvent|ObjectDeletingEvent|ObjectLockedEvent|ObjectRevertedEvent|ObjectTransitionedEvent|ObjectUnlockedEvent|ObjectUpdatedEvent|ObjectUpdatingEvent|ObjectsMergedEvent|PermissionVerb|PermissionsDeclaringEvent|RegisterCreatedEvent|RegisterDeletedEvent|RegisterUpdatedEvent|SchemaCreatedEvent|SchemaDeletedEvent|SchemaUpdatedEvent|SourceCreatedEvent|SourceDeletedEvent|SourceUpdatedEvent|ViewAlertCrossedEvent|ViewCreatedEvent|ViewDeletedEvent|ViewUpdatedEvent|WriteVetoState)[.]php$'
+            - type: directory
+              value: 'lib/Exception/(AnalyzeRequestRejectedException|ArchivalImmutableException|AuthorizationUnresolvableException|CalendarDateKindException|ConditionGroupException|ConfidenceThresholdOutOfRangeException|CorrectionRefusedException|CustomValidationException|DatabaseErrorChain|DecisionConflictException|DraftAlreadyLeftException|DuplicateBlockedException|EncryptedFieldFilterException|ExplicitRevealQueryException|ExportTooLargeException|FlowRunRefused|FolderAccessDeniedException|HandoffException|HookStoppedException|InvalidNoteParentException|InvalidViewAlertException|LockedException|MergeDecisionException|MergeNotFullyReadableException|NoVtodoCalendarException|NotAuthorizedException|NotImplementedException|NoteEditForbiddenException|NoteLockedException|NoteWriteRefusedException|ObjectExistsException|ObjectStateMarker|ObjectStateWriteException|OfficeServerRequiredException|PropertyAlreadySetException|ReferentialIntegrityException|RegisterNotFoundException|RelatedRowFilterNotSupportedException|RuleRefusedException|SchemaNotInRegisterException|TaskAccessDeniedException|TaskConflictException|TaskValidationException|UniqueHintException|UnknownMaskFormException|UnknownMetadataFieldException|UnknownPatternSetException|ValidationException)[.]php$'
             - type: directory
               value: 'lib/Formats/[^/]*$'
             - type: directory
               value: 'lib/Kernel/.*$'
             - type: directory
-              value: 'lib/Lifecycle/[^/]*$'
+              value: 'lib/Lifecycle/GuardResult[.]php$'
             - type: directory
-              value: 'lib/Lifecycle/Action/[^/]*$'
-            - type: directory
-              value: 'lib/Service/Flow/Timer/EscalationNotice[.]php$'
-            - type: directory
-              value: 'lib/Service/Flow/Timer/TimerFiring[.]php$'
-            - type: directory
-              value: 'lib/Service/Form/FormDependent[.]php$'
-            - type: directory
-              value: 'lib/Service/Form/PublishedForm[.]php$'
-            - type: directory
-              value: 'lib/Service/Handoff/HandoffRequest[.]php$'
-            - type: directory
-              value: 'lib/Service/Handoff/HandoffSourceRef[.]php$'
+              value: 'lib/Lifecycle/LifecycleGuardInterface[.]php$'
             - type: directory
               value: 'lib/Service/Lifecycle/TransitionActor[.]php$'
             - type: directory
               value: 'lib/Service/Lifecycle/TransitionMove[.]php$'
-            - type: directory
-              value: 'lib/Service/Oas/OasValidationReportInterface[.]php$'
             - type: directory
               value: 'lib/Service/Object/BatchOperationStatusInterface[.]php$'
             - type: directory
@@ -538,7 +528,7 @@ deptrac:
         - type: directory
           value: 'lib/Controller/Trait/ResolvesRegisterAndSchemaTrait[.]php$'
         - type: directory
-          value: 'lib/Db/(AbstractObjectMapper|AccessLink|AccessLinkMapper|AccessLinkMapperInterface|AuditTrailMapperInterface|AuthorizationRulesTrait|CatalogueScope|ColumnFiltersTrait|DbRegistrar|DecisionMetadataEdit|DelegationGrant|DelegationGrantMapper|DelegationGrantMapperInterface|DeleteByObjectTrait|DraftVersion|DraftVersionMapper|EmptyPropertyClaim|EntityChangeDetector|EntityRelation|HydrateBySettersTrait|HydrateEmptyJsonAsNullTrait|IsoTimestampsTrait|JobRunFilter|LikeOperator|LikeOperatorInterface|LikeOperators|LinkColumn|MagicMapper|MagicMapperInterface|MapperRegistrar|MapperWiring|MultiTenancyTrait|ObjectHandling|ObjectLinkTypesTrait|ObjectReadState|ObjectReadStateMapper|ObjectReadStateMapperInterface|ObjectRelation|ObjectRelationMapper|ObjectRelationMapperInterface|Organisation|OrganisationFieldTrait|OrganisationMapper|OrganisationMapperInterface|OutcomeFilter|PartialObjectEntity|ProcessingLogReadScope|QueryPage|RegisterLookup|RegisterMapper|RegisterMapperHelper|RegisterMapperServices|RegisterSchema|RegistrySubscription|RegistrySubscriptionMapper|RegistrySubscriptionMapperInterface|RunObjectLock|RunObjectLockMapperInterface|SchemaCatalog|SchemaCatalogInterface|SchemaChangelog|SchemaChangelogMapper|SchemaChangelogMapperInterface|SchemaFollower|SchemaFollowerMapper|SchemaMapper|SchemaPropertyInheritance|SchemaRun|SchemaRunEntry|SchemaRunEntryMapper|SchemaRunEntryMapperInterface|SchemaRunMapper|SchemaRunMapperInterface|SchemaRunStoreInterface|SelectByColumnTrait|SlugIdLookupTrait|SourceMapperInterface|StateChangePeriod|StateHistory|StateHistoryMapper|StateHistoryMapperInterface|StoredEntity|TenantUsage|TenantUsageMapper|TenantUsageMapperInterface|TextSignature|TextSignatureMapper|Translation|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapper|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface|TypedFieldsJson|TypedFieldsJsonTrait|UsageMeasurement)[.]php$'
+          value: 'lib/Db/(AbstractObjectMapper|AccessLink|AccessLinkMapper|AccessLinkMapperInterface|AuditTrailMapperInterface|AuthorizationRulesTrait|CatalogueScope|ColumnFiltersTrait|DbRegistrar|DecisionMetadataEdit|DelegationGrant|DelegationGrantMapper|DelegationGrantMapperInterface|DeleteByObjectTrait|DraftVersion|DraftVersionMapper|EmptyPropertyClaim|EntityChangeDetector|EntityRelation|HydrateBySettersTrait|HydrateEmptyJsonAsNullTrait|IsoTimestampsTrait|JobRunFilter|LikeOperator|LikeOperatorInterface|LikeOperators|LinkColumn|MagicMapper|MagicMapperInterface|MapperRegistrar|MapperWiring|MultiTenancyTrait|ObjectHandling|ObjectLinkTypesTrait|ObjectReadState|ObjectReadStateMapper|ObjectReadStateMapperInterface|ObjectRelation|ObjectRelationMapper|ObjectRelationMapperInterface|Organisation|OrganisationFieldTrait|OrganisationMapper|OrganisationMapperInterface|OutcomeFilter|PartialObjectEntity|ProcessingLogReadScope|QueryPage|RegisterLookup|RegisterMapper|RegisterMapperHelper|RegisterMapperServices|RegistrySubscription|RegistrySubscriptionMapper|RegistrySubscriptionMapperInterface|RunObjectLock|RunObjectLockMapperInterface|SchemaCatalog|SchemaCatalogInterface|SchemaChangelog|SchemaChangelogMapper|SchemaChangelogMapperInterface|SchemaFollower|SchemaFollowerMapper|SchemaMapper|SchemaPropertyInheritance|SchemaRun|SchemaRunEntry|SchemaRunEntryMapper|SchemaRunEntryMapperInterface|SchemaRunMapper|SchemaRunMapperInterface|SchemaRunStoreInterface|SelectByColumnTrait|SlugIdLookupTrait|SourceMapperInterface|StateChangePeriod|StateHistory|StateHistoryMapper|StateHistoryMapperInterface|StoredEntity|TenantUsage|TenantUsageMapper|TenantUsageMapperInterface|TextSignature|TextSignatureMapper|Translation|TranslationBackfillScope|TranslationEdit|TranslationFilter|TranslationMapper|TranslationMapperInterface|TranslationSlot|TranslationSourceLanguageBackfillInterface|TypedFieldsJson|TypedFieldsJsonTrait|UsageMeasurement)[.]php$'
         - type: directory
           value: 'lib/Db/AccessLink/[^/]*$'
         - type: directory
@@ -680,7 +670,19 @@ deptrac:
         - type: directory
           value: 'lib/Db/Translation/[^/]*$'
         - type: directory
-          value: 'lib/Event/(ObjectLeavingEvent|ObjectWriteRequestEvent)[.]php$'
+          value: 'lib/Dto/BulkRowCount[.]php$'
+        - type: directory
+          value: 'lib/Dto/BulkSaveOutcome[.]php$'
+        - type: directory
+          value: 'lib/Dto/BulkSaveOutcomeInterface[.]php$'
+        - type: directory
+          value: 'lib/Dto/BulkSaveOutcomes[.]php$'
+        - type: directory
+          value: 'lib/Dto/StreamedRowCount[.]php$'
+        - type: directory
+          value: 'lib/Event/(AbstractOrganisationEvent|AbstractReferenceValidationEvent|AbstractRegistrySubscriptionEvent|ActionEvaluatedEvent|CustomScopeAccessors|CustomScopeEvaluatedEvent|CustomScopeEvaluatingEvent|EntityRelationDecisionUpdatedEvent|EvaluatedSchemaActionAccessors|IdentityClaimsCollectingEvent|MatrixRowsRequestedEvent|ObjectActivatedEvent|ObjectEventSubscription|ObjectLeavingEvent|ObjectWriteRequestEvent|OrganisationCreatedEvent|OrganisationDeletedEvent|OrganisationUpdatedEvent|ReferenceValidatedEvent|ReferenceValidationFailedEvent|RegistrySubscriptionEndedEvent|RegistrySubscriptionRequestedEvent|UserProfileUpdatedEvent)[.]php$'
+        - type: directory
+          value: 'lib/Exception/(AppendOnlyException|ArchiveNotOfferedException|AuthorizationBlockException|BreakingSchemaChangeException|BrokenReference|CircularReferenceException|CodedValueException|DatabaseConstraintException|DatabaseConstraintMessages|DraftActivationRefusedException|EncryptedFieldSortException|FieldDecryptionException|GrantExceedsGranterException|InvalidAuthorizationRuleException|OasValidationException|ObjectLookupFailedException|OrganisationSlugConflictException|ReadOnlyTypeException|ReferenceCycle|ReferenceValidationException|SchemaImportException|SchemaNotFoundException|SchemaRunConcurrencyException|SearchTermSyntaxException|SharedMasterDataWriteException|SlugBackfillWriteException|SystemContextUnavailableException|TranslationTargetConflictException|ViewAlertRecipientException)[.]php$'
         - type: directory
           value: 'lib/Listener/(CodedValueValidationListener|ConceptDeleteGuardListener|CoreListenerRegistrar|FacetCacheInvalidationListener|GeneratedIdentifierFreezeRun|GeneratedIdentifierIssueRun|GeneratedIdentifierListener|GrantableRightsInvalidationListener|IdentityClaimsLoginListener|IdentityGuardListener|ListenerClassesInterface|NotifyPushBatchInterface|ObjectCleanupListener|ObjectEventFilterRun|ObjectEventProxyListener|ObjectEventSlugMapRun|ObjectStateDeleteGuardListener|PresencePushInterface|SchemaFlowImportListenerInterface|StateHistoryProjectionListener|SurvivorshipRecomputeListener|SurvivorshipRecomputeRun|UniqueConstraintListener|UniqueConstraintListenerInterface|UniqueConstraintRun|ValidatesPreWriteObject|WrittenObjectOfEvent)[.]php$'
         - type: directory
@@ -698,7 +700,15 @@ deptrac:
         - type: directory
           value: 'lib/Repair/Support/RepairPlatform[.]php$'
         - type: directory
-          value: 'lib/Service/(AcceptLanguageHeader|AnonymousEvaluationContext|AppConfigurationImporterInterface|AppRegisterImportRunnerInterface|AuthFailureRun|AuthenticationTokenFetcherInterface|AuthorizationChange|AvgComplianceServiceInterface|AvgRetentionPassInterface|BulkTranslationServiceInterface|CauseFrame|ComparableInstants|ConditionMatcher|ConditionUserResolvers|ConfigLookup|CrossRegisterExistenceService|DateTimeNormalizer|DateTimeNormalizerInterface|DeclaredPair|DeclaredRow|DeepLinkRegistryServiceInterface|DeepLinkResolverInterface|DemoDataServiceInterface|DisposalSweep|EntryScripts|ExecutedDestruction|FailedAttempt|FieldDecryptionScope|FieldEncryptionHandler|FieldEncryptionHandlerInterface|HoldOrder|InboundAuthRateLimitInterface|LanguageGapScan|LanguageService|LanguageServiceInterface|LinkPageWindow|LinkServiceRuntime|LinkSessionRuntime|LinkedEntityMappers|LinkedEventMerge|LockoutStrike|LogExportFormatter|LoginSecurityInterface|ManifestServiceInterface|ManifestSources|MdiIconRenderer|MdiIconSvg|MdiIconSvgInterface|MigrationServiceInterface|OasService|OasServiceInterface|OasSources|ObjectFilesInterface|ObjectHandlerAccessInterface|ObjectRelationCleanupServiceInterface|ObjectService|ObjectServiceMapperAdapter|ObjectSourceRead|ObjectStreamingSaveInterface|ObjectTranslationRequest|OperatorEvaluator|OrganisationContext|OrganisationService|OrganisationServiceInterface|OrganisationUsageService|OrganisationUsageServiceInterface|PersonLinkTarget|PropertyAccessCollaborators|PropertyAccessRequest|PropertyRbacCaller|PropertyRbacHandler|PropertyRbacHandlerInterface|PropertyRbacRules|PropertyWriteCheck|ProtectedCarryForward|ProtectedPropertyRead|RateLimitResetInterface|RecordUpdate|RegisterDescriptorServiceInterface|RegisterImportCall|RegisterImportDocument|RegisterImportRoute|RegisterMappingFunctionsEvent|RegisterResolverService|RegisterResolverServiceInterface|RegisterSchemaLinkageRepairService|RegisterSchemaLinkageRepairServiceInterface|RegisterSchemaMappers|RegisterScopedSchemaResolver|RegisterScopedSchemaResolverInterface|RegisterScopedSchemaResolvers|RegisterService|RegisterServiceHelpers|RegisterServiceInterface|RegisterServiceStorage|RegisterSlugProbe|RegisterSlugResolver|SchemaApplicationMigratorInterface|SchemaDeletionStores|SchemaObjectTally|SchemaProperty|SchemaTeardownInterface|SchemaTeardownOverride|ScriptManifestLoader|SearchMeasurement|SecurityHeadersInterface|SecurityService|SemanticTypeQuery|SemanticTypeResolver|SemanticTypeResolverInterface|ServiceBootstrap|ServiceRegistrar|SettingsServiceInterface|SharedMasterDataService|SharedMasterDataServiceInterface|SharedSchemaDedupeServiceInterface|ShippedRegister|SkosNodeReader|SourceLanguageLookup|SystemOperationContext|TableDeletionOptions|TenancyCollaborators|TenantDirectory|TenantKeyRotationInterface|TenantLifecycleService|TenantLifecycleServiceInterface|TenantLogRedactor|TenantLogRedactorInterface|TmloServiceInterface|TranslationSearch|TranslationStatusService|TranslationStatusServiceInterface|UrnService|UrnServiceInterface|UserService|UserServiceInterface|UserTaskListInterface|VocabularyConceptEdges|VocabularyCsvReader|VocabularyImportTally|VocabularyObjectStore|WriteCause|WritePhase|WritePhaseProbe)[.]php$'
+          value: 'lib/Search/Service/Search/PlaceholderResolver[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/PlaceholderResolverInterface[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/PlaceholderResolvers[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/PropertySearchProfile[.]php$'
+        - type: directory
+          value: 'lib/Service/(AcceptLanguageHeader|AnonymousEvaluationContext|AppConfigurationImporterInterface|AppRegisterImportRunnerInterface|AuthFailureRun|AuthenticationTokenFetcherInterface|AuthorizationChange|AvgComplianceServiceInterface|AvgRetentionPassInterface|BulkTranslationServiceInterface|CauseFrame|ComparableInstants|ConditionMatcher|ConditionUserResolvers|ConfigLookup|CoreServiceBindings|CrossRegisterExistenceService|DateTimeNormalizer|DateTimeNormalizerInterface|DeclaredPair|DeclaredRow|DeepLinkRegistryServiceInterface|DeepLinkResolverInterface|DemoDataServiceInterface|DisposalSweep|EntryScripts|ExecutedDestruction|FailedAttempt|FieldDecryptionScope|FieldEncryptionHandler|FieldEncryptionHandlerInterface|HoldOrder|InboundAuthRateLimitInterface|LanguageGapScan|LanguageService|LanguageServiceInterface|LinkPageWindow|LinkServiceRuntime|LinkSessionRuntime|LinkedEntityMappers|LinkedEventMerge|LockoutStrike|LogExportFormatter|LoginSecurityInterface|ManifestServiceInterface|ManifestSources|MdiIconRenderer|MdiIconSvg|MdiIconSvgInterface|MigrationServiceInterface|OasService|OasServiceInterface|OasSources|ObjectFilesInterface|ObjectHandlerAccessInterface|ObjectRelationCleanupServiceInterface|ObjectService|ObjectServiceMapperAdapter|ObjectSourceRead|ObjectStreamingSaveInterface|ObjectTranslationRequest|OperatorEvaluator|OrganisationContext|OrganisationService|OrganisationServiceInterface|OrganisationUsageService|OrganisationUsageServiceInterface|PersonLinkTarget|PropertyAccessCollaborators|PropertyAccessRequest|PropertyRbacCaller|PropertyRbacHandler|PropertyRbacHandlerInterface|PropertyRbacRules|PropertyWriteCheck|ProtectedCarryForward|ProtectedPropertyRead|RateLimitResetInterface|RecordUpdate|RegisterDescriptorServiceInterface|RegisterImportCall|RegisterImportDocument|RegisterImportRoute|RegisterMappingFunctionsEvent|RegisterResolverService|RegisterResolverServiceInterface|RegisterSchemaLinkageRepairService|RegisterSchemaLinkageRepairServiceInterface|RegisterSchemaMappers|RegisterScopedSchemaResolver|RegisterScopedSchemaResolverInterface|RegisterScopedSchemaResolvers|RegisterSearch|RegisterService|RegisterServiceHelpers|RegisterServiceInterface|RegisterServiceStorage|RegisterSlugProbe|RegisterSlugResolver|SchemaApplicationMigratorInterface|SchemaDeletionStores|SchemaObjectTally|SchemaProperty|SchemaTeardownInterface|SchemaTeardownOverride|ScriptManifestLoader|SearchMeasurement|SecurityHeadersInterface|SecurityService|SemanticTypeQuery|SemanticTypeResolver|SemanticTypeResolverInterface|ServiceBootstrap|ServiceRegistrar|SettingsServiceInterface|SharedMasterDataService|SharedMasterDataServiceInterface|SharedSchemaDedupeServiceInterface|ShippedRegister|SkosNodeReader|SourceLanguageLookup|SystemOperationContext|TableDeletionOptions|TenancyCollaborators|TenantDirectory|TenantKeyRotationInterface|TenantLifecycleService|TenantLifecycleServiceInterface|TenantLogRedactor|TenantLogRedactorInterface|TmloServiceInterface|TranslationSearch|TranslationStatusService|TranslationStatusServiceInterface|UrnService|UrnServiceInterface|UserService|UserServiceInterface|UserTaskListInterface|VocabularyConceptEdges|VocabularyCsvReader|VocabularyImportTally|VocabularyObjectStore|WriteCause|WritePhase|WritePhaseProbe)[.]php$'
         - type: directory
           value: 'lib/Service/Aggregation/[^/]*$'
         - type: directory
@@ -814,53 +824,7 @@ deptrac:
         - type: directory
           value: 'lib/Service/Merge/[^/]*$'
         - type: directory
-          value: 'lib/Service/Oas/DynamicAnchorScan[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovConformance[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovDateTimeRules[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovDocumentInfoRules[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovDocumentRules[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovErrorRules[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovFindings[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovMarker[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/NlGovRuleCatalogue[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasETagComputer[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasETagComputerInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasExtendedTypes[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasIssue[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasNames[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasPropertySanitizer[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasRbacAnnotator[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasReferenceRepair[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasRequestValidator[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasRequestValidatorInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/OasValidationReport[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/ProblemDescription[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/ProblemDetailsBuilder[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/ProblemDetailsBuilderInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Oas/ProblemStatement[.]php$'
+          value: 'lib/Service/Oas/[^/]*$'
         - type: directory
           value: 'lib/Service/Object/AccessFlags[.]php$'
         - type: directory
@@ -1198,8 +1162,6 @@ deptrac:
         - type: directory
           value: 'lib/Service/Object/ObjectSaveRun[.]php$'
         - type: directory
-          value: 'lib/Service/Object/ObjectSelection[.]php$'
-        - type: directory
           value: 'lib/Service/Object/ObjectSlugBackfillLedger[.]php$'
         - type: directory
           value: 'lib/Service/Object/ObjectSlugBackfillRequest[.]php$'
@@ -1429,8 +1391,6 @@ deptrac:
           value: 'lib/Service/Object/SchemaUriResolverInterface[.]php$'
         - type: directory
           value: 'lib/Service/Object/SearchLenses[.]php$'
-        - type: directory
-          value: 'lib/Service/Object/SearchOptions[.]php$'
         - type: directory
           value: 'lib/Service/Object/SearchPageRun[.]php$'
         - type: directory
@@ -2630,7 +2590,29 @@ deptrac:
         - type: directory
           value: 'lib/Db/TaskSequence/[^/]*$'
         - type: directory
-          value: 'lib/Event/(BulkActionRegistrationEvent|TaskSequenceCompletedEvent|TaskSequenceUndecidedEvent|TaskTransitionedEvent)[.]php$'
+          value: 'lib/Event/(AbstractDecisionRequestEvent|AbstractTaskEvent|AbstractTaskSequenceEvent|AgentRunDispatch|AgentRunInstruction|AgentRunRequestedEvent|BulkActionRegistrationEvent|CaseItemTransitionedEvent|DecisionChangeRequestedEvent|DecisionVisibilityRequestedEvent|FlowEmailItem|FlowEmailMessage|FlowEmailOrigin|FlowEmailSentEvent|FlowTimerFiredEvent|FormDestinationDependentsEvent|RegisterFlowTriggersEvent|TaskSequenceCompletedEvent|TaskSequenceUndecidedEvent|TaskTerminalEvent|TaskTransitionedEvent)[.]php$'
+        - type: directory
+          value: 'lib/Exception/(ActionParameterTypeException|BpmnImportRefused|BpmnSchemaInvalid|BulkJobRefusedException|CaseAccessDeniedException|CaseCascadeBoundException|CasePlanExistsException|CaseTransitionException|CaseValidationException|FlowRunExpired|FlowSignalRefused|FlowTimerStateException|FlowTimerValidationException|FormSubmitRefusedException|InvalidTransitionInputException|LifecycleProviderException|LifecycleSubjectNotFoundException|PortalPartyNotFoundException|PortalSubjectException|TaskCompleteViaAppException|TaskFormRefusedException|TaskSeparationOfDutiesException|TaskSubjectNotFoundException|TaskSubjectWriteRefusedException)[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/BuiltinLifecycleActionsInterface[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/ContextLifecycleActionInterface[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/LegacyLifecycleActionInterface[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/LifecycleActionContext[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/LifecycleActionInterface[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/LifecycleActionInvoker[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/LifecycleActionProviderInterface[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/LifecycleGuardContext[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/LifecycleTransitionGuardInterface[.]php$'
+        - type: directory
+          value: 'lib/Lifecycle/Action/[^/]*$'
         - type: directory
           value: 'lib/Listener/(AdministeredValidationListener|AggregationCacheInvalidationListener|AnnotationNotificationListener|ApprovalChainAdvanceListener|ApprovalChainGateListener|AssigneeFollowListener|AssigneeFollowRun|AuthorizationCacheInvalidationListener|AutoTransitionRecordListener|BulkActionRegistrationListener|CalculationApplyRun|CalculationOnSaveListener|CaseItemTimerListener|CaseObjectEventListener|CaseRunTerminalListener|CaseTaskTerminalListener|ChainGateRun|ChangeGateListener|CommentsEntityListener|ConsentApplyRun|ConsentEnvelopeOnSaveListener|DecisionTableValidationListener|DecisionTableValidationListenerInterface|DeclaredFlowRun|DependentValueListener|FileChangeListener|FilesSidebarListener|FlowEngineRegistrationListener|FlowNodePreflightListener|FlowNodeRegistrationListener|FlowOversightRegistrationListener|FlowRunLockReleaseListener|FlowTimerSubjectTerminalListener|FlowTriggerListener|FormDestinationSchemaListener|FrozenNodeWriteListener|FrozenObjectDeleteGuardListener|HandoffLifecycleListener|HandoffQueueDrainListener|IntegrationGlobalScriptListener|LeafScriptListener|LifecycleActionListener|LifecycleActionRecordListener|LifecycleAttempt|LifecycleCreate|LifecycleDeclaration|LifecycleEdit|LifecycleEditReader|LifecycleInitialReference|LifecycleInitialStateListener|LifecycleValidationListener|ListenerRegistrar|MailAppScriptListener|NativeFlowTriggerListener|NotificationTrigger|ObjectChangeListener|ObjectExtractionRun|ObjectQuotaListener|OcmResourceTypeListener|PartyAddressUnionRun|PartyMergeListener|PartyTreeGuardListener|PortalTaskReminderListener|PrincipalResolverRegistrationListener|PushClientScriptListener|ReadStateInvalidationListener|ReadStatePruneListener|ReferencedCalculationListener|RequiredWhenListener|SchemaDeclarationChecksListener|SchemaFlowImportListener|SharerViewsEndWithUserListener|SourceRecordChangeListener|StateEntryFreezeListener|StateFieldRuleListener|StateFieldSaveRun|SurveyWriteListener|TablesTableDeletedListener|TaskBlockerReleaseListener|TaskCalendarProjectionListener|TaskNotificationListener|TaskRunTerminalListener|TaskSequenceProgressListener|TaskTerminalProjectionListener|TaskVtodoWriteBackListener|TranslationProjectionListener|UserTaskTerminalListener|ViewAlertAudience|ViewAlertCrossedListener|ViewAlertDeliveryRun|ViewAlertMail|WatcherPruneListener|WebhookEventListener|WorkingCalendarChangedListener|WorkingCalendarDeleteGuardListener|WorkingCalendarValidationListener)[.]php$'
         - type: directory
@@ -2918,131 +2900,7 @@ deptrac:
         - type: directory
           value: 'lib/Service/Flow/Principal/[^/]*$'
         - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarBatch[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarBlackoutRefusal[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarBlackouts[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarDependency[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarRecompute[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarRecomputeInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarRecomputeSources[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarRoll[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarSpan[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/CalendarWeekNumbering[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/EscalationAudience[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/EscalationLadderService[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/EscalationRule[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerAct[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerArithmetic[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerDeadlines[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerDefinitionStore[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerExtension[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerFactory[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerLedgerEntry[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerProjection[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerScope[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerService[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerStorage[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerSubjects[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerSweep[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerSweepInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerSweepTally[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerSweepTasks[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerSweepTimers[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/FlowTimerValues[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/MomentShift[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/RollRule[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/RungTimeline[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/ServiceHours[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/ServiceHoursClock[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/ServiceHoursDeclaration[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/ServiceHoursFrame[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/ServiceHoursWalk[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/SlaAddition[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/SlaCalculator[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/SlaCalculatorInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/SlaDeclaration[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/TermDiagnostic[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/TermDiagnosticInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/TermQuery[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/TimerDecision[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/TimerExtensionGrant[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/TimerExtensionRequest[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/TimerSuspension[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/UnitConversion[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WalkCollector[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendar[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendarDefinition[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendarDefinitionsInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendarHolidays[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendarInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendarRules[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendarService[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendarWriteGuard[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendarWriteGuardInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingCalendars[.]php$'
-        - type: directory
-          value: 'lib/Service/Flow/Timer/WorkingDayRoll[.]php$'
+          value: 'lib/Service/Flow/Timer/[^/]*$'
         - type: directory
           value: 'lib/Service/Form/AppDataFolder[.]php$'
         - type: directory
@@ -3051,6 +2909,8 @@ deptrac:
           value: 'lib/Service/Form/FormDefinitionResolver[.]php$'
         - type: directory
           value: 'lib/Service/Form/FormDefinitionResolverInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/FormDependent[.]php$'
         - type: directory
           value: 'lib/Service/Form/FormDependentsCheck[.]php$'
         - type: directory
@@ -3121,6 +2981,8 @@ deptrac:
           value: 'lib/Service/Form/NestedIdentityGuard[.]php$'
         - type: directory
           value: 'lib/Service/Form/OwnedDraft[.]php$'
+        - type: directory
+          value: 'lib/Service/Form/PublishedForm[.]php$'
         - type: directory
           value: 'lib/Service/Interaction/ProcessingListRead[.]php$'
         - type: directory
@@ -3206,6 +3068,8 @@ deptrac:
         - type: directory
           value: 'lib/Service/Lifecycle/LifecycleGraph[.]php$'
         - type: directory
+          value: 'lib/Service/Lifecycle/LifecycleGraphBlock[.]php$'
+        - type: directory
           value: 'lib/Service/Lifecycle/LifecycleGraphCheck[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/LifecycleGraphMovesValidator[.]php$'
@@ -3264,7 +3128,11 @@ deptrac:
         - type: directory
           value: 'lib/Service/Lifecycle/StateSave[.]php$'
         - type: directory
+          value: 'lib/Service/Lifecycle/SystemApproval[.]php$'
+        - type: directory
           value: 'lib/Service/Lifecycle/TransitionAttempt[.]php$'
+        - type: directory
+          value: 'lib/Service/Lifecycle/TransitionCommand[.]php$'
         - type: directory
           value: 'lib/Service/Lifecycle/TransitionDispatch[.]php$'
         - type: directory
@@ -3276,7 +3144,11 @@ deptrac:
         - type: directory
           value: 'lib/Service/Lifecycle/TransitionRequest[.]php$'
         - type: directory
+          value: 'lib/Service/Lifecycle/TransitionRun[.]php$'
+        - type: directory
           value: 'lib/Service/Lifecycle/TransitionSubjects[.]php$'
+        - type: directory
+          value: 'lib/Service/Lifecycle/TransitionSubmission[.]php$'
         - type: directory
           value: 'lib/Service/ObjectAction/[^/]*$'
         - type: directory
@@ -3539,6 +3411,8 @@ deptrac:
           value: 'lib/Db/ExportProfile/[^/]*$'
         - type: directory
           value: 'lib/Db/JobRun/[^/]*$'
+        - type: directory
+          value: 'lib/Exception/(BuiltinPackSlugLockedException|ConsistencyCheckWouldWriteException|InvalidPackDefinitionException|JobRunRefusedException|MigrationPackRefusedException|MigrationPackRequestException|PackChangedException|PackSlugExistsException|RecordTemplateRefused|RepairRefusedException)[.]php$'
         - type: directory
           value: 'lib/Listener/(RedactionPolicyCacheListener|ReferenceCardDeclarationCheckListener|ShareableConfigTypeRegistrationListener)[.]php$'
         - type: directory
@@ -4454,7 +4328,9 @@ deptrac:
         - type: directory
           value: 'lib/Db/WebhookLog/[^/]*$'
         - type: directory
-          value: 'lib/Event/(RegisterLeafProvidersEvent|ToolRegistrationEvent)[.]php$'
+          value: 'lib/Event/(AbstractPersonLinkEvent|CredentialRelinkRequiredEvent|DeepLinkRegistrationEvent|HandoffExecutedEvent|HandoffExecutedSource|HandoffExecutedTarget|PersonLinkUpdatedEvent|PersonLinkedEvent|PersonUnlinkedEvent|RegisterLeafProvidersEvent|ToolRegistrationEvent)[.]php$'
+        - type: directory
+          value: 'lib/Exception/(AuthenticationException|ProviderUnavailableException)[.]php$'
         - type: directory
           value: 'lib/Federation/[^/]*$'
         - type: directory
@@ -4584,49 +4460,7 @@ deptrac:
         - type: directory
           value: 'lib/Service/Federation/RemoteShareNotification[.]php$'
         - type: directory
-          value: 'lib/Service/Handoff/HandoffAnnotationEntry[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffAnnotationValidator[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffAnnotationValidatorInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffContractBindingValidator[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffContractBindingValidatorInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffKindBinding[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffKindContract[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffKindContracts[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffLedger[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffMappingChecks[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffMappingEvaluator[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffMappingSource[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffObjectAccess[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffPlan[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffProviders[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffRequesters[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffRun[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffService[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffServiceInterface[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffSourceRestore[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffSuccessUpdateChecks[.]php$'
-        - type: directory
-          value: 'lib/Service/Handoff/HandoffTarget[.]php$'
+          value: 'lib/Service/Handoff/[^/]*$'
         - type: directory
           value: 'lib/Service/Integration/[^/]*$'
         - type: directory
@@ -4663,6 +4497,10 @@ deptrac:
           value: 'lib/Controller/(FileDisclosuresController)[.]php$'
         - type: directory
           value: 'lib/Db/(DecisionMetadataChange|EntityRelationMapper|FileDigest|FileDigestMapper|FilesMapperBindings|FilesMapperRegistrar)[.]php$'
+        - type: directory
+          value: 'lib/Event/(AbstractObjectFileEvent|FileCopiedEvent|FileLockedEvent|FileMovedEvent|FileRenamedEvent|FileRestrictionAdmitEvent|FileUnlockedEvent|FileVersionRestoredEvent|ObjectNoteAddedEvent)[.]php$'
+        - type: directory
+          value: 'lib/Exception/(ChunkMatcherException|EmlParseException|ManualEntityException|ObjectFileAccessDeniedException|ObjectFolderConflictException|OfficeOpenRefusedException|PdfAnonymisationException|SanitizationException)[.]php$'
         - type: directory
           value: 'lib/Files/[^/]*$'
         - type: directory
@@ -4990,7 +4828,17 @@ deptrac:
         - type: directory
           value: 'lib/Search/Service/Reporting/[^/]*$'
         - type: directory
-          value: 'lib/Search/Service/Search/[^/]*$'
+          value: 'lib/Search/Service/Search/SearchIndexMaintenance[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexMaintenanceInterface[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexPass[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexRowCounts[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexSnapshotRestore[.]php$'
+        - type: directory
+          value: 'lib/Search/Service/Search/SearchIndexStores[.]php$'
         - type: directory
           value: 'lib/Search/Service/Vectorization/[^/]*$'
         - type: directory
