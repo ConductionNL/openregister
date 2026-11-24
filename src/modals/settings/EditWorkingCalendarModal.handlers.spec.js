@@ -74,6 +74,51 @@ describe('EditWorkingCalendarModal computed', () => {
 	})
 })
 
+describe('EditWorkingCalendarModal time zone', () => {
+	afterEach(() => {
+		jest.restoreAllMocks()
+	})
+
+	it('starts a new calendar in the administrator\'s zone, and in UTC when there is none', () => {
+		const resolved = jest.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions')
+
+		resolved.mockReturnValue({ timeZone: 'Europe/Amsterdam' })
+		expect(contextOf().form.timezone).toBe('Europe/Amsterdam')
+
+		resolved.mockReturnValue({})
+		expect(contextOf().form.timezone).toBe('UTC')
+	})
+
+	it('reads a stored zone, and UTC for a calendar stored without one', () => {
+		const ctx = contextOf()
+
+		expect(ctx.toForm({ slug: 'nl', timezone: 'America/Curacao' }).timezone).toBe('America/Curacao')
+		expect(ctx.toForm({ slug: 'old' }).timezone).toBe('UTC')
+	})
+
+	it('offers UTC with the runtime\'s zones and keeps a current zone the runtime does not list', () => {
+		jest.spyOn(Intl, 'supportedValuesOf').mockReturnValue(['Europe/Amsterdam'])
+		const ctx = contextOf()
+
+		ctx.form.timezone = 'Europe/Amsterdam'
+		expect(ctx.timeZoneOptions).toEqual(['UTC', 'Europe/Amsterdam'])
+
+		ctx.form.timezone = 'Etc/GMT-14'
+		expect(ctx.timeZoneOptions).toEqual(['Etc/GMT-14', 'UTC', 'Europe/Amsterdam'])
+	})
+
+	it('sends the chosen zone with every save', async () => {
+		axios.post.mockResolvedValue({})
+		const ctx = contextOf({ calendar: null })
+		ctx.form.slug = 'nl'
+		ctx.form.timezone = 'Europe/Amsterdam'
+
+		await ctx.save()
+
+		expect(axios.post.mock.calls[0][1].timezone).toBe('Europe/Amsterdam')
+	})
+})
+
 describe('EditWorkingCalendarModal opening hours', () => {
 	it('adds a default window, then removes the chosen one', () => {
 		const ctx = contextOf()
@@ -121,6 +166,7 @@ describe('EditWorkingCalendarModal opening hours', () => {
 		ctx.form.slug = ' nl '
 		ctx.form.title = ' NL '
 		ctx.form.organisation = '   '
+		ctx.form.timezone = 'UTC'
 		ctx.form.workingWeekdays = [5, 1]
 
 		const definition = ctx.toDefinition()
@@ -128,6 +174,7 @@ describe('EditWorkingCalendarModal opening hours', () => {
 		expect(definition).toEqual({
 			slug: 'nl',
 			title: 'NL',
+			timezone: 'UTC',
 			workingWeekdays: [1, 5],
 			hoursPerWorkingDay: 8,
 			rules: [],
