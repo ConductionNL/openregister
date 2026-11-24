@@ -459,6 +459,29 @@ class DestructionListRunBehaviourTest extends TestCase {
 		$this->assertArrayNotHasKey('archiefstatus', $this->objects['keep']->getRetention());
 	}
 
+	public function testAnAnonymiseAnswerOrNominationIsNeverDestroyedButADestroyAnswerIs(): void {
+		$this->listObject(
+			'approved',
+			[
+				['uuid' => 'answered', 'decision' => 'anonymise'],
+				['uuid' => 'nominated', 'action' => 'anonymise'],
+				['uuid' => 'overruled', 'action' => 'anonymise', 'decision' => 'destroy'],
+				['uuid' => 'plain', 'action' => 'destroy'],
+			]
+		);
+		foreach (['answered', 'nominated', 'overruled', 'plain'] as $uuid) {
+			$this->object($uuid);
+		}
+
+		$this->makeRun()->execute('list-1');
+
+		$this->assertSame(['overruled', 'plain'], array_column($this->deleted, 2));
+		$this->assertSame(2, $this->updates[1]['skippedDecisions']);
+		$this->assertContains('[DestructionExecutionJob] Refusing to destroy answered: review decision "anonymise"', $this->warnings);
+		$this->assertContains('[DestructionExecutionJob] Refusing to destroy nominated: nominated for anonymising', $this->warnings);
+		$this->assertArrayNotHasKey('archiefstatus', $this->objects['nominated']->getRetention());
+	}
+
 	public function testHeldObjectIsNeitherAuditedNorDeletedAndArchivistsAreNotified(): void {
 		$this->listObject('approved', [['uuid' => 'held'], ['uuid' => 'free']]);
 		$this->object('held');
