@@ -793,3 +793,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: one phpunit call over tests/Unit/Architecture is killed at the timeout; no failure printed.
 - Cause: every *InterfaceBindingsTest::testNoOutsideFileNamesTheClass case walks all of lib/ (~1 s each); phpunit 10.5 has no --exclude-filter.
 - Fix: run each Architecture test file as its own process in parallel (ls tests/Unit/Architecture/*Test.php | xargs -P $(nproc) ...), resumable; all 201 files finish in ~9 min on 4 cores.
+
+## Open PRs pick distinct info.xml versions after an absorbed bump (or-fix-8)
+- Symptom: several clean, approved migration PRs all sit at main's <version> after main moved to the value they picked; check-migration-version-bump.php exits 1 on each merged tree.
+- Cause: main absorbs one shared bump, leaving the others with migrations that never run.
+- Fix: merge main (a bump-only commit conflicts with main's info.xml hunk), then bump each PR to its own distinct value past main (this run: #10398 dev.5, #10568 dev.6, #5968 dev.7, #10518 dev.8), so the one that lands second only needs one re-bump.
