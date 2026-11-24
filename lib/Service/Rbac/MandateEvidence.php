@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 
@@ -116,11 +117,9 @@ class MandateEvidence implements MandateEvidenceInterface {
 		}
 
 		$holds = $this->permissions->hasPermission(
-			schema: $schema,
-			action: $verb,
-			userId: $uid,
-			object: $object,
-			register: $register
+			ask: (new PermissionAsk(schema: $schema, action: $verb))
+				->askedBy(userId: $uid, objectOwner: null)
+				->about(object: $object, register: $register)
 		);
 		if ($holds !== true) {
 			return null;

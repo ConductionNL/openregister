@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 use OCA\OpenRegister\Service\Rbac\MandateEvidence;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
 use OCA\OpenRegister\Service\Task\TaskMandateGuard;
+use OCA\OpenRegister\Tests\Unit\Service\Object\PermissionAskArgs;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -165,7 +166,7 @@ class TaskMandateGuardTest extends TestCase {
 		$rule = ['principal' => 'chris', 'until' => '2026-12-31'];
 		$this->objects->expects($this->once())->method('find')->with('case-1')->willReturn($this->subject);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($this->schema, 'decide', 'chris', null, true, $this->subject, '3')
+			->with(...PermissionAskArgs::with($this->schema, 'decide', 'chris', null, true, $this->subject, null))
 			->willReturn(true);
 		$this->permissions->expects($this->once())->method('provenanceFor')
 			->with($this->callback(fn (ProvenanceRequest $r): bool => $r->actions === ['decide'] && $r->userId === 'chris' && $r->object === $this->subject))
@@ -223,7 +224,7 @@ class TaskMandateGuardTest extends TestCase {
 	public function testWithoutAMandateTheReadVerbIsAsked(): void {
 		$this->objects->method('find')->willReturn($this->subject);
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($this->schema, 'read', 'bram')
+			->with(...PermissionAskArgs::with($this->schema, 'read', 'bram'))
 			->willReturn(false);
 
 		$this->expectException(TaskMandateRefusedException::class);
@@ -287,7 +288,7 @@ class TaskMandateGuardTest extends TestCase {
 		$task->setRegisterId(3);
 		$this->objects->expects($this->never())->method('find');
 		$this->permissions->expects($this->once())->method('hasPermission')
-			->with($this->schema, 'decide', 'chris', null, true, null, '3')
+			->with(...PermissionAskArgs::with($this->schema, 'decide', 'chris', null, true, null, '3'))
 			->willReturn(true);
 		$this->permissions->method('provenanceFor')->willReturn(['decide' => ['granted' => true, 'source' => 'register', 'rule' => 'chris', 'role' => null]]);
 
