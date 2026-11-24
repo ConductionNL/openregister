@@ -39,8 +39,8 @@ use OCA\OpenRegister\Db\RegisterMapperServices;
 
 /**
  * @covers \OCA\OpenRegister\Db\RegisterMapper
+ * @uses   \OCA\OpenRegister\Db\RequestIdentityMap
  * @uses   \OCA\OpenRegister\Db\Register
- * @uses   \OCA\OpenRegister\Db\SchemaMapper
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Db\MappingMapper
@@ -69,13 +69,14 @@ class RegisterMapperFindGoldenTest extends TestCase {
 			}
 		}
 
-		// One query per identifier column (id for a numeric identifier, then
-		// uuid, then slug), first hit wins; only a miss of every column runs the
-		// unfiltered probe, again column by column.
-		$cases['missing everywhere'] = ['missing', false, false, [[], [], [], []]];
+		$cases['missing everywhere'] = ['missing', false, false, [[], []]];
+		// The filtered lookup asks the id, slug and uuid arms first; the unfiltered
+		// existence probe runs only after all three missed, and finds the row.
 		$cases['filtered away'] = ['7', false, false, [[], [], [], [self::ROW]]];
-		$cases['numeric slug found on the slug column'] = ['7', false, true, [[], [], [self::ROW]]];
-		$cases['slug found after the uuid column misses'] = ['Seven-Slug', true, true, [[], [self::ROW]]];
+		// A numeric identifier that is no primary key falls through to the slug arm.
+		$cases['numeric slug'] = ['42', false, false, [[], [self::ROW]]];
+		// A UUID-shaped identifier asks the uuid arm alone when it hits.
+		$cases['uuid shaped'] = ['0b6c6f1e-8d5a-4c2b-9f3e-2a1d4c5b6e7f', false, false, [[self::ROW]]];
 		$cases['null slug and uuid'] = ['7', false, false, [[['id' => 7, 'uuid' => null, 'slug' => null]], [['id' => 7, 'uuid' => null, 'slug' => null]]]];
 
 		return $cases;
@@ -99,15 +100,17 @@ class RegisterMapperFindGoldenTest extends TestCase {
 			}
 
 			$cache = (new \ReflectionProperty(RegisterMapper::class, 'findCache'))->getValue($mapper);
-			$outcome['cacheKeys'] = array_keys($cache);
+			$outcome['cacheKeys'] = $cache->keys();
 			$outcome['queries'] = $this->queryLog;
 			$outcome['logs'] = $this->logs;
 
-			// A second lookup by every cached key must be answered without a query.
+			// A second lookup by every cached key, under either RBAC flag, must be answered without a query.
 			$this->queryLog = [];
-			foreach (array_keys($cache) as $key) {
-				[$cachedId, $r, $m] = explode(':', $key);
-				$mapper->find($cachedId, $r === '1', $m === '1');
+			foreach ($cache->keys() as $key) {
+				[$cachedId, $m] = explode(':', $key);
+				foreach (['0', '1'] as $r) {
+					$mapper->find($cachedId, $r === '1', $m === '1');
+				}
 			}
 
 			$outcome['queriesOnCacheHit'] = count($this->queryLog);

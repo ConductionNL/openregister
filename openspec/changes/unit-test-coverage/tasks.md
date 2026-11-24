@@ -7,12 +7,18 @@
 - [ ] Implement: Use Data Providers for Parameterized Scenarios
 - [ ] Implement: Verify Side Effects with Mock Expectations
 - [ ] Implement: Test All Service Classes with Full Branch Coverage (~175 source files)
+  - Progress (not complete): direct tests for `DependentValuePairCheck`, `RuleFlag`, `ValidationVerdict`, `Dmn\RuleMatch`, `DeploymentOrigin`, `Flow\Nodes\DecisionTablePlan`, `ShippedBaseline\LeafReset`, `AnnotatedProperties`, `Aggregation\JoinedColumnProjection`, `File\FolderAccessDenial`, `Integration\Providers\EmailListPaging` (37 tests, each file break-checked).
+  - Progress (not complete): `Notifications\NotificationDigestValidator`, `Mcp\Chat\RetrievedSource`, `Integration\PropertyReferenceValidationTrait`, `Files\File\ChunkMatchRun`, `Notifications\Controller\Support\QueryText`, `Import\MappingErrorRow`, `Archival\RetentionScanCriteria`, `RegisterSlugProbe`, `ObjectSource\DefensiveGetters`, `Notifications\Controller\Support\NotificationRequestTrait` (38 tests, each file break-checked).
 - [ ] Implement: Test All Controller Classes with CRUD and Error Handling (~46 root + 12 Settings)
 - [ ] Implement: Test All Db Entities and Mapper Handlers with Full Field Coverage (~65 source files)
+  - Progress (not complete): `MagicMapper\StatisticsPairFilter` (5 tests).
+  - Progress (not complete): `ManagedByConfigurationTrait`, `HydrateKnownFieldsTrait`, `IsoTimestampsTrait` (5 tests, break-checked).
 - [ ] Implement: Test All Event Classes via DataProvider Grouping (~39 source files)
 - [ ] Implement: Test All BackgroundJob, Command, Cron, and Listener Classes
 - [ ] Implement: Test All Exception and Format Classes
-- [ ] Implement: Test Organisation Service Multi-Tenancy Paths
+  - Progress: `DatabaseErrorChainTest`, `FlowSignalRefusedTest`, `GrantExceedsGranterExceptionTest`, `MigrationPackRequestExceptionTest` (with its abstract parent), `TextDisclosureNotRecordedExceptionTest`, `ChunkMatcherExceptionTest`: the exceptions with logic that no test covered directly. Every Format class already has a test. Still open: many exceptions are exercised only through their callers' tests, not by a test of their own.
+- [x] Implement: Test Organisation Service Multi-Tenancy Paths
+  - Done: `OrganisationServiceMembershipTest` covers joining (membership added, the cached organisation list dropped; another user must exist; a missing organisation keeps the cache) and leaving (the last organisation refused, the active organisation cleared only when it is the one left, removing another user skipping the last-organisation guard). The cache expiry and default-organisation fallback scenarios were already covered by `ActiveOrganisationCachingTest` and `DefaultOrganisationManagementTest`.
 - [x] Implement: Test Webhook Service Delivery and Retry Logic
   - Done: `WebhookServiceTest` (delivery, retry scheduling, logging) and `WebhookInterceptionFastPathTest` resolve hosts through a fixed offline address guard instead of DNS, so their delivery paths run and assert on every machine; before, 14 + 3 of them failed without DNS.
 - [ ] Implement: Test Import and Export Service Handlers

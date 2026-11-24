@@ -18,41 +18,17 @@
 
 declare(strict_types=1);
 
-// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
-
 namespace OCA\OpenRegister\Tests\Unit\Db\SchemaMapper;
 
 use OCA\OpenRegister\Db\SchemaMapper\SchemaLookup;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The cache key and not-found message of one schema lookup.
+ * The not-found message of one schema lookup.
  *
  * @covers \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
  */
 final class SchemaLookupTest extends TestCase {
-	/**
-	 * The cache key is the lowered id and the multitenancy flag; RBAC does not
-	 * change the row a lookup loads, so both RBAC settings share one key.
-	 *
-	 * @return void
-	 */
-	public function testTheCacheKeyCarriesTheIdAndTheTenancyFlagOnly(): void {
-		$lookup = new SchemaLookup(id: 'Publicatie', rbac: true, multitenancy: false);
-
-		self::assertSame(':0', $lookup->cacheSuffix());
-		self::assertSame('publicatie:0', $lookup->cacheKey());
-		self::assertSame('42:1', (new SchemaLookup(id: 42, rbac: false, multitenancy: true))->cacheKey());
-		self::assertSame(
-			(new SchemaLookup(id: 42, rbac: true, multitenancy: true))->cacheKey(),
-			(new SchemaLookup(id: 42, rbac: false, multitenancy: true))->cacheKey()
-		);
-		self::assertNotSame(
-			(new SchemaLookup(id: 42, rbac: true, multitenancy: true))->cacheKey(),
-			(new SchemaLookup(id: 42, rbac: true, multitenancy: false))->cacheKey()
-		);
-	}//end testTheCacheKeyCarriesTheIdAndTheTenancyFlagOnly()
-
 	/**
 	 * The not-found message names the id as given and both flags.
 	 *

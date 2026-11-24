@@ -83,11 +83,6 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 	}
 
 	/**
-	 * The execution that is the unfiltered probe's first query for '19'.
-	 */
-	private const PROBE_EXECUTION = 4;
-
-	/**
 	 * Build the mapper over a query builder that finds nothing.
 	 *
 	 * @param bool $rowExistsBeforeFilters Whether the unfiltered probe finds a row
@@ -95,10 +90,10 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 	 * @return RegisterMapper the mapper under test
 	 */
 	private function mapperFindingNothing(bool $rowExistsBeforeFilters = false): RegisterMapper {
-		// The filtered lookup runs first, one query per identifier column (id,
-		// uuid and slug for the numeric '19'), and only a miss runs the
-		// unfiltered existence probe: a row for the probe's first query and none
-		// for the filtered ones models "a filter removed the row".
+		// The filtered lookup runs first, one execution per identifier arm (three
+		// for the numeric '19' the tests use), and the unfiltered existence probe
+		// runs only after every arm missed: a row for the probe and none after the
+		// filters models "a filter removed the row".
 		$executions = 0;
 		$this->db->method('getQueryBuilder')->willReturnCallback(
 			function () use (&$executions, $rowExistsBeforeFilters) {
@@ -123,9 +118,9 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 	}
 
 	/**
-	 * A query builder that yields zero rows, except that the execution after
-	 * the three filtered lookups (the unfiltered probe's first query) yields
-	 * `$probeRow` when one is given.
+	 * A query builder that yields zero rows, except that the fourth execution
+	 * (the unfiltered probe after the three filtered id, slug and uuid arms)
+	 * yields `$probeRow` when one is given.
 	 *
 	 * @param array|false $probeRow    The row the first execution returns, or false for none
 	 * @param int         $executions  Shared execution counter
@@ -163,7 +158,7 @@ class RegisterMapperDiagnosticsTest extends TestCase {
 				// return false to prove uniqueness. Both reader names (`fetch()` up
 				// to NC 34, `fetchAssociative()` from NC 35) share one cursor.
 				$row = false;
-				if ($executions === self::PROBE_EXECUTION) {
+				if ($executions === 4) {
 					$row = $probeRow;
 				}
 

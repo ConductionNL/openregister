@@ -176,6 +176,11 @@ that number is read, so "done" is a measurement rather than an opinion.
       (`findMultiple()` already goes through `find()`). Pinned in
       `SchemaMapperScopedRowCacheTest` (10). Still open: `findAll()` /
       `findBySlug()` listings and which callers need metadata only.
+      2026-11-24 (main merge): main landed the same identifier arms through
+      `object-write-at-instance-floor` (#10520, `IdentifierArms`: numeric id,
+      then slug, then uuid; uuid-shaped uuid then slug; else slug then uuid).
+      This change now uses main's arms and keeps only what it adds on top:
+      the row cache, the narrow probes and the `LOWER(slug)` indexes.
 
 - [x] **Task 4 — cross-request cache.**
       APCu layer keyed on `schema.id + schema.updated`, so a cold worker does

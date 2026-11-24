@@ -41,6 +41,9 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
+ * @uses   \OCA\OpenRegister\Db\IdentifierArms
+ * @uses   \OCA\OpenRegister\Db\RequestIdentityMap
+ * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaRowCache
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
@@ -71,19 +74,13 @@ class SchemaMapperIdentifierArmsTest extends TestCase {
 	 */
 	private array $logs = [];
 
-	public function testANumericIdentifierTriesIdThenUuidThenSlug(): void {
-		self::assertSame(['id', 'uuid', 'slug'], SchemaMapper::identifierArms(id: '7'));
-		self::assertSame(['id', 'uuid', 'slug'], SchemaMapper::identifierArms(id: 7));
-		self::assertSame(['uuid', 'slug'], SchemaMapper::identifierArms(id: 'seven'));
-		self::assertSame(['uuid', 'slug'], SchemaMapper::identifierArms(id: '7abc'));
-	}
-
 	public function testEachQueryMatchesOneColumnAndAHitStopsTheWalk(): void {
 		$this->queuedRows = [[], [self::ROW]];
 		$schema = $this->makeMapper()->find('seven', [], true, false);
 
 		self::assertSame(7, $schema->getId());
-		self::assertSame(['#1 where(eq(uuid, :p1, NULL))', '#2 where(eq(lower(slug), :p2, NULL))'], $this->wheres());
+		// A non-numeric identifier that is not shaped like a uuid tries the slug first (IdentifierArms).
+		self::assertSame(['#1 where(eq(lower(slug), :p1, NULL))', '#2 where(eq(uuid, :p2, NULL))'], $this->wheres());
 		self::assertSame(2, $this->executions());
 	}
 
@@ -157,7 +154,7 @@ class SchemaMapperIdentifierArmsTest extends TestCase {
 		$schema = $this->makeMapper()->findInIds('seven', [7, 9]);
 
 		self::assertSame(7, $schema?->getId());
-		self::assertSame(['#1 where(eq(uuid, :p1, NULL))', '#2 where(eq(lower(slug), :p3, NULL))'], $this->wheres());
+		self::assertSame(['#1 where(eq(lower(slug), :p1, NULL))', '#2 where(eq(uuid, :p3, NULL))'], $this->wheres());
 		self::assertSame(
 			['#1 andWhere(in(id, :p2, NULL))', '#2 andWhere(in(id, :p4, NULL))'],
 			array_values(array_filter($this->queryLog, static fn (string $line): bool => str_contains($line, ' andWhere(in(id')))

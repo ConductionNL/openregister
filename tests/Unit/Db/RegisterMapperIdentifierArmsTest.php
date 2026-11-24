@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Db\RegisterMapper
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\SchemaMapper
+ * @uses   \OCA\OpenRegister\Db\IdentifierArms
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
  * @uses   \OCA\OpenRegister\Service\OrganisationContext
  * @uses \OCA\OpenRegister\Db\MappingMapper
@@ -80,8 +81,9 @@ class RegisterMapperIdentifierArmsTest extends TestCase {
 		$register = $this->makeMapper()->find('Seven', false, false);
 
 		self::assertSame(7, $register->getId());
-		self::assertSame(['#1 where(eq(uuid, :p1, NULL))', '#2 where(eq(lower(slug), :p2, NULL))'], $this->wheres());
-		self::assertContains('#2 param :p2 = seven, 2', $this->queryLog);
+		// A non-numeric identifier that is not shaped like a uuid tries the slug first (IdentifierArms).
+		self::assertSame(['#1 where(eq(lower(slug), :p1, NULL))', '#2 where(eq(uuid, :p2, NULL))'], $this->wheres());
+		self::assertContains('#1 param :p1 = seven, 2', $this->queryLog);
 		self::assertSame(2, $this->executions());
 	}
 

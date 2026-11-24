@@ -81,4 +81,33 @@ final class UtilityHandlerTest extends TestCase {
 		$this->assertSame($register, $this->handler->normalizeEntity($register, 'register'));
 		$this->assertNull($this->handler->normalizeEntity(null, 'schema'));
 	}
+	public function testASchemaSlugResolvesInsideTheGivenRegisterFirst(): void {
+		$register = new Register();
+		$register->setSchemas([36, 37]);
+		$own = new Schema();
+		$own->setId(36);
+		$this->registers->expects($this->once())->method('find')->with('hermiq')->willReturn($register);
+		$this->schemas->expects($this->once())->method('findBySlugInIds')->with('agent', [36, 37])->willReturn($own);
+		$this->schemas->expects($this->never())->method('find');
+
+		$this->assertSame($own, $this->handler->normalizeEntity('agent', 'schema', 'hermiq'));
+	}
+
+	public function testASchemaSlugTheRegisterLacksResolvesGloballyAsWithoutIt(): void {
+		$register = new Register();
+		$register->setSchemas([40]);
+		$global = new Schema();
+		$this->schemas->method('findBySlugInIds')->willReturn(null);
+		$this->schemas->expects($this->once())->method('find')->with('agent')->willReturn($global);
+
+		$this->assertSame($global, $this->handler->normalizeEntity('agent', 'schema', $register));
+	}
+
+	public function testARegisterIsNeverScopedByTheRegisterArgument(): void {
+		$register = new Register();
+		$this->registers->expects($this->once())->method('find')->with('zaken')->willReturn($register);
+		$this->schemas->expects($this->never())->method('findBySlugInIds');
+
+		$this->assertSame($register, $this->handler->normalizeEntity('zaken', 'register', 'other'));
+	}
 }
