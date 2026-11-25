@@ -85,4 +85,13 @@ class MagicNumberColumnSizesCacheTest extends TestCase {
 		$this->assertSame(['amount' => ['precision' => 20, 'scale' => 8]], $sizes->sizes($table));
 		$this->assertSame(2, $this->reads);
 	}//end testForgetMakesTheNextAskReadTheTableAgain()
+
+	public function testOnSqliteNoInformationSchemaIsQueried(): void {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabaseProvider')->willReturn(IDBConnection::PLATFORM_SQLITE);
+		$db->expects($this->never())->method('prepare');
+		$sizes = new MagicNumberColumnSizes($db, 'oc_');
+
+		$this->assertSame([], $sizes->sizes('openregister_table_sqlite_' . uniqid()));
+	}//end testOnSqliteNoInformationSchemaIsQueried()
 }//end class

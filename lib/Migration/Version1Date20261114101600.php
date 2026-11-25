@@ -162,11 +162,17 @@ class Version1Date20261114101600 extends TargetedMigrationStep {
 	/**
 	 * Whether any unique index on the table covers exactly the triple, under any name.
 	 *
-	 * @param ITable $table The link table.
+	 * Untyped on purpose: Nextcloud 34's ISchemaWrapper::getTable() hands back Doctrine's Table, which
+	 * does not implement OCP\DB\Schema\ITable (that interface is newer than the server), so a typed
+	 * parameter threw a TypeError and stopped `occ app:enable openregister` on Nextcloud 34.
+	 *
+	 * @param ITable|\Doctrine\DBAL\Schema\Table $table The link table (anything with getIndexes()).
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
 	 */
-	private static function hasUniqueTriple(ITable $table): bool {
+	private static function hasUniqueTriple(object $table): bool {
 		$wanted = self::COLUMNS;
 		sort($wanted);
 

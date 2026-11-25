@@ -125,6 +125,24 @@ class Version1Date20261114101600Test extends TestCase {
 		$this->assertSame($schema, $migration->changeSchema($output, fn () => $schema, []));
 	}
 
+	/**
+	 * Nextcloud 34's schema wrapper returns Doctrine's Table, which is not an OCP ITable.
+	 */
+	public function testATableThatIsNotAnOcpITableIsAcceptedOnNextcloud34(): void {
+		$table = new class([$this->index(['object_uuid', 'calendar_uri', 'event_uid'], true)]) {
+			public function __construct(private array $indexes) {
+			}
+
+			public function getIndexes(): array {
+				return $this->indexes;
+			}
+		};
+		// The OCP stubs declare ISchemaWrapper::getTable(): ITable, so the check is reached directly.
+		$check = new \ReflectionMethod(Version1Date20261114101600::class, 'hasUniqueTriple');
+
+		$this->assertTrue($check->invoke(null, $table));
+	}
+
 	public function testAUniqueIndexUnderAnotherNameAndColumnOrderCounts(): void {
 		$table = $this->table([$this->index(['EVENT_UID', 'object_uuid', 'calendar_uri'], true)]);
 		$table->expects($this->never())->method('addUniqueIndex');
