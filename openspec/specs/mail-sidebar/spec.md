@@ -76,6 +76,26 @@ The existing `EmailsController` provides forward lookups (object -> emails). The
 - **WHEN** the request is processed
 - **THEN** the response MUST return HTTP 400 with `{"error": "Invalid account ID or message ID"}`
 
+#### Scenario: A non-admin reads the links of mail in their own Mail account
+- **GIVEN** a user who is not an administrator owns Mail account 1, and message `1/42` is linked (`_mail`) to object `abc-123`, which they may read, and to object `def-456`, which they may not read
+- **WHEN** they send a GET request to `/api/linked/mail/1/42`
+- **THEN** the account's owner MUST be checked against the session user BEFORE anything is looked up
+- **AND** every object MUST be resolved under the caller's RBAC and multitenancy before it is returned, so the response lists `abc-123` and leaves out `def-456`
+- **AND** register, schema and organisation rows MUST be left out for a non-admin
+
+#### Scenario: A non-admin asks for mail in somebody else's Mail account
+- **GIVEN** Mail account 2 belongs to another user
+- **WHEN** a non-admin sends a GET request to `/api/linked/mail/2/42`, or names no account (`/api/linked/mail/x`)
+- **THEN** the response MUST be HTTP 403 and nothing MUST be looked up
+
+#### Scenario: A non-admin asks for a type other than mail
+- **WHEN** a non-admin sends a GET request to `/api/linked/deck/7`
+- **THEN** the response MUST be HTTP 403 (admin only, unchanged)
+
+#### Scenario: An administrator's reverse lookup is unchanged
+- **WHEN** an administrator sends a GET request to `/api/linked/{type}/{entityId}`
+- **THEN** the full reverse lookup MUST be returned as before
+
 ---
 
 ### Requirement: Sender-based object discovery API
