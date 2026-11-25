@@ -368,6 +368,12 @@ final class ListenerRegistrar {
 		$context->registerEventListener(CaseItemTransitionedEvent::class, CaseItemTimerListener::class);
 		$context->registerEventListener(FlowTimerFiredEvent::class, CaseItemTimerListener::class);
 
+		// The deadline warning (flow-task-inbox-projections, task 7): a fired
+		// preBreach rung of a task's due timer is recorded as the task's
+		// `due-soon` action, once per deadline value, which the `taskDueSoon`
+		// notification rule delivers.
+		$context->registerEventListener(FlowTimerFiredEvent::class, TaskDueSoonListener::class);
+
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): the SAME terminal event, and the run-terminal one, also cancel
 		// the subject's open business timers. TaskTerminalEvent fires right
