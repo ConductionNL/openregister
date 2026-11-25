@@ -196,6 +196,8 @@ class MagicRbacHandlerApplyFiltersGoldenTest extends TestCase {
 			$user->method('getUID')->willReturn($uid);
 			$userSession->method('getUser')->willReturn($user);
 			$groupManager->method('getUserGroupIds')->willReturn($groups);
+			// Nextcloud's own administrator check, as it answers inside allowed_admin_ranges.
+			$groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 		}
 
 		$logger = $this->createMock(LoggerInterface::class);

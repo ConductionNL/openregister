@@ -91,17 +91,23 @@
 
 ## Verification
 
-- [ ] V1 A 5,000-row file referencing 3 targets reports 3 cache misses and the
+- [x] V1 A 5,000-row file referencing 3 targets reports 3 cache misses and the
       rest hits — proving the streaming path is actually engaged. Without this
       the import could silently be using the bulk path and nobody would notice.
-- [ ] V2 A file with one invalid row imports the other 999 and reports exactly
+  - 2026-11-25: measured on a sandbox Nextcloud 34 on MariaDB with `reference_validation_admin_bypass=false`: 5,000 rows over 3 targets, 5,000 created, 3 misses, 4,997 hits. `tests/e2e/ci/widget-record-import.spec.ts` V1. The import routes are administrator-only and the bypass (default on) skips reference validation for an administrator, so with the default the counters read 0 misses; the spec skips V1 and V6 there, naming why.
+- [x] V2 A file with one invalid row imports the other 999 and reports exactly
       one failure.
-- [ ] V3 A dry run over a populated register leaves the object count unchanged,
+  - 2026-11-25: 1,000 rows with one over-long `naam`: 999 created, 1 failed, the count grew by 999, and `failedRows` held that one line with its reason (same spec).
+- [x] V3 A dry run over a populated register leaves the object count unchanged,
       asserted by counting before and after.
-- [ ] V4 Re-importing an unchanged file with an identifying column reports
+  - 2026-11-25: a 200-row dry run over a register of 5,999 rows: 5,999 before and after (same spec).
+- [x] V4 Re-importing an unchanged file with an identifying column reports
       0 created.
-- [ ] V5 Export the failures of a known-bad import, correct them, re-import, and
+  - 2026-11-25: the V1 file again with identifier `code`: 0 created, 5,000 unchanged, count unchanged (same spec, on 300 rows).
+- [x] V5 Export the failures of a known-bad import, correct them, re-import, and
       assert only those rows changed.
-- [ ] V6 Negative control for V1: run the same fixture through the non-streaming
+  - 2026-11-25: the exported failed row, corrected and re-imported with the `reason` column ignored: 1 created, 0 updated, 0 failed; the count reached exactly the 1,000 rows of the file (same spec).
+- [x] V6 Negative control for V1: run the same fixture through the non-streaming
       path and assert the cache counters are NOT produced. "Cache hits reported"
       means nothing until it has been shown that the other path reports none.
+  - 2026-11-25: the same row shape through `POST /api/bulk/{register}/{schema}/save` (300 rows): no `referenceCacheHits` or `referenceCacheMisses` in the answer (same spec).
