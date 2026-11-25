@@ -315,7 +315,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		);
 	}
 
-	public function testAFailingHoldIs500WithItsPrefix(): void {
+	public function testAFailingHoldIs500NamingTheActionOnly(): void {
 		$this->signIn('els', true);
 		$this->params = ['reason' => 'WOO', 'objectId' => 'o-1'];
 		$this->objectMapper->method('find')->willThrowException(new \RuntimeException('gone'));
@@ -323,7 +323,7 @@ class ArchivalAccessGoldenTest extends TestCase {
 		$response = $this->controller->createLegalHold();
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'Failed to create legal hold: gone'], $response->getData());
+		$this->assertSame(['error' => 'Failed to create legal hold'], $response->getData());
 	}
 
 	// --- createDestructionList ------------------------------------------

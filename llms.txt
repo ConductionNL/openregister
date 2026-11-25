@@ -1,0 +1,35 @@
+# OpenRegister
+
+> A Nextcloud app for building structured data registers: data models in JSON Schema, objects stored in registers, exposed through REST APIs. It is the shared data layer for other Conduction apps such as OpenCatalogi, Procest, Pipelinq and Software Catalogus.
+
+Start with README.md and CONTRIBUTING.md for the commands, and CLAUDE.md before any translation work.
+
+## Docs
+
+- [README.md](README.md): features, installation, development and tech stack
+- [ARCHITECTURE.md](ARCHITECTURE.md): components, boundaries and how a request flows
+- [CONTRIBUTING.md](CONTRIBUTING.md): branches, quality workflow, commit format, releases
+- [CLAUDE.md](CLAUDE.md): the l10n rules and commands
+- [docs/intro.md](docs/intro.md): introduction to the documentation site
+- [docs/installation.md](docs/installation.md): installation
+- [docs/Features/index.md](docs/Features/index.md): feature documentation (registers, schemas, objects, search, access control, federation and more)
+- [docs/development/docker-setup.md](docs/development/docker-setup.md): the Docker development environment
+- [docs/testing.md](docs/testing.md): testing
+- [docs/l10n-workflow.md](docs/l10n-workflow.md): the translation runbook
+
+## API
+
+- [openapi.json](openapi.json): OpenAPI document of the REST API
+- [appinfo/routes.php](appinfo/routes.php): every route of the app
+- [docs/api/objects.md](docs/api/objects.md): the objects API
+- [docs/api/schemas.md](docs/api/schemas.md): the schemas API
+- [docs/api/bulk-operations.md](docs/api/bulk-operations.md): bulk operations
+- [docs/Features/endpoints.md](docs/Features/endpoints.md): exposing views, agents, webhooks, registers and schemas as endpoints
+
+## Specs and decisions
+
+- [openspec/specs/](openspec/specs/): one spec per capability, the behaviour the code implements
+- [openspec/changes/](openspec/changes/): open change proposals; shipped ones are in openspec/changes/archive/
+- [openspec/config.yaml](openspec/config.yaml): the project rules for specs and changes
+- [openspec/platform-capabilities.md](openspec/platform-capabilities.md): the platform capabilities
+- [openspec/architecture/](openspec/architecture/): numbered architecture decision records

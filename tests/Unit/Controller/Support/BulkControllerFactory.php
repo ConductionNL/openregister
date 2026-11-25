@@ -27,6 +27,7 @@ final class BulkControllerFactory {
 	 * @param IGroupManager $groupManager Constructor argument.
 	 * @param IDBConnection $db Constructor argument.
 	 * @param ?SchemaManageGate $schemaManageGate Constructor argument.
+	 * @param ?\Psr\Log\LoggerInterface $logger Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -40,6 +41,7 @@ final class BulkControllerFactory {
 		\OCP\IGroupManager $groupManager,
 		\OCP\IDBConnection $db,
 		?\OCA\OpenRegister\Service\Rbac\SchemaManageGate $schemaManageGate = null,
+		?\Psr\Log\LoggerInterface $logger = null,
 	): array {
 		return [
 			$request,
@@ -54,6 +56,7 @@ final class BulkControllerFactory {
 					principal: new \OCA\OpenRegister\Controller\Support\SessionPrincipal(userSession: $userSession, groupManager: $groupManager),
 					db: $db,
 				),
+				logger: $logger,
 			),
 		];
 	}
