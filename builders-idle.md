@@ -530,3 +530,7 @@
 2026-11-25T01:04Z help-opencatalogi-1 skipped opencatalogi publications-reference-the-shared-organisation: group 6 waits on openregister#10281 (open PR, OR integrator); 4.1 live
 2026-11-25T01:04Z help-opencatalogi-1 skipped opencatalogi harvest-feed-intake, harvest-observability, harvest-protocol-plugins, woo-obligation-overview: all wait on openregister#10156 app-harvest-fetchers-and-flow-node (open PR, OR integrator)
 2026-11-25T01:04Z help-opencatalogi-1 skipped opencatalogi woo-value-list-curation (needs woo-value-lists-on-the-concept-register merged), woo-redaction-scans-and-text-layer (needs woo-review-surface merged), hermiq-ai-tooling (needs opencatalogi-mcp-adoption merged): prerequisite changes are other lanes' branches; tree-shake-lodash-cherry-picks: only live click-through tasks left
+2026-11-25T01:06:45Z help-filinq-1 skipped redaction-guarantees-from-the-engine: precondition unmet, openregister redaction-release-safeguards (0/20) and redaction-policy-as-data (3/15) not merged; both have other lanes' build branches
+2026-11-25T01:06:45Z help-filinq-1 skipped propose-grondslag-per-entity-type: 7.1 is owned by the OpenAnonymiser team (external system), 7.2/7.3 wait on it
+2026-11-25T01:06:45Z help-filinq-1 skipped companion-knows-the-open-document, document-editing-tools: only a live check / a Euro-Office instance left
+2026-11-25T01:06:45Z help-filinq-1 skipped work-content-search 2.4 OR half: file deep-link hook needs OR file hits in unified search (#11037 item 2), an access-control design over all of a user's files
