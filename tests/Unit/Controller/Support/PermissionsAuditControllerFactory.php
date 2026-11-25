@@ -26,6 +26,7 @@ final class PermissionsAuditControllerFactory {
 	 * @param PermissionReportScope $scope Constructor argument.
 	 * @param ScopeAudit $audit Constructor argument.
 	 * @param AdminGate $adminGate Constructor argument.
+	 * @param \OCA\OpenRegister\Controller\Support\PermissionsAuditMatrix|null $matrix The matrix export's services.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -38,6 +39,7 @@ final class PermissionsAuditControllerFactory {
 		\OCA\OpenRegister\Service\Rbac\PermissionReportScope $scope,
 		\OCA\OpenRegister\Service\Rbac\ScopeAudit $audit = new ScopeAudit(),
 		\OCA\OpenRegister\Service\Rbac\AdminGate $adminGate = new AdminGate(),
+		?\OCA\OpenRegister\Controller\Support\PermissionsAuditMatrix $matrix = null,
 	): array {
 		return [
 			$request,
@@ -52,6 +54,7 @@ final class PermissionsAuditControllerFactory {
 					audit: $audit,
 					adminGate: $adminGate,
 				),
+				matrix: $matrix,
 			),
 		];
 	}

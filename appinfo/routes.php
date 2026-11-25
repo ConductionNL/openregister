@@ -530,6 +530,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'permissionsAudit#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
         ['name' => 'permissionsAudit#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
         ['name' => 'permissionsAudit#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
+        // The full authorisation matrix with provenance (REQ-RAH-001). Administrator
+        // only: no NoAdminRequired, so the framework refuses everybody else.
+        ['name' => 'permissionsAudit#matrix',      'url' => '/api/permissions/matrix',        'verb' => 'GET'],
         // Administrator only: the route carries no NoAdminRequired, so the
         // framework refuses everybody else before the method runs.
         ['name' => 'derivedGrants#reapply', 'url' => '/api/permissions/derived-grants/reapply', 'verb' => 'POST'],
@@ -965,6 +968,10 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'flow#versionPreview', 'url' => '/api/flows/{id}/version-preview', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#draft',     'url' => '/api/flows/{id}/draft',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#deprecate', 'url' => '/api/flows/{id}/deprecate',           'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Workflow progress (tasks-progress-report). Above `/api/flows/{id}`
+        // so `progress` is never read as a flow id.
+        ['name' => 'flowProgress#index', 'url' => '/api/flows/progress',      'verb' => 'GET'],
+        ['name' => 'flowProgress#show',  'url' => '/api/flows/{id}/progress', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
         ['name' => 'flow#create',  'url' => '/api/flows',          'verb' => 'POST'],
         ['name' => 'flow#show',    'url' => '/api/flows/{id}',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -1858,6 +1865,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'schemaMigration#revalidate', 'url' => '/api/schemas/{id}/revalidate', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#runs', 'url' => '/api/schemas/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#run', 'url' => '/api/schemas/{id}/runs/{run}', 'verb' => 'GET', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
+        // generated-identifier C41.5: a scheme change rewrites issued identifiers in a background job.
+        ['name' => 'identifierSchemeMigrations#create', 'url' => '/api/schemas/{id}/identifier-migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'identifierSchemeMigrations#show', 'url' => '/api/identifier-migrations/{run}', 'verb' => 'GET', 'requirements' => ['run' => '\d+']],
         ['name' => 'schemaMigration#previewMigration', 'url' => '/api/schemas/{id}/migrations/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#migrate', 'url' => '/api/schemas/{id}/migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         // One named part of one schema back to what its app shipped (admin; shipped-baseline-reset-is-reachable).
