@@ -35,6 +35,7 @@ use OCA\OpenRegister\Listener\IdentityClaimsLoginListener;
 use OCA\OpenRegister\Listener\IdentityGuardListener;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
 use OCA\OpenRegister\Listener\ObjectStateDeleteGuardListener;
+use OCA\OpenRegister\Listener\ObjectFolderReshareGuard;
 use OCA\OpenRegister\Listener\PlatformShareRoutingListener;
 use OCA\OpenRegister\Listener\ServiceAccountLoginListener;
 use OCA\OpenRegister\Listener\StateHistoryProjectionListener;
@@ -64,7 +65,7 @@ final class CoreListenerRegistrarTest extends TestCase {
 		return [
 			'identityClaims' => ['identityClaims', [[UserLoggedInEvent::class, IdentityClaimsLoginListener::class]]],
 			'serviceAccountLogin' => ['serviceAccountLogin', [[PostLoginEvent::class, ServiceAccountLoginListener::class]]],
-			'platformShareRouting' => ['platformShareRouting', [[BeforeShareCreatedEvent::class, PlatformShareRoutingListener::class]]],
+			'platformShareRouting' => ['platformShareRouting', [[BeforeShareCreatedEvent::class, PlatformShareRoutingListener::class], [BeforeShareCreatedEvent::class, ObjectFolderReshareGuard::class]]],
 			'generatedIdentifier' => ['generatedIdentifier', [[ObjectCreatingEvent::class, GeneratedIdentifierListener::class], [ObjectUpdatingEvent::class, GeneratedIdentifierListener::class]]],
 			'survivorship' => ['survivorship', [[ObjectCreatingEvent::class, SurvivorshipRecomputeListener::class], [ObjectUpdatingEvent::class, SurvivorshipRecomputeListener::class]]],
 			'codedValueValidation' => ['codedValueValidation', [[ObjectCreatingEvent::class, CodedValueValidationListener::class], [ObjectUpdatingEvent::class, CodedValueValidationListener::class]]],

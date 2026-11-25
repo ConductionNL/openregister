@@ -4340,6 +4340,7 @@ BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
 Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
 Listener/ServiceAccountLoginListener.php,,Listener,,,,,Core
 Listener/PlatformShareRoutingListener.php,,Listener,,,,,Core
+Listener/ObjectFolderReshareGuard.php,,Listener,,,,,Core
 Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
 Service/AuditChainKey.php,,Service,,,,,Compliance
 Db/HydrationKey.php,,Db,,,,,Kernel

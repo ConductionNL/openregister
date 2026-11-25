@@ -382,7 +382,8 @@
 		"OCA\\OpenRegister\\Listener\\OcmResourceTypeListener"
 	],
 	"OCP\\Share\\Events\\BeforeShareCreatedEvent": [
-		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener"
+		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener",
+		"OCA\\OpenRegister\\Listener\\ObjectFolderReshareGuard"
 	],
 	"OCP\\Share\\Events\\ShareCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"

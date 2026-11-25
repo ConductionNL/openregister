@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 273;
+	private const LISTENER_COUNT = 274;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -47,8 +47,10 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * (count 263 -> 264). The deadline warning then appended one TaskDueSoonListener
 	 * registration on FlowTimerFiredEvent, after CaseItemTimerListener (264 -> 265).
 	 * Then the cross-app semantic reference listeners (8 registrations, count 265 -> 273).
+	 * Then ObjectFolderReshareGuard on BeforeShareCreatedEvent, right after
+	 * PlatformShareRoutingListener in the same slot (count 273 -> 274).
 	 */
-	private const SEQUENCE_SHA256 = '52c42f0ad1a9b7628b309e3ae3e44c9eb563e80087c24cc0a3fa1a4027ac3f7d';
+	private const SEQUENCE_SHA256 = '97a581a0f84e9c44da85748d3f14547392be195da98ff1362d72a0fd603ad99c';
 
 	/**
 	 * The registration calls, in call order, with every argument.
