@@ -4737,6 +4737,7 @@ Contract/ObjectFileReaderInterface.php,4,Contract,Contract,Contract/ObjectFileRe
 Service/File/ObjectFileReader.php,14,Service,Service,Service/File/ObjectFileReader.php,0,,Core
 Controller/FileEntityRelationsController.php,,Controller,,,,,Processes
 Controller/FlowProgressController.php,,Controller,,,,,Processes
+Event/ObjectReadStatePropertiesEvent.php,,Event,,,,,Kernel
 Db/ProcessesMapperBindings.php,,Db,,,,,Processes
 Db/ProcessesMapperRegistrar.php,,Db,,,,,Processes
 Db/IntegrationsMapperBindings.php,,Db,,,,,Integrations
