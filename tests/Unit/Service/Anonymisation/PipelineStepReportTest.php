@@ -131,7 +131,7 @@ final class PipelineStepReportTest extends TestCase {
 		// The DOCX and ODT sanitisers, the PDF text replacer and the PDF metadata sanitiser.
 		$this->assertGreaterThanOrEqual(4, $found);
 
-		// The image seam's burner paints into pixels: it is a step too, for the standalone image types and the images inside DOCX and ODT.
+		// The image seam's burner paints into pixels: it is a step too, for the standalone image types and the images inside PDF, DOCX and ODT.
 		$this->assertSame('image-burner', $implementers->stepImplementedBy(class: \OCA\OpenRegister\Service\File\ImageBurner::class));
 		$this->assertSame(
 			[
@@ -139,6 +139,7 @@ final class PipelineStepReportTest extends TestCase {
 				'image/jpeg',
 				'image/tiff',
 				'image/webp',
+				'application/pdf',
 				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 				'application/vnd.oasis.opendocument.text',
 			],

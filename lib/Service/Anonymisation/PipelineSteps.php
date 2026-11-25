@@ -96,7 +96,7 @@ final class PipelineSteps {
 		],
 		self::IMAGE_BURNER => [
 			'label' => 'Image region burner (decided regions painted into the pixels)',
-			'mimeTypes' => [...self::IMAGE_TYPES, self::DOCX, self::ODT],
+			'mimeTypes' => [...self::IMAGE_TYPES, self::PDF, self::DOCX, self::ODT],
 		],
 	];
 

@@ -50,6 +50,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\File\ImageRedactionService
  * @covers \OCA\OpenRegister\Service\File\ImageBurner
  * @covers \OCA\OpenRegister\Service\File\OfficeMediaBurner
+ * @covers \OCA\OpenRegister\Service\File\PdfImageBurner
  * @uses   \OCA\OpenRegister\Files\Db\AnonymisationLog
  * @uses   \OCA\OpenRegister\Service\File\ImageDetection
  * @uses   \OCA\OpenRegister\Service\File\ImageRegion
@@ -495,7 +496,7 @@ final class ImageRedactionServiceTest extends TestCase {
 	public static function unsupported(): array {
 		return [
 			'tiff' => ['scan.tif', 'image/tiff'],
-			'pdf' => ['scan.pdf', 'application/pdf'],
+			'plain text' => ['notes.txt', 'text/plain'],
 		];
 	}//end unsupported()
 
@@ -512,6 +513,47 @@ final class ImageRedactionServiceTest extends TestCase {
 
 		$this->assertSame([], $this->written);
 	}//end testATypeThatCannotBeBurnedYetIsRefusedWithoutOutput()
+
+	public function testAnImageOnlyPdfPageIsBurnedNotOverlaid(): void {
+		$scan = PdfImageFixture::onePage(PdfImageFixture::jpegImage());
+		$region = new ImageRegion(1, ['x' => 0.0, 'y' => 0.0, 'w' => 0.25, 'h' => 0.25], 'PERSON', 0.9, 'ocr-text');
+
+		$this->service()->redactImage($this->file('scan.pdf', 'application/pdf', $scan), [$region]);
+
+		$out = $this->written['scan_anonymized.pdf'];
+		$this->assertStringNotContainsString(PdfImageFixture::jpeg(), $out, 'The original image stream is absent from the output.');
+		$this->assertStringNotContainsString('/Annot', $out, 'No annotation is drawn over the page.');
+		$samples = (string)PdfImageFixture::pageImages($out)['Im1']->get_stream(false);
+		$this->assertSame(["\0\0\0"], PdfImageFixture::pixels($samples, 3, [0, 0, 15, 15]), 'The region is burned into the page image.');
+	}//end testAnImageOnlyPdfPageIsBurnedNotOverlaid()
+
+	public function testAPdfRegionThatCannotBeBurnedLeavesNoOutput(): void {
+		$region = new ImageRegion(3, ['x' => 0.0, 'y' => 0.0, 'w' => 0.25, 'h' => 0.25], 'PERSON', 0.9, 'ocr-text');
+
+		try {
+			$this->service()->redactImage($this->file('scan.pdf', 'application/pdf', PdfImageFixture::onePage(PdfImageFixture::jpegImage())), [$region]);
+			$this->fail('A region on a page the PDF does not have must be refused.');
+		} catch (ImageRegionNotBurnableException $e) {
+			$this->assertStringContainsString('scan.pdf', $e->getMessage());
+		}
+
+		$this->assertSame([], $this->written);
+	}//end testAPdfRegionThatCannotBeBurnedLeavesNoOutput()
+
+	public function testTheEmbeddedImageTypesAreOfficeAndPdf(): void {
+		$service = $this->service();
+
+		$this->assertTrue($service->burnsEmbeddedImages('application/pdf'));
+		$this->assertTrue($service->burnsEmbeddedImages('application/vnd.oasis.opendocument.text'));
+		$this->assertFalse($service->burnsEmbeddedImages('image/png'));
+	}//end testTheEmbeddedImageTypesAreOfficeAndPdf()
+
+	public function testEmbeddedImagesOfATypeWithoutThemAreRefused(): void {
+		$this->expectException(ImageRegionNotBurnableException::class);
+		$this->expectExceptionMessage('text/plain files hold no images this seam burns');
+
+		$this->service()->burnEmbeddedImages('bytes', 'text/plain', [], 'notes.txt');
+	}//end testEmbeddedImagesOfATypeWithoutThemAreRefused()
 
 	public function testAnImageInsideADocxIsBurned(): void {
 		$first = self::gradient(40, 40, 'png');
@@ -640,7 +682,7 @@ final class ImageRedactionServiceTest extends TestCase {
 		$this->assertSame(['image/png', 'image/jpeg', 'image/tiff', 'image/webp'], ImageRedactionService::STANDALONE_TYPES);
 		$this->assertSame(PipelineSteps::IMAGE_TYPES, ImageRedactionService::STANDALONE_TYPES);
 		$this->assertSame(
-			[...PipelineSteps::IMAGE_TYPES, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text'],
+			[...PipelineSteps::IMAGE_TYPES, 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text'],
 			(new PipelineSteps())->mimeTypes(PipelineSteps::IMAGE_BURNER)
 		);
 	}//end testTheStandaloneTypesAreThePipelineImageTypes()
