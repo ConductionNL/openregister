@@ -34,6 +34,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Support\RequestListPage;
 use OCA\OpenRegister\Controller\Support\WebhookOwnership;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Controller\Support\WebhooksControllerServices;
 use OCA\OpenRegister\Controller\Support\WebhookLogQuery;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
@@ -78,6 +79,7 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
 class WebhooksController extends Controller {
+	use HandlesExceptionsTrait;
 
 	/**
 	 * The webhook event types a subscription can name, with their display metadata.
@@ -856,16 +858,7 @@ class WebhooksController extends Controller {
 
 			return new JSONResponse(data: $webhook, statusCode: 201);
 		} catch (\Exception $e) {
-			return $this->loggedFailure(
-				logMessage: '[WebhooksController] Error creating webhook: ' . $e->getMessage(),
-				context: [
-					'fields' => array_keys($this->request->getParams()),
-					'trace' => $e->getTraceAsString(),
-				],
-				data: [
-					'error' => 'Failed to create webhook: ' . $e->getMessage(),
-				]
-			);
+			return $this->handleApiException(e: $e, context: $this->withFieldNames(label: 'Webhook creation failed'));
 		}//end try
 	}//end create()
 
@@ -915,17 +908,7 @@ class WebhooksController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return $this->webhookNotFound();
 		} catch (\Exception $e) {
-			return $this->loggedFailure(
-				logMessage: '[WebhooksController] Error updating webhook: ' . $e->getMessage(),
-				context: [
-					'id' => $id,
-					'fields' => array_keys($this->request->getParams()),
-					'trace' => $e->getTraceAsString(),
-				],
-				data: [
-					'error' => 'Failed to update webhook: ' . $e->getMessage(),
-				]
-			);
+			return $this->handleApiException(e: $e, context: $this->withFieldNames(label: 'Webhook update failed'));
 		}//end try
 	}//end update()
 
@@ -1110,16 +1093,7 @@ class WebhooksController extends Controller {
 				]
 			);
 		} catch (\Exception $e) {
-			return $this->loggedFailure(
-				logMessage: '[WebhooksController] Error testing webhook: ' . $e->getMessage(),
-				context: [
-					'id' => $id,
-					'trace' => $e->getTraceAsString(),
-				],
-				data: [
-					'error' => 'Failed to test webhook: ' . $e->getMessage(),
-				]
-			);
+			return $this->handleApiException(e: $e, context: 'Webhook test failed');
 		}//end try
 	}//end test()
 
@@ -1535,18 +1509,35 @@ class WebhooksController extends Controller {
 	}//end withOutcome()
 
 	/**
-	 * Log a failed listing and answer 500.
+	 * A log label naming the request's field names, never their values.
+	 *
+	 * A failed create or update logs which fields were sent so the failure can
+	 * be diagnosed, without writing a signing secret or URL into the log.
+	 *
+	 * @param string $label The log label.
+	 *
+	 * @return string The label followed by the sent field names.
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
+	 */
+	private function withFieldNames(string $label): string {
+		return $label . ' (fields: ' . implode(', ', array_keys($this->request->getParams())) . ')';
+	}//end withFieldNames()
+
+	/**
+	 * Answer a failed log listing.
+	 *
+	 * A typed failure keeps its status and message; anything else answers a
+	 * generic 500 and the message goes to the server log only.
 	 *
 	 * @param \Exception $e The failure.
 	 *
-	 * @return JSONResponse The 500 response.
+	 * @return JSONResponse The translated error response.
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
 	 */
 	private function logsFailed(\Exception $e): JSONResponse {
-		return $this->loggedFailure(
-			logMessage: '[WebhooksController] Error retrieving webhook logs: ' . $e->getMessage(),
-			context: ['trace' => $e->getTraceAsString()],
-			data: ['error' => 'Failed to retrieve webhook logs: ' . $e->getMessage()]
-		);
+		return $this->handleApiException(e: $e, context: 'Webhook log listing failed');
 	}//end logsFailed()
 
 	/**
