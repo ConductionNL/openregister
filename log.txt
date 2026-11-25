@@ -4748,3 +4748,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T09:16:47Z precheck-20261125T085905-5d01d28f NORESULT tree fdb556d260: checker floor not measured (exit 2)
 2026-11-25T09:16:55Z session-20261125T083748-feeadcef or-fix-3/or-fix-8: precheck not run: gitleaks 8.30.0 install refused by the permission check (already in the coordinator queue)
 2026-11-25T09:28:32Z precheck-20261125T092731-e310afa6 NORESULT tree acca2ef598: deps failed
+2026-11-25T09:29:37Z precheck-20261125T085905-5d01d28f NORESULT tree c20c35d5c0: checker floor not measured (exit 2)
