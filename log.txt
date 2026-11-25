@@ -4743,3 +4743,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T09:04:22Z session-20261125T082601-64ce3a0a or-fix-7: REVERIFY 10537@6ae1929a (main 28d6ce8f merge: info.xml dev.17, yaml regen; green bar inherited reds); 11067 11087 11097 11107 11117 11127 10547 APPROVE+clean (no churn); 11077 BLOCK stands (stylelint 18 peer); 10627 sbom park unchanged; 7721 obsolete
 2026-11-25T09:04:41Z session-20261125T082601-64ce3a0a or-fix-2/or-fix-7 done: precheck-when-idle not run, gitleaks release-binary install refused by the permission check (as before)
 2026-11-25T09:09:41Z session-20261125T084604-389971f7 cloud-or-reviewer-6: APPROVE 10550 (fast path, only main merge 28d6ce8f), 11134 (full: two Core-port retypes, same bound instances); 10526 10614 11086 11094 11126 ledgered at head; no lane-6 PR conflicts with main 28d6ce8f
+2026-11-25T09:15:45Z integrator-20261125T091248-61562fa2 NORESULT tree f90aadce79: deps failed
