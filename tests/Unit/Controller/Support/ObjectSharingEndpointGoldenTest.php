@@ -33,6 +33,7 @@ use OCA\OpenRegister\Controller\Support\ObjectSharingEndpoint;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -76,6 +77,21 @@ class ObjectSharingEndpointGoldenTest extends TestCase {
 		$this->objects->method('getObject')->willReturn(null);
 
 		$this->assertNotFound($this->endpoint()->resolve(new ObjectRef('reg', 'sch', 'uuid-1')));
+	}
+
+	public function testResolveRefusesAnObjectTheLookupCannotFindWith404(): void {
+		// The RBAC-bounded lookup throws for a row the caller may not read, as for a missing one.
+		$this->objects->method('setObject')->willThrowException(new DoesNotExistException('Object not found in magic table'));
+		$this->objects->expects($this->never())->method('getObject');
+
+		$this->assertNotFound($this->endpoint()->resolve(new ObjectRef('reg', 'sch', 'uuid-1')));
+	}
+
+	public function testResolveLetsAnyOtherLookupFailurePropagate(): void {
+		$this->objects->method('setObject')->willThrowException(new RuntimeException('database gone'));
+
+		$this->expectException(RuntimeException::class);
+		$this->endpoint()->resolve(new ObjectRef('reg', 'sch', 'uuid-1'));
 	}
 
 	public function testResolveLetsAnUnknownRegisterPropagate(): void {

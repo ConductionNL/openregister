@@ -155,6 +155,83 @@ class WebhookLogMapper extends QBMapper implements WebhookLogMapperInterface {
 	}//end countPendingRetries()
 
 	/**
+	 * The delivery durations as cumulative buckets, aggregated in one query.
+	 *
+	 * Only attempts with a recorded `duration_ms` count; rows written before
+	 * the column existed are left out. The bucket expressions are built from
+	 * the integer bounds, cast, never from text.
+	 *
+	 * @param array<int, int> $boundsMs The bucket upper bounds, in milliseconds.
+	 *
+	 * @return array{timed: int, sumMs: float, buckets: array<int, int>}
+	 *
+	 * @spec openspec/changes/production-observability
+	 */
+	public function deliveryDurationStats(array $boundsMs): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->createFunction('COUNT(duration_ms)'), 'timed')
+			->selectAlias($qb->createFunction('SUM(duration_ms)'), 'sum_ms');
+
+		foreach ($boundsMs as $bound) {
+			$qb->selectAlias(
+				$qb->createFunction('SUM(CASE WHEN duration_ms <= '.(int) $bound.' THEN 1 ELSE 0 END)'),
+				'le_'.(int) $bound
+			);
+		}
+
+		$qb->from($this->getTableName());
+
+		$result = $qb->executeQuery();
+		$row    = $result->fetch();
+		$result->closeCursor();
+
+		if (is_array($row) === false) {
+			$row = [];
+		}
+
+		$buckets = [];
+		foreach ($boundsMs as $bound) {
+			$buckets[(int) $bound] = (int) ($row['le_'.(int) $bound] ?? 0);
+		}
+
+		return [
+			'timed' => (int) ($row['timed'] ?? 0),
+			'sumMs' => (float) ($row['sum_ms'] ?? 0),
+			'buckets' => $buckets,
+		];
+	}//end deliveryDurationStats()
+
+	/**
+	 * The successful and failed delivery attempts logged since an instant.
+	 *
+	 * Aggregated in one query, so a health check never loads log rows.
+	 *
+	 * @param DateTime $since The earliest `created` counted.
+	 *
+	 * @return array{successful: int, failed: int}
+	 *
+	 * @spec openspec/changes/production-observability
+	 */
+	public function outcomesSince(DateTime $since): array {
+		$qb   = $this->db->getQueryBuilder();
+		$sums = $this->outcomeSums(qb: $qb);
+
+		$qb->select($qb->createFunction($sums['successful']))
+			->addSelect($qb->createFunction($sums['failed']))
+			->from($this->getTableName())
+			->where($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+
+		$result = $qb->executeQuery();
+		$row    = $result->fetch();
+		$result->closeCursor();
+
+		return [
+			'successful' => (int) ($row['successful'] ?? 0),
+			'failed' => (int) ($row['failed'] ?? 0),
+		];
+	}//end outcomesSince()
+
+	/**
 	 * Insert a new webhook log
 	 *
 	 * @param Entity $entity WebhookLog entity to insert
