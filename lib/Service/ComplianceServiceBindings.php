@@ -72,6 +72,11 @@ use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Audit\AuditResealInterface;
+use OCA\OpenRegister\Service\Audit\AuditSealBacklogCursor;
+use OCA\OpenRegister\Service\Audit\AuditSealBacklogCursorInterface;
+use OCA\OpenRegister\Service\Audit\AuditSealBacklogInterface;
+use OCA\OpenRegister\Service\Audit\AuditSealBacklogService;
+use OCA\OpenRegister\Service\Audit\AuditSealWindowInterface;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
 use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
@@ -254,6 +259,9 @@ final class ComplianceServiceBindings {
 		ArchiveReferenceReaderInterface::class         => ArchiveActionDateCalculator::class,
 		AuditSealInterface::class                      => AuditHashService::class,
 		AuditRechainInterface::class                   => AuditHashService::class,
+		AuditSealWindowInterface::class                => AuditHashService::class,
+		AuditSealBacklogCursorInterface::class         => AuditSealBacklogCursor::class,
+		AuditSealBacklogInterface::class               => AuditSealBacklogService::class,
 		DpiaPatternDetectorInterface::class            => DpiaPatternDetectionService::class,
 		RetentionSweepInterface::class                 => RetentionSweepService::class,
 	];

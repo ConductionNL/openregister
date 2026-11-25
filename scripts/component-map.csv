@@ -5026,6 +5026,13 @@ Controller/ObjectTransferController.php,,Controller,,,,,Core
 Service/Organisation/ObjectGraphTransfer.php,,Service,,,,,Core
 Service/Organisation/ObjectGraphTransferRefusal.php,,Service,,,,,Core
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
+BackgroundJob/SealAuditBacklogJob.php,,BackgroundJob,,,,,Compliance
+Command/SealAuditBacklogCommand.php,,Command,,,,,Compliance
+Service/Audit/AuditSealBacklogCursor.php,,Service,,,,,Compliance
+Service/Audit/AuditSealBacklogCursorInterface.php,,Service,,,,,Compliance
+Service/Audit/AuditSealBacklogInterface.php,,Service,,,,,Compliance
+Service/Audit/AuditSealBacklogService.php,,Service,,,,,Compliance
+Service/Audit/AuditSealWindowInterface.php,,Service,,,,,Compliance
 Service/Flow/IFlowNodeRuntime.php,,Service,Flows,Flows/Service/Flow/IFlowNodeRuntime.php,0,,Processes
 Service/Audit/ReadRuleResolver.php,,Service,Core,,0,,Core
 Kernel/Contracts/ReadRuleMatch.php,,Kernel,,,,,Kernel
