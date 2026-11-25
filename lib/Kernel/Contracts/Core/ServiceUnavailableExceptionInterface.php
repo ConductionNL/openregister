@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts\Core;
 
-use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\UnavailableServiceExceptionInterface;
 
 /**
  * Marks a failure that means a service the request needs is not available:
@@ -31,5 +31,5 @@ use Throwable;
  *
  * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md
  */
-interface ServiceUnavailableExceptionInterface extends Throwable {
+interface ServiceUnavailableExceptionInterface extends UnavailableServiceExceptionInterface {
 }//end interface
