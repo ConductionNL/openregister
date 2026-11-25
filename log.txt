@@ -4711,3 +4711,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T04:13:54Z precheck-20261125T034540-86ed4903 NORESULT tree a2bd2c85da: checker floor not measured (exit 2)
 2026-11-25T04:15:03Z precheck-20261125T034540-86ed4903 CONFLICT-DEV #10499 f372bd82
 2026-11-25T04:15:20Z precheck-20261125T034540-86ed4903 CONFLICT-DEV #10549 7ccafdd5
+2026-11-25T04:20:01Z integrator-20261125T031209-b842bbc3 GREEN tree 195fcc744d on dev b48bfec939 prs 2 front=skip: Tests: 66215, Assertions: 234557, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
