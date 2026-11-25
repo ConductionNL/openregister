@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -69,6 +70,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
  * signed-in caller only when the rule is marked `crossOrganisation: true`.
  */
 class MagicSearchHandlerPublicReadOrganisationTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private const ALL_ROWS = ['no-org', 'other-org', 'own-org'];
 
@@ -103,6 +106,7 @@ class MagicSearchHandlerPublicReadOrganisationTest extends TestCase {
 	protected function setUp(): void {
 		$this->userSession = $this->createMock(originalClassName: IUserSession::class);
 		$this->groupManager = $this->createMock(originalClassName: IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$registerMapper = $this->createMock(originalClassName: RegisterMapper::class);
 		$registerMapper->method('getAllRegisterIdsWithSchema')->willReturn([]);
 		$userManager = $this->createMock(originalClassName: IUserManager::class);

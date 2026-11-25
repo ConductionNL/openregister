@@ -124,6 +124,7 @@ DOMAIN_ORDER=(
     "anonymisation-disclosures"
     "public-export"
     "nlgov-conformance"
+    "reply-threading"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -229,6 +230,8 @@ declare -A DOMAIN_COLLECTIONS=(
     [public-export]="$REPO_ROOT/tests/integration/openregister-public-export.postman_collection.json"
     # NLGov API design rules: the report is public (200 anonymous), the probe is administrator-only (403).
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
+    # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
+    [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
