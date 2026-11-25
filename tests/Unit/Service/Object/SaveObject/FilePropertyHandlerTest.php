@@ -173,7 +173,7 @@ class FilePropertyHandlerTest extends TestCase {
 		$this->handler = new FilePropertyHandler(
 			$this->logger,
 			$this->fileService,
-			new UrlFileFetcher(opener: new WrapperStreamOpener())
+			urlFetcher: new UrlFileFetcher(opener: new WrapperStreamOpener())
 		);
 	}
 
@@ -2640,7 +2640,7 @@ class FilePropertyHandlerTest extends TestCase {
 				'%PDF-1.4 bytes',
 				$this->throwException(new \OCA\OpenRegister\Service\File\UrlFetchRefused(reason: 'status', message: 'The URL answered with status 404.'))
 			);
-		$handler = new FilePropertyHandler($this->logger, $this->fileService, $fetcher);
+		$handler = new FilePropertyHandler($this->logger, $this->fileService, urlFetcher: $fetcher);
 		$method = new ReflectionMethod($handler, 'fetchFileFromUrl');
 
 		$this->assertSame('%PDF-1.4 bytes', $method->invoke($handler, 'http://93.184.216.34/a.pdf'));

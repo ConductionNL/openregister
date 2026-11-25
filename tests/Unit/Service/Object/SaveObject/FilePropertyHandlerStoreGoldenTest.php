@@ -472,6 +472,6 @@ class FilePropertyHandlerStoreGoldenTest extends TestCase {
 			}
 		);
 
-		return new FilePropertyHandler($logger, $fileService, new \OCA\OpenRegister\Service\File\UrlFileFetcher(opener: new WrapperStreamOpener()));
+		return new FilePropertyHandler($logger, $fileService, urlFetcher: new \OCA\OpenRegister\Service\File\UrlFileFetcher(opener: new WrapperStreamOpener()));
 	}//end handler()
 }//end class

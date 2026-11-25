@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\File\UrlFetchRefused;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\SecurityService;
+use OCA\OpenRegister\Service\File\DocumentStoreMoveGuard;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -174,15 +175,17 @@ class FilePropertyHandler {
 	/**
 	 * Constructor for FilePropertyHandler.
 	 *
-	 * @param LoggerInterface            $logger      Logger for logging operations
-	 * @param ObjectFilesInterface       $fileService File service for file operations
-	 * @param UrlFileFetchInterface|null $urlFetcher  The shared URL fetch (Files' UrlFileFetcher); null uses the guarded fallback.
+	 * @param LoggerInterface             $logger      Logger for logging operations
+	 * @param ObjectFilesInterface        $fileService File service for file operations
+	 * @param DocumentStoreMoveGuard|null $moveGuard   Holds file writes off a register being moved
+	 * @param UrlFileFetchInterface|null  $urlFetcher  The shared URL fetch (Files' UrlFileFetcher); null uses the guarded fallback.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function __construct(
 		LoggerInterface $logger,
 		private readonly ObjectFilesInterface $fileService,
+		private readonly ?DocumentStoreMoveGuard $moveGuard = null,
 		?UrlFileFetchInterface $urlFetcher = null,
 	) {
 		$this->parts = new FilePropertyParts(logger: $logger, fileService: $fileService);
@@ -659,9 +662,12 @@ class FilePropertyHandler {
 	 *
 	 * @return int The ID of the created file.
 	 *
-	 * @throws Exception If the file cannot be stored.
+	 * @throws Exception If the file cannot be stored, or the register is being moved.
 	 */
 	private function addFile(FileStoreRequest $request, array $fileData): int {
+		// REQ-RDS-004: nothing is written into a register whose documents are moving.
+		$this->moveGuard?->assertNotMoving(registerId: $request->objectEntity->getRegister());
+
 		$file = $this->fileService->addFile(
 			target: new FileTarget(object: $request->objectEntity),
 			upload: new FileUpload(

@@ -260,8 +260,8 @@ class BulkControllerTest extends TestCase {
 
 		$this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
 		$data = $result->getData();
-		$this->assertStringContainsString('Delete error', $data['error']);
-		$this->assertStringContainsString('Bulk delete operation failed', $data['error']);
+		$this->assertSame('Internal server error', $data['error']);
+		$this->assertStringNotContainsString('Bulk delete operation failed', $data['error']);
 	}
 
 	public function testDeleteRegisterNotFound(): void {
@@ -427,8 +427,8 @@ class BulkControllerTest extends TestCase {
 
 		$this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
 		$data = $result->getData();
-		$this->assertStringContainsString('Bulk save operation failed', $data['error']);
-		$this->assertStringContainsString('Save error', $data['error']);
+		$this->assertSame('Internal server error', $data['error']);
+		$this->assertStringNotContainsString('Save error', $data['error']);
 	}
 
 	public function testSaveMixedSchemaMode(): void {
@@ -1286,8 +1286,8 @@ class BulkControllerTest extends TestCase {
 
 		$this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
 		$data = $result->getData();
-		$this->assertStringContainsString('Schema objects deletion failed', $data['error']);
-		$this->assertStringContainsString('Schema delete error', $data['error']);
+		$this->assertSame('Internal server error', $data['error']);
+		$this->assertStringNotContainsString('Schema delete error', $data['error']);
 	}
 
 	// ========================================================================
@@ -1395,8 +1395,8 @@ class BulkControllerTest extends TestCase {
 
 		$this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
 		$data = $result->getData();
-		$this->assertStringContainsString('Objects deletion failed', $data['error']);
-		$this->assertStringContainsString('Delete objects error', $data['error']);
+		$this->assertSame('Internal server error', $data['error']);
+		$this->assertStringNotContainsString('Delete objects error', $data['error']);
 	}
 
 	// ========================================================================
@@ -1458,8 +1458,8 @@ class BulkControllerTest extends TestCase {
 
 		$this->assertEquals(Http::STATUS_INTERNAL_SERVER_ERROR, $result->getStatus());
 		$data = $result->getData();
-		$this->assertStringContainsString('Register objects deletion failed', $data['error']);
-		$this->assertStringContainsString('Register delete error', $data['error']);
+		$this->assertSame('Internal server error', $data['error']);
+		$this->assertStringNotContainsString('Register delete error', $data['error']);
 	}
 
 	/**

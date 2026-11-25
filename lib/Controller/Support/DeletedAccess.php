@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Controller\Support;
 use OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizerInterface;
 use OCA\OpenRegister\Service\Object\RenderObjectInterface;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 
 /**
  * Services of the deleted API.
@@ -38,6 +39,7 @@ final class DeletedAccess {
 	 * @param DeletedObjectAuthorizerInterface $authorizer   Answers the authorization and schema-resolution questions
 	 * @param RenderObjectInterface            $renderObject Strips write-only and unreadable properties before a trashed row is served
 	 * @param IUserSession                     $userSession  The user session
+	 * @param LoggerInterface|null            $logger       Logs the detail of a failed request (optional for older wiring)
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
@@ -45,6 +47,7 @@ final class DeletedAccess {
 		public readonly DeletedObjectAuthorizerInterface $authorizer,
 		public readonly RenderObjectInterface $renderObject,
 		public readonly IUserSession $userSession,
+		public readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 }//end class
