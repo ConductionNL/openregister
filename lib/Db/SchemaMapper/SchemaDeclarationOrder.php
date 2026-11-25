@@ -164,6 +164,11 @@ final class SchemaDeclarationOrder {
 	public const SEARCH_RESULT = 230;
 
 	/**
+	 * The team-resources declaration (Platform).
+	 */
+	public const TEAM_RESOURCES = 235;
+
+	/**
 	 * The retention annotation.
 	 */
 	public const RETENTION = 240;
@@ -222,6 +227,11 @@ final class SchemaDeclarationOrder {
 	 * The classification.
 	 */
 	public const CLASSIFICATION = 350;
+
+	/**
+	 * The break-glass declaration (grants-that-follow-a-slot-a-relation-or-a-reason).
+	 */
+	public const BREAK_GLASS = 355;
 
 	/**
 	 * The confidentiality.
