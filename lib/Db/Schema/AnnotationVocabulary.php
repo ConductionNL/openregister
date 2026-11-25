@@ -65,6 +65,9 @@ final class AnnotationVocabulary {
 		// having declared nothing — the same or#460/#462-class silent drop the
 		// entries around this one record.
 		'x-openregister-card',
+		// The property naming the team that owns an object, which puts the
+		// schema's objects on that team's Nextcloud page (platform-team-resources).
+		'x-openregister-team-resources',
 		// What a unified-search result of this schema's objects shows: its
 		// title property, subline property and ordering date property
 		// (platform-search-provider). Absent from this list setConfiguration()
@@ -313,6 +316,13 @@ final class AnnotationVocabulary {
 		// fails closed. Absent from this list setConfiguration() would drop it
 		// and every confidential object would read as unclassified.
 		Schema::CONFIDENTIALITY_ANNOTATION,
+		// Whether emergency self-granted access is offered, which verbs it
+		// grants, for how long and who is told (REQ-GSR-004). Read by
+		// BreakGlassDeclaration, refused at save by
+		// AccessDeclarationChecks::checkBreakGlass(). Absent from this list
+		// setConfiguration() would drop it and every take would be refused as
+		// undeclared while its author read a 200.
+		Schema::BREAK_GLASS_ANNOTATION,
 	];
 
 

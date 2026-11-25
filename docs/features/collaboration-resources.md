@@ -71,8 +71,32 @@ register file) and, if it wants, renders the record's collections on its own
 page from the endpoint above. It registers no provider of its own: the
 `openregister-object` provider covers every record of every register.
 
+## Adding a record to a collection and taking it out
+
+```
+POST   /apps/openregister/api/objects/{register}/{schema}/{id}/collections   {"collectionId": 12}
+DELETE /apps/openregister/api/objects/{register}/{schema}/{id}/collections/12
+```
+
+Which collections a record belongs to says what belongs together, so changing
+it needs the right to update the record, not only to read it. The checks run in
+this order:
+
+1. The record is read as the signed-in user; an unreadable record answers 404.
+2. The record's schema must let its records join collections; otherwise 400.
+3. The user must be allowed to update the record; otherwise 403.
+4. The collection must exist and be one the user may access; otherwise 404.
+
+Every add and every removal that changed something writes one entry on the
+record's audit trail, `collection.added` or `collection.removed`, naming the
+collection's id and name. Adding a record that is already a member, or removing
+one that is not, changes nothing and writes nothing. The answer is the record's
+collections after the change, in the same shape as the read above.
+
 ## What is not there yet
 
-Adding a record to a collection and removing it are handled by Nextcloud
-itself. Tying those changes to the record's update rights and writing them to
-the record's audit trail are planned.
+Nextcloud's own collection screens (the "Collaborative resources" sidebar on a
+file or a Talk room) add and remove members through Nextcloud's endpoints,
+which ask OpenRegister only whether the record may be read. Those changes are
+not tied to update rights and are not on the record's audit trail; use the
+endpoints above where that matters.

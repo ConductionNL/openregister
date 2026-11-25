@@ -11,6 +11,7 @@ import {
 	emptyPropertyDefinition,
 	formatSelect,
 	GEO_FORMATS,
+	geoFormatOptions,
 	hasFormatChoice,
 	itemsTypeSelect,
 	propertyTypeSelect,
@@ -73,7 +74,7 @@ describe('schemaPropertyForm', () => {
 	})
 
 	it('offers the five geometry formats for an object and the string formats otherwise', () => {
-		expect(formatSelect('object').options).toEqual([
+		expect(formatSelect('object').options.map((option) => option.id)).toEqual([
 			'geo:point',
 			'geo:linestring',
 			'geo:polygon',
@@ -83,6 +84,26 @@ describe('schemaPropertyForm', () => {
 		expect(formatSelect('string').options).toContain('date-time')
 		expect(formatSelect('string').options).not.toContain('geo:point')
 		expect(formatSelect().options).toEqual(formatSelect('string').options)
+	})
+
+	it('labels every geometry format through the translator and stores its id', () => {
+		const select = formatSelect('object')
+
+		expect(select.options).toEqual([
+			{ id: 'geo:point', label: 'Point' },
+			{ id: 'geo:linestring', label: 'Line' },
+			{ id: 'geo:polygon', label: 'Polygon' },
+			{ id: 'geo:multipolygon', label: 'Multipolygon' },
+			{ id: 'geo:geometry', label: 'Any geometry' },
+		])
+		expect(select.options.map(select.reduce)).toEqual([...GEO_FORMATS])
+		expect(formatSelect('string').reduce).toBeUndefined()
+	})
+
+	it('builds a fresh labelled option list each time', () => {
+		geoFormatOptions()[0].label = 'changed'
+
+		expect(geoFormatOptions()[0]).toEqual({ id: 'geo:point', label: 'Point' })
 	})
 
 	it('hands out a copy of the geometry formats', () => {

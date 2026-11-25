@@ -3282,8 +3282,6 @@
   "lib/Service/Settings/FileSettingsHandler.php -> lib/Files/Service/File/MaskForm.php",
   "lib/Service/Settings/FileSettingsHandler.php -> lib/Kernel/Contracts/Core/FileSettingsReaderInterface.php",
   "lib/Service/Settings/FileSettingsHandler.php -> lib/Kernel/Contracts/Files/RedactionSettingsInterface.php",
-  "lib/Service/Settings/FileSettingsHandler.php -> lib/Service/Anonymisation/CapacityPolicy.php",
-  "lib/Service/Settings/FileSettingsHandler.php -> lib/Service/Anonymisation/OfficialsSource.php",
   "lib/Service/Settings/FileSettingsHandler.php -> lib/Service/Decision/ReviewAnnotationValidator.php",
   "lib/Service/Settings/FileSettingsHandler.php -> lib/Service/Decision/ReviewPolicy.php",
   "lib/Service/Settings/FileSettingsHandler.php -> lib/Service/File/ArchiveBounds.php",
