@@ -53,7 +53,7 @@ class FlowMapperNodeTypeLikeTest extends TestCase {
 	private function lookup(object $platform): array {
 		$where = '';
 		$param = '';
-		$qb    = $this->createMock(IQueryBuilder::class);
+		$qb    = $this->createMock(originalClassName: IQueryBuilder::class);
 		$qb->method('select')->willReturnSelf();
 		$qb->method('from')->willReturnSelf();
 		$qb->method('getColumnName')->willReturnCallback(static fn (string $column): string => $column);
@@ -70,7 +70,7 @@ class FlowMapperNodeTypeLikeTest extends TestCase {
 			}
 		);
 
-		$db = $this->createMock(IDBConnection::class);
+		$db = $this->createMock(originalClassName: IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturn($qb);
 		$db->method('getDatabasePlatform')->willReturn($platform);
 
