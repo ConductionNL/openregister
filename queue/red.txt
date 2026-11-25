@@ -365,3 +365,4 @@
 2026-11-25T11:03:32Z dev=03d2528a7e prs=10513 Tests: 66540, Assertions: 235692, Errors: 9, Failures: 4, Deprecations: 23, PHPUnit Deprecations: 1, Skipped: 27. front=skip
 2026-11-25T11:24:33Z dev=d5dd89eaac prs=10537 Tests: 66655, Assertions: 236069, Errors: 9, Failures: 3, Deprecations: 25, PHPUnit Deprecations: 1, Skipped: 27. front=ok
 2026-11-25T11:50:22Z dev=5aa365abba prs=11069 Tests: 66625, Assertions: 236010, Errors: 9, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27. front=skip
+2026-11-25T12:08:52Z dev=76bbb15a14 prs=11165 Tests: 66659, Assertions: 236206, Errors: 9, Failures: 2, Warnings: 1, Deprecations: 23, PHPUnit Deprecations: 1, Skipped: 27. front=skip
