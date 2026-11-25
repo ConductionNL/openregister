@@ -104,6 +104,8 @@ class IntegrationRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				['event' => 'OCA\OpenRegister\Event\ObjectWriteRequestEvent', 'listener' => 'OCA\OpenRegister\Listener\WebhookRequestInterceptionListener'],
+				['event' => 'OCP\User\Events\BeforeUserDeletedEvent', 'listener' => 'OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener'],
+				['event' => 'OCP\User\Events\UserChangedEvent', 'listener' => 'OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener'],
 				['event' => 'OCP\Calendar\Events\CalendarObjectCreatedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
 				['event' => 'OCP\Calendar\Events\CalendarObjectUpdatedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
 				['event' => 'OCP\Calendar\Events\CalendarObjectMovedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],

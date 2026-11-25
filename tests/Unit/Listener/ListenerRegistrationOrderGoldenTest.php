@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 267;
+	private const LISTENER_COUNT = 268;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -39,9 +39,11 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent). The platform
 	 * share provider then appended one PlatformShareRoutingListener registration on
 	 * BeforeShareCreatedEvent in AccessListenerRegistrar. Then the ServiceAccountLoginListener
-	 * (PostLoginEvent) was added (count 258 -> 259). Then the cross-app semantic reference listeners (8 registrations, count 259 -> 267).
+	 * (PostLoginEvent) was added (count 258 -> 259). The new-notes notification then added
+	 * one AnnotationNotificationListener registration on ObjectNoteAddedEvent (count 259 -> 260).
+	 * Then the cross-app semantic reference listeners (8 registrations, count 260 -> 268).
 	 */
-	private const SEQUENCE_SHA256 = 'b25e3d367b301484adee8143a1b427a9508708063d0d141e266208513e014981';
+	private const SEQUENCE_SHA256 = '4e445aa736943891d823df6aabb68505142a16632f55fb3975fbf41bfa4f3301';
 
 	/**
 	 * The registration calls, in call order, with every argument.
