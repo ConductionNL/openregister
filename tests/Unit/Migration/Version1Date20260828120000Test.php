@@ -111,4 +111,15 @@ class Version1Date20260828120000Test extends TestCase {
 
 		$this->assertSame($schema, (new Version1Date20260828120000())->changeSchema($this->createMock(IOutput::class), static fn (): ISchemaWrapper => $schema, []));
 	}
+
+	/**
+	 * The step is targeted: run on its own (`occ migrations:execute`) it reads only
+	 * the audit table, so SQLite does not have to introspect every JSON column of
+	 * the instance first, which it cannot ("Unknown database type json").
+	 *
+	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
+	 */
+	public function testTheStepIsTargetedSoItRunsOnItsOwnOnSqlite(): void {
+		$this->assertInstanceOf(\OCA\OpenRegister\Migration\TargetedMigrationStep::class, new \OCA\OpenRegister\Migration\Version1Date20260828120000());
+	}
 }
