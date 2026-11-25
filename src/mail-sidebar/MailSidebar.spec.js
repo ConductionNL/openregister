@@ -19,6 +19,9 @@ jest.mock('./composables/useMailObserver.js', () => ({
 jest.mock('./composables/useAttachmentDrag.js', () => ({
 	useAttachmentDrag: jest.fn(),
 }))
+jest.mock('./composables/useSubjectLine.js', () => ({
+	useSubjectLine: jest.fn(),
+}))
 const mockAddToObject = {}
 jest.mock('./composables/useAddToObject.js', () => ({
 	useAddToObject: jest.fn((label, onAdd) => {

@@ -42,6 +42,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Search\Service\Reporting\SheetHeading
  * @uses \OCA\OpenRegister\Search\Service\Reporting\SpreadsheetReportWriter
  * @uses \OCA\OpenRegister\Service\Import\ImportErrorsCsv
+ * @uses \OCA\OpenRegister\Kernel\Contracts\CsvCell
  */
 class SpreadsheetCellTest extends TestCase {
 

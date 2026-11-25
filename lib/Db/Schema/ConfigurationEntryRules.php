@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\Schema;
 final class ConfigurationEntryRules {
 	// `objectSlugField` was missing here, so every save and import dropped it
 	// and object slugs could not be switched on outside the database (#4037).
+	// `mailObjectName` is what one item is called in the Mail panel's sentences
+	// ("New work queue item from this mail"), when the schema title names the collection.
 	// `workingCalendar` is read by RecordTypeCalendars (working-calendar-admin
 	// REQ-WCA-005): the calendar slug the schema's terms and week numbers follow.
 	// Off this list it was dropped on save, so no record type could name one.
@@ -40,6 +42,7 @@ final class ConfigurationEntryRules {
 		'objectSummaryField',
 		'objectImageField',
 		'objectSlugField',
+		'mailObjectName',
 		'workingCalendar',
 	];
 	// `exportable` opts the schema into nextcloud-vue's native Export menu

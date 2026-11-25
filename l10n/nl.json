@@ -8,6 +8,8 @@
         "{schema} {title} deleted": "{schema} {title} verwijderd",
         "Object \"%1$s\" created": "Object \"%1$s\" aangemaakt",
         "Object \"%1$s\" updated": "Object \"%1$s\" bijgewerkt",
+        "New note on \"%1$s\"": "Nieuwe notitie bij \"%1$s\"",
+        "New note on \"%1$s\" in register \"%2$s\"": "Nieuwe notitie bij \"%1$s\" in register \"%2$s\"",
         "Object \"%1$s\" assigned to you": "Object \"%1$s\" aan je toegewezen",
         "3": "3",
         "30": "30",
@@ -3752,6 +3754,12 @@
         "phone number": "telefoonnummer",
         "link": "link",
         "other": "overig",
+        "connected to {name} #{number}": "gekoppeld aan {name} #{number}",
+        "connected to {name}": "gekoppeld aan {name}",
+        "_%n message_::_%n messages_": [
+            "%n bericht",
+            "%n berichten"
+        ],
         "Scheduled report \"%s\"": "Geplande rapportage \"%s\"",
         "_Your scheduled report \"%s\" ran and delivered %n row._::_Your scheduled report \"%s\" ran and delivered %n rows._": [
             "Je geplande rapportage \"%s\" is uitgevoerd en leverde %n rij op.",

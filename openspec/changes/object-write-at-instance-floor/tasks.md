@@ -195,6 +195,15 @@ survives even where the priority moved.
       > identity map, so a scoped answer never serves an unscoped `find()`. Pinned in
       > `tests/Unit/Db/SchemaMapperScopedLookupMemoTest`. Left as before: `findBySlug` /
       > `findAll` (paged lists) and serving a multi-tenancy lookup from an unscoped row.
+      > 2026-11-25 (partial): an unfiltered `findAll()` (no limit, offset, filter or search
+      > condition), which the save path asks per object (`SaveLookups`, `RelationCascadeHandler`,
+      > `RegisterReferenceLookup`), is read once per request and organisation scope. The rows are
+      > kept in `RequestIdentityMap` beside the identifier entries and handed out as copies, so a
+      > caller changing a schema it was given does not change the next caller's list. Dropped on
+      > every schema insert/update/delete, by `clearFindCache()` and whenever the map forgets an
+      > entity. A paged or filtered list is read every time, as before. Pinned in
+      > `tests/Unit/Db/SchemaMapperFullListMemoTest` and `RequestIdentityMapTest`. Left: `findBySlug`
+      > and serving a multi-tenancy lookup from an unscoped row.
 
 - [ ] **Task 2 — make the miss path cheap.**
       - Drop `SELECT *` where only metadata is needed; `properties` is ~2 KB per
@@ -224,6 +233,10 @@ survives even where the priority moved.
       > 2026-11-14 (partial): `RegisterMapper` uses the same `RequestIdentityMap`; the RBAC
       > flag is out of its key too. The golden test now asserts a cached register is served
       > without a query under either RBAC flag. Same left-over as task 1.
+      > 2026-11-25 (partial): the unfiltered `findAll()` is read once per request through the
+      > same map, as for schemas; dropped on every register insert/update/delete and by
+      > `clearFindCache()`. Pinned in `tests/Unit/Db/RegisterMapperFullListMemoTest`. Left: serving
+      > a multi-tenancy lookup from an unscoped row.
 
 - [ ] **Task 4 — cross-request cache.** APCu keyed on `schema.id + schema.updated`
       so a cold worker does not repay everything. Invalidated by the existing

@@ -126,7 +126,6 @@
 		"Openbare verlichting": "The source string is already Dutch (public lighting); a schema title in a Dutch municipal register.",
 		"Wegen en paden": "The source string is already Dutch (roads and paths); a schema title in a Dutch municipal register.",
 		"Diagram": "The native word for a drawn diagram is spelled identically to English.",
-		"IBAN": "Acronym of the international bank account number (ISO 13616); Dutch banks and the Dutch UI use it unchanged.",
-		"link": "Same word in Dutch: 'link' is the standard Dutch noun for a hyperlink; used here as the entity-type label in the mail sidebar."
+		"link": "Dutch uses the English loanword \"link\" for a hyperlink (as in \"deel de link\"); \"koppeling\" here would read as a data connection."
 	}
 }

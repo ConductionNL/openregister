@@ -932,6 +932,23 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end recordChange()
 
 	/**
+	 * Record a read of one object, naming the read rule that granted it when one did.
+	 *
+	 * @param ObjectEntity $object      The object read.
+	 * @param string|null  $ruleDigest  The SHA-256 of the granting rule's canonical JSON, or null.
+	 * @param string|null  $ruleVersion The schema version that rule belonged to, or null.
+	 *
+	 * @return AuditTrail The `read` entry.
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	public function recordRead(ObjectEntity $object, ?string $ruleDigest = null, ?string $ruleVersion = null): AuditTrail {
+		return $this->recordChange(
+			change: new AuditedChange(new: $object, action: 'read', ruleDigest: $ruleDigest, ruleVersion: $ruleVersion)
+		);
+	}//end recordRead()
+
+	/**
 	 * Fold an edit into the entry already written, when a window says to.
 	 *
 	 * Returns the amended entry, or null when the edit is its own entry. Null
@@ -1097,6 +1114,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
 	 */
 	public function buildEntry(AuditedChange $change): AuditTrail {
 		$pair = ['old' => $change->old, 'new' => $change->new];
@@ -1117,6 +1135,9 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setAction($action);
 		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
 		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $change->cascadeContext));
+		// The rule that granted a read: set before the row is sealed, as the chain covers it.
+		$auditTrail->setRuleDigest($change->ruleDigest);
+		$auditTrail->setRuleVersion($change->ruleVersion);
 
 		$this->stampActorAndObject(auditTrail: $auditTrail, objectEntity: $objectEntity);
 		$this->stampAttributions(auditTrail: $auditTrail, objectEntity: $objectEntity);
@@ -2630,6 +2651,34 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $this->findEntities(query: $qb);
 	}//end findObjectActions()
+
+	/**
+	 * The entries a delete wrote for the objects it acted on, by the uuid of the object that triggered it.
+	 *
+	 * @param string              $triggerObject The uuid of the object whose delete cascaded.
+	 * @param ActionLookupOptions $options       The actions to return (every action when empty) and the row cap.
+	 *
+	 * @return array<int, AuditTrail> The matching rows, oldest first.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+	 */
+	public function findTriggeredActions(string $triggerObject, ActionLookupOptions $options): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('trigger_object', $qb->createNamedParameter($triggerObject)))
+			->andWhere($qb->expr()->isNull('purged_at'))
+			->orderBy('id', 'ASC')
+			->setMaxResults($options->limit);
+
+		if ($options->actions !== []) {
+			$qb->andWhere(
+				$qb->expr()->in('action', $qb->createNamedParameter($options->actions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findTriggeredActions()
 
 	/**
 	 * Destruction entries created since a moment, oldest first, one page.

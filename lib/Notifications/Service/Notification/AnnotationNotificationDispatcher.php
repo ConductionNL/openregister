@@ -91,6 +91,13 @@ use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifierInterface;
 class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInterface {
 
 	/**
+	 * The trigger a note added to an object fires.
+	 *
+	 * @var string
+	 */
+	private const NOTE_TRIGGER = 'noteAdded';
+
+	/**
 	 * Logger for dispatch diagnostics (from the ledger).
 	 *
 	 * @var LoggerInterface
@@ -323,6 +330,10 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
 	 */
 	public function dispatchWithSchema(ObjectEntity $object, string $trigger, array $context, Schema $schema): void {
+		if ($trigger === self::NOTE_TRIGGER) {
+			$context = $this->noteContext()->enrich(context: $context);
+		}
+
 		$this->fireRules(event: new NotificationEvent(object: $object, trigger: $trigger, context: $context), schema: $schema);
 	}//end dispatchWithSchema()
 
@@ -349,7 +360,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$subjectKey = $this->canonicalSubject(trigger: $event->trigger);
 
 		foreach ($notifications as $name => $spec) {
-			if (is_array($spec) === false) {
+			if (is_array($spec) === false || self::reminderAllows(spec: $spec, name: (string)$name, context: $event->context) === false) {
 				continue;
 			}
 
@@ -365,6 +376,31 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 	}//end fireRules()
+
+	/**
+	 * Whether a rule takes part in this dispatch, as far as reminders go.
+	 *
+	 * A reminder's sends are counted and stopped by the scheduled sweep, so a
+	 * rule with a `reminder` block fires only from its own reminder dispatch,
+	 * and a reminder dispatch fires only the rule it names. Without that, any
+	 * other scheduled rule on the schema would send the reminder past its
+	 * count and its stop condition.
+	 *
+	 * @param array<string, mixed> $spec    The rule.
+	 * @param string               $name    The rule's key.
+	 * @param array<string, mixed> $context The dispatch context.
+	 *
+	 * @return boolean True when the rule may fire.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/notificatie-engine/spec.md
+	 */
+	private static function reminderAllows(array $spec, string $name, array $context): bool {
+		if (array_key_exists('reminderSequence', $context) === true) {
+			return $name === (string)($context['notificationName'] ?? '');
+		}
+
+		return is_array($spec['reminder'] ?? null) === false;
+	}//end reminderAllows()
 
 	/**
 	 * Fire one rule and leave its automation run record: one per evaluation,
@@ -451,10 +487,17 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		$this->resolveFiringRecipients(firing: $firing);
 		$this->renderBroadcastSubject(firing: $firing);
 
-		// Parties and referenced addresses are reached before the zero-recipient
-		// bail: a rule addressed only to them resolves no account at all.
-		$addressesReached  = $this->dispatchToParties(firing: $firing);
-		$addressesReached += $this->dispatchToAddresses(firing: $firing);
+		$addressesReached = 0;
+		if ($trigger === self::NOTE_TRIGGER) {
+			// A note reaches only accounts that may read the object, never its author.
+			$this->narrowToNoteReaders(firing: $firing);
+		} else {
+			// Parties and referenced addresses are reached before the zero-recipient
+			// bail: a rule addressed only to them resolves no account at all.
+			$addressesReached  = $this->dispatchToParties(firing: $firing);
+			$addressesReached += $this->dispatchToAddresses(firing: $firing);
+		}
+
 		for ($reached = 0; $reached < $addressesReached; $reached++) {
 			$firing->tally->delivery(channel: 'address', delivered: true);
 		}
@@ -483,6 +526,38 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		}
 
 	}//end fireRule()
+
+	/**
+	 * Drop the note's author and every recipient who may not read the object.
+	 *
+	 * Fails closed: without the read check the firing reaches nobody.
+	 *
+	 * @param RuleFiring $firing The rule and the note event.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/specs/notificatie-engine/spec.md#requirement-a-rule-can-fire-when-a-note-is-added
+	 */
+	private function narrowToNoteReaders(RuleFiring $firing): void {
+		$uids     = $this->noteContext()->withoutAuthor(uids: $firing->recipients, context: $firing->context);
+		$readable = $this->audience->readable;
+		if ($readable === null) {
+			$this->logger->warning(sprintf('[AnnotationNotificationDispatcher] rule="%s" noteAdded without a read check reaches nobody', $firing->ruleId));
+			$firing->recipients = [];
+			return;
+		}
+
+		$firing->recipients = $readable->filter(uids: $uids, object: $firing->object, schema: $firing->schema);
+	}//end narrowToNoteReaders()
+
+	/**
+	 * The note context of a `noteAdded` firing, injected or built without lookups.
+	 *
+	 * @return NoteTriggerContext
+	 */
+	private function noteContext(): NoteTriggerContext {
+		return ($this->audience->notes ?? new NoteTriggerContext(logger: $this->logger));
+	}//end noteContext()
 
 	/**
 	 * Whether the rule fires for this event: trigger match, organisation pin
@@ -2163,6 +2238,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 		return match ($trigger) {
 			'created' => 'object_created',
 			'transition' => 'object_transitioned',
+			self::NOTE_TRIGGER => 'object_note_added',
 			default => 'object_updated',
 		};
 	}//end canonicalSubject()

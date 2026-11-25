@@ -61,6 +61,7 @@ use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
 use OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption;
+use OCA\OpenRegister\Db\MagicMapper\MagicSharePrincipals;
 use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
 use OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
@@ -140,6 +141,7 @@ use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
+use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -634,6 +636,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private readonly IAppConfig $appConfig;
 
 	/**
+	 * The text search configuration `_search` stems with; null on a mapper
+	 * assembled without its constructor, which then builds no stemmed-match index.
+	 *
+	 * @var TextSearchConfiguration|null
+	 */
+	private ?TextSearchConfiguration $textSearch = null;
+
+	/**
 	 * Event dispatcher for audit trail events.
 	 *
 	 * @var IEventDispatcher
@@ -673,6 +683,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->userManager     = $identity->userManager;
 		$this->config          = $runtime->config;
 		$this->appConfig       = $runtime->appConfig;
+		$this->textSearch      = new TextSearchConfiguration(db: $db, appConfig: $runtime->appConfig);
 		$this->eventDispatcher = $runtime->eventDispatcher;
 		$this->logger          = $runtime->logger;
 
@@ -795,9 +806,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * The search handler gets the request's language state, so a translatable
 	 * property sorts by the value the response shows
-	 * (order-filters-and-notification-links), and the request's reveal state:
+	 * (order-filters-and-notification-links), the request's reveal state:
 	 * filtering or sorting on an explicit-reveal property is refused unless the
-	 * code is trusted (property-explicit-reveal).
+	 * code is trusted (property-explicit-reveal), and the text search
+	 * configuration `_search` also stems with on PostgreSQL
+	 * (search-dutch-language-quality).
 	 *
 	 * @return void
 	 */
@@ -816,7 +829,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			metadataColumns: $this->metadataColumnHealer,
 			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class),
 			appConfig: $this->appConfig,
-			searchProfile: $this->container->get(PropertySearchProfileInterface::class)
+			searchProfile: $this->container->get(PropertySearchProfileInterface::class),
+			textSearch: $this->textSearch
 		);
 	}//end initializeSearchHandler()
 
@@ -3079,7 +3093,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function createTableIndexes(string $tableName, Schema $schema): void {
 		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
-		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer = new MagicTableIndexer(
+			db: $this->db,
+			logger: $this->logger,
+			trgm: $this->trgmProbe(),
+			textSearchConfig: $this->textSearch?->active()
+		);
 		$indexer->create(run: $run, schema: $schema);
 	}//end createTableIndexes()
 
@@ -3328,6 +3347,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// An encrypted property is written only as an envelope, whichever path
 		// got here (see MagicFlaggedEncryption).
+		// A share list's derived principal lists are recomputed, whichever path
+		// got here (see MagicSharePrincipals); before encryption, on plaintext.
+		$data = (new MagicSharePrincipals(container: $this->container))->forObject(data: $data, schema: $schema);
 		$data = (new MagicFlaggedEncryption(container: $this->container))->forObject(data: $data, schema: $schema);
 
 		$rowMetadata = new MagicRowMetadata(container: $this->container);
@@ -8275,7 +8297,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// The bulk path never went through SaveObject's encryption step. An
 		// encrypted property used to have no column, so bulk dropped its value;
 		// now that it has one, encrypt here so it can only ever hold an envelope.
-		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
+		// Nor through the share endpoints: recompute the derived principal lists here too.
+		$objects = (new MagicSharePrincipals(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
+		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $objects, schema: $schema);
 
 		try {
 			return $this->bulkHandler->upsert(

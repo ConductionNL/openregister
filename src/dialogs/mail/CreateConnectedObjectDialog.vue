@@ -112,7 +112,7 @@ import { loadTranslations, translate as t } from '@nextcloud/l10n'
 import { generateOcsUrl, generateUrl } from '@nextcloud/router'
 import { NcButton, NcDateTimePicker, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import { sentenceName } from '../../mail-sidebar/sentenceName.js'
+import { itemName, sentenceName } from '../../mail-sidebar/sentenceName.js'
 
 /**
  * The form control for a property, by the first rule that applies to its key
@@ -224,6 +224,17 @@ export function isoDateOf(date) {
 }
 
 /**
+ * The one choice a relation or group field shows while its names load: the
+ * current value under "Loading…", never its raw id.
+ *
+ * @param {string} current The current value.
+ * @return {Array<{value: string, label: string}>}
+ */
+export function loadingOptions(current) {
+	return current ? [{ value: current, label: t('openregister', 'Loading…') }] : []
+}
+
+/**
  * The choices of a group field: each group by its display name, keeping the
  * current value even when it is not among them.
  *
@@ -302,6 +313,8 @@ export default {
 			relations: {},
 			// The Nextcloud groups a group field offers, as {id, label}.
 			groups: [],
+			// Whether the group list has been read for this opening.
+			groupsLoaded: false,
 			// Whether the first focus of this opening has been handled.
 			startShown: false,
 			// Bumped once the schema owner's catalogue has loaded, so labels re-translate.
@@ -323,7 +336,7 @@ export default {
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		schemaName() {
-			return sentenceName(this.schemaTitle)
+			return this.schema ? itemName(this.schema) : sentenceName(this.schemaTitle)
 		},
 
 		/**
@@ -342,10 +355,10 @@ export default {
 					label: this.translateLabel(enumLabel(def, value, index)),
 				}))
 				if (options.length === 0 && isRelation(def)) {
-					options = this.relations[key] || relationOptions([], {}, current)
+					options = this.relations[key] || loadingOptions(current)
 				}
 				if (isGroup(def)) {
-					options = groupOptions(this.groups, current)
+					options = this.groupsLoaded ? groupOptions(this.groups, current) : loadingOptions(current)
 				}
 				return {
 					key,
@@ -378,6 +391,7 @@ export default {
 					this.startShown = false
 					this.loadRelations()
 					this.loadOwnerCatalogue()
+					this.groupsLoaded = false
 					this.loadGroups()
 				}
 			},
@@ -427,6 +441,8 @@ export default {
 				this.groups = Array.isArray(data) ? data.filter((entry) => entry.source === 'groups' || entry.source === undefined) : []
 			} catch {
 				// The current id stays the only choice.
+			} finally {
+				this.groupsLoaded = true
 			}
 		},
 
@@ -515,6 +531,7 @@ export default {
 					this.relations = { ...this.relations, [key]: relationOptions(objects, filter, String(this.initialData[key] ?? '')) }
 				} catch {
 					// The current value stays the only choice.
+					this.relations = { ...this.relations, [key]: relationOptions([], {}, String(this.initialData[key] ?? '')) }
 				}
 			}))
 		},

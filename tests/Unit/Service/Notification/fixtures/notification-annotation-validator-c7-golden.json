@@ -34,7 +34,7 @@
     "two-rules": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"a\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"a\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         },
         {
             "code": "notification-channels-empty",
@@ -50,7 +50,7 @@
         },
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"b\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"b\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         },
         {
             "code": "notification-channels-empty",
@@ -477,7 +477,7 @@
     "everything-wrong": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         },
         {
             "code": "notification-bad-opt-in-channel",

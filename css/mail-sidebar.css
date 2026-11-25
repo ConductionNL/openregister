@@ -663,3 +663,15 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-connect
 	font-weight: 600;
 	cursor: pointer;
 }
+
+/* "1 message · Inbox · connected to case #2026-4833" under Mail's subject (MlConnections). */
+#mail-thread-header-fields > .or-mail-subject-line {
+	margin: 2px 0 0;
+	font-size: 12px;
+	line-height: 18px;
+	color: var(--color-text-maxcontrast);
+}
+
+#mail-thread-header-fields > .or-mail-subject-line[hidden] {
+	display: none;
+}

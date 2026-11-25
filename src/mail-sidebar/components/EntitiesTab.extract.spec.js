@@ -173,7 +173,7 @@ describe('EntitiesTab rendering', () => {
 			{ type: 'PERSON', role: 'sender' }, { type: 'PERSON' }, { type: 'ADDRESS' }, { type: 'EMAIL' },
 			{ type: 'PHONE' }, { type: 'IBAN' }, { type: 'URL' }, { type: 'ORG' },
 		].map(vm.kindLabel)
-		expect(kinds).toEqual(['t:sender', 't:person', 't:address', 't:email address', 't:phone number', 't:IBAN', 't:link', 't:other'])
+		expect(kinds).toEqual(['t:sender', 't:person', 't:address', 't:email address', 't:phone number', 'IBAN', 't:link', 't:other'])
 	})
 
 	it('lists each found value with its kind and a Search action that hands the value on', async () => {

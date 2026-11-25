@@ -64,6 +64,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\RequestLanguagesInterface;
 use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\PreservedListLens;
 use OCA\OpenRegister\Service\Object\PreservedListing;
@@ -191,6 +192,21 @@ class MagicSearchHandler {
 		'folder'             => 'scalar',
 		'application'        => 'scalar',
 		'size'               => 'scalar',
+	];
+
+	/**
+	 * The metadata blocks a `@self` filter may read inside, as NestedPathFilter reads a property.
+	 *
+	 * Only the archival blocks: `retention` and `tmlo` hold plain values (dates,
+	 * nominations, categories) a list asks about. A path into the access columns
+	 * (authorization, groups) would be an oracle on who may read what, so those
+	 * stay addressable as a whole only.
+	 *
+	 * @spec openspec/changes/self-filter-inside-retention/specs/zoeken-filteren/spec.md#requirement-a-self-filter-can-name-a-field-inside-the-archival-metadata
+	 */
+	private const METADATA_PATH_ROOTS = [
+		'retention' => ['type' => 'object'],
+		'tmlo'      => ['type' => 'object'],
 	];
 
 	/**
@@ -363,6 +379,8 @@ class MagicSearchHandler {
 	 * @param PropertySearchProfileInterface|null $searchProfile Search's rules for a property's match type and
 	 *                                                           free-text participation; MagicMapper always
 	 *                                                           passes it
+	 * @param TextSearchConfiguration|null $textSearch The configuration an operator-free `_search` is also matched with
+	 *                                                 on PostgreSQL (stemmed); none keeps the substring match alone
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 */
@@ -379,6 +397,7 @@ class MagicSearchHandler {
 		private readonly ?ExplicitRevealInterface $explicitReveal = null,
 		private readonly ?IAppConfig $appConfig = null,
 		private readonly ?PropertySearchProfileInterface $searchProfile = null,
+		private readonly ?TextSearchConfiguration $textSearch = null,
 	) {
 		$this->termParser = SearchGrammar::termParser();
 		$this->termCompiler = SearchGrammar::termCompiler();
@@ -1474,6 +1493,7 @@ class MagicSearchHandler {
 			$scope->connection = $connection;
 			$scope->existingColumns = $request->existingColumns;
 			$scope->folding = $this->searchFolding(query: $query);
+			$scope->stemming = $this->stemmingConfiguration(isPostgres: $isPostgres);
 			$conditions[] = $this->buildSearchConditionSql(search: trim($search), scope: $scope);
 		}
 
@@ -2187,8 +2207,65 @@ class MagicSearchHandler {
 			);
 		}
 
-		return $this->buildSearchLeafSql(leaf: $scope->term(pattern: ('%' . $search . '%'), literal: $search));
+		$leaf     = $scope->term(pattern: ('%' . $search . '%'), literal: $search);
+		$leafSql  = $this->buildSearchLeafSql(leaf: $leaf);
+		$stemmed  = $this->stemmedLeafConditions(leaf: $leaf);
+		if ($stemmed === []) {
+			return $leafSql;
+		}
+
+		return '(' . $leafSql . ' OR ' . implode(' OR ', $stemmed) . ')';
 	}//end buildSearchConditionSql()
+
+	/**
+	 * The stemmed matches of an operator-free term on the UNION path: name,
+	 * description and summary in one expression, then each searchable property.
+	 *
+	 * @param SearchLeaf $leaf The term in its scope.
+	 *
+	 * @return array<int, string> The conditions; none when the scope does not stem.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TextSearchConfiguration writes the expressions the GIN index uses.
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+	 */
+	private function stemmedLeafConditions(SearchLeaf $leaf): array {
+		$config = $leaf->scope->stemming;
+		if ($config === null) {
+			return [];
+		}
+
+		$query      = TextSearchConfiguration::query(config: $config, quotedTerm: $leaf->quote(value: $leaf->literal));
+		$conditions = [TextSearchConfiguration::metadataVector(config: $config) . ' @@ ' . $query];
+		foreach (array_keys($this->searchableProperties(scope: $leaf->scope)) as $propName) {
+			$column       = $this->searchColumn(scope: $leaf->scope, propName: $propName);
+			$conditions[] = TextSearchConfiguration::vector(config: $config, column: $column) . ' @@ ' . $query;
+		}
+
+		return $conditions;
+	}//end stemmedLeafConditions()
+
+	/**
+	 * The configuration this search stems with: the saved one on PostgreSQL, unless it is `simple`.
+	 *
+	 * @param bool $isPostgres Whether the platform is PostgreSQL.
+	 *
+	 * @return string|null The configuration, or null for the substring match alone.
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+	 */
+	private function stemmingConfiguration(bool $isPostgres): ?string {
+		if ($isPostgres === false || $this->textSearch === null) {
+			return null;
+		}
+
+		$config = $this->textSearch->configured();
+		if ($config === 'simple') {
+			return null;
+		}
+
+		return $config;
+	}//end stemmingConfiguration()
 
 	/**
 	 * Build the SQL for one literal term across every searchable column.
@@ -3089,6 +3166,7 @@ class MagicSearchHandler {
 	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 * @spec openspec/changes/self-filter-inside-retention/specs/zoeken-filteren/spec.md#requirement-a-self-filter-can-name-a-field-inside-the-archival-metadata
 	 */
 	private function buildMetadataFilterConditionsSql(ConditionSqlRun $run): array {
 		$metadataFilters = ($run->query['@self'] ?? []);
@@ -3096,7 +3174,15 @@ class MagicSearchHandler {
 			return [];
 		}
 
+		[$metadataFilters, $paths] = $this->nestedPaths->split(filters: $metadataFilters, properties: self::METADATA_PATH_ROOTS);
+		$connection = $run->connection;
+		$quote      = static fn (string $text): string => (string)$connection->quote($text);
 		$conditions = [];
+		foreach ($paths as $path) {
+			$column     = $this->quoteIdentifier(name: '_' . $path['root'], isPostgres: $run->isPostgres);
+			$conditions = array_merge($conditions, $this->metadataPathConditions(path: $path, column: $column, bind: $quote, isPostgres: $run->isPostgres));
+		}
+
 		foreach ($metadataFilters as $field => $value) {
 			$column     = $this->quotedMetadataColumn(run: $run, field: $field);
 			$conditions = array_merge($conditions, $this->metadataValueConditionsSql(column: $column, value: $value));
@@ -3409,6 +3495,7 @@ class MagicSearchHandler {
 			'_order',
 			'_sort',
 			'_search',
+			'_snippet',
 			'_extend',
 			'_fields',
 			'_filter',
@@ -3887,8 +3974,18 @@ class MagicSearchHandler {
 	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 * @spec openspec/changes/self-filter-inside-retention/specs/zoeken-filteren/spec.md#requirement-a-self-filter-can-name-a-field-inside-the-archival-metadata
 	 */
 	private function applyMetadataFilters(IQueryBuilder $qb, array $filters): void {
+		[$filters, $paths] = $this->nestedPaths->split(filters: $filters, properties: self::METADATA_PATH_ROOTS);
+		$bind = static fn (string $text): string => (string)$qb->createNamedParameter($text);
+		// The platform is read only when a path filter needs it: a plain `@self` filter never asks.
+		$isPostgres = $paths !== [] && $this->isPostgresPlatform();
+		foreach ($paths as $path) {
+			$column = "t._{$path['root']}";
+			$this->andWhereEach(qb: $qb, conditions: $this->metadataPathConditions(path: $path, column: $column, bind: $bind, isPostgres: $isPostgres));
+		}
+
 		foreach ($filters as $field => $value) {
 			$columnName = $this->resolveMetadataColumn(field: (string)$field);
 			$columnRef = "t.{$columnName}";
@@ -4114,6 +4211,36 @@ class MagicSearchHandler {
 
 		return [$value];
 	}//end operandList()
+
+	/**
+	 * The conditions of a `@self` filter on a field inside an archival metadata column
+	 *
+	 * The same operator vocabulary as a filter inside an object property
+	 * (NestedPathFilter), on either query path: the binder decides whether a
+	 * value becomes a named parameter or a quoted literal. A path that is not a
+	 * plain name matches nothing.
+	 *
+	 * @param array<string, mixed> $path       The path filter: `root`, `path` and `value`.
+	 * @param string               $column     The column as the query writes it (qualified or quoted).
+	 * @param callable             $bind       Value to SQL: fn(string $value): string.
+	 * @param bool                 $isPostgres Whether the platform is PostgreSQL.
+	 *
+	 * @return list<string|\Stringable> The conditions
+	 *
+	 * @spec openspec/changes/self-filter-inside-retention/specs/zoeken-filteren/spec.md#requirement-a-self-filter-can-name-a-field-inside-the-archival-metadata
+	 */
+	private function metadataPathConditions(array $path, string $column, callable $bind, bool $isPostgres): array {
+		$root       = new NestedPathTarget(expression: $column, bind: $bind, isPostgres: $isPostgres);
+		$expression = $this->nestedPaths->expression(column: $root, path: $path['path']);
+		if ($expression === null) {
+			return ['1 = 0'];
+		}
+
+		return $this->nestedPathCriterionConditions(
+			target: new NestedPathTarget(expression: $expression, bind: $bind, isPostgres: $isPostgres),
+			value: $path['value']
+		);
+	}//end metadataPathConditions()
 
 	/**
 	 * Resolve a `@self` field name to its magic-table metadata column
@@ -5149,6 +5276,7 @@ class MagicSearchHandler {
 		$scope  = new SearchLeafScope(schema: $run->schema(), isPostgres: $this->isPostgresPlatform());
 		$scope->fuzzyEnabled = $fuzzyEnabled;
 		$scope->folding      = $this->searchFolding(query: $run->query);
+		$scope->stemming     = $this->stemmingConfiguration(isPostgres: $scope->isPostgres);
 		$searchRun           = new SearchTermRun(filter: $run, scope: $scope);
 
 		// A term carrying AND/OR/NOT, brackets, a quoted phrase or a wildcard is
@@ -5207,7 +5335,8 @@ class MagicSearchHandler {
 		$predicates      = array_merge(
 			$this->propertySearchPredicates(run: $run, pattern: $searchPattern),
 			$this->metadataSearchPredicates(qb: $qb, pattern: $searchPattern, folding: $run->scope->folding),
-			$this->fuzzyNamePredicates(run: $run, termParam: $searchTermParam)
+			$this->fuzzyNamePredicates(run: $run, termParam: $searchTermParam),
+			$this->stemmedSearchPredicates(run: $run, termParam: $searchTermParam)
 		);
 		foreach ($predicates as $predicate) {
 			$searchConditions->add($predicate);
@@ -5323,6 +5452,41 @@ class MagicSearchHandler {
 
 		return [$run->qb()->createFunction("similarity(t._name::text, {$termParam}) > 0.1")];
 	}//end fuzzyNamePredicates()
+
+	/**
+	 * The stemmed matches of an operator-free term on the QueryBuilder path:
+	 * name, description and summary in one expression (the one the GIN index
+	 * holds), then each substring-searchable property.
+	 *
+	 * @param SearchTermRun     $run       The search: filter pass and leaf scope.
+	 * @param IParameter|string $termParam The bound term parameter.
+	 *
+	 * @return list<string|\Stringable> The predicates; none when the scope does not stem.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TextSearchConfiguration writes the expressions the GIN index uses.
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+	 */
+	private function stemmedSearchPredicates(SearchTermRun $run, IParameter|string $termParam): array {
+		$config = $run->scope->stemming;
+		if ($config === null) {
+			return [];
+		}
+
+		$qb         = $run->qb();
+		$query      = TextSearchConfiguration::query(config: $config, quotedTerm: (string)$termParam);
+		$predicates = [$qb->createFunction(TextSearchConfiguration::metadataVector(config: $config, prefix: 't.') . ' @@ ' . $query)];
+		foreach ($run->scope->schema->getProperties() ?? [] as $field => $propertyConfig) {
+			if ($this->isSubstringSearchable(propertyConfig: $propertyConfig) === false) {
+				continue;
+			}
+
+			$quotedCol    = $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $field), isPostgres: true);
+			$predicates[] = $qb->createFunction(TextSearchConfiguration::vector(config: $config, column: "t.{$quotedCol}") . ' @@ ' . $query);
+		}
+
+		return $predicates;
+	}//end stemmedSearchPredicates()
 
 	/**
 	 * Build the SQL for one literal term on the QueryBuilder path.

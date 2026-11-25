@@ -161,9 +161,10 @@ final class SearchScopesCapabilityTest extends TestCase {
 				'app:dossiq', 'app:pipelinq', 'app:procest',
 				'register:archive', 'register:crm', 'register:zaken',
 				'schema:case', 'schema:contact',
+				'files',
 			],
 			self::ids($capabilities),
-			'the vault register, its schema and its app are not offered'
+			'the vault register, its schema and its app are not offered; files comes last, now that hits carry a kind'
 		);
 		self::assertSame([[1, 'read', 'alice'], [2, 'read', 'alice'], [3, 'read', 'alice'], [4, 'read', 'alice']], $asked);
 
@@ -244,5 +245,52 @@ final class SearchScopesCapabilityTest extends TestCase {
 	 */
 	public function testIsExcludedFromTheInitialState(): void {
 		self::assertInstanceOf(IInitialStateExcludedCapability::class, $this->capability());
+	}
+
+	/**
+	 * 🔴 The provider identities are asked for over the readable schemas only, sharing their read checks.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function testOffersTheProviderIdentitiesOfTheReadableSchemas(): void {
+		$this->signIn('alice');
+		$asked = 0;
+		$this->permissions->method('hasPermission')->willReturnCallback(
+			function (PermissionAsk $ask) use (&$asked): bool {
+				$asked++;
+				return $ask->schema->getId() !== 3;
+			}
+		);
+		$given = null;
+		$this->catalog->method('providers')->willReturnCallback(
+			function (array $rows) use (&$given): array {
+				$given = array_map(static fn (array $row): int => $row['id'], $rows);
+				return [['id' => 'procest', 'name' => 'Zaken', 'order' => 11]];
+			}
+		);
+
+		$search = $this->capability()->getCapabilities()['openregister']['search'];
+
+		self::assertSame([1, 2, 4], $given, 'the vault schema the reader may not read is not handed over');
+		self::assertSame('provider', $search['providerFilter']);
+		self::assertSame([['id' => 'procest', 'name' => 'Zaken', 'order' => 11]], $search['providers']);
+		self::assertSame(4, $asked, 'one read check per schema, shared by the scopes and the identities');
+		self::assertContains('app:procest', self::ids(['openregister' => ['search' => $search]]), 'the scopes are unchanged');
+	}
+
+	/**
+	 * Nobody signed in is asked about no schema and offered no identity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function testOffersNoProviderIdentityWithoutAUser(): void {
+		$this->permissions->expects(self::never())->method('hasPermission');
+		$this->catalog->method('providers')->willReturnCallback(static fn (array $rows): array => $rows);
+
+		self::assertSame([], $this->capability()->getCapabilities()['openregister']['search']['providers']);
 	}
 }
