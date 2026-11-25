@@ -1276,6 +1276,7 @@ Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
 Formats/UuidFormat.php,25,Formats,Formats,Formats/UuidFormat.php,0,,Kernel
 Kernel/Contracts/AppContainerFinderInterface.php,7,Kernel,Kernel,Kernel/Contracts/AppContainerFinderInterface.php,0,,Kernel
 Kernel/Contracts/AppIdentity.php,6,Kernel,Kernel,Kernel/Contracts/AppIdentity.php,0,,Kernel
+Kernel/Contracts/SchemaWriteRightsInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RegisterSchemaPairsInterface.php,38,Kernel,Kernel,Kernel/Contracts/RegisterSchemaPairsInterface.php,0,,Kernel
 Kernel/Contracts/AppSettingsInterface.php,42,Kernel,Kernel,Kernel/Contracts/AppSettingsInterface.php,0,,Kernel
 Kernel/Contracts/ContactMatcherInterface.php,11,Kernel,Kernel,Kernel/Contracts/ContactMatcherInterface.php,0,,Kernel
@@ -2494,6 +2495,8 @@ Service/Flow/Nodes/CodeNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Node
 Service/Flow/Nodes/DecisionTableNode.php,284,Service,Flows,Flows/Service/Flow/Nodes/DecisionTableNode.php,0,,Processes
 Service/Flow/Nodes/EndNode.php,59,Service,Flows,Flows/Service/Flow/Nodes/EndNode.php,0,,Processes
 Service/Flow/Nodes/ExplodeNode.php,86,Service,Flows,Flows/Service/Flow/Nodes/ExplodeNode.php,0,,Processes
+Service/Flow/Nodes/ExtendInputNode.php,180,Service,Flows,Flows/Service/Flow/Nodes/ExtendInputNode.php,0,,Processes
+Service/Flow/Nodes/ExtendInputNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Nodes/ExtendInputNodeInterface.php,0,,Processes
 Service/Flow/Nodes/FilterNode.php,94,Service,Flows,Flows/Service/Flow/Nodes/FilterNode.php,0,,Processes
 Service/Flow/Nodes/FlowStateNode.php,243,Service,Flows,Flows/Service/Flow/Nodes/FlowStateNode.php,0,,Processes
 Service/Flow/Nodes/IterateNode.php,136,Service,Flows,Flows/Service/Flow/Nodes/IterateNode.php,0,,Processes
@@ -2897,6 +2900,7 @@ Service/Object/PerformanceHandler.php,87,Service,Service,Service/Object/Performa
 Service/Object/PerformanceOptimizationHandler.php,38,Service,Service,Service/Object/PerformanceOptimizationHandler.php,0,,Core
 Service/Object/PermissionCheck.php,27,Service,Access,Access/Service/Object/PermissionCheck.php,0,,Kernel
 Service/Object/PermissionHandler.php,1872,Service,Access,Access/Service/Object/PermissionHandler.php,22,5,Core
+Service/Object/SchemaWriteRights.php,,Service,,,,,Core
 Service/Object/PinnedTable.php,10,Service,Service,Service/Object/PinnedTable.php,0,,Core
 Service/Object/PreservedListing.php,11,Service,Service,Service/Object/PreservedListing.php,0,,Core
 Service/Object/PreservedListLens.php,53,Service,Service,Service/Object/PreservedListLens.php,0,,Core
@@ -4470,6 +4474,8 @@ Service/Calendar/ObjectDateEvents.php,26,Service,Work,Work/Service/Calendar/Obje
 Notifications/Controller/NotificationRecipientAnswerController.php,52,Notifications,Notifications,Notifications/Controller/NotificationRecipientAnswerController.php,0,,Notifications
 Notifications/Service/Notification/RecipientKindAnswer.php,64,Notifications,Notifications,Notifications/Service/Notification/RecipientKindAnswer.php,0,,Notifications
 Db/MagicMapper/MagicTableIndexCatalogue.php,70,Db,Service,Service/Db/MagicMapper/MagicTableIndexCatalogue.php,0,,Core
+Files/Controller/AttachTargetsController.php,47,Files,Files,Files/Controller/AttachTargetsController.php,0,,Files
+Files/Service/Integration/AttachTargetSearch.php,128,Files,Files,Files/Service/Integration/AttachTargetSearch.php,0,,Files
 Service/Flow/Nodes/TriggerCalendarNode.php,280,Service,Flows,Flows/Service/Flow/Nodes/TriggerCalendarNode.php,0,,Processes
 Service/Flow/Nodes/TriggerCalendarNodeInterface.php,35,Service,Flows,Flows/Service/Flow/Nodes/TriggerCalendarNodeInterface.php,0,,Processes
 Repair/RepairSharedPrincipalLists.php,,Repair,,,,,Core
@@ -4565,6 +4571,8 @@ Service/Anonymisation/DetectorEvaluationService.php,92,Service,Compliance,Compli
 Service/Anonymisation/DetectorEvaluationStore.php,87,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationStore.php,0,,Compliance
 Service/Anonymisation/EvaluationCorpus.php,128,Service,Compliance,Compliance/Service/Anonymisation/EvaluationCorpus.php,0,,Compliance
 Command/EvaluateDetectorCommand.php,,Command,,,,,Compliance
+Search/FileHitSearch.php,,Search,,,,,Search
+Kernel/Contracts/FileOwnerLookupInterface.php,,Kernel,,,,,Kernel
 Service/Import/RecordImport/FailedRowExport.php,,Service,,,,,Core
 Service/Import/RecordImport/ImportProgress.php,,Service,,,,,Core
 Controller/RecordImportController.php,,Controller,,,,,Core
@@ -4918,3 +4926,4 @@ Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AdministratorCheck.php,63,Kernel,Kernel,Kernel/Contracts/AdministratorCheck.php,0,,Kernel
+Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
