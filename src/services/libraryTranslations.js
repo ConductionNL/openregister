@@ -16,7 +16,10 @@
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */
-import { registerTranslations } from '@conduction/nextcloud-vue'
+// Imported from its own module, not the package barrel: the barrel keeps every
+// component it re-exports (the package marks `.vue` modules as side effects),
+// and this file is part of the script Nextcloud loads on every page.
+import { registerTranslations } from '@conduction/nextcloud-vue/dist/esm/l10n/index.js'
 import { getLanguage, register } from '@nextcloud/l10n'
 
 /**

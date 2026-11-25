@@ -18,7 +18,7 @@ import {
 	getSharedRegistry,
 	registerBuiltinIntegrations,
 	registerLeafIntegrations,
-} from '@conduction/nextcloud-vue'
+} from './library.js'
 import { registerBookmarksIntegration } from './builtin/bookmarks.js'
 import { registerExternalRegisterIntegration } from './builtin/externalRegister.js'
 

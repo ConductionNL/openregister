@@ -1,4 +1,4 @@
-import { registerTranslations } from '@conduction/nextcloud-vue'
+import { registerTranslations } from '@conduction/nextcloud-vue/dist/esm/l10n/index.js'
 import { getLanguage, register } from '@nextcloud/l10n'
 import fs from 'fs'
 import path from 'path'
@@ -9,7 +9,7 @@ import {
 	registerLibraryTranslations,
 } from './libraryTranslations.js'
 
-jest.mock('@conduction/nextcloud-vue', () => ({
+jest.mock('@conduction/nextcloud-vue/dist/esm/l10n/index.js', () => ({
 	__esModule: true,
 	registerTranslations: jest.fn(),
 }))

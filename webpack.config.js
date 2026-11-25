@@ -233,6 +233,11 @@ if (useLocalLib) {
 webpackConfig.resolve.alias = {
 	...(webpackConfig.resolve.alias || {}),
 	'@': path.resolve(__dirname, 'src'),
+	// Deep imports of the library's dist modules (the global script imports the
+	// integration registry and the l10n module directly, not the barrel) map
+	// onto the same files in the sibling checkout's src/. Listed before the
+	// package alias, which would otherwise turn them into src/dist/esm/....
+	...(useLocalLib ? { '@conduction/nextcloud-vue/dist/esm': localLib } : {}),
 	...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 	// Deduplicate shared packages so the aliased library source uses
 	// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
