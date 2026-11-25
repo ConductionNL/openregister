@@ -146,6 +146,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'objectOwnership#claim',         'url' => '/api/objects/{register}/{schema}/{id}/ownership/claim', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#assign',        'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#setOwnerGroup', 'url' => '/api/objects/{register}/{schema}/{id}/ownership/group', 'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // grants-that-follow-a-slot-a-relation-or-a-reason REQ-GSR-004: emergency access, taken with a reason.
+        ['name' => 'breakGlass#take',               'url' => '/api/objects/{register}/{schema}/{id}/break-glass',     'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#reassign',      'url' => '/api/ownership/reassign',                               'verb' => 'POST'],
 
         // A draft's owner makes it definitive (decision 216). An explicit action:
