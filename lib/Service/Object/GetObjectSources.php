@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use Psr\Log\LoggerInterface;
 
@@ -48,4 +50,30 @@ final class GetObjectSources {
 		public readonly ?PermissionCheckInterface $permissions=null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the signed-in caller is refused the read of an object a source answered.
+	 *
+	 * Asked like the read of a native object: the schema's read rule, with the
+	 * object and its owner. Without a permission check wired nothing is refused
+	 * here, and the caller's own check applies as before.
+	 *
+	 * @param Schema       $schema The schema the object belongs to.
+	 * @param ObjectEntity $object The object the source answered.
+	 *
+	 * @return bool True when the caller may not read the object.
+	 *
+	 * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md#requirement-read-access-parity-and-no-enumeration-oracle
+	 */
+	public function refusesRead(Schema $schema, ObjectEntity $object): bool {
+		if ($this->permissions === null) {
+			return false;
+		}
+
+		$ask = (new PermissionAsk(schema: $schema, action: 'read'))
+			->askedBy(userId: null, objectOwner: $object->getOwner())
+			->about(object: $object, register: null);
+
+		return $this->permissions->hasPermission(ask: $ask, _rbac: true) === false;
+	}//end refusesRead()
 }//end class
