@@ -4152,7 +4152,11 @@ OC.L10N.register(
     "Unit" : "Unit",
     "Weekend" : "Weekend",
     "Working day" : "Working day",
-    "Works out, without saving or arming anything, when a term that starts at a chosen moment ends under the rules above." : "Works out, without saving or arming anything, when a term that starts at a chosen moment ends under the rules above."
+    "Works out, without saving or arming anything, when a term that starts at a chosen moment ends under the rules above." : "Works out, without saving or arming anything, when a term that starts at a chosen moment ends under the rules above.",
+    "Manage the grants on records the group does not own" : "Manage the grants on records the group does not own",
+    "{group}, only for {schemas}" : "{group}, only for {schemas}",
+    "{group}, only for {schemas} in register {register}" : "{group}, only for {schemas} in register {register}",
+    "{group}, only in register {register}" : "{group}, only in register {register}"
 },
 "nplurals=2; plural=(n != 1);"
 );
