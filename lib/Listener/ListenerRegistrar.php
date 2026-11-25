@@ -167,6 +167,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, NotificationDeclarationCheckListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, McpDeclarationChecksListener::class);
 		SearchListenerRegistrar::declarationChecks(context: $context);
+		CoreListenerRegistrar::teamResources(context: $context);
 	}//end registerSchemaDeclarationChecks()
 
 	/**
