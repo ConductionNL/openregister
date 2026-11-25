@@ -121,6 +121,7 @@ DOMAIN_ORDER=(
     "duplicate-merge"
     "upsert-on-key"
     "draft-activation"
+    "object-grants"
     "anonymisation-disclosures"
     "public-export"
     "nlgov-conformance"
@@ -223,6 +224,9 @@ declare -A DOMAIN_COLLECTIONS=(
     # 422 with findings, 409, 404), and OCSMiddleware turns a 403 from an
     # OCSController into a 200 that no unit test of the controller can see.
     [draft-activation]="$REPO_ROOT/tests/integration/openregister-draft-activation.postman_collection.json"
+    # an-object-lists-its-grants-with-their-origin 4.4/4.5: /grants is 404 for a caller who cannot read the
+    # record, 403 for a reader, 200 for the owner; /permissions and /shares keep their answers.
+    [object-grants]="$REPO_ROOT/tests/integration/openregister-object-grants.postman_collection.json"
     # REQ-ADI-005/006: file disclosures (reader 200, non-reader 403) and the admin pipeline report.
     [anonymisation-disclosures]="$REPO_ROOT/tests/newman/openregister-anonymisation-disclosures.postman_collection.json"
     # Anonymous export: 200 with paging headers for a public schema, 401 not-public, 406 for pdf.
