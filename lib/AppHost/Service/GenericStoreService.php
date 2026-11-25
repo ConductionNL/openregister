@@ -60,6 +60,8 @@ use OCA\OpenRegister\AppHost\Store\StorePublishRules;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Security\SafeFetchUrl;
 use OCP\Http\Client\IResponse;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -137,6 +139,31 @@ class GenericStoreService {
 	private const SEARCH_LIMIT = 50;
 
 	/**
+	 * How long a remote registry's search answer is kept, in seconds.
+	 *
+	 * Apps list store cards in places every page load reads (a setup
+	 * wizard's status, for one). Uncached, each of those loads waited on the
+	 * registry, up to TIMEOUT when it is slow or down. Failures are kept too,
+	 * as GitHubStoreSource does, so a down registry is not asked again on
+	 * the very next page.
+	 */
+	public const SEARCH_TTL = 60;
+
+	/**
+	 * The search-answer cache, once asked for; null without one.
+	 *
+	 * @var ICache|null
+	 */
+	private ?ICache $searchCache = null;
+
+	/**
+	 * Whether the cache factory was already asked for the search cache.
+	 *
+	 * @var bool
+	 */
+	private bool $searchCacheResolved = false;
+
+	/**
 	 * The registry URL that names this instance's own register: the store is
 	 * read in-process through the object service, with no HTTP request.
 	 */
@@ -149,6 +176,7 @@ class GenericStoreService {
 	 * @param LoggerInterface $logger PSR logger — server-side diagnostics only.
 	 * @param StorePublishRules $publishRules The pure body and outcome rules of publish().
 	 * @param LocalStoreRegistry|null $localRegistry Reads a `local` registry from this instance.
+	 * @param ICacheFactory|null $cacheFactory Keeps remote search answers for SEARCH_TTL seconds.
 	 *
 	 * @return void
 	 */
@@ -157,6 +185,7 @@ class GenericStoreService {
 		private readonly LoggerInterface $logger,
 		private readonly StorePublishRules $publishRules = new StorePublishRules(),
 		private readonly ?LocalStoreRegistry $localRegistry = null,
+		private readonly ?ICacheFactory $cacheFactory = null,
 	) {
 	}//end __construct()
 
@@ -212,6 +241,39 @@ class GenericStoreService {
 
 		$params = ['_limit' => self::SEARCH_LIMIT] + $search->filters();
 
+		// A `local` registry is read in-process and stays live; only a remote
+		// registry's answer is kept.
+		$cache = null;
+		$key   = '';
+		if ($this->isLocal(descriptor: $descriptor) === false) {
+			$cache = $this->searchCache();
+			$key   = $this->searchCacheKey(descriptor: $descriptor, params: $params);
+			$kept  = $cache?->get($key);
+			if (is_string($kept) === true) {
+				$decoded = json_decode($kept, true);
+				if (is_array($decoded) === true && isset($decoded['outcome'], $decoded['cards']) === true) {
+					return ['outcome' => (string)$decoded['outcome'], 'cards' => (array)$decoded['cards']];
+				}
+			}
+		}
+
+		$answer = $this->searchFetched(descriptor: $descriptor, params: $params);
+		$cache?->set($key, (string)json_encode($answer), self::SEARCH_TTL);
+
+		return $answer;
+	}//end searchStore()
+
+	/**
+	 * Fetch a search from the registry and turn its rows into cards.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param array<string, mixed> $params The registry query.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	private function searchFetched(StoreDescriptor $descriptor, array $params): array {
 		$result = $this->fetch(descriptor: $descriptor, params: $params);
 		if ($result['outcome'] !== self::OUTCOME_OK) {
 			return ['outcome' => $result['outcome'], 'cards' => []];
@@ -225,7 +287,50 @@ class GenericStoreService {
 		}
 
 		return ['outcome' => self::OUTCOME_OK, 'cards' => $cards];
-	}//end searchStore()
+	}//end searchFetched()
+
+	/**
+	 * The search-answer cache, made on first use; null without one.
+	 *
+	 * @return ICache|null
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	private function searchCache(): ?ICache {
+		if ($this->searchCacheResolved === false && $this->cacheFactory !== null && $this->cacheFactory->isAvailable() === true) {
+			$this->searchCache = $this->cacheFactory->createDistributed('openregister_store_search');
+		}
+
+		$this->searchCacheResolved = true;
+		return $this->searchCache;
+	}//end searchCache()
+
+	/**
+	 * The cache key of one search: the app, its registry and store, and the query.
+	 *
+	 * Scoped by app id and registry, so two apps, or one app after its
+	 * registry setting changed, never read each other's cards.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param array<string, mixed> $params The registry query.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	private function searchCacheKey(StoreDescriptor $descriptor, array $params): string {
+		$scope = implode(
+			'|',
+			[
+				trim($this->registryUrl(descriptor: $descriptor)),
+				$this->registerSlug(descriptor: $descriptor),
+				$descriptor->schema,
+				http_build_query($params),
+			]
+		);
+
+		return $descriptor->appId . ':' . hash(algo: 'xxh128', data: $scope);
+	}//end searchCacheKey()
 
 	/**
 	 * Resolve a single remote item by slug, returning its FULL payload for the
