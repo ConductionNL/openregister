@@ -262,20 +262,23 @@ class AccessReviewGateGoldenTest extends TestCase {
 	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
 	 */
 	public function testResolveIsNullWhenTheLookupFindsNoReadableRow(): void {
-		$objectService = $this->createMock(ObjectService::class);
+		$objectService = $this->createMock(originalClassName: ObjectService::class);
 		$objectService->expects($this->once())->method('setObject')->with('id-1')
-			->willThrowException(new DoesNotExistException('Object not found in magic table'));
+			->willThrowException(exception: new DoesNotExistException(msg: 'Object not found in magic table'));
 		$objectService->expects($this->never())->method('getObject');
 
 		$gate = $this->build(
-			$objectService,
-			$this->createMock(ObjectAccessReport::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class))
+			objectService: $objectService,
+			report: $this->createMock(originalClassName: ObjectAccessReport::class),
+			session: $this->createMock(originalClassName: IUserSession::class),
+			groupManager: $this->createMock(originalClassName: IGroupManager::class),
+			guard: new GrantManageGuard(
+				scopeResolver: new ObjectScopeResolver(),
+				specialRights: $this->createMock(originalClassName: OrganisationSpecialRights::class)
+			)
 		);
 
-		$this->assertNull($gate->resolve(new ObjectRef('reg', 'sch', 'id-1')));
+		$this->assertNull(actual: $gate->resolve(ref: new ObjectRef(register: 'reg', schema: 'sch', id: 'id-1')));
 	}//end testResolveIsNullWhenTheLookupFindsNoReadableRow()
 
 	/**
@@ -284,18 +287,21 @@ class AccessReviewGateGoldenTest extends TestCase {
 	 * @return void
 	 */
 	public function testResolveLetsAnyOtherLookupFailurePropagate(): void {
-		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('setObject')->willThrowException(new RuntimeException('database gone'));
+		$objectService = $this->createMock(originalClassName: ObjectService::class);
+		$objectService->method('setObject')->willThrowException(exception: new RuntimeException(message: 'database gone'));
 
 		$gate = $this->build(
-			$objectService,
-			$this->createMock(ObjectAccessReport::class),
-			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class))
+			objectService: $objectService,
+			report: $this->createMock(originalClassName: ObjectAccessReport::class),
+			session: $this->createMock(originalClassName: IUserSession::class),
+			groupManager: $this->createMock(originalClassName: IGroupManager::class),
+			guard: new GrantManageGuard(
+				scopeResolver: new ObjectScopeResolver(),
+				specialRights: $this->createMock(originalClassName: OrganisationSpecialRights::class)
+			)
 		);
 
-		$this->expectException(RuntimeException::class);
-		$gate->resolve(new ObjectRef('reg', 'sch', 'id-1'));
+		$this->expectException(exception: RuntimeException::class);
+		$gate->resolve(ref: new ObjectRef(register: 'reg', schema: 'sch', id: 'id-1'));
 	}//end testResolveLetsAnyOtherLookupFailurePropagate()
 }//end class
