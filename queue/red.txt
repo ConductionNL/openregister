@@ -375,3 +375,4 @@
 2026-11-25T15:25:20Z dev=934a492cf0 prs=11210 Tests: 67061, Assertions: 238001, Errors: 5, Failures: 2, Deprecations: 24, PHPUnit Deprecations: 1, Skipped: 27. front=skip
 2026-11-25T15:29:58Z dev=934a492cf0 prs=11171 Tests: 67057, Assertions: 237990, Errors: 5, Failures: 2, Deprecations: 24, PHPUnit Deprecations: 1, Skipped: 27. front=skip
 2026-11-25T17:54:46Z dev=bec7e11e2a prs=11152,11199,11201,11208 Tests: 67147, Assertions: 238453, Errors: 5, Failures: 4, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27. front=skip
+2026-11-25T18:00:18Z dev=bec7e11e2a prs=11152 Tests: 67147, Assertions: 238454, Errors: 5, Failures: 3, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27. front=skip
