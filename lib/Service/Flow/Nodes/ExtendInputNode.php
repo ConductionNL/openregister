@@ -127,7 +127,7 @@ class ExtendInputNode extends ObjectNodeBase implements IFlowNode, ExtendInputNo
 	 * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-rule-parity/spec.md
 	 */
 	public function getIcon(): string {
-		return $this->presentation->urls->imagePath('core', 'actions/link.svg');
+		return $this->presentation->urls->imagePath('core', 'actions/external.svg');
 	}//end getIcon()
 
 	/**

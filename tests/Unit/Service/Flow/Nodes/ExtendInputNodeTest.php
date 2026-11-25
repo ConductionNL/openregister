@@ -148,7 +148,7 @@ class ExtendInputNodeTest extends TestCase {
 	public function testMetadataNamesTheParityNode(): void {
 		$this->assertSame('openregister.extend-input', $this->node->getId());
 		$this->assertSame('Extend references', $this->node->getDisplayName());
-		$this->assertSame('/core/img/actions/link.svg', $this->node->getIcon());
+		$this->assertSame('/core/img/actions/external.svg', $this->node->getIcon());
 		$this->assertSame(['properties'], $this->node->configKeys());
 		$this->assertSame(IFlowNodeTaxonomy::KIND_SERVICE_TASK, $this->node->getKind());
 		$this->assertSame(IFlowNodeTaxonomy::CATEGORY_OBJECTS, $this->node->getCategory());
