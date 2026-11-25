@@ -243,46 +243,16 @@ class CreateFileHandler {
 	 *
 	 * The skip for a stream resource is behaviour-preserving, not a security
 	 * control: the streamed (binary-download) path already produced decoded bytes.
+	 * The decoding is shared with the upload malware check, so the bytes it scans
+	 * are the bytes written here.
 	 *
 	 * @param string|resource $content The content.
 	 *
 	 * @return string|resource The content to write.
 	 */
 	private function decodedContent(mixed $content): mixed {
-		if (is_resource($content) === true) {
-			return $content;
-		}
-
-		$content = $this->dataUriPayload(content: $content);
-		$decodedContent = base64_decode($content, true);
-		if ($decodedContent !== false && base64_encode($decodedContent) === $content) {
-			return $decodedContent;
-		}
-
-		return $content;
+		return (new PostedFileContent())->decoded(content: $content);
 	}//end decodedContent()
-
-	/**
-	 * The base64 payload of a `data:mime/type;base64,...` URI; any other string as given.
-	 *
-	 * A data URI that is not base64-encoded is left as is (it might be URL-encoded).
-	 *
-	 * @param string $content The content.
-	 *
-	 * @return string The payload or the content.
-	 */
-	private function dataUriPayload(string $content): string {
-		if (str_starts_with($content, 'data:') === false) {
-			return $content;
-		}
-
-		$parts = explode(',', $content, 2);
-		if (count($parts) === 2 && str_contains($parts[0], 'base64') === true) {
-			return $parts[1];
-		}
-
-		return $content;
-	}//end dataUriPayload()
 
 	/**
 	 * Refuse a nameless file and, by its magic bytes, an executable one.

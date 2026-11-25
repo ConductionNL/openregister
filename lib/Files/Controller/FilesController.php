@@ -65,6 +65,8 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\File\FileTarget;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FetchedFile;
+use OCA\OpenRegister\Service\File\MalwareScanRefusal;
+use OCA\OpenRegister\Service\File\UploadMalwareCheck;
 use OCA\OpenRegister\Service\File\UrlFetchRefused;
 use OCA\OpenRegister\Service\File\UrlFileSource;
 use OCA\OpenRegister\Service\WriteCause;
@@ -224,6 +226,13 @@ class FilesController extends Controller {
 	private readonly ?DocumentStoreMoveGuard $moveGuard;
 
 	/**
+	 * Scans every upload before it is written; without it every upload is refused.
+	 *
+	 * @var UploadMalwareCheck|null
+	 */
+	private readonly ?UploadMalwareCheck $malwareCheck;
+
+	/**
 	 * The file restrictions.
 	 *
 	 * @var ?FileRestrictionGuard
@@ -268,6 +277,7 @@ class FilesController extends Controller {
 		$this->fileWriteGuard = $services->guards->fileWriteGuard;
 		$this->fileRestrictions = $services->guards->fileRestrictions;
 		$this->moveGuard = $services->guards->moveGuard;
+		$this->malwareCheck = $services->guards->malwareCheck;
 
 		// Store dependencies for use in controller methods.
 		$this->fileService = $services->store->fileService;
@@ -740,6 +750,11 @@ class FilesController extends Controller {
 			return $this->stateRefused(e: $e);
 		}
 
+		if ($e instanceof MalwareScanRefusal) {
+			// REQ-UMS-001: infected (422) or no scan could be made (503); nothing was written.
+			return new JSONResponse(data: $e->body, statusCode: $e->status);
+		}
+
 		if ($e instanceof UrlFetchRefused) {
 			// REQ-FCU-002: a failed fetch names its reason, and nothing was created.
 			return new JSONResponse(data: ['error' => $e->getMessage(), 'reason' => $e->reason], statusCode: 422);
@@ -779,6 +794,36 @@ class FilesController extends Controller {
 		$this->moveGuard?->assertNotMoving(registerId: $object->getRegister());
 		return $object;
 	}//end writableObject()
+
+	/**
+	 * The malware check every upload runs before it is written.
+	 *
+	 * @return UploadMalwareCheck The check.
+	 *
+	 * @throws MalwareScanRefusal With 503 when no check is wired: an upload is never accepted unscanned.
+	 *
+	 * @spec openspec/changes/upload-malware-scan/specs/file-actions/spec.md#requirement-every-upload-is-scanned-by-files_antivirus-and-without-it-nothing-is-accepted-req-ums-001
+	 */
+	private function malwareCheck(): UploadMalwareCheck {
+		return ($this->malwareCheck ?? throw MalwareScanRefusal::unavailable());
+	}//end malwareCheck()
+
+	/**
+	 * A stored upload's answer: its verdict kept on the file and returned under `metadata`.
+	 *
+	 * @param File                 $file      The stored file.
+	 * @param array<string, mixed> $formatted The formatted file.
+	 * @param array<string, mixed> $verdict   The scan's verdict.
+	 *
+	 * @return JSONResponse The file.
+	 *
+	 * @spec openspec/changes/upload-malware-scan/specs/file-actions/spec.md#requirement-every-upload-is-scanned-by-files_antivirus-and-without-it-nothing-is-accepted-req-ums-001
+	 */
+	private function scannedUpload(File $file, array $formatted, array $verdict): JSONResponse {
+		$check = $this->malwareCheck();
+		$check->record(fileId: (int)$file->getId(), verdict: $verdict);
+		return new JSONResponse(data: $check->withVerdict(formatted: $formatted, verdict: $verdict));
+	}//end scannedUpload()
 
 	/**
 	 * Answer a failed action where a missing object answers 404, not its message.
@@ -1295,17 +1340,19 @@ class FilesController extends Controller {
 			return $this->addFetchedFile(object: $object, fileName: $fileName, url: $this->postedSourceUrl(data: $data), share: $share, tags: $tags);
 		}
 
+		$content = (string)$data['content'];
+		$verdict = $this->malwareCheck()->scanPosted(fileName: $fileName, content: $content);
 		$file = $this->fileService->addFile(
 			target: new FileTarget(object: $object),
 			upload: new FileUpload(
 				fileName: $fileName,
-				content: (string)$data['content'],
+				content: $content,
 				share: $share,
 				tags: $tags
 			)
 		);
 
-		return new JSONResponse(data: $this->fileService->formatFile($file));
+		return $this->scannedUpload(file: $file, formatted: $this->fileService->formatFile($file), verdict: $verdict);
 	}//end addPostedFile()
 
 	/**
@@ -1331,6 +1378,7 @@ class FilesController extends Controller {
 		}
 
 		$fetched = $this->urlFileSource->fetch(url: $url, fileName: $fileName);
+		$verdict = $this->malwareCheck()->scanBytes(fileName: $fileName, bytes: $fetched->bytes);
 		$file = $this->fileService->addFile(
 			target: new FileTarget(object: $object),
 			upload: new FileUpload(fileName: $fileName, content: $fetched->stream(), share: $share, tags: $tags)
@@ -1338,7 +1386,7 @@ class FilesController extends Controller {
 		$this->urlFileSource->remember(fileId: (int)$file->getId(), fetched: $fetched);
 		$this->fileAuditHandler?->logFileAction(object: $object, fileId: (int)$file->getId(), action: 'file.fetched', data: $fetched->metadata());
 
-		return new JSONResponse(data: $this->withProvenance(formatted: $this->fileService->formatFile($file), fetched: $fetched));
+		return $this->scannedUpload(file: $file, formatted: $this->withProvenance(formatted: $this->fileService->formatFile($file), fetched: $fetched), verdict: $verdict);
 	}//end addFetchedFile()
 
 	/**
@@ -1462,6 +1510,7 @@ class FilesController extends Controller {
 	private function savePostedFile(ObjectEntity $object): JSONResponse {
 		$data = $this->request->getParams();
 		$this->requireNameAndContent(data: $data);
+		$verdict = $this->malwareCheck()->scanPosted(fileName: (string)$data['name'], content: (string)$data['content']);
 		$file = $this->fileService->saveFile(
 			objectEntity: $object,
 			upload: new FileUpload(
@@ -1472,7 +1521,7 @@ class FilesController extends Controller {
 			)
 		);
 
-		return new JSONResponse(data: $this->fileService->formatFile($file));
+		return $this->scannedUpload(file: $file, formatted: $this->fileService->formatFile($file), verdict: $verdict);
 	}//end savePostedFile()
 
 	/**
@@ -1558,6 +1607,12 @@ class FilesController extends Controller {
 		// A per-file rejection is collected, not thrown: see processUploadedFiles() and openregister#2776.
 		$outcome = $this->processUploadedFiles(object: $object, uploadedFiles: $this->extractUploadedFiles());
 		$rejected = $outcome['rejected'];
+
+		// Every file was refused by the malware scan: answer with the scan's status (REQ-UMS-001).
+		if (empty($outcome['stored']) === true && empty($rejected) === false && count($outcome['refusals']) === count($rejected)) {
+			$refusal = $outcome['refusals'][0];
+			return new JSONResponse(data: $refusal->body + ['rejected' => $rejected], statusCode: $refusal->status);
+		}
 
 		// Every file was refused: there is nothing to report as stored, so name each rejection.
 		if (empty($outcome['stored']) === true && empty($rejected) === false) {
@@ -1781,14 +1836,16 @@ class FilesController extends Controller {
 	 * @param ObjectEntity $object Object entity to attach files to
 	 * @param array $uploadedFiles Normalized uploaded files array
 	 *
-	 * @return array{stored: list<\OCP\Files\File>, rejected: list<array{name: string, error: string}>}
-	 *         The successfully stored file nodes, and the rejected files with the reason each was refused.
+	 * @return array{stored: list<\OCP\Files\File>, rejected: list<array{name: string, error: string}>, refusals: list<MalwareScanRefusal>}
+	 *         The successfully stored file nodes, the rejected files with the reason each was refused,
+	 *         and the malware scan refusals among them.
 	 *
-	 * @psalm-return array{stored: list<\OCP\Files\File>, rejected: list<array{name: string, error: string}>}
+	 * @psalm-return array{stored: list<\OCP\Files\File>, rejected: list<array{name: string, error: string}>, refusals: list<MalwareScanRefusal>}
 	 */
 	private function processUploadedFiles(ObjectEntity $object, array $uploadedFiles): array {
 		$stored = [];
 		$rejected = [];
+		$refusals = [];
 
 		foreach ($uploadedFiles as $file) {
 			try {
@@ -1796,10 +1853,13 @@ class FilesController extends Controller {
 			} catch (\Throwable $e) {
 				// One bad file must not abort the batch: record it and continue.
 				$rejected[] = ['name' => (string)($file['name'] ?? 'unknown'), 'error' => $e->getMessage()];
+				if ($e instanceof MalwareScanRefusal) {
+					$refusals[] = $e;
+				}
 			}
 		}
 
-		return ['stored' => $stored, 'rejected' => $rejected];
+		return ['stored' => $stored, 'rejected' => $rejected, 'refusals' => $refusals];
 	}//end processUploadedFiles()
 
 	/**
@@ -1821,10 +1881,15 @@ class FilesController extends Controller {
 			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
 		}
 
-		return $this->fileService->addFile(
+		$check = $this->malwareCheck();
+		$verdict = $check->scanPosted(fileName: $fileName, content: $content);
+		$stored = $this->fileService->addFile(
 			target: new FileTarget(object: $object),
 			upload: new FileUpload(fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags'])
 		);
+		$check->record(fileId: (int)$stored->getId(), verdict: $verdict);
+
+		return $stored;
 	}//end storeUpload()
 
 	/**
@@ -1881,8 +1946,8 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->routedFile(object: $this->writableObject(id: $id), fileId: $fileId);
-			return $this->updateFromRequest(fileId: $fileId);
+			$file = $this->routedFile(object: $this->writableObject(id: $id), fileId: $fileId);
+			return $this->updateFromRequest(fileId: $fileId, fileName: $file->getName());
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
 		}
@@ -1891,22 +1956,33 @@ class FilesController extends Controller {
 	/**
 	 * Update the file from the request, on the object in context.
 	 *
-	 * @param int $fileId The file id.
+	 * @param int    $fileId   The file id.
+	 * @param string $fileName The file's name, which the malware scan reports.
 	 *
 	 * @return JSONResponse The updated file.
 	 */
-	private function updateFromRequest(int $fileId): JSONResponse {
+	private function updateFromRequest(int $fileId, string $fileName): JSONResponse {
 		$data = $this->request->getParams();
+		$content = $data['content'] ?? null;
 
-		// Content is optional for metadata-only updates.
+		// Content is optional for metadata-only updates; new content is scanned before it is written.
+		$verdict = null;
+		if ($content !== null) {
+			$verdict = $this->malwareCheck()->scanPosted(fileName: $fileName, content: $content);
+		}
+
 		$result = $this->fileService->overwriteFile(
 			overwrite: new FileOverwrite(
 				filePath: $fileId,
-				content: $data['content'] ?? null,
+				content: $content,
 				tags: $data['tags'] ?? [],
 				object: $this->objectService->getObject()
 			)
 		);
+
+		if ($verdict !== null) {
+			return $this->scannedUpload(file: $result, formatted: $this->fileService->formatFile($result), verdict: $verdict);
+		}
 
 		return new JSONResponse(data: $this->fileService->formatFile($result));
 	}//end updateFromRequest()
