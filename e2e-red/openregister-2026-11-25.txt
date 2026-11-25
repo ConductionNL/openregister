@@ -17,7 +17,7 @@ object-calendar-feed.spec.ts:252 deadline all-day event (1)
 object-watchers.spec.ts:170 watchers:'yes' expected 422, saved 201: same decision as notification-routing
 party-roles.spec.ts:251 FIXED by #11268 (top-level partyKinds/linkRoles dropped on save); then the next serial test is red: :340 'mail from a second address resolves' -> 404 'No party holds that address' (undiagnosed)
 # specs 38-59 (19:50 UTC):
-permission-provenance-and-deny.spec.ts:236/285/370/502/639 deny/staging rows (5): "the control failed: this row must be refused while enforcing"
+permission-provenance-and-deny.spec.ts:236/285/370/502/639 (5): diagnosed: the spec writes an object deny as @self.authorization on PUT; no API write stores an object-level authorization on main (POST/PUT/PATCH, @self.authorization or _authorization, owner or admin: @self.authorization reads back null), so no deny exists to enforce. deny_enforcement=enforcing is set correctly. Needs the object-authorization write path (feature gap), not a spec change
 publication-link.spec.ts:232 POST /api/access-links 404: route exists; AccessLinkMintGuard::mayPublishView refuses the admin's view (sandbox admin has no active organisation; may be sandbox-only)
 query-related-schema-rows.spec.ts:162 object create "Validation failed" in setup
 reference-options.spec.ts: FIXED by #11242 + #11243
