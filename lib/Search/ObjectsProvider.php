@@ -251,7 +251,13 @@ class ObjectsProvider implements IFilteringProvider {
 	 *
 	 * @return FilterDefinition[]
 	 *
-	 * @psalm-return   list{FilterDefinition, FilterDefinition, FilterDefinition, FilterDefinition}
+	 * `provider` is not among them: it is one of Nextcloud's built-in filters
+	 * (IFilter::BUILTIN_PROVIDER, a string), so it is supported without a
+	 * definition here. Declaring it again makes SearchComposer throw "Filter
+	 * name is already used", which fails GET /ocs/v2.php/search/providers and
+	 * so the whole unified search, for every provider on the instance.
+	 *
+	 * @psalm-return   list{FilterDefinition, FilterDefinition, FilterDefinition}
 	 * @phpstan-return list<\OCP\Search\FilterDefinition>
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
@@ -261,7 +267,6 @@ class ObjectsProvider implements IFilteringProvider {
 			new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
 			new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
 			new FilterDefinition(name: 'scopes', type: FilterDefinition::TYPE_STRING),
-			new FilterDefinition(name: 'provider', type: FilterDefinition::TYPE_STRING),
 		];
 	}//end getCustomFilters()
 
