@@ -36,7 +36,7 @@ use Closure;
 use OCA\OpenRegister\Db\CalendarLinkDuplicates;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
-use OCP\DB\Schema\ITable;
+use Doctrine\DBAL\Schema\Table;
 use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 
@@ -162,11 +162,11 @@ class Version1Date20261114101600 extends TargetedMigrationStep {
 	/**
 	 * Whether any unique index on the table covers exactly the triple, under any name.
 	 *
-	 * @param ITable $table The link table.
+	 * @param Table $table The link table (ISchemaWrapper::getTable() returns the Doctrine table).
 	 *
 	 * @return bool
 	 */
-	private static function hasUniqueTriple(ITable $table): bool {
+	private static function hasUniqueTriple(Table $table): bool {
 		$wanted = self::COLUMNS;
 		sort($wanted);
 
