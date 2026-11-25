@@ -39,6 +39,8 @@ final class SearchProviderRegistrar {
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public static function register(IRegistrationContext $context): void {
 		$context->registerSearchProvider(ObjectsProvider::class);
