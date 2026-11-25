@@ -946,3 +946,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: on the merge with main, ServiceRegistrarTest::testRegistersTheServicesInOrder gains an entry and ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/Service/ServiceRegistrar.php -> lib/<Area>/... (Core -> <Area>)'.
 - Cause: Core may not reference an area's class; the binding belongs to the owning area's registrar.
 - Fix: keep main's ServiceRegistrar and its test; add Contract => Class to the area's registrar BINDINGS (e.g. FilesRegistrar), bump its test's assertCount and assert the pair; add component-map rows for new lib files; never extend the dependency baseline.
+## Architecture suite exceeds the 600 s Bash timeout (or-fix-3/8, 25 Nov)
+- Symptom: phpunit tests/Unit/Architecture alone runs ~19 min in the cloud container and is killed or backgrounded.
+- Fix: pass the test files in batches as positional args (phpunit -c phpunit-unit.xml $(ls tests/Unit/Architecture/*Test.php | sed -n 1,70p)); 70/35/35/rest+C12 each finish under 600 s; total 2388 tests at main 1e257c72.
