@@ -4186,7 +4186,12 @@ OC.L10N.register(
     "phone number" : "telefoonnummer",
     "Search for {value}" : "{value} zoeken",
     "sender" : "afzender",
-    "Undo" : "Ongedaan maken"
+    "Undo" : "Ongedaan maken",
+    "Any geometry" : "Willekeurige geometrie",
+    "Line" : "Lijn",
+    "Multipolygon" : "Multipolygoon",
+    "Point" : "Punt",
+    "Polygon" : "Polygoon"
 },
 "nplurals=2; plural=(n != 1);"
 );

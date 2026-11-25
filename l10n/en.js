@@ -4073,7 +4073,12 @@ OC.L10N.register(
     "other" : "other",
     "connected to {name} #{number}" : "connected to {name} #{number}",
     "connected to {name}" : "connected to {name}",
-    "_%n message_::_%n messages_" : ["%n message", "%n messages"]
+    "_%n message_::_%n messages_" : ["%n message", "%n messages"],
+    "Any geometry" : "Any geometry",
+    "Line" : "Line",
+    "Multipolygon" : "Multipolygon",
+    "Point" : "Point",
+    "Polygon" : "Polygon"
 },
 "nplurals=2; plural=(n != 1);"
 );
