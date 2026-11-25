@@ -45,6 +45,8 @@ interface AuditResealInterface {
 	 *     unkeyedEntries: int,
 	 *     keyedFrom: int|null,
 	 *     keyBoundaryIntact: bool,
+	 *     unsealedAfterCutover: int,
+	 *     sealCutoverId: int|null,
 	 *     range?: array{from: int, to: int}
 	 * }
 	 *

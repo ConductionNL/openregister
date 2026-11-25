@@ -57,6 +57,8 @@ use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationProviderInvoker;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
 use OCA\OpenRegister\Support\FleetAppId;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -87,16 +89,23 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	// 24 hours in seconds.
 
 	/**
+	 * Seconds a page search answer is reused, per user and query.
+	 */
+	private const SEARCH_CACHE_TTL = 60;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param XwikiLinkMapperInterface $xwikiLinkMapper Persistence for link rows.
 	 * @param ContainerInterface $container Container for late-bound provider/router.
 	 * @param LinkServiceRuntime $runtime Whether the app is enabled, the current user, and the logger.
+	 * @param ICacheFactory|null $cacheFactory Distributed cache for page search answers; none disables it.
 	 */
 	public function __construct(
 		private readonly XwikiLinkMapperInterface $xwikiLinkMapper,
 		private readonly ContainerInterface $container,
 		private readonly LinkServiceRuntime $runtime,
+		private readonly ?ICacheFactory $cacheFactory=null,
 	) {
 	}//end __construct()
 
@@ -502,14 +511,50 @@ class XwikiLinkService implements XwikiLinkServiceInterface {
 	public function searchPages(ListQuery $query): array {
 		$page = new ListQuery(limit: max(1, min(100, $query->limit)), offset: max(0, ($query->offset ?? 0)), search: $query->search);
 
+		$cache    = $this->searchCache();
+		$cacheKey = $this->searchCacheKey(page: $page);
+		$cached   = $cache?->get($cacheKey);
+		if (is_array($cached) === true) {
+			return $cached;
+		}
+
 		// Object-independent browse/search: empty OR context.
 		$outcome = $this->browse(filters: $this->searchFilters(page: $page), caller: 'searchPages');
 		if ($outcome['cause'] !== null) {
 			return $this->degraded(cause: $outcome['cause'], page: $page);
 		}
 
-		return ['results' => $outcome['results'], 'total' => count($outcome['results']), 'limit' => $page->limit, 'offset' => $page->offset];
+		$result = ['results' => $outcome['results'], 'total' => count($outcome['results']), 'limit' => $page->limit, 'offset' => $page->offset];
+		$cache?->set($cacheKey, $result, self::SEARCH_CACHE_TTL);
+
+		return $result;
 	}//end searchPages()
+
+	/**
+	 * The distributed cache for page search answers, or null when there is none.
+	 *
+	 * @return ICache|null
+	 */
+	private function searchCache(): ?ICache {
+		if ($this->cacheFactory === null || $this->cacheFactory->isAvailable() === false) {
+			return null;
+		}
+
+		return $this->cacheFactory->createDistributed('openregister-xwiki-search');
+	}//end searchCache()
+
+	/**
+	 * The cache key of a page search: the user, because a source may answer per user, and the query.
+	 *
+	 * @param ListQuery $page The clamped query.
+	 *
+	 * @return string
+	 */
+	private function searchCacheKey(ListQuery $page): string {
+		$userId = (string)($this->runtime->userSession()->getUser()?->getUID() ?? '');
+
+		return hash('sha256', json_encode([$userId, $page->search, $page->limit, $page->offset], JSON_THROW_ON_ERROR));
+	}//end searchCacheKey()
 
 	/**
 	 * Provider list filters for a free-text search page.
