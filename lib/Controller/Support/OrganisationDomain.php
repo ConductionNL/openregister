@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionServiceInterface;
+use OCA\OpenRegister\Service\Organisation\PromotionServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;

@@ -1280,6 +1280,9 @@ Formats/Iso8601DateTimeFormat.php,18,Formats,Formats,Formats/Iso8601DateTimeForm
 Formats/SemVerFormat.php,18,Formats,Formats,Formats/SemVerFormat.php,0,,Kernel
 Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
 Formats/UuidFormat.php,25,Formats,Formats,Formats/UuidFormat.php,0,,Kernel
+Kernel/Contracts/IntegrationPromotionRowsInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/PromotionLandingInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/PromotionRefusedException.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AppContainerFinderInterface.php,7,Kernel,Kernel,Kernel/Contracts/AppContainerFinderInterface.php,0,,Kernel
 Kernel/Contracts/AppIdentity.php,6,Kernel,Kernel,Kernel/Contracts/AppIdentity.php,0,,Kernel
 Kernel/Contracts/ObjectRoleOccupantsInterface.php,,Kernel,,,,,Kernel
@@ -2128,12 +2131,7 @@ Service/ConfigurationDeployment/ConfigurationValueStore.php,155,Service,Configur
 Service/ConfigurationDeployment/DeploymentPreviewService.php,138,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentPreviewService.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentRefusedException.php,38,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentRefusedException.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentService.php,260,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentService.php,0,,Configuration
-Service/ConfigurationDeployment/PromotionComponent.php,,Service,,,,,Configuration
-Service/ConfigurationDeployment/PromotionPackageReader.php,,Service,,,,,Configuration
-Service/ConfigurationDeployment/PromotionPackageReaderInterface.php,,Service,,,,,Configuration
-Service/ConfigurationDeployment/PromotionRemap.php,,Service,,,,,Configuration
-Service/ConfigurationDeployment/PromotionService.php,,Service,,,,,Configuration
-Service/ConfigurationDeployment/PromotionServiceInterface.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/PromotionLanding.php,,Service,,,,,Configuration
 Service/ConfigurationDeployment/SettingsDomainMap.php,,Service,,,,,Configuration
 Service/ConfigurationDeployment/SettingsDraftGate.php,,Service,,,,,Configuration
 Service/ConfigurationService.php,457,Service,Configuration,Configuration/Service/ConfigurationService.php,200,47,Configuration
@@ -2695,6 +2693,7 @@ Service/Import/MatchQuery.php,,Service,,,,,Core
 Service/Import/SchemaMappingCheck.php,49,Service,Configuration,Configuration/Service/Import/SchemaMappingCheck.php,0,,Configuration
 Service/Import/SourceRowReader.php,138,Service,Configuration,Configuration/Service/Import/SourceRowReader.php,0,,Configuration
 Service/ImportService.php,1197,Service,Configuration,Configuration/Service/ImportService.php,0,,Configuration
+Service/Integration/PromotionIntegrationRows.php,,Service,,,,,Integrations
 Service/Integration/AbstractIntegrationProvider.php,51,Service,Integrations,Integrations/Service/Integration/AbstractIntegrationProvider.php,7,418,Integrations
 Service/Integration/ActivityFeedExport.php,54,Service,Integrations,Integrations/Service/Integration/ActivityFeedExport.php,0,,Integrations
 Service/Integration/ActivityFeedMerge.php,112,Service,Integrations,Integrations/Service/Integration/ActivityFeedMerge.php,0,,Integrations
@@ -3093,6 +3092,12 @@ Service/Operations/OperationsJobsService.php,157,Service,Configuration,Configura
 Service/Operations/SupportBundleService.php,117,Service,Configuration,Configuration/Service/Operations/SupportBundleService.php,0,,Configuration
 Service/OperationsConsoleService.php,207,Service,Configuration,Configuration/Service/OperationsConsoleService.php,0,,Configuration
 Service/OperatorEvaluator.php,130,Service,Access,Access/Service/OperatorEvaluator.php,5,,Core
+Service/Organisation/PromotionComponent.php,,Service,,,,,Core
+Service/Organisation/PromotionPackageReader.php,,Service,,,,,Core
+Service/Organisation/PromotionPackageReaderInterface.php,,Service,,,,,Core
+Service/Organisation/PromotionRemap.php,,Service,,,,,Core
+Service/Organisation/PromotionService.php,,Service,,,,,Core
+Service/Organisation/PromotionServiceInterface.php,,Service,,,,,Core
 Service/Organisation/OrganisationLifecycleAuditor.php,76,Service,Access,Access/Service/Organisation/OrganisationLifecycleAuditor.php,0,,Core
 Service/OrganisationContext.php,32,Service,Access,Access/Service/OrganisationContext.php,0,447,Core
 Service/OrganisationService.php,895,Service,Access,Access/Service/OrganisationService.php,181,9,Core

@@ -9,7 +9,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\ConfigurationDeployment
+ * @package  OCA\OpenRegister\Service\Organisation
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ConfigurationDeployment;
+namespace OCA\OpenRegister\Service\Organisation;
 
 /**
  * The source organisation's schemas, registers, mappings, sources, webhooks and endpoints.
@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 interface PromotionPackageReaderInterface {
 
 	/**
-	 * Every component the organisation holds, in a stable order: registers, schemas, mappings, sources, webhooks, endpoints.
+	 * Every component the organisation holds, in a stable order: registers, schemas, sources, mappings, webhooks, endpoints.
 	 *
 	 * @param string $organisationUuid The source organisation.
 	 *

@@ -5,11 +5,11 @@
  *
  * Registers and schemas come from the configuration export, matched back to
  * their source uuid by slug; mappings, sources, webhooks and endpoints come
- * from their mappers, only the source organisation's rows, without the fields
- * that belong to the source instance.
+ * from their mappers or the Integrations contract, only the source
+ * organisation's rows, without the fields that belong to the source instance.
  *
  * @category Test
- * @package  OCA\OpenRegister\Tests\Unit\Service\ConfigurationDeployment
+ * @package  OCA\OpenRegister\Tests\Unit\Service\Organisation
  *
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -21,24 +21,21 @@
 
 declare(strict_types=1);
 
-namespace Unit\Service\ConfigurationDeployment;
+namespace OCA\OpenRegister\Tests\Unit\Service\Organisation;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
 use JsonSerializable;
-use OCA\OpenRegister\Db\EndpointMapper;
-use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Db\WebhookMapperInterface;
-use OCA\OpenRegister\Kernel\Contracts\ListQuery;
-use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionComponent;
-use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionPackageReader;
-use OCA\OpenRegister\Service\ConfigurationTransferInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SourceMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\IntegrationPromotionRowsInterface;
+use OCA\OpenRegister\Kernel\Contracts\PromotionLandingInterface;
+use OCA\OpenRegister\Service\Organisation\PromotionComponent;
+use OCA\OpenRegister\Service\Organisation\PromotionPackageReader;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -46,46 +43,37 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(PromotionPackageReader::class)]
 #[UsesClass(PromotionComponent::class)]
-#[UsesClass(ListQuery::class)]
 final class PromotionPackageReaderTest extends TestCase {
 
 	private const ORG = 'org-source';
 
-	private ConfigurationTransferInterface&MockObject $export;
+	private PromotionLandingInterface&MockObject $landing;
 
-	private RegisterMapper&MockObject $registers;
+	private RegisterMapperInterface&MockObject $registers;
 
-	private SchemaMapper&MockObject $schemas;
+	private SchemaMapperInterface&MockObject $schemas;
 
-	private MappingMapper&MockObject $mappings;
+	private SourceMapperInterface&MockObject $sources;
 
-	private SourceMapper&MockObject $sources;
-
-	private WebhookMapperInterface&MockObject $webhooks;
-
-	private EndpointMapper&MockObject $endpoints;
+	private IntegrationPromotionRowsInterface&MockObject $integrations;
 
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->export    = $this->createMock(ConfigurationTransferInterface::class);
-		$this->registers = $this->createMock(RegisterMapper::class);
-		$this->schemas   = $this->createMock(SchemaMapper::class);
-		$this->mappings  = $this->createMock(MappingMapper::class);
-		$this->sources   = $this->createMock(SourceMapper::class);
-		$this->webhooks  = $this->createMock(WebhookMapperInterface::class);
-		$this->endpoints = $this->createMock(EndpointMapper::class);
+		$this->landing      = $this->createMock(PromotionLandingInterface::class);
+		$this->registers    = $this->createMock(RegisterMapperInterface::class);
+		$this->schemas      = $this->createMock(SchemaMapperInterface::class);
+		$this->sources      = $this->createMock(SourceMapperInterface::class);
+		$this->integrations = $this->createMock(IntegrationPromotionRowsInterface::class);
 	}
 
 	private function reader(): PromotionPackageReader {
 		return new PromotionPackageReader(
-			export: $this->export,
+			landing: $this->landing,
 			registers: $this->registers,
 			schemas: $this->schemas,
-			mappings: $this->mappings,
 			sources: $this->sources,
-			webhooks: $this->webhooks,
-			endpoints: $this->endpoints
+			integrations: $this->integrations
 		);
 	}
 
@@ -123,7 +111,7 @@ final class PromotionPackageReaderTest extends TestCase {
 		$this->schemas->expects($this->once())->method('findAll')
 			->with(null, null, ['organisation' => self::ORG], [], [], [], false, false)
 			->willReturn([$this->schema('sch-case', 'case')]);
-		$this->export->expects($this->once())->method('exportConfig')->with($cases)->willReturn(
+		$this->landing->expects($this->once())->method('exportRegister')->with($cases)->willReturn(
 			[
 				'components' => [
 					'registers' => ['cases' => ['slug' => 'cases', 'schemas' => ['case', 'note']]],
@@ -131,10 +119,8 @@ final class PromotionPackageReaderTest extends TestCase {
 				],
 			]
 		);
-		$this->mappings->method('findAll')->willReturn([]);
 		$this->sources->method('findAll')->willReturn([]);
-		$this->webhooks->method('findAll')->willReturn([]);
-		$this->endpoints->method('findAll')->willReturn([]);
+		$this->integrations->method('rowsOf')->willReturn([]);
 
 		$components = $this->reader()->componentsOf(self::ORG);
 
@@ -152,40 +138,31 @@ final class PromotionPackageReaderTest extends TestCase {
 	public function testAnOrganisationWithoutRegistersIsNotExported(): void {
 		$this->registers->method('findAll')->willReturn([]);
 		$this->schemas->expects($this->never())->method('findAll');
-		$this->export->expects($this->never())->method('exportConfig');
-		$this->mappings->method('findAll')->willReturn([]);
+		$this->landing->expects($this->never())->method('exportRegister');
 		$this->sources->method('findAll')->willReturn([]);
-		$this->webhooks->method('findAll')->willReturn([]);
-		$this->endpoints->method('findAll')->willReturn([]);
+		$this->integrations->method('rowsOf')->willReturn([]);
 
 		$this->assertSame([], $this->reader()->componentsOf(self::ORG));
 	}
 
-	public function testIntegrationRowsAreTheSourceOrganisationsOnlyWithoutInstanceFields(): void {
+	public function testSourcesAreTheOrganisationsOwnWithoutInstanceFieldsThenTheIntegrationRows(): void {
 		$this->registers->method('findAll')->willReturn([]);
-		$instance = ['id' => 7, 'uuid' => 'u-map', 'organisation' => self::ORG, 'created' => 'c', 'updated' => 'u', 'owner' => 'alice'];
-		$this->mappings->method('findAll')->willReturn(
+		$this->sources->expects($this->once())->method('findAll')->with(null, null, ['organisation' => self::ORG])->willReturn(
 			[
-				$this->row($instance + ['name' => 'own mapping']),
+				$this->row(['id' => 3, 'uuid' => 'u-src', 'organisation' => self::ORG, 'owner' => 'alice', 'location' => 'https://api']),
 				// The mapper's own scope may hand over another tenant's row: it never travels.
-				$this->row(['uuid' => 'u-other', 'organisation' => 'org-other', 'name' => 'foreign']),
+				$this->row(['uuid' => 'u-other', 'organisation' => 'org-other', 'location' => 'https://foreign']),
 			]
 		);
-		$this->sources->expects($this->once())->method('findAll')->with(null, null, ['organisation' => self::ORG])
-			->willReturn([$this->row(['uuid' => 'u-src', 'organisation' => self::ORG, 'location' => 'https://api'])]);
-		$this->webhooks->expects($this->once())->method('findAll')
-			->with($this->callback(static fn (ListQuery $query): bool => $query->filters === ['organisation' => self::ORG] && $query->limit === ListQuery::UNBOUNDED))
-			->willReturn([$this->row(['organisation' => self::ORG, 'name' => 'no uuid'])]);
-		$this->endpoints->method('findAll')->willReturn([$this->row(['uuid' => 'u-end', 'organisation' => self::ORG, 'endpoint' => '/x'])]);
+		$this->integrations->expects($this->once())->method('rowsOf')->with(self::ORG)
+			->willReturn([['type' => 'mapping', 'uuid' => 'u-map', 'definition' => ['name' => 'm']]]);
 
 		$components = $this->reader()->componentsOf(self::ORG);
 
 		$this->assertSame(
 			[
-				['mapping', 'u-map', ['name' => 'own mapping']],
 				['source', 'u-src', ['location' => 'https://api']],
-				['webhook', null, ['name' => 'no uuid']],
-				['endpoint', 'u-end', ['endpoint' => '/x']],
+				['mapping', 'u-map', ['name' => 'm']],
 			],
 			array_map(static fn (PromotionComponent $c): array => [$c->type, $c->sourceUuid, $c->definition], $components)
 		);

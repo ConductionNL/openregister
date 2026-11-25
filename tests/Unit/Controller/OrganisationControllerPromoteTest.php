@@ -32,8 +32,8 @@ use OCA\OpenRegister\Controller\Support\OrganisationDomain;
 use OCA\OpenRegister\Controller\Support\OrganisationMappers;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
-use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\PromotionRefusedException;
+use OCA\OpenRegister\Service\Organisation\PromotionServiceInterface;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\OrganisationUsageService;
 use OCA\OpenRegister\Service\TenantLifecycleService;
@@ -117,8 +117,8 @@ final class OrganisationControllerPromoteTest extends TestCase {
 
 	public function testARefusalAnswersWithItsOwnStatusAndBody(): void {
 		$this->promotion->method('promote')->willThrowException(
-			new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_INVALID,
+			new PromotionRefusedException(
+				reason: 'invalid',
 				message: 'Promotion must follow OTAP order: development -> test -> acceptance -> production',
 				refusals: [],
 				statusCode: 400

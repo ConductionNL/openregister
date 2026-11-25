@@ -9,7 +9,7 @@
  * write a promotion makes is drafts into a set.
  *
  * @category Test
- * @package  OCA\OpenRegister\Tests\Unit\Service\ConfigurationDeployment
+ * @package  OCA\OpenRegister\Tests\Unit\Service\Organisation
  *
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
@@ -21,25 +21,21 @@
 
 declare(strict_types=1);
 
-namespace Unit\Service\ConfigurationDeployment;
+namespace OCA\OpenRegister\Tests\Unit\Service\Organisation;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Db\ConfigurationDraft;
-use OCA\OpenRegister\Db\ConfigurationDraftSet;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftTarget;
-use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
-use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionComponent;
-use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionPackageReaderInterface;
-use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionRemap;
-use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionService;
+use OCA\OpenRegister\Kernel\Contracts\PromotionLandingInterface;
+use OCA\OpenRegister\Kernel\Contracts\PromotionRefusedException;
+use OCA\OpenRegister\Service\Organisation\PromotionComponent;
+use OCA\OpenRegister\Service\Organisation\PromotionPackageReaderInterface;
+use OCA\OpenRegister\Service\Organisation\PromotionRemap;
+use OCA\OpenRegister\Service\Organisation\PromotionService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -54,8 +50,7 @@ use RuntimeException;
 #[CoversClass(PromotionService::class)]
 #[UsesClass(PromotionRemap::class)]
 #[UsesClass(PromotionComponent::class)]
-#[UsesClass(DeploymentRefusedException::class)]
-#[UsesClass(ConfigurationDraftTarget::class)]
+#[UsesClass(PromotionRefusedException::class)]
 final class PromotionServiceTest extends TestCase {
 
 	private const SOURCE = '11111111-1111-4111-8111-111111111111';
@@ -66,22 +61,22 @@ final class PromotionServiceTest extends TestCase {
 
 	private const SCHEMA = '44444444-4444-4444-8444-444444444444';
 
-	private OrganisationMapper&MockObject $organisations;
+	private OrganisationMapperInterface&MockObject $organisations;
 
 	private PromotionPackageReaderInterface&MockObject $package;
 
-	private ConfigurationDraftsInterface&MockObject $drafts;
+	private PromotionLandingInterface&MockObject $landing;
 
 	private AuditEntryWriterInterface&MockObject $audit;
 
 	private LoggerInterface&MockObject $logger;
 
 	/**
-	 * Every draftValue() call, as [target, value].
+	 * Every land() call, as [name, description, drafts].
 	 *
-	 * @var list<array{0: ConfigurationDraftTarget, 1: mixed}>
+	 * @var list<array{0: string, 1: string, 2: list<array<string, mixed>>}>
 	 */
-	private array $drafted = [];
+	private array $landed = [];
 
 	/**
 	 * Every batch of audit entries written.
@@ -93,15 +88,15 @@ final class PromotionServiceTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$this->organisations = $this->createMock(OrganisationMapper::class);
+		$this->organisations = $this->createMock(OrganisationMapperInterface::class);
 		$this->package       = $this->createMock(PromotionPackageReaderInterface::class);
-		$this->drafts        = $this->createMock(ConfigurationDraftsInterface::class);
+		$this->landing       = $this->createMock(PromotionLandingInterface::class);
 		$this->audit         = $this->createMock(AuditEntryWriterInterface::class);
 		$this->logger        = $this->createMock(LoggerInterface::class);
 
-		$this->drafts->method('draftValue')->willReturnCallback(function (ConfigurationDraftTarget $target, mixed $value): ConfigurationDraft {
-			$this->drafted[] = [$target, $value];
-			return new ConfigurationDraft();
+		$this->landing->method('land')->willReturnCallback(function (string $name, string $description, array $drafts): array {
+			$this->landed[] = [$name, $description, $drafts];
+			return ['uuid' => 'set-' . count($this->landed), 'name' => $name, 'state' => 'open'];
 		});
 		$this->audit->method('writeAuditEntries')->willReturnCallback(function (array $entries): void {
 			$this->audited[] = $entries;
@@ -115,7 +110,7 @@ final class PromotionServiceTest extends TestCase {
 		return new PromotionService(
 			organisations: $this->organisations,
 			package: $this->package,
-			drafts: $this->drafts,
+			landing: $this->landing,
 			auditEntries: $this->audit,
 			userSession: $session,
 			logger: $this->logger
@@ -143,14 +138,10 @@ final class PromotionServiceTest extends TestCase {
 		);
 	}
 
-	private function openedSet(): void {
-		$set = new ConfigurationDraftSet();
-		$set->setUuid('set-1');
-		$set->setName('Promotion from Dev org');
-		$set->setState(ConfigurationDraftSet::STATE_OPEN);
-		$this->drafts->expects($this->once())->method('openSet')
-			->with('Promotion from Dev org', $this->stringContains(self::SOURCE . ' (test) to ' . self::TARGET . ' (acceptance)'))
-			->willReturn($set);
+	private function assertLandedInAPromotionSet(): void {
+		$this->assertCount(1, $this->landed);
+		$this->assertSame('Promotion from Dev org', $this->landed[0][0]);
+		$this->assertStringContainsString(self::SOURCE . ' (test) to ' . self::TARGET . ' (acceptance)', $this->landed[0][1]);
 	}
 
 	/**
@@ -189,15 +180,15 @@ final class PromotionServiceTest extends TestCase {
 	public function testAPromotionAgainstTheOtapOrderIsRefusedWithTheOrderBeforeAnythingIsRead(?string $from, ?string $to): void {
 		$this->knownOrganisations($from, $to);
 		$this->package->expects($this->never())->method('componentsOf');
-		$this->drafts->expects($this->never())->method('openSet');
+		$this->landing->expects($this->never())->method('land');
 
 		try {
 			$this->service()->promote(self::SOURCE, self::TARGET);
 			$this->fail('a promotion against the OTAP order must be refused');
-		} catch (DeploymentRefusedException $refusal) {
-			$this->assertSame(400, $refusal->getStatusCode());
+		} catch (PromotionRefusedException $refusal) {
+			$this->assertSame(400, $refusal->statusCode);
 			$this->assertSame('Promotion must follow OTAP order: development -> test -> acceptance -> production', $refusal->getMessage());
-			$this->assertSame(DeploymentRefusedException::REASON_INVALID, $refusal->getReason());
+			$this->assertSame(PromotionService::REASON_INVALID, $refusal->reason);
 		}
 
 		$this->assertSame([], $this->audited);
@@ -206,9 +197,9 @@ final class PromotionServiceTest extends TestCase {
 	public function testPromotingAnOrganisationOntoItselfIsRefused(): void {
 		$organisation = $this->organisation(self::SOURCE, 'development', 'Dev org');
 		$this->organisations->method('findByUuid')->willReturn($organisation);
-		$this->drafts->expects($this->never())->method('openSet');
+		$this->landing->expects($this->never())->method('land');
 
-		$this->expectException(DeploymentRefusedException::class);
+		$this->expectException(PromotionRefusedException::class);
 		$this->expectExceptionMessage(PromotionService::ORDER_MESSAGE);
 		$this->service()->promote(self::SOURCE, self::SOURCE);
 	}
@@ -219,8 +210,8 @@ final class PromotionServiceTest extends TestCase {
 		try {
 			$this->service()->promote(self::SOURCE, 'nope');
 			$this->fail('an unknown organisation must be refused');
-		} catch (DeploymentRefusedException $refusal) {
-			$this->assertSame(404, $refusal->getStatusCode());
+		} catch (PromotionRefusedException $refusal) {
+			$this->assertSame(404, $refusal->statusCode);
 			$this->assertSame('no organisation "nope"', $refusal->getMessage());
 		}
 	}
@@ -228,24 +219,24 @@ final class PromotionServiceTest extends TestCase {
 	public function testASourceWithNothingToPromoteOpensNoSet(): void {
 		$this->knownOrganisations('test', 'acceptance');
 		$this->package->expects($this->once())->method('componentsOf')->with(self::SOURCE)->willReturn([]);
-		$this->drafts->expects($this->never())->method('openSet');
+		$this->landing->expects($this->never())->method('land');
 
 		try {
 			$this->service()->promote(self::SOURCE, self::TARGET);
 			$this->fail('an empty package must be refused');
-		} catch (DeploymentRefusedException $refusal) {
-			$this->assertSame(409, $refusal->getStatusCode());
-			$this->assertSame(DeploymentRefusedException::REASON_EMPTY, $refusal->getReason());
+		} catch (PromotionRefusedException $refusal) {
+			$this->assertSame(409, $refusal->statusCode);
+			$this->assertSame(PromotionService::REASON_EMPTY, $refusal->reason);
 		}
 	}
 
 	public function testThePackageLandsAsDraftsInAPromotionSetWithEveryUuidRemapped(): void {
 		$this->knownOrganisations('test', 'acceptance');
 		$this->package->method('componentsOf')->willReturn($this->package());
-		$this->openedSet();
 
 		$result = $this->service()->promote(self::SOURCE, self::TARGET);
 
+		$this->assertLandedInAPromotionSet();
 		$remapped = $result['remapped'];
 		$this->assertSame([self::REGISTER, self::SCHEMA], array_keys($remapped));
 		$newRegister = $remapped[self::REGISTER];
@@ -254,29 +245,33 @@ final class PromotionServiceTest extends TestCase {
 		$this->assertNotSame(self::REGISTER, $newRegister);
 		$this->assertNotSame($newRegister, $newSchema);
 
-		$this->assertCount(3, $this->drafted);
-		[$registerTarget, $registerValue] = $this->drafted[0];
-		$this->assertSame('set-1', $registerTarget->setUuid);
-		$this->assertSame(ConfigurationLayer::REGISTER, $registerTarget->address->layer);
-		$this->assertSame($newRegister, $registerTarget->address->layerRef);
-		$this->assertSame('register.definition', $registerTarget->address->configKey);
-		$this->assertSame(['slug' => 'cases', 'title' => 'Cases', 'uuid' => $newRegister, 'organisation' => self::TARGET], $registerValue);
+		$drafts = $this->landed[0][2];
+		$this->assertCount(3, $drafts);
+		$this->assertSame(
+			[
+				'layer' => PromotionLandingInterface::LAYER_REGISTER,
+				'layerRef' => $newRegister,
+				'configKey' => 'register.definition',
+				'value' => ['slug' => 'cases', 'title' => 'Cases', 'uuid' => $newRegister, 'organisation' => self::TARGET],
+			],
+			$drafts[0]
+		);
 
-		[$schemaTarget, $schemaValue] = $this->drafted[1];
-		$this->assertSame(ConfigurationLayer::SUBJECT, $schemaTarget->address->layer);
-		$this->assertSame($newSchema, $schemaTarget->address->layerRef);
-		$this->assertSame('schema.definition', $schemaTarget->address->configKey);
+		$schema = $drafts[1];
+		$this->assertSame(PromotionLandingInterface::LAYER_SUBJECT, $schema['layer']);
+		$this->assertSame($newSchema, $schema['layerRef']);
+		$this->assertSame('schema.definition', $schema['configKey']);
 		// A whole-string reference follows the register; a uuid inside text stays text.
-		$this->assertSame($newRegister, $schemaValue['properties']['register']['default']);
-		$this->assertSame('see /api/registers/' . self::REGISTER, $schemaValue['description']);
-		$this->assertSame(self::TARGET, $schemaValue['organisation']);
+		$this->assertSame($newRegister, $schema['value']['properties']['register']['default']);
+		$this->assertSame('see /api/registers/' . self::REGISTER, $schema['value']['description']);
+		$this->assertSame(self::TARGET, $schema['value']['organisation']);
 
-		[$webhookTarget, $webhookValue] = $this->drafted[2];
-		$this->assertSame('integration.webhook', $webhookTarget->address->configKey);
-		$this->assertSame([$newSchema], $webhookValue['schemas']);
+		$webhook = $drafts[2];
+		$this->assertSame('integration.webhook', $webhook['configKey']);
+		$this->assertSame([$newSchema], $webhook['value']['schemas']);
 		// A component without a source uuid still gets a fresh one of its own.
-		$this->assertSame($webhookValue['uuid'], $webhookTarget->address->layerRef);
-		$this->assertNotContains($webhookValue['uuid'], [$newRegister, $newSchema]);
+		$this->assertSame($webhook['value']['uuid'], $webhook['layerRef']);
+		$this->assertNotContains($webhook['value']['uuid'], [$newRegister, $newSchema]);
 
 		$this->assertSame(['register' => 1, 'schema' => 1, 'webhook' => 1], $result['components']);
 		$this->assertSame('set-1', $result['set']['uuid']);
@@ -284,10 +279,26 @@ final class PromotionServiceTest extends TestCase {
 		$this->assertSame(self::TARGET, $result['target']);
 	}
 
+	public function testALandingRefusalReachesTheCallerAndNothingIsAudited(): void {
+		$this->knownOrganisations('test', 'acceptance');
+		$this->package->method('componentsOf')->willReturn($this->package());
+		$landing = $this->createMock(PromotionLandingInterface::class);
+		$landing->method('land')->willThrowException(new PromotionRefusedException(reason: 'invalid', message: 'refused draft', statusCode: 400));
+		$this->landing = $landing;
+
+		try {
+			$this->service()->promote(self::SOURCE, self::TARGET);
+			$this->fail('a refused landing must reach the caller');
+		} catch (PromotionRefusedException $refusal) {
+			$this->assertSame('refused draft', $refusal->getMessage());
+		}
+
+		$this->assertSame([], $this->audited);
+	}
+
 	public function testBothOrganisationsGetAPromotionEntryNamingTheSet(): void {
 		$this->knownOrganisations('test', 'acceptance');
 		$this->package->method('componentsOf')->willReturn($this->package());
-		$this->openedSet();
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('admin');
 		$user->method('getDisplayName')->willReturn('Admin');
@@ -313,9 +324,6 @@ final class PromotionServiceTest extends TestCase {
 	public function testAnAuditFailureIsLoggedAndDoesNotUndoTheLandedSet(): void {
 		$this->knownOrganisations('development', 'test');
 		$this->package->method('componentsOf')->willReturn($this->package());
-		$set = new ConfigurationDraftSet();
-		$set->setUuid('set-2');
-		$this->drafts->method('openSet')->willReturn($set);
 		$audit = $this->createMock(AuditEntryWriterInterface::class);
 		$audit->method('writeAuditEntries')->willThrowException(new RuntimeException('disk full'));
 		$this->audit = $audit;
@@ -324,7 +332,7 @@ final class PromotionServiceTest extends TestCase {
 
 		$result = $this->service()->promote(self::SOURCE, self::TARGET);
 
-		$this->assertSame('set-2', $result['set']['uuid']);
-		$this->assertCount(3, $this->drafted);
+		$this->assertSame('set-1', $result['set']['uuid']);
+		$this->assertCount(3, $this->landed[0][2]);
 	}
 }

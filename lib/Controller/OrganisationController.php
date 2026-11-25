@@ -45,8 +45,8 @@ use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
-use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
-use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\PromotionRefusedException;
+use OCA\OpenRegister\Service\Organisation\PromotionServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
 use OCA\OpenRegister\Service\Organisation\NewOrganisation;
@@ -1583,8 +1583,8 @@ class OrganisationController extends Controller {
 
 		try {
 			$result = $this->promotion->promote(sourceUuid: $uuid, targetUuid: trim($targetOrganisation));
-		} catch (DeploymentRefusedException $exception) {
-			return new JSONResponse(data: $exception->toResponseBody(), statusCode: $exception->getStatusCode());
+		} catch (PromotionRefusedException $exception) {
+			return new JSONResponse(data: $exception->toResponseBody(), statusCode: $exception->statusCode);
 		}
 
 		return new JSONResponse(data: $result, statusCode: Http::STATUS_CREATED);

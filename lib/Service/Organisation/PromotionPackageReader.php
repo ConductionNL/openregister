@@ -4,13 +4,14 @@
  * OpenRegister PromotionPackageReader
  *
  * Reads what a promotion carries: the registers and schemas through the existing
- * configuration export, the mappings, sources, webhooks and endpoints from their own mappers.
+ * configuration export, the sources from their mapper, and the mappings, webhooks
+ * and endpoints from the Integrations component.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\ConfigurationDeployment
+ * @package  OCA\OpenRegister\Service\Organisation
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,59 +26,43 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ConfigurationDeployment;
-use OCA\OpenRegister\Db\EndpointMapper;
-use OCA\OpenRegister\Db\MappingMapper;
-use OCA\OpenRegister\Db\Register;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Db\SourceMapper;
-use OCA\OpenRegister\Db\WebhookMapperInterface;
-use OCA\OpenRegister\Kernel\Contracts\ListQuery;
-use OCA\OpenRegister\Service\ConfigurationTransferInterface;
+namespace OCA\OpenRegister\Service\Organisation;
 use JsonSerializable;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Db\SourceMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\IntegrationPromotionRowsInterface;
+use OCA\OpenRegister\Kernel\Contracts\PromotionLandingInterface;
 
 /**
  * Collect one organisation's configuration as promotion components.
  *
  * Registers and schemas go through the configuration export a package
  * download uses, so a promotion carries exactly what an export would: no ids,
- * no organisation, references by slug. The export knows nothing of webhooks
- * and endpoints, so those four kinds are read from their mappers and keep
- * their serialised form minus the instance-bound fields.
- *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One mapper per promoted kind plus the export; splitting them would split one package.
+ * no organisation, references by slug. The export knows nothing of sources,
+ * webhooks and endpoints, so those keep their serialised form minus the
+ * instance-bound fields.
  *
  * @spec openspec/specs/environment-otap/spec.md#requirement-configuration-promotion-must-transfer-settings-between-otap-environments
  */
 class PromotionPackageReader implements PromotionPackageReaderInterface {
 
 	/**
-	 * Fields that belong to the source instance and never travel.
-	 *
-	 * @var list<string>
-	 */
-	private const INSTANCE_FIELDS = ['id', 'uuid', 'organisation', 'created', 'updated', 'owner'];
-
-	/**
 	 * Constructor.
 	 *
-	 * @param ConfigurationTransferInterface $export    The configuration export.
-	 * @param RegisterMapper                 $registers The registers.
-	 * @param SchemaMapper                   $schemas   The schemas.
-	 * @param MappingMapper                  $mappings  The mappings.
-	 * @param SourceMapper                   $sources   The sources.
-	 * @param WebhookMapperInterface         $webhooks  The webhooks.
-	 * @param EndpointMapper                 $endpoints The endpoints.
+	 * @param PromotionLandingInterface         $landing      The configuration export.
+	 * @param RegisterMapperInterface           $registers    The registers.
+	 * @param SchemaMapperInterface             $schemas      The schemas.
+	 * @param SourceMapperInterface             $sources      The sources.
+	 * @param IntegrationPromotionRowsInterface $integrations The mappings, webhooks and endpoints.
 	 */
 	public function __construct(
-		private readonly ConfigurationTransferInterface $export,
-		private readonly RegisterMapper $registers,
-		private readonly SchemaMapper $schemas,
-		private readonly MappingMapper $mappings,
-		private readonly SourceMapper $sources,
-		private readonly WebhookMapperInterface $webhooks,
-		private readonly EndpointMapper $endpoints,
+		private readonly PromotionLandingInterface $landing,
+		private readonly RegisterMapperInterface $registers,
+		private readonly SchemaMapperInterface $schemas,
+		private readonly SourceMapperInterface $sources,
+		private readonly IntegrationPromotionRowsInterface $integrations,
 	) {
 
 	}//end __construct()
@@ -92,25 +77,18 @@ class PromotionPackageReader implements PromotionPackageReaderInterface {
 	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md#8-promotion-between-environments-row-op-otap
 	 */
 	public function componentsOf(string $organisationUuid): array {
-		$filters = ['organisation' => $organisationUuid];
+		$sources = $this->sources->findAll(filters: ['organisation' => $organisationUuid]);
 
 		return array_merge(
 			$this->exported(organisationUuid: $organisationUuid),
-			$this->serialised(type: PromotionComponent::TYPE_MAPPING, organisationUuid: $organisationUuid, entities: $this->mappings->findAll()),
-			$this->serialised(
-				type: PromotionComponent::TYPE_SOURCE,
-				organisationUuid: $organisationUuid,
-				entities: $this->sources->findAll(filters: $filters)
-			),
-			$this->serialised(
-				type: PromotionComponent::TYPE_WEBHOOK,
-				organisationUuid: $organisationUuid,
-				entities: $this->webhooks->findAll(ListQuery::unbounded(filters: $filters))
-			),
-			$this->serialised(
-				type: PromotionComponent::TYPE_ENDPOINT,
-				organisationUuid: $organisationUuid,
-				entities: $this->endpoints->findAll()
+			self::serialised(type: PromotionComponent::TYPE_SOURCE, organisationUuid: $organisationUuid, entities: $sources),
+			array_map(
+				static fn (array $row): PromotionComponent => new PromotionComponent(
+					type: $row['type'],
+					sourceUuid: $row['uuid'],
+					definition: $row['definition']
+				),
+				$this->integrations->rowsOf(organisationUuid: $organisationUuid)
 			)
 		);
 
@@ -160,7 +138,7 @@ class PromotionPackageReader implements PromotionPackageReaderInterface {
 	 * @return array<string, mixed> The OpenAPI document the export writes.
 	 */
 	private function exportOf(Register $register): array {
-		return $this->export->exportConfig(input: $register);
+		return $this->landing->exportRegister(register: $register);
 
 	}//end exportOf()
 
@@ -210,17 +188,13 @@ class PromotionPackageReader implements PromotionPackageReaderInterface {
 	/**
 	 * The organisation's rows of one kind as components, without their instance-bound fields.
 	 *
-	 * The organisation is checked on the row itself as well: a mapper that
-	 * scopes to the caller's active organisation instead of the filter would
-	 * otherwise hand over another tenant's rows.
-	 *
-	 * @param string             $type             The component kind.
-	 * @param string             $organisationUuid The source organisation.
+	 * @param string                       $type             The component kind.
+	 * @param string                       $organisationUuid The source organisation.
 	 * @param array<int, JsonSerializable> $entities         The rows the mapper returned.
 	 *
 	 * @return list<PromotionComponent> The components.
 	 */
-	private function serialised(string $type, string $organisationUuid, array $entities): array {
+	private static function serialised(string $type, string $organisationUuid, array $entities): array {
 		$components = [];
 		foreach ($entities as $entity) {
 			$row = $entity->jsonSerialize();
@@ -233,7 +207,7 @@ class PromotionPackageReader implements PromotionPackageReaderInterface {
 				$uuid = $row['uuid'];
 			}
 
-			foreach (self::INSTANCE_FIELDS as $field) {
+			foreach (IntegrationPromotionRowsInterface::INSTANCE_FIELDS as $field) {
 				unset($row[$field]);
 			}
 

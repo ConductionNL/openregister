@@ -10,7 +10,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\ConfigurationDeployment
+ * @package  OCA\OpenRegister\Service\Organisation
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -25,12 +25,14 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ConfigurationDeployment;
+namespace OCA\OpenRegister\Service\Organisation;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\Organisation;
-use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
+use OCA\OpenRegister\Kernel\Contracts\PromotionLandingInterface;
+use OCA\OpenRegister\Kernel\Contracts\PromotionRefusedException;
 use OCA\OpenRegister\Service\TenantLifecycleServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -50,11 +52,33 @@ use Throwable;
  * uuid it gets in the target, so two promotions of the same component land on
  * different addresses and never overwrite each other's review.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The organisations, the package, the drafts and the audit trail are the four sides of one promotion.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The organisations, the package, the landing and the audit
+ *     trail are the four sides of one promotion.
  *
  * @spec openspec/specs/environment-otap/spec.md#requirement-configuration-promotion-must-transfer-settings-between-otap-environments
  */
 class PromotionService implements PromotionServiceInterface {
+
+	/**
+	 * The refusal reason of a promotion against the OTAP order.
+	 *
+	 * @var string
+	 */
+	public const REASON_INVALID = 'invalid';
+
+	/**
+	 * The refusal reason of an unknown organisation.
+	 *
+	 * @var string
+	 */
+	public const REASON_UNKNOWN = 'unknown';
+
+	/**
+	 * The refusal reason of a source with nothing to promote.
+	 *
+	 * @var string
+	 */
+	public const REASON_EMPTY = 'empty';
 
 	/**
 	 * The audit action written in both organisations.
@@ -83,28 +107,28 @@ class PromotionService implements PromotionServiceInterface {
 	 * @var array<string, array{0: string, 1: string}>
 	 */
 	private const ADDRESSES = [
-		PromotionComponent::TYPE_REGISTER => [ConfigurationLayer::REGISTER, 'register.definition'],
-		PromotionComponent::TYPE_SCHEMA => [ConfigurationLayer::SUBJECT, 'schema.definition'],
-		PromotionComponent::TYPE_MAPPING => [ConfigurationLayer::SUBJECT, 'integration.mapping'],
-		PromotionComponent::TYPE_SOURCE => [ConfigurationLayer::SUBJECT, 'integration.source'],
-		PromotionComponent::TYPE_WEBHOOK => [ConfigurationLayer::SUBJECT, 'integration.webhook'],
-		PromotionComponent::TYPE_ENDPOINT => [ConfigurationLayer::SUBJECT, 'integration.endpoint'],
+		PromotionComponent::TYPE_REGISTER => [PromotionLandingInterface::LAYER_REGISTER, 'register.definition'],
+		PromotionComponent::TYPE_SCHEMA => [PromotionLandingInterface::LAYER_SUBJECT, 'schema.definition'],
+		PromotionComponent::TYPE_MAPPING => [PromotionLandingInterface::LAYER_SUBJECT, 'integration.mapping'],
+		PromotionComponent::TYPE_SOURCE => [PromotionLandingInterface::LAYER_SUBJECT, 'integration.source'],
+		PromotionComponent::TYPE_WEBHOOK => [PromotionLandingInterface::LAYER_SUBJECT, 'integration.webhook'],
+		PromotionComponent::TYPE_ENDPOINT => [PromotionLandingInterface::LAYER_SUBJECT, 'integration.endpoint'],
 	];
 
 	/**
 	 * Constructor.
 	 *
-	 * @param OrganisationMapper              $organisations The organisations.
+	 * @param OrganisationMapperInterface     $organisations The organisations.
 	 * @param PromotionPackageReaderInterface $package       What the source organisation holds.
-	 * @param ConfigurationDraftsInterface    $drafts        The draft sets.
+	 * @param PromotionLandingInterface       $landing       The draft set the package lands in.
 	 * @param AuditEntryWriterInterface       $auditEntries  The audit trail.
 	 * @param IUserSession                    $userSession   Who promotes.
 	 * @param LoggerInterface                 $logger        The logger.
 	 */
 	public function __construct(
-		private readonly OrganisationMapper $organisations,
+		private readonly OrganisationMapperInterface $organisations,
 		private readonly PromotionPackageReaderInterface $package,
-		private readonly ConfigurationDraftsInterface $drafts,
+		private readonly PromotionLandingInterface $landing,
 		private readonly AuditEntryWriterInterface $auditEntries,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
@@ -121,7 +145,7 @@ class PromotionService implements PromotionServiceInterface {
 	 * @return array{set: array<string, mixed>, source: string, target: string, components: array<string, int>, remapped: array<string, string>}
 	 *     The landed set, both organisations, the drafted components by kind and target uuid by source uuid.
 	 *
-	 * @throws DeploymentRefusedException When an organisation is unknown, the OTAP order is not followed or there is nothing to promote.
+	 * @throws PromotionRefusedException When an organisation is unknown, the OTAP order is not followed or there is nothing to promote.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md#8-promotion-between-environments-row-op-otap
 	 */
@@ -132,8 +156,8 @@ class PromotionService implements PromotionServiceInterface {
 
 		$components = $this->package->componentsOf(organisationUuid: $sourceUuid);
 		if ($components === []) {
-			throw new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_EMPTY,
+			throw new PromotionRefusedException(
+				reason: self::REASON_EMPTY,
 				message: sprintf('organisation "%s" holds no configuration to promote', $sourceUuid),
 				refusals: [],
 				statusCode: Http::STATUS_CONFLICT
@@ -141,7 +165,9 @@ class PromotionService implements PromotionServiceInterface {
 		}
 
 		$remapped = self::remapTable(components: $components);
-		$set      = $this->drafts->openSet(
+		$remap    = new PromotionRemap(targetUuid: $targetUuid, uuids: $remapped);
+		$drafts   = self::drafts(components: $components, remap: $remap);
+		$set      = $this->landing->land(
 			name: sprintf('Promotion from %s', ($source->getName() ?? $sourceUuid)),
 			description: sprintf(
 				'Configuration promoted from %s (%s) to %s (%s)',
@@ -149,13 +175,17 @@ class PromotionService implements PromotionServiceInterface {
 				self::environmentOf(organisation: $source),
 				$targetUuid,
 				self::environmentOf(organisation: $target)
-			)
+			),
+			drafts: $drafts
 		);
 
-		$remap  = new PromotionRemap(targetUuid: $targetUuid, uuids: $remapped);
-		$counts = $this->land(setUuid: (string) $set->getUuid(), components: $components, remap: $remap);
+		$counts = [];
+		foreach ($components as $component) {
+			$counts[$component->type] = (($counts[$component->type] ?? 0) + 1);
+		}
+
 		$result = [
-			'set' => $set->jsonSerialize(),
+			'set' => $set,
 			'source' => $sourceUuid,
 			'target' => $targetUuid,
 			'components' => $counts,
@@ -175,14 +205,14 @@ class PromotionService implements PromotionServiceInterface {
 	 *
 	 * @return Organisation The organisation.
 	 *
-	 * @throws DeploymentRefusedException When no such organisation exists.
+	 * @throws PromotionRefusedException When no such organisation exists.
 	 */
 	private function organisation(string $uuid): Organisation {
 		try {
 			return $this->organisations->findByUuid($uuid);
 		} catch (DoesNotExistException $exception) {
-			throw new DeploymentRefusedException(
-				reason: DeploymentRefusedException::REASON_UNKNOWN,
+			throw new PromotionRefusedException(
+				reason: self::REASON_UNKNOWN,
 				message: sprintf('no organisation "%s"', $uuid),
 				refusals: [],
 				statusCode: Http::STATUS_NOT_FOUND
@@ -203,7 +233,7 @@ class PromotionService implements PromotionServiceInterface {
 	 *
 	 * @return void
 	 *
-	 * @throws DeploymentRefusedException When the order is not followed.
+	 * @throws PromotionRefusedException When the order is not followed.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md#8-promotion-between-environments-row-op-otap
 	 */
@@ -217,8 +247,8 @@ class PromotionService implements PromotionServiceInterface {
 			return;
 		}
 
-		throw new DeploymentRefusedException(
-			reason: DeploymentRefusedException::REASON_INVALID,
+		throw new PromotionRefusedException(
+			reason: self::REASON_INVALID,
 			message: self::ORDER_MESSAGE,
 			refusals: [
 				[
@@ -268,33 +298,31 @@ class PromotionService implements PromotionServiceInterface {
 	}//end remapTable()
 
 	/**
-	 * Draft every component into the set and count them by kind.
+	 * Every component as a draft at its own address, with its uuids remapped and the target as its organisation.
 	 *
-	 * @param string                   $setUuid    The set.
 	 * @param list<PromotionComponent> $components The package.
 	 * @param PromotionRemap           $remap      The target and the uuid table.
 	 *
-	 * @return array<string, int> Drafted components by kind.
+	 * @return list<array{layer: string, layerRef: string, configKey: string, value: mixed}> The drafts.
 	 */
-	private function land(string $setUuid, array $components, PromotionRemap $remap): array {
-		$counts = [];
+	private static function drafts(array $components, PromotionRemap $remap): array {
+		$drafts = [];
 		foreach ($components as $component) {
 			$uuid       = self::targetUuidOf(component: $component, remap: $remap);
 			$definition = $remap->apply(value: $component->definition);
-			$definition = array_merge($definition, ['uuid' => $uuid, 'organisation' => $remap->targetUuid]);
 
 			[$layer, $configKey] = self::ADDRESSES[$component->type];
-			$this->drafts->draftValue(
-				target: new ConfigurationDraftTarget(setUuid: $setUuid, address: new ConfigurationAddress(layer: $layer, layerRef: $uuid, configKey: $configKey)),
-				value: $definition
-			);
-
-			$counts[$component->type] = (($counts[$component->type] ?? 0) + 1);
+			$drafts[] = [
+				'layer' => $layer,
+				'layerRef' => $uuid,
+				'configKey' => $configKey,
+				'value' => array_merge($definition, ['uuid' => $uuid, 'organisation' => $remap->targetUuid]),
+			];
 		}
 
-		return $counts;
+		return $drafts;
 
-	}//end land()
+	}//end drafts()
 
 	/**
 	 * The uuid a component gets in the target: its remapped one, or a fresh one when it had none.

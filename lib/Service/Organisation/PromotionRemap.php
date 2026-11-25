@@ -9,7 +9,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\ConfigurationDeployment
+ * @package  OCA\OpenRegister\Service\Organisation
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ConfigurationDeployment;
+namespace OCA\OpenRegister\Service\Organisation;
 /**
  * Source uuid to target uuid, applied to every string in a definition.
  *

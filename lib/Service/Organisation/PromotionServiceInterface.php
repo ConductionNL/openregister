@@ -9,7 +9,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\ConfigurationDeployment
+ * @package  OCA\OpenRegister\Service\Organisation
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\ConfigurationDeployment;
+namespace OCA\OpenRegister\Service\Organisation;
 
 /**
  * Promote configuration from one organisation to another, in OTAP order.
@@ -40,7 +40,8 @@ interface PromotionServiceInterface {
 	 * @return array{set: array<string, mixed>, source: string, target: string, components: array<string, int>, remapped: array<string, string>}
 	 *     The landed set, both organisations, the drafted components by kind and target uuid by source uuid.
 	 *
-	 * @throws DeploymentRefusedException When an organisation is unknown, the OTAP order is not followed or there is nothing to promote.
+	 * @throws \OCA\OpenRegister\Kernel\Contracts\PromotionRefusedException When an organisation is unknown,
+	 *     the OTAP order is not followed or there is nothing to promote.
 	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md#8-promotion-between-environments-row-op-otap
 	 */
