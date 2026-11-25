@@ -2665,6 +2665,7 @@ components:
       - ".*/lib/Search/Service/ViewAudience[.]php"
       - ".*/lib/Search/Service/ViewDefinition[.]php"
       - ".*/lib/Search/Service/ViewEdit[.]php"
+      - ".*/lib/Search/Service/ViewNamingDocuments[.]php"
       - ".*/lib/Search/Service/ViewPresentationService[.]php"
       - ".*/lib/Search/Service/ViewService[.]php"
       - ".*/lib/Search/Service/Aggregation/[^/]*"

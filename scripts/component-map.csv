@@ -5061,6 +5061,9 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Service/Schema/RenameReferenceWarnings.php,,Service,,,,,Core
+Service/Flow/FlowNamingDocuments.php,,Service,,,,,Processes
+Search/Service/ViewNamingDocuments.php,,Search,,,,,Search
 Service/Import/BaseImportPlanner.php,,Service,,,,,Configuration
 Service/Authorization/PermissionMatrixExport.php,,Service,,,,,Core
 Service/Authorization/PermissionMatrixExporter.php,,Service,,,,,Core
