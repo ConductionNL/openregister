@@ -655,9 +655,14 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$translations = $this->enrichers->translations->translationHandler;
-		$row->setObject(
-			$translations->resolveTranslationsForRender(objectData: $row->getObject(), scope: new TranslationScope(schema: $schema, register: $register))
-		);
+		$stored       = ($row->getObject() ?? []);
+		$resolved     = $translations->resolveTranslationsForRender(objectData: $stored, scope: new TranslationScope(schema: $schema, register: $register));
+		$row->setObject($resolved);
+
+		$name = $translations->translatedName(stored: $stored, resolved: $resolved, schema: $schema, name: $row->getName());
+		if ($name !== null) {
+			$row->setName($name);
+		}
 	}//end translateEntityRow()
 
 	/**
@@ -675,10 +680,23 @@ class RenderObject implements RenderObjectInterface {
 			return $row;
 		}
 
-		return $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
+		$translations = $this->enrichers->translations->translationHandler;
+		$resolved     = $translations->resolveTranslationsForRender(
 			objectData: $row,
 			scope: new TranslationScope(schema: $schema, register: $this->arrayRowRegister(row: $row))
 		);
+
+		$stored = ($row['@self']['name'] ?? null);
+		if (is_string($stored) === false) {
+			$stored = null;
+		}
+
+		$name = $translations->translatedName(stored: $row, resolved: $resolved, schema: $schema, name: $stored);
+		if ($name !== null) {
+			$resolved['@self']['name'] = $name;
+		}
+
+		return $resolved;
 	}//end translateArrayRow()
 
 	/**
@@ -3162,6 +3180,15 @@ class RenderObject implements RenderObjectInterface {
 			objectData: $run->data,
 			scope: new TranslationScope(schema: $run->schema, register: $register)
 		);
+		$name      = $this->enrichers->translations->translationHandler->translatedName(
+			stored: $preResolveData,
+			resolved: $run->data,
+			schema: $run->schema,
+			name: $run->entity->getName()
+		);
+		if ($name !== null) {
+			$run->entity->setName($name);
+		}
 		if ($this->shouldAttachLanguageMeta() === false) {
 			return $run->data;
 		}

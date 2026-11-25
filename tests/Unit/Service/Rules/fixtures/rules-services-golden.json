@@ -877,7 +877,7 @@
                         {
                             "verdict": "fired",
                             "operand": "",
-                            "operandValue": null,
+                            "operandValue": "after",
                             "message": "Status changed"
                         },
                         "uuid-1",
@@ -893,7 +893,7 @@
                         {
                             "verdict": "refused",
                             "operand": "mandaat, bedrag",
-                            "operandValue": null,
+                            "operandValue": "after",
                             "message": "Mandate required"
                         },
                         "uuid-1",
@@ -954,7 +954,7 @@
                         {
                             "verdict": "fired",
                             "operand": "",
-                            "operandValue": null,
+                            "operandValue": "transition",
                             "message": "Status changed"
                         },
                         "uuid-1",
@@ -970,7 +970,7 @@
                         {
                             "verdict": "refused",
                             "operand": "mandaat, bedrag",
-                            "operandValue": null,
+                            "operandValue": "after",
                             "message": "Mandate required"
                         },
                         "uuid-1",
@@ -1018,7 +1018,7 @@
                         {
                             "verdict": "fired",
                             "operand": "",
-                            "operandValue": null,
+                            "operandValue": "transition",
                             "message": "Status changed"
                         },
                         "uuid-1",
@@ -1140,7 +1140,7 @@
                         {
                             "verdict": "fired",
                             "operand": "",
-                            "operandValue": null,
+                            "operandValue": "transition",
                             "message": "Status changed"
                         },
                         "uuid-1",
@@ -1160,7 +1160,7 @@
                         {
                             "verdict": "refused",
                             "operand": "mandaat, bedrag",
-                            "operandValue": null,
+                            "operandValue": "after",
                             "message": "Mandate required"
                         },
                         "uuid-1",

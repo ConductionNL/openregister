@@ -136,6 +136,9 @@ use Psr\Container\ContainerInterface;
 use ReflectionProperty;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface;
+use OCA\OpenRegister\Service\Rules\SaveWarnings;
+use OCA\OpenRegister\Service\ContractBindings;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowWiring
@@ -316,6 +319,17 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheReadHistoryPortIsAnsweredByTheReadHistoryService()
 
 	/**
+	 * The request's save warnings are bound inside the Processes area, to the one collector.
+	 *
+	 * @return void
+	 */
+	public function testTheSaveWarningsPortIsAnsweredByTheRequestCollector(): void {
+		self::assertSame(expected: SaveWarnings::class, actual: (FlowWiring::BINDINGS[SaveWarningsInterface::class] ?? null));
+		self::assertTrue(condition: is_a(SaveWarnings::class, SaveWarningsInterface::class, true));
+		self::assertArrayNotHasKey(key: SaveWarningsInterface::class, array: ContractBindings::BINDINGS);
+	}//end testTheSaveWarningsPortIsAnsweredByTheRequestCollector()
+
+	/**
 	 * The code step and its runner client are bound by the flow component itself, not by ContractBindings.
 	 *
 	 * @return void
@@ -474,6 +488,7 @@ final class FlowWiringTest extends TestCase {
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 				SaveBoundaryInterface::class               => AutoTransitionPass::class,
 				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
+				SaveWarningsInterface::class               => SaveWarnings::class,
 				\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
 			],
 			actual: $this->aliases
