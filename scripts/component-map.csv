@@ -4919,6 +4919,11 @@ Service/User/UserPlatform.php,,Service,,,,,Core
 Service/User/UserStorage.php,,Service,,,,,Core
 Notifications/Controller/Support/GroupAdministration.php,,Notifications,,,,,Notifications
 Service/MappingRun.php,,Service,,,,,Integrations
+Notifications/Db/ReminderProgress.php,64,Notifications,Notifications,Notifications/Db/ReminderProgress.php,0,,Notifications
+Notifications/Service/Notification/ReminderPlan.php,270,Notifications,Notifications,Notifications/Service/Notification/ReminderPlan.php,0,,Notifications
+Notifications/Service/Notification/ReminderDecision.php,84,Notifications,Notifications,Notifications/Service/Notification/ReminderDecision.php,0,,Notifications
+Notifications/BackgroundJob/ScheduledReminders.php,184,Notifications,Notifications,Notifications/BackgroundJob/ScheduledReminders.php,0,,Notifications
+Migration/Version1Date20261114100003.php,84,Migration,,,,,Platform
 Service/RegisterSearch.php,,Service,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
 Service/Lifecycle/SystemApproval.php,,Service,,,,,Processes
@@ -4942,6 +4947,9 @@ Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel
 Service/ProcessesServiceBindings.php,,Service,,,,,Processes
 Service/ProcessesServiceRegistrar.php,,Service,,,,,Processes
 Service/Object/PermissionAsk.php,,Service,,,,,Kernel
+Kernel/Contracts/BusinessCalendarInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/BusinessTimeInterface.php,,Kernel,,,,,Kernel
+Service/Flow/Timer/BusinessTime.php,,Service,,,,,Processes
 Kernel/Contracts/SchemaReadRightInterface.php,,Kernel,,,,,Kernel
 Service/Object/SchemaReadRight.php,,Service,,,,,Core
 Kernel/Contracts/BoundedQueryRunInterface.php,,Kernel,,,,,Kernel
