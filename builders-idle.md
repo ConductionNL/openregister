@@ -846,3 +846,4 @@
 2026-11-25T12:36:05Z live-opencatalogi-1 merged #3045 (admin-settings 13.5 repair re-import now passes, 13.6 admin page version card first + save persists)
 2026-11-25T12:36:12Z planninq (helping launchpad e2e): merged launchpad #1991 (decision: REQ-SHELL-001 names the shipped mount #workspace-vue; expected-red test removed; runtime-shell 13/13 live)
 2026-11-25T12:36:21Z b-stackiq live: merged stackiq #2198 (SearchSelection looked for SearchOptions under Kernel\Contracts; OR main moved it to Contract, so rounds with owners still 500) and #2200 (application page Roadmap/Connection map/Contracts panels 'could not be loaded': getSchemaConfig threw 'Settings not loaded' on a deep link). OR bug seen: array filter emits Postgres ::jsonb SQL on MariaDB (catalogService?modules= 500)
+2026-11-25T12:36:39Z b-launchpad built (live): merged launchpad #1992 (icon-only-app-tiles e2e 2/2 live, spec allows its health-ping host; change archived)
