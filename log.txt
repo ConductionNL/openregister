@@ -4779,3 +4779,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T10:02:08Z precheck-20261125T095120-9a712c23 CONFLICT-DEV #10533 5473faf2
 2026-11-25T10:02:26Z precheck-20261125T085905-5d01d28f AUTOPARK openregister#11084 00c46b9e sbom: composer.lock changed without sbom.cdx.json (tree fb8ee4e88b)
 2026-11-25T10:05:29Z precheck-20261125T100507-543643c0 NORESULT tree 5cca78e33d: deps failed
+2026-11-25T10:06:45Z integrator-20261125T091917-ff3156fa RED tree 8ffe1ae616 prs 2 front=red: Tests: 66486, Assertions: 235719, Errors: 9, Failures: 1, Deprecations: 27, PHPUnit Deprec; first failures: FAIL src/services/initial-data.golden.spec.js
