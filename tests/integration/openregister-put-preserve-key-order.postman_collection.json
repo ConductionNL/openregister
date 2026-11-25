@@ -1,0 +1,531 @@
+{
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"info": {
+		"_postman_id": "openregister-put-preserve-key-order-v1",
+		"name": "OpenRegister PUT preserves key order",
+		"description": "# PUT preserves key order\n\nREQ-OBJ-KO-01 (openspec/changes/put-preserve-key-order): the keys of a JSON object-typed property come back in the order they were submitted, after a create, a PUT that reorders them (a drag-reorder) and a re-read, with no alphabetising. The unchanged sibling `title` survives each write.\n\nCreates its own register and schema under a per-run slug and removes them at the end.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "register_id",
+			"value": ""
+		},
+		{
+			"key": "schema_id",
+			"value": ""
+		},
+		{
+			"key": "object_id",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Setup: register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Key order {{run}}\",\"slug\":\"keyorder-{{run}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.collectionVariables.set('run', String(Date.now()));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('register_id', pm.response.json().id);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: schema with an object-typed property",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Board {{run}}\",\"slug\":\"board-{{run}}\",\"properties\":{\"title\":{\"type\":\"string\"},\"rows\":{\"type\":\"object\"}}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('schema_id', pm.response.json().id);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: attach the schema to the register",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{register_id}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Key order {{run}}\",\"slug\":\"keyorder-{{run}}\",\"schemas\":[{{schema_id}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Create keeps a non-alphabetical key order",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/keyorder-{{run}}/board-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"keyorder-{{run}}",
+						"board-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Sprint\",\"rows\":{\"b\":2,\"a\":1,\"c\":3}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('object_id', pm.response.json().id);",
+							"pm.test('rows keep the submitted key order bac', function () { pm.expect(Object.keys(pm.response.json().rows)).to.eql(['b', 'a', 'c']); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Read back after create",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/keyorder-{{run}}/board-{{run}}/{{object_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"keyorder-{{run}}",
+						"board-{{run}}",
+						"{{object_id}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });",
+							"pm.test('rows keep the submitted key order bac', function () { pm.expect(Object.keys(pm.response.json().rows)).to.eql([\"b\", \"a\", \"c\"]); });",
+							"pm.test('the unchanged sibling title survives', function () { pm.expect(pm.response.json().title).to.equal('Sprint'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "PUT the keys reordered (drag-reorder)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/keyorder-{{run}}/board-{{run}}/{{object_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"keyorder-{{run}}",
+						"board-{{run}}",
+						"{{object_id}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Sprint\",\"rows\":{\"c\":3,\"a\":1,\"b\":2}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });",
+							"pm.test('rows keep the submitted key order cab', function () { pm.expect(Object.keys(pm.response.json().rows)).to.eql([\"c\", \"a\", \"b\"]); });",
+							"pm.test('the unchanged sibling title survives', function () { pm.expect(pm.response.json().title).to.equal('Sprint'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Read back after the reorder",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/keyorder-{{run}}/board-{{run}}/{{object_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"keyorder-{{run}}",
+						"board-{{run}}",
+						"{{object_id}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });",
+							"pm.test('rows keep the submitted key order cab', function () { pm.expect(Object.keys(pm.response.json().rows)).to.eql([\"c\", \"a\", \"b\"]); });",
+							"pm.test('the unchanged sibling title survives', function () { pm.expect(pm.response.json().title).to.equal('Sprint'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "PUT reversed again",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/keyorder-{{run}}/board-{{run}}/{{object_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"keyorder-{{run}}",
+						"board-{{run}}",
+						"{{object_id}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Sprint\",\"rows\":{\"b\":2,\"a\":1,\"c\":3}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });",
+							"pm.test('rows keep the submitted key order bac', function () { pm.expect(Object.keys(pm.response.json().rows)).to.eql([\"b\", \"a\", \"c\"]); });",
+							"pm.test('the unchanged sibling title survives', function () { pm.expect(pm.response.json().title).to.equal('Sprint'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Read back after reversing",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/keyorder-{{run}}/board-{{run}}/{{object_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"keyorder-{{run}}",
+						"board-{{run}}",
+						"{{object_id}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });",
+							"pm.test('rows keep the submitted key order bac', function () { pm.expect(Object.keys(pm.response.json().rows)).to.eql([\"b\", \"a\", \"c\"]); });",
+							"pm.test('the unchanged sibling title survives', function () { pm.expect(pm.response.json().title).to.equal('Sprint'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Teardown: object",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/keyorder-{{run}}/board-{{run}}/{{object_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"keyorder-{{run}}",
+						"board-{{run}}",
+						"{{object_id}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('deleted', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Teardown: register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{register_id}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('deleted', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204, 409]); });"
+						]
+					}
+				}
+			]
+		}
+	]
+}

@@ -38,6 +38,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Hardening\HardeningReportService
  * @covers \OCA\OpenRegister\Service\Hardening\HardeningControl
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
+ * @uses \OCA\OpenRegister\Service\Hardening\AddressAllowlist
  * @uses \OCA\OpenRegister\Service\Hardening\ThrottledSurfaces
  * @uses \OCA\OpenRegister\Service\Hardening\FloorRule
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningControlLabel
@@ -189,6 +190,17 @@ class HardeningReportServiceTest extends TestCase {
 		$this->assertSame(['https://example.nl'], $report['observed']['allowedOrigins']);
 		$this->assertFalse($report['observed']['reflectsAnyOrigin']);
 		$this->assertSame(1, $this->row(report: $report, id: 'origins.allowlistEntries')['value']);
+	}
+
+	/**
+	 * Each surface's address allowlist is reported, an unbound one as an empty list.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function testTheAddressAllowlistsAreReported(): void {
+		$report = $this->service(stored: ['hardening_admin_addresses' => '192.0.2.0/24,2001:db8::/32'])->report();
+
+		$this->assertSame(['admin' => ['192.0.2.0/24', '2001:db8::/32'], 'api' => []], $report['observed']['addressAllowlists']);
 	}
 
 	public function testEveryControlCarriesASourceAFloorAndAComparator(): void {
