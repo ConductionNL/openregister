@@ -228,6 +228,19 @@ interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
 	public function recordChange(AuditedChange $change): AuditTrail;
 
 	/**
+	 * Record a read of one object, naming the read rule that granted it when one did.
+	 *
+	 * @param ObjectEntity $object      The object read.
+	 * @param string|null  $ruleDigest  The SHA-256 of the granting rule's canonical JSON, or null.
+	 * @param string|null  $ruleVersion The schema version that rule belonged to, or null.
+	 *
+	 * @return AuditTrail The `read` entry.
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	public function recordRead(ObjectEntity $object, ?string $ruleDigest = null, ?string $ruleVersion = null): AuditTrail;
+
+	/**
 	 * Build (but do not persist) an audit trail entity for object changes.
 	 *
 	 * Contains the complete row-building logic shared by {@see createAuditTrail()}

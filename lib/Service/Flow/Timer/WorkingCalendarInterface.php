@@ -22,11 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use DateTimeInterface;
+use OCA\OpenRegister\Kernel\Contracts\BusinessCalendarInterface;
+
 /**
  * Declares only what callers outside the component use of WorkingCalendar; the rest
  * of the class stays its own.
  */
-interface WorkingCalendarInterface {
+interface WorkingCalendarInterface extends BusinessCalendarInterface {
 
 	/**
 	 * The calendar's name.
@@ -120,4 +123,23 @@ interface WorkingCalendarInterface {
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function nonWorkingDates(int $year): array;
+	/**
+	 * Whether the calendar day containing this instant is a working day.
+	 *
+	 * @param DateTimeInterface $moment Any instant on the day.
+	 *
+	 * @return boolean True on a working weekday that is not a non-working date.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 */
+	public function isWorkingDay(DateTimeInterface $moment): bool;
+
+	/**
+	 * The hours of the day this calendar's clock runs, per weekday; empty when none are declared.
+	 *
+	 * @return ServiceHours The declared windows.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
+	 */
+	public function getServiceHours(): ServiceHours;
 }//end interface

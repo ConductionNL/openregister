@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -76,6 +77,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\WritePhase
  */
 class ObjectsControllerCanDeleteScopeTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private ObjectService&MockObject $objectService;
 	private IGroupManager&MockObject $groupManager;
@@ -112,6 +115,7 @@ class ObjectsControllerCanDeleteScopeTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$stored = new ObjectEntity();
 		$stored->setUuid('uuid-b');
 		$stored->setOrganisation('org-b');

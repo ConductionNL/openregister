@@ -9039,6 +9039,16 @@
                 ]
             ],
             [
+                "schemaMapper.findByFormerSlugInIds",
+                [
+                    "none",
+                    [
+                        9,
+                        6
+                    ]
+                ]
+            ],
+            [
                 "schemaMapper.countBySlug",
                 [
                     "none"

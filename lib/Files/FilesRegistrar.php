@@ -59,6 +59,8 @@ use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Contract\FileTextReaderInterface;
+use OCA\OpenRegister\Files\Service\TextExtraction\FileTextReader;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
@@ -83,6 +85,8 @@ use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\UrlFileFetchInterface;
+use OCA\OpenRegister\Service\File\UrlFileFetcher;
 use OCA\OpenRegister\Service\Object\CopyFiles;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -112,6 +116,7 @@ final class FilesRegistrar
         FileMapperInterface::class                => FileMapper::class,
         FileOwnerLookupInterface::class           => FileMapper::class,
         FileSizeTotalsInterface::class            => FileMapper::class,
+        FileTextReaderInterface::class            => FileTextReader::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
         AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
         FileReadRestrictionInterface::class       => FileRestrictionGuard::class,
@@ -134,6 +139,7 @@ final class FilesRegistrar
         TaggingHandlerInterface::class            => TaggingHandler::class,
         TextExtractionServiceInterface::class     => TextExtractionService::class,
         UploadServiceInterface::class             => UploadService::class,
+        UrlFileFetchInterface::class              => UrlFileFetcher::class,
     ];
 
     /**
