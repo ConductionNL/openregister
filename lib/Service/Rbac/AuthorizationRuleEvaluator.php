@@ -35,6 +35,8 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 /**
  * The one reader of "does this rule list grant this group this verb".
+ *
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class AuthorizationRuleEvaluator {
 

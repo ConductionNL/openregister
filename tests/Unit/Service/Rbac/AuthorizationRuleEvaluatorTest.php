@@ -40,6 +40,11 @@ use ReflectionMethod;
  */
 class AuthorizationRuleEvaluatorTest extends TestCase {
 
+	/**
+	 * The evaluator under test.
+	 *
+	 * @var AuthorizationRuleEvaluator
+	 */
 	private AuthorizationRuleEvaluator $evaluator;
 
 	protected function setUp(): void {
@@ -78,9 +83,11 @@ class AuthorizationRuleEvaluatorTest extends TestCase {
 	public function testAnAnonymousWriteIsRefusedUnlessPublicIsGrantedThatVerb(): void {
 		$readOnly = ['read' => ['public']];
 		foreach (AuthorizationRuleEvaluator::ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS as $verb) {
-			$this->assertTrue($this->evaluator->refusesAnonymousWrite(authorization: $readOnly, action: $verb), $verb . ' on a read-only public block');
+			$refused = $this->evaluator->refusesAnonymousWrite(authorization: $readOnly, action: $verb);
+			$this->assertTrue($refused, $verb . ' on a read-only public block');
 			$this->assertTrue($this->evaluator->refusesAnonymousWrite(authorization: null, action: $verb), $verb . ' with no block');
-			$this->assertFalse($this->evaluator->refusesAnonymousWrite(authorization: [$verb => [['group' => 'public']]], action: $verb), $verb . ' granted to public');
+			$granted = [$verb => [['group' => 'public']]];
+			$this->assertFalse($this->evaluator->refusesAnonymousWrite(authorization: $granted, action: $verb), $verb . ' granted to public');
 		}
 	}
 
@@ -94,7 +101,7 @@ class AuthorizationRuleEvaluatorTest extends TestCase {
 		$this->assertTrue($this->evaluator->admitsAnonymous(rules: ['editors', ['group' => 'public']]));
 		$this->assertFalse($this->evaluator->admitsAnonymous(rules: null));
 		$this->assertFalse($this->evaluator->admitsAnonymous(rules: []));
-		$this->assertFalse($this->evaluator->admitsAnonymous(rules: ['*']), 'the wildcard means any of the caller\'s groups, and an anonymous caller has none');
+		$this->assertFalse($this->evaluator->admitsAnonymous(rules: ['*']), 'the wildcard means any of the caller\'s groups; an anonymous caller has none');
 		$this->assertFalse($this->evaluator->admitsAnonymous(rules: ['authenticated']));
 	}
 
@@ -112,7 +119,8 @@ class AuthorizationRuleEvaluatorTest extends TestCase {
 	public function testARefusalIsRecordedOncePerKindPerRequest(): void {
 		$this->assertTrue($this->evaluator->firstRefusal(plane: 'entity', entityType: 'register', action: 'update', cause: 'no-rule'));
 		$this->assertFalse($this->evaluator->firstRefusal(plane: 'entity', entityType: 'register', action: 'update', cause: 'no-rule'));
-		$this->assertFalse((new AuthorizationRuleEvaluator())->firstRefusal(plane: 'entity', entityType: 'register', action: 'update', cause: 'no-rule'), 'a second evaluator in the same request shares the memory');
+		$second = (new AuthorizationRuleEvaluator())->firstRefusal(plane: 'entity', entityType: 'register', action: 'update', cause: 'no-rule');
+		$this->assertFalse($second, 'a second evaluator in the same request shares the memory');
 
 		$this->assertTrue($this->evaluator->firstRefusal(plane: 'entity', entityType: 'register', action: 'update', cause: 'rule-refused'));
 		$this->assertTrue($this->evaluator->firstRefusal(plane: 'entity', entityType: 'register', action: 'read', cause: 'no-rule'));
@@ -128,6 +136,8 @@ class AuthorizationRuleEvaluatorTest extends TestCase {
 	 *
 	 * A second implementation arriving on either plane is the drift this class
 	 * exists to end, so the delegation is pinned by name.
+	 *
+	 * @return void
 	 */
 	public function testBothPlanesAskThisEvaluator(): void {
 		$this->assertStringContainsString('->refusesAnonymousWrite(', self::body(class: PermissionHandler::class, method: 'anonymousVerdict'));

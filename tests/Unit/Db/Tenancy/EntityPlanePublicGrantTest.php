@@ -76,6 +76,8 @@ class EntityPlanePublicGrantTest extends TestCase {
 
 	/**
 	 * A host composing the trait exactly as a mapper does, with no session user.
+	 *
+	 * @return object The host.
 	 */
 	private function anonymousHost(): object {
 		$session = $this->createMock(IUserSession::class);
@@ -84,9 +86,13 @@ class EntityPlanePublicGrantTest extends TestCase {
 		$host = new class {
 			use MultiTenancyTrait;
 
+			/** @var mixed */
 			public $userSession;
+			/** @var mixed */
 			public $organisationMapper;
+			/** @var mixed */
 			public $groupManager;
+			/** @var mixed */
 			public $logger;
 
 			public function decide(string $action, string $entityType): bool {
@@ -142,12 +148,15 @@ class EntityPlanePublicGrantTest extends TestCase {
 	 * No entity gains access by this change: the default organisation
 	 * authorization declares no `public`, so every entity type, by name, still
 	 * refuses every verb.
+	 *
+	 * @return void
 	 */
 	public function testTheDefaultAuthorizationStillRefusesEveryEntityByName(): void {
 		$this->organisationMapper->method('findByUuid')->willReturn(new Organisation());
 		$host = $this->anonymousHost();
 
-		foreach (['register', 'schema', 'object', 'view', 'agent', 'configuration', 'application', 'webhook', 'source', 'mapping', 'endpoint'] as $entityType) {
+		$entityTypes = ['register', 'schema', 'object', 'view', 'agent', 'configuration', 'application', 'webhook', 'source', 'mapping', 'endpoint'];
+		foreach ($entityTypes as $entityType) {
 			foreach (self::VERBS as $verb) {
 				$this->assertFalse($this->anonymously(host: $host, action: $verb, entityType: $entityType), $entityType . ' ' . $verb);
 			}
@@ -192,7 +201,11 @@ class EntityPlanePublicGrantTest extends TestCase {
 
 		$this->assertCount(2, $logged);
 		$this->assertStringContainsString('`public` group', $logged[0][0], 'the message names the remedy');
-		$this->assertSame(['entity', 'register', 'read', 'rule-refused', true], [$logged[0][1]['plane'], $logged[0][1]['entityType'], $logged[0][1]['action'], $logged[0][1]['cause'], $logged[0][1]['authorizationDeclared']]);
+		$first = $logged[0][1];
+		$this->assertSame(
+			['entity', 'register', 'read', 'rule-refused', true],
+			[$first['plane'], $first['entityType'], $first['action'], $first['cause'], $first['authorizationDeclared']]
+		);
 		$this->assertSame(['update', 'no-rule', false], [$logged[1][1]['action'], $logged[1][1]['cause'], $logged[1][1]['authorizationDeclared']]);
 	}
 

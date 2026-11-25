@@ -73,7 +73,8 @@ trait EntityRbacTrait {
 		}
 
 		if ($this->getCurrentUserId() === null) {
-			return $this->isTrustedSystemCaller() === true || $this->publicPolicyAllows(action: $action, entityType: $entityType) === true;
+			return $this->isTrustedSystemCaller() === true
+				|| $this->publicPolicyAllows(action: $action, entityType: $entityType) === true;
 		}
 
 		return $this->organisationPolicyAllows(action: $action, entityType: $entityType);
@@ -162,7 +163,8 @@ trait EntityRbacTrait {
 		}
 
 		$this->logger->info(
-			message: '[EntityRbac] Anonymous caller refused: to admit it, add the `public` group to the organisation\'s authorization for this entity type and action',
+			message: '[EntityRbac] Anonymous caller refused: to admit it, add the `public` group to the'
+				. ' organisation\'s authorization for this entity type and action',
 			context: [
 				'file' => __FILE__,
 				'line' => __LINE__,
