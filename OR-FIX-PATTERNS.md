@@ -987,3 +987,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: precheck.sh finish prints 'NORESULT #N rc=4: ... deps failed'; ~/sigint/logs/deps.log says vimeo/psalm 7.16.0 requires php ~8.3.16 (sandbox PHP is 8.3.6, not the 8.3.16 the setup note promises).
 - Cause: integrate.sh composer_deps runs a plain composer install without --ignore-platform-req.
 - Fix: run `bash ~/q/bin/composer-cloud.sh <any checkout>` once (it ignores the platform req), then `cp -a <that checkout>/vendor ~/sigint/or/vendor; sha256sum ~/sigint/or/composer.lock | cut -d' ' -f1 > ~/sigint/or/vendor/.sig-lock` (same lock hash only) and rerun precheck next/finish.
+
+## Admin bypass gone in a PR test after main c25f225ee79 (or-fix-4)
+- Symptom: a PR's RBAC test with an 'admin'-group caller fails: row predicate not null ('without a token the administrator keeps the bypass'), hasPermission false for the admin.
+- Cause: main's RbacAccessCall/RbacPermissionCheck/PropertyAccessRequest/ClassificationCaller now take the admin verdict from IGroupManager::isAdmin() (AdministratorCheck), not the literal admin group; a bare IGroupManager mock answers isAdmin false.
+- Fix: in the test add `$groupManager->method('isAdmin')->willReturn(true)` (or in_array('admin', $groups, true)) next to getUserGroupIds, as main's MagicRbac*Test do (#10514 52d8794d).
