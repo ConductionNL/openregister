@@ -672,6 +672,7 @@ class TransitionEngine implements LifecycleTransitionInterface {
 	 * @return ObjectEntity The saved object after the transition.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/transition-inputs-name-a-nested-field/specs/object-lifecycle/spec.md
 	 */
 	private function applyToSubject(TransitionRun $run): ObjectEntity {
 		$request = $run->request;
@@ -717,11 +718,16 @@ class TransitionEngine implements LifecycleTransitionInterface {
 		// Validate the payload against the transition's `inputs` allowlist and
 		// merge the accepted values BEFORE flipping the lifecycle field, so the
 		// status write always wins and both land in the same save.
+		$inputs = (array)($spec['inputs'] ?? []);
 		$accepted = $this->acceptInputs(
-			inputs: (array)($spec['inputs'] ?? []),
+			inputs: $inputs,
 			submission: new TransitionSubmission(action: $action, data: $request->data)
 		);
-		$objectData = array_merge($objectData, $accepted);
+		$objectData = TransitionInputPaths::merge(
+			objectData: $objectData,
+			accepted: $accepted,
+			declared: $this->normaliseDeclaredInputs(inputs: $inputs)
+		);
 
 		// Mutate the lifecycle field. The validator listener will re-check
 		// the transition on save; the guard (if any) will run there too.
@@ -1873,16 +1879,18 @@ class TransitionEngine implements LifecycleTransitionInterface {
 	 *                          key, or a `required` input is absent or empty-string.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
+	 * @spec openspec/changes/transition-inputs-name-a-nested-field/specs/object-lifecycle/spec.md
 	 */
 	private function acceptInputs(array $inputs, TransitionSubmission $submission): array {
 		$action = $submission->action;
-		$data = $submission->data;
+		$data = TransitionInputPaths::unfold(data: $submission->data);
 		$declared = $this->normaliseDeclaredInputs(inputs: $inputs);
 
-		// Reject any payload key the transition does not declare.
-		$unknown = array_diff(array_keys($data), array_keys($declared));
+		// Reject any payload key the transition does not declare. A declared
+		// field may be a path (`parent.child`): its parent is then accepted,
+		// holding only its declared children.
+		$unknown = TransitionInputPaths::undeclared(declared: $declared, data: $data);
 		if ($unknown !== []) {
-			$unknown = array_values(array_map('strval', $unknown));
 			throw new InvalidTransitionInputException(
 				message: sprintf(
 					'Transition "%s" does not accept input field(s): %s.',
@@ -1926,18 +1934,7 @@ class TransitionEngine implements LifecycleTransitionInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function collectMissingRequiredInputs(array $declared, array $data): array {
-		$missing = [];
-		foreach ($declared as $fieldName => $required) {
-			if ($required === false) {
-				continue;
-			}
-
-			if (array_key_exists($fieldName, $data) === false || $data[$fieldName] === '') {
-				$missing[] = $fieldName;
-			}
-		}
-
-		return $missing;
+		return TransitionInputPaths::missing(declared: $declared, data: $data);
 	}//end collectMissingRequiredInputs()
 
 	/**

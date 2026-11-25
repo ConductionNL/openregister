@@ -577,4 +577,73 @@ class TransitionEngineInputsTest extends TestCase {
 		$this->assertSame($viaWrite->getFields(), $viaForm->getFields());
 		$this->assertSame($viaWrite->getMessage(), $viaForm->getMessage());
 	}//end testBothCallSitesRefuseTheSamePayloads()
+
+	/**
+	 * A dotted input names a field inside an object property: the dialog's
+	 * nested payload is accepted, merged into the same write, and the
+	 * parent's other stored fields survive.
+	 *
+	 * @spec openspec/changes/transition-inputs-name-a-nested-field/specs/object-lifecycle/spec.md
+	 *
+	 * @return void
+	 */
+	public function testDottedInputAcceptsTheNestedPayload(): void {
+		$sheet = $this->timesheet();
+		$sheet->setObject(['status' => 'draft', 'feedback' => ['receivedOn' => '2026-11-01']]);
+		$this->wire(
+			$sheet,
+			$this->annotation(
+				[
+					['field' => 'feedback.route', 'required' => true],
+					['field' => 'feedback.note'],
+				]
+			)
+		);
+
+		$captured = null;
+		$this->objectService->expects($this->once())
+			->method('saveObject')
+			->willReturnCallback(
+				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
+					$captured = $object;
+					return $this->timesheet();
+				}
+			);
+
+		$this->engine->transition(self::OBJ, 'submit', ['feedback' => ['route' => 'mas', 'note' => 'n']]);
+
+		$this->assertIsArray($captured);
+		$this->assertSame('submitted', $captured['status']);
+		$this->assertSame(['receivedOn' => '2026-11-01', 'route' => 'mas', 'note' => 'n'], $captured['feedback']);
+	}//end testDottedInputAcceptsTheNestedPayload()
+
+	/**
+	 * A required dotted input is checked inside its parent, and an undeclared
+	 * child is refused by its dotted path; nothing is saved.
+	 *
+	 * @spec openspec/changes/transition-inputs-name-a-nested-field/specs/object-lifecycle/spec.md
+	 *
+	 * @return void
+	 */
+	public function testDottedInputRefusesAMissingOrUndeclaredChild(): void {
+		$this->wire(
+			$this->timesheet(),
+			$this->annotation([['field' => 'feedback.route', 'required' => true]])
+		);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		try {
+			$this->engine->transition(self::OBJ, 'submit', ['feedback' => ['other' => 'x']]);
+			$this->fail('Expected InvalidTransitionInputException was not thrown.');
+		} catch (InvalidTransitionInputException $e) {
+			$this->assertSame(['feedback.other'], $e->getFields());
+		}
+
+		try {
+			$this->engine->transition(self::OBJ, 'submit', ['feedback' => []]);
+			$this->fail('Expected InvalidTransitionInputException was not thrown.');
+		} catch (InvalidTransitionInputException $e) {
+			$this->assertSame(['feedback.route'], $e->getFields());
+		}
+	}//end testDottedInputRefusesAMissingOrUndeclaredChild()
 }//end class
