@@ -111,6 +111,26 @@ class Version1Date20261114101600Test extends TestCase {
 		return ['id' => $id, 'object_uuid' => 'o1', 'event_uid' => 'e1', 'calendar_uri' => 'personal', 'linked_at' => $linkedAt];
 	}
 
+	/**
+	 * Nextcloud 34 hands the migration a Doctrine Table, not an ITable; enabling the app must not fail on it.
+	 *
+	 * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-linking-is-idempotent-req-cal-inb-003
+	 */
+	public function testADoctrineTableIsAcceptedAndItsUniqueIndexCounts(): void {
+		$withIndex = new \Doctrine\DBAL\Schema\Table('openregister_calendar_links');
+		$withIndex->addColumn('object_uuid', 'string');
+		$withIndex->addColumn('event_uid', 'string');
+		$withIndex->addColumn('calendar_uri', 'string');
+		$withIndex->addUniqueIndex(['calendar_uri', 'object_uuid', 'event_uid'], 'or_cal_links_triple');
+
+		$without = new \Doctrine\DBAL\Schema\Table('openregister_calendar_links');
+		$without->addColumn('object_uuid', 'string');
+
+		$method = new \ReflectionMethod(Version1Date20261114101600::class, 'hasUniqueTriple');
+		$this->assertTrue($method->invoke(null, $withIndex));
+		$this->assertFalse($method->invoke(null, $without));
+	}
+
 	public function testAnInstallWithTheIndexIsLeftAlone(): void {
 		$table = $this->table([$this->index(['id'], true), $this->index(['object_uuid', 'calendar_uri', 'event_uid'], true)]);
 		$table->expects($this->never())->method('addUniqueIndex');
