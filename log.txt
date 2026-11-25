@@ -4746,3 +4746,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T09:15:45Z integrator-20261125T091248-61562fa2 NORESULT tree f90aadce79: deps failed
 2026-11-25T09:15:52Z session-20261125T083748-feeadcef or-fix-8: main 28d6ce8f; fixed (merged main, REVERIFY) #5968 -> 951813c9 (info.xml dev.17), #10508 -> 044e6eed (yaml), #11128 -> 5454b3cd (l10n en/nl); #11008 #11068 #11108 approved+clean, untouched (NO CHURN); precheck next
 2026-11-25T09:16:47Z precheck-20261125T085905-5d01d28f NORESULT tree fdb556d260: checker floor not measured (exit 2)
+2026-11-25T09:16:55Z session-20261125T083748-feeadcef or-fix-3/or-fix-8: precheck not run: gitleaks 8.30.0 install refused by the permission check (already in the coordinator queue)
