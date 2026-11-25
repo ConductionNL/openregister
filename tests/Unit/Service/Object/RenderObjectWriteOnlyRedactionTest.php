@@ -138,7 +138,11 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase {
 	 *
 	 * @return RenderObject
 	 */
-	private function renderer(Schema $schema, ?\Psr\Container\ContainerInterface $container = null, ?\OCA\OpenRegister\Service\Object\RenderReadExtensions $extensions = null): RenderObject {
+	private function renderer(
+		Schema $schema,
+		?\Psr\Container\ContainerInterface $container = null,
+		?\OCA\OpenRegister\Service\Object\RenderReadExtensions $extensions = null
+	): RenderObject {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
@@ -688,7 +692,7 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase {
 	 * @return \OCA\OpenRegister\Service\Object\RenderReadExtensions
 	 */
 	private function decryptingExtensions(): \OCA\OpenRegister\Service\Object\RenderReadExtensions {
-		$handler = $this->createMock(\OCA\OpenRegister\Service\FieldEncryptionHandler::class);
+		$handler = $this->createMock(originalClassName: \OCA\OpenRegister\Service\FieldEncryptionHandler::class);
 		$handler->method('decryptInScope')->willReturnCallback(
 			static function (array $data, \OCA\OpenRegister\Service\FieldDecryptionScope $scope): array {
 				foreach ($scope->schema->getEncryptedProperties() as $property) {
@@ -730,9 +734,9 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase {
 	public function testCheapPathDecryptsEntityRowsOfASchemaWithoutReadRules(): void {
 		$rows = [$this->careRecord()];
 
-		$this->renderer($this->schemaWithAnEncryptedProperty(), null, $this->decryptingExtensions())->redactWriteOnlyFromRows($rows, true);
+		$this->renderer(schema: $this->schemaWithAnEncryptedProperty(), extensions: $this->decryptingExtensions())->redactWriteOnlyFromRows($rows, true);
 
-		$this->assertSame('hazelnuts', $rows[0]->getObject()['allergies']);
+		$this->assertSame(expected: 'hazelnuts', actual: $rows[0]->getObject()['allergies']);
 	}
 
 	/**
@@ -749,10 +753,10 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase {
 			['player' => 'Karel', 'allergies' => 'enc:gluten', '@self' => ['schema' => 213]],
 		];
 
-		$this->renderer($this->schemaWithAnEncryptedProperty(), null, $this->decryptingExtensions())->redactWriteOnlyFromRows($rows, false);
+		$this->renderer(schema: $this->schemaWithAnEncryptedProperty(), extensions: $this->decryptingExtensions())->redactWriteOnlyFromRows($rows, false);
 
-		$this->assertSame('hazelnuts', $rows[0]->getObject()['allergies']);
-		$this->assertSame('gluten', $rows[1]['allergies']);
+		$this->assertSame(expected: 'hazelnuts', actual: $rows[0]->getObject()['allergies']);
+		$this->assertSame(expected: 'gluten', actual: $rows[1]['allergies']);
 	}
 
 	/**
@@ -767,10 +771,10 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase {
 
 		\OCA\OpenRegister\Service\SystemOperationContext::run(
 			function () use (&$rows) {
-				$this->renderer($this->schemaWithAnEncryptedProperty(), null, $this->decryptingExtensions())->redactWriteOnlyFromRows($rows, true);
+				$this->renderer(schema: $this->schemaWithAnEncryptedProperty(), extensions: $this->decryptingExtensions())->redactWriteOnlyFromRows($rows, true);
 			}
 		);
 
-		$this->assertSame('enc:hazelnuts', $rows[0]->getObject()['allergies']);
+		$this->assertSame(expected: 'enc:hazelnuts', actual: $rows[0]->getObject()['allergies']);
 	}
 }

@@ -309,8 +309,15 @@ class RenderObjectFieldEncryptionTest extends TestCase {
 		$this->assertSame($envelope, $rows[0]['bsn']);
 	}
 
+	/**
+	 * An admin's list (`_rbac: false`) is decrypted like the single-object read.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
+	 *
+	 * @return void
+	 */
 	public function testRedactWriteOnlyFromRowsDecryptsAnAdminsRbacFalseList(): void {
-		$schema = $this->createSchema(4, [
+		$schema = $this->createSchema(id: 4, properties: [
 			'bsn' => ['type' => 'string', 'x-openregister-encrypted' => true],
 		]);
 		$this->schemaMapper->method('find')->willReturn($schema);
@@ -324,6 +331,6 @@ class RenderObjectFieldEncryptionTest extends TestCase {
 
 		$this->handler->redactWriteOnlyFromRows($rows, false);
 
-		$this->assertSame('222222222', $rows[0]['bsn']);
+		$this->assertSame(expected: '222222222', actual: $rows[0]['bsn']);
 	}
 }
