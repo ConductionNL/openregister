@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 265;
+	private const LISTENER_COUNT = 266;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -43,11 +43,12 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * one AnnotationNotificationListener registration on ObjectNoteAddedEvent (count 259 -> 260).
 	 * Then SlotOccupantAuditListener took the three person-link events in the Access slot
 	 * (grants-that-follow-a-slot-a-relation-or-a-reason, count 260 -> 263).
-	 * Then the ChangeGateListener took the decided approval sequences too, on
-	 * TaskSequenceCompletedEvent after the ApprovalChainAdvanceListener and on the new
-	 * TaskSequenceRejectedEvent (263 -> 265).
+	 * Then the Collaboration team resource provider registration (CoreListenerRegistrar::teamResources)
+	 * (count 263 -> 264). Then the ChangeGateListener took the decided approval sequences too,
+	 * on TaskSequenceCompletedEvent after the ApprovalChainAdvanceListener and on the new
+	 * TaskSequenceRejectedEvent (264 -> 266).
 	 */
-	private const SEQUENCE_SHA256 = '1b841b020194db22a15e48ca66c007284c5ab8b11a40dbff5b44619a710b223e';
+	private const SEQUENCE_SHA256 = '4fd6b3a4e7b5bdc51bf0e349088ba86942586e4c05afbaa49c240799296c6516';
 
 	/**
 	 * The registration calls, in call order, with every argument.
