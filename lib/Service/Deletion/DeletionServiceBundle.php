@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service\Deletion;
  * @package  OCA\OpenRegister\Service\Deletion
  *
  * @spec openspec/specs/deletion-audit-trail/spec.md
+ * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
  */
 class DeletionServiceBundle {
 	/**
@@ -43,6 +44,7 @@ class DeletionServiceBundle {
 	 * @param DestroyRightService $destroyRight Decides whether the caller may destroy.
 	 * @param RetentionClockService $clock Reads the AVG and Archiefwet clocks.
 	 * @param DestructionServices $destruction Carries out the declared scope and records it.
+	 * @param CascadeRestoreService|null $cascadeRestore Restores what a delete cascaded to; null restores objects alone.
 	 *
 	 * @return void
 	 */
@@ -51,6 +53,7 @@ class DeletionServiceBundle {
 		public readonly DestroyRightService $destroyRight,
 		public readonly RetentionClockService $clock,
 		public readonly DestructionServices $destruction,
+		public readonly ?CascadeRestoreService $cascadeRestore=null,
 	) {
 	}//end __construct()
 }//end class

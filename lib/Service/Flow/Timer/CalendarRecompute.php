@@ -231,6 +231,9 @@ class CalendarRecompute implements CalendarRecomputeInterface {
 	/**
 	 * Supersede a timer whose moment moved, as the counter key to raise.
 	 *
+	 * The supersede action is handed the batch's reason, which names the
+	 * calendar version, so the ledger row says which edit moved the deadline.
+	 *
 	 * @param FlowTimer     $timer The timer.
 	 * @param CalendarBatch $batch The batch: the changed calendar and the supersede action.
 	 *
@@ -240,7 +243,7 @@ class CalendarRecompute implements CalendarRecomputeInterface {
 	 */
 	private function superseded(FlowTimer $timer, CalendarBatch $batch): string {
 		try {
-			($batch->supersede)($timer);
+			($batch->supersede)($timer, $batch->reason());
 			return 'moved';
 		} catch (Throwable $e) {
 			// One timer that cannot be superseded must not abandon the rest:
