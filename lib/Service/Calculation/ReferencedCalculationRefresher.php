@@ -251,13 +251,7 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 		}
 
 		$dependents = [];
-		foreach ($register->getSchemas() as $schemaId) {
-			try {
-				$schema = $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false);
-			} catch (Throwable) {
-				continue;
-			}
-
+		foreach ($this->registerSchemas(register: $register) as $schema) {
 			foreach ($this->dependencies(schema: $schema, target: $target) as $field => $reads) {
 				$dependents[] = ['schema' => $schema, 'field' => $field, 'reads' => $reads];
 			}
@@ -266,6 +260,69 @@ class ReferencedCalculationRefresher implements ReferencedCalculationRefresherIn
 		$this->found[$key] = $dependents;
 		return $dependents;
 	}//end dependentsOf()
+
+	/**
+	 * The schemas of a register, in register order: plain schemas with numeric ids from one query.
+	 *
+	 * Every update of an object asks this for its register; one find() per
+	 * schema was 187 queries (about 0.3 s) on a register of 187 schemas.
+	 * The bulk query returns rows unresolved, so a schema that composes
+	 * others (allOf, oneOf, anyOf) and any non-numeric identifier still go
+	 * through find(), which merges inherited properties and skips a schema
+	 * whose composition cannot be resolved, as before.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<int, Schema> The schemas that could be loaded.
+	 *
+	 * @spec openspec/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+	 */
+	private function registerSchemas(Register $register): array {
+		$ids     = array_values((array)($register->getSchemas() ?? []));
+		$numeric = array_values(array_filter($ids, static fn ($id): bool => is_numeric($id) === true));
+		$bulk    = [];
+		try {
+			foreach ($this->catalog->schemas()->findMultipleOptimized(ids: array_map('intval', $numeric)) as $key => $row) {
+				$bulk[(int)($row->getId() ?? $key)] = $row;
+			}
+		} catch (Throwable) {
+			$bulk = [];
+		}
+
+		$schemas = [];
+		foreach ($ids as $schemaId) {
+			$row = null;
+			if (is_numeric($schemaId) === true) {
+				$row = ($bulk[(int)$schemaId] ?? null);
+			}
+
+			if ($row !== null && self::isComposed(schema: $row) === false) {
+				$schemas[] = $row;
+				continue;
+			}
+
+			try {
+				$schemas[] = $this->catalog->schemas()->find(id: $schemaId, _rbac: false, _multitenancy: false);
+			} catch (Throwable) {
+				continue;
+			}
+		}
+
+		return $schemas;
+	}//end registerSchemas()
+
+	/**
+	 * Whether a schema composes others, so its stored row is not the schema find() returns.
+	 *
+	 * @param Schema $schema The unresolved schema row.
+	 *
+	 * @return bool
+	 */
+	private static function isComposed(Schema $schema): bool {
+		return empty($schema->getAllOf()) === false
+			|| empty($schema->getOneOf()) === false
+			|| empty($schema->getAnyOf()) === false;
+	}//end isComposed()
 
 	/**
 	 * The fields of the target schema a schema's materialised calculations read, by the field that points at it.
