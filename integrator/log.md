@@ -166,3 +166,4 @@
 2026-11-25T18:47:55Z GREEN prs=11217,11152,11206,11216 main=7edd219c7c integrator-cloud (merged)
 2026-11-25T18:53:37Z RED prs=10156,11184,11222,11224 main=973cd85b27 integrator-cloud (jest initial-data.golden EditSource snapshot; suspect #10156, rebuild without)
 2026-11-25T19:06:30Z GREEN prs=11184,11222,11224,11225 main=973cd85b27 integrator-cloud (merged; #10156 back as single)
+2026-11-25T19:11:35Z RED prs=10156 main=0e1d060912 integrator-cloud (failed-solo: initial-data.golden EditSource snapshot)
