@@ -15,12 +15,13 @@
  * @license EUPL-1.2
  */
 
-import '@conduction/nextcloud-vue/dist/esm/library-style.js'
 import CnIntegrationWidgetGrid from '@conduction/nextcloud-vue/dist/esm/components/CnIntegrationWidgetGrid/CnIntegrationWidgetGrid.vue.js'
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp, h } from 'vue'
 import { ensureIntegrationRegistry } from '../integrations/bootstrap.js'
 import { registerLibraryTranslations } from '../services/libraryTranslations.js'
+
+import '@conduction/nextcloud-vue/dist/esm/library-style.js'
 
 /**
  * Register translations and integrations, then mount the widget grid.

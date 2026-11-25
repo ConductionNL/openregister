@@ -58,6 +58,9 @@ function mountUmbrella() {
 		.then(({ mountUmbrellaApp }) => mountUmbrellaApp(el))
 		.catch((error) => {
 			el.dataset.openregisterMounted = ''
+			// No logger import here: any package import would put this entry
+			// back on the shared vendor chunk.
+			// eslint-disable-next-line no-console
 			console.error('OpenRegister: could not load the dashboard integrations', error)
 		})
 

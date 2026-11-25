@@ -143,4 +143,13 @@ describe('user-dashboard entry', () => {
 		error.mockRestore()
 		jest.dontMock('./user-dashboard/umbrella.js')
 	})
+
+	it('has no static imports, so the entry never joins the shared vendor chunk', () => {
+		const fs = require('fs')
+		const path = require('path')
+		const source = fs.readFileSync(path.join(__dirname, 'user-dashboard.js'), 'utf8')
+		expect(source).not.toMatch(/^\s*import\s[^(]/m)
+		expect(source).not.toMatch(/\brequire\(/)
+		expect(source).toMatch(/import\(\s*\/\* webpackChunkName: "user-dashboard-umbrella" \*\/ '\.\/user-dashboard\/umbrella\.js'\)/)
+	})
 })
