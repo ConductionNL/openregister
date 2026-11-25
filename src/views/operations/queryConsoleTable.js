@@ -2,7 +2,8 @@
  * The first list of a GraphQL result as a table, the way the export route flattens it.
  *
  * Mirrors AdminQueryExport::tableOf(): the first value of `data` that is a
- * connection (`edges[].node`) or a plain list is the table; each record is
+ * connection (`edges[].node`), a plain list, or a `groupBy` connection's
+ * `groups` buckets is the table; each record is
  * flattened to dotted paths, and a list value is written as its JSON.
  *
  * @spec openspec/changes/operate-admin-query-console/specs/admin-query-console/spec.md
@@ -32,6 +33,11 @@ export function firstList(data) {
 
 		if (Array.isArray(value)) {
 			return value
+		}
+
+		// A connection asked only for its `groupBy` buckets: the buckets are the answer.
+		if (Array.isArray(value.groups)) {
+			return value.groups
 		}
 	}
 

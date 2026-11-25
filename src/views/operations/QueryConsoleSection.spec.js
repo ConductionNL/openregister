@@ -60,6 +60,8 @@ describe('queryConsoleTable', () => {
 	it('takes the first connection or plain list in data', () => {
 		expect(firstList({ total: 3, items: [{ id: 1 }] })).toEqual([{ id: 1 }])
 		expect(firstList({ objects: { edges: [{ node: { id: 2 } }] } })).toEqual([{ id: 2 }])
+		expect(firstList({ zaken: { totalCount: 2, groups: [{ key: 'open', value: 2 }] } })).toEqual([{ key: 'open', value: 2 }])
+		expect(firstList({ zaken: { groups: [{ key: 'open', value: 1 }], edges: [{ node: { id: 'a' } }] } })).toEqual([{ id: 'a' }])
 		expect(firstList({ total: 3 })).toBeNull()
 		expect(firstList(null)).toBeNull()
 	})

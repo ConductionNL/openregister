@@ -69,7 +69,9 @@ reach.
 returns the **first list** in the result as a file named
 `query-{yyyyMMdd-HHmm}.{csv|json}`.
 
-- A connection is read through `edges[].node`; a plain list is read as-is.
+- A connection is read through `edges[].node`; a plain list is read as-is; a
+  `groupBy` connection asked without its edges downloads its `groups` buckets
+  (`key`, `value`).
 - Each row is flattened to columns by dot path; an array value is written as its
   JSON.
 - The CSV is UTF-8 with a byte order mark so a spreadsheet opens it in the right

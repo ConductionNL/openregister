@@ -127,11 +127,14 @@ class AdminQueryExport {
 
 	/**
 	 * The first list in the result's data: the `edges[].node` of a connection,
-	 * or a plain array of records; null when there is none.
+	 * a plain array of records, or the `groups` buckets of a `groupBy` connection
+	 * asked without its edges; null when there is none.
 	 *
 	 * @param mixed $data The result's `data`.
 	 *
 	 * @return list<mixed>|null The records, or null.
+	 *
+	 * @spec openspec/changes/operate-admin-query-console/specs/admin-query-console/spec.md
 	 */
 	private function firstList(mixed $data): ?array {
 		if (is_array($data) === false) {
@@ -155,6 +158,12 @@ class AdminQueryExport {
 
 			if (array_is_list($value) === true) {
 				return $value;
+			}
+
+			// A connection asked only for its `groupBy` buckets (`groups { key value }`):
+			// the buckets are the answer.
+			if (array_key_exists('groups', $value) === true && is_array($value['groups']) === true) {
+				return array_values($value['groups']);
 			}
 		}
 
