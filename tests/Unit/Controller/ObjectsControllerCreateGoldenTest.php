@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -102,6 +103,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  */
 class ObjectsControllerCreateGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private const FIXTURE = __DIR__ . '/fixtures/objects-create-golden.json';
 
 	/** @var array<string, mixed>|null */
@@ -264,6 +267,7 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(($setup['anonymous'] ?? false) ? null : $user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturn((($setup['admin'] ?? false) === true) ? ['admin'] : ['staff']);
 
 		return ObjectsControllerFactory::create(
