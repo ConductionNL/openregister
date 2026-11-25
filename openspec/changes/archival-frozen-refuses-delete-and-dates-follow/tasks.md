@@ -11,8 +11,14 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Newman: freeze a record, try `DELETE` (refused), unfreeze, delete (done). Collection written: `tests/integration/openregister-frozen-delete.postman_collection.json`; tick after its first live pass.
-- [ ] 3.2 Newman: set a client's end date, read its and its contact's destruction dates, clear it, read them again. Collection written: `tests/integration/openregister-dates-follow.postman_collection.json`; tick after its first live pass.
+- [x] 3.1 Newman: freeze a record, try `DELETE` (refused), unfreeze, delete (done). Collection written: `tests/integration/openregister-frozen-delete.postman_collection.json`; tick after its first live pass.
+- [x] 3.2 Newman: set a client's end date, read its and its contact's destruction dates, clear it, read them again. Collection written: `tests/integration/openregister-dates-follow.postman_collection.json`; tick after its first live pass.
+  > 2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e). 3.1: `openregister-frozen-delete` 11 requests,
+  > 10 assertions, 0 failed. 3.2: `openregister-dates-follow` with background jobs in AJAX mode (as its description
+  > asks) failed on main: the contact never followed. A web or AJAX cron request runs the job with no user and is not
+  > a trusted caller, so the relation lookup kept only rows without an organisation and the contact (which has one)
+  > was skipped without a word; `occ`/system cron did follow. Fixed in the same PR: the job recalculates inside
+  > `SystemOperationContext::run()`. With it, 47 requests, 47 assertions, 0 failed.
 - [x] 3.3 Document both in `docs/` beside archiving and freezing.
 
 Acceptance:

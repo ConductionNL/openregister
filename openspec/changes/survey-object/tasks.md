@@ -9,10 +9,14 @@
 
 ## 2. Answering without an account
 
-- [ ] 2.1 Mint the invitation token over `access-by-link-not-by-account`, with an expiry.
-- [ ] 2.2 Render the survey and accept answers with no login.
-- [ ] 2.3 Refuse a used token unless the survey allows reopening, and refuse an expired one.
-- [ ] 2.4 PHPUnit on all three refusals, with a frozen clock for the expiry.
+- [x] 2.1 Mint the invitation token over `access-by-link-not-by-account`, with an expiry.
+  - `SurveyInvitations::invite()` mints a read link over the invitation object (`ObjectAccessLinksInterface`, a Kernel contract over the sharing service) and writes the invitation once, with `token` = the link's uuid (never its anchor) and `expiresAt`. The link outlives the invitation by `LINK_GRACE_DAYS` so a late visitor reads "expired" rather than a bare 404.
+- [x] 2.2 Render the survey and accept answers with no login.
+  - `GET`/`POST /api/public/surveys/{anchor}` (`SurveyAnswerController`, public, rate limited, brute-force counted): the form (survey and questions in order, public fields only) and the submission, written through the ordinary save path so `SurveyWriteListener` refuses a missing required answer and scrubs an anonymous respondent. The rendered page is the portaliq half (7.3).
+- [x] 2.3 Refuse a used token unless the survey allows reopening, and refuse an expired one.
+  - 410 with `SurveyRules::refuseInvitation()`'s reason (expired, already answered, never sent); 404 for a link that opens no invitation.
+- [x] 2.4 PHPUnit on all three refusals, with a frozen clock for the expiry.
+  - `SurveyAnsweringTest` (frozen `ITimeFactory`: expired a second ago, already answered, never sent; reopening), `SurveyAnswerControllerTest`, `ObjectAccessLinksTest`.
 
 ## 3. The answer set
 
@@ -22,10 +26,14 @@
 
 ## 4. Automation
 
-- [ ] 4.1 Add the invitation action to the rules engine, with an optional delay.
-- [ ] 4.2 Add the fatigue rule: period, maximum, evaluated per respondent across the instance.
-- [ ] 4.3 Record a blocked invitation with its reason rather than skipping it.
-- [ ] 4.4 PHPUnit on the delay and on the fatigue block.
+- [x] 4.1 Add the invitation action to the rules engine, with an optional delay.
+  - Flow step `openregister.survey-invite` (`SurveyInviteNode`, messaging palette): `register`, `survey`, `respondent` (template), `subject` (defaults to the item's object), `expiresIn` (default 30 days), `delay`. A delay suspends the run like the Wait step and the engine resumes it; no scheduler of its own. The outcome (id, state, blocked, reason, answering `url`) goes on the item under `surveyInvitation`.
+- [x] 4.2 Add the fatigue rule: period, maximum, evaluated per respondent across the instance.
+  - App config `survey_fatigue_maximum` (0 = no limit) and `survey_fatigue_period_days` (default 90); counted over every invitation to the respondent in the survey register, whichever survey sent it, blocked ones excluded (`SurveyInvitations::recentInvitations()`).
+- [x] 4.3 Record a blocked invitation with its reason rather than skipping it.
+  - Written with state `blocked` and `blockedReason`, no link minted.
+- [x] 4.4 PHPUnit on the delay and on the fatigue block.
+  - `SurveyInviteNodeTest` (the delay suspends, the resume invites), `SurveyInvitationsTest` (the fatigue block with a frozen clock).
 
 ## 5. Access and anonymity
 
@@ -34,6 +42,7 @@
 - [x] 5.3 Withhold anonymous results below the configurable minimum, showing the count and the reason.
   - `GET /api/surveys/{register}/{survey}/results` (SurveyResultsController over SurveyResults and SurveyRules::disclosure)
 - [ ] 5.4 Apply the survey's reader roles to answer sets.
+  - Open: the results and export routes already enforce `readerRoles`. Doing the same for the plain object API means an object-level authorization block on every answer set, and object-level blocks are not honoured by the list paths today (see the slot notes in `grants-that-follow-a-slot-a-relation-or-a-reason`). Stamping one would make a read and a list disagree, so this needs a decision on how a schema delegates reads to a parent record.
 - [x] 5.5 PHPUnit on the refusal, the withholding and the role check, probing with a reader who must be refused.
   - SurveyResultsTest, SurveyResultsControllerTest; the anonymity-change refusal in SurveyWriteListenerTest
 

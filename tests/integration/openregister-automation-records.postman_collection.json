@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "openregister-automation-records",
     "name": "OpenRegister - Automation run records",
-    "description": "automation-run-records task 3.1: `GET /api/automation-records`. Seeds a non-admin user, a register and an admin-only schema whose `submit` transition declares a keyed `set-fields` action and a keyed transition notification. Submitting one item must leave one `succeeded` lifecycle-action record and one `sent` notification record, both found by key prefix; the non-admin user, who may not read the schema, sees none of them; an anonymous caller gets 401.\n\nThe notification record needs the notifications app and a background worker for `AnnotationNotificationDispatchJob`; tests/integration/ci/seed.sh provides both in CI.\n\nEverything it creates is removed in `99 teardown`.",
+    "description": "automation-run-records task 3.1: `GET /api/automation-records`. Seeds a non-admin user, a register and an admin-only schema whose `submit` transition declares a keyed `set-fields` action and a keyed transition notification. Submitting one item must leave one `succeeded` lifecycle-action record and one `sent` notification record, both found by key prefix; the non-admin user, who may not read the schema, sees none of them; an anonymous caller gets 401.\n\nThe notification record needs the notifications app and a background worker for `AnnotationNotificationDispatchJob`; tests/integration/ci/seed.sh provides both in CI.\n\nEverything it creates is removed in `99 teardown`.\n\na-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did task 3.1: `20 outcomes` reads the same records through `GET /api/automation-outcomes?keyPrefix=`, in the consuming-app shape (kind notification|lifecycle, outcome sent/done, recipients counted), and refuses the reader and an anonymous caller the same way.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -456,6 +456,177 @@
               }
             ],
             "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-records?key=aut-{{stamp}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('anonymous answers 401', () => pm.expect(pm.response.code, pm.response.text()).to.eql(401));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 outcomes",
+      "item": [
+        {
+          "name": "both outcomes by keyPrefix",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-outcomes?keyPrefix=aut-{{stamp}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('outcomes answer 200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+                  "const b = pm.response.json();",
+                  "const mine = b.results.filter((r) => r.subject && r.subject.id === pm.collectionVariables.get('itemId'));",
+                  "pm.test('both kinds are returned', () => pm.expect(mine.map((r) => r.kind).sort()).to.eql(['lifecycle', 'notification']));",
+                  "const n = mine.find((r) => r.kind === 'notification') || {};",
+                  "const l = mine.find((r) => r.kind === 'lifecycle') || {};",
+                  "pm.test('the reminder went out and counts its recipients', () => { pm.expect(n.outcome).to.eql('sent'); pm.expect(n.recipients).to.be.above(0); pm.expect(n.key).to.eql('aut-' + pm.collectionVariables.get('stamp') + '-n'); });",
+                  "pm.test('the lifecycle action is done', () => { pm.expect(l.outcome).to.eql('done'); pm.expect(l.key).to.eql('aut-' + pm.collectionVariables.get('stamp') + '-l'); pm.expect(l).to.not.have.property('recipients'); });",
+                  "pm.test('the subject names register and schema', () => { pm.expect(String(n.subject.register)).to.eql(String(pm.collectionVariables.get('registerId'))); pm.expect(String(n.subject.schema)).to.eql(String(pm.collectionVariables.get('schemaId'))); });",
+                  "pm.test('no body, address or channel breakdown', () => mine.forEach((r) => pm.expect(Object.keys(r).sort()).to.eql(r.kind === 'notification' ? ['at', 'key', 'kind', 'outcome', 'reason', 'recipients', 'subject'] : ['at', 'key', 'kind', 'outcome', 'reason', 'subject'])));",
+                  "pm.test('newest first', () => { const at = b.results.map((r) => r.at); pm.expect(at).to.eql([...at].sort().reverse()); });",
+                  "pm.test('the page is echoed', () => { pm.expect(b.limit).to.eql(50); pm.expect(b.offset).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "a lifecycle kind filter returns no notification",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-outcomes?keyPrefix=aut-{{stamp}}&kind=lifecycle"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('outcomes answer 200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('only lifecycle outcomes', () => { pm.expect(b.results.length).to.be.above(0); pm.expect(b.results.every((x) => x.kind === 'lifecycle')).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "another department's case stays out",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-outcomes?keyPrefix=aut-{{stamp}}",
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{readerId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{readerPassword}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('outcomes answer 200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+                  "pm.test('no outcome of the admin-only schema is returned', () => pm.expect(pm.response.json().results).to.eql([]));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          }
+        },
+        {
+          "name": "an anonymous caller is refused the outcomes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIREQUEST",
+                "value": "true"
+              }
+            ],
+            "url": "{{baseUrl}}/index.php/apps/openregister/api/automation-outcomes?keyPrefix=aut-{{stamp}}",
             "auth": {
               "type": "noauth"
             }

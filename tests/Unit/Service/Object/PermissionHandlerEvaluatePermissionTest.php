@@ -26,6 +26,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\AuthorizationRuleEvaluator;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -273,6 +274,9 @@ class PermissionHandlerEvaluatePermissionTest extends TestCase {
 	 * @return array<string, mixed>
 	 */
 	public function runCase(array $case): array {
+		// The anonymous-refusal line is throttled per request; every case is its own request.
+		(new AuthorizationRuleEvaluator())->forgetRecordedRefusals();
+
 		$logger = new class extends AbstractLogger {
 			/**
 			 * The logged levels, messages and context.

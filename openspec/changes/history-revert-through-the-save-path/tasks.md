@@ -13,4 +13,6 @@
 
 ## 3. Proof
 
-- [ ] 3.1 Add `tests/e2e/ci/revert-through-save.spec.ts`: edit a record twice, restore the first version from the history tab, and assert the value and a `revert` audit entry.
+- [x] 3.1 Add `tests/e2e/ci/revert-through-save.spec.ts`: edit a record twice, restore the first version from the history tab, and assert the value and a `revert` audit entry.
+  - 2026-11-25: two tests, green on a sandbox Nextcloud 34 with MariaDB (2 passed). A record is edited twice and restored to its first version through `POST .../revert`: it holds the first version's values as a new version, a field the first version did not have is gone, the audit trail has a `revert` entry with `revertedToVersion` set to the first version, and both edits stay in the history. After the schema makes `einddatum` required, restoring the version without it answers 422 naming `einddatum`, and the record's version, values and history are unchanged.
+  - The restore is driven through the route, not a tab: the history tab with its restore button is nextcloud-vue's `CnVersionHistory`, mounted by the apps that show a record's history, and OpenRegister's own object page has none. The route is what this change built.

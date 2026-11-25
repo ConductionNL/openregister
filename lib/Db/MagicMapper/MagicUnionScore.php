@@ -70,7 +70,11 @@ final class MagicUnionScore {
 	}//end ofColumn()
 
 	/**
-	 * The select expression over the column scores: the greatest, or 0 without any.
+	 * The select expression over the column scores: the greatest, the one, or 0 without any.
+	 *
+	 * One score is selected as it is: MariaDB and MySQL refuse `GREATEST()` with
+	 * a single argument (error 1582), which failed the whole cross-table search
+	 * for any schema with one searchable column.
 	 *
 	 * @param array<int, string> $scores The column scores.
 	 *
@@ -81,6 +85,10 @@ final class MagicUnionScore {
 	public function greatest(array $scores): string {
 		if ($scores === []) {
 			return '0 AS _search_score';
+		}
+
+		if (count($scores) === 1) {
+			return reset($scores) . ' AS _search_score';
 		}
 
 		return 'GREATEST(' . implode(', ', $scores) . ') AS _search_score';

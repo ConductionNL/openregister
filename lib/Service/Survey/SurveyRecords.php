@@ -63,6 +63,11 @@ class SurveyRecords {
 	public const ANSWER_SET = 'surveyAnswerSet';
 
 	/**
+	 * The invitation schema's slug.
+	 */
+	public const INVITATION = 'surveyInvitation';
+
+	/**
 	 * The most questions read for one survey.
 	 *
 	 * @var int
@@ -75,6 +80,14 @@ class SurveyRecords {
 	 * @var int
 	 */
 	public const ANSWER_SET_CAP = 10000;
+
+	/**
+	 * The most invitations to one respondent read to count them against a fatigue limit.
+	 *
+	 * A fatigue maximum is a handful a quarter; a thousand is far past any limit an
+	 * administrator sets, so a count that reaches it has already blocked.
+	 */
+	public const INVITATION_CAP = 1000;
 
 	/**
 	 * Constructor.
@@ -217,18 +230,77 @@ class SurveyRecords {
 	 * @return array<int, ObjectEntity> The rows.
 	 */
 	private function rowsOf(ObjectEntity $within, string $slug, string $surveyUuid, int $limit): array {
+		if ($surveyUuid === '') {
+			return [];
+		}
+
+		return $this->rowsWhere(within: $within, slug: $slug, filters: ['object->survey' => $surveyUuid], limit: $limit);
+	}//end rowsOf()
+
+	/**
+	 * Every invitation in the register sent to one respondent, whichever survey sent it.
+	 *
+	 * A fatigue limit is about the person, not about the survey: the person who is
+	 * asked too often does not care which survey did it.
+	 *
+	 * @param ObjectEntity $within     An object in the survey register.
+	 * @param string       $respondent The respondent address.
+	 *
+	 * @return array<int, ObjectEntity> The invitations, at most INVITATION_CAP.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md#requirement-req-surv-004-an-invitation-is-fired-by-a-rule-with-a-delay-and-a-fatigue-limit
+	 */
+	public function invitationsTo(ObjectEntity $within, string $respondent): array {
+		$respondent = trim($respondent);
+		if ($respondent === '') {
+			return [];
+		}
+
+		return $this->rowsWhere(
+			within: $within,
+			slug: self::INVITATION,
+			filters: ['object->respondent' => $respondent],
+			limit: self::INVITATION_CAP
+		);
+	}//end invitationsTo()
+
+	/**
+	 * The table of a sibling schema in the register of an object, for a write into it.
+	 *
+	 * @param ObjectEntity $within An object in the register.
+	 * @param string       $slug   The schema slug.
+	 *
+	 * @return RegisterSchema|null The table, or null when the register holds no such schema.
+	 *
+	 * @spec openspec/changes/survey-object/specs/survey-object/spec.md#requirement-req-surv-002-an-invitation-is-answerable-without-an-account
+	 */
+	public function tableOf(ObjectEntity $within, string $slug): ?RegisterSchema {
+		return $this->table(within: $within, slug: $slug);
+	}//end tableOf()
+
+	/**
+	 * The rows of a sibling schema matching the filters.
+	 *
+	 * @param ObjectEntity          $within  An object in the register.
+	 * @param string                $slug    The schema slug.
+	 * @param array<string, string> $filters The filters.
+	 * @param int                   $limit   The most rows to read.
+	 *
+	 * @return array<int, ObjectEntity> The rows.
+	 */
+	private function rowsWhere(ObjectEntity $within, string $slug, array $filters, int $limit): array {
 		$table = $this->table(within: $within, slug: $slug);
-		if ($table === null || $surveyUuid === '') {
+		if ($table === null) {
 			return [];
 		}
 
 		return $this->catalog->tables()->findAllListed(
 			request: new MagicListRequest(
 				table: $table,
-				query: new ListQuery(limit: $limit, filters: ['object->survey' => $surveyUuid])
+				query: new ListQuery(limit: $limit, filters: $filters)
 			)
 		);
-	}//end rowsOf()
+	}//end rowsWhere()
 
 	/**
 	 * The register of an object and the sibling schema with this slug in it.

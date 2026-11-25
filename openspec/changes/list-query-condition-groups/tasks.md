@@ -17,7 +17,8 @@
 
 ## 2. Proof and docs
 
-- [ ] 2.1 Newman: `GET /api/objects/{register}/{schema}?_where=...` returns the first scenario's 7 rows and total; a bad leaf returns 400 with its path.
+- [x] 2.1 Newman: `GET /api/objects/{register}/{schema}?_where=...` returns the first scenario's 7 rows and total; a bad leaf returns 400 with its path.
+      > 2026-11-25: `tests/newman/openregister-condition-groups.postman_collection.json` seeds the first scenario's 18 clients and asserts the 7 rows, total 7 (also on a one-row page) and the `industry` facet `{horeca: 4, detailhandel: 3}`; the undeclared `branche` leaf answers 400 with path `$.children[1].children[0]`, and invalid JSON answers 400 without rows. 46 requests, 56 assertions, 0 failed, against a sandbox Nextcloud 34 + OpenRegister main on MariaDB 10.11. This is also the first live MariaDB run of 1.2 and 1.4 (list, count and facet read the same tree); PostgreSQL was not run here.
 - [x] 2.2 Document `_where` in `docs/` beside the filter table and in the OAS export (`OasService`), as a reserved parameter.
       > 2026-11-14: `docs/api/objects.md` "Condition groups" beside the reserved search parameters, and `_where` as a reserved collection parameter in the OAS export (`OasService::WHERE_QUERY_PARAMETER`, golden re-recorded).
 

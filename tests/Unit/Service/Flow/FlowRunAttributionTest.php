@@ -204,6 +204,46 @@ class FlowRunAttributionTest extends TestCase {
 	}
 
 	/**
+	 * A calendar-fired run acts as the calendar trigger's own runAs, not the
+	 * schedule trigger's, when the flow carries both.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/specs/flow-engine/spec.md#requirement-a-calendar-trigger-starts-a-flow-at-a-date-held-on-a-record
+	 */
+	public function testACalendarRunActsAsTheCalendarTriggersIdentity(): void {
+		$flow = $this->ownedFlow('alice', 'org-a');
+		$flow->setNodes([
+			['id' => 'nightly', 'type' => 'openregister.trigger-schedule', 'config' => ['runAs' => 'carol']],
+			['id' => 'reminder', 'type' => 'openregister.trigger-calendar', 'config' => ['runAs' => 'dave']],
+			['id' => 'stop', 'type' => 'end'],
+		]);
+
+		$run = $this->service($flow)->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'calendar'));
+
+		$this->assertSame('dave', $run->getRunAs());
+	}
+
+	/**
+	 * A webhook-fired run acts as the webhook trigger's runAs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/specs/flow-engine/spec.md#requirement-an-incoming-webhook-trigger-starts-a-flow-from-a-signed-call-by-another-system
+	 */
+	public function testAWebhookRunActsAsTheWebhookTriggersIdentity(): void {
+		$flow = $this->ownedFlow('alice', 'org-a');
+		$flow->setNodes([
+			['id' => 'hook', 'type' => 'openregister.trigger-webhook', 'config' => ['runAs' => 'betalingen']],
+			['id' => 'stop', 'type' => 'end'],
+		]);
+
+		$run = $this->service($flow)->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'webhook'));
+
+		$this->assertSame('betalingen', $run->getRunAs());
+	}
+
+	/**
 	 * A run a case plan queues without a caller (a system or cascade realisation) goes through the real queue
 	 * path and acts as the identity the flow's schedule trigger declares; the flow's owner still does not answer.
 	 *

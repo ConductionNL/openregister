@@ -33,6 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -305,4 +307,51 @@ class SchemaShapeExposureTest extends TestCase {
 		$this->assertArrayHasKey('id', $described['properties']);
 		$this->assertArrayHasKey('_self', $described['properties']);
 	}//end testTheCoreApiPropertiesAreUntouched()
+
+	/**
+	 * The filter parameters of a collection, as the list operation publishes them.
+	 *
+	 * @param OasService $service The service.
+	 * @param Schema     $schema  The schema.
+	 *
+	 * @return array<int, string> The parameter names.
+	 */
+	private function filterNames(OasService $service, Schema $schema): array {
+		$method = new ReflectionMethod(OasService::class, 'propertyFilterParameters');
+		$method->setAccessible(true);
+
+		return array_column((array)$method->invoke($service, $schema), 'name');
+	}//end filterNames()
+
+	/**
+	 * 🔴 A FILTER PARAMETER IS NAMED AFTER ITS PROPERTY.
+	 *
+	 * The list operation publishes one query parameter per property, so a
+	 * parameter for a property the caller may not read prints the very name
+	 * the schema description withholds, with "Filter results by" in front of it.
+	 *
+	 * @return void
+	 */
+	public function testAGovernedPropertyIsNotOfferedAsAFilterToSomebodyOutsideIt(): void {
+		$names = $this->filterNames(
+			$this->serviceWhereReadsAre(['onderzoek_integriteit' => false]),
+			$this->governedSchema()
+		);
+
+		$this->assertSame(['zaaknummer'], $names);
+	}//end testAGovernedPropertyIsNotOfferedAsAFilterToSomebodyOutsideIt()
+
+	/**
+	 * A caller who may read the property is offered its filter.
+	 *
+	 * @return void
+	 */
+	public function testAColleagueInsideTheScopeIsOfferedTheFilter(): void {
+		$names = $this->filterNames(
+			$this->serviceWhereReadsAre(['onderzoek_integriteit' => true]),
+			$this->governedSchema()
+		);
+
+		$this->assertSame(['zaaknummer', 'onderzoek_integriteit'], $names);
+	}//end testAColleagueInsideTheScopeIsOfferedTheFilter()
 }//end class
