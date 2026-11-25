@@ -99,12 +99,22 @@ class FederatedConfigServiceTest extends TestCase {
 		$this->service->bundle('nope', []);
 	}
 
-	public function testInstallSucceedsWhenNoAllowlistIsSet(): void {
-		$this->allowlist = ['']; // empty = not yet enforced
+	public function testInstallIsRefusedWhenNoAllowlistIsSet(): void {
+		$this->allowlist = [''];
 		$this->registry->method('get')->willReturn($this->type());
 
-		$result = $this->service->install('demo.type', ['flows' => []], 'anyone/repo');
-		$this->assertSame(['x'], $result['installed']);
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('allowlist');
+		$this->service->install('demo.type', ['flows' => []], 'anyone/repo');
+	}
+
+	public function testInstallWithoutASourceIsRefused(): void {
+		$this->allowlist = ['ConductionNL'];
+		$this->registry->method('get')->willReturn($this->type());
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('allowlist');
+		$this->service->install('demo.type', ['flows' => []], '');
 	}
 
 	public function testInstallFromANonAllowlistedSourceIsRefused(): void {
@@ -123,9 +133,10 @@ class FederatedConfigServiceTest extends TestCase {
 		$this->assertSame(['x'], $result['installed']);
 	}
 
-	public function testEmptyAllowlistAllowsAnySourceButASetOneEnforces(): void {
+	public function testEmptyAllowlistAllowsNoSourceAndASetOneEnforces(): void {
 		$this->allowlist = [''];
-		$this->assertTrue($this->service->isSourceAllowed('whoever/repo'));
+		$this->assertFalse($this->service->isSourceAllowed('whoever/repo'));
+		$this->assertFalse($this->service->isSourceAllowed(''));
 
 		$this->allowlist = ['acme, ConductionNL/flows'];
 		$this->assertTrue($this->service->isSourceAllowed('ConductionNL/flows'));
@@ -172,7 +183,7 @@ class FederatedConfigServiceTest extends TestCase {
 
 	#[\PHPUnit\Framework\Attributes\DataProvider('unverifiedVerdicts')]
 	public function testInstallRefusesABundleNothingVouchesFor(array $verdict, string $allowance): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->allowUnverified = $allowance;
 		$this->registry->expects($this->never())->method('get');
 
@@ -182,7 +193,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testAnAdministratorMayAllowUnverifiedBundles(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->allowUnverified = 'true';
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => false, 'valid' => false, 'trusted' => true, 'publicKey' => null]);
@@ -191,7 +202,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testATrustedKeyVerifiesWithoutTheAllowance(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->allowUnverified = '';
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k'], enforced: true);
@@ -200,7 +211,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testTheAllowanceDoesNotOverruleATrustedKeysList(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->allowUnverified = 'true';
 		$this->registry->expects($this->never())->method('get');
 		$service = $this->serviceWithVerdict(['signed' => false, 'valid' => false, 'trusted' => false, 'publicKey' => null], enforced: true);
@@ -245,7 +256,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testInstallRefusesATamperedSignature(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => true, 'valid' => false, 'trusted' => true, 'publicKey' => 'k']);
 
@@ -255,7 +266,7 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testInstallRefusesAnUntrustedPublisher(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => true, 'valid' => true, 'trusted' => false, 'publicKey' => 'k']);
 
@@ -265,12 +276,61 @@ class FederatedConfigServiceTest extends TestCase {
 	}
 
 	public function testInstallAcceptsAValidTrustedBundle(): void {
-		$this->allowlist = [''];
+		$this->allowlist = ['ConductionNL'];
 		$this->registry->method('get')->willReturn($this->type());
 		$service = $this->serviceWithVerdict(['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k']);
 
 		$result = $service->install('demo.type', [], 'ConductionNL/pack');
 		$this->assertSame(['x'], $result['installed']);
+	}
+
+	/**
+	 * The signer sees the bundle as published; the type gets it with the install target stamped.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	public function testAStampIsAppliedAfterTheSignatureCheck(): void {
+		$this->allowlist = ['ConductionNL'];
+		$verified = [];
+		$received = [];
+		$signer   = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Config\BundleSigner::class);
+		$signer->method('verify')->willReturnCallback(
+			callback: static function (array $bundle) use (&$verified): array {
+				$verified = $bundle;
+				return ['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k'];
+			}
+		);
+		$type = $this->createMock(originalClassName: IShareableConfigType::class);
+		$type->method('deserialise')->willReturnCallback(
+			callback: static function (array $bundle) use (&$received): array {
+				$received = $bundle;
+				return ['installed' => ['x']];
+			}
+		);
+		$this->registry->method('get')->willReturn(value: $type);
+		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$this->createMock(originalClassName: CredentialBrokerService::class),
+				$signer,
+				$this->createMock(originalClassName: \OCP\Http\Client\IClientService::class)
+			),
+			$this->registry,
+			$this->config,
+			$this->createMock(originalClassName: \Psr\Log\LoggerInterface::class)
+		);
+		$bundle = ['components' => ['objects' => [['@self' => ['schema' => 'larping_skill'], 'name' => 'Herbalism']]]];
+
+		$service->install(
+			'demo.type',
+			$bundle,
+			'ConductionNL/pack',
+			(new \OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp(property: 'setting', schemas: ['larping_skill'], value: 'world-1'))->applyTo(...)
+		);
+
+		$this->assertSame(expected: $bundle, actual: $verified, message: 'the signature is checked on the bundle as published');
+		$this->assertSame(expected: 'world-1', actual: $received['components']['objects'][0]['setting']);
 	}
 
 	public function testFetchBundleDecodesTheRepoContentsFile(): void {

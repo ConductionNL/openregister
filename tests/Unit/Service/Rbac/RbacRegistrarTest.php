@@ -65,4 +65,21 @@ class RbacRegistrarTest extends TestCase {
 			$this->assertInstanceOf(expected: $name, actual: $factory($container), message: $name);
 		}
 	}//end testEveryFactoryBuildsItsService()
+
+	/**
+	 * register() binds the read-rule contract the read audit entry asks to its resolver.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	public function testBindsTheReadRuleContract(): void {
+		$context = new RecordingRegistrationContext();
+		RbacRegistrar::register(context: $context);
+
+		$this->assertSame(
+			expected: [['alias' => 'OCA\\OpenRegister\\Kernel\\Contracts\\ReadRuleResolverInterface', 'target' => 'OCA\\OpenRegister\\Service\\Audit\\ReadRuleResolver']],
+			actual: $context->aliases
+		);
+	}//end testBindsTheReadRuleContract()
 }//end class

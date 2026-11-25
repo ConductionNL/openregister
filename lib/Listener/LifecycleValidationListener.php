@@ -33,7 +33,11 @@ use OCA\OpenRegister\Lifecycle\LifecycleGuardContext;
 use OCA\OpenRegister\Lifecycle\LifecycleTransitionGuardInterface;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionAccess;
 use OCA\OpenRegister\Listener\Support\LifecycleTransitionChecks;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
+use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Rules\ConditionJudgement;
+use OCA\OpenRegister\Service\Rules\NamedConditionScope;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
@@ -287,17 +291,7 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return array<string, mixed>|null
 	 */
 	private function conditionRefusal(LifecycleAttempt $attempt): ?array {
-		$edit    = $attempt->edit;
-		$refusal = $this->checks->conditionEvaluator->refusal(
-			spec: $attempt->spec,
-			newData: $edit->getNewData(),
-			oldData: $edit->getOldData(),
-			action: $attempt->action,
-			from: $edit->getFromState(),
-			to: $edit->getToState(),
-			schemaSlug: (string)$edit->declaration->schema->getSlug(),
-			field: $edit->declaration->field()
-		);
+		$refusal = $this->checks->conditionEvaluator->refusalOf(spec: $attempt->spec, attempt: $this->transitionAttempt(attempt: $attempt));
 		$this->recordCondition(attempt: $attempt, refusal: $refusal);
 
 		return $refusal;
@@ -438,6 +432,16 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return RuleTrace
 	 */
 	private function conditionTrace(LifecycleAttempt $attempt, ?array $refusal): RuleTrace {
+		if (is_array($refusal['unresolved'] ?? null) === true) {
+			// A named condition that could not be resolved: the run log names
+			// it, rather than tracing an expression that was never evaluated.
+			return new RuleTrace(
+				verdict: RuleVocabulary::VERDICT_REFUSED,
+				operand: '$condition:'.(string)($refusal['unresolved']['condition'] ?? ''),
+				message: (string)($refusal['message'] ?? '')
+			);
+		}
+
 		$verdict = RuleVocabulary::VERDICT_FIRED;
 		$message = null;
 		if ($refusal !== null) {
@@ -463,14 +467,30 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return array<string, mixed>
 	 */
 	private function conditionDocument(LifecycleAttempt $attempt): array {
-		$edit = $attempt->edit;
-
-		return $this->checks->conditionEvaluator->document(
-			newData: $edit->getNewData(),
-			oldData: $edit->getOldData(),
-			action: $attempt->action,
-			from: $edit->getFromState(),
-			to: $edit->getToState()
-		);
+		return $this->checks->conditionEvaluator->documentOf(attempt: $this->transitionAttempt(attempt: $attempt));
 	}//end conditionDocument()
+
+	/**
+	 * The write and the move of the matched transition, as the condition evaluator reads them.
+	 *
+	 * @param LifecycleAttempt $attempt The matched transition.
+	 *
+	 * @return TransitionAttempt
+	 */
+	private function transitionAttempt(LifecycleAttempt $attempt): TransitionAttempt {
+		$edit   = $attempt->edit;
+		$schema = $edit->declaration->schema;
+
+		return new TransitionAttempt(
+			write: new LifecycleWrite(
+				newData: $edit->getNewData(),
+				oldData: $edit->getOldData(),
+				schemaSlug: (string)$schema->getSlug(),
+				field: $edit->declaration->field()
+			),
+			move: new TransitionMove(action: $attempt->action, from: $edit->getFromState(), to: $edit->getToState()),
+			// The schema's own library: the one its save checked every reference against.
+			conditions: NamedConditionScope::libraryFrom(configuration: $schema->getConfiguration())
+		);
+	}//end transitionAttempt()
 }//end class

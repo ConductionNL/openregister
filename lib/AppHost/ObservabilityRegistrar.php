@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost;
 
+use OCA\OpenRegister\Dashboard\OperationsDashboardWidget;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -54,5 +56,12 @@ final class ObservabilityRegistrar {
 	 */
 	public static function register(IRegistrationContext $context, string $appId): void {
 		ObservabilityWiring::register(context: $context, appId: $appId);
+
+		// Production-observability: the operations figures for administrators,
+		// rendered by the Nextcloud dashboard itself (an API widget, no script).
+		// OpenRegister's own figures, so only OpenRegister registers it.
+		if ($appId === AppIdentity::APP_ID) {
+			$context->registerDashboardWidget(OperationsDashboardWidget::class);
+		}
 	}//end register()
 }//end class

@@ -73,6 +73,16 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 			}
 			return $found;
 		});
+		$this->schemas->method('findMultipleOptimized')->willReturnCallback(function (array $ids): array {
+			$this->schemaFinds++;
+			$found = [];
+			foreach ($ids as $id) {
+				if (($this->schemaById[(string) $id] ?? null) instanceof Schema) {
+					$found[$id] = $this->schemaById[(string) $id];
+				}
+			}
+			return $found;
+		});
 	}
 
 	private function refresher(): ReferencedCalculationRefresher {
@@ -163,6 +173,58 @@ class ReferencedCalculationRefresherBranchesTest extends TestCase {
 
 		// The second refresh only re-finds the updated object's own schema.
 		$this->assertSame($afterFirst + 1, $this->schemaFinds);
+	}
+
+	public function testTheRegisterSchemasAreReadInOneBatch(): void {
+		$this->rows->method('findAllInRegisterSchemaTable')->willReturn([]);
+		$batches = [];
+		$schemas = $this->createMock(SchemaMapperInterface::class);
+		$schemas->method('find')->willReturnCallback(fn (string|int $id): Schema => $this->schemaById[(string) $id]);
+		$schemas->method('findMultipleOptimized')->willReturnCallback(function (array $ids) use (&$batches): array {
+			$batches[] = $ids;
+			return ['1' => $this->schemaById['1'], '2' => $this->schemaById['2']];
+		});
+		$this->schemas = $schemas;
+
+		$this->refresher()->refresh($this->caseType(['startableFlows' => [1]]), null);
+
+		$this->assertSame([[1, 2, 99]], $batches);
+	}
+
+	public function testAComposedSchemaFromTheBatchIsResolvedThroughFind(): void {
+		// The stored row of an allOf child carries only its delta: no calculation of its own.
+		$row = new Schema();
+		$row->setId(3);
+		$row->setSlug('subcase');
+		$row->setAllOf(['2']);
+		// find() returns it with the parent's materialised calculation merged in.
+		$resolved = $this->caseSchema();
+		$resolved->setId(3);
+		$resolved->setSlug('subcase');
+		$resolved->setAllOf(['2']);
+		$this->schemaById['3'] = $resolved;
+
+		$register = new Register();
+		$register->setId(7);
+		$register->setSlug('zaken');
+		$register->setSchemas([1, 3]);
+		$this->registers = $this->createMock(RegisterMapperInterface::class);
+		$this->registers->method('find')->willReturn($register);
+
+		$finds = [];
+		$schemas = $this->createMock(SchemaMapperInterface::class);
+		$schemas->method('find')->willReturnCallback(function (string|int $id) use (&$finds): Schema {
+			$finds[] = (string) $id;
+			return $this->schemaById[(string) $id];
+		});
+		$schemas->method('findMultipleOptimized')->willReturn([1 => $this->schemaById['1'], 3 => $row]);
+		$this->schemas = $schemas;
+
+		$this->rows->expects($this->once())->method('findAllInRegisterSchemaTable')->willReturn([$this->referrer('sub-1')]);
+		$this->objects->expects($this->once())->method('saveObject');
+
+		$this->assertSame(1, $this->refresher()->refresh($this->caseType(['startableFlows' => [1]]), null));
+		$this->assertContains('3', $finds);
 	}
 
 	public function testAFailedReferrerLookupIsLoggedAndSavesNothing(): void {

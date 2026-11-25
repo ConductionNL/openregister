@@ -71,4 +71,19 @@ class MagicUnionScoreTest extends TestCase {
 		$this->assertSame('GREATEST(x, y) AS _search_score', $score->greatest(scores: ['x', 'y']));
 		$this->assertSame('0 AS _search_score', $score->greatest(scores: []));
 	}//end testTheArmScoresTheGreatestColumn()
+
+	/**
+	 * One column is scored on its own, never as `GREATEST(x)`, which MariaDB and MySQL refuse.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	public function testOneColumnIsScoredWithoutGreatest(): void {
+		$score  = new MagicUnionScore(quotedTerm: "'foo'", isPostgres: false, hasTrgm: false);
+		$column = $score->ofColumn(column: '`title`');
+
+		$this->assertSame($column . ' AS _search_score', $score->greatest(scores: [$column]));
+		$this->assertStringNotContainsString('GREATEST', $score->greatest(scores: [$column]));
+	}//end testOneColumnIsScoredWithoutGreatest()
 }//end class

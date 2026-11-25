@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
+use OCA\OpenRegister\Kernel\Contracts\AddressAllowlistsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuthRateLimitCeilingInterface;
 use OCP\IAppConfig;
 use Throwable;
@@ -56,7 +57,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service\Hardening
  */
-class HardeningPolicy implements HardeningFloorsInterface, AllowedOriginsInterface, AuthRateLimitCeilingInterface {
+class HardeningPolicy implements HardeningFloorsInterface, AllowedOriginsInterface, AuthRateLimitCeilingInterface, AddressAllowlistsInterface {
 
 	/**
 	 * The app the administered controls live under.
@@ -78,6 +79,16 @@ class HardeningPolicy implements HardeningFloorsInterface, AllowedOriginsInterfa
 	 * @var string
 	 */
 	public const ORIGINS_KEY = 'hardening_allowed_origins';
+
+	/**
+	 * The app configuration key of each surface's address allowlist.
+	 *
+	 * @var array<string, string>
+	 */
+	public const ADDRESS_KEYS = [
+		AddressAllowlistsInterface::ADMIN => 'hardening_admin_addresses',
+		AddressAllowlistsInterface::API => 'hardening_api_addresses',
+	];
 
 	/**
 	 * The controls an administrator may change through OpenRegister.
@@ -184,6 +195,52 @@ class HardeningPolicy implements HardeningFloorsInterface, AllowedOriginsInterfa
 		return self::parseOrigins(raw: $raw);
 
 	}//end allowedOrigins()
+
+	/**
+	 * The addresses and ranges a surface may be reached from.
+	 *
+	 * An empty list means the surface is not bound, which is how every
+	 * instance behaved before this control existed. A value that cannot be
+	 * read is read as unbound as well, like the origin allowlist: closing the
+	 * administration surface and the API on a configuration hiccup would lock
+	 * out the administrator who has to fix it.
+	 *
+	 * @param string $surface `admin` or `api`.
+	 *
+	 * @return array<int, string> The entries, lowercased, in stored order; empty for an unknown surface.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function addressAllowlist(string $surface): array {
+		$key = (self::ADDRESS_KEYS[$surface] ?? null);
+		if ($key === null) {
+			return [];
+		}
+
+		try {
+			$raw = $this->appConfig->getValueString(self::APP_ID, $key, '');
+		} catch (Throwable) {
+			$raw = '';
+		}
+
+		return AddressAllowlist::parse(raw: $raw);
+	}//end addressAllowlist()
+
+	/**
+	 * Whether an address may reach a surface: the surface is unbound, or its allowlist holds the address.
+	 *
+	 * @param string $surface `admin` or `api`.
+	 * @param string $address The request's remote address.
+	 *
+	 * @return bool True when the request may go on.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function allowsAddress(string $surface, string $address): bool {
+		$entries = $this->addressAllowlist(surface: $surface);
+
+		return $entries === [] || AddressAllowlist::contains(entries: $entries, address: $address) === true;
+	}//end allowsAddress()
 
 	/**
 	 * Split a stored allowlist into its entries.

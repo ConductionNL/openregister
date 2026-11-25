@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\DefaultOrganisationInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use Psr\Container\ContainerInterface;
@@ -223,8 +224,58 @@ class ExampleSetInstance {
 			return ['uuid' => '', 'created' => false, 'error' => $e->getMessage()];
 		}
 
-		return ['uuid' => (string) $saved->getUuid(), 'created' => true, 'error' => ''];
+		$error = $this->keepInDefault(members: (array) ($declared['members'] ?? []), created: $saved);
+
+		return ['uuid' => (string) $saved->getUuid(), 'created' => true, 'error' => $error];
 	}//end create()
+
+	/**
+	 * Make each member of a new organisation a member of the default organisation too.
+	 *
+	 * A user's active organisation is the oldest one they belong to. A cast person whose only
+	 * membership is the new organisation would get it as their active one, and every read would
+	 * then filter out the set's objects, which sit in the default organisation. The default
+	 * organisation is older than any organisation a set creates, so it stays their active one,
+	 * and the new organisation is still among their organisations.
+	 *
+	 * @param array<int, string> $members The new organisation's members' accounts.
+	 * @param Organisation       $created The organisation just created.
+	 *
+	 * @return string The error, or '' when every member belongs to the default organisation.
+	 *
+	 * @spec openspec/changes/cast-members-keep-the-default-organisation/specs/example-sets/spec.md
+	 */
+	private function keepInDefault(array $members, Organisation $created): string {
+		if ($members === []) {
+			return '';
+		}
+
+		try {
+			$default = $this->container->get(DefaultOrganisationInterface::class)->ensureDefaultOrganisation();
+			if ($default instanceof Organisation === false) {
+				return 'its members could not join the default organisation: it is not an organisation entity';
+			}
+
+			if ((string) $default->getUuid() === (string) $created->getUuid()) {
+				return '';
+			}
+
+			$missing = array_filter($members, static fn (string $member): bool => $default->hasUser($member) === false);
+			if ($missing === []) {
+				return '';
+			}
+
+			foreach ($missing as $member) {
+				$default->addUser($member);
+			}
+
+			$this->mapper()->update(entity: $default);
+		} catch (Throwable $e) {
+			return 'its members could not join the default organisation: '.$e->getMessage();
+		}
+
+		return '';
+	}//end keepInDefault()
 
 	/**
 	 * The declared organisation, with its quota and members, as it is created.

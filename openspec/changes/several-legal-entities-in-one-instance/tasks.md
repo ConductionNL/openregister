@@ -9,9 +9,12 @@
 
 ## 2. The move between organisations
 
-- [ ] 2.1 A per-object-type policy of move, copy or drop under the root (D-3).
-- [ ] 2.2 A preview listing every object and its policy, and an approval the move requires (D-3).
-- [ ] 2.3 The move written to both organisations' audit trails under one correlation (D-4).
+- [x] 2.1 A per-object-type policy of move, copy or drop under the root (D-3).
+  - `lib/Service/Organisation/ObjectGraphTransfer.php`: every object the relation walk reaches from the root (the affected set over `RelationGraphService::graph()`, depth 1-3) takes the policy named for its schema; the root always moves. No default: a reached schema without a policy, a `move` of an object a third organisation holds, a truncated walk and an object the caller may not read all refuse. `drop` leaves the object where it is (not deleted).
+- [x] 2.2 A preview listing every object and its policy, and an approval the move requires (D-3).
+  - `POST .../transfer/preview` answers the plan and its sha256 digest; `POST .../transfer` takes the digest as `approval`, recomputes the plan and refuses with 409 (nothing written) when it is missing or names another plan. Copies first, then moves, in one transaction (`ObjectTransferController`, admin only).
+- [x] 2.3 The move written to both organisations' audit trails under one correlation (D-4).
+  - `organisation.transfer.out` / `organisation.transfer.in`, each filed under its organisation (`AuditEntry::organisationId`), with one `correlation` and the moved, copied and dropped uuids. Tests: `tests/Unit/Service/Organisation/ObjectGraphTransferTest.php`, `tests/Unit/Controller/ObjectTransferControllerTest.php`. Docs: `docs/features/moving-records-between-organisations.md`. Not run live: the saves through the object stack on a real instance.
 
 ## 3. Logging
 
@@ -26,7 +29,7 @@
 ## 5. Tests
 
 - [x] 5.1 `tests/e2e/workflows/shared-master-data.spec.ts`: three organisations, one code list, a refused write naming the holder, an unchanged third organisation. Placed in the ROOT suite rather than `tests/e2e/ci/`: the CI floor admits a file after a run has been seen, and this lane has no Playwright runner.
-- [x] 5.2 Unit tests: the redactor including the drop path (13 tests) and the share resolver (16 tests), both mutation-checked. The move preview and the two-chain audit write belong to task 2 and are NOT done.
+- [x] 5.2 Unit tests: the redactor including the drop path (13 tests) and the share resolver (16 tests), both mutation-checked. The move preview and the two-chain audit write: `ObjectGraphTransferTest` (task 2).
 - [x] 5.3 `openspec validate several-legal-entities-in-one-instance --strict`. Valid.
 
 ## 6. Re-rate and hand over

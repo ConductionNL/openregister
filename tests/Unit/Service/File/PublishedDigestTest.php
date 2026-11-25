@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\FileDigestMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Files\Db\PublicShareRequest;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
 use OCA\OpenRegister\Service\File\PublishedDigestService;
@@ -66,6 +67,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Db\FileDigestMapper
  * @covers \OCA\OpenRegister\Db\FileDigest
  * @uses   \OCA\OpenRegister\Db\AuditFlowAttribution
+ * @uses   \OCA\OpenRegister\Files\Db\PublicShareRequest
  * @uses   \OCA\OpenRegister\Db\AuditTrail
  * @uses   \OCA\OpenRegister\Db\AuditTrailMapper
  * @uses   \OCA\OpenRegister\Db\AuditTrailPayloadHelper
@@ -176,8 +178,8 @@ class PublishedDigestTest extends TestCase {
 	 */
 	public function testPublishingRecordsTheDigest(): void {
 		$this->shares->expects($this->once())->method('publishFile')->willReturnCallback(
-			function (int $fileId): array {
-				$this->transactions[] = 'share ' . $fileId;
+			function (PublicShareRequest $request): array {
+				$this->transactions[] = 'share ' . $request->fileId;
 				return ['id' => 7, 'token' => 'tok', 'accessUrl' => 'https://x/s/tok'];
 			}
 		);

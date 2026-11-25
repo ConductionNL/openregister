@@ -31,11 +31,13 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordRetentionStampsInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\WriteCause;
+use OCA\OpenRegister\Tests\Support\AuditChangeCalls;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -424,14 +426,14 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$settings = $this->createMock(SettingsService::class);
 		$settings->method('getRetentionSettingsOnly')->willReturn(['auditTrailsEnabled' => ($case['audit'] ?? true)]);
 		$audit = $this->createMock(AuditTrailMapper::class);
-		$audit->method('createAuditTrail')->willReturnCallback(function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null): AuditTrail {
+		$audit->method('recordChange')->willReturnCallback(AuditChangeCalls::positional(function (?ObjectEntity $old = null, ?ObjectEntity $new = null, ?string $action = null): AuditTrail {
 			$this->trace[] = ['audit', $old?->getUuid(), $new?->getUuid(), $action];
 			$uuid = (string)($new?->getUuid() ?? $old?->getUuid());
 			$this->auditedMarks[$uuid] = WriteCause::clientAttemptedFor(objectUuid: $uuid);
 			$log = $this->createMock(AuditTrail::class);
 			$log->method('jsonSerialize')->willReturn(['log' => 1]);
 			return $log;
-		});
+		}));
 		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('guardClassificationOverride')->willReturnCallback(function (Schema $schema, array $data): void {
 			$this->trace[] = ['retentionGuard', $schema->getId(), array_key_exists('title', $data)];
@@ -450,7 +452,7 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$hints->method('check')->willReturnCallback(function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintCandidate $candidate): void {
 			$this->trace[] = ['hints', $candidate->scope->register, $candidate->scope->schema, $candidate->selfUuid];
 		});
-		$services = [RetentionServiceInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
+		$services = [RecordRetentionStampsInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $services[$id] ?? throw new \RuntimeException('no ' . $id));
 		$folders = $this->createMock(FolderManagementHandler::class);
 		$translations = $this->createMock(TranslationHandler::class);

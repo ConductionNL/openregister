@@ -50,7 +50,6 @@ class WebhooksControllerTest extends TestCase {
 		$this->setupAdminUser();
 
 		$this->controller = WebhooksControllerFactory::create(
-			'openregister',
 			$this->request,
 			$this->webhookMapper,
 			$this->webhookLogMapper,
@@ -372,7 +371,7 @@ class WebhooksControllerTest extends TestCase {
 		$logged = [];
 		$this->logger->method('error')->willReturnCallback(
 			static function (string $message, array $context) use (&$logged): void {
-				$logged[] = $context['fields'] ?? $context;
+				$logged[] = $message;
 			}
 		);
 		$this->request->method('getParams')->willReturn([
@@ -386,7 +385,13 @@ class WebhooksControllerTest extends TestCase {
 		$this->controller->create();
 		$this->controller->update(1);
 
-		$this->assertSame([['name', 'url', 'secret'], ['name', 'url', 'secret']], $logged);
+		$this->assertSame(
+			[
+				'[' . WebhooksController::class . '] Webhook creation failed (fields: name, url, secret): refused',
+				'[' . WebhooksController::class . '] Webhook update failed (fields: name, url, secret): refused',
+			],
+			$logged
+		);
 	}
 
 	public function testCreateMissingRequired(): void {
@@ -1537,7 +1542,6 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminWebhookService = $webhookService;
 
 		return WebhooksControllerFactory::create(
-			'openregister',
 			$request,
 			$webhookMapper,
 			$webhookLogMapper,
@@ -1567,7 +1571,6 @@ class WebhooksControllerTest extends TestCase {
 		$this->nonAdminWebhookService = $webhookService;
 
 		return WebhooksControllerFactory::create(
-			'openregister',
 			$request,
 			$webhookMapper,
 			$webhookLogMapper,

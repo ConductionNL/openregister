@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -89,6 +90,8 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ObjectServiceDraftDeleteTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/** @var ObjectService */
 	private ObjectService $service;
@@ -128,6 +131,7 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->saveHandler = $this->createMock(SaveObject::class);
 		$this->renderHandler = $this->createMock(RenderObject::class);
 		$this->deleteHandler = $this->createMock(DeleteObject::class);

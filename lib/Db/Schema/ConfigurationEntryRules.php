@@ -31,7 +31,20 @@ use OCA\OpenRegister\Db\Schema;
 final class ConfigurationEntryRules {
 	// `objectSlugField` was missing here, so every save and import dropped it
 	// and object slugs could not be switched on outside the database (#4037).
-	private const CONFIG_STRING_FIELDS = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField', 'objectSlugField'];
+	// `mailObjectName` is what one item is called in the Mail panel's sentences
+	// ("New work queue item from this mail"), when the schema title names the collection.
+	// `workingCalendar` is read by RecordTypeCalendars (working-calendar-admin
+	// REQ-WCA-005): the calendar slug the schema's terms and week numbers follow.
+	// Off this list it was dropped on save, so no record type could name one.
+	private const CONFIG_STRING_FIELDS = [
+		'objectNameField',
+		'objectDescriptionField',
+		'objectSummaryField',
+		'objectImageField',
+		'objectSlugField',
+		'mailObjectName',
+		'workingCalendar',
+	];
 	// `exportable` opts the schema into nextcloud-vue's native Export menu
 	// on an index page (or#4103). Off the allowlist it was dropped without
 	// a log line, so `allowExport: true` on every app page was a no-op.
@@ -294,7 +307,7 @@ final class ConfigurationEntryRules {
 	}//end validateVocabularyValue()
 
 	/**
-	 * Keep a declared `x-openregister-*` annotation; record an unknown one.
+	 * Keep a declared `x-openregister` or `x-openregister-*` annotation; record an unknown one.
 	 *
 	 * Declarative annotation extensions round-trip through the configuration
 	 * column; their shape is validated by the dedicated validators (e.g.
@@ -308,7 +321,8 @@ final class ConfigurationEntryRules {
 	 * @return array<int, mixed> The value to store as a one-element list; empty when the key is not stored.
 	 */
 	private function annotationConfigurationValue(string $key, mixed $value): array {
-		if (str_starts_with($key, 'x-openregister-') === false) {
+		// The bare `x-openregister` block (expired-object-sweep's `expiry`) is kept like any declared annotation.
+		if ($key !== 'x-openregister' && str_starts_with($key, 'x-openregister-') === false) {
 			return [];
 		}
 

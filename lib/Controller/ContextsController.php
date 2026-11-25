@@ -45,6 +45,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * Serves JSON-LD context documents.
@@ -233,7 +234,7 @@ class ContextsController extends Controller {
 	 */
 	private function isPublished(Schema $schema): bool {
 		try {
-			return $this->permissions->hasPermission(schema: $schema, action: 'read');
+			return $this->permissions->hasPermission(ask: new PermissionAsk(schema: $schema, action: 'read'));
 		} catch (\Throwable $e) {
 			return false;
 		}

@@ -117,13 +117,123 @@ class FlowTokenRouter {
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function takenExits(FlowNodeExits $exits, FlowStepOutput $output): array {
+		if (FlowErrorPolicy::branches(step: $this->stepFor(flow: $exits->flow, transitionName: $exits->nodeId)) === true) {
+			return $this->branchingExitsTaken(exits: $exits, output: $output);
+		}
+
+		return $this->normalExitsTaken(exits: $exits, output: $output);
+	}//end takenExits()
+
+	/**
+	 * The places a firing of a step under `onError: "branch"` reaches.
+	 *
+	 * The `error` output is never a normal exit: it is taken exactly when an
+	 * item is tagged for it, which only a failure does, and the normal exits
+	 * are chosen from the other items alone. A failure that failed every item
+	 * takes only the error output; one that failed some takes both.
+	 *
+	 * @param FlowNodeExits  $exits  The fired node within its flow, among its output places.
+	 * @param FlowStepOutput $output What the step produced and the run-level metadata.
+	 *
+	 * @return array<string> The output places that receive the token.
+	 *
+	 * @spec openspec/changes/flow-error-branch-and-step-retry/specs/flow-engine/spec.md
+	 */
+	private function branchingExitsTaken(FlowNodeExits $exits, FlowStepOutput $output): array {
+		$errorPlaces = $this->placesForExit(exits: $exits, exitId: FlowErrorPolicy::ERROR_EXIT);
+		$errorKeys   = array_merge([FlowErrorPolicy::ERROR_EXIT], $errorPlaces);
+		$rest        = [];
+		$failed      = false;
+		foreach ($output->items as $item) {
+			if (is_array($item) === true && in_array(FlowItems::outputOf(member: $item), $errorKeys, true) === true) {
+				$failed = true;
+				continue;
+			}
+
+			$rest[] = $item;
+		}
+
+		$taken = [];
+		if ($rest !== [] || $failed === false) {
+			$normal = new FlowNodeExits(
+				flow: $exits->flow,
+				nodeId: $exits->nodeId,
+				candidates: array_values(array_diff($exits->candidates, $errorPlaces))
+			);
+			$taken  = $this->normalExitsTaken(exits: $normal, output: new FlowStepOutput(items: $rest, context: $output->context));
+		}
+
+		if ($failed === true) {
+			$taken = array_values(array_unique(array_merge($taken, $errorPlaces)));
+		}
+
+		return $taken;
+	}//end branchingExitsTaken()
+
+	/**
+	 * Under `onError: "branch"`, point the step's untagged items at its one normal place.
+	 *
+	 * Only after a failure tagged items for the `error` output; a plain
+	 * successful firing is left as it is. An untagged item is broadcast to
+	 * every place a firing takes. When a
+	 * failure sends some items down the `error` output, the succeeded items
+	 * would otherwise land on the error branch as well. With exactly one
+	 * normal place they are tagged for it; with several (a parallel split)
+	 * they are left untagged, as before.
+	 *
+	 * @param FlowNodeExits $exits The fired node within its flow, among its output places.
+	 * @param array<mixed>  $items The step's output items.
+	 *
+	 * @return array<mixed> The items, the untagged ones pointed at the normal place when there is one.
+	 *
+	 * @spec openspec/changes/flow-error-branch-and-step-retry/specs/flow-engine/spec.md
+	 */
+	public function keepSucceededOffTheErrorBranch(FlowNodeExits $exits, array $items): array {
+		if (FlowErrorPolicy::branches(step: $this->stepFor(flow: $exits->flow, transitionName: $exits->nodeId)) === false) {
+			return $items;
+		}
+
+		$tags = array_keys($this->routedTags(items: $items));
+		if (in_array(FlowErrorPolicy::ERROR_EXIT, $tags, true) === false) {
+			return $items;
+		}
+
+		$normal = array_values(array_diff($exits->candidates, $this->placesForExit(exits: $exits, exitId: FlowErrorPolicy::ERROR_EXIT)));
+		if (count($normal) !== 1) {
+			return $items;
+		}
+
+		return array_map(
+			static function (mixed $item) use ($normal): mixed {
+				if (is_array($item) === false || FlowItems::outputOf(member: $item) !== null) {
+					return $item;
+				}
+
+				$item[FlowItems::OUTPUT] = $normal[0];
+				return $item;
+			},
+			$items
+		);
+	}//end keepSucceededOffTheErrorBranch()
+
+	/**
+	 * The output places a firing reaches by its declared exits, as {@see takenExits()} documents.
+	 *
+	 * @param FlowNodeExits  $exits  The fired node within its flow, among its output places.
+	 * @param FlowStepOutput $output What the step produced and the run-level metadata.
+	 *
+	 * @return array<string> The output places that receive the token.
+	 *
+	 * @spec openspec/specs/flow-engine/spec.md
+	 */
+	private function normalExitsTaken(FlowNodeExits $exits, FlowStepOutput $output): array {
 		$items = $output->items;
 		$data  = FlowExpression::documentFor(
 			item: ($items[0] ?? []),
 			options: new FlowExpressionDataOptions(itemCount: count($items), context: $output->context)
 		);
 		return $this->exitsTaken(choice: new FlowExitChoice(exits: $exits, data: $data, tags: $this->routedTags(items: $items)));
-	}//end takenExits()
+	}//end normalExitsTaken()
 
 	/**
 	 * The output places a firing node's token reaches, as {@see takenExits()} documents.

@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyValue;
 use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
@@ -174,6 +175,44 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 			request: $request
 		);
 	}//end canUpdateProperty()
+
+	/**
+	 * The properties the current user may read but may not change, for one object.
+	 *
+	 * The hint a form disables and `@self.readOnlyProperties` carries. It is a
+	 * HINT, not the gate: the save path still refuses a write to any of these
+	 * (see {@see getUnauthorizedProperties()}). An admin, and a schema with no
+	 * property-level authorization, has nothing read-only. A property with no
+	 * `update` rule is writable by anyone who may write the object, so it is
+	 * not read-only. A rule's `match` condition is evaluated against the object
+	 * handed in.
+	 *
+	 * @param Schema               $schema The object's schema.
+	 * @param array<string, mixed> $object The object data, for a rule's `match` condition.
+	 *
+	 * @return array<int, string> The read-only property names, in schema order.
+	 *
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md#requirement-the-client-knows-which-fields-it-may-not-change
+	 */
+	public function readOnlyProperties(Schema $schema, array $object = []): array {
+		if ($schema->hasPropertyAuthorization() === false || $this->isAdmin() === true) {
+			return [];
+		}
+
+		$readOnly = [];
+		foreach (array_keys($schema->getPropertiesWithAuthorization()) as $name) {
+			$name = (string) $name;
+			$property = new SchemaProperty(schema: $schema, name: $name);
+			$request = new PropertyAccessRequest(object: $object);
+			if ($this->canReadProperty(property: $property, request: $request) === true
+				&& $this->canUpdateProperty(property: $property, request: $request) === false
+			) {
+				$readOnly[] = $name;
+			}
+		}
+
+		return $readOnly;
+	}//end readOnlyProperties()
 
 	/**
 	 * Filter an object to only include readable properties
@@ -926,7 +965,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 *
 	 * @return bool True if user is in admin group
 	 *
-	 * @spec exclude Trivial admin-group membership check helper; no business logic.
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
 		$user = $this->caller->userSession->getUser();
@@ -934,7 +973,6 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 			return false;
 		}
 
-		$userGroups = $this->caller->groupManager->getUserGroupIds($user);
-		return in_array('admin', $userGroups, true);
+		return AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $user);
 	}//end isAdmin()
 }//end class

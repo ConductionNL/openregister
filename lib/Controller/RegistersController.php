@@ -25,6 +25,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\RegisterAccessAudit;
 use OCA\OpenRegister\Controller\Support\RegisterDownloads;
@@ -43,7 +44,12 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
+use OCA\OpenRegister\Exception\GrantExceedsGranterException;
+use OCA\OpenRegister\Service\Authorization\AddedGrants;
+use OCA\OpenRegister\Service\Authorization\GrantCeiling;
+use OCA\OpenRegister\Service\Authorization\GrantedRight;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\BundleImport;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
@@ -53,6 +59,7 @@ use OCA\OpenRegister\Kernel\Contracts\GitHubClientInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Service\Schemas\RegisterModelService;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\RbacRuleChecks;
@@ -242,29 +249,26 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 	 * Initializes controller with required dependencies for register operations.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName Application name
 	 * @param IRequest $request HTTP request object
-	 * @param ControllerSession $session Session, group manager and logger.
-	 * @param RegistersControllerServices $services The registers controller services.
+	 * @param RegistersControllerServices $services The registers controller services, with the session, group manager and logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
-		ControllerSession $session,
 		RegistersControllerServices $services,
 	) {
+		$session      = $services->session;
 		$this->logger = $session->logger;
 		$this->logger->debug(
 			message: '[RegistersController] Constructor started.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
-		$this->downloads = new RegisterDownloads(session: $session, services: $services);
+		$this->downloads = new RegisterDownloads(services: $services);
 		$this->statistics = new RegisterStatistics(services: $services);
-		$this->gitHub = new RegisterGitHubPublisher(request: $request, session: $session, services: $services);
+		$this->gitHub = new RegisterGitHubPublisher(request: $request, services: $services);
 		$this->registerService = $services->registers->registerService;
 		$this->userSession = $session->userSession;
 		$this->session = $session;
@@ -662,8 +666,110 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 			return new JSONResponse(data: ['error' => 'User does not have permission to manage this register'], statusCode: 403);
 		}
 
+		$refusal = $this->grantCeilingRefusal(existing: $existingRegister, document: $update->data);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		return $this->updateResponse(update: $update, existing: $existingRegister);
 	}//end update()
+
+	/**
+	 * Refuse a register authorization edit that gives an action the editor does not hold.
+	 *
+	 * A register's block decides every schema of the register that writes no
+	 * block of its own, so an action the edit adds is judged against each of
+	 * those schemas: the editor must hold it on all of them. Only what the edit
+	 * adds is judged, so a manager can still save a register whose block
+	 * already names rights they lack. With no schema to judge against, the
+	 * grant cannot be shown to be within the editor's rights and is refused.
+	 * Nothing is stored on refusal.
+	 *
+	 * @param Register             $existing The register as stored.
+	 * @param array<string, mixed> $document The incoming register.
+	 *
+	 * @return JSONResponse|null A 403 naming every excess right, or null when the write may go on.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	private function grantCeilingRefusal(Register $existing, array $document): ?JSONResponse {
+		if (array_key_exists('authorization', $document) === false) {
+			return null;
+		}
+
+		$actions = (new AddedGrants())->between(old: $existing->getAuthorization(), new: $document['authorization']);
+		if ($actions === [] || $this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		try {
+			$this->assertWithinCeiling(actions: $actions, schemas: $this->schemasDecidedBy(register: $existing), register: $existing);
+		} catch (GrantExceedsGranterException $refusal) {
+			return new JSONResponse(data: $refusal->body(), statusCode: 403);
+		}
+
+		return null;
+	}//end grantCeilingRefusal()
+
+	/**
+	 * Throw unless the editor holds every added action on every schema the register decides.
+	 *
+	 * @param array<int, string> $actions  The added actions.
+	 * @param array<int, Schema> $schemas  The schemas the register's block decides.
+	 * @param Register           $register The register, named in a refusal.
+	 *
+	 * @return void
+	 *
+	 * @throws GrantExceedsGranterException When an action is beyond the editor's rights.
+	 */
+	private function assertWithinCeiling(array $actions, array $schemas, Register $register): void {
+		$granter = $this->userSession->getUser();
+		$ceiling = $this->container->get(GrantCeiling::class);
+		if ($granter === null || $schemas === [] || $ceiling instanceof GrantCeiling === false) {
+			// Nobody to hold the rights, nothing to hold them on, or no check to ask: refused, never stored on a guess.
+			throw new GrantExceedsGranterException(
+				excess: array_map(
+					static fn (string $action): array => ['register' => $register->getSlug(), 'schema' => null, 'action' => $action],
+					$actions
+				)
+			);
+		}
+
+		$grants = [];
+		foreach ($schemas as $schema) {
+			foreach ($actions as $action) {
+				$grants[] = new GrantedRight(schema: $schema, action: $action);
+			}
+		}
+
+		$ceiling->assertWithin(granter: $granter, grants: $grants);
+	}//end assertWithinCeiling()
+
+	/**
+	 * The schemas of a register that write no block of their own, so the register's block decides them.
+	 *
+	 * Read without RBAC or tenancy: a schema the editor cannot see is still one
+	 * the grant would reach, and leaving it out would let the grant through
+	 * unjudged there.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<int, Schema> The schemas.
+	 */
+	private function schemasDecidedBy(Register $register): array {
+		$ids = array_values(array_filter(($register->getSchemas() ?? []), static fn (mixed $id): bool => is_int($id) === true || is_string($id) === true));
+		if ($ids === []) {
+			return [];
+		}
+
+		return array_values(
+			array_filter(
+				$this->schemaMapper->findMultiple(ids: $ids, _rbac: false, _multitenancy: false),
+				static fn (mixed $schema): bool => $schema instanceof Schema
+					&& (is_array($schema->getAuthorization()) === false || $schema->getAuthorization() === [])
+			)
+		);
+	}//end schemasDecidedBy()
 
 	/**
 	 * Save an update the caller may make and answer with the result.
@@ -1027,7 +1133,7 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 			return new JSONResponse(data: ['error' => $errMsg], statusCode: 400);
 		}
 
-		$schema = $this->schemaMapper->find($schemaId);
+		$schema = $this->schemaInRegister(schemaRef: $schemaId, register: $register);
 		if ($format === 'pdf') {
 			return $this->downloads->pdf(register: $register, schema: $schema);
 		}
@@ -1084,7 +1190,7 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 
 		// RBAC is enforced inside both find() calls (default _rbac=true).
 		$register = $this->registerMapper->find($id);
-		$schemaEntity = $this->schemaMapper->find($schema);
+		$schemaEntity = $this->schemaInRegister(schemaRef: $schema, register: $register);
 
 		if ($format === 'csv') {
 			return $this->downloads->templateCsv(register: $register, schema: $schemaEntity);
@@ -1545,7 +1651,7 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 			return new JSONResponse(data: ['error' => 'Schema parameter is required for CSV imports.'], statusCode: 400);
 		}
 
-		$schema = $this->schemaMapper->find($schemaId);
+		$schema = $this->schemaInRegister(schemaRef: $schemaId, register: $options['register']);
 
 		$scope = new ImportScope(register: $options['register'], schema: $schema, currentUser: $this->userSession->getUser());
 
@@ -1574,12 +1680,16 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 	 */
 	private function importJsonObjects(array $options): array|JSONResponse {
 		$peek = json_decode((string)file_get_contents($options['file']['tmp_name']), true);
+		if ($options['register'] === null && $this->isRegisterBundle(peek: $peek) === false) {
+			return $this->missingImportRegisterResponse(registerSlugOrId: (string)$options['id']);
+		}
+
 		$schemaId = $this->jsonImportSchemaId(peek: $peek);
 		if ($this->isBlank(value: $schemaId) === true && $this->isRegisterBundle(peek: $peek) === false) {
 			return new JSONResponse(data: ['error' => 'Could not determine schema for JSON import; pass a schema parameter.'], statusCode: 400);
 		}
 
-		$schema = $this->jsonImportSchema(schemaId: $schemaId);
+		$schema = $this->jsonImportSchema(schemaId: $schemaId, register: $options['register']);
 
 		$scope = new ImportScope(
 			register: $options['register'],
@@ -1594,6 +1704,23 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 			_multitenancy: true
 		);
 	}//end importJsonObjects()
+
+	/**
+	 * The 404 for a JSON import whose register does not exist and whose upload is
+	 * not a register bundle that could create it: names the register and the two
+	 * remedies (create it first, or upload a full bundle).
+	 *
+	 * @param string $registerSlugOrId The register the import asked for
+	 *
+	 * @return JSONResponse The refusal
+	 *
+	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-clear-failure-when-auto-create-is-impossible-req-imp-ac-02
+	 */
+	private function missingImportRegisterResponse(string $registerSlugOrId): JSONResponse {
+		$refusal = RegisterNotFoundException::forImport(registerSlugOrId: $registerSlugOrId);
+
+		return new JSONResponse(data: ['error' => $refusal->getMessage()], statusCode: $refusal->getCode());
+	}//end missingImportRegisterResponse()
 
 	/**
 	 * The schema a JSON import names: the parameter, else the first object's `@self.schema`.
@@ -1620,7 +1747,8 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 	/**
 	 * The schema entity of a JSON import, if it names one.
 	 *
-	 * @param mixed $schemaId The schema id, or blank
+	 * @param mixed         $schemaId The schema id, or blank
+	 * @param Register|null $register The register imported into; a slug is looked up inside it first
 	 *
 	 * @return Schema|null The schema
 	 *
@@ -1629,13 +1757,33 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
-	private function jsonImportSchema(mixed $schemaId): ?Schema {
+	private function jsonImportSchema(mixed $schemaId, ?Register $register = null): ?Schema {
 		if ($this->isBlank(value: $schemaId) === true) {
 			return null;
 		}
 
-		return $this->schemaMapper->find($schemaId);
+		return $this->schemaInRegister(schemaRef: $schemaId, register: $register);
 	}//end jsonImportSchema()
+
+	/**
+	 * The schema a request names, looked up inside the route's register first.
+	 *
+	 * Slugs are unique within a register, so a slug two apps share resolves to
+	 * this register's schema; ids, uuids and slugs it does not carry resolve
+	 * globally, as before. RBAC still applies to the lookup.
+	 *
+	 * @param mixed         $schemaRef The schema's id, uuid or slug.
+	 * @param Register|null $register  The register in the route.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no schema matches.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function schemaInRegister(mixed $schemaRef, ?Register $register): Schema {
+		return (new SchemaRefInRegister(schemas: $this->schemaMapper))->find(schemaRef: $schemaRef, register: $register);
+	}//end schemaInRegister()
 
 	/**
 	 * Whether decoded JSON is a register bundle with at least one register.

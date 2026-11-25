@@ -22,12 +22,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\GroupRuleRequest;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 
 /**
  * The object resolution and the access-review checks of the per-object access reads.
@@ -76,7 +78,13 @@ class AccessReviewGate implements AccessReviewGateInterface {
 	public function resolve(ObjectRef $ref): ?ObjectEntity {
 		$this->objectService->setRegister((string)$ref->register);
 		$this->objectService->setSchema((string)$ref->schema);
-		$this->objectService->setObject($ref->id);
+		try {
+			$this->objectService->setObject($ref->id);
+		} catch (DoesNotExistException $e) {
+			// The lookup is RBAC-bounded: an unreadable row and a missing one
+			// both land here, and both are the caller's 404, not a 500.
+			return null;
+		}
 
 		return $this->currentObject();
 	}//end resolve()
@@ -218,11 +226,9 @@ class AccessReviewGate implements AccessReviewGateInterface {
 		}
 
 		return $run->handler->hasPermission(
-			schema: $schema,
-			action: $action,
-			userId: $this->callerUid(),
-			objectOwner: $object?->getOwner(),
-			object: $object
+			ask: (new PermissionAsk(schema: $schema, action: $action))
+				->askedBy(userId: $this->callerUid(), objectOwner: $object?->getOwner())
+				->about(object: $object, register: null)
 		);
 	}//end writtenRuleAdmits()
 

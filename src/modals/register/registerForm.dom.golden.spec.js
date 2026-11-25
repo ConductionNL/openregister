@@ -174,6 +174,8 @@ function resetStores(log, failSave) {
 	stores.registerStore.getRegisterItem = REGISTER
 	stores.schemaStore.schemaList = [{ id: 7, title: 'S7' }, { id: 8, title: 'S8' }]
 	stores.schemaStore.refreshSchemaList = call('refreshSchemaList')
+	// The pages resolve the active register from this list by id, uuid or slug.
+	stores.dashboardStore.registers = [{ ...REGISTER, stats: { objects: { total: 0, size: 0 } } }]
 	stores.dashboardStore.fetchRegisters = call('fetchRegisters')
 	stores.configurationStore.refreshConfigurationList = call('refreshConfigurations')
 }

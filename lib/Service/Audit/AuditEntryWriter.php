@@ -23,18 +23,21 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use DateTime;
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
 use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PlacedAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\SystemAuditLineInterface;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Turns each entry into an audit trail row and inserts them through the mapper, which seals them.
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
-final class AuditEntryWriter implements AuditEntryWriterInterface {
+final class AuditEntryWriter implements AuditEntryWriterInterface, SystemAuditLineInterface {
 
 	/**
 	 * Constructor.
@@ -60,6 +63,34 @@ final class AuditEntryWriter implements AuditEntryWriterInterface {
 	}//end writeAuditEntries()
 
 	/**
+	 * Write one audit line by the system, dated now.
+	 *
+	 * @param string               $action   What happened.
+	 * @param string               $userName The display name the line carries.
+	 * @param array<string, mixed> $changed  What changed.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard symfony/uid factory.
+	 *
+	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 */
+	public function recordSystemLine(string $action, string $userName, array $changed): void {
+		$this->writeAuditEntries(
+			entries: [
+				new AuditEntry(
+					uuid: Uuid::v4()->toRfc4122(),
+					action: $action,
+					user: 'system',
+					userName: $userName,
+					changed: $changed,
+					created: new DateTimeImmutable(),
+				),
+			]
+		);
+	}//end recordSystemLine()
+
+	/**
 	 * The unsealed row for one entry.
 	 *
 	 * @param AuditEntry|PlacedAuditEntry $entry The entry.
@@ -80,6 +111,10 @@ final class AuditEntryWriter implements AuditEntryWriterInterface {
 		$row->setCreated(DateTime::createFromInterface($entry->created));
 		if ($entry->objectUuid !== null) {
 			$row->setObjectUuid($entry->objectUuid);
+		}
+
+		if ($entry->organisationId !== null) {
+			$row->setOrganisationId($entry->organisationId);
 		}
 
 		return $row;

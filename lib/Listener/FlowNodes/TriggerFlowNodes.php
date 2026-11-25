@@ -23,6 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener\FlowNodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
@@ -45,11 +47,15 @@ final readonly class TriggerFlowNodes {
 	 * @param TriggerObjectNodeInterface $triggerObject The "When an object changes" entry point.
 	 * @param TriggerScheduleNodeInterface $triggerSchedule The "On a schedule" entry point.
 	 * @param TriggerManualNodeInterface $triggerManual The "When someone runs it" entry point.
+	 * @param TriggerCalendarNodeInterface $triggerCalendar The "At a date on a record" entry point.
+	 * @param TriggerWebhookNodeInterface $triggerWebhook The "When another system calls" entry point.
 	 */
 	public function __construct(
 		private TriggerObjectNodeInterface $triggerObject,
 		private TriggerScheduleNodeInterface $triggerSchedule,
 		private TriggerManualNodeInterface $triggerManual,
+		private TriggerCalendarNodeInterface $triggerCalendar,
+		private TriggerWebhookNodeInterface $triggerWebhook,
 	) {
 	}//end __construct()
 
@@ -63,6 +69,8 @@ final readonly class TriggerFlowNodes {
 			$this->triggerObject,
 			$this->triggerSchedule,
 			$this->triggerManual,
+			$this->triggerCalendar,
+			$this->triggerWebhook,
 		];
 
 	}//end nodes()

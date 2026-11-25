@@ -224,8 +224,40 @@ class HardeningController extends Controller {
 			$answer['allowedOrigins'] = $this->settingsService->setAllowedOrigins(origins: $body['allowedOrigins']);
 		}
 
+		if (array_key_exists('addressAllowlists', $body) === true && is_array($body['addressAllowlists']) === true) {
+			$answer['addressAllowlists'] = $this->appliedAddressAllowlists(requested: $body['addressAllowlists']);
+		}
+
 		return $answer;
 	}//end appliedHardening()
+
+	/**
+	 * Store each requested surface's address allowlist, checked against the address this request comes from.
+	 *
+	 * @param array<mixed, mixed> $requested Surface (`admin`, `api`) to its list of addresses and ranges
+	 *
+	 * @return array<string, array<int, string>> Each surface with the list now in force
+	 *
+	 * @throws InvalidArgumentException When a surface, a list or an entry is not valid, or a list would lock this request out
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function appliedAddressAllowlists(array $requested): array {
+		$lists = [];
+		foreach ($requested as $surface => $entries) {
+			if (is_array($entries) === false) {
+				throw new InvalidArgumentException('Each address allowlist must be a list of addresses and ranges.');
+			}
+
+			$lists[(string)$surface] = $this->settingsService->setAddressAllowlist(
+				surface: (string)$surface,
+				entries: array_values($entries),
+				requesterAddress: $this->request->getRemoteAddress()
+			);
+		}
+
+		return $lists;
+	}//end appliedAddressAllowlists()
 
 	/**
 	 * Store each requested control value; a body without a controls map sets none.

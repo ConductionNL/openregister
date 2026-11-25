@@ -103,6 +103,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setPurpose(?string $purpose)
  * @method string|null getConsumer()
  * @method void setConsumer(?string $consumer)
+ * @method string|null getTriggerObject()
+ * @method void setTriggerObject(?string $triggerObject)
+ * @method string|null getRuleDigest()
+ * @method void setRuleDigest(?string $ruleDigest)
+ * @method string|null getRuleVersion()
+ * @method void setRuleVersion(?string $ruleVersion)
  * @method string|null getProcessingActivityId()
  * @method void setProcessingActivityId(?string $processingActivityId)
  * @method string|null getVersion()
@@ -491,6 +497,46 @@ class AuditTrail extends Entity implements JsonSerializable, AuditRecordInterfac
 	 * @var string|null
 	 */
 	protected ?string $consumer = null;
+
+	/**
+	 * The uuid of the object whose delete caused this entry, for a cascade
+	 * delete, a cleared reference or a defaulted reference.
+	 *
+	 * A projection of `changed` (the cascade context's or the integrity entry's
+	 * `triggerObject`), written in the same insert so the dependants of a delete
+	 * are one indexed lookup instead of a scan of the JSON column. It is NOT in
+	 * the sealed form: `changed` already carries the value and is sealed, so no
+	 * chain is re-sealed and no stored hash changes (openregister ADR-003).
+	 * Null on every other entry and on rows written before the column existed.
+	 *
+	 * @var string|null
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
+	 */
+	protected ?string $triggerObject = null;
+
+	/**
+	 * The SHA-256 of the canonical JSON of the read rule that let the reader see the object.
+	 *
+	 * Set on a `read` entry only, and only when a rule mediated the read; null for an
+	 * administrator, the object's owner, a schema without read rules, and every entry
+	 * written before the column existed. Sealed when set; left out of the sealed form
+	 * when null, so older entries hash exactly as they did.
+	 *
+	 * @var string|null
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	protected ?string $ruleDigest = null;
+
+	/**
+	 * The schema version the rule in {@see $ruleDigest} belonged to.
+	 *
+	 * @var string|null
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	protected ?string $ruleVersion = null;
 
 	/**
 	 * Constructor for the AuditTrail class

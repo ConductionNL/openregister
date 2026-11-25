@@ -1806,7 +1806,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	 */
 	private function buildGdprEntitiesController(): GdprEntitiesController {
 		return GdprEntitiesControllerFactory::create(
-			'openregister',
 			$this->request,
 			\OC::$server->get(GdprEntityMapper::class),
 			\OC::$server->get(EntityRelationMapper::class),
@@ -1826,7 +1825,6 @@ class ControllersIntegrationTest2 extends TestCase {
 	 */
 	private function buildWebhooksController(): WebhooksController {
 		return WebhooksControllerFactory::create(
-			'openregister',
 			$this->request,
 			\OC::$server->get(WebhookMapper::class),
 			\OC::$server->get(WebhookLogMapper::class),

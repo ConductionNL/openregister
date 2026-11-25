@@ -170,6 +170,140 @@ class DeclaredProviderResolver {
 	}//end resolve()
 
 	/**
+	 * Every discovered valid declaration as a provider picker may see it: never its rules or host.
+	 *
+	 * An invalid declaration admits nothing and is not offered; the administrator review
+	 * view reads the declarations itself and shows the reason.
+	 *
+	 * @return array<int, array{identifier: string, title: string, origin: string, status: string}>
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-the-provider-listing-exposes-origin-and-status-but-never-allow-rules
+	 */
+	public function listing(): array {
+		$out = [];
+		foreach ($this->loader->all() as $identifier => $declaration) {
+			$identifier = (string) $identifier;
+			if ($declaration['valid'] !== true) {
+				continue;
+			}
+
+			$title = trim((string) ($declaration['entry']['title'] ?? ''));
+			if ($title === '') {
+				$title = $identifier;
+			}
+
+			$out[] = [
+				'identifier' => $identifier,
+				'title'      => $title,
+				'origin'     => $declaration['app'],
+				'status'     => $this->resolve(identifier: $identifier)['status'],
+			];
+		}
+
+		return $out;
+	}//end listing()
+
+	/**
+	 * Every discovered declaration as an administrator reviews it: origin, status, host and rules.
+	 *
+	 * Unlike {@see self::listing()} this names the host and the full method+path rule set,
+	 * because deciding on a declaration means reading what it would open. An invalid
+	 * declaration is listed with the reason it admits nothing. `autoAdmitted` is true only
+	 * for a narrowing declaration, which needs no decision.
+	 *
+	 * @return array<int, array<string, mixed>> Per declaration: identifier, title, origin, status, lane,
+	 *         autoAdmitted, host, baseUrl, allowRules (method and pathPattern) and reason.
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-a-novel-declaration-is-unusable-until-an-administrator-approves-it
+	 */
+	public function review(): array {
+		$out = [];
+		foreach ($this->loader->all() as $identifier => $declaration) {
+			$identifier = (string) $identifier;
+			$entry = $declaration['entry'];
+			$title = '';
+			if (is_string($entry['title'] ?? null) === true) {
+				$title = trim($entry['title']);
+			}
+
+			$baseUrl = '';
+			if (is_string($entry['baseUrl'] ?? null) === true) {
+				$baseUrl = $entry['baseUrl'];
+			}
+
+			$lane = '';
+			$reason = $declaration['reason'];
+			if ($declaration['valid'] === true) {
+				$lane = $declaration['lane'];
+				$reason = '';
+			}
+
+			if ($title === '') {
+				$title = $identifier;
+			}
+
+			$out[] = [
+				'identifier'   => $identifier,
+				'title'        => $title,
+				'origin'       => $declaration['app'],
+				'status'       => $this->resolve(identifier: $identifier)['status'],
+				'lane'         => $lane,
+				'autoAdmitted' => $lane === DeclarationValidator::LANE_NARROWING,
+				'host'         => (string) (parse_url($baseUrl, PHP_URL_HOST) ?? ''),
+				'baseUrl'      => $baseUrl,
+				'allowRules'   => $this->reviewRules(rules: ($entry['allowRules'] ?? [])),
+				'reason'       => $reason,
+			];
+		}
+
+		return $out;
+	}//end review()
+
+	/**
+	 * The method+path rules of a declared entry, as written; anything that is not a rule is left out.
+	 *
+	 * @param mixed $rules The entry's `allowRules`.
+	 *
+	 * @return array<int, array{method: string, pathPattern: string}>
+	 */
+	private function reviewRules(mixed $rules): array {
+		if (is_array($rules) === false) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($rules as $rule) {
+			if (is_array($rule) === false || is_string($rule['method'] ?? null) === false || is_string($rule['pathPattern'] ?? null) === false) {
+				continue;
+			}
+
+			$out[] = ['method' => $rule['method'], 'pathPattern' => $rule['pathPattern']];
+		}
+
+		return $out;
+	}//end reviewRules()
+
+	/**
+	 * The app a declared identifier belongs to: the part before its first colon.
+	 *
+	 * Read from the identifier itself, so it still answers when the declaring app is
+	 * disabled and its declaration can no longer be discovered.
+	 *
+	 * @param string $identifier The `<appId>:<localId>` identifier.
+	 *
+	 * @return string The declaring app, or '' for an identifier outside the declared space.
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-a-declared-provider-is-usable-only-by-the-app-that-declared-it
+	 */
+	public function declaringApp(string $identifier): string {
+		if ($this->isDeclaredIdentifier(identifier: $identifier) === false) {
+			return '';
+		}
+
+		return explode(':', $identifier, 2)[0];
+	}//end declaringApp()
+
+	/**
 	 * The admitted provider entry of a declared identifier, or null when it is not admitted.
 	 *
 	 * @param string $identifier The `<appId>:<localId>` identifier.

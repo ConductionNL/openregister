@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
@@ -160,7 +161,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		}
 
 		$timer = $this->factory()->build(config: $config, act: $act);
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 
 		// Arm-time validation is AUTHORITATIVE: resolve the ladder and check
 		// every preBreach rung on the timeline before anything is written.
@@ -229,7 +230,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$priorFireAt = $timer->getFireAt();
 		$consumed = $this->arithmetic->calculator->measure(
 			span: new CalendarSpan(from: $timer->getRunningSince(), to: $act->now, calendar: $calendar),
@@ -288,7 +289,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 
 		return $this->transactional(
 			mutation: function () use ($timer, $calendar, $decision, $act, $now): FlowTimer {
@@ -398,15 +399,17 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * Supersede a timer whose anchoring event moved, as {@see supersede()} documents.
 	 *
 	 * @param TimerDecision $decision The timer to supersede and why the anchor moved.
-	 * @param FlowTimerAct  $act      The acting identity, the clock, and as `when` the new instant of the anchoring event.
+	 * @param FlowTimerAct             $act      The acting identity, the clock, and as `when` the new instant of the anchoring event.
+	 * @param TimerCalendarSwitch|null $switch   The calendar the successor moves to, keeping the anchor; null to keep the calendar.
 	 *
 	 * @return FlowTimer The successor.
 	 *
 	 * @throws FlowTimerStateException When the timer is not open.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
 	 */
-	private function reanchor(TimerDecision $decision, FlowTimerAct $act): FlowTimer {
+	private function reanchor(TimerDecision $decision, FlowTimerAct $act, ?TimerCalendarSwitch $switch=null): FlowTimer {
 		$prior = $this->storage->timers->findByUuid(uuid: $decision->uuid);
 		if ($prior->isOpen() === false) {
 			throw new FlowTimerStateException(
@@ -414,15 +417,26 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $prior->getCalendarSlug(), organisation: $prior->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $prior)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$successor = $this->factory()->successor(
 			scope: new FlowTimerScope(timer: $prior, calendar: $calendar),
 			act: $act
 		);
+		$successorCalendar = $calendar;
+		if ($switch !== null) {
+			// The anchor did NOT move, the calendar under it did: the successor
+			// keeps the anchor and the running segment, and is measured on the
+			// calendar its new record type names (identity-survives-a-move 1.2).
+			$switch->applyTo(timer: $successor);
+			$successor->setAnchorAt($prior->getAnchorAt());
+			$successor->setRunningSince($prior->getRunningSince());
+			$successorCalendar = WorkingCalendarScope::ofTimer(timer: $successor)->calendarFrom(calendars: $this->arithmetic->calendars);
+		}
+
 		$priorFired = $this->storage->fires->findByTimer(timerUuid: $decision->uuid);
 
 		return $this->transactional(
-			mutation: function () use ($prior, $successor, $priorFired, $calendar, $decision, $act): FlowTimer {
+			mutation: function () use ($prior, $successor, $priorFired, $calendar, $successorCalendar, $decision, $act): FlowTimer {
 				$priorFireAt = $prior->getFireAt();
 				$prior->setState(FlowTimer::STATE_SUPERSEDED);
 				$this->deadlines()->recompute(scope: new FlowTimerScope(timer: $prior, calendar: $calendar), firedKeys: []);
@@ -433,7 +447,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 
 				// The successor must exist before its inherited fire rows.
 				$persisted = $this->storage->timers->insert($successor);
-				$scope = new FlowTimerScope(timer: $persisted, calendar: $calendar);
+				$scope = new FlowTimerScope(timer: $persisted, calendar: $successorCalendar);
 				$inherited = [];
 				if ($priorFired !== []) {
 					$passed = $this->passedRungKeys(scope: $scope, now: $act->now);
@@ -473,6 +487,55 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$cancellation = $this->cancellation(change: $change);
 		return $this->cancelAll(timers: $open, cancellation: $cancellation);
 	}//end cancelForSubject()
+
+	/**
+	 * The subject moved to another record type: move every OPEN timer whose
+	 * calendar its record type named onto the calendar the new one names.
+	 *
+	 * An armed timer is superseded with the change's reason (`moved`) and a
+	 * successor keeps its anchor, running segment and consumed time, measured
+	 * on the new calendar, so its deadline is re-projected and the ledger
+	 * shows why. A suspended timer has no fire moment until it resumes, and
+	 * resume measures the remainder against the timer's own calendar, so it
+	 * is pointed at the new calendar in place. A timer whose calendar came
+	 * from its own configuration, its unit or the instance is not touched,
+	 * and neither is one whose calendar does not change.
+	 *
+	 * @param TimerSubjectRef $subject    The subject type and uuid.
+	 * @param string          $recordType The schema the subject now has.
+	 * @param TimerChange     $change     Why (`moved`), the acting identity, and the clock.
+	 *
+	 * @return int How many timers changed calendar.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function recalendarForSubject(TimerSubjectRef $subject, string $recordType, TimerChange $change): int {
+		$slug  = $this->arithmetic->calendars->recordTypeCalendar(schema: $recordType);
+		$open  = $this->storage->timers->findBySubject(subject: new TimerSubject(type: $subject->type, uuid: $subject->uuid), states: self::OPEN_STATES);
+		$count = 0;
+		foreach ($open as $timer) {
+			$switch = TimerCalendarSwitch::forTimer(timer: $timer, calendarSlug: $slug, recordType: $recordType);
+			if ($switch === null) {
+				continue;
+			}
+
+			if ($timer->getState() === FlowTimer::STATE_SUSPENDED) {
+				$switch->applyTo(timer: $timer);
+				$this->storage->timers->update($timer);
+				$count++;
+				continue;
+			}
+
+			$this->reanchor(
+				decision: new TimerDecision(uuid: (string)$timer->getUuid(), reason: $change->reason),
+				act: new FlowTimerAct(actor: $change->actor, now: $this->instant(now: $change->now), when: ($timer->getAnchorAt() ?? $timer->getRunningSince())),
+				switch: $switch
+			);
+			$count++;
+		}
+
+		return $count;
+	}//end recalendarForSubject()
 
 	/**
 	 * Cancel every OPEN timer a run terminality reaches: the run as subject,
@@ -529,7 +592,10 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @param FlowTimer $timer The timer.
 	 * @param DateTimeInterface|null $now The clock.
 	 *
-	 * @return array{overdue: bool, remaining: float, unit: string, overdueBy: float|null, fireAt: string|null, state: string} The derivation.
+	 * @return array{
+	 *     overdue: bool, remaining: float, unit: string, overdueBy: float|null, fireAt: string|null, state: string,
+	 *     unrolledAt: string|null, rolledBy: mixed, timeZone: string, fireAtLocal: string|null, unrolledAtLocal: string|null
+	 * } The derivation.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
 	 */
@@ -552,8 +618,34 @@ class FlowTimerService implements FlowTimerControlInterface {
 			// defend.
 			'unrolledAt' => $timer->getUnrolledAt()?->format('c'),
 			'rolledBy' => $timer->getRolledBy(),
+			// The instants stay UTC; beside them the date as the organisation
+			// reads it, in the calendar's zone and naming it (calendar-time-zone
+			// 2.3), so a handler is not left converting a statutory deadline.
+			'timeZone' => $scope->calendar->getTimezone(),
+			'fireAtLocal' => $this->localDate(moment: $timer->getFireAt(), zone: $scope->calendar->getTimezone()),
+			'unrolledAtLocal' => $this->localDate(moment: $timer->getUnrolledAt(), zone: $scope->calendar->getTimezone()),
 		];
 	}//end describe()
+
+	/**
+	 * An instant as a local date in a zone, naming the zone: `2027-06-30 23:59 Europe/Amsterdam`.
+	 *
+	 * @param DateTimeInterface|null $moment The instant, or null.
+	 * @param string                 $zone   The IANA zone.
+	 *
+	 * @return string|null The local date, or null when there is no instant.
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	private function localDate(?DateTimeInterface $moment, string $zone): ?string {
+		if ($moment === null) {
+			return null;
+		}
+
+		$local = (new DateTimeImmutable('@'.$moment->format('U')))->setTimezone(new DateTimeZone($zone));
+
+		return $local->format('Y-m-d H:i').' '.$zone;
+	}//end localDate()
 
 	/**
 	 * How far an armed timer is past its fire moment, or null when it is not.
@@ -655,13 +747,14 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return int How many rungs THIS call fired.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-task-nearing-its-deadline-warns-its-assignee-once
 	 */
 	public function fireRungs(FlowTimer $timer, DateTimeInterface $now): int {
 		if ($timer->getState() !== FlowTimer::STATE_ARMED || $timer->getFireAt() === null) {
 			return 0;
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$ladder = $this->arithmetic->ladder->resolveLadder(timer: $timer);
 		$firedKeys = $this->firedKeys(timerUuid: (string)$timer->getUuid());
 		$subject = $this->projection()->subjectTask(timer: $timer);
@@ -697,7 +790,12 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$this->subjects->dispatcher->dispatchTyped(
 				new FlowTimerFiredEvent(
 					timer: $timer,
-					firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: $transition, rungKey: (string)$rung['key']),
+					firing: new TimerFiring(
+						kind: FlowTimerFiredEvent::KIND_RUNG,
+						transition: $transition,
+						rungKey: (string)$rung['key'],
+						rungTrigger: (string)$rung['trigger']
+					),
 					notice: new EscalationNotice(
 						recipients: $recipients,
 						priority: (string)$rung['priority'],
@@ -761,7 +859,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$act = $grant->act;
 		$extension->assertValid();
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$added = $this->arithmetic->calculator->convert(
 			conversion: new UnitConversion(
 				value: (float)$extension->amount,
@@ -1001,9 +1099,29 @@ class FlowTimerService implements FlowTimerControlInterface {
 		// later is reading the ledger.
 		$event->setUnrolledAt($timer->getUnrolledAt());
 		$event->setRolledBy($timer->getRolledBy());
+		$event->setTimeZone($this->ledgerZone(timer: $timer));
 		$event->setCreated($this->mutable(value: $entry->moment));
 		$this->storage->events->insert($event);
 	}//end record()
+
+	/**
+	 * The zone of the calendar a timer counts in, for its ledger row, or null
+	 * when the calendar cannot be resolved: the row is still written, since
+	 * the history matters more than its local dates (calendar-time-zone 2.3).
+	 *
+	 * @param FlowTimer $timer The timer.
+	 *
+	 * @return string|null The IANA zone.
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	private function ledgerZone(FlowTimer $timer): ?string {
+		try {
+			return $this->scope(timer: $timer)->calendar->getTimezone();
+		} catch (Throwable) {
+			return null;
+		}
+	}//end ledgerZone()
 
 	/**
 	 * Run a mutation in one transaction.
@@ -1057,7 +1175,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return FlowTimerScope The scope.
 	 */
 	private function scope(FlowTimer $timer): FlowTimerScope {
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		return new FlowTimerScope(timer: $timer, calendar: $calendar);
 	}//end scope()
 

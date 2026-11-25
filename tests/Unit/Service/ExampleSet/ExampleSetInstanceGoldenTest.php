@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\DefaultOrganisationInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
@@ -119,8 +120,17 @@ class ExampleSetInstanceGoldenTest extends TestCase {
 				self::organisation(uuid: 'u3', slug: '', name: 'No slug'),
 			]
 		);
+		$service = $this->createMock(DefaultOrganisationInterface::class);
+		$service->method('ensureDefaultOrganisation')->willReturn(
+			self::organisation(uuid: 'default-1', slug: 'default', name: 'Default Organisation', members: ['alice'])
+		);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturn($mapper);
+		$container->method('get')->willReturnMap(
+			[
+				[DefaultOrganisationInterface::class, $service],
+				[OrganisationMapperInterface::class, $mapper],
+			]
+		);
 		return new ExampleSetInstance(container: $container, config: $this->createMock(IConfig::class));
 	}//end instance()
 
@@ -191,6 +201,7 @@ class ExampleSetInstanceGoldenTest extends TestCase {
 			[
 				'findBySlug partner',
 				'insert ["Partner","partner","A partner","partner","info@partner.example",["alice","bob"],[5,null,null,null,9,"case"]]',
+				'update ["Default Organisation","default",null,"organisation",null,["alice","bob"],[null,null,null,null,null,null]]',
 				'findBySlug plain',
 				'insert ["Plain","plain","","organisation",null,[],[null,null,null,null,null,null]]',
 				'findBySlug plain',

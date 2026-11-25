@@ -32,9 +32,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Repair\FlowTimerRegisterPathInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\App\IAppManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -70,17 +72,32 @@ class FlowTimerDefinitionStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects Reads the seeded objects.
-	 * @param IAppManager $appManager Locates the shipped descriptor.
-	 * @param LoggerInterface $logger Diagnostics.
+	 * The object operations are looked up on first read: ObjectService's own
+	 * graph reaches this store (save -> property rules -> named conditions ->
+	 * relative time -> working calendars; move -> timers; facets -> week
+	 * numbering -> working calendars), so taking ObjectOperationsInterface in
+	 * the constructor closed a DI loop and the app could not be enabled.
+	 *
+	 * @param ContainerInterface $container  Supplies ObjectOperationsInterface, which reads the seeded objects.
+	 * @param IAppManager        $appManager Locates the shipped descriptor.
+	 * @param LoggerInterface    $logger     Diagnostics.
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
+		private readonly ContainerInterface $container,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The object operations that read the seeded objects.
+	 *
+	 * @return ObjectOperationsInterface The operations.
+	 */
+	private function objects(): ObjectOperationsInterface {
+		return $this->container->get(ObjectOperationsInterface::class);
+	}//end objects()
 
 	/**
 	 * Every working-calendar definition, keyed by slug.
@@ -149,9 +166,8 @@ class FlowTimerDefinitionStore {
 	 */
 	private function fromRegister(string $schema): array {
 		try {
-			$result = $this->objects->searchObjectsBySlug(
-				registerSlug: self::REGISTER,
-				schemaSlug: $schema,
+			$result = $this->objects()->searchObjectsBySlug(
+				target: new RegisterSchemaSlugs(register: self::REGISTER, schema: $schema),
 				filters: [],
 				_rbac: false,
 				_multitenancy: false

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -57,6 +58,8 @@ use ReflectionMethod;
  * @package Unit\Controller
  */
 class ObjectsControllerCountsTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private ObjectsController $controller;
 	private IRequest&MockObject $request;
 	private IAppConfig&MockObject $config;
@@ -93,6 +96,7 @@ class ObjectsControllerCountsTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->importService = $this->createMock(ImportService::class);
 		$this->writeRequestDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);

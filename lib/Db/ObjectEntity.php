@@ -86,6 +86,8 @@ use OCP\IUserSession;
  * @method void setAuthorization(?array $authorization)
  * @method string|null getFolder()
  * @method void setFolder(?string $folder)
+ * @method DateTime|null getExpires()
+ * @method void setExpires(?DateTime $expires)
  * @method string|null getApplication()
  * @method void setApplication(?string $application)
  * @method string|null getOrganisation()
@@ -712,6 +714,16 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $fieldRules = null;
 
 	/**
+	 * The properties the current reader may read but not update, derived at
+	 * render time from the property-level authorization. A hint a form disables;
+	 * the save path still refuses the write. Exposed in @self as
+	 * `readOnlyProperties`, and omitted when the reader may change every field.
+	 *
+	 * @var array<int, string>|null
+	 */
+	protected ?array $readOnlyProperties = null;
+
+	/**
 	 * The object's key under its schema's declared identity
 	 * (`modelling-composite-identity`): the identity values joined in
 	 * declared order, such as `0363:Z-2026-0042`.
@@ -822,6 +834,49 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var int|null
 	 */
 	protected ?int $childCount = null;
+
+	/**
+	 * Whether this object's parent is one the reader may not read.
+	 *
+	 * Transient, set only on a `_roots=true` page of a schema that declares
+	 * `x-openregister-hierarchy` (records-tree-view): such an object would sit
+	 * under no node the reader can open, so the root page carries it, marked.
+	 * Exposed in @self as `parentHidden`, and absent on every other read.
+	 *
+	 * @var bool|null
+	 */
+	protected ?bool $parentHidden = null;
+
+	/**
+	 * The name of the attached file whose text matched a content search.
+	 *
+	 * Transient, set only on a row that entered a content search through a
+	 * file chunk. Exposed in @self as `matchedFile`; it carries the name only,
+	 * never text from the file.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $matchedFile = null;
+
+	/**
+	 * The id of the attached file whose text matched a content search.
+	 *
+	 * Transient, set beside matchedFile. Exposed in @self as `matchedFileId`.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $matchedFileId = null;
+
+	/**
+	 * The path of the archive member whose text matched a content search.
+	 *
+	 * Transient, set only when the matching chunk belongs to a member of a zip
+	 * attachment; matchedFile then names the archive. Exposed in @self as
+	 * `matchedMember`; a path inside the archive, never text from it.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $matchedMember = null;
 
 	/**
 	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
@@ -1057,6 +1112,32 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setFieldRules()
 
 	/**
+	 * The properties the current reader may read but not update.
+	 *
+	 * @return array<int, string>|null The property names, or null when not derived.
+	 *
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md
+	 */
+	public function getReadOnlyProperties(): ?array {
+		return $this->readOnlyProperties;
+	}//end getReadOnlyProperties()
+
+	/**
+	 * Set the properties the current reader may read but not update.
+	 *
+	 * Surfaced in the @self envelope as `readOnlyProperties` by getObjectArray().
+	 *
+	 * @param array<int, string>|null $properties The property names.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md
+	 */
+	public function setReadOnlyProperties(?array $properties): void {
+		$this->readOnlyProperties = $properties;
+	}//end setReadOnlyProperties()
+
+	/**
 	 * Get the object's key under its schema's identity, when set by the render layer.
 	 *
 	 * @return string|null
@@ -1222,6 +1303,68 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setChildCount(?int $childCount): void {
 		$this->childCount = $childCount;
 	}//end setChildCount()
+
+	/**
+	 * Mark that the reader may not read this object's parent.
+	 *
+	 * Write-only, like setChildCount(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `parentHidden`.
+	 *
+	 * @param bool|null $parentHidden True when the parent is hidden from the reader.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/records-tree-view/specs/saved-search-views/spec.md#requirement-a-record-under-an-unreadable-parent-stays-visible
+	 */
+	public function setParentHidden(?bool $parentHidden): void {
+		$this->parentHidden = $parentHidden;
+	}//end setParentHidden()
+
+	/**
+	 * Write the name of the file whose text matched a content search.
+	 *
+	 * Write-only, like setViewedAt(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `matchedFile`.
+	 *
+	 * @param string|null $matchedFile The file name.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/tables-bulk-jobs-and-file-search/design.md
+	 */
+	public function setMatchedFile(?string $matchedFile): void {
+		$this->matchedFile = $matchedFile;
+	}//end setMatchedFile()
+
+	/**
+	 * Write the id of the file whose text matched a content search.
+	 *
+	 * Write-only, like setMatchedFile(). Surfaced in the @self envelope as `matchedFileId`.
+	 *
+	 * @param int|null $matchedFileId The file id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	public function setMatchedFileId(?int $matchedFileId): void {
+		$this->matchedFileId = $matchedFileId;
+	}//end setMatchedFileId()
+
+	/**
+	 * Write the path of the archive member whose text matched a content search.
+	 *
+	 * Write-only, like setMatchedFile(). Surfaced in the @self envelope as `matchedMember`.
+	 *
+	 * @param string|null $matchedMember The member path inside the archive.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	public function setMatchedMember(?string $matchedMember): void {
+		$this->matchedMember = $matchedMember;
+	}//end setMatchedMember()
 
 	/**
 	 * Write what the reader may do with this object.
@@ -1744,6 +1887,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//   release, so a client that still reads the star keeps working.
 		// - viewedAt: when the reader last opened this object, on a
 		//   `_recent=true` page only (`read-history-on-audit-trail`).
+		// - parentHidden: true on a `_roots=true` page for an object whose
+		//   parent the reader may not read (`records-tree-view`).
 		//
 		// This is a map rather than a chain of ifs because the chain grew one
 		// branch per feature and ran past the complexity budget.
@@ -1780,6 +1925,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'fieldRules'              => $this->fieldRules,
 			'key'                     => $this->identityKey,
 			'confidentiality'         => $this->confidentiality,
+			'matchedFile'             => $this->matchedFile,
+			'matchedFileId'           => $this->matchedFileId,
+			'matchedMember'           => $this->matchedMember,
 		];
 	}//end renderedFields()
 
@@ -1797,7 +1945,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'favourite'               => $this->watching,
 			'viewedAt'                => $this->viewedAt,
 			'childCount'              => $this->childCount,
+			'parentHidden'            => $this->parentHidden,
 			'can'                     => $this->can,
+			'readOnlyProperties'      => $this->readOnlyProperties,
 		];
 	}//end readerFields()
 
@@ -2279,23 +2429,6 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end getLockedBy()
 
 	/**
-	 * Delete the object
-	 *
-	 * @param IUserSession $userSession Current user session
-	 * @param string $deletedReason Reason for deletion
-	 * @param int $retentionPeriod Retention period in days (default: 30 days)
-	 *
-	 * @throws Exception If no user is logged in
-	 *
-	 * @return static Returns the entity
-	 *
-	 * @spec openspec/specs/deletion-audit-trail/spec.md
-	 */
-	public function delete(IUserSession $userSession, ?string $deletedReason = null, ?int $retentionPeriod = 30): static {
-		return $this->softDelete(userSession: $userSession, deletion: new SoftDeletion(reason: $deletedReason, retentionDays: $retentionPeriod));
-	}//end delete()
-
-	/**
 	 * Soft-delete the object: record who deleted it, why, and until when it stays recoverable.
 	 *
 	 * The retention handed in is the window (a non-positive one takes the
@@ -2315,7 +2448,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->setDeleted($deletion->metadataFor(userId: $userId, now: new DateTime()));
 
 		return $this;
-	}//end delete()
+	}//end softDelete()
 
 	/**
 	 * Whether an active legal hold keeps this record from being destroyed.

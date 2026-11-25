@@ -72,6 +72,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @param IURLGenerator             $urlGenerator  The task page link and icon.
 	 * @param IDateTimeFormatter        $dateFormatter The due date in the user's format.
 	 * @param DeepLinkRegistryServiceInterface|null $deepLinks  The subject app's own task route, when it registered one (design D-3).
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function __construct(
 		private readonly TaskInboxServiceInterface $inbox,
@@ -89,6 +91,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @return string
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function getId(): string {
 		return 'openregister_flow_tasks';
@@ -100,6 +104,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @return string
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function getName(): string {
 		return $this->l10n->t('Tasks');
@@ -116,6 +122,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function getOrder(string $route, array $routeParameters): ?int {
 		unset($route, $routeParameters);
@@ -128,6 +136,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @return array<int, string>
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function getSupportedFilters(): array {
 		return ['term'];
@@ -139,6 +149,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @return array<int, string>
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function getAlternateIds(): array {
 		return [];
@@ -150,6 +162,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @return array<int, mixed>
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function getCustomFilters(): array {
 		return [];
@@ -166,6 +180,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @SuppressWarnings(PHPMD.StaticAccess) SearchResult::complete/paginated is the Nextcloud search pattern
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function search(IUser $user, ISearchQuery $query): SearchResult {
 		$term = trim($query->getTerm());
@@ -197,6 +213,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @param string $term The term.
 	 *
 	 * @return TaskInboxCriteria
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-flow-task-search-never-shows-more-than-the-inbox
 	 */
 	private function criteria(IUser $user, string $term): TaskInboxCriteria {
 		return new TaskInboxCriteria(
@@ -219,6 +237,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @param array<string, mixed> $row An inbox row.
 	 *
 	 * @return SearchResultEntry
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-a-flow-task-search-result-names-the-task-and-opens-it
 	 */
 	private function entry(array $row): SearchResultEntry {
 		$uuid  = (string) ($row['uuid'] ?? '');
@@ -273,6 +293,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @param array<string, mixed> $row An inbox row.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-a-flow-task-search-result-names-the-task-and-opens-it
 	 */
 	private function subline(array $row): string {
 		$parts = [$this->stateWord(row: $row)];
@@ -296,6 +318,8 @@ class FlowTasksProvider implements IFilteringProvider {
 	 * @param array<string, mixed> $row An inbox row.
 	 *
 	 * @return string
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-a-flow-task-search-result-names-the-task-and-opens-it
 	 */
 	private function stateWord(array $row): string {
 		if (($row['overdue'] ?? false) === true) {

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -60,6 +61,7 @@ class AdminGate implements AdminGateInterface {
 	 * @return bool True when the signed-in caller is an admin.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
 		if ($this->userSession === null || $this->groupManager === null) {
@@ -71,7 +73,7 @@ class AdminGate implements AdminGateInterface {
 			return false;
 		}
 
-		return $this->groupManager->isAdmin($user->getUID());
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end isAdmin()
 
 	/**

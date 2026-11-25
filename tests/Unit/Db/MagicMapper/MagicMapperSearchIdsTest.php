@@ -164,7 +164,7 @@ class MagicMapperSearchIdsTest extends TestCase {
 			->getMock();
 
 		$mapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query): array {
+			function (RegisterSchema $table, array $query): array {
 				$this->tableQueries[] = $query;
 				$this->searches++;
 				return ($this->tableRows ?? [new ObjectEntity()]);

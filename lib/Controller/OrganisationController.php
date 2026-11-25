@@ -38,12 +38,15 @@ use OCA\OpenRegister\Controller\Support\MembershipChangeRun;
 use OCA\OpenRegister\Controller\Support\ParentAssignmentRun;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationEdit;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Kernel\Contracts\PromotionRefusedException;
+use OCA\OpenRegister\Service\Organisation\PromotionServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
 use OCA\OpenRegister\Service\Organisation\NewOrganisation;
@@ -80,6 +83,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class OrganisationController extends Controller {
+	use HandlesExceptionsTrait;
 
 	/**
 	 * The refusal of a join or leave for another user, by operation.
@@ -192,6 +196,13 @@ class OrganisationController extends Controller {
 	private readonly ?OrganisationEditAuditorInterface $lifecycleAuditor;
 
 	/**
+	 * Promotes configuration to the next OTAP environment. Null only in legacy fixtures.
+	 *
+	 * @var ?PromotionServiceInterface
+	 */
+	private readonly ?PromotionServiceInterface $promotion;
+
+	/**
 	 * OrganisationController constructor
 	 *
 	 * @param IRequest $request HTTP request
@@ -205,6 +216,7 @@ class OrganisationController extends Controller {
 		$this->usageService = $services->domain->usageService;
 		$this->lifecycleAuditor = $services->auditing->lifecycleAuditor;
 		$this->grantAuditor = $services->domain->grantAuditor;
+		$this->promotion = $services->domain->promotion;
 		$this->organisationService = $services->domain->organisationService;
 		$this->organisationMapper = $services->mappers->organisationMapper;
 		$this->logger = $services->session->logger;
@@ -696,7 +708,7 @@ class OrganisationController extends Controller {
 			]
 		);
 
-		return self::errorResponse(error: $error);
+		return self::badRequestResponse(error: $error);
 	}//end membershipFailure()
 
 	/**
@@ -706,14 +718,14 @@ class OrganisationController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private static function errorResponse(Exception $error): JSONResponse {
+	private static function badRequestResponse(Exception $error): JSONResponse {
 		return new JSONResponse(
 			data: [
 				'error' => $error->getMessage(),
 			],
 			statusCode: Http::STATUS_BAD_REQUEST
 		);
-	}//end errorResponse()
+	}//end badRequestResponse()
 
 	/**
 	 * Get organisation details by UUID
@@ -1319,7 +1331,7 @@ class OrganisationController extends Controller {
 			return null;
 		} catch (Exception $e) {
 			$this->logParentRefusal(run: $run, error: $e);
-			return self::errorResponse(error: $e);
+			return self::badRequestResponse(error: $e);
 		}//end try
 	}//end assignParent()
 
@@ -1431,10 +1443,7 @@ class OrganisationController extends Controller {
 			$result = $this->tenantLifecycleService->suspend($organisation);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			if ($e->getCode() >= 400) {
-				$statusCode = $e->getCode();
-			}
+			$statusCode = $this->lifecycleStatus(error: $e);
 
 			return new JSONResponse(
 				data: [
@@ -1472,15 +1481,7 @@ class OrganisationController extends Controller {
 			$result = $this->tenantLifecycleService->reactivate($organisation);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			if ($e->getCode() >= 400) {
-				$statusCode = $e->getCode();
-			}
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $statusCode
-			);
+			return $this->lifecycleFailure(error: $e);
 		}//end try
 	}//end activate()
 
@@ -1500,15 +1501,7 @@ class OrganisationController extends Controller {
 			$result = $this->tenantLifecycleService->deprovision($organisation);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			if ($e->getCode() >= 400) {
-				$statusCode = $e->getCode();
-			}
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $statusCode
-			);
+			return $this->lifecycleFailure(error: $e);
 		}
 	}//end deprovision()
 
@@ -1527,17 +1520,75 @@ class OrganisationController extends Controller {
 			$result = $this->tenantLifecycleService->retain($organisation);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			$statusCode = Http::STATUS_INTERNAL_SERVER_ERROR;
-			if ($e->getCode() >= 400) {
-				$statusCode = $e->getCode();
-			}
-
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: $statusCode
-			);
+			return $this->lifecycleFailure(error: $e);
 		}
 	}//end retain()
+
+	/**
+	 * The answer to a lifecycle action that failed: the error, under its status.
+	 *
+	 * @param Exception $error The failure.
+	 *
+	 * @return JSONResponse The error response.
+	 */
+	private function lifecycleFailure(Exception $error): JSONResponse {
+		return new JSONResponse(
+			data: ['error' => $error->getMessage()],
+			statusCode: $this->lifecycleStatus(error: $error)
+		);
+	}//end lifecycleFailure()
+
+	/**
+	 * The status a failed lifecycle action answers: the exception code when it is an HTTP error, else 500.
+	 *
+	 * @param Exception $error The failure.
+	 *
+	 * @return int The HTTP status.
+	 */
+	private function lifecycleStatus(Exception $error): int {
+		if ($error->getCode() >= 400) {
+			return (int)$error->getCode();
+		}
+
+		return Http::STATUS_INTERNAL_SERVER_ERROR;
+	}//end lifecycleStatus()
+
+	/**
+	 * Promote this organisation's configuration to a later OTAP environment.
+	 *
+	 * Admin only: the administrator check runs before either organisation is
+	 * looked up, so a refused caller learns nothing about them. The package
+	 * lands in the target as a draft set; nothing goes live until that set is
+	 * approved and deployed.
+	 *
+	 * @param string      $uuid               The organisation promoted from.
+	 * @param string|null $targetOrganisation The organisation promoted to.
+	 *
+	 * @return JSONResponse 201 with the landed set, 400 against the OTAP order or without a target, 403, 404 or 409.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md#8-promotion-between-environments-row-op-otap
+	 */
+	public function promote(string $uuid, ?string $targetOrganisation = null): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Only administrators can promote configuration'], statusCode: Http::STATUS_FORBIDDEN);
+		}
+
+		if ($this->promotion === null) {
+			return new JSONResponse(data: ['error' => 'Configuration promotion is not available'], statusCode: Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		if ($targetOrganisation === null || trim($targetOrganisation) === '') {
+			return new JSONResponse(data: ['error' => 'targetOrganisation is required'], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+
+		try {
+			$result = $this->promotion->promote(sourceUuid: $uuid, targetUuid: trim($targetOrganisation));
+		} catch (PromotionRefusedException $exception) {
+			return new JSONResponse(data: $exception->toResponseBody(), statusCode: $exception->statusCode);
+		}
+
+		return new JSONResponse(data: $result, statusCode: Http::STATUS_CREATED);
+	}//end promote()
 
 	/**
 	 * Get usage data for an organisation.
@@ -1557,10 +1608,7 @@ class OrganisationController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Organisation usage report failed');
 		}//end try
 	}//end usage()
 
@@ -1729,10 +1777,7 @@ class OrganisationController extends Controller {
 
 			return new JSONResponse(data: $report, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Tenant isolation verification failed');
 		}//end try
 	}//end isolationVerify()
 
@@ -1775,10 +1820,7 @@ class OrganisationController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Tenant isolation metrics failed');
 		}//end try
 	}//end isolationMetrics()
 }//end class

@@ -351,6 +351,53 @@
             }
         ]
     },
+    "failure property not authorized": {
+        "status": 403,
+        "headers": {
+            "Content-Type": "application/json; charset=utf-8"
+        },
+        "data": {
+            "error": "You are not authorized to modify the following properties: salaris, besluitdatum",
+            "properties": [
+                "salaris",
+                "besluitdatum"
+            ]
+        },
+        "calls": [
+            {
+                "findSilent": [
+                    "object-1",
+                    [],
+                    false,
+                    3,
+                    7,
+                    true,
+                    true
+                ]
+            },
+            {
+                "saveObject": [
+                    {
+                        "title": "x"
+                    },
+                    [],
+                    3,
+                    7,
+                    "stored-uuid",
+                    true,
+                    true,
+                    false,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    false,
+                    null
+                ]
+            }
+        ]
+    },
     "failure translation conflict": {
         "status": 400,
         "headers": {

@@ -1,0 +1,621 @@
+{
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"info": {
+		"_postman_id": "openregister-generated-identifier-partition-v1",
+		"name": "OpenRegister generated identifier per partition",
+		"description": "# Generated identifier per partition\n\nopenspec/changes/generated-identifier-partition task 2.2: `x-openregister-generated` with `partitionBy: unit` numbers each unit from one in each period (`{year}-{seq:5}`, `resetOn: year`); an object without a unit draws from the unpartitioned counter; a supplied number advances only its own unit's counter; a dotted `partitionBy` is refused at schema save.\n\nThe sequence name is per run, so its counters start fresh in the current year: the same state as the first object of a new year. Creates its own register and removes it at the end.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "year",
+			"value": ""
+		},
+		{
+			"key": "register_id",
+			"value": ""
+		},
+		{
+			"key": "schema_id",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Setup: register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Post {{run}}\",\"slug\":\"post-{{run}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.collectionVariables.set('run', String(Date.now()));",
+							"pm.collectionVariables.set('year', String(new Date().getUTCFullYear()));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('register_id', pm.response.json().id);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: registration schema, numbered per unit and year",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Registration {{run}}\",\"slug\":\"registration-{{run}}\",\"properties\":{\"subject\":{\"type\":\"string\"},\"unit\":{\"type\":\"string\"},\"registrationNumber\":{\"type\":\"string\",\"x-openregister-generated\":{\"sequence\":\"post-{{run}}\",\"format\":\"{year}-{seq:5}\",\"resetOn\":\"year\",\"partitionBy\":\"unit\"}}}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('schema_id', pm.response.json().id);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: attach the schema",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{register_id}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Post {{run}}\",\"slug\":\"post-{{run}}\",\"schemas\":[{{schema_id}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Finance, first",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/post-{{run}}/registration-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"post-{{run}}",
+						"registration-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\":\"a\",\"unit\":\"Finance\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.test('numbered '+pm.collectionVariables.get('year')+'-00001', function () { pm.expect(pm.response.json().registrationNumber).to.equal(pm.collectionVariables.get('year') + '-00001'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Housing, first: its own counter starts at one",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/post-{{run}}/registration-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"post-{{run}}",
+						"registration-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\":\"b\",\"unit\":\"Housing\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.test('numbered '+pm.collectionVariables.get('year')+'-00001', function () { pm.expect(pm.response.json().registrationNumber).to.equal(pm.collectionVariables.get('year') + '-00001'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Finance, second",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/post-{{run}}/registration-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"post-{{run}}",
+						"registration-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\":\"c\",\"unit\":\"Finance\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.test('numbered '+pm.collectionVariables.get('year')+'-00002', function () { pm.expect(pm.response.json().registrationNumber).to.equal(pm.collectionVariables.get('year') + '-00002'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "No unit: the unpartitioned counter",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/post-{{run}}/registration-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"post-{{run}}",
+						"registration-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\":\"d\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.test('numbered '+pm.collectionVariables.get('year')+'-00001', function () { pm.expect(pm.response.json().registrationNumber).to.equal(pm.collectionVariables.get('year') + '-00001'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "No unit again: still the shared counter, not a unit's",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/post-{{run}}/registration-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"post-{{run}}",
+						"registration-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\":\"e\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.test('numbered '+pm.collectionVariables.get('year')+'-00002', function () { pm.expect(pm.response.json().registrationNumber).to.equal(pm.collectionVariables.get('year') + '-00002'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Housing with a supplied number keeps it",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/post-{{run}}/registration-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"post-{{run}}",
+						"registration-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\":\"f\",\"unit\":\"Housing\",\"registrationNumber\":\"{{year}}-00010\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.test('numbered '+pm.collectionVariables.get('year')+'-00010', function () { pm.expect(pm.response.json().registrationNumber).to.equal(pm.collectionVariables.get('year') + '-00010'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Housing next follows the supplied number",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/post-{{run}}/registration-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"post-{{run}}",
+						"registration-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\":\"g\",\"unit\":\"Housing\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.test('numbered '+pm.collectionVariables.get('year')+'-00011', function () { pm.expect(pm.response.json().registrationNumber).to.equal(pm.collectionVariables.get('year') + '-00011'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Finance is not moved by Housing's supplied number",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/post-{{run}}/registration-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"post-{{run}}",
+						"registration-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\":\"h\",\"unit\":\"Finance\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.test('numbered '+pm.collectionVariables.get('year')+'-00003', function () { pm.expect(pm.response.json().registrationNumber).to.equal(pm.collectionVariables.get('year') + '-00003'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "A path as partitionBy is refused at schema save",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Bad {{run}}\",\"slug\":\"bad-{{run}}\",\"properties\":{\"unit\":{\"type\":\"object\"},\"n\":{\"type\":\"string\",\"x-openregister-generated\":{\"sequence\":\"bad-{{run}}\",\"format\":\"{seq:3}\",\"partitionBy\":\"unit.name\"}}}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('422', function () { pm.response.to.have.status(422); });",
+							"pm.test('the refusal names partitionBy', function () { pm.expect(pm.response.text()).to.include('partitionBy'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Teardown: register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{register_id}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('answered', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204, 409]); });"
+						]
+					}
+				}
+			]
+		}
+	]
+}

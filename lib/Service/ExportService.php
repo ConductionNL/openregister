@@ -30,11 +30,17 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
+use OCA\OpenRegister\Kernel\Contracts\TablePdfRendererInterface;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 use OCA\OpenRegister\Service\Rbac\AnonymousEnvelope;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Export\ExportRequest;
 use OCA\OpenRegister\Service\Export\ExportTable;
+use OCA\OpenRegister\Service\Export\RecordPdfRows;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Service\Export\RowsTable;
 use OCA\OpenRegister\Service\Export\XmlObjectWriter;
@@ -54,11 +60,11 @@ use OCA\OpenRegister\Files\Service\File\Pdf\Fallback\NcOfficeConverterInterface;
 use OCA\OpenRegister\Service\Object\CacheHandlerInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
-use OCP\IUserManager;
 use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
 use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Export\SheetTitle;
 use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -73,7 +79,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
-class ExportService implements ObjectExporterInterface {
+class ExportService implements ObjectExporterInterface, TablePdfRendererInterface {
 
 	/**
 	 * Maximum number of objects a single PDF export may render.
@@ -155,7 +161,6 @@ class ExportService implements ObjectExporterInterface {
 	 * Constructor for the ExportService.
 	 *
 	 * @param RegisterMapperInterface $registerMapper The register mapper.
-	 * @param IUserManager $_userManager The user manager (unused).
 	 * @param IGroupManager $groupManager The group manager.
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 * @param CacheHandlerInterface $cacheHandler The cache handler for name resolution.
@@ -168,7 +173,6 @@ class ExportService implements ObjectExporterInterface {
 	 */
 	public function __construct(
 		RegisterMapperInterface $registerMapper,
-		IUserManager $_userManager,
 		IGroupManager $groupManager,
 		ObjectOperationsInterface $objectService,
 		CacheHandlerInterface $cacheHandler,
@@ -537,6 +541,65 @@ class ExportService implements ObjectExporterInterface {
 	}//end renderTableToPdf()
 
 	/**
+	 * Render one record as a PDF: each field the user may read, with its label and value.
+	 *
+	 * The caller has already read the record with the user's rights; this
+	 * leaves out every field the user may not read (property-level RBAC, with
+	 * the record's own data for conditional rules) and every field marked not
+	 * visible, and masks explicit-reveal fields as the list export does. The
+	 * house style of the requesting user applies, as for a list export.
+	 *
+	 * @param ObjectEntity $object      The record, read with the user's rights.
+	 * @param Schema       $schema      Its schema.
+	 * @param IUser|null   $currentUser The requesting user, or null for the instance default house style.
+	 *
+	 * @return string The PDF bytes.
+	 *
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-single-record-exports-as-a-pdf
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
+	 */
+	public function recordToPdf(ObjectEntity $object, Schema $schema, ?IUser $currentUser): string {
+		$this->assertPdfAvailable();
+
+		$this->maskedColumns = array_fill_keys(ExplicitReveal::explicitProperties(schema: $schema), true);
+		$data = $object->getObject();
+		$table = (new RecordPdfRows())->table(
+			title: (string) ($object->getName() ?? $object->getUuid() ?? 'Record'),
+			uuid: $object->getUuid(),
+			properties: $schema->getProperties() ?? [],
+			readable: fn (string $name): bool => $this->propertyRbacHandler->canReadProperty(
+				property: new SchemaProperty(schema: $schema, name: $name),
+				request: new PropertyAccessRequest(object: $data)
+			),
+			value: fn (string $name): ?string => $this->getObjectValue(object: $object, header: $name)
+		);
+
+		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(table: $table)], uid: $currentUser?->getUID());
+	}//end recordToPdf()
+
+	/**
+	 * Render a table a caller in another component built as a PDF, as renderTableToPdf() does.
+	 *
+	 * @param string                           $title      The heading above the table.
+	 * @param array<int|string, string>        $columns    Column keys to labels, or a list of keys that are their own labels.
+	 * @param array<int, array<string, mixed>> $rows       The rows, each keyed by column key.
+	 * @param bool                             $wholeCells True to print every cell whole instead of cut to the object export's length.
+	 *
+	 * @return string The PDF bytes.
+	 *
+	 * @throws ExportTooLargeException When there are more rows than {@see self::MAX_PDF_EXPORT_ROWS}.
+	 * @throws OfficeServerRequiredException When no office server converts to PDF.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
+	 */
+	public function renderRowsToPdf(string $title, array $columns, array $rows, bool $wholeCells=false): string {
+		return $this->renderTableToPdf(table: new RowsTable(title: $title, columns: $columns, rows: $rows, wholeCells: $wholeCells));
+	}//end renderRowsToPdf()
+
+	/**
 	 * Build one PDF section per schema for a register-level export (no
 	 * single schema selected), mirroring `exportToExcel()`'s
 	 * one-sheet-per-schema behaviour. The row-count cap is enforced on the
@@ -800,8 +863,10 @@ class ExportService implements ObjectExporterInterface {
 	 * office server converts it to PDF.
 	 *
 	 * The requesting user's house style, when thematiq offers one, colours the
-	 * table header and adds the footer lines; without one the layout is the
-	 * plain one, and a profile that cannot be read never fails the export.
+	 * table header, adds the footer lines, puts the logo in the page header and
+	 * embeds its heading and body fonts where they can be embedded (a role whose
+	 * font cannot be keeps the default font); without one the layout is the plain one, and a profile that cannot be
+	 * read never fails the export.
 	 *
 	 * @param string[]    $sections Escaped HTML fragments, one per schema section.
 	 * @param string|null $uid      The requesting user, or null for the instance default house style.
@@ -817,10 +882,17 @@ class ExportService implements ObjectExporterInterface {
 			throw new OfficeServerRequiredException();
 		}
 
+		$profile = $this->documentStyle?->forUser(uid: $uid);
 		$odt = (new OdtWriter())->fromHtml(
 			html: implode('', $sections),
 			landscape: true,
-			houseStyle: OdtHouseStyle::fromProfile(profile: $this->documentStyle?->forUser(uid: $uid))
+			houseStyle: OdtHouseStyle::withFonts(
+				style: OdtHouseStyle::withLogo(
+					style: OdtHouseStyle::fromProfile(profile: $profile),
+					logo: $this->documentStyle?->logo(profile: $profile)
+				),
+				fonts: ($this->documentStyle?->fonts(profile: $profile) ?? [])
+			)
 		);
 
 		return $this->officeConverter->odtToPdf(odtBytes: $odt);
@@ -865,7 +937,7 @@ class ExportService implements ObjectExporterInterface {
 		$spreadsheet = new Spreadsheet();
 		$spreadsheet->removeSheetByIndex(0);
 		$sheet = $spreadsheet->createSheet();
-		$sheet->setTitle($request->schema?->getSlug() ?? 'data');
+		$sheet->setTitle(SheetTitle::for(spreadsheet: $spreadsheet, slug: $request->schema?->getSlug()));
 
 		foreach ($this->getHeaders(schema: $request->schema, currentUser: $request->currentUser) as $col => $header) {
 			SpreadsheetCell::set(sheet: $sheet, coordinate: $col . '1', value: $header);
@@ -943,6 +1015,9 @@ class ExportService implements ObjectExporterInterface {
 	 * @param ExportRequest $request     The register, schema, filters and user of this sheet
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 *       (the sheet title is one the workbook accepts, whatever the slug)
 	 */
 	private function populateSheet(Spreadsheet $spreadsheet, ExportRequest $request): void {
 		// Capture register context so getHeaders / getObjectValue can
@@ -950,13 +1025,7 @@ class ExportService implements ObjectExporterInterface {
 		// properties (register-i18n Phase 3 wire-in).
 		$this->contextRegister = $request->register;
 		$sheet = $spreadsheet->createSheet();
-
-		$sheetTitle = 'data';
-		if ($request->schema !== null) {
-			$sheetTitle = $request->schema->getSlug();
-		}
-
-		$sheet->setTitle($sheetTitle);
+		$sheet->setTitle(SheetTitle::for(spreadsheet: $spreadsheet, slug: $request->schema?->getSlug()));
 
 		$headers = $this->getHeaders(schema: $request->schema, currentUser: $request->currentUser);
 		foreach ($headers as $col => $header) {
@@ -1031,8 +1100,7 @@ class ExportService implements ObjectExporterInterface {
 			// Apply RBAC filtering.
 			_multitenancy: $selection['multitenancy'],
 			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: $selection['ids'],
-			uses: null
+			options: new SearchOptions(selection: new ObjectSelection(ids: $selection['ids']))
 		);
 
 		if ($this->processAudit === null) {
@@ -1064,8 +1132,7 @@ class ExportService implements ObjectExporterInterface {
 			query: $query,
 			_rbac: true,
 			_multitenancy: $selection['multitenancy'],
-			ids: $selection['ids'],
-			uses: null
+			selection: new ObjectSelection(ids: $selection['ids'])
 		);
 	}//end countExportTotal()
 

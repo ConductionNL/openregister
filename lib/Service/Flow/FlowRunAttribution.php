@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\FlowMapperInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -88,6 +89,19 @@ class FlowRunAttribution {
 	 * @var string
 	 */
 	private const NODE_TRIGGER_SCHEDULE = 'openregister.trigger-schedule';
+
+	/**
+	 * The trigger node whose `runAs` a run of each unattended trigger acts as.
+	 * A calendar or webhook run reads its own node (flow-calendar-and-webhook-triggers).
+	 *
+	 * @var array<string, string>
+	 */
+	private const DECLARING_NODE = [
+		self::TRIGGER_SCHEDULE => self::NODE_TRIGGER_SCHEDULE,
+		self::TRIGGER_CASE => self::NODE_TRIGGER_SCHEDULE,
+		'calendar' => 'openregister.trigger-calendar',
+		'webhook' => 'openregister.trigger-webhook',
+	];
 
 	/**
 	 * The node-config key naming the identity a scheduled run executes as.
@@ -281,7 +295,7 @@ class FlowRunAttribution {
 	 */
 	private function declaredByTrigger(?object $flow, string $trigger): array {
 		foreach ($this->nodesDeclaringFor(flow: $flow, trigger: $trigger) as $node) {
-			$declared = $this->declaredByNode(node: $node);
+			$declared = $this->declaredByNode(node: $node, type: self::DECLARING_NODE[$trigger]);
 			if ($declared !== null) {
 				return $declared;
 			}
@@ -299,7 +313,7 @@ class FlowRunAttribution {
 	 * @return array The nodes to look for a declaration in.
 	 */
 	private function nodesDeclaringFor(?object $flow, string $trigger): array {
-		if ($flow === null || in_array($trigger, [self::TRIGGER_SCHEDULE, self::TRIGGER_CASE], true) === false) {
+		if ($flow === null || array_key_exists($trigger, self::DECLARING_NODE) === false) {
 			return [];
 		}
 
@@ -314,13 +328,14 @@ class FlowRunAttribution {
 	/**
 	 * The identity one flow node declares, or null when it is no schedule trigger or declares none.
 	 *
-	 * @param mixed $node One entry of the flow's nodes.
+	 * @param mixed  $node One entry of the flow's nodes.
+	 * @param string $type The trigger node type that declares the identity for this run's trigger.
 	 *
 	 * @return array{user: string, declaredBy: string|null}|null The declaration, or null.
 	 */
-	private function declaredByNode(mixed $node): ?array {
+	private function declaredByNode(mixed $node, string $type): ?array {
 		if (is_array($node) === false
-			|| ($node['type'] ?? null) !== self::NODE_TRIGGER_SCHEDULE
+			|| ($node['type'] ?? null) !== $type
 		) {
 			return null;
 		}
@@ -377,7 +392,7 @@ class FlowRunAttribution {
 	 */
 	private function loadFlow(string $flowId): ?object {
 		try {
-			return $this->container->get('OCA\OpenRegister\Db\FlowMapper')->findByUuid($flowId);
+			return $this->container->get(FlowMapperInterface::class)->findByUuid($flowId);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				message: '[FlowRunAttribution] Could not load the flow to attribute its run: ' . $e->getMessage(),

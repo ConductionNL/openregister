@@ -33,12 +33,14 @@ final class PermissionsAuditControllerServices {
 	 *
 	 * @param PermissionsAuditRules $rules The rules bundle.
 	 * @param PermissionsAuditScope $scope Resolves which registers and schemas a report covers bundle.
+	 * @param PermissionsAuditMatrix|null $matrix The matrix export's services; the container always injects them.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function __construct(
 		public readonly PermissionsAuditRules $rules,
 		public readonly PermissionsAuditScope $scope,
+		public readonly ?PermissionsAuditMatrix $matrix = null,
 	) {
 	}//end __construct()
 }//end class

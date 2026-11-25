@@ -222,4 +222,36 @@ class SurveyRecordsTest extends TestCase {
 		$this->assertTrue($this->records->hasAnswers(within: $within, surveyUuid: 's-1'));
 		$this->assertFalse($this->records->hasAnswers(within: $within, surveyUuid: 's-1'));
 	}//end testHasAnswersReadsOneAnswerSet()
+	/**
+	 * A respondent's invitations are read across every survey of the register; no respondent reads nothing.
+	 *
+	 * @return void
+	 */
+	public function testInvitationsToARespondentAreReadAcrossSurveys(): void {
+		$this->tables->expects($this->once())->method('findAllListed')
+			->with($this->callback(
+				fn (MagicListRequest $request): bool => $request->table->schema->getSlug() === 'surveyInvitation'
+					&& $request->query->filters === ['object->respondent' => 'jan@example.org']
+					&& $request->query->limit === SurveyRecords::INVITATION_CAP
+			))
+			->willReturn([self::object(schema: '12', uuid: 'i-1')]);
+
+		$within = self::object(schema: '13', uuid: 'a');
+		$this->assertCount(1, $this->records->invitationsTo(within: $within, respondent: ' jan@example.org '));
+		$this->assertSame([], $this->records->invitationsTo(within: $within, respondent: ' '));
+	}//end testInvitationsToARespondentAreReadAcrossSurveys()
+
+	/**
+	 * The table of a sibling schema is found in the register's own schema list, or not at all.
+	 *
+	 * @return void
+	 */
+	public function testTableOfFindsTheSiblingSchemaInTheRegister(): void {
+		$within = self::object(schema: '13', uuid: 'a');
+		$table = $this->records->tableOf(within: $within, slug: SurveyRecords::INVITATION);
+
+		$this->assertSame(7, $table?->register->getId());
+		$this->assertSame(12, $table?->schema->getId());
+		$this->assertNull($this->records->tableOf(within: $within, slug: 'case'));
+	}//end testTableOfFindsTheSiblingSchemaInTheRegister()
 }//end class

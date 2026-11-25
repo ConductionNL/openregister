@@ -104,4 +104,5 @@ class AdminGateTest extends TestCase {
 		$this->assertSame(403, $response->getStatus());
 		$this->assertStringContainsString('read the authorization model', $response->getData()['error']);
 	}
+
 }//end class

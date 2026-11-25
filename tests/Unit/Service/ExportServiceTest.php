@@ -3,6 +3,7 @@
 namespace Unit\Service;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\SchemaProperty;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -72,7 +73,6 @@ class ExportServiceTest extends TestCase {
 
 		$this->service = new ExportService(
 			$this->registerMapper,
-			$this->userManager,
 			$this->groupManager,
 			$this->objectService,
 			$this->cacheHandler,
@@ -977,8 +977,7 @@ class ExportServiceTest extends TestCase {
 				}),
 				true,   // _rbac
 				true,   // _multitenancy stays on
-				null,
-				null
+				$this->equalTo(new SearchOptions())
 			)
 			->willReturn([]);
 
@@ -1011,8 +1010,7 @@ class ExportServiceTest extends TestCase {
 				}),
 				true,   // _rbac
 				false,  // _multitenancy lifted by the administrator
-				null,
-				null
+				$this->equalTo(new SearchOptions())
 			)
 			->willReturn([]);
 
@@ -1823,8 +1821,7 @@ class ExportServiceTest extends TestCase {
 				}),
 				true,
 				true,  // _multitenancy should be true
-				null,
-				null
+				$this->equalTo(new SearchOptions())
 			)
 			->willReturn([]);
 
@@ -1940,8 +1937,7 @@ class ExportServiceTest extends TestCase {
 				}),
 				true,
 				true,  // default multitenancy is true
-				null,
-				null
+				$this->equalTo(new SearchOptions())
 			)
 			->willReturn([]);
 

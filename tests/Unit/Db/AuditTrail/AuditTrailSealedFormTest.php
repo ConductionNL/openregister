@@ -47,10 +47,30 @@ class AuditTrailSealedFormTest extends TestCase {
 	public function testTheIdLeadsAndOnlySealedFieldsFollowInOrder(): void {
 		$form = (new AuditTrailSealedForm())->serialise($this->values());
 
-		$this->assertSame(array_merge(['id'], AuditTrailFieldTypes::SEALED_FIELDS), array_keys($form));
+		$this->assertSame(array_merge(['id'], AuditTrailFieldTypes::SEALED_FIELDS, AuditTrailFieldTypes::SEALED_WHEN_SET), array_keys($form));
 		$this->assertSame(12, $form['id']);
 		$this->assertSame('v-cause', $form['cause']);
 	}//end testTheIdLeadsAndOnlySealedFieldsFollowInOrder()
+
+	/**
+	 * A read-rule field is sealed when set and left out when null, so an older row hashes as it did.
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-the-rule-digest-is-part-of-the-hash-chain
+	 */
+	public function testReadRuleFieldsAreSealedOnlyWhenSet(): void {
+		$values = $this->values();
+		$values['ruleDigest'] = null;
+		$values['ruleVersion'] = null;
+		$form = (new AuditTrailSealedForm())->serialise($values);
+
+		$this->assertSame(array_merge(['id'], AuditTrailFieldTypes::SEALED_FIELDS), array_keys($form));
+
+		$values['ruleDigest'] = str_repeat('a', 64);
+		$values['ruleVersion'] = '1.2.0';
+		$form = (new AuditTrailSealedForm())->serialise($values);
+
+		$this->assertSame([str_repeat('a', 64), '1.2.0'], [$form['ruleDigest'], $form['ruleVersion']]);
+	}//end testReadRuleFieldsAreSealedOnlyWhenSet()
 
 	public function testUnsealedFieldsAreLeftOut(): void {
 		$form = (new AuditTrailSealedForm())->serialise($this->values());

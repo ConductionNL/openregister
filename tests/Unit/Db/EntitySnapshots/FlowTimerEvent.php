@@ -19,6 +19,7 @@ return array (
     'unrolledAt' => 'datetime',
     'rolledBy' => 'string',
     'created' => 'datetime',
+    'timeZone' => 'string',
   ),
   'empty' => 
   array (
@@ -34,6 +35,7 @@ return array (
     'unrolledAt' => NULL,
     'rolledBy' => NULL,
     'created' => NULL,
+    'timeZone' => NULL,
   ),
   'filled' => 
   array (
@@ -49,6 +51,7 @@ return array (
     'unrolledAt' => '2026-01-02T03:04:05+00:00',
     'rolledBy' => 'rolledBy-v',
     'created' => '2026-01-02T03:04:05+00:00',
+    'timeZone' => 'timeZone-v',
   ),
   'filledUpdated' => 
   array (
@@ -64,6 +67,7 @@ return array (
     9 => 'unrolledAt',
     10 => 'rolledBy',
     11 => 'created',
+    12 => 'timeZone',
   ),
   'refused' => 
   array (

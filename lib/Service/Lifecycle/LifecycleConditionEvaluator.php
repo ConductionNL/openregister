@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
+use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
 
 /**
  * Evaluates a transition `condition` and produces the refusal, if any.
@@ -84,41 +85,6 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	}//end __construct()
 
 	/**
-	 * The refusal for a transition, or null when its condition lets it through.
-	 *
-	 * A transition declaring no condition always yields null.
-	 *
-	 * @param array<string, mixed> $spec The matched transition's spec.
-	 * @param array<string, mixed> $newData The object as it would be saved.
-	 * @param array<string, mixed> $oldData The object as currently stored.
-	 * @param string $action The matched transition's name.
-	 * @param string $from The lifecycle value being moved away from.
-	 * @param string $to The lifecycle value being moved to.
-	 * @param string $schemaSlug The schema's slug, for the log line.
-	 * @param string $field The lifecycle field's name.
-	 *
-	 * @return array{code: string, field: string, action: string, message: string}|null
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function refusal(
-		array $spec,
-		array $newData,
-		array $oldData,
-		string $action,
-		string $from,
-		string $to,
-		string $schemaSlug,
-		string $field,
-	): ?array {
-		$attempt = new TransitionAttempt(
-			write: new LifecycleWrite(newData: $newData, oldData: $oldData, schemaSlug: $schemaSlug, field: $field),
-			move: new TransitionMove(action: $action, from: $from, to: $to)
-		);
-		return $this->refusalOf(spec: $spec, attempt: $attempt);
-	}//end refusal()
-
-	/**
 	 * The refusal for a transition attempt, or null when its condition lets it through.
 	 *
 	 * A transition declaring no condition always yields null.
@@ -126,14 +92,22 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 * @param array<string, mixed> $spec    The matched transition's spec.
 	 * @param TransitionAttempt    $attempt The write and the transition it attempts.
 	 *
-	 * @return array{code: string, field: string, action: string, message: string}|null
+	 * @return array{code: string, field: string, action: string, message: string, unresolved?: array{condition: string, reason: string}}|null
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function refusalOf(array $spec, TransitionAttempt $attempt): ?array {
 		$condition = $this->activeCondition(spec: $spec);
-		if ($condition === null || $this->holds(rule: $condition, attempt: $attempt) === true) {
+		if ($condition === null) {
 			return null;
+		}
+
+		try {
+			if ($this->judge(rule: $condition, attempt: $attempt) === true) {
+				return null;
+			}
+		} catch (ConditionRefusedException $refused) {
+			return $this->unresolvedRefusal(attempt: $attempt, refused: $refused);
 		}
 
 		$context = ['schema' => $attempt->write->schemaSlug, 'action' => $attempt->move->action, 'field' => $attempt->write->field];
@@ -215,6 +189,35 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function holds(mixed $rule, TransitionAttempt $attempt): bool {
+		try {
+			return $this->judge(rule: $rule, attempt: $attempt);
+		} catch (ConditionRefusedException $refused) {
+			// Never a pass: an `autoWhen` that names a condition nobody can
+			// resolve makes no move, and a `condition` refuses it.
+			$this->reporting->logger->warning(
+				'[LifecycleConditionEvaluator] A named condition could not be resolved; refusing.',
+				[
+					'schema' => $attempt->write->schemaSlug,
+					'action' => $attempt->move->action,
+					'condition' => $refused->getConditionName(),
+					'reason' => $refused->getWhy(),
+				]
+			);
+			return false;
+		}
+	}//end holds()
+
+	/**
+	 * Whether a lifecycle rule holds, letting an unresolvable named condition through as an exception.
+	 *
+	 * @param mixed             $rule    The rule to evaluate.
+	 * @param TransitionAttempt $attempt The write and the transition it attempts.
+	 *
+	 * @return bool True only when the rule is a non-empty rule object that evaluates true.
+	 *
+	 * @throws ConditionRefusedException When a named condition it references cannot be resolved.
+	 */
+	private function judge(mixed $rule, TransitionAttempt $attempt): bool {
 		$write = $attempt->write;
 		$move  = $attempt->move;
 		if (is_array($rule) === false || $rule === []) {
@@ -229,7 +232,42 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 		}
 
 		return $this->check->holds(rule: $rule, attempt: $attempt);
-	}//end holds()
+	}//end judge()
+
+	/**
+	 * The refusal of a transition whose condition names a condition that cannot be resolved.
+	 *
+	 * Not the author's `message`: that sentence says the condition is unmet,
+	 * and this one was never evaluated. The refusal names the condition and
+	 * why, under `unresolved`, so the run log can name it too (REQ-RCT-001).
+	 *
+	 * @param TransitionAttempt          $attempt The refused attempt.
+	 * @param ConditionRefusedException $refused The reference that could not be resolved.
+	 *
+	 * @return array{code: string, field: string, action: string, message: string, unresolved: array{condition: string, reason: string}}
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function unresolvedRefusal(TransitionAttempt $attempt, ConditionRefusedException $refused): array {
+		$this->reporting->logger->warning(
+			'[LifecycleConditionEvaluator] A named condition could not be resolved; refusing the transition.',
+			['schema' => $attempt->write->schemaSlug, 'action' => $attempt->move->action, 'condition' => $refused->getConditionName()]
+		);
+
+		return [
+			'code' => self::CODE_UNMET,
+			'field' => $attempt->write->field,
+			'action' => $attempt->move->action,
+			'message' => sprintf(
+				'The condition "%s" of "%s" could not be evaluated (%s), so "%s" cannot change.',
+				$refused->getConditionName(),
+				$attempt->move->action,
+				$refused->getWhy(),
+				$attempt->write->field
+			),
+			'unresolved' => ['condition' => $refused->getConditionName(), 'reason' => $refused->getWhy()],
+		];
+	}//end unresolvedRefusal()
 
 	/**
 	 * Build the refusal error for a transition.
@@ -255,44 +293,10 @@ class LifecycleConditionEvaluator implements LifecycleConditionEvaluatorInterfac
 	}//end refusalFor()
 
 	/**
-	 * Build the document a condition is evaluated against.
-	 *
-	 * Exactly four keys, and deliberately NOT the flow engine's `json` /
-	 * `binary` / `itemIndex` shape: a schema author writing a lifecycle rule is
-	 * looking at an object and a transition, not at a flow item. The expression
-	 * language is shared with flows; the document it reads is not.
-	 *
-	 * `user` is empty under `occ`, which has no session. A condition reading
-	 * `user.uid` therefore refuses on the CLI unless it allows for that.
-	 *
-	 * PUBLIC so that the rule run log can trace a refusal against the SAME
-	 * document the refusal was decided on. A tracer that rebuilt the document
-	 * itself would be a second opinion about what the condition read, and would
-	 * drift the first time this shape changes.
-	 *
-	 * @param array<string, mixed> $newData The object as it would be saved.
-	 * @param array<string, mixed> $oldData The object as currently stored.
-	 * @param string $action The matched transition's name.
-	 * @param string $from The lifecycle value being moved away from.
-	 * @param string $to The lifecycle value being moved to.
-	 *
-	 * @return array<string, mixed>
-	 *
-	 * @spec openspec/specs/flow-engine/spec.md
-	 */
-	public function document(array $newData, array $oldData, string $action, string $from, string $to): array {
-		// The document reads only the two objects and the move; the schema slug
-		// and field name of the write are for log lines and do not enter it.
-		$write = new LifecycleWrite(newData: $newData, oldData: $oldData, schemaSlug: '', field: '');
-		$move  = new TransitionMove(action: $action, from: $from, to: $to);
-		return $this->documentOf(attempt: new TransitionAttempt(write: $write, move: $move));
-	}//end document()
-
-	/**
 	 * Build the document a condition is evaluated against, for one attempt.
 	 *
-	 * PUBLIC for the same reason as {@see document()}: the rule run log traces
-	 * a refusal against the document the refusal was decided on.
+	 * PUBLIC so that the rule run log traces a refusal against the document
+	 * the refusal was decided on.
 	 *
 	 * @param TransitionAttempt $attempt The write (object after and before) and the move.
 	 *

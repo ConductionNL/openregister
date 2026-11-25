@@ -175,6 +175,35 @@ survives even where the priority moved.
       combinations. Apply visibility to the value returned from the map.
 
       Target: **57 → ≤ 5** schema reads per create.
+      > 2026-11-14 (partial): `SchemaMapper::find()` and `RegisterMapper::find()` now share
+      > one extracted `RequestIdentityMap`, keyed on identifier + multi-tenancy flag. The RBAC
+      > flag left the key: neither query reads it, so it never changed the row loaded, and
+      > a schema asked for under both flags was read twice. The multi-tenancy flag stays,
+      > because the organisation filter decides WHICH row a slug returns. `loadSchema()`, the
+      > per-`$ref` load during composition, now remembers its raw row for the request (a copy
+      > per hit; dropped by `clearFindCache()` and by every schema insert/update/delete), so a
+      > parent extended by N children is read once. Left: routing `findBySlug`,
+      > `findBySlugInIds` and `findAll` through the map, and serving a multi-tenancy lookup
+      > from an unscoped row with the visibility check applied in PHP (needs the organisation
+      > predicate reproduced exactly, including shared master data; not done blind).
+      > Pinned in `tests/Unit/Db/SchemaMapperIdentityMapTest` and `RequestIdentityMapTest`.
+      > 2026-11-16 (partial): the register-scoped lookups a save repeats per object,
+      > `findInIds()` and `findBySlugInIds()`, now answer a repeated (identifier, schema-id set)
+      > from a request memo instead of the database. Only hits are kept; the whole memo is
+      > dropped on every schema insert/update/delete and by `clearFindCache()`, since a rename
+      > or a new schema changes which row a scoped identifier names. It is kept apart from the
+      > identity map, so a scoped answer never serves an unscoped `find()`. Pinned in
+      > `tests/Unit/Db/SchemaMapperScopedLookupMemoTest`. Left as before: `findBySlug` /
+      > `findAll` (paged lists) and serving a multi-tenancy lookup from an unscoped row.
+      > 2026-11-25 (partial): an unfiltered `findAll()` (no limit, offset, filter or search
+      > condition), which the save path asks per object (`SaveLookups`, `RelationCascadeHandler`,
+      > `RegisterReferenceLookup`), is read once per request and organisation scope. The rows are
+      > kept in `RequestIdentityMap` beside the identifier entries and handed out as copies, so a
+      > caller changing a schema it was given does not change the next caller's list. Dropped on
+      > every schema insert/update/delete, by `clearFindCache()` and whenever the map forgets an
+      > entity. A paged or filtered list is read every time, as before. Pinned in
+      > `tests/Unit/Db/SchemaMapperFullListMemoTest` and `RequestIdentityMapTest`. Left: `findBySlug`
+      > and serving a multi-tenancy lookup from an unscoped row.
 
 - [ ] **Task 2 — make the miss path cheap.**
       - Drop `SELECT *` where only metadata is needed; `properties` is ~2 KB per
@@ -184,10 +213,30 @@ survives even where the priority moved.
       - Split the three-way `uuid OR LOWER(slug) OR id` disjunction into the one
         arm the caller actually holds — a disjunction across three columns cannot
         use an index on any of them.
+      > 2026-11-15 (partial): the disjunction is split. `SchemaMapper::find()`/`findInIds()` and
+      > `RegisterMapper::find()` ask one column per query through the shared `IdentifierArms`:
+      > numeric → id, then slug, then uuid; UUID-shaped → uuid, then slug; anything else → slug,
+      > then uuid. The next arm runs only when the previous one found nothing, so a hit on the arm
+      > the caller holds is one indexable query. The only answer that moves is a cross-arm tie
+      > (two different rows matching different arms): it now follows the arm order, so on
+      > `RegisterMapper` an exact id beats a register whose slug is that number, as `SchemaMapper`
+      > already did. The register not-found probe now runs only on a miss instead of before every
+      > uncached lookup (one query less per register read). Outcomes pinned unchanged in the find
+      > goldens; arms in `tests/Unit/Db/IdentifierArmsTest`. Left: the `LOWER(slug)` functional
+      > index (an expression index has to be checked against the schema comparison Nextcloud runs on later migrations,
+      > so it needs a live PostgreSQL/MySQL migration run to land safely), and `SELECT *`, which
+      > `find()` needs because it returns the full entity.
 
 - [ ] **Task 3 — same treatment for `RegisterMapper`.** 24 reads per create of
       the identical query shape. Do not copy the map; extract the one the
       schemas use.
+      > 2026-11-14 (partial): `RegisterMapper` uses the same `RequestIdentityMap`; the RBAC
+      > flag is out of its key too. The golden test now asserts a cached register is served
+      > without a query under either RBAC flag. Same left-over as task 1.
+      > 2026-11-25 (partial): the unfiltered `findAll()` is read once per request through the
+      > same map, as for schemas; dropped on every register insert/update/delete and by
+      > `clearFindCache()`. Pinned in `tests/Unit/Db/RegisterMapperFullListMemoTest`. Left: serving
+      > a multi-tenancy lookup from an unscoped row.
 
 - [ ] **Task 4 — cross-request cache.** APCu keyed on `schema.id + schema.updated`
       so a cold worker does not repay everything. Invalidated by the existing
@@ -261,7 +310,7 @@ survives even where the priority moved.
 
 ## Phase 4 — per-request work outside the write (ADR-076)
 
-- [ ] **Task 11 — pipelinq: stop building an app-store lookup per request.**
+- [x] **Task 11 — pipelinq: stop building an app-store lookup per request.**
       `resolveDependencyStatuses()` → `buildAppStoreLookup()` →
       `AppFetcher::get()` iterates the **3.4 MB** appstore catalogue on every
       request. It is free on this instance **only because
@@ -275,6 +324,12 @@ survives even where the priority moved.
         Initial state exists for page loads; an object-create API call pays for
         it and throws it away. Gate on the request being a page request, or move
         it to a controller.
+      > 2026-11-16: both halves are on pipelinq `development` (checked at 934bb58c2).
+      > `Application::resolveDependencyStatuses()` caches the statuses in a local
+      > `ICacheFactory` cache keyed on app version + dependency list (5 min TTL), so the
+      > appstore walk runs once per worker per window, and `boot()` skips the whole
+      > initial-state block when `requestRendersPage()` says the path is an API, OCS, DAV,
+      > webhook or asset route. No openregister code is involved.
 
 - [ ] **Task 12 — openconnector: move the repair-step fallback to cron.**
       `ensureRegisterBootstrapped()` invokes a repair step from `boot()`. It is
@@ -308,6 +363,13 @@ survives even where the priority moved.
       bounds. Make it fail on **wall minus floor > 50 ms**, and run it on changes
       to the write path. Report min/median/p95 — a single timing is not evidence
       when the observed spread was 13.6 s to 99.1 s on identical payloads.
+      > 2026-11-14: the gate half is done. `tests/perf/object-create.sh` now fails when
+      > p95 wall minus the same-run floor is not under `FLOOR_BUDGET_MS` (default 50), over
+      > 20 runs by default, with a nearest-rank p95; the absolute wall budget is reported
+      > always and gated only when `BUDGET_MS` is set. The verdict lives in
+      > `tests/perf/lib/summarise.awk`, pinned by `tests/perf/summarise.test.sh` (no instance
+      > needed). Still open: running it in CI on write-path changes needs a live Nextcloud
+      > with PostgreSQL in the job, so the box stays unticked.
 
 - [ ] **Task 15 — re-measure the full matrix.**
       create/update/delete × (no relations, typed relations, untyped references)

@@ -303,7 +303,7 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 			return $subline . ' — ' . $declaredSubline;
 		}
 
-		$excerpt = $this->buildExcerpt(object: $hit->object(), term: (string)$term);
+		$excerpt = (self::snippetText(hit: $hit) ?? $this->buildExcerpt(object: $hit->object(), term: (string)$term));
 		if ($excerpt !== '') {
 			$subline .= ' — ' . $excerpt;
 		}
@@ -334,11 +334,37 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	}//end cardSummary()
 
 	/**
-	 * The owner, register and schema names a hit's subline names.
+	 * The matched passage the search attached as `@self.snippet`, as plain text, or null.
+	 *
+	 * The snippet was taken under REQ-SDL-002's rules (never a write-only or
+	 * encrypted property); a subline is text, so the marks are dropped and the
+	 * escaping undone.
+	 *
+	 * @param ObjectSearchHit $hit The search hit.
+	 *
+	 * @return string|null The passage, or null when the row carries none.
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md#requirement-a-result-shows-the-passage-that-matched-only-from-what-the-reader-may-see-req-sdl-002
+	 */
+	private static function snippetText(ObjectSearchHit $hit): ?string {
+		$text = ($hit->selfData()['snippet']['text'] ?? null);
+		if (is_string($text) === false || $text === '') {
+			return null;
+		}
+
+		return html_entity_decode(strip_tags($text), (ENT_QUOTES | ENT_HTML5), 'UTF-8');
+	}//end snippetText()
+
+	/**
+	 * The owner, register and schema names a hit's subline names, and the
+	 * archive member a content-search hit was found in.
 	 *
 	 * @param ObjectSearchHit $hit The hit.
 	 *
-	 * @return array<int, string> The owning app (or Open Register), then the register and schema names when known.
+	 * @return array<int, string> The owning app (or Open Register), then the register and schema names when known,
+	 *     then `archive › member` for a hit inside a zip attachment.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
 	 */
 	private function sublineParts(ObjectSearchHit $hit): array {
 		$parts = [self::ownerOf(appLabel: $hit->appLabel())];
@@ -350,8 +376,44 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 			$parts[] = $this->formatter->resolveSchemaName(schemaId: $hit->schemaId());
 		}
 
+		$member = self::matchedMemberOf(object: $hit->object());
+		if ($member !== null) {
+			$parts[] = $member;
+		}
+
 		return $parts;
 	}//end sublineParts()
+
+	/**
+	 * The archive and member a content-search hit was found in, as `archive.zip › path/in/archive.pdf`.
+	 *
+	 * Only for a hit whose matching text is in a member of a zip attachment;
+	 * a path inside the archive, never text from it.
+	 *
+	 * @param array $object The rendered object.
+	 *
+	 * @return string|null The archive and member, or null for any other hit.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	private static function matchedMemberOf(array $object): ?string {
+		$self = ($object['@self'] ?? []);
+		if (is_array($self) === false) {
+			return null;
+		}
+
+		$member = ($self['matchedMember'] ?? null);
+		if (is_string($member) === false || $member === '') {
+			return null;
+		}
+
+		$archive = ($self['matchedFile'] ?? null);
+		if (is_string($archive) === false || $archive === '') {
+			return $member;
+		}
+
+		return $archive.' › '.$member;
+	}//end matchedMemberOf()
 
 	/**
 	 * The owner a subline names: the hit's app, or Open Register.

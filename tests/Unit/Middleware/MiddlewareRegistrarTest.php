@@ -41,6 +41,7 @@ class MiddlewareRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				'OCA\OpenRegister\Middleware\ProblemDetailsMiddleware',
+				'OCA\OpenRegister\Middleware\AddressAllowlistMiddleware',
 				'OCA\OpenRegister\Middleware\LanguageMiddleware',
 				'OCA\OpenRegister\Middleware\TenantQuotaMiddleware',
 				'OCA\OpenRegister\Middleware\OasValidationMiddleware',
@@ -60,6 +61,8 @@ class MiddlewareRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Middleware\UnversionedPathDeprecationMiddleware',
 				'OCA\OpenRegister\Middleware\ApiCallerMiddleware',
 				'OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware',
+				'OCA\OpenRegister\Middleware\SaveWarningsMiddleware',
+				'OCA\OpenRegister\Middleware\RequestMetricsMiddleware',
 				'OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware',
 			],
 			actual: $registered

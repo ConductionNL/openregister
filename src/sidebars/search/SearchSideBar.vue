@@ -98,6 +98,11 @@
 							<ContentSaveOutline :size="20" />
 						</template>
 					</NcTextField>
+					<CnViewPresentationPicker
+						:schema="objectStore.searchSchema || null"
+						:value="viewPresentation"
+						:errors="viewPresentationErrors"
+						@input="onViewPresentationInput" />
 					<div class="saveViewFormActions">
 						<NcButton
 							variant="primary"
@@ -483,7 +488,7 @@
 </template>
 
 <script>
-import { CnIndexSidebar } from '@conduction/nextcloud-vue'
+import { CnIndexSidebar, CnViewPresentationPicker } from '@conduction/nextcloud-vue'
 import { getCurrentUser } from '@nextcloud/auth'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -509,6 +514,7 @@ import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline
 import SelectOption from '../../components/shared/SelectOption.vue'
 import DeleteView from '../../modals/view/DeleteView.vue'
 import EditView from '../../modals/view/EditView.vue'
+import { presentationErrorsFrom, saveFailureMessage } from '../../modals/view/presentationErrors.js'
 import { freshState } from '../../services/initialState.js'
 import {
 	navigationStore,
@@ -517,6 +523,7 @@ import {
 	schemaStore,
 	viewsStore,
 } from '../../store/store.js'
+import { inheritedProperties } from '../../views/search/inheritedProperties.js'
 import { scopeListLoader } from '../scopeListLoader.js'
 import { rememberedSearchColumns, rememberSearchColumns } from './searchColumnMemory.js'
 
@@ -549,6 +556,8 @@ const INITIAL_STATE = {
 	viewDescription: '',
 	viewIsPublic: false,
 	viewIsDefault: false,
+	viewPresentation: { viewType: 'table' }, // How the new view shows its objects
+	viewPresentationErrors: {}, // A save refusal, under the picker field it names
 	activeViewName: '', // Editable name for the active view
 	// Edit view dialog
 	showEditDialog: false,
@@ -602,10 +611,108 @@ function facetEntries(fields, keys, label) {
 	})
 }
 
+/**
+ * The register picker of the sidebar's scope pickers.
+ *
+ * @param {object} sidebar The sidebar
+ * @return {object} The picker
+ */
+function registerPicker(sidebar) {
+	return {
+		id: 'registerSelect',
+		label: t('openregister', 'Registers'),
+		bag: sidebar.registerOptions,
+		value: sidebar.selectedRegisters,
+		loading: sidebar.registerLoading,
+		disabled: sidebar.registerLoading,
+		placeholder: t('openregister', 'Select one or more registers'),
+		change: sidebar.handleRegisterChange,
+		hint: t('openregister', 'register(s) selected'),
+	}
+}
+
+/**
+ * The schema picker of the sidebar's scope pickers; disabled until a
+ * register is picked.
+ *
+ * @param {object} sidebar The sidebar
+ * @return {object} The picker
+ */
+function schemaPicker(sidebar) {
+	return {
+		id: 'schemaSelect',
+		label: t('openregister', 'Schemas'),
+		bag: sidebar.schemaOptions,
+		value: sidebar.selectedSchemas,
+		loading: sidebar.schemaLoading,
+		disabled: sidebar.selectedRegisters.length === 0 || sidebar.schemaLoading,
+		placeholder: t('openregister', 'Select one or more schemas'),
+		change: sidebar.handleSchemaChange,
+		hint: t('openregister', 'schema(s) selected'),
+	}
+}
+
+/**
+ * The metadata (`@self`) facet category.
+ *
+ * @param {object} facetableFields The facetable fields by category
+ * @return {object} The category
+ */
+function metadataFacetCategory(facetableFields) {
+	return {
+		key: '@self',
+		title: t('openregister', 'Metadata Filters'),
+		entries: facetEntries(
+			facetableFields['@self'],
+			(fieldName) => [
+				`@self.${fieldName}`,
+				`facet-@self-${fieldName}`,
+			],
+			(field, fieldName) => field.description || fieldName,
+		),
+	}
+}
+
+/**
+ * The content (object field) facet category.
+ *
+ * @param {object} facetableFields The facetable fields by category
+ * @return {object} The category
+ */
+function contentFacetCategory(facetableFields) {
+	return {
+		key: 'object_fields',
+		title: t('openregister', 'Content Filters'),
+		entries: facetEntries(
+			facetableFields.object_fields,
+			(fieldName) => [fieldName, `facet-${fieldName}`],
+			(field, fieldName) =>
+				field.title || field.description || fieldName,
+		),
+	}
+}
+
+/**
+ * How one facet is asked for: by the field's first facet type, terms by
+ * default, and a date histogram bucketed by month.
+ *
+ * @param {object|undefined} fieldInfo The facetable field
+ * @return {{type: string, interval?: string}} The facet request
+ */
+function facetRequest(fieldInfo) {
+	const facetType = fieldInfo?.facet_types?.[0] || 'terms'
+	const request = { type: facetType }
+	if (facetType === 'date_histogram') {
+		request.interval = 'month'
+	}
+	return request
+}
+
 export default {
 	name: 'SearchSideBar',
 	components: {
 		CnIndexSidebar,
+		CnViewPresentationPicker,
 		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
@@ -668,30 +775,7 @@ export default {
 		 * @return {Array<object>} The pickers, registers first
 		 */
 		scopePickers() {
-			return [
-				{
-					id: 'registerSelect',
-					label: t('openregister', 'Registers'),
-					bag: this.registerOptions,
-					value: this.selectedRegisters,
-					loading: this.registerLoading,
-					disabled: this.registerLoading,
-					placeholder: t('openregister', 'Select one or more registers'),
-					change: this.handleRegisterChange,
-					hint: t('openregister', 'register(s) selected'),
-				},
-				{
-					id: 'schemaSelect',
-					label: t('openregister', 'Schemas'),
-					bag: this.schemaOptions,
-					value: this.selectedSchemas,
-					loading: this.schemaLoading,
-					disabled: this.selectedRegisters.length === 0 || this.schemaLoading,
-					placeholder: t('openregister', 'Select one or more schemas'),
-					change: this.handleSchemaChange,
-					hint: t('openregister', 'schema(s) selected'),
-				},
-			]
+			return [registerPicker(this), schemaPicker(this)]
 		},
 
 		/**
@@ -703,28 +787,8 @@ export default {
 		 */
 		facetCategories() {
 			return [
-				{
-					key: '@self',
-					title: t('openregister', 'Metadata Filters'),
-					entries: facetEntries(
-						this.facetableFields['@self'],
-						(fieldName) => [
-							`@self.${fieldName}`,
-							`facet-@self-${fieldName}`,
-						],
-						(field, fieldName) => field.description || fieldName,
-					),
-				},
-				{
-					key: 'object_fields',
-					title: t('openregister', 'Content Filters'),
-					entries: facetEntries(
-						this.facetableFields.object_fields,
-						(fieldName) => [fieldName, `facet-${fieldName}`],
-						(field, fieldName) =>
-							field.title || field.description || fieldName,
-					),
-				},
+				metadataFacetCategory(this.facetableFields),
+				contentFacetCategory(this.facetableFields),
 			]
 		},
 
@@ -1425,21 +1489,7 @@ export default {
 		 * @return {object} Merged properties object
 		 */
 		resolveInheritedProperties(schema) {
-			const allOf = schema?.allOf || []
-			const inherited = {}
-			for (const ref of allOf) {
-				const schemaId = typeof ref === 'object' ? ref.id : ref
-				const parentSchema = schemaStore.schemaList.find(
-					(s) =>
-						s.id === schemaId
-						|| s.uuid === schemaId
-						|| String(s.id) === String(schemaId),
-				)
-				if (parentSchema?.properties) {
-					Object.assign(inherited, parentSchema.properties)
-				}
-			}
-			return { ...inherited, ...(schema?.properties || {}) }
+			return { ...inheritedProperties(schema), ...(schema?.properties || {}) }
 		},
 
 		/**
@@ -1514,23 +1564,14 @@ export default {
 					const field = fieldName.replace('@self.', '')
 					if (!config['@self']) config['@self'] = {}
 
-					const fieldInfo = this.facetableFields?.['@self']?.[field]
-					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
-
-					config['@self'][field] = { type: facetType }
-					if (facetType === 'date_histogram') {
-						config['@self'][field].interval = 'month'
-					}
+					config['@self'][field] = facetRequest(
+						this.facetableFields?.['@self']?.[field],
+					)
 				} else {
 					// Object field facet
-					const fieldInfo =
-						this.facetableFields?.object_fields?.[fieldName]
-					const facetType = fieldInfo?.facet_types?.[0] || 'terms'
-
-					config[fieldName] = { type: facetType }
-					if (facetType === 'date_histogram') {
-						config[fieldName].interval = 'month'
-					}
+					config[fieldName] = facetRequest(
+						this.facetableFields?.object_fields?.[fieldName],
+					)
 				}
 			})
 
@@ -1805,6 +1846,7 @@ export default {
 					isPublic: this.viewIsPublic,
 					isDefault: this.viewIsDefault,
 					configuration: this.viewConfiguration(),
+					presentation: this.viewPresentation,
 				}
 
 				const newView = await viewsStore.createView(viewData)
@@ -1822,6 +1864,7 @@ export default {
 				this.viewDescription = ''
 				this.viewIsPublic = false
 				this.viewIsDefault = false
+				this.resetViewPresentation()
 				this.showSaveForm = false
 
 				// Show success message
@@ -1830,6 +1873,8 @@ export default {
 				)
 			} catch (error) {
 				console.error('Error saving view:', error)
+				// A refused presentation stays in the form, under the field it names.
+				this.viewPresentationErrors = presentationErrorsFrom(saveFailureMessage(error))
 				OC.Notification.showTemporary(
 					this.t('openregister', 'Failed to save view: {error}', {
 						error: error.message,
@@ -1849,7 +1894,31 @@ export default {
 			this.viewName = ''
 			this.viewNameTouched = false
 			this.viewDescription = ''
+			this.resetViewPresentation()
 			this.showSaveForm = false
+		},
+
+		/**
+		 * Record the presentation chosen for the new view and clear a refusal shown on it.
+		 *
+		 * @param {object} presentation The presentation the picker emits.
+		 * @return {void}
+		 * @spec openspec/changes/saved-view-presentation-picker/tasks.md#2.2
+		 */
+		onViewPresentationInput(presentation) {
+			this.viewPresentation = presentation
+			this.viewPresentationErrors = {}
+		},
+
+		/**
+		 * Put the save form's presentation back to a table, with no refusal.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/saved-view-presentation-picker/tasks.md#2.2
+		 */
+		resetViewPresentation() {
+			this.viewPresentation = { viewType: 'table' }
+			this.viewPresentationErrors = {}
 		},
 
 		/**

@@ -199,6 +199,40 @@ class NotificationDedupeStateMapper extends QBMapper {
 	}//end insertOrReadWinner()
 
 	/**
+	 * Record a reminder's progress on its dedupe row, creating the row when absent.
+	 *
+	 * The fingerprint holds the anchor value the reminder is armed from; the
+	 * sent count and the stop reason ride alongside it.
+	 *
+	 * @param NotificationDedupeKey $key        The (schema, rule, object) triple.
+	 * @param ReminderProgress      $progress   The progress to store.
+	 * @param DateTime              $now        The evaluation moment (UTC).
+	 * @param bool                  $dispatched True when this evaluation sent a reminder.
+	 *
+	 * @return NotificationDedupeState The stored row.
+	 *
+	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/notificatie-engine/spec.md
+	 */
+	public function recordReminder(NotificationDedupeKey $key, ReminderProgress $progress, DateTime $now, bool $dispatched): NotificationDedupeState {
+		$sighting = new DedupeSighting(fingerprint: $progress->fingerprint, now: $now, dispatched: $dispatched);
+		$existing = $this->findByKey(key: $key);
+		$entity   = ($existing ?? $this->newState(key: $key, sighting: $sighting));
+		$entity->setFingerprint($progress->fingerprint);
+		$entity->setSeenAt($now);
+		if ($dispatched === true) {
+			$entity->setDispatchedAt($now);
+		}
+
+		$entity->setReminderSent($progress->sent);
+		$entity->setReminderStopped($progress->stopped);
+		if ($existing === null) {
+			return $this->insertOrReadWinner(entity: $entity, key: $key);
+		}
+
+		return $this->update(entity: $entity);
+	}//end recordReminder()
+
+	/**
 	 * Drop every dedup row tied to an object (used on object purge).
 	 *
 	 * @param string $objectUuid Target ObjectEntity UUID.

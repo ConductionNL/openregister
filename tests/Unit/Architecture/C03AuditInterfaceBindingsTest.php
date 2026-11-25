@@ -35,7 +35,8 @@ use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\Audit\PurposeRegistry;
 use OCA\OpenRegister\Service\Audit\PurposeRegistryInterface;
-use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportService;
 use OCA\OpenRegister\Service\Gdpr\Export\SubjectExportServiceInterface;
@@ -70,14 +71,14 @@ final class C03AuditInterfaceBindingsTest extends TestCase {
 	 * @var array<class-string, array{class-string, class-string}>
 	 */
 	private const CLASSES = [
-		PartyIndicatorGuard::class => [PartyIndicatorGuardInterface::class, ContractBindings::class],
+		PartyIndicatorGuard::class => [PartyIndicatorGuardInterface::class, ProcessesServiceBindings::class],
 		ProcessingLogMapper::class => [ProcessingLogMapperInterface::class, ComplianceMapperRegistrar::class],
 		ProcessingPurposeMapper::class => [ProcessingPurposeMapperInterface::class, ComplianceMapperRegistrar::class],
-		PurposeGuard::class => [PurposeGuardInterface::class, ContractBindings::class],
-		PurposeRegistry::class => [PurposeRegistryInterface::class, ContractBindings::class],
+		PurposeGuard::class => [PurposeGuardInterface::class, ComplianceServiceBindings::class],
+		PurposeRegistry::class => [PurposeRegistryInterface::class, ComplianceServiceBindings::class],
 		SearchTrailMapper::class => [SearchTrailMapperInterface::class, ComplianceMapperRegistrar::class],
 		StateHistoryProjector::class => [StateHistoryProjectorInterface::class, CoreServiceBindings::class],
-		SubjectExportService::class => [SubjectExportServiceInterface::class, ContractBindings::class],
+		SubjectExportService::class => [SubjectExportServiceInterface::class, ComplianceServiceBindings::class],
 		UniqueHintWarnings::class => [UniqueHintWarningsInterface::class, CoreServiceBindings::class],
 		VerwerkingsactiviteitMapper::class => [VerwerkingsactiviteitMapperInterface::class, ComplianceMapperRegistrar::class],
 		ViewerReachResolver::class => [ViewerReachResolverInterface::class, CoreServiceBindings::class],

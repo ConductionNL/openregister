@@ -28,6 +28,7 @@ use OCA\OpenRegister\Event\DraftUpdatedEvent;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectNoteAddedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
@@ -56,6 +57,8 @@ use OCA\OpenRegister\Notifications\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Search\Listener\Registrar\SearchListenerRegistrar;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\User\Events\OutOfOfficeEndedEvent;
+use OCP\User\Events\OutOfOfficeStartedEvent;
 
 /**
  * Subscribes every OpenRegister listener to its events.
@@ -163,6 +166,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, NotificationDeclarationCheckListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, McpDeclarationChecksListener::class);
 		SearchListenerRegistrar::declarationChecks(context: $context);
+		CoreListenerRegistrar::teamResources(context: $context);
 	}//end registerSchemaDeclarationChecks()
 
 	/**
@@ -240,6 +244,13 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectDeletedEvent::class, FlowTriggerListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, FlowTriggerListener::class);
 
+		// Calendar flow triggers (flow-calendar-and-webhook-triggers): a write
+		// places, moves or removes the record's moment on every calendar trigger
+		// of its schema; FlowCalendarWorker fires the moments that come due.
+		$context->registerEventListener(ObjectCreatedEvent::class, FlowCalendarIndexListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, FlowCalendarIndexListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, FlowCalendarIndexListener::class);
+
 		// Flow preflight — refuse a flow document naming a step type this
 		// instance cannot run. Registered FIRST on both events so an unrunnable
 		// flow is rejected before any other listener does work on the way in.
@@ -282,6 +293,12 @@ final class ListenerRegistrar {
 		// own transaction committed (the listener skips uncommitted dispatches);
 		// a failure here costs latency, never the completion.
 		$context->registerEventListener(TaskTerminalEvent::class, UserTaskTerminalListener::class);
+
+		// Substitution (tasks-delegation-and-substitution, design D-5): an
+		// absence that starts or ends only queues TaskSubstitutionJob, which
+		// moves the person's open tasks to the stand-in or gives untouched ones back.
+		$context->registerEventListener(OutOfOfficeStartedEvent::class, TaskAbsenceListener::class);
+		$context->registerEventListener(OutOfOfficeEndedEvent::class, TaskAbsenceListener::class);
 
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): a terminal task (TaskMapper, both write paths) or a terminal run
@@ -357,6 +374,12 @@ final class ListenerRegistrar {
 		// enforcing expiry terminates the item. The case layer keeps no clock.
 		$context->registerEventListener(CaseItemTransitionedEvent::class, CaseItemTimerListener::class);
 		$context->registerEventListener(FlowTimerFiredEvent::class, CaseItemTimerListener::class);
+
+		// The deadline warning (flow-task-inbox-projections, task 7): a fired
+		// preBreach rung of a task's due timer is recorded as the task's
+		// `due-soon` action, once per deadline value, which the `taskDueSoon`
+		// notification rule delivers.
+		$context->registerEventListener(FlowTimerFiredEvent::class, TaskDueSoonListener::class);
 
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): the SAME terminal event, and the run-terminal one, also cancel
@@ -708,6 +731,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
+		$context->registerEventListener(ObjectNoteAddedEvent::class, AnnotationNotificationListener::class);
 
 		// Object-lifecycle flow triggers have ONE listener: FlowTriggerListener,
 		// registered above with the other flow triggers. EventCatalogListener
@@ -771,6 +795,9 @@ final class ListenerRegistrar {
 		// listener never fails the move: the projection is derived and
 		// rebuildable, the transition is not.
 		CoreListenerRegistrar::stateHistory(context: $context);
+
+		// The semantic provider list the integrations capability advertises follows schemas, registers and apps.
+		CoreListenerRegistrar::semanticProviders(context: $context);
 	}//end registerCacheEvictionListeners()
 
 	/**
@@ -808,6 +835,8 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectTransitionedEvent::class, StateEntryFreezeListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
+		// Queue-mode handoff drain on app enable: a provider may have appeared.
+		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
 	}//end registerProjectionAndHandoffListeners()
 
 	/**

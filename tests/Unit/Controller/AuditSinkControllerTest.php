@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
@@ -37,6 +38,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
 final class AuditSinkControllerTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private function controller(
 		bool $admin,
 		bool $configured,
@@ -76,6 +79,8 @@ final class AuditSinkControllerTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$groups = $this->createMock(IGroupManager::class);
+
+		$this->adminFollowsGroups(groupManager: $groups);
 		$memberships = ['users'];
 		if ($admin === true) {
 			$memberships = ['admin'];

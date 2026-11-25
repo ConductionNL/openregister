@@ -73,6 +73,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\XwikiLinkService' => [
 			'OCA\OpenRegister\Db\XwikiLinkMapperInterface',
 			'OCA\OpenRegister\Service\LinkServiceRuntime',
+			'OCP\ICacheFactory',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\KvkProvider' => [
 			'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter',
@@ -84,6 +85,20 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 			'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter',
 			'OCP\App\IAppManager',
 			'OCP\IL10N',
+			'Psr\Log\LoggerInterface',
+		],
+		'OCA\OpenRegister\Service\Integration\Providers\ExternalRegisterProvider' => [
+			'OCA\OpenRegister\Service\Integration\ExternalRegisterLookupInterface',
+			'OCP\IL10N',
+		],
+		'OCA\OpenRegister\Service\Integration\ExternalRegisterLookup' => [
+			'OCA\OpenRegister\Db\RegisterMapperInterface',
+			'OCA\OpenRegister\Db\SchemaMapperInterface',
+			'OCA\OpenRegister\Kernel\Contracts\SchemaReadCheckInterface',
+			'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
+			'OCA\OpenRegister\Service\Integration\ExternalRegisterDegrade',
+			'OCP\ICacheFactory',
+			'OCP\AppFramework\Utility\ITimeFactory',
 			'Psr\Log\LoggerInterface',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider' => [

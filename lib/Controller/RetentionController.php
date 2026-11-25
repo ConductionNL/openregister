@@ -30,10 +30,12 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\BackgroundJob\DestructionExecutionJobInterface;
 use OCA\OpenRegister\Controller\Support\DestructionListApproval;
 use OCA\OpenRegister\Controller\Support\RetentionControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
@@ -61,6 +63,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class RetentionController extends Controller {
+	use HandlesExceptionsTrait;
+
 	/**
 	 * Statuses in which a destruction list can be approved or rejected.
 	 *
@@ -141,16 +145,14 @@ class RetentionController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $appName App name
 	 * @param IRequest $request Request
 	 * @param RetentionControllerServices $services The retention controller services.
 	 */
 	public function __construct(
-		string $appName,
 		IRequest $request,
 		RetentionControllerServices $services,
 	) {
-		parent::__construct(appName: $appName, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->retentionService = $services->domain->retentionService;
 		$this->settingsHandler = $services->domain->settingsHandler;
 		$this->saveObject = $services->domain->saveObject;
@@ -189,7 +191,7 @@ class RetentionController extends Controller {
 			$approval->userId = $this->currentUserId();
 			return $this->approveReviewable(listObject: $listObject, approval: $approval);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Destruction list approval failed');
 		}
 	}//end approveDestructionList()
 
@@ -321,7 +323,7 @@ class RetentionController extends Controller {
 
 			return $this->reject(listObject: $listObject, reason: $reason);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Destruction list rejection failed');
 		}
 	}//end rejectDestructionList()
 
@@ -448,7 +450,7 @@ class RetentionController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Legal hold placement failed');
 		}//end try
 	}//end placeLegalHold()
 
@@ -496,7 +498,7 @@ class RetentionController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Legal hold release failed');
 		}//end try
 	}//end releaseLegalHold()
 
@@ -552,7 +554,7 @@ class RetentionController extends Controller {
 				]
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(['error' => $e->getMessage()], 500);
+			return $this->handleApiException(e: $e, context: 'Bulk legal hold placement failed');
 		}//end try
 	}//end placeBulkLegalHold()
 

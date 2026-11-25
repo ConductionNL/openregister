@@ -19,7 +19,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Export\Odt;
 
 use DOMDocument;
 use DOMXPath;
+use OCA\OpenRegister\Service\Export\Odt\OdtFont;
 use OCA\OpenRegister\Service\Export\Odt\OdtHouseStyle;
+use OCA\OpenRegister\Service\Export\Odt\OdtLogo;
 use OCA\OpenRegister\Service\Export\Odt\OdtWriter;
 use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Service\Export\RowsTable;
@@ -34,6 +36,9 @@ use ZipArchive;
  * @uses \OCA\OpenRegister\Service\Export\Odt\HtmlToOdt
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
  * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtLogo
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtHouseStyle
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtFont
  */
 class OdtWriterTest extends TestCase {
 
@@ -263,6 +268,168 @@ class OdtWriterTest extends TestCase {
 		$this->assertSame(1, $styles->query('//style:master-page/style:footer/text:p')->length);
 		$this->assertSame('#ffffff', $this->xpath(part: 'content.xml')->evaluate('string(//style:style[@style:name="OR_HeadCell"]/style:text-properties/@fo:color)'));
 	}//end testColoursOnlyKeepThePlainFooter()
+
+	/**
+	 * A house-style logo is embedded in the package and drawn in the header of every page.
+	 *
+	 * @return void
+	 */
+	public function testALogoIsEmbeddedAndDrawnInThePageHeader(): void {
+		require_once __DIR__ . '/OdtLogoTest.php';
+		$bytes = OdtLogoTest::png(width: 300, height: 150);
+		$style = new OdtHouseStyle(logo: OdtLogo::fromBytes(bytes: $bytes));
+
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: '<p>Tekst</p>', landscape: true, houseStyle: $style));
+
+		$this->assertSame($bytes, $this->parts['Pictures/logo.png']);
+		$this->assertSame('mimetype', $this->names[0]);
+		$manifest = new DOMDocument();
+		$manifest->loadXML($this->parts['META-INF/manifest.xml']);
+		$entries = [];
+		foreach ($manifest->getElementsByTagNameNS('urn:oasis:names:tc:opendocument:xmlns:manifest:1.0', 'file-entry') as $entry) {
+			$entries[$entry->getAttributeNS('urn:oasis:names:tc:opendocument:xmlns:manifest:1.0', 'full-path')]
+				= $entry->getAttributeNS('urn:oasis:names:tc:opendocument:xmlns:manifest:1.0', 'media-type');
+		}
+
+		$this->assertSame('image/png', $entries['Pictures/logo.png']);
+
+		$styles = $this->xpath(part: 'styles.xml');
+		$styles->registerNamespace('draw', 'urn:oasis:names:tc:opendocument:xmlns:drawing:1.0');
+		$styles->registerNamespace('xlink', 'http://www.w3.org/1999/xlink');
+		$styles->registerNamespace('svg', 'urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0');
+		$this->assertSame('Pictures/logo.png', $styles->evaluate('string(//style:master-page/style:header/text:p/draw:frame/draw:image/@xlink:href)'));
+		$this->assertSame('3.000cm', $styles->evaluate('string(//style:master-page/style:header//draw:frame/@svg:width)'));
+		$this->assertSame('1.500cm', $styles->evaluate('string(//style:master-page/style:header//draw:frame/@svg:height)'));
+		$this->assertSame(1, $styles->query('//style:page-layout/style:header-style')->length);
+		$this->assertSame(1, $styles->query('//style:master-page/style:footer/text:p')->length);
+	}//end testALogoIsEmbeddedAndDrawnInThePageHeader()
+
+	/**
+	 * Without a logo there is no header and no picture.
+	 *
+	 * @return void
+	 */
+	public function testWithoutALogoThereIsNoHeaderOrPicture(): void {
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: '<p>Tekst</p>', landscape: true, houseStyle: new OdtHouseStyle(footerLines: ['Regel'])));
+
+		$this->assertSame(['META-INF/manifest.xml', 'content.xml', 'meta.xml', 'mimetype', 'styles.xml'], $this->sortedNames());
+		$this->assertSame(0, $this->xpath(part: 'styles.xml')->query('//style:header | //style:header-style')->length);
+		$this->assertStringNotContainsString('xmlns:draw', $this->parts['styles.xml']);
+	}//end testWithoutALogoThereIsNoHeaderOrPicture()
+
+	/**
+	 * The manifest's media type per path.
+	 *
+	 * @return array<string, string>
+	 */
+	private function manifestEntries(): array {
+		$manifest = new DOMDocument();
+		$manifest->loadXML($this->parts['META-INF/manifest.xml']);
+		$entries = [];
+		foreach ($manifest->getElementsByTagNameNS('urn:oasis:names:tc:opendocument:xmlns:manifest:1.0', 'file-entry') as $entry) {
+			$entries[$entry->getAttributeNS('urn:oasis:names:tc:opendocument:xmlns:manifest:1.0', 'full-path')]
+				= $entry->getAttributeNS('urn:oasis:names:tc:opendocument:xmlns:manifest:1.0', 'media-type');
+		}
+
+		return $entries;
+	}//end manifestEntries()
+
+	/**
+	 * The font-face a paragraph style of a part names.
+	 *
+	 * @param DOMXPath $xpath The part.
+	 * @param string   $name  The style name.
+	 *
+	 * @return string
+	 */
+	private function styleFont(DOMXPath $xpath, string $name): string {
+		return $xpath->evaluate('string(//style:style[@style:name="' . $name . '"]/style:text-properties/@style:font-name)');
+	}//end styleFont()
+
+	/**
+	 * Both fonts of a house style are embedded, declared with their package file, and set on their roles.
+	 *
+	 * @return void
+	 */
+	public function testHouseStyleFontsAreEmbeddedAndSetPerRole(): void {
+		require_once __DIR__ . '/OdtFontTest.php';
+		$headingBytes = OdtFontTest::sfnt(flavor: 'OTTO');
+		$bodyBytes = OdtFontTest::sfnt();
+		$style = new OdtHouseStyle(
+			headingFont: OdtFont::fromBytes(role: 'heading', family: 'Gemeente Kop', bytes: $headingBytes),
+			bodyFont: OdtFont::fromBytes(role: 'body', family: 'Gemeente Tekst', bytes: $bodyBytes)
+		);
+		$html = (new RowsPdfSection())->build(table: new RowsTable(title: 'Vergunningen', columns: ['naam' => 'Naam'], rows: [['naam' => 'A']]));
+
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: $html, landscape: true, houseStyle: $style));
+
+		$this->assertSame($headingBytes, $this->parts['Fonts/heading.otf']);
+		$this->assertSame($bodyBytes, $this->parts['Fonts/body.ttf']);
+		$this->assertSame('mimetype', $this->names[0]);
+		$entries = $this->manifestEntries();
+		$this->assertSame('application/vnd.ms-opentype', $entries['Fonts/heading.otf']);
+		$this->assertSame('application/x-font-ttf', $entries['Fonts/body.ttf']);
+
+		foreach (['content.xml', 'styles.xml'] as $part) {
+			$xpath = $this->xpath(part: $part);
+			$xpath->registerNamespace('svg', 'urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0');
+			$xpath->registerNamespace('xlink', 'http://www.w3.org/1999/xlink');
+			$this->assertSame("'Gemeente Kop'", $xpath->evaluate('string(//style:font-face[@style:name="OR_HeadingFont"]/@svg:font-family)'), $part);
+			$this->assertSame('Fonts/heading.otf', $xpath->evaluate('string(//style:font-face[@style:name="OR_HeadingFont"]//svg:font-face-uri/@xlink:href)'), $part);
+			$this->assertSame('opentype', $xpath->evaluate('string(//style:font-face[@style:name="OR_HeadingFont"]//svg:font-face-format/@svg:string)'), $part);
+			$this->assertSame('Fonts/body.ttf', $xpath->evaluate('string(//style:font-face[@style:name="OR_BodyFont"]//svg:font-face-uri/@xlink:href)'), $part);
+			$this->assertSame(1, $xpath->query('//style:font-face[@style:name="Liberation Sans"]')->length, $part);
+		}
+
+		$content = $this->xpath(part: 'content.xml');
+		foreach (['OR_H1', 'OR_H1_Break', 'OR_H2', 'OR_Headline'] as $name) {
+			$this->assertSame('OR_HeadingFont', $this->styleFont(xpath: $content, name: $name), $name);
+		}
+
+		foreach (['OR_Body', 'OR_Cell', 'OR_HeadCell', 'OR_Meta'] as $name) {
+			$this->assertSame('OR_BodyFont', $this->styleFont(xpath: $content, name: $name), $name);
+		}
+
+		$this->assertSame('OR_BodyFont', $this->xpath(part: 'styles.xml')->evaluate('string(//style:default-style/style:text-properties/@style:font-name)'));
+	}//end testHouseStyleFontsAreEmbeddedAndSetPerRole()
+
+	/**
+	 * A role without an embeddable font keeps the default font while the other role uses its own.
+	 *
+	 * @return void
+	 */
+	public function testARoleWithoutAFontKeepsTheDefaultFont(): void {
+		require_once __DIR__ . '/OdtFontTest.php';
+		// The heading font is WOFF2, which cannot be embedded: only the body font is.
+		$fonts = array_values(array_filter([
+			OdtFont::fromBytes(role: 'heading', family: 'Kop', bytes: 'wOF2' . substr(OdtFontTest::sfnt(), 4)),
+			OdtFont::fromBytes(role: 'body', family: 'Tekst', bytes: OdtFontTest::sfnt()),
+		]));
+		$style = OdtHouseStyle::withFonts(style: null, fonts: $fonts);
+
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: '<h1>Titel</h1><p>Tekst</p>', landscape: false, houseStyle: $style));
+
+		$content = $this->xpath(part: 'content.xml');
+		$this->assertSame('Liberation Sans', $this->styleFont(xpath: $content, name: 'OR_H1'));
+		$this->assertSame('OR_BodyFont', $this->styleFont(xpath: $content, name: 'OR_Body'));
+		$this->assertSame(0, $content->query('//style:font-face[@style:name="OR_HeadingFont"]')->length);
+		$this->assertArrayNotHasKey('Fonts/heading.ttf', $this->parts);
+		$this->assertArrayHasKey('Fonts/body.ttf', $this->parts);
+		$this->assertArrayNotHasKey('Fonts/heading.ttf', $this->manifestEntries());
+	}//end testARoleWithoutAFontKeepsTheDefaultFont()
+
+	/**
+	 * Without fonts no font file or font namespace is added.
+	 *
+	 * @return void
+	 */
+	public function testWithoutFontsNothingIsEmbedded(): void {
+		$this->open(bytes: (new OdtWriter())->fromHtml(html: '<p>Tekst</p>', landscape: true, houseStyle: new OdtHouseStyle(footerLines: ['Regel'])));
+
+		$this->assertSame([], array_values(array_filter($this->names, static fn (string $name): bool => str_starts_with($name, 'Fonts/'))));
+		$this->assertStringNotContainsString('xmlns:xlink', $this->parts['content.xml']);
+		$this->assertSame('Liberation Sans', $this->styleFont(xpath: $this->xpath(part: 'content.xml'), name: 'OR_H1'));
+	}//end testWithoutFontsNothingIsEmbedded()
 
 	/**
 	 * Entry names, sorted.

@@ -35,7 +35,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Settings\FileSettingsHandler
  * @uses   \OCA\OpenRegister\Files\Service\File\MaskForm
  * @uses   \OCA\OpenRegister\Service\File\ArchiveBounds
- * @uses   \OCA\OpenRegister\Service\Anonymisation\CapacityPolicy
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\CapacityPolicy
  * @uses   \OCA\OpenRegister\Service\Anonymisation\OfficialsSource
  * @uses   \OCA\OpenRegister\Service\Settings\EntityPatternSetSetting
  */

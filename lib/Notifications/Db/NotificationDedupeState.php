@@ -50,6 +50,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDispatchedAt(DateTime $dispatchedAt)
  * @method DateTime getSeenAt()
  * @method void setSeenAt(DateTime $seenAt)
+ * @method int|null getReminderSent()
+ * @method void setReminderSent(int $reminderSent)
+ * @method string|null getReminderStopped()
+ * @method void setReminderStopped(?string $reminderStopped)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -98,6 +102,20 @@ class NotificationDedupeState extends Entity implements JsonSerializable {
 	protected ?DateTime $seenAt = null;
 
 	/**
+	 * How many reminders were sent from the anchor the fingerprint holds.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $reminderSent = 0;
+
+	/**
+	 * The stop condition that ended the reminder, or null while it runs.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $reminderStopped = null;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
@@ -107,6 +125,8 @@ class NotificationDedupeState extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'fingerprint', type: 'string');
 		$this->addType(fieldName: 'dispatchedAt', type: 'datetime');
 		$this->addType(fieldName: 'seenAt', type: 'datetime');
+		$this->addType(fieldName: 'reminderSent', type: 'integer');
+		$this->addType(fieldName: 'reminderStopped', type: 'string');
 
 	}//end __construct()
 
@@ -124,6 +144,8 @@ class NotificationDedupeState extends Entity implements JsonSerializable {
 			'fingerprint' => $this->fingerprint,
 			'dispatchedAt' => $this->dispatchedAt?->format(DateTime::ATOM),
 			'seenAt' => $this->seenAt?->format(DateTime::ATOM),
+			'reminderSent' => $this->reminderSent,
+			'reminderStopped' => $this->reminderStopped,
 		];
 
 	}//end jsonSerialize()

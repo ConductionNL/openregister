@@ -17,7 +17,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectExistsException;
-use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
+use OCA\OpenRegister\Kernel\Contracts\CreateGuardInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -43,7 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
+use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
 
 /**
  * SaveObject::setDefaultValues(): which defaults apply, how templated ones
@@ -221,7 +221,7 @@ final class SaveObjectDefaultValuesTest extends TestCase {
 				throw new RuntimeException('stop');
 			}
 		);
-		$this->services[DedupCreatePolicyInterface::class] = $policy;
+		$this->services[CreateGuardInterface::class] = $policy;
 	}
 
 	public function testDefaultsApplyByBehaviourRenderAgainstStoredDataAndYieldToConstants(): void {

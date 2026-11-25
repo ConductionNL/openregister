@@ -148,7 +148,7 @@ class ApiCallersControllerTest extends TestCase {
 		$row = $controller->index()->getData()['callers'][0];
 
 		$this->assertSame(
-			['id', 'principal', 'route', 'method', 'version', 'calls', 'firstSeen', 'lastSeen'],
+			['id', 'principal', 'route', 'method', 'version', 'client', 'calls', 'firstSeen', 'lastSeen'],
 			array_keys($row)
 		);
 	}//end testTheRecordCarriesNoBody()

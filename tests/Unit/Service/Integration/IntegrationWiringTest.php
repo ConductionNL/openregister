@@ -42,7 +42,10 @@ use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
+use OCA\OpenRegister\Listener\CalendarObjectChangedListener;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarLinkListenerRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\Calendar\Events\CalendarObjectUpdatedEvent;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -147,6 +150,16 @@ class IntegrationWiringTest extends TestCase {
 		}
 	}//end testTheWebhookHelpersAreBoundByIntegrationsOnly()
 
+	/**
+	 * The request metrics port the middleware and the object cache type on is answered by the Integrations recorder.
+	 *
+	 * @return void
+	 */
+	public function testTheRequestMetricsPortIsAnsweredByTheRecorder(): void {
+		$this->assertSame(\OCA\OpenRegister\Service\Observability\RequestMetricsRecorder::class, IntegrationWiring::BINDINGS[\OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface::class]);
+		$this->assertTrue(is_a(\OCA\OpenRegister\Service\Observability\RequestMetricsRecorder::class, \OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface::class, true));
+	}//end testTheRequestMetricsPortIsAnsweredByTheRecorder()
+
 	public function testTheRegistryAndSemanticValidatorFactoriesBuildFromTheContainer(): void {
 		$this->registerAll();
 		$container = $this->createMock(ContainerInterface::class);
@@ -200,6 +213,12 @@ class IntegrationWiringTest extends TestCase {
 				return true;
 			}
 		);
+		$loader = null;
+		$registry->method('setBuiltinLoader')->willReturnCallback(
+			static function (callable $installed) use (&$loader): void {
+				$loader = $installed;
+			}
+		);
 		$logger->expects($this->once())->method('warning')->with(
 			'OpenRegister: integration provider failed to construct and was dropped from the registry: {provider} — {message}',
 			$this->callback(
@@ -210,17 +229,26 @@ class IntegrationWiringTest extends TestCase {
 		);
 
 		IntegrationWiring::boot($server);
+		$this->assertSame(expected: [], actual: $built, message: 'boot() constructs no provider.');
+		$this->assertIsCallable(actual: $loader);
+		$loader();
 
 		$this->assertSame(array_values($built), $added);
 		$this->assertSame(FilesProvider::class, array_key_first($built));
 		$this->assertSame(TimeProvider::class, array_key_last($built));
 		$this->assertArrayNotHasKey(NotesProvider::class, $built);
-		$this->assertCount(25, $added);
+		$this->assertCount(26, $added);
 	}//end testBootAddsEveryBuiltinProviderAndDropsOneThatFailsToConstruct()
 
 	public function testAFailingProviderIsDroppedSilentlyWithoutALogger(): void {
 		$registry = $this->createMock(IntegrationRegistry::class);
 		$registry->expects($this->never())->method('addProvider');
+		$loader = null;
+		$registry->method('setBuiltinLoader')->willReturnCallback(
+			static function (callable $installed) use (&$loader): void {
+				$loader = $installed;
+			}
+		);
 		$server = $this->createMock(ContainerInterface::class);
 		$server->method('get')->willReturnCallback(
 			static function (string $id) use ($registry): mixed {
@@ -233,6 +261,8 @@ class IntegrationWiringTest extends TestCase {
 		);
 
 		IntegrationWiring::boot($server);
+		$this->assertIsCallable(actual: $loader);
+		$loader();
 	}//end testAFailingProviderIsDroppedSilentlyWithoutALogger()
 
 	public function testBootObjectSourcesAddsTheExternalRegisterProvider(): void {
@@ -298,4 +328,20 @@ class IntegrationWiringTest extends TestCase {
 
 		IntegrationWiring::bootLeafRegistry($server);
 	}//end testTheLeafLoaderIsSkippedWithoutARegistry()
+	public function testTheInboundCalendarLinkListenersAreRegistered(): void {
+		$listeners = [];
+		$context   = $this->createMock(IRegistrationContext::class);
+		$context->method('registerEventListener')->willReturnCallback(
+			static function (string $event, string $listener, int $priority = 0) use (&$listeners): void {
+				$listeners[] = [$event, $listener, $priority];
+			}
+		);
+
+		IntegrationWiring::register($context);
+
+		$this->assertContains(
+			[CalendarObjectUpdatedEvent::class, CalendarObjectChangedListener::class, CalendarLinkListenerRegistrar::PRIORITY],
+			$listeners
+		);
+	}//end testTheInboundCalendarLinkListenersAreRegistered()
 }//end class

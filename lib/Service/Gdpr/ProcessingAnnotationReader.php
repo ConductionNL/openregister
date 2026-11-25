@@ -107,6 +107,8 @@ final class ProcessingAnnotationReader {
 	 * @param mixed $legacy The legacy annotation value.
 	 *
 	 * @return array{logReads: false, attribution: array{default: string}, subjectIdFields: array{}}|null
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md#requirement-discovery-also-finds-records-through-schema-declared-subject-id-fields
 	 */
 	private static function legacyAnnotation(mixed $legacy): ?array {
 		if (is_string($legacy) === false || $legacy === '') {
@@ -126,6 +128,8 @@ final class ProcessingAnnotationReader {
 	 * @param mixed $value Candidate value.
 	 *
 	 * @return array<array-key, mixed>
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md#requirement-discovery-also-finds-records-through-schema-declared-subject-id-fields
 	 */
 	private static function asArray(mixed $value): array {
 		if (is_array($value) === true) {

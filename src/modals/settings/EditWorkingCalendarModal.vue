@@ -48,6 +48,12 @@
 						)
 					"
 					data-testid="working-calendar-organisation" />
+				<NcSelect
+					v-model="form.timezone"
+					:options="timeZoneOptions"
+					:inputLabel="t('openregister', 'Time zone')"
+					:clearable="false"
+					data-testid="working-calendar-timezone" />
 			</section>
 
 			<section class="calendar-form__block">
@@ -264,6 +270,11 @@
 					</li>
 				</ul>
 			</section>
+
+			<TermDiagnosticPanel
+				:key="(calendar && calendar.slug) || 'new'"
+				:definitionOf="toDefinition"
+				:initialSla="initialSla" />
 		</div>
 
 		<template #actions>
@@ -293,6 +304,7 @@ import Calendar from 'vue-material-design-icons/Calendar.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import SaveButton from '../../components/shared/SaveButton.vue'
 import CalendarRowButton from './CalendarRowButton.vue'
+import TermDiagnosticPanel from './TermDiagnosticPanel.vue'
 
 /**
  * Edits one working calendar and previews what its rules mean in a year.
@@ -307,6 +319,28 @@ import CalendarRowButton from './CalendarRowButton.vue'
  * shape that produced half-written rules in the form this replaces. It is
  * rebuilt on the way out.
  */
+/**
+ * The IANA zone names this browser knows, with UTC, which some engines list
+ * only as an alias. The server checks the choice against PHP's own list.
+ *
+ * @return {Array<string>} The zone names
+ */
+function availableTimeZones() {
+	const zones = typeof Intl.supportedValuesOf === 'function'
+		? Intl.supportedValuesOf('timeZone')
+		: []
+	return zones.includes('UTC') ? [...zones] : ['UTC', ...zones]
+}
+
+/**
+ * The zone a new calendar starts in: the administrator's own, else UTC.
+ *
+ * @return {string} An IANA zone name
+ */
+function initialTimeZone() {
+	return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+}
+
 /**
  * A stored calendar's working weekdays, Monday to Friday when it has none.
  *
@@ -404,6 +438,7 @@ export default {
 		NcSelect,
 		NcTextField,
 		SaveButton,
+		TermDiagnosticPanel,
 	},
 
 	props: {
@@ -413,6 +448,14 @@ export default {
 		},
 
 		calendar: {
+			type: Object,
+			default: null,
+		},
+
+		/**
+		 * A term the "Try a date" panel starts from, e.g. from a deep link.
+		 */
+		initialSla: {
 			type: Object,
 			default: null,
 		},
@@ -442,6 +485,20 @@ export default {
 		 */
 		isNew() {
 			return !this.calendar || !this.calendar['@self']
+		},
+
+		/**
+		 * The zones a calendar can count its days in, the current one kept.
+		 *
+		 * @return {Array<string>} IANA zone names.
+		 *
+		 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md#requirement-a-working-calendar-counts-its-days-in-a-named-time-zone
+		 */
+		timeZoneOptions() {
+			const zones = availableTimeZones()
+			return zones.includes(this.form.timezone)
+				? zones
+				: [this.form.timezone, ...zones]
 		},
 
 		/**
@@ -572,6 +629,7 @@ export default {
 				slug: '',
 				title: '',
 				organisation: '',
+				timezone: initialTimeZone(),
 				workingWeekdays: [1, 2, 3, 4, 5],
 				hoursPerWorkingDay: '8',
 				serviceHours: {},
@@ -720,6 +778,7 @@ export default {
 				slug: value.slug || '',
 				title: value.title || '',
 				organisation: value.organisation || '',
+				timezone: value.timezone || 'UTC',
 				workingWeekdays: storedWeekdays(value),
 
 				hoursPerWorkingDay: String(value.hoursPerWorkingDay ?? '8'),
@@ -740,6 +799,7 @@ export default {
 			const definition = {
 				slug: this.form.slug.trim(),
 				title: this.form.title.trim(),
+				timezone: this.form.timezone,
 				workingWeekdays: [...this.form.workingWeekdays].sort(
 					(a, b) => a - b,
 				),

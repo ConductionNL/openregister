@@ -85,7 +85,7 @@ class FlowRunAttributionTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
 			function (string $id) use ($flowMapper, $activeOrg, $delegation, $versions): object {
-				if ($id === 'OCA\OpenRegister\Db\FlowMapper') {
+				if ($id === \OCA\OpenRegister\Db\FlowMapperInterface::class) {
 					return $flowMapper;
 				}
 
@@ -201,6 +201,46 @@ class FlowRunAttributionTest extends TestCase {
 		$this->assertSame('carol', $run->getRunAs(), 'the trigger names the acting identity');
 		$this->assertNotSame('alice', $run->getRunAs(), "the flow's owner must not answer");
 		$this->assertSame('org-a', $run->getOrganisation(), 'tenancy still falls back to the flow');
+	}
+
+	/**
+	 * A calendar-fired run acts as the calendar trigger's own runAs, not the
+	 * schedule trigger's, when the flow carries both.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/specs/flow-engine/spec.md#requirement-a-calendar-trigger-starts-a-flow-at-a-date-held-on-a-record
+	 */
+	public function testACalendarRunActsAsTheCalendarTriggersIdentity(): void {
+		$flow = $this->ownedFlow('alice', 'org-a');
+		$flow->setNodes([
+			['id' => 'nightly', 'type' => 'openregister.trigger-schedule', 'config' => ['runAs' => 'carol']],
+			['id' => 'reminder', 'type' => 'openregister.trigger-calendar', 'config' => ['runAs' => 'dave']],
+			['id' => 'stop', 'type' => 'end'],
+		]);
+
+		$run = $this->service($flow)->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'calendar'));
+
+		$this->assertSame('dave', $run->getRunAs());
+	}
+
+	/**
+	 * A webhook-fired run acts as the webhook trigger's runAs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/specs/flow-engine/spec.md#requirement-an-incoming-webhook-trigger-starts-a-flow-from-a-signed-call-by-another-system
+	 */
+	public function testAWebhookRunActsAsTheWebhookTriggersIdentity(): void {
+		$flow = $this->ownedFlow('alice', 'org-a');
+		$flow->setNodes([
+			['id' => 'hook', 'type' => 'openregister.trigger-webhook', 'config' => ['runAs' => 'betalingen']],
+			['id' => 'stop', 'type' => 'end'],
+		]);
+
+		$run = $this->service($flow)->queueRun(flowId: 'flow-1', options: new FlowRunQueueOptions(trigger: 'webhook'));
+
+		$this->assertSame('betalingen', $run->getRunAs());
 	}
 
 	/**

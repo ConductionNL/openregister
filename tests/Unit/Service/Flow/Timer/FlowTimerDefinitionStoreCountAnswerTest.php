@@ -20,6 +20,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Tests\Unit\Support\OneServiceContainer;
+use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -40,11 +43,11 @@ class FlowTimerDefinitionStoreCountAnswerTest extends TestCase {
 	public function testACountAnswerFallsBackToTheShippedDescriptor(): void {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->expects(self::once())->method('searchObjectsBySlug')
-			->with('flow-timers', 'working-calendar', [], false, false)
+			->with($this->equalTo(new RegisterSchemaSlugs(register: 'flow-timers', schema: 'working-calendar')), [], false, false)
 			->willReturn(3);
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getAppPath')->with('openregister')->willReturn(realpath(__DIR__ . '/../../../../..'));
-		$store = new FlowTimerDefinitionStore(objects: $objects, appManager: $appManager, logger: new NullLogger());
+		$store = new FlowTimerDefinitionStore(container: new OneServiceContainer(ObjectOperationsInterface::class, $objects), appManager: $appManager, logger: new NullLogger());
 
 		self::assertSame(['nl-national', 'example-organisation'], array_keys($store->calendars()));
 	}//end testACountAnswerFallsBackToTheShippedDescriptor()

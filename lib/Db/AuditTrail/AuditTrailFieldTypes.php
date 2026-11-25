@@ -74,6 +74,9 @@ final class AuditTrailFieldTypes {
 		'flowStep' => 'integer',
 		'purpose' => 'string',
 		'consumer' => 'string',
+		'triggerObject' => 'string',
+		'ruleDigest' => 'string',
+		'ruleVersion' => 'string',
 	];
 
 	/**
@@ -87,7 +90,8 @@ final class AuditTrailFieldTypes {
 	 * rather than a column addition: any key added here changes the canonical
 	 * form of every row ever written. Do not add a key to this list without
 	 * reading that ADR — and note that `purgedAt` is deliberately ABSENT for
-	 * exactly this reason, as are `importJobId`, `purpose` and `consumer`.
+	 * exactly this reason, as are `importJobId`, `purpose`, `consumer` and
+	 * `triggerObject` (a projection of `changed`, which is sealed already).
 	 *
 	 * @var string[]
 	 */
@@ -99,4 +103,16 @@ final class AuditTrailFieldTypes {
 		'expires', 'hash', 'previousHash', 'toolId', 'paramsDigest', 'resultSummary',
 		'cause', 'causeRun', 'flowRun', 'flowNode', 'flowStep',
 	];
+
+	/**
+	 * Fields sealed only when they hold a value.
+	 *
+	 * Added after the chain's v2 form: a null one is left out of the sealed form, so a
+	 * row written before the field existed canonicalises, and verifies, exactly as it did.
+	 *
+	 * @var array<int, string>
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-the-rule-digest-is-part-of-the-hash-chain
+	 */
+	public const SEALED_WHEN_SET = ['ruleDigest', 'ruleVersion'];
 }//end class

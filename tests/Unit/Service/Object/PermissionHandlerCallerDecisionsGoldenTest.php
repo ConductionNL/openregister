@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\ProvenanceRequest;
 use OCP\IAppConfig;
@@ -122,6 +123,7 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 		$manager = $this->createStub(IUserManager::class);
 		$manager->method('get')->willReturnCallback(static fn (string $uid): ?IUser => ($users[$uid] ?? null));
 		$groups = $this->createStub(IGroupManager::class);
+		$groups->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => in_array('admin', (self::GROUPS[$uid] ?? []), true));
 		$groups->method('getUserGroupIds')->willReturnCallback(static fn (IUser $user): array => self::GROUPS[$user->getUID()]);
 
 		$matcher = $this->createStub(ConditionMatcher::class);
@@ -229,7 +231,7 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 				)
 			);
 			$answers["allowed $action"] = $this->answer(
-				fn () => $this->newHandler($caller)->hasPermission(schema: $schema, action: $action, userId: $userId, object: $object)
+				fn () => $this->newHandler($caller)->hasPermission(ask: (new PermissionAsk(schema: $schema, action: $action))->askedBy(userId: $userId, objectOwner: null)->about(object: $object, register: null))
 			);
 		}
 

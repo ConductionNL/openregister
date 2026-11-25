@@ -48,7 +48,6 @@ class ExportServiceGapTest extends TestCase {
 
 		$this->exportService = new ExportService(
 			$this->registerMapper,
-			$this->userManager,
 			$this->groupManager,
 			$this->objectService,
 			$this->cacheHandler,
@@ -340,6 +339,34 @@ class ExportServiceGapTest extends TestCase {
 		$this->assertEquals(2, $spreadsheet->getSheetCount());
 		$this->assertEquals('schema-one', $spreadsheet->getSheet(0)->getTitle());
 		$this->assertEquals('schema-two', $spreadsheet->getSheet(1)->getTitle());
+	}
+
+	/**
+	 * A register whose schema slugs exceed a workbook's 31-character title limit
+	 * and share their first 31 characters still exports, one sheet per schema.
+	 * Before, the first slug over the limit aborted the export with a server error.
+	 *
+	 * @return void
+	 */
+	public function testExportToExcelNamesSheetsWithinTheWorkbookLimits(): void {
+		$register = $this->createRegisterEntity(1);
+
+		$schema1 = $this->createSchemaEntity('e2e-export-profile-schema-k3j9x2a1', []);
+		$schema2 = $this->createSchemaEntity('e2e-export-profile-schema-k3j9x2a1-two', []);
+		$schema3 = $this->createSchemaEntity('zaak:type/[2026]', []);
+
+		$this->registerMapper->method('getSchemasByRegisterId')
+			->with(1)
+			->willReturn([$schema1, $schema2, $schema3]);
+
+		$this->objectService->method('searchObjects')->willReturn([]);
+
+		$spreadsheet = $this->exportService->exportToExcel(request: new ObjectExportRequest(register: $register));
+
+		$this->assertSame(3, $spreadsheet->getSheetCount());
+		$this->assertSame('e2e-export-profile-schema-k3j9x', $spreadsheet->getSheet(0)->getTitle());
+		$this->assertSame('e2e-export-profile-schema-k (2)', $spreadsheet->getSheet(1)->getTitle());
+		$this->assertSame('zaak-type--2026-', $spreadsheet->getSheet(2)->getTitle());
 	}
 
 	/**

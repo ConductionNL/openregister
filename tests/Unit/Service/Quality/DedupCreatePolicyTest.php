@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Quality;
 
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -37,7 +38,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Search\Service\Quality\CreateCandidate;
+use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
 
 class DedupCreatePolicyTest extends TestCase {
 
@@ -77,6 +78,13 @@ class DedupCreatePolicyTest extends TestCase {
 	private DedupCreatePolicy $policy;
 
 	/**
+	 * Logger of the override audit.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
+	private $logger;
+
+	/**
 	 * Wire the policy over mocked collaborators.
 	 *
 	 * @return void
@@ -86,6 +94,7 @@ class DedupCreatePolicyTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
 		$this->policy = new DedupCreatePolicy(
 			$this->duplicates,
@@ -93,7 +102,7 @@ class DedupCreatePolicyTest extends TestCase {
 			$this->groupManager,
 			new \OCA\OpenRegister\Search\Service\Quality\DedupOverrideAudit(
 				$this->auditTrailMapper,
-				$this->createMock(LoggerInterface::class)
+				$this->logger
 			)
 		);
 	}//end setUp()
@@ -353,4 +362,19 @@ class DedupCreatePolicyTest extends TestCase {
 
 		$this->policy->recordOverride(new ObjectEntity(), []);
 	}//end testNoOverrideWritesNoAuditEntry()
+
+	/**
+	 * The audit trail stores rows of the stored entity, so an override over an
+	 * object of another shape writes no audit row instead of failing the save.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 */
+	public function testAnObjectThatIsNotTheStoredEntityWritesNoAuditEntry(): void {
+		$this->auditTrailMapper->expects($this->never())->method('recordObjectEvent');
+		$this->logger->expects($this->never())->method('warning');
+
+		$this->policy->recordOverride($this->createMock(ObjectEntityInterface::class), $this->oneMatch());
+	}//end testAnObjectThatIsNotTheStoredEntityWritesNoAuditEntry()
 }//end class

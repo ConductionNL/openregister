@@ -37,13 +37,13 @@ final class SlaAddition {
 	 * @param DateTimeImmutable    $start     The start instant.
 	 * @param float                $value     The amount; negative subtracts.
 	 * @param string               $unit      The unit.
-	 * @param WorkingCalendar|null $calendar  The resolved calendar, when one was given.
+	 * @param WorkingCalendarInterface|null $calendar  The resolved calendar, when one was given.
 	 */
 	public function __construct(
 		public readonly DateTimeImmutable $start,
 		public readonly float $value,
 		public readonly string $unit,
-		private readonly ?WorkingCalendar $calendar,
+		private readonly ?WorkingCalendarInterface $calendar,
 	) {
 
 	}//end __construct()
@@ -57,13 +57,13 @@ final class SlaAddition {
 	 * have to invent one to say "two days"; the units that DO need one
 	 * refuse here rather than quietly computing a different deadline.
 	 *
-	 * @return WorkingCalendar The calendar.
+	 * @return WorkingCalendarInterface The calendar.
 	 *
 	 * @throws FlowTimerValidationException When none was given.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
-	public function calendar(): WorkingCalendar {
+	public function calendar(): WorkingCalendarInterface {
 		if ($this->calendar === null) {
 			throw new FlowTimerValidationException(
 				message: sprintf(
@@ -85,11 +85,11 @@ final class SlaAddition {
 	 * escalation rung needs it, the backward path keeps the wall clock it has
 	 * always had, and says so rather than pretending to be window-aware.
 	 *
-	 * @return WorkingCalendar|null The calendar, or null for wall-clock hours.
+	 * @return WorkingCalendarInterface|null The calendar, or null for wall-clock hours.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
-	public function serviceHoursCalendar(): ?WorkingCalendar {
+	public function serviceHoursCalendar(): ?WorkingCalendarInterface {
 		if ($this->calendar !== null && $this->value > 0 && $this->calendar->getServiceHours()->areDeclared() === true) {
 			return $this->calendar;
 		}

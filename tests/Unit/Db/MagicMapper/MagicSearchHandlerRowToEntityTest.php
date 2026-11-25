@@ -119,7 +119,8 @@ class MagicSearchHandlerRowToEntityTest extends TestCase {
 			'deleted as timestamp'    => ['row' => ['_deleted' => '2026-01-05 10:00:00']],
 			'relevance'               => ['row' => ['_relevance' => '87.5']],
 			'relevance int'           => ['row' => ['_relevance' => 3]],
-			'unhandled metadata'      => ['row' => ['_schema_version' => '2', '_status' => 'open', '_archived' => '{}', '_register' => '9']],
+			'unhandled metadata'      => ['row' => ['_schema_version' => '2', '_archived' => '{}', '_register' => '9']],
+			'status'                  => ['row' => ['_status' => 'draft']],
 			'properties typed'        => [
 				'row' => [
 					'title'        => 'Hello',

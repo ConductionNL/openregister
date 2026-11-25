@@ -26,13 +26,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\WebhooksMappers
  * @uses \OCA\OpenRegister\Controller\Support\TasksPlatform
  * @uses \OCA\OpenRegister\Controller\Support\WebhooksControllerServices
+ * @uses \OCA\OpenRegister\Event\AppWebhookEvents
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class WebhooksControllerEventsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/webhooks-events-golden.json';
 
 	public function testEventsMatchTheRecordedCatalogue(): void {
 		$controller = WebhooksControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$this->createMock(WebhookMapper::class),
 			$this->createMock(WebhookLogMapper::class),
@@ -61,7 +62,6 @@ class WebhooksControllerEventsGoldenTest extends TestCase {
 		$webhookMapper = $this->createMock(WebhookMapper::class);
 		$webhookMapper->expects($this->never())->method('insert');
 		$controller = WebhooksControllerFactory::create(
-			'openregister',
 			$this->createMock(IRequest::class),
 			$webhookMapper,
 			$this->createMock(WebhookLogMapper::class),

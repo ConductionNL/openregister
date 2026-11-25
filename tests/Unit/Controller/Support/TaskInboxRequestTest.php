@@ -51,7 +51,7 @@ class TaskInboxRequestTest extends TestCase {
 		$filters = TaskInboxRequest::fromParams([])->query->filters;
 
 		$this->assertSame(
-			['state', 'isTerminal', 'priority', 'kind', 'objectUuid', 'runUuid', 'overdue', 'dueAfter', 'dueBefore', 'includeBlocked', 'openFirst'],
+			['state', 'isTerminal', 'priority', 'kind', 'objectUuid', 'runUuid', 'overdue', 'dueAfter', 'dueBefore', 'includeBlocked', 'openFirst', 'flow', 'node'],
 			array_keys($filters)
 		);
 		$this->assertSame([], array_filter($filters, static fn (?string $value): bool => $value !== null));

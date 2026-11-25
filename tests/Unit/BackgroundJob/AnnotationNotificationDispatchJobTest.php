@@ -85,6 +85,28 @@ class AnnotationNotificationDispatchJobTest extends TestCase {
 		$this->assertSame([['u1', 'created', []]], $this->dispatched);
 	}
 
+	public function testNoteAddedEntryForwardsTheNoteContext(): void {
+		$this->resolver->method('resolve')->willReturn($this->liveObject('u1'));
+
+		$this->runJob([
+			[
+				'uuid' => 'u1',
+				'register' => 'r',
+				'schema' => 's',
+				'trigger' => 'noteAdded',
+				'noteId' => '42',
+				'actorType' => 'users',
+				'actorId' => 'bob',
+				'visibility' => 'internal',
+			],
+		]);
+
+		$this->assertSame(
+			[['u1', 'noteAdded', ['noteId' => '42', 'actorType' => 'users', 'actorId' => 'bob', 'visibility' => 'internal']]],
+			$this->dispatched
+		);
+	}
+
 	public function testTransitionEntryForwardsTheEventContext(): void {
 		$this->resolver->method('resolve')->willReturn($this->liveObject('u1'));
 

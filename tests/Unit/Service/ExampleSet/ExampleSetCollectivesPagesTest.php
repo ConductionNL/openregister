@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Kernel\Contracts\ExampleSetInstallInput;
+
 /**
  * A fragment writes a work-instruction page in a collective its team can read, and remove takes away what it wrote.
  */
@@ -55,17 +57,17 @@ class ExampleSetCollectivesPagesTest extends ExampleSetTestCase {
 		$this->app(app: 'alpha', fragment: ['collectivesPages' => [['key' => 'woo-werkinstructie', 'data' => self::page()]]]);
 		$plan = $this->catalogue->gather(set: 'demo');
 
-		$this->assertSame([], $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->assertSame([], $this->installer->check(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()))['refusals']);
 		$this->assertSame([], $this->collectives['pages'], 'the check writes no page');
 
-		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertTrue($report['ok'], (string) json_encode($report));
 		$this->assertSame(['name' => 'Woo en informatie', 'owner' => 'esra.demir', 'groups' => ['demo-staff']], array_values($this->collectives['collectives'])[0]);
 		$page = array_values($this->collectives['pages'])[0];
 		$this->assertSame('Hoe we Woo-verzoeken behandelen', $page['title']);
 		$this->assertStringContainsString('Binnen een week', $page['content']);
 
-		$this->installer->install(plan: $plan, today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $plan, today: $this->today()));
 		$this->assertCount(1, $this->collectives['pages'], 'a kept page is written once');
 
 		$removed = $this->remover->remove(set: 'demo');
@@ -84,7 +86,7 @@ class ExampleSetCollectivesPagesTest extends ExampleSetTestCase {
 		$this->collectives['pages'][50]      = ['collective' => 7, 'title' => 'Eigen pagina', 'content' => '', 'owner' => 'esra.demir'];
 		$this->app(app: 'alpha', fragment: ['collectivesPages' => [['key' => 'woo-werkinstructie', 'data' => self::page()]]]);
 
-		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 		$this->assertCount(2, $this->collectives['pages']);
 
 		$this->remover->remove(set: 'demo');
@@ -101,7 +103,7 @@ class ExampleSetCollectivesPagesTest extends ExampleSetTestCase {
 		$this->collectivesInstalled = false;
 		$this->app(app: 'alpha', fragment: ['collectivesPages' => [['key' => 'woo-werkinstructie', 'data' => self::page()]]]);
 
-		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$report = $this->installer->install(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()));
 
 		$this->assertFalse($report['ok']);
 		$this->assertStringContainsString('Collectives is not installed', (string) json_encode($report['dropped']));
@@ -120,7 +122,7 @@ class ExampleSetCollectivesPagesTest extends ExampleSetTestCase {
 	public function testACheckRefusesAFaultyPage(array $data, string $reason): void {
 		$this->app(app: 'alpha', fragment: ['collectivesPages' => [['key' => 'bad', 'data' => $data]]]);
 
-		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$refusals = $this->installer->check(input: new ExampleSetInstallInput(plan: $this->catalogue->gather(set: 'demo'), today: $this->today()))['refusals'];
 
 		$this->assertCount(1, $refusals);
 		$this->assertStringContainsString($reason, $refusals[0]);

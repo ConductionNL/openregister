@@ -48,6 +48,11 @@ class ImageBurner {
 	];
 
 	/**
+	 * The type whose page images {@see burnPdfPages()} burns.
+	 */
+	public const PDF_TYPE = 'application/pdf';
+
+	/**
 	 * The JPEG block grid, with 2x2 chroma subsampling.
 	 */
 	private const JPEG_GRID = 16;
@@ -88,6 +93,26 @@ class ImageBurner {
 
 		return $this->encode(image: $image, format: $format);
 	}//end burn()
+
+	/**
+	 * Burn the regions into the page images of a PDF.
+	 *
+	 * A region's `page` is the 1-based PDF page, and its box is relative to that
+	 * page's one image, which {@see PdfImageBurner} replaces by the burned raster.
+	 *
+	 * @param string            $bytes    The PDF.
+	 * @param list<ImageRegion> $regions  The decided regions.
+	 * @param string            $fileName The file, for messages.
+	 *
+	 * @return string The PDF with the affected page images replaced.
+	 *
+	 * @throws ImageRegionNotBurnableException When the PDF does not load, or a region addresses no single burnable image.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-decided-regions-are-burned-into-the-pixels-req-ais-003
+	 */
+	public function burnPdfPages(string $bytes, array $regions, string $fileName): string {
+		return (new PdfImageBurner(burner: $this))->burn(bytes: $bytes, regions: $regions, fileName: $fileName);
+	}//end burnPdfPages()
 
 	/**
 	 * Decode the image bytes.

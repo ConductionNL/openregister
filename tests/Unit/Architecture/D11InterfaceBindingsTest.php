@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\ApplicationServiceInterface;
 use OCA\OpenRegister\Service\BulkActionRegistry;
 use OCA\OpenRegister\Service\BulkActionRegistryInterface;
 use OCA\OpenRegister\Service\ContractBindings;
+use OCA\OpenRegister\Service\ProcessesServiceBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\PlatformServiceRegistrar;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -79,14 +80,9 @@ final class D11InterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * Application::boot() resolves the deep-link registry inside a 43-line
-	 * method this refactor does not reshape.
-	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [
-		DeepLinkRegistryService::class => ['AppInfo/Application.php'],
-	];
+	private const KEPT_CALLERS = [];
 
 	/**
 	 * The class and its interface, one case per class.
@@ -126,7 +122,7 @@ final class D11InterfaceBindingsTest extends TestCase {
 	 */
 	#[DataProvider('classes')]
 	public function testTheInterfaceIsBound(string $class, string $contract): void {
-		$bindings = ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + PlatformServiceRegistrar::BINDINGS;
+		$bindings = ContractBindings::BINDINGS + CoreServiceBindings::BINDINGS + ProcessesServiceBindings::BINDINGS + PlatformServiceRegistrar::BINDINGS;
 		$this->assertArrayHasKey(key: $contract, array: $bindings);
 		$this->assertSame(expected: $class, actual: $bindings[$contract]);
 	}//end testTheInterfaceIsBound()

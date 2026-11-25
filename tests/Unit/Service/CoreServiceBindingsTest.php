@@ -21,8 +21,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
 use OCA\OpenRegister\AppInfo\Application;
+use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
+use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
+use OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Search\Service\Search\PlaceholderResolverInterface;
+use OCA\OpenRegister\Search\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
+use OCA\OpenRegister\Service\SemanticProviderCatalogue;
 use OCA\OpenRegister\Service\ServiceRegistrar;
 use OCA\OpenRegister\Tests\Unit\AppHost\RecordingRegistrationContext;
 use PHPUnit\Framework\TestCase;
@@ -95,6 +102,31 @@ final class CoreServiceBindingsTest extends TestCase {
 
 		$this->assertSame(expected: [], actual: array_intersect_key($aliases, CoreServiceBindings::BINDINGS));
 	}//end testContractBindingsDoesNotRegisterThemAgain()
+
+	/**
+	 * The Core filter-placeholders port and the resolver contract resolve to the same
+	 * resolver, so the aggregation runner resolves exactly what it did; the property
+	 * search profile keeps its Kernel contract. All three are bound by Core.
+	 *
+	 * @return void
+	 */
+	public function testThePlaceholdersAndTheSearchProfileAreBoundByCore(): void {
+		$this->assertSame(expected: PlaceholderResolver::class, actual: CoreServiceBindings::BINDINGS[FilterPlaceholdersInterface::class]);
+		$this->assertSame(expected: PlaceholderResolver::class, actual: CoreServiceBindings::BINDINGS[PlaceholderResolverInterface::class]);
+		$this->assertSame(expected: PropertySearchProfile::class, actual: CoreServiceBindings::BINDINGS[PropertySearchProfileInterface::class]);
+		$this->assertTrue(is_subclass_of(PlaceholderResolverInterface::class, FilterPlaceholdersInterface::class));
+	}//end testThePlaceholdersAndTheSearchProfileAreBoundByCore()
+
+	/**
+	 * The semantic provider port the integrations capability reads is the Core catalogue itself,
+	 * so the capability and the cache listener share one instance.
+	 *
+	 * @return void
+	 */
+	public function testTheSemanticProvidersPortIsTheCatalogue(): void {
+		$this->assertSame(expected: SemanticProviderCatalogue::class, actual: CoreServiceBindings::BINDINGS[SemanticProvidersInterface::class]);
+		$this->assertTrue(condition: is_subclass_of(SemanticProviderCatalogue::class, SemanticProvidersInterface::class));
+	}//end testTheSemanticProvidersPortIsTheCatalogue()
 
 	/**
 	 * The map binds only classes that count to Core in scripts/component-map.csv.

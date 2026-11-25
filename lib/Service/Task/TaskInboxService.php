@@ -64,6 +64,13 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	private readonly TaskTemporalProjection $temporal;
 
 	/**
+	 * Absences read in this request, by user id.
+	 *
+	 * @var array<string, array{id: string, start: string, end: string, replacement: string|null}|null>
+	 */
+	private array $absences = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param TaskMapper $tasks The datastore queries.
@@ -95,6 +102,10 @@ class TaskInboxService implements TaskInboxServiceInterface {
 	 *                                         open, for the derived `blocked`
 	 *                                         flag. Absent, no row is blocked.
 	 * @param TaskVerbList|null $verbs The per-row `can` list; without it a row read for someone carries an empty one.
+	 * @param TaskSubstitution|null $substitution Says whether a user
+	 *                                            assignee is away and until
+	 *                                            when; absent, rows carry no
+	 *                                            absence fields.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -104,6 +115,7 @@ class TaskInboxService implements TaskInboxServiceInterface {
 		private readonly ?TaskSubjectLocator $locator = null,
 		private readonly ?TaskBlockerMapperInterface $blockers = null,
 		private readonly ?TaskVerbList $verbs = null,
+		private readonly ?TaskSubstitution $substitution = null,
 	) {
 		$this->temporal = new TaskTemporalProjection();
 	}//end __construct()
@@ -173,6 +185,8 @@ class TaskInboxService implements TaskInboxServiceInterface {
 			$row['delivery'] = $this->deliveryState(task: $task);
 		}
 
+		$row = array_merge($row, $this->absenceFields(task: $task));
+
 		// The verbs the reader may run now (record-tasks-tab D-4), only when the
 		// row is read FOR someone: a notification or a job has no reader to ask.
 		if ($listing->caller !== null) {
@@ -181,6 +195,39 @@ class TaskInboxService implements TaskInboxServiceInterface {
 
 		return $row;
 	}//end row()
+
+	/**
+	 * Whether a user assignee is away, and until when, so a requester sees
+	 * work that waits on somebody absent (design D-6). Asked once per person
+	 * per request.
+	 *
+	 * @param TaskInterface $task The task.
+	 *
+	 * @return array{assigneeAbsent?: bool, absentUntil?: string|null} The fields, none without a substitution service.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	private function absenceFields(TaskInterface $task): array {
+		if ($this->substitution === null) {
+			return [];
+		}
+
+		$assignee = trim((string)$task->getAssignee());
+		if ((string)$task->getPerformerType() !== TaskInterface::PERFORMER_USER || $assignee === '') {
+			return ['assigneeAbsent' => false, 'absentUntil' => null];
+		}
+
+		if (array_key_exists($assignee, $this->absences) === false) {
+			$this->absences[$assignee] = $this->substitution->absenceOf(uid: $assignee);
+		}
+
+		$absence = $this->absences[$assignee];
+
+		return [
+			'assigneeAbsent' => ($absence !== null),
+			'absentUntil' => $absence['end'] ?? null,
+		];
+	}//end absenceFields()
 
 	/**
 	 * The subject context of a task, when the listing read one.

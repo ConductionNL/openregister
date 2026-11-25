@@ -25,7 +25,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetActingAs;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetGrants;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRow;
-use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\Share\IManager;
@@ -37,14 +37,14 @@ use RuntimeException;
 
 final class ExampleSetGrantsWriteTest extends TestCase {
 
-	private PartyService&MockObject $parties;
+	private ObjectOperationsInterface&MockObject $objects;
 	private ObjectSharingService&MockObject $sharing;
 	private IManager&MockObject $shares;
 	private ExampleSetActingAs&MockObject $actingAs;
 	private ExampleSetGrants $grants;
 
 	protected function setUp(): void {
-		$this->parties  = $this->createMock(PartyService::class);
+		$this->objects  = $this->createMock(ObjectOperationsInterface::class);
 		$this->sharing  = $this->createMock(ObjectSharingService::class);
 		$this->shares   = $this->createMock(IManager::class);
 		$this->actingAs = $this->createMock(ExampleSetActingAs::class);
@@ -52,7 +52,7 @@ final class ExampleSetGrantsWriteTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnMap(
 			[
-				[PartyService::class, $this->parties],
+				[ObjectOperationsInterface::class, $this->objects],
 				[ObjectSharingService::class, $this->sharing],
 				[IManager::class, $this->shares],
 				[ExampleSetActingAs::class, $this->actingAs],
@@ -86,7 +86,7 @@ final class ExampleSetGrantsWriteTest extends TestCase {
 
 	public function testWritingSharesTheObjectAsTheSharerAndRecordsTheShareIdentity(): void {
 		$object = new ObjectEntity();
-		$this->parties->expects($this->once())->method('findUnscoped')->with('obj-1')->willReturn($object);
+		$this->objects->expects($this->once())->method('find')->with('obj-1', $this->anything(), false, false)->willReturn($object);
 		$this->actingAs->expects($this->once())->method('run')
 			->with('ann', $this->isType('callable'))
 			->willReturnCallback(static fn (string $uid, callable $operation): mixed => $operation());
@@ -110,7 +110,7 @@ final class ExampleSetGrantsWriteTest extends TestCase {
 	}
 
 	public function testPermissionsDefaultToRead(): void {
-		$this->parties->method('findUnscoped')->willReturn(new ObjectEntity());
+		$this->objects->method('find')->willReturn(new ObjectEntity());
 		$this->actingAs->method('run')->willReturnCallback(static fn (string $uid, callable $operation): mixed => $operation());
 		$this->sharing->expects($this->once())->method('grantWithTerms')
 			->with($this->anything(), $this->callback(static fn (GrantRequest $r): bool => $r->terms->permissions === 1 && $r->terms->verbs === []))
@@ -120,7 +120,7 @@ final class ExampleSetGrantsWriteTest extends TestCase {
 	}
 
 	public function testAMissingObjectIsAnErrorWithoutSharing(): void {
-		$this->parties->method('findUnscoped')->willReturn(null);
+		$this->objects->method('find')->willReturn(null);
 		$this->actingAs->expects($this->never())->method('run');
 
 		$this->assertSame(
@@ -130,7 +130,7 @@ final class ExampleSetGrantsWriteTest extends TestCase {
 	}
 
 	public function testAFailingGrantIsReportedAsItsMessage(): void {
-		$this->parties->method('findUnscoped')->willReturn(new ObjectEntity());
+		$this->objects->method('find')->willReturn(new ObjectEntity());
 		$this->actingAs->method('run')->willThrowException(new RuntimeException('not allowed'));
 
 		$this->assertSame(

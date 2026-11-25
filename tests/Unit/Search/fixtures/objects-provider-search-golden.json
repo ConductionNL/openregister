@@ -432,7 +432,8 @@
             "[ObjectsProvider] OpenRegister search requested",
             {
                 "search_query": {
-                    "_search": "a"
+                    "_search": "a",
+                    "_snippet": true
                 },
                 "has_search": true,
                 "limit": 10,
@@ -444,6 +445,7 @@
             "searchObjectsPaginated",
             {
                 "_search": "a",
+                "_snippet": true,
                 "_content_search": true,
                 "@self": {
                     "schema": [
@@ -795,7 +797,8 @@
             "[ObjectsProvider] OpenRegister search requested",
             {
                 "search_query": {
-                    "_search": "b"
+                    "_search": "b",
+                    "_snippet": true
                 },
                 "has_search": true,
                 "limit": 4,
@@ -807,6 +810,7 @@
             "searchObjectsPaginated",
             {
                 "_search": "b",
+                "_snippet": true,
                 "_content_search": true,
                 "@self": {
                     "schema": [
@@ -870,6 +874,7 @@
             "searchObjectsPaginated",
             {
                 "_search": "b",
+                "_snippet": true,
                 "_content_search": true,
                 "@self": {
                     "schema": [
@@ -933,6 +938,7 @@
             "searchObjectsPaginated",
             {
                 "_search": "b",
+                "_snippet": true,
                 "_content_search": true,
                 "@self": {
                     "schema": [
@@ -3129,6 +3135,7 @@
             {
                 "search_query": {
                     "_search": "zaak",
+                    "_snippet": true,
                     "@self": {
                         "register": 7,
                         "created": {
@@ -3147,6 +3154,7 @@
             "searchObjectsPaginated",
             {
                 "_search": "zaak",
+                "_snippet": true,
                 "@self": {
                     "register": 7,
                     "created": {

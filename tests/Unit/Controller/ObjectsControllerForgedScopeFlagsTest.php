@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 // phpcs:disable Squiz.Commenting.VariableComment.Missing -- typed mock fixtures; the declaration IS the description.
 
 use OCA\OpenRegister\Controller\ObjectsController;
+use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
@@ -140,6 +141,7 @@ class ObjectsControllerForgedScopeFlagsTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturnCallback(fn (IUser $asked): array => ($asked === $user ? $groups : []));
+		$groupManager->method('isAdmin')->willReturnCallback(fn (string $uid): bool => ($uid === 'mallory' && in_array('admin', $groups, true)));
 
 		$register = new Register();
 		$register->setId(7);
@@ -165,7 +167,7 @@ class ObjectsControllerForgedScopeFlagsTest extends TestCase {
 
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('searchObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query): array {
+			function (RegisterSchema $table, array $query): array {
 				$this->searches[] = ['route' => 'magicTable', 'rbac' => $query['_rbac'], 'multitenancy' => $query['_multitenancy'], 'explicit' => $query['_multitenancy_explicit']];
 				return [];
 			}

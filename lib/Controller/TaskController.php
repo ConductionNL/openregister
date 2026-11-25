@@ -59,6 +59,7 @@ use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
+use OCA\OpenRegister\Exception\TaskMandateRefusedException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
@@ -256,8 +257,9 @@ class TaskController extends Controller {
 	 * instants of a due window, at-or-after and strictly before), `sort`
 	 * (dueAt|priority|created, a leading `-` inverts it), `limit`, `offset`,
 	 * `includeBlocked` ('true' to list tasks whose blocker is still open; an
-	 * object or run anchor lists them regardless) and `openFirst` ('true' to
-	 * list open tasks before finished ones).
+	 * object or run anchor lists them regardless), `openFirst` ('true' to
+	 * list open tasks before finished ones), `flow` (the tasks the runs of
+	 * this flow raised) and `node` (the tasks of this flow node).
 	 *
 	 * @return JSONResponse The page: results, total, limit, offset; 400 for a parameter of the wrong type.
 	 *
@@ -265,6 +267,7 @@ class TaskController extends Controller {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-person-sees-the-report-on-the-flow
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -334,7 +337,9 @@ class TaskController extends Controller {
 		$anchor = new TaskInboxAnchor(
 			objectUuid: $filters['objectUuid'],
 			runUuid: $this->trimmedOrNull(value: $filters['runUuid']),
-			includeBlocked: $this->isTrue(value: $filters['includeBlocked'])
+			includeBlocked: $this->isTrue(value: $filters['includeBlocked']),
+			flowId: $this->trimmedOrNull(value: $filters['flow']),
+			nodeId: $this->trimmedOrNull(value: $filters['node'])
 		);
 
 		return new TaskInboxSelection(filter: $filter, window: $due, anchor: $anchor, order: $this->inboxOrder(query: $query));
@@ -815,6 +820,10 @@ class TaskController extends Controller {
 			// objects exist. This catch sits ABOVE the write refusal because
 			// both are about the subject and only this one is about access.
 			return new JSONResponse(['error' => $missing->getMessage()], Http::STATUS_NOT_FOUND);
+		} catch (TaskMandateRefusedException $refused) {
+			// The delegate does not hold what the task requires. 422 naming
+			// the verb and the person, nothing about the subject or the rule.
+			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_UNPROCESSABLE_ENTITY);
 		} catch (TaskSubjectWriteRefusedException $refused) {
 			// The payload passed the form and the SUBJECT refused it, on the
 			// ordinary save path: not malformed, not completed.

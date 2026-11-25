@@ -143,13 +143,22 @@
       produces byte-identical marking, `resumeAt`, status and step ordering to
       the pre-change engine — the assertion that carries the BREAKING
       `flow-engine` delta.
-- [ ] 8.3 Recovery, status and migration: a claim whose holder died is released
+- [x] 8.3 Recovery, status and migration: a claim whose holder died is released
       after the cutoff, its branch failed and named, never re-dispatched; a live
       long-running firing is not reaped; a branch waiting days on a signal is
       not failed as abandoned by `findStale()`
       (`lib/Db/FlowRunMapper.php:543-547`); one branch waiting and one working
       reads as `running`; and the migration back-fill over a seeded database
       with in-flight multi-token runs, applied twice with identical results.
+      Covered by: `FlowRunWorkerClaimReaperTest` (dead claim released at the
+      run reaper's cutoff, branch failed and named, never re-dispatched; a live
+      long-running firing not reaped; a sibling parked days on a signal never
+      failed as abandoned, under `continue` and `stop`);
+      `FlowRunMapperActiveStatusGoldenTest::testUntouchedSince` (`findStale()`
+      reads `running` only); `FlowRunCommitTest::testOneWaitingAndOneWorkingReadsAsRunningViaItsClaim`;
+      `Version1Date20260901120000BackFillTwiceTest` (the back-fill over an
+      in-memory runs/streams/steps store seeded with in-flight multi-token
+      runs, applied twice: identical tables, and deterministic over the same seed).
 
 ## Acceptance criteria
 
