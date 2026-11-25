@@ -7,9 +7,10 @@
       - built as `WHERE hash IS NULL`, the predicate the sweep (`getEarliestUnsealedId`, `countUnsealed`) uses; PostgreSQL and SQLite only (Version1Date20261113210000)
       - the backlog cursor currently degrades to a pkey scan + filter (784 ms / 2,000 ids)
       - the index shrinks as the backlog drains, so the cursor speeds up over time
-- [ ] Persist a hash-chain cutover marker in the same migration (app config,
+- [x] Persist a hash-chain cutover marker in the same migration (app config,
       set to the migration's run time)
       - existing instances classify their current backlog as legacy, not as an alarm
+      - built as its own step, Version1Date20261124193002: the index step had already shipped, so a marker added to it would never run on an upgraded instance; stored as `audit_seal_cutover_id`, the first audit id written after the step (ids follow write order exactly, a timestamp carries the server clock); written once, never moved
 
 ## 2. Driver
 
@@ -40,9 +41,10 @@
 
 ## 5. Verification
 
-- [ ] Classify null-hash rows in `verifyChain()` against the cutover marker:
+- [x] Classify null-hash rows in `verifyChain()` against the cutover marker:
       pre-cutover counted as `skippedNullHashes`, post-cutover returns `valid: false`
-- [ ] Report the post-cutover unsealed count in the `verifyChain()` result
+- [x] Report the post-cutover unsealed count in the `verifyChain()` result
+      - `unsealedAfterCutover`, plus `sealCutoverId` (null without a marker, which keeps the old behaviour)
 
 ## 6. Tests
 
@@ -50,8 +52,9 @@
       and that a drained backlog re-runs as a no-op
 - [ ] Unit-test that sealed rows interleaved in a window are byte-identical after a pass
       - guards the false-tamper-alarm failure mode
-- [ ] Unit-test the cutover classification in `verifyChain()` (both populations,
+- [x] Unit-test the cutover classification in `verifyChain()` (both populations,
       plus a drained backlog restoring `valid: true`)
+      - AuditHashSealCutoverTest, Version1Date20261124193002Test
 - [ ] Unit-test the job's caps and its lock-contention yield
 
 ## 7. Evidence

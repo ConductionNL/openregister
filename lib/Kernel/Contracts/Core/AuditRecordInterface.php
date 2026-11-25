@@ -29,6 +29,7 @@ use DateTime;
  * save collided with, without naming the entity. The column accessors are
  * served by Nextcloud's Entity::__call, so they are listed as tags here.
  *
+ * @method string|null getAction()
  * @method string|null getUser()
  * @method string|null getUserName()
  * @method array|null getChanged()
