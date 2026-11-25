@@ -33,11 +33,11 @@ final class ServiceHoursWalk {
 	/**
 	 * Constructor.
 	 *
-	 * @param WorkingCalendar $calendar The calendar deciding the days.
+	 * @param WorkingCalendarInterface $calendar The calendar deciding the days.
 	 * @param ServiceHours    $windows  Its declared windows.
 	 */
 	public function __construct(
-		private readonly WorkingCalendar $calendar,
+		private readonly WorkingCalendarInterface $calendar,
 		private readonly ServiceHours $windows,
 	) {
 
