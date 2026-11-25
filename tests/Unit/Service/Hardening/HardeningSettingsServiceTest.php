@@ -51,6 +51,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningChange
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningPosture
  * @uses \OCA\OpenRegister\Service\Hardening\HardeningSettingsStore
+ * @uses \OCA\OpenRegister\Service\Hardening\AddressAllowlist
  */
 class HardeningSettingsServiceTest extends TestCase {
 
@@ -232,5 +233,115 @@ class HardeningSettingsServiceTest extends TestCase {
 
 		$this->expectException(InvalidArgumentException::class);
 		$service->setFloor(control: 'invented.control', floor: 1);
+	}
+
+	/**
+	 * An address allowlist is normalised, stored and audited.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function testAnAddressAllowlistIsNormalisedStoredAndAudited(): void {
+		$service = $this->service(['hardening_admin_addresses' => '198.51.100.1']);
+		$this->appConfig->expects($this->once())
+			->method('setValueString')
+			->with('openregister', 'hardening_admin_addresses', '192.0.2.0/24,2001:db8::/32');
+
+		$stored = $service->setAddressAllowlist(
+			surface: 'admin',
+			entries: [' 192.0.2.0/24 ', '2001:DB8::/32', '', '192.0.2.0/24'],
+			requesterAddress: '192.0.2.44'
+		);
+
+		$this->assertSame(['192.0.2.0/24', '2001:db8::/32'], $stored);
+		$this->assertSame(
+			[['control' => 'addresses.admin', 'before' => ['198.51.100.1'], 'after' => ['192.0.2.0/24', '2001:db8::/32'], 'accepted' => true, 'refusal' => '']],
+			$this->rows
+		);
+	}
+
+	/**
+	 * 🔴 A list that would refuse the address the change comes from is refused, never stored, and audited.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function testAListThatLocksItsAuthorOutIsRefusedAndAudited(): void {
+		$service = $this->service();
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		try {
+			$service->setAddressAllowlist(surface: 'api', entries: ['192.0.2.0/24'], requesterAddress: '203.0.113.9');
+			$this->fail('the lock-out was stored');
+		} catch (InvalidArgumentException $refused) {
+			$this->assertStringContainsString('would refuse the address this change comes from', $refused->getMessage());
+		}
+
+		$this->assertCount(1, $this->rows);
+		$this->assertSame('addresses.api', $this->rows[0]['control']);
+		$this->assertFalse($this->rows[0]['accepted']);
+		$this->assertNotSame('', $this->rows[0]['refusal']);
+	}
+
+	/**
+	 * An empty list unbinds the surface, wherever the change comes from.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function testAnEmptyListUnbindsTheSurface(): void {
+		$service = $this->service(['hardening_api_addresses' => '192.0.2.0/24']);
+		$this->appConfig->expects($this->once())->method('setValueString')->with('openregister', 'hardening_api_addresses', '');
+
+		$this->assertSame([], $service->setAddressAllowlist(surface: 'api', entries: [' '], requesterAddress: '203.0.113.9'));
+	}
+
+	/**
+	 * A list holding an entry that is no address, or a non-text entry, or for an unknown surface, is refused whole.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function testAnInvalidAddressListIsRefusedWhole(): void {
+		foreach ([['admin', ['192.0.2.1', 'example.nl']], ['admin', [42]], ['files', ['192.0.2.1']]] as [$surface, $entries]) {
+			$service = $this->service();
+			$this->appConfig->expects($this->never())->method('setValueString');
+			try {
+				$service->setAddressAllowlist(surface: $surface, entries: $entries, requesterAddress: '192.0.2.1');
+				$this->fail('stored '.json_encode($entries).' for '.$surface);
+			} catch (InvalidArgumentException) {
+				$this->assertSame([], $this->rows, 'nothing was changed, so nothing is audited');
+			}
+		}
+	}
+
+	/**
+	 * The policy reads an unbound surface as open and a bound one by its entries.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function testThePolicyAllowsAnAddressPerSurface(): void {
+		$this->service();
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default): string => (['hardening_admin_addresses' => '192.0.2.0/24, bogus'][$key] ?? $default)
+		);
+		$policy = new HardeningPolicy($appConfig);
+
+		$this->assertSame(['192.0.2.0/24'], $policy->addressAllowlist(surface: 'admin'));
+		$this->assertTrue($policy->allowsAddress(surface: 'admin', address: '192.0.2.9'));
+		$this->assertFalse($policy->allowsAddress(surface: 'admin', address: '198.51.100.9'));
+		$this->assertTrue($policy->allowsAddress(surface: 'api', address: '198.51.100.9'), 'the API list is empty: unbound');
+		$this->assertTrue($policy->allowsAddress(surface: 'files', address: '198.51.100.9'), 'an unknown surface is not bound');
+
+		$broken = $this->createMock(IAppConfig::class);
+		$broken->method('getValueString')->willThrowException(new \RuntimeException('down'));
+		$this->assertTrue((new HardeningPolicy($broken))->allowsAddress(surface: 'admin', address: '198.51.100.9'), 'an unreadable list is unbound');
 	}
 }

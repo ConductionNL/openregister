@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
@@ -56,6 +57,8 @@ use RuntimeException;
  * Allowed and refused outcomes of the verwerkingsactiviteiten API.
  */
 final class VerwerkingsactiviteitenControllerA24GoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * The catalog mapper of the controller under test.
@@ -190,6 +193,7 @@ final class VerwerkingsactiviteitenControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$memberships = ['users'];
 		if ($admin === true) {
 			$memberships = ['admin'];

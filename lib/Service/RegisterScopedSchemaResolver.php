@@ -183,8 +183,34 @@ class RegisterScopedSchemaResolver implements RegisterScopedSchemaResolverInterf
 			return $unique;
 		}
 
+		$renamed = $this->renamedSchemaWithin(registerSchemaIds: $registerSchemaIds, schemaRef: $schemaRef);
+		if ($renamed !== null) {
+			return $renamed;
+		}
+
 		throw $this->notInRegister(register: $register, schemaRef: $schemaRef);
 	}//end resolveSchemaWithin()
+
+	/**
+	 * A schema of this register that answered to the slug before it was renamed.
+	 *
+	 * Asked last, so a schema carrying the slug now always wins. Ids and uuids
+	 * never change, so only a slug is looked up this way.
+	 *
+	 * @param array<int|string> $registerSchemaIds The register's schema ids.
+	 * @param int|string        $schemaRef         The schema reference.
+	 *
+	 * @return Schema|null The renamed schema, or null.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
+	 */
+	private function renamedSchemaWithin(array $registerSchemaIds, int|string $schemaRef): ?Schema {
+		if ($this->isUniqueIdentifier(ref: $schemaRef) === true) {
+			return null;
+		}
+
+		return $this->schemaMapper->findByFormerSlugInIds(slug: (string)$schemaRef, schemaIds: $registerSchemaIds);
+	}//end renamedSchemaWithin()
 
 	/**
 	 * A schema named by a unique identifier, resolved instance-wide.

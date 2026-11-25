@@ -37,6 +37,7 @@ use OCA\OpenRegister\Files\Controller\Support\FileObjectRoute;
 use OCA\OpenRegister\Files\Controller\Support\FileTransfer;
 use OCA\OpenRegister\Files\Controller\Support\FilesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\FileAddedEvent;
 use OCA\OpenRegister\Event\FileCopiedEvent;
 use OCA\OpenRegister\Event\FileLockedEvent;
 use OCA\OpenRegister\Event\FileMovedEvent;
@@ -1314,9 +1315,41 @@ class FilesController extends Controller {
 				tags: $tags
 			)
 		);
+		$this->dispatchFileAdded(object: $object, file: $file);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end addPostedFile()
+
+	/**
+	 * Tell listeners a file was added to the object, after it is stored.
+	 *
+	 * A listener that throws does not fail the add: the file is already in the
+	 * object's folder, so a listener handles and logs its own failures.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param File         $file   The added file.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-file-added-event/specs/file-actions/spec.md#requirement-adding-a-file-to-an-object-dispatches-an-event-req-ofae-001
+	 */
+	private function dispatchFileAdded(ObjectEntity $object, File $file): void {
+		$event = new FileAddedEvent(
+			objectUuid: (string)$object->getUuid(),
+			fileId: (int)$file->getId(),
+			data: [
+				'fileName' => $file->getName(),
+				'register' => $object->getRegister(),
+				'schema'   => $object->getSchema(),
+			]
+		);
+
+		try {
+			$this->eventDispatcher->dispatchTyped($event);
+		} catch (\Throwable) {
+			// This controller has no logger; a listener logs its own failure, and the add stands.
+		}
+	}//end dispatchFileAdded()
 
 	/**
 	 * Fetch the bytes at a URL and add them as a file, with where they came from.
@@ -1346,6 +1379,7 @@ class FilesController extends Controller {
 			upload: new FileUpload(fileName: $fileName, content: $fetched->stream(), share: $share, tags: $tags)
 		);
 		$this->urlFileSource->remember(fileId: (int)$file->getId(), fetched: $fetched);
+		$this->dispatchFileAdded(object: $object, file: $file);
 		$this->fileAuditHandler?->logFileAction(object: $object, fileId: (int)$file->getId(), action: 'file.fetched', data: $fetched->metadata());
 
 		return new JSONResponse(data: $this->withProvenance(formatted: $this->fileService->formatFile($file), fetched: $fetched));
@@ -1831,10 +1865,13 @@ class FilesController extends Controller {
 			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
 		}
 
-		return $this->fileService->addFile(
+		$stored = $this->fileService->addFile(
 			target: new FileTarget(object: $object),
 			upload: new FileUpload(fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags'])
 		);
+		$this->dispatchFileAdded(object: $object, file: $stored);
+
+		return $stored;
 	}//end storeUpload()
 
 	/**

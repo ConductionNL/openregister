@@ -141,6 +141,7 @@ use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepInterface;
 use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepService;
+use OCA\OpenRegister\Kernel\Contracts\AddressAllowlistsInterface;
 use OCA\OpenRegister\Service\Hardening\AllowedOriginsInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationService;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
@@ -237,6 +238,7 @@ final class ComplianceServiceBindings {
 		ArchivalAnnotationValidatorInterface::class    => ArchivalAnnotationValidator::class,
 		ElementMappingValidatorInterface::class        => ElementMappingValidator::class,
 		ElevationServiceInterface::class               => ElevationService::class,
+		AddressAllowlistsInterface::class              => HardeningPolicy::class,
 		AllowedOriginsInterface::class                 => HardeningPolicy::class,
 		HardeningFloorsInterface::class                => HardeningPolicy::class,
 		HardeningReportServiceInterface::class         => HardeningReportService::class,
