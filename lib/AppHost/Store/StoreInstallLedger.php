@@ -135,9 +135,8 @@ class StoreInstallLedger {
 			return [];
 		}
 
-		$decoded = json_decode($raw, true);
-		$ledger  = [];
-		foreach ((is_array($decoded) === true ? $decoded : []) as $slug => $targets) {
+		$ledger = [];
+		foreach (self::storedRows(raw: $raw) as $slug => $targets) {
 			if (is_string($slug) === false || self::isId(value: $slug) === false || is_array($targets) === false) {
 				continue;
 			}
@@ -147,6 +146,22 @@ class StoreInstallLedger {
 
 		return $ledger;
 	}//end installedIn()
+
+	/**
+	 * The rows of a stored value; none when it is not a JSON object or list.
+	 *
+	 * @param string $raw The stored value.
+	 *
+	 * @return array<mixed>
+	 */
+	private static function storedRows(string $raw): array {
+		$decoded = json_decode($raw, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return [];
+	}//end storedRows()
 
 	/**
 	 * The targets of one stored row that are ids or the empty target.
