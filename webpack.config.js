@@ -1,4 +1,5 @@
 const webpackConfig = require('@nextcloud/webpack-vue-config')
+const webpack = require('webpack')
 const fs = require('fs')
 const path = require('path')
 const TerserPlugin = require('terser-webpack-plugin')
@@ -396,6 +397,22 @@ webpackConfig.output.clean = {
 // from the currently-executing script's URL (document.currentScript), so chunks
 // load correctly whether the app lives under apps/ or custom_apps/.
 webpackConfig.output.publicPath = 'auto'
+
+// The icon pickers of @conduction/nextcloud-vue < 2.228.1 (CnIconBrowserPanel,
+// CnIconPicker) build their Material catalogue from `import('@mdi/js')`. That
+// namespace import marks every export of the ESM build as used, and since this
+// app imports single icons from the same module statically, webpack kept ALL of
+// @mdi/js (~2.8 MB) in the openregister-vendor chunk every page loads, and the
+// lazy import itself became a no-op. Pointing those two lazy imports at the
+// CommonJS build (a different module, the library's own fix in 2.228.1) keeps
+// the ESM build tree-shaken and puts the full catalogue in its own chunk,
+// fetched when an icon picker opens.
+const ICON_PICKERS = /[\\/]@conduction[\\/]nextcloud-vue[\\/]dist[\\/]esm[\\/]components[\\/]Cn(IconBrowser|IconPicker)[\\/]/
+webpackConfig.plugins.push(new webpack.NormalModuleReplacementPlugin(/^@mdi\/js$/, (resource) => {
+	if (ICON_PICKERS.test(resource.contextInfo?.issuer || '')) {
+		resource.request = '@mdi/js/commonjs/mdi.js'
+	}
+}))
 
 // The global script (integrationGlobal) is built as its OWN compilation.
 //
