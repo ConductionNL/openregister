@@ -225,14 +225,14 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 		$this->registerMapper
 			->expects($this->once())
 			->method('find')
-			->with($this->equalTo('filinq'), $this->equalTo(true), $this->equalTo(false))
+			->with($this->equalTo(value: 'filinq'), $this->equalTo(value: true), $this->equalTo(value: false))
 			->willReturn($register);
 		$this->schemaMapper->method('findBySlugInIds')->willReturn($schema);
 
 		$this->queryHandler
 			->expects($this->once())
 			->method('searchObjects')
-			->with($this->anything(), $this->equalTo(true), $this->equalTo(true))
+			->with($this->anything(), $this->equalTo(value: true), $this->equalTo(value: true))
 			->willReturn([]);
 
 		$this->service->searchObjectsBySlug(
