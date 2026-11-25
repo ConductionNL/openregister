@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Tests\Unit\Support\OneServiceContainer;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Flow\Timer\SlaAddition;
 use DateTimeZone;
@@ -185,7 +187,7 @@ class FlowTimerEdgeCasesTest extends TestCase {
 		$objects->method('searchObjectsBySlug')->willReturn(7);
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getAppPath')->willReturn('/nowhere-at-all');
-		$store = new FlowTimerDefinitionStore(objects: $objects, appManager: $appManager, logger: new NullLogger());
+		$store = new FlowTimerDefinitionStore(container: new OneServiceContainer(ObjectOperationsInterface::class, $objects), appManager: $appManager, logger: new NullLogger());
 		self::assertSame([], $store->calendars(), 'a count result and an unreadable descriptor answer empty, not wrongly');
 		self::assertSame([], $store->ladders());
 	}//end testTheDefinitionStoreDegradesLoudlyAndQuietly()

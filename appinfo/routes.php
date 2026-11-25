@@ -927,6 +927,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // per-instance, so admin-gating them would make the feature unusable
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
+        // Incoming-webhook flow triggers (flow-calendar-and-webhook-triggers):
+        // public, signed with the trigger's secret; #[PublicPage] in the controller.
+        ['name' => 'flowWebhook#receive', 'url' => '/api/flows/hooks/{token}', 'verb' => 'POST', 'requirements' => ['token' => '[0-9a-f]{32}']],
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         // Try a flow against an object without effect (flow-dry-run): the `flow.update` right.
         ['name' => 'flowDryRun#dryRun', 'url' => '/api/flows/{id}/dry-run', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -1560,6 +1563,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
         // Automation run records (automation-run-records): notification and lifecycle-action outcomes, by key prefix.
         ['name' => 'automationRecords#index', 'url' => '/api/automation-records', 'verb' => 'GET'],
+        // The same records in the consuming-app shape (a-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did).
+        ['name' => 'automationRecords#outcomes', 'url' => '/api/automation-outcomes', 'verb' => 'GET'],
         // The bell's own verbs (`object-read-state`). A snooze postpones a
         // notice, an archive takes it out without claiming it was read, and a
         // thread is marked read as a whole. Each is scoped to the caller's own
