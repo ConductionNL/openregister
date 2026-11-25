@@ -16,3 +16,4 @@ humaniq	aea494a6	php=RED	Tests: 4772, Failures: 0, Errors: 0	phpmd,psalm	js=n/a	
 thematiq	39ae6dbb	php=RED	not run	composer-install	js=GREEN	vendor incomplete (3 GitHub zipballs 403); eslint clean; vitest 2013 pass
 larpinq	533abab1	php=RED	not run	composer-install	js=GREEN	vendor incomplete (3 GitHub zipballs 403); eslint 0 err; vitest 889 pass
 keepiq	6d629b7f	php=RED	Tests: 5802, Failures: 0, Errors: 0	phpmd,psalm	js=GREEN	phpmd 2 viol (ExcessiveClassComplexity, CyclomaticComplexity); psalm needs PHP>=8.3.16 (env 8.3.6)
+launchpad	90d502c2	php=RED	Tests: 5995, Failures: 0, Errors: 0	phpmd,psalm	js=RED	phpmd 94 viol; psalm needs PHP>=8.3.16 (env 8.3.6); vitest dashboard.golden.spec 1 fail
