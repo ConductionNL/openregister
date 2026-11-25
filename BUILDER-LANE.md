@@ -1,5 +1,12 @@
 # BUILDER-LANE.md: the brief for every cloud app BUILDER routine.
 
+NEVER IDLE, REPURPOSE (Ruben, 25 Nov 2026 09:20 CET): a run that finds no startable work in its own app does NOT end idle. Go down this list and take the first thing you can do, with the same leases, SAVE OFTEN and verify rules:
+1. Launchpad and thematiq first (today's priority, they must reach DONE): an openspec change of launchpad nobody started (lease help-launchpad-<change>), or a failing live e2e test from e2e-red/launchpad-2026-11-25.txt / e2e-red/thematiq-2026-11-25.txt on this branch whose spec you can correct to the board without a live instance (one PR per spec file, branch cloud/e2e-<app>-<spec>; lease e2e-<app>-<spec>). Skip tests the local lanes are already on (FINISH-ORDER.md LIVE PASS section names them).
+2. Help the next app in FINISH-ORDER.md that has a startable change (SPARE CAPACITY steps).
+3. A PERF-HANDOFF.md item for any app that is not TAKEN (claim it in the file with your lane name first).
+4. An OpenRegister PR in OR-FIX-LANE.md's list that is red or conflicting (lease worker-orfix-<pr>), following OR-FIX-LANE.md.
+Write one line in builders-idle.md naming what you switched to. Only when all four are empty, end, and say so in one line.
+
 COORDINATOR AWAY (24 Nov 2026 20:00 CET; still in force): never wait for the coordinator. Anything only the coordinator can do (a refused merge, a release bump, an unanswered decision) goes as one line into COORDINATOR-QUEUE.md (format there), then continue with other work. Merge main/development into your own conflicting dependency PRs so they stay mergeable.
 
 SAVE OFTEN (Ruben, 24 Nov 2026): the account can hit its usage limit at any moment and end this session mid-task without warning. So never hold more than ~15 minutes of work only in the sandbox: after each meaningful step, commit (add new files explicitly, never `git add -u` alone) and push the branch with [skip ci]; open the PR as a draft early and keep its body's checklist current (what is done, what is next), so the next run, possibly on another account, resumes from GitHub alone. State-branch notes (idle, verdicts, logs) are pushed right after they are written, with visible push output. Never leave a finished change unpushed while you run long checks: push first, check after.
