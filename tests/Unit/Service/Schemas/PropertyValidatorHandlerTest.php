@@ -649,6 +649,44 @@ class PropertyValidatorHandlerTest extends TestCase {
 	}
 
 	/**
+	 * Scenario "a wrong value is refused at save": `portal: write` is refused
+	 * naming the property and the accepted values.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-property-says-what-the-portal-may-do-with-it/specs/schema-property-exploration/spec.md#scenario-a-wrong-value-is-refused-at-save
+	 */
+	public function testAnUnknownPortalLevelIsRefusedNamingThePropertyAndTheValues(): void {
+		$handler = new PropertyValidatorHandler();
+
+		try {
+			$handler->validateProperty(['type' => 'string', 'portal' => 'write'], '/subject');
+		} catch (Exception $exception) {
+			$this->assertStringContainsString('portal', $exception->getMessage());
+			$this->assertStringContainsString('/subject', $exception->getMessage());
+			$this->assertStringContainsString('none, read, edit', $exception->getMessage());
+			return;
+		}
+
+		$this->fail('An unknown portal level was accepted.');
+	}
+
+	/**
+	 * Each declared portal level is accepted, so the refusal above refuses the value rather than the key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-property-says-what-the-portal-may-do-with-it/specs/schema-property-exploration/spec.md#requirement-a-property-declares-what-the-portal-may-do-with-it
+	 */
+	public function testEveryPortalLevelIsAccepted(): void {
+		$handler = new PropertyValidatorHandler();
+
+		foreach (['none', 'read', 'edit'] as $level) {
+			$this->assertTrue($handler->validateProperty(['type' => 'string', 'portal' => $level], '/subject'), $level);
+		}
+	}
+
+	/**
 	 * The closed modifier values are the Search profile's own vocabulary, read
 	 * through the Kernel contract.
 	 *
