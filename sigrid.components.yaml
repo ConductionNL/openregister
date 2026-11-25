@@ -446,6 +446,7 @@ components:
       - ".*/lib/Service/File/ObjectFolderOptions[.]php"
       - ".*/lib/Service/File/OcrWords[.]php"
       - ".*/lib/Service/File/PdfImageBurner[.]php"
+      - ".*/lib/Service/File/TiffCodec[.]php"
       - ".*/lib/Service/Form/FormPayloadFindings[.]php"
       - ".*/lib/Service/Geo/[^/]*"
       - ".*/lib/Service/GraphQL/AdminQueryAudit[.]php"
