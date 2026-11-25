@@ -135,7 +135,7 @@ test.describe('the query console', () => {
 		expect(download.suggestedFilename()).toMatch(/^query-\d{8}-\d{4}\.csv$/)
 		const file = testInfo.outputPath('query.csv')
 		await download.saveAs(file)
-		const csv = fs.readFileSync(file, 'utf8').replace(/^﻿/, '')
+		const csv = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '')
 		expect(csv.split(/\r?\n/)[0]).toBe('key,value')
 		expect(csv).toContain('open,2')
 		expect(csv).toContain('closed,1')
