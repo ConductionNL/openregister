@@ -65,6 +65,9 @@ final class AnnotationVocabulary {
 		// having declared nothing — the same or#460/#462-class silent drop the
 		// entries around this one record.
 		'x-openregister-card',
+		// The property naming the team that owns an object, which puts the
+		// schema's objects on that team's Nextcloud page (platform-team-resources).
+		'x-openregister-team-resources',
 		// What a unified-search result of this schema's objects shows: its
 		// title property, subline property and ordering date property
 		// (platform-search-provider). Absent from this list setConfiguration()

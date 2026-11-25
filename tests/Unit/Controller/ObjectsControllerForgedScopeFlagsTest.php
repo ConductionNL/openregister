@@ -141,6 +141,7 @@ class ObjectsControllerForgedScopeFlagsTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturnCallback(fn (IUser $asked): array => ($asked === $user ? $groups : []));
+		$groupManager->method('isAdmin')->willReturnCallback(fn (string $uid): bool => ($uid === 'mallory' && in_array('admin', $groups, true)));
 
 		$register = new Register();
 		$register->setId(7);

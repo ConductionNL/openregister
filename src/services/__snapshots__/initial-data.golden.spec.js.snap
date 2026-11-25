@@ -827,6 +827,10 @@ exports[`initial component data golden SearchSideBar starts from the recorded st
   "viewIsPublic": false,
   "viewName": "",
   "viewNameTouched": false,
+  "viewPresentation": {
+    "viewType": "table",
+  },
+  "viewPresentationErrors": {},
   "viewSearchQuery": "",
   "viewToDelete": null,
   "viewsStore": undefined,
