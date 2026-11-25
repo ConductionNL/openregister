@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
@@ -32,6 +33,8 @@ use PHPUnit\Framework\TestCase;
  * The object API history route answers as it did on ObjectsController.
  */
 class AuditTrailObjectLogsRouteGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private $request;
 
@@ -61,6 +64,7 @@ class AuditTrailObjectLogsRouteGoldenTest extends TestCase {
 		$this->userSession = $this->createMock(\OCP\IUserSession::class);
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager = $this->createMock(\OCP\IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->groupManager->method('getUserGroupIds')->willReturn($admin ? ['users', 'admin'] : ['users']);
 		$this->objectService = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
 		$o = new \OCA\OpenRegister\Db\ObjectEntity();
@@ -239,6 +243,7 @@ class AuditTrailObjectLogsRouteGoldenTest extends TestCase {
 		$this->request = $request;
 		$this->userSession = $this->createMock(\OCP\IUserSession::class);
 		$this->groupManager = $this->createMock(\OCP\IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->history = $this->createMock(\OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders::class);
 		$this->masker = null;
 		$controller = (new \ReflectionClass(AuditTrailController::class))->getMethod('listingConfig');
