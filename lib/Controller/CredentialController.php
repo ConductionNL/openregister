@@ -70,6 +70,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use OCA\OpenRegister\Service\Credential\BrokerTokenBinding;
+use OCA\OpenRegister\Service\Credential\DeclaredProviderResolver;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
@@ -277,6 +278,7 @@ class CredentialController extends Controller {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-the-provider-listing-exposes-origin-and-status-but-never-allow-rules
 	 */
 	#[NoAdminRequired]
 	public function providers(): JSONResponse {
@@ -292,17 +294,54 @@ class CredentialController extends Controller {
 			}
 		}
 
+		foreach ($this->declaredProviderListings() as $listed) {
+			$out[] = $listed;
+		}
+
 		return new JSONResponse(['results' => $out]);
 	}//end providers()
+
+	/**
+	 * The app-declared providers as the picker sees them: identifier, title, origin and status.
+	 *
+	 * The declaring app is the origin. Host and allow-rules stay behind, exactly as they do
+	 * for the reviewed catalogue; a declared provider is always a plain secret proxy entry.
+	 *
+	 * @return array<int, array<string, mixed>> The listings, empty without the declaration layer.
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-the-provider-listing-exposes-origin-and-status-but-never-allow-rules
+	 */
+	private function declaredProviderListings(): array {
+		$declared = $this->services->vault->declared;
+		if ($declared === null) {
+			return [];
+		}
+
+		$out = [];
+		foreach ($declared->listing() as $listing) {
+			$out[] = [
+				'identifier' => $listing['identifier'],
+				'title' => $listing['title'],
+				'kind' => 'secret',
+				'requiresInstanceBaseUrl' => false,
+				'preview' => false,
+				'origin' => $listing['origin'],
+				'status' => $listing['status'],
+			];
+		}
+
+		return $out;
+	}//end declaredProviderListings()
 
 	/**
 	 * One catalogue entry as the provider picker sees it, or null for a malformed one.
 	 *
 	 * @param mixed $entry The catalogue entry.
 	 *
-	 * @return array<string, mixed>|null `{identifier, title, kind, requiresInstanceBaseUrl, preview}`, or null.
+	 * @return array<string, mixed>|null `{identifier, title, kind, requiresInstanceBaseUrl, preview, origin, status}`, or null.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-the-provider-listing-exposes-origin-and-status-but-never-allow-rules
 	 */
 	private function providerListing(mixed $entry): ?array {
 		if (is_array($entry) === false) {
@@ -331,6 +370,8 @@ class CredentialController extends Controller {
 			'kind' => $kind,
 			'requiresInstanceBaseUrl' => (trim((string)($entry['baseUrlFrom'] ?? '')) !== ''),
 			'preview' => (($entry['preview'] ?? false) === true),
+			'origin' => 'catalogue',
+			'status' => DeclaredProviderResolver::STATUS_ADMITTED,
 		];
 	}//end providerListing()
 
@@ -381,6 +422,7 @@ class CredentialController extends Controller {
 	 * @return JSONResponse The created credential metadata, or a static error.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-a-declared-provider-is-usable-only-by-the-app-that-declared-it
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
@@ -395,7 +437,8 @@ class CredentialController extends Controller {
 		$allowed = $this->normaliseAllowedApps(value: $this->request->getParam('allowedApps', []));
 		$scope = $this->requestedScope();
 
-		if ($name === '' || $this->services->vault->catalogue->get($provider) === null) {
+		$allowed = $this->usableAllowedApps(provider: $provider, allowed: $allowed);
+		if ($name === '' || $allowed === null) {
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 
@@ -418,6 +461,74 @@ class CredentialController extends Controller {
 			]
 		);
 	}//end create()
+
+	/**
+	 * The allowedApps a new credential gets for its provider, or null when the provider is unusable.
+	 *
+	 * A reviewed catalogue provider keeps the requested apps. An app-declared provider is
+	 * accepted only while admitted, and its credential is scoped to the declaring app alone,
+	 * whatever the request asked for. Anything else is refused.
+	 *
+	 * @param string             $provider The requested provider identifier.
+	 * @param array<int, string> $allowed  The requested allowedApps.
+	 *
+	 * @return array<int, string>|null The allowedApps to mint with, or null to refuse.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-a-declared-provider-is-usable-only-by-the-app-that-declared-it
+	 */
+	private function usableAllowedApps(string $provider, array $allowed): ?array {
+		if ($this->services->vault->catalogue->get($provider) !== null) {
+			return $allowed;
+		}
+
+		$declared = $this->services->vault->declared;
+		if ($declared === null || $declared->isDeclaredIdentifier(identifier: $provider) === false) {
+			return null;
+		}
+
+		$state = $declared->resolve(identifier: $provider);
+		if ($state['status'] !== DeclaredProviderResolver::STATUS_ADMITTED || $state['origin'] === '') {
+			return null;
+		}
+
+		return [$state['origin']];
+	}//end usableAllowedApps()
+
+	/**
+	 * Whether an update adds an app other than the declaring one to a declared provider's credential.
+	 *
+	 * Only additions count: removing apps, or saving the list unchanged, is not a widening.
+	 * A reviewed catalogue provider is never affected.
+	 *
+	 * @param array<string, mixed> $before The credential data as stored.
+	 * @param array<string, mixed> $after  The credential data with the update applied.
+	 *
+	 * @return bool True when the update is refused.
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-a-declared-provider-is-usable-only-by-the-app-that-declared-it
+	 */
+	private function widensDeclaredProvider(array $before, array $after): bool {
+		$declared = $this->services->vault->declared;
+		$provider = (string) ($before['provider'] ?? '');
+		if ($declared === null || $this->services->vault->catalogue->get($provider) !== null) {
+			return false;
+		}
+
+		$origin = $declared->declaringApp(identifier: $provider);
+		if ($origin === '') {
+			return false;
+		}
+
+		$old = $this->normaliseAllowedApps(value: ($before['allowedApps'] ?? []));
+		foreach ($this->normaliseAllowedApps(value: ($after['allowedApps'] ?? [])) as $app) {
+			if ($app !== $origin && in_array($app, $old, true) === false) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end widensDeclaredProvider()
 
 	/**
 	 * The secret a create request carries, or null when it carries no string.
@@ -501,6 +612,7 @@ class CredentialController extends Controller {
 	 * @return JSONResponse The updated credential metadata, or a static error.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-a-declared-provider-is-usable-only-by-the-app-that-declared-it
 	 */
 	#[NoAdminRequired]
 	public function update(string $id): JSONResponse {
@@ -518,9 +630,12 @@ class CredentialController extends Controller {
 		$scope = $this->scopeOf(data: $data);
 
 		$update = CredentialUpdateRequests::fromRequest(request: $this->request);
+		$stored = $data;
 		$data = $update->applyTo(data: $data);
 
-		if ($this->isInvalidUpdate(update: $update, data: $data) === true) {
+		if ($this->isInvalidUpdate(update: $update, data: $data) === true
+			|| $this->widensDeclaredProvider(before: $stored, after: $data) === true
+		) {
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 

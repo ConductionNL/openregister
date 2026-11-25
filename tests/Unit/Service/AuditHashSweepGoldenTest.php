@@ -420,6 +420,8 @@ class AuditHashSweepGoldenTest extends TestCase {
 				'unkeyedEntries' => 1,
 				'keyedFrom' => null,
 				'keyBoundaryIntact' => true,
+				'unsealedAfterCutover' => 0,
+				'sealCutoverId' => null,
 				'range' => ['from' => 2, 'to' => 9],
 			],
 			$this->service->verifyChain(2, 9)
@@ -448,6 +450,8 @@ class AuditHashSweepGoldenTest extends TestCase {
 				'unkeyedEntries' => 1,
 				'keyedFrom' => null,
 				'keyBoundaryIntact' => true,
+				'unsealedAfterCutover' => 0,
+				'sealCutoverId' => null,
 				'range' => ['from' => 2, 'to' => 5],
 			],
 			$this->service->verifyChain(null, 5)
@@ -473,6 +477,8 @@ class AuditHashSweepGoldenTest extends TestCase {
 				'unkeyedEntries' => 0,
 				'keyedFrom' => null,
 				'keyBoundaryIntact' => true,
+				'unsealedAfterCutover' => 0,
+				'sealCutoverId' => null,
 			],
 			$this->service->verifyChain()
 		);
