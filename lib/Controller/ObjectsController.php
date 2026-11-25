@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FormerSlugSignal;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
@@ -1262,12 +1263,13 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$listing = $this->buildListingScope(urlPath: $urlPath, resolved: $resolved);
 
 		if ($this->isServedFromMagicTable(resolved: $resolved) === true) {
-			$listed = $this->indexFromMagicTable(listing: $listing, objectService: $objectService);
-			return $this->signalFormerSlug(response: $watermark->stamp(response: $listed));
+			$response = $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService));
+		} else {
+			$response = $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService));
 		}
 
-		$listed = $this->indexFromObjectService(listing: $listing, objectService: $objectService);
-		return $this->signalFormerSlug(response: $watermark->stamp(response: $listed));
+		// A schema named by a slug it has since given up still answers, and says where to go.
+		return FormerSlugSignal::apply(response: $response, headers: $this->formerSlugHeaders);
 	}//end index()
 
 	/**
@@ -3023,8 +3025,10 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		$services = $this->showServices(objectService: $objectService);
 
-		$shown = $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
-		return $this->signalFormerSlug(response: $shown);
+		return FormerSlugSignal::apply(
+			response: $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services)),
+			headers: $this->formerSlugHeaders
+		);
 	}//end show()
 
 	/**

@@ -20,12 +20,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Trait;
 
+use OCA\OpenRegister\Controller\Support\FormerSlugSignal;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Db\Schema\FormerSlugs;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -60,11 +59,11 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 trait ResolvesRegisterAndSchemaTrait {
 	/**
-	 * The path at the current slug when the last resolved path named a former slug, else null.
+	 * The Deprecation and Link headers when the last resolved path named its schema by a former slug.
 	 *
-	 * @var string|null
+	 * @var array<string, string>
 	 */
-	private ?string $formerSlugSuccessor = null;
+	protected array $formerSlugHeaders = [];
 
 	/**
 	 * Resolve a register/schema path pair, given as one reference, to numeric ids.
@@ -78,6 +77,7 @@ trait ResolvesRegisterAndSchemaTrait {
 	 * @throws SchemaNotFoundException   When the schema does not resolve in it.
 	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
 	 */
 	protected function resolveRegisterSchemaRef(RegisterSchemaRef $ref, ObjectOperationsInterface $objectService): array {
 		// (1) Drop anything an earlier caller left on the shared service.
@@ -87,74 +87,14 @@ trait ResolvesRegisterAndSchemaTrait {
 		$this->setSchemaOrNotFound(schema: (string)$ref->schema, objectService: $objectService);
 
 		$resolved = $this->resolvedIdsAndEntities(objectService: $objectService);
-		$this->noteFormerSlug(ref: $ref, schema: $resolved['schemaEntity']);
+		$this->formerSlugHeaders = FormerSlugSignal::headers(
+			register: (string)$ref->register,
+			schema: (string)$ref->schema,
+			resolved: $resolved['schemaEntity']
+		);
 
 		return $resolved;
 	}//end resolveRegisterSchemaRef()
-
-	/**
-	 * Remember whether the path named the schema by a former slug, and the path at its current slug.
-	 *
-	 * Reset on every resolution, so a former-slug request never signals onto a
-	 * later response of the same controller.
-	 *
-	 * @param RegisterSchemaRef $ref    The register and schema from the path.
-	 * @param mixed             $schema The schema the path resolved to.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/modelling-rename-without-loss/tasks.md#2.2
-	 */
-	private function noteFormerSlug(RegisterSchemaRef $ref, mixed $schema): void {
-		$this->formerSlugSuccessor = null;
-		if (FormerSlugs::servedThrough(schemaRef: (string)$ref->schema, schema: $schema) === false) {
-			return;
-		}
-
-		$this->formerSlugSuccessor = FormerSlugs::successorPath(
-			requestUri: $this->formerSlugRequestUri(),
-			register: (string)$ref->register,
-			former: (string)$ref->schema,
-			current: (string)$schema->getSlug()
-		);
-	}//end noteFormerSlug()
-
-	/**
-	 * The URI of the request being answered, or an empty string when the request cannot tell.
-	 *
-	 * @return string
-	 */
-	private function formerSlugRequestUri(): string {
-		try {
-			return (string)$this->request->getRequestUri();
-		} catch (\Throwable) {
-			return '';
-		}
-	}//end formerSlugRequestUri()
-
-	/**
-	 * Add the `Deprecation` and `Link: rel="successor-version"` headers when the path named a former slug.
-	 *
-	 * A schema renamed from `melding` to `signaal` keeps answering at
-	 * `.../melding`; the headers tell the caller where it lives now.
-	 *
-	 * @param JSONResponse $response The response to the request.
-	 *
-	 * @return JSONResponse The same response, signalled when a former slug served it.
-	 *
-	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
-	 */
-	protected function signalFormerSlug(JSONResponse $response): JSONResponse {
-		if ($this->formerSlugSuccessor === null) {
-			return $response;
-		}
-
-		foreach (FormerSlugs::headers(successorPath: $this->formerSlugSuccessor) as $name => $value) {
-			$response->addHeader($name, $value);
-		}
-
-		return $response;
-	}//end signalFormerSlug()
 
 	/**
 	 * Set the register, reporting a failure as the side that actually failed.

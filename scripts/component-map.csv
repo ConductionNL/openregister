@@ -330,6 +330,7 @@ Controller/ObjectShareLinkController.php,137,Controller,Integrations,Integration
 Controller/ObjectSharingController.php,205,Controller,Access,Access/Controller/ObjectSharingController.php,0,,Core
 Controller/ObjectStateController.php,121,Controller,Service,Service/Controller/ObjectStateController.php,0,,Core
 Controller/ObjectExportController.php,,Controller,,,,,Configuration
+Controller/Support/FormerSlugSignal.php,,Controller,,,,,Core
 Controller/ObjectsController.php,3385,Controller,Service,Service/Controller/ObjectsController.php,0,,Core
 Controller/OpenProjectLinksController.php,111,Controller,Integrations,Integrations/Controller/OpenProjectLinksController.php,0,,Integrations
 Controller/Support/OpenProjectLinksControllerServices.php,,Controller,,,,,Integrations
@@ -1214,6 +1215,7 @@ Files/Service/File/Pdf/StructureMeasurement.php,51,Files,Files,Files/Service/Fil
 Files/Service/File/PdfDocumentSanitizer.php,94,Files,Files,Files/Service/File/PdfDocumentSanitizer.php,0,,Files
 Files/Service/File/PdfSanitizationReport.php,29,Files,Files,Files/Service/File/PdfSanitizationReport.php,0,,Files
 Files/Service/File/PdfSanitizationResult.php,10,Files,Files,Files/Service/File/PdfSanitizationResult.php,0,,Files
+Files/Service/FileTextFacade.php,171,Files,Files,Files/Service/FileTextFacade.php,0,,Files
 Files/Service/NoteReplies.php,73,Files,Files,Files/Service/NoteReplies.php,0,,Files
 Kernel/Contracts/StructurePreservation.php,35,Kernel,Kernel,Kernel/Contracts/StructurePreservation.php,0,427,Kernel
 Files/Service/File/PlaceholderIdTranslator.php,47,Files,Files,Files/Service/File/PlaceholderIdTranslator.php,2,,Files
@@ -4977,7 +4979,6 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
-Db/Schema/FormerSlugs.php,,Db,,,,,Kernel
 Service/Schema/RenameReferenceWarnings.php,,Service,,,,,Core
 Service/Flow/FlowNamingDocuments.php,,Service,,,,,Processes
 Search/Service/ViewNamingDocuments.php,,Search,,,,,Search

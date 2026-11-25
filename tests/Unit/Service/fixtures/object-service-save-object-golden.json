@@ -9039,14 +9039,13 @@
                 ]
             ],
             [
-                "schemaMapper.findMultiple",
+                "schemaMapper.findByFormerSlugInIds",
                 [
+                    "none",
                     [
                         9,
                         6
-                    ],
-                    false,
-                    false
+                    ]
                 ]
             ],
             [

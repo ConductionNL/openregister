@@ -31,7 +31,6 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Formats\UuidFormat;
-use OCA\OpenRegister\Db\Schema\FormerSlugs;
 use Throwable;
 
 /**
@@ -193,32 +192,24 @@ class RegisterScopedSchemaResolver implements RegisterScopedSchemaResolverInterf
 	}//end resolveSchemaWithin()
 
 	/**
-	 * The schema of the register that answered to this slug before it was renamed.
+	 * A schema of this register that answered to the slug before it was renamed.
 	 *
-	 * Asked only after the register carries no schema with this CURRENT slug,
-	 * so a current slug always wins. The boundary holds: only the register's
-	 * own schemas are candidates, read without RBAC or tenancy like the rest of
-	 * this resolution (it decides WHICH schema is meant and grants nothing).
+	 * Asked last, so a schema carrying the slug now always wins. Ids and uuids
+	 * never change, so only a slug is looked up this way.
 	 *
-	 * @param array      $registerSchemaIds The ids of the schemas the register carries.
-	 * @param int|string $schemaRef         The schema reference.
+	 * @param array<int|string> $registerSchemaIds The register's schema ids.
+	 * @param int|string        $schemaRef         The schema reference.
 	 *
 	 * @return Schema|null The renamed schema, or null.
 	 *
-	 * @spec openspec/changes/modelling-rename-without-loss/tasks.md#2.2
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
 	 */
 	private function renamedSchemaWithin(array $registerSchemaIds, int|string $schemaRef): ?Schema {
-		if ($this->isUniqueIdentifier(ref: $schemaRef) === true || $registerSchemaIds === []) {
+		if ($this->isUniqueIdentifier(ref: $schemaRef) === true) {
 			return null;
 		}
 
-		try {
-			$schemas = $this->schemaMapper->findMultiple(ids: array_values($registerSchemaIds), _rbac: false, _multitenancy: false);
-		} catch (Throwable) {
-			return null;
-		}
-
-		return FormerSlugs::among(schemas: $schemas, slug: (string)$schemaRef);
+		return $this->schemaMapper->findByFormerSlugInIds(slug: (string)$schemaRef, schemaIds: $registerSchemaIds);
 	}//end renamedSchemaWithin()
 
 	/**
