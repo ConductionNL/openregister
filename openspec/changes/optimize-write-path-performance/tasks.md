@@ -41,4 +41,11 @@
 
 - [x] 6.1 `composer check:strict` components green on changed files (phpcs/phpstan/phpmd clean; psalm per-file artifact + full-run results recorded in the change report).
 - [x] 6.2 Full unit suite in php:8.3 container: 14432 tests — 15 red, ALL pre-existing (base commit 40378fa37 has 29 red incl. the 14 fixed here; every remaining failure also fails on the pristine base export).
-- [ ] 6.3 Live end-to-end re-verification of the bulk endpoint against a deployed instance (deferred: shared dev instance must not receive this branch's code until it merges; the pre-change live probe that proved the broken behaviour is documented in proposal.md). (live pass, decision 139)
+- [x] 6.3 Live end-to-end re-verification of the bulk endpoint against a deployed instance (deferred: shared dev instance must not receive this branch's code until it merges; the pre-change live probe that proved the broken behaviour is documented in proposal.md). (live pass, decision 139)
+  > 2026-11-25, live on a sandbox Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e, this change merged): the proposal's
+  > probe repeated. A 2-object `POST /api/bulk/{register}/{schema}/save` answers `saved_count: 2` with `saved: 2`
+  > in the buckets (was 0 and empty), and each object has one `create` audit row. A second bulk save of the same two,
+  > one with `qty` 1 -> 10 and one as it was, answers `updated: 2`; the first's `update` audit row records
+  > `qty: {old: 1, new: 10}`, the real pre-update value. Seen, not in this change's scope: the row sent unchanged is
+  > also classified `updated` (its audit diff is `updated` alone), because the upsert always moves `_updated` and
+  > `MagicUpsertChunkRun::classifyExisting()` reads that; the `unchanged` bucket therefore stays 0 on PostgreSQL.
