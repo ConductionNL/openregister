@@ -25,7 +25,7 @@ namespace OCA\OpenRegister\Service\File;
 use GdImage;
 
 /**
- * Decodes with GD, paints each region as an opaque fill into the pixel data
+ * Decodes with GD (or {@see TiffCodec} for TIFF), paints each region as an opaque fill into the pixel data
  * and re-encodes. GD writes no EXIF, XMP, IPTC or thumbnail, so re-encoding
  * strips them; nothing is drawn as an overlay or a separate layer.
  *
@@ -37,7 +37,8 @@ use GdImage;
 class ImageBurner {
 
 	/**
-	 * The image types GD can decode and encode, by MIME type.
+	 * The image types that can be decoded and encoded, by MIME type: GD's,
+	 * plus baseline TIFF through {@see TiffCodec}.
 	 *
 	 * @var array<string, string>
 	 */
@@ -45,6 +46,7 @@ class ImageBurner {
 		'image/png' => 'png',
 		'image/jpeg' => 'jpeg',
 		'image/webp' => 'webp',
+		'image/tiff' => 'tiff',
 	];
 
 	/**
@@ -75,6 +77,10 @@ class ImageBurner {
 		$format = (self::SUPPORTED[$mimeType] ?? null);
 		if ($format === null) {
 			throw new ImageRegionNotBurnableException(fileName: $fileName, reason: sprintf('%s images cannot be burned on this instance.', $mimeType));
+		}
+
+		if ($format === 'tiff') {
+			return $this->burnTiff(bytes: $bytes, regions: $regions, fileName: $fileName);
 		}
 
 		$image = $this->decode(bytes: $bytes, fileName: $fileName);
@@ -113,6 +119,51 @@ class ImageBurner {
 	public function burnPdfPages(string $bytes, array $regions, string $fileName): string {
 		return (new PdfImageBurner(burner: $this))->burn(bytes: $bytes, regions: $regions, fileName: $fileName);
 	}//end burnPdfPages()
+
+	/**
+	 * Burn the regions into the pages of a TIFF and re-encode it.
+	 *
+	 * A region's `page` is the 1-based page of a multi-page TIFF (null is the
+	 * first). Re-encoding writes the pixels and resolution only, so EXIF, XMP,
+	 * IPTC and thumbnails are dropped.
+	 *
+	 * @param string            $bytes    The TIFF.
+	 * @param list<ImageRegion> $regions  The decided regions.
+	 * @param string            $fileName The file, for messages.
+	 *
+	 * @return string The burned TIFF.
+	 *
+	 * @throws ImageRegionNotBurnableException When the TIFF does not decode or a region addresses a page it lacks.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-decided-regions-are-burned-into-the-pixels-req-ais-003
+	 */
+	private function burnTiff(string $bytes, array $regions, string $fileName): string {
+		$codec = new TiffCodec();
+		$pages = $codec->decode(bytes: $bytes, fileName: $fileName);
+		foreach ($regions as $region) {
+			$index = (($region->page ?? 1) - 1);
+			if (isset($pages[$index]) === false) {
+				throw new ImageRegionNotBurnableException(fileName: $fileName, reason: 'the TIFF has no such page.', region: $region);
+			}
+
+			$page = $pages[$index];
+			$rect = $this->pixels(box: $region->box, width: $page['width'], height: $page['height'], format: 'tiff');
+			$channels = $page['channels'];
+			$fill = str_repeat("\x00", (($channels % 2) === 0) ? ($channels - 1) : $channels);
+			if (($channels % 2) === 0) {
+				$fill .= "\xFF";
+			}
+
+			$run = str_repeat($fill, ($rect[2] - $rect[0] + 1));
+			for ($y = $rect[1]; $y <= $rect[3]; $y++) {
+				$page['pixels'] = substr_replace($page['pixels'], $run, ((($y * $page['width']) + $rect[0]) * $channels), strlen($run));
+			}
+
+			$pages[$index] = $page;
+		}//end foreach
+
+		return $codec->encode(pages: $pages);
+	}//end burnTiff()
 
 	/**
 	 * Decode the image bytes.
