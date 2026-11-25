@@ -534,15 +534,17 @@ class ConfigurationsController extends Controller {
 	/**
 	 * Link the imported registers, schemas and objects to the configuration.
 	 *
-	 * `$result['objects']` IS NOT UNIFORMLY ENTITIES. ImportHandler
-	 * appends an ObjectEntity in two places and a bare id in two others
-	 * (`$result['objects'][] = $existingObject->getId()`), so a
-	 * descriptor that carries seed objects reached
+	 * `$result['objects']` WAS NOT UNIFORMLY ENTITIES. ImportHandler
+	 * appended an ObjectEntity in two places and a bare id in two others
+	 * (the seed paths), so a descriptor that carries seed objects reached
 	 * `$obj->getId()` on an int and died with a TypeError. That is an
 	 * `Error`, not an `Exception`, so the catch in import() did not see it
 	 * either: the endpoint answered 500 with Nextcloud's HTML error page
 	 * instead of the JSON it documents. Measured on stackiq's register,
 	 * whose import was the only one of eighteen to fail this way.
+	 *
+	 * ImportHandler now records the entity at every site; idsOf() still takes
+	 * either shape, so this link never depends on which one a producer hands it.
 	 *
 	 * @param Configuration $configuration The imported configuration.
 	 * @param array         $result        The import result.
