@@ -18,20 +18,14 @@
  * @license EUPL-1.2
  */
 
-import { CnIntegrationWidgetGrid } from '@conduction/nextcloud-vue'
-import { translatePlural as n, translate as t } from '@nextcloud/l10n'
-import { createApp, h } from 'vue'
-import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
-import { registerLibraryTranslations } from './services/libraryTranslations.js'
-
-// Register nextcloud-vue's own catalogue before anything renders, so the
-// library's labels follow the reader's language on this page too.
-registerLibraryTranslations()
-
-// Install + populate the integration registry on this entry bundle's
-// JS scope. Each NC entry bundle runs in isolation, so bootstrap must
-// happen here in addition to main.js. Idempotent.
-ensureIntegrationRegistry()
+/**
+ * The umbrella app itself (`./user-dashboard/umbrella.js`: the widget grid,
+ * the library stylesheet, translations and the integration registry) is
+ * imported only once the tile exists. Nextcloud calls every registered
+ * widget's `load()` on every Dashboard render, also when the user's layout
+ * does not hold this tile, so this entry stays a few KB and carries no
+ * dependencies (webpack.config.js keeps it out of the shared vendor chunk).
+ */
 
 // Nextcloud's dashboard renders each widget into an element with id
 // `<widget-id>` — see apps/dashboard/lib/Controller/DashboardController.
@@ -39,36 +33,13 @@ ensureIntegrationRegistry()
 const MOUNT_SELECTOR = '#openregister-integrations'
 
 /**
- * The umbrella widget grid app, with `t` and `n` installed.
+ * Mount the umbrella app into the tile once it exists.
  *
- * @return {object} The app, not yet mounted
- */
-function createUmbrellaApp() {
-	// Vue 3: a plain options object handed to createApp() replaces
-	// Vue.extend(); `h` is imported from 'vue' rather than injected into
-	// render(), and props pass FLAT (no `props:` wrapper).
-	const app = createApp({
-		name: 'IntegrationDashboardUmbrella',
-		components: { CnIntegrationWidgetGrid },
-		render() {
-			return h(CnIntegrationWidgetGrid, { surface: 'user-dashboard' })
-		},
-	})
-
-	// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL — one call in main.js gave `t`/`n` to
-	// every Vue instance on the page, including the ones this entry bundle
-	// mounts. Vue 3's `app.mixin()` is scoped to a single app instance, so each
-	// entry now has to install it for itself or `this.t(...)` is undefined in
-	// anything it renders.
-	app.mixin({ methods: { t, n } })
-	return app
-}
-
-/**
- * Mount the umbrella Vue app once the DOM is ready and the NC
- * dashboard has rendered the tile container. The tile may not exist
- * yet when this script loads, so we retry on DOMContentLoaded and
- * fall back to a short polling window for late renders.
+ * Returns true once the tile was found (the app then mounts when its chunk
+ * has loaded), false while the tile is not there yet.
+ *
+ * @spec openspec/changes/archive/2026-07-07-frontend-code-splitting-and-fetch-efficiency/tasks.md
+ * @return {boolean} Whether the tile was found
  */
 function mountUmbrella() {
 	const el = document.querySelector(MOUNT_SELECTOR)
@@ -83,11 +54,12 @@ function mountUmbrella() {
 	}
 	el.dataset.openregisterMounted = '1'
 
-	const app = createUmbrellaApp()
-
-	const target = document.createElement('div')
-	el.appendChild(target)
-	app.mount(target)
+	import(/* webpackChunkName: "user-dashboard-umbrella" */ './user-dashboard/umbrella.js')
+		.then(({ mountUmbrellaApp }) => mountUmbrellaApp(el))
+		.catch((error) => {
+			el.dataset.openregisterMounted = ''
+			console.error('OpenRegister: could not load the dashboard integrations', error)
+		})
 
 	return true
 }
