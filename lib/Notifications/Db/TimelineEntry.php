@@ -350,7 +350,7 @@ class TimelineEntry extends Entity implements JsonSerializable {
 			'author' => $this->author,
 			'visibility' => $this->visibility,
 			'message' => $this->message,
-			'fields' => ($this->fields ?? []),
+			'fields' => self::fieldsMap(fields: $this->fields),
 			'followUp' => $this->followUp,
 			'closedBy' => $this->closedBy,
 			'closedAt' => $this->closedAt?->format(DateTime::ATOM),
@@ -366,6 +366,27 @@ class TimelineEntry extends Entity implements JsonSerializable {
 		];
 
 	}//end jsonSerialize()
+
+	/**
+	 * The entry's fields as a JSON object, `{}` when it holds none.
+	 *
+	 * `fields` is a map of field name to value. An empty PHP array encodes as
+	 * `[]`, which a client reads as a list, so a plain note answered `[]` where
+	 * every entry with fields answered an object.
+	 *
+	 * @param array|null $fields The stored fields.
+	 *
+	 * @return array|\stdClass The fields, or an empty object.
+	 *
+	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 */
+	private static function fieldsMap(?array $fields): array|\stdClass {
+		if ($fields === null || $fields === []) {
+			return new \stdClass();
+		}
+
+		return $fields;
+	}//end fieldsMap()
 
 	/**
 	 * The withdrawal as the API returns it: who, when and why, or null.
