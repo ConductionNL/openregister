@@ -109,6 +109,7 @@ namespace {
 	class_alias('OCA\\OpenRegister\\Notifications\\Controller\\NotificationHistoryController', 'OCA\\OpenRegister\\Controller\\NotificationHistoryController');
 	class_alias('OCA\\OpenRegister\\Notifications\\Controller\\NotificationPreferencesController', 'OCA\\OpenRegister\\Controller\\NotificationPreferencesController');
 	class_alias('OCA\\OpenRegister\\Notifications\\Controller\\NotificationRecipientAnswerController', 'OCA\\OpenRegister\\Controller\\NotificationRecipientAnswerController');
+	class_alias('OCA\\OpenRegister\\Notifications\\Controller\\NotificationRuleReachController', 'OCA\\OpenRegister\\Controller\\NotificationRuleReachController');
 	class_alias('OCA\\OpenRegister\\Notifications\\Controller\\NotificationSubscriptionsController', 'OCA\\OpenRegister\\Controller\\NotificationSubscriptionsController');
 	class_alias('OCA\\OpenRegister\\Notifications\\Controller\\NotificationTemplatesController', 'OCA\\OpenRegister\\Controller\\NotificationTemplatesController');
 	class_alias('OCA\\OpenRegister\\Files\\Controller\\ObjectFilesArchiveController', 'OCA\\OpenRegister\\Controller\\ObjectFilesArchiveController');

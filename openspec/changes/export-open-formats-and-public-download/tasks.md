@@ -19,7 +19,9 @@
 ## 4. Docs and end-to-end test
 
 - [x] 4.1 Document the formats, the public download rule, the row cap and paging headers, and the release-note behaviour change in `docs/features/data-import-export.md`, with curl examples for an anonymous TSV and XML download. Verify: `npm run build` in `docs/` succeeds.
-- [ ] 4.2 Add `tests/e2e/ci/public-export.spec.ts`: an anonymous request downloads a public schema filtered on one field as TSV and as XML and gets only public rows and columns; the same request on a private schema gets 401; a signed-in user picks XML in the export dialog and gets a `.xml` file. Verify: the spec runs green in the Playwright CI project.
+- [x] 4.2 Add `tests/e2e/ci/public-export.spec.ts`: an anonymous request downloads a public schema filtered on one field as TSV and as XML and gets only public rows and columns; the same request on a private schema gets 401; a signed-in user picks XML in the export dialog and gets a `.xml` file. Verify: the spec runs green in the Playwright CI project.
+  - 2026-11-25: four tests, green on a sandbox Nextcloud 34 with MariaDB (4 passed). An anonymous client downloads the public schema filtered on `thema=milieu` as TSV and as XML: two rows, no `behandelaar` column or element (restricted to `admin`), and an `export.completed` audit row with user `anonymous`, format `xml` and row count 2; the schema that keeps `export` to `admin` answers 401 with rule `not-public`; a signed-in administrator opens Export on the schema's row on the registers page, picks XML and saves a `.xml` file holding the rows.
+  - 🔴 THE DIALOG'S HEADING WAS ITS ID. `ExportRegister.vue` passed `name="export-register-dialog"` and `:title="t('openregister', 'Export Objects')"`; NcDialog shows `name` as the heading and ignores `title`, so the dialog read "export-register-dialog" to every user. The e2e found it because it locates the dialog by its accessible name. Fixed by passing the translated text as `name` (the key exists in every bundle); the mount spec now asserts the `name` and is red on main.
 
 ## Acceptance
 

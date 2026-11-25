@@ -31,6 +31,9 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ExportKeySealersInterface;
+use OCA\OpenRegister\Service\Archival\DestructionCopies;
+use OCA\OpenRegister\Service\Archival\DestructionCopy;
 use OCA\OpenRegister\Service\Archival\DestructionCopyWriter;
 use OCA\OpenRegister\Service\Archival\AppraisalInterface;
 use OCA\OpenRegister\Service\Archival\DestructionReviewServiceInterface;
@@ -131,6 +134,13 @@ final class DestructionListRun {
 	private readonly DestructionCopyWriter $copyWriter;
 
 	/**
+	 * Writes this run's copies, encrypted as `destructionCopyEncryption` asks; set once the list is claimed.
+	 *
+	 * @var DestructionCopies|null
+	 */
+	private ?DestructionCopies $copies = null;
+
+	/**
 	 * Archival settings.
 	 *
 	 * @var array<string, mixed>
@@ -219,6 +229,8 @@ final class DestructionListRun {
 	 * deleted twice and no audit row is written twice.
 	 *
 	 * @return ObjectEntity|null The claimed list, or null when it is not approved
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
 	 */
 	private function claimList(): ?ObjectEntity {
 		$listObject = $this->objectMapper->find($this->listUuid, null, null, false, false, false);
@@ -234,6 +246,12 @@ final class DestructionListRun {
 		$this->objectMapper->update($listObject);
 
 		$this->listData = $listData;
+		$this->copies   = new DestructionCopies(
+			settings: $this->settings,
+			writer: $this->copyWriter,
+			sealers: fn (): mixed => $this->container->get(ExportKeySealersInterface::class),
+			organisation: $listObject->getOrganisation()
+		);
 		return $listObject;
 	}//end claimList()
 
@@ -373,23 +391,24 @@ final class DestructionListRun {
 	 *
 	 * Without a configured location no copy is written and the destruction
 	 * runs as it always has; with one, the copy must succeed for the
-	 * destruction to run.
+	 * destruction to run, and `destructionCopyEncryption` decides whether it
+	 * is encrypted with the organisation's export key or must be.
 	 *
 	 * @param ObjectEntity $object Object about to be destroyed
 	 *
-	 * @return string|null The path of the copy, or null when no location is configured
+	 * @return DestructionCopy|null The copy, or null when no location is configured
 	 *
-	 * @throws RuntimeException When the copy cannot be written; the message names the location
+	 * @throws RuntimeException When the copy cannot be written or must be encrypted without a usable key; the message names why
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md#requirement-a-destruction-writes-a-restorable-copy-first-req-ipc-004
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
 	 */
-	private function copy(ObjectEntity $object): ?string {
-		$location = trim((string) ($this->settings['destructionCopyLocation'] ?? ''));
-		if ($location === '') {
+	private function copy(ObjectEntity $object): ?DestructionCopy {
+		if ($this->copies === null) {
 			return null;
 		}
 
-		return $this->copyWriter->write(location: $location, listUuid: $this->listUuid, object: $object);
+		return $this->copies->write(listUuid: $this->listUuid, object: $object);
 	}//end copy()
 
 	/**
@@ -397,19 +416,22 @@ final class DestructionListRun {
 	 *
 	 * @param ObjectEntity         $object Object about to be destroyed
 	 * @param array<string, mixed> $objRef Its list entry
-	 * @param string|null          $copy   Where its restorable copy was written, when one was
+	 * @param DestructionCopy|null $copy   Its restorable copy, when one was written
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
 	 */
-	private function audit(ObjectEntity $object, array $objRef, ?string $copy=null): void {
+	private function audit(ObjectEntity $object, array $objRef, ?DestructionCopy $copy=null): void {
 		$context = [
 			'destructionListUuid' => $this->listUuid,
 			'classification' => $objRef['classification'] ?? null,
 			'approvedBy' => array_column($this->listData['approvals'] ?? [], 'userId'),
 		];
 		if ($copy !== null) {
-			// The recorded destruction names its copy (REQ-IPC-004).
-			$context['copy'] = $copy;
+			// The recorded destruction names its copy (REQ-IPC-004) and, for an
+			// encrypted copy, the fingerprint of the key that opens it (D-6).
+			$context = array_merge($context, $copy->auditContext());
 		}
 		$this->auditMapper->recordObjectEvent(event: new ObjectAuditEvent(object: $object, action: 'archival.destroyed', context: $context));
 	}//end audit()
@@ -420,6 +442,8 @@ final class DestructionListRun {
 	 * @param ObjectEntity $listObject The claimed list
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
 	 */
 	private function finish(ObjectEntity $listObject): void {
 		$this->listData['status']           = 'executed';
@@ -428,6 +452,11 @@ final class DestructionListRun {
 		$this->listData['skippedHolds']     = $this->count['held'];
 		$this->listData['skippedErrors']    = $this->count['errors'];
 		$this->listData['skippedDecisions'] = $this->count['withheld'];
+		$refusal = $this->copies?->refusal();
+		if ($refusal !== null) {
+			// The report names why the copies were refused (exchange-encrypted-instance-export D-6).
+			$this->listData['copyRefusal'] = $refusal;
+		}
 
 		$this->saveCertificate();
 		$listObject->setObject($this->listData);
