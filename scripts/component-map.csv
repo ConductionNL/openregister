@@ -4672,6 +4672,9 @@ Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTra
 Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
 Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
 Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
+Service/SemanticProviderCatalogue.php,,Service,,,,,Core
+Kernel/Contracts/SemanticProvidersInterface.php,,Kernel,,,,,Kernel
+Listener/SemanticProviderCacheListener.php,,Listener,,,,,Core
 Exception/PersonRegisterPurposeMissingException.php,,Exception,,,,,Kernel
 Service/Anonymisation/PersonRegisterSource.php,,Service,,,,,Kernel
 Service/Anonymisation/RegisterNameReader.php,,Service,,,,,Files
