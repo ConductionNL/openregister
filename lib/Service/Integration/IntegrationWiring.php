@@ -35,6 +35,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\OutboundMailLinkRecorderInterface;
 use OCA\OpenRegister\Listener\SourceFetcherRegistrationListener;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarLinkListenerRegistrar;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationRecorder;
 use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -238,6 +239,8 @@ final class IntegrationWiring {
 		// Harvest protocols. OpenRegister registers its own fetchers through the
 		// same event an app uses to add one (app-harvest-fetchers-and-flow-node).
 		$context->registerEventListener(RegisterSourceFetchersEvent::class, SourceFetcherRegistrationListener::class);
+		// Inbound calendar changes refresh the link rows (calendar-leaf-inbound, REQ-CAL-INB-001).
+		CalendarLinkListenerRegistrar::register(context: $context);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}

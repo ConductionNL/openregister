@@ -35,9 +35,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use DateTime;
+use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\FlowNodeResumeState;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
+use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -46,6 +48,9 @@ use UnexpectedValueException;
 
 /**
  * Suspends the run for a duration or until a moment.
+ *
+ * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate::render() is the stateless renderer every
+ *   node uses for its authored values.
  */
 class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 	/**
@@ -127,6 +132,8 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 	 * @return void
 	 *
 	 * @throws UnexpectedValueException When neither `for` nor `until` is usable.
+	 *
+	 * @spec openspec/specs/flow-expressions/spec.md
 	 */
 	public function validateConfig(array $config): void {
 		$for = trim((string)($config['for'] ?? ''));
@@ -134,6 +141,13 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 
 		if ($for === '' && $until === '') {
 			throw new UnexpectedValueException($this->l10n->t('A wait needs a duration or a moment to wait until.'));
+		}
+
+		// A placeholder (`{{ run.payDate }}`) is only a time once an item fills
+		// it in; whether it reads as one is a run-time question, and a time that
+		// cannot be read then passes through (execute()).
+		if (str_contains($until.$for, '{{') === true) {
+			return;
 		}
 
 		if ($this->resolve(config: $config) === null) {
@@ -182,7 +196,7 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 			return $items;
 		}
 
-		$this->suspendUntil(context: $context, resumeAt: $this->resolve(config: $config));
+		$this->suspendUntil(context: $context, resumeAt: $this->resolve(config: $this->rendered(config: $config, items: $items)));
 
 		return $items;
 	}//end execute()
@@ -258,6 +272,43 @@ class WaitNode extends LogicNodeBase implements IFlowNode, WaitNodeInterface, IF
 		}
 
 	}//end markWaiting()
+
+	/**
+	 * The configured `until` and `for` with their `{{dotted.path}}`
+	 * placeholders filled in from the first item.
+	 *
+	 * A wait suspends the whole run, so it waits for ONE moment; the first
+	 * item states it, the way the await-signal node takes its correlation key
+	 * from a representative item. A value without a placeholder is unchanged.
+	 *
+	 * @param array $config The step configuration.
+	 * @param array $items  The items this firing carries.
+	 *
+	 * @return array The configuration with `until` and `for` rendered.
+	 *
+	 * @spec openspec/specs/flow-expressions/spec.md
+	 */
+	private function rendered(array $config, array $items): array {
+		$json = [];
+		foreach ($items as $item) {
+			if (is_array($item) === true) {
+				$payload = ($item[FlowItems::JSON] ?? $item);
+				if (is_array($payload) === true) {
+					$json = $payload;
+				}
+
+				break;
+			}
+		}
+
+		foreach (['until', 'for'] as $key) {
+			if (is_string($config[$key] ?? null) === true && str_contains($config[$key], '{{') === true) {
+				$config[$key] = (string)FlowValueTemplate::render(value: $config[$key], json: $json);
+			}
+		}
+
+		return $config;
+	}//end rendered()
 
 	/**
 	 * Work out when this wait ends.
