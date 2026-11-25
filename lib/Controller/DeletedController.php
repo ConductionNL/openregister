@@ -46,6 +46,8 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Service\Deletion\CascadeRestoreRefusedException;
+use OCA\OpenRegister\Service\Deletion\CascadeRestoreResult;
 use OCA\OpenRegister\Service\Deletion\DeletionServiceBundle;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowInterface;
 use OCA\OpenRegister\Service\Deletion\DestructionRefusedException;
@@ -636,9 +638,11 @@ class DeletedController extends Controller {
 	 *
 	 * @param ObjectEntity $object The full stored row.
 	 *
-	 * @return JSONResponse The outcome: 200, or 400 when not deleted, 403 without the right.
+	 * @return JSONResponse The outcome: 200, or 400 when not deleted, 403 without the right
+	 *                      (on the object or on one of its cascade), 409 over the cascade cap.
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
 	 */
 	private function restoreFound(ObjectEntity $object): JSONResponse {
 		if ($object->isSoftDeleted() === false) {
@@ -662,13 +666,31 @@ class DeletedController extends Controller {
 			query: new DeletionWindowQuery(object: $object, schema: $this->services->access->authorizer->resolveSchema(object: $object))
 		);
 
-		// Objects live in per-register/schema magic tables, so the restore goes through MagicMapper.
-		$this->services->store->objectEntityMapper->restoreObject(uuid: (string)$object->getUuid());
+		$cascadeRestore = $this->services->store->deletion->cascadeRestore;
+		$result = null;
+		if ($cascadeRestore === null) {
+			// Objects live in per-register/schema magic tables, so the restore goes through MagicMapper.
+			$this->services->store->objectEntityMapper->restoreObject(uuid: (string)$object->getUuid());
+		} else {
+			try {
+				$result = $cascadeRestore->restore(root: $object, cascade: $this->cascadeRequested());
+			} catch (CascadeRestoreRefusedException $refusal) {
+				return new JSONResponse(data: ['error' => $refusal->getMessage()] + $refusal->details, statusCode: $refusal->status);
+			}
+		}
 
 		// A restore is one act, and it is recorded with its actor. Without
 		// this the trail shows an object deleted and then, without
 		// explanation, present again.
-		$this->recordRestore(object: $object, window: $window);
+		$this->recordRestore(object: $object, window: $window, extra: $this->restoreCounts(result: $result));
+		$dependants = [];
+		if ($result !== null) {
+			$dependants = $result->dependants;
+		}
+
+		foreach ($dependants as $dependant) {
+			$this->recordRestore(object: $dependant, window: null, extra: ['restoredWith' => (string)$object->getUuid()]);
+		}
 
 		$data = [
 			'success' => true,
@@ -678,8 +700,100 @@ class DeletedController extends Controller {
 			$data['restoredWithin'] = $window->toArray();
 		}
 
+		if ($result !== null) {
+			$data += $result->toArray();
+		}
+
 		return new JSONResponse(data: $data);
 	}//end restoreFound()
+
+	/**
+	 * Whether the caller asked for the cascade, which is the default.
+	 *
+	 * `cascade: false` (or "false", "0", 0) restores the object alone, as before.
+	 *
+	 * @return bool True unless the request turned the cascade off.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+	 */
+	private function cascadeRequested(): bool {
+		$cascade = $this->request->getParam('cascade', true);
+		if (is_bool($cascade) === true) {
+			return $cascade;
+		}
+
+		return in_array(strtolower(trim((string)$cascade)), ['false', '0', 'no', 'off'], true) === false;
+	}//end cascadeRequested()
+
+	/**
+	 * The counts a cascade restore adds to the root's restore entry.
+	 *
+	 * @param CascadeRestoreResult|null $result The cascade outcome, null when restored alone.
+	 *
+	 * @return array<string, mixed> restored and relinked, or nothing.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+	 */
+	private function restoreCounts(?CascadeRestoreResult $result): array {
+		if ($result === null) {
+			return [];
+		}
+
+		$counts = $result->toArray();
+
+		return ['restored' => $counts['restored'], 'relinked' => $counts['relinked']];
+	}//end restoreCounts()
+
+	/**
+	 * Preview what restoring a deleted object with its cascade would bring back.
+	 *
+	 * Writes nothing. Lists the dependants that would be restored, the
+	 * references that would be put back, and those that would not, each with
+	 * its reason. Objects the caller may not restore are counted per schema,
+	 * never named.
+	 *
+	 * @param string $id The ID or UUID of the deleted object.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse The plan: 200, or 400 when not deleted, 403 without the right, 404, 409 over the cap.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+	 */
+	public function restorePreview(string $id): JSONResponse {
+		if ($this->services->access->userSession->getUser() === null) {
+			return $this->notAuthenticated();
+		}
+
+		try {
+			$object = $this->services->store->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
+			if ($object->isSoftDeleted() === false) {
+				return new JSONResponse(data: ['error' => 'Object is not deleted'], statusCode: 400);
+			}
+
+			if ($this->services->access->authorizer->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
+				return new JSONResponse(data: ['error' => 'User does not have permission to restore this object'], statusCode: 403);
+			}
+
+			$cascadeRestore = $this->services->store->deletion->cascadeRestore;
+			if ($cascadeRestore === null) {
+				return new JSONResponse(data: ['root' => (string)$object->getUuid(), 'cascadeKnown' => false]);
+			}
+
+			return new JSONResponse(data: $cascadeRestore->preview(root: $object)->toArray());
+		} catch (CascadeRestoreRefusedException $refusal) {
+			return new JSONResponse(data: ['error' => $refusal->getMessage()] + $refusal->details, statusCode: $refusal->status);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (\Exception $e) {
+			return new JSONResponse(
+				data: ['error' => 'Failed to preview the restore: ' . $e->getMessage()],
+				statusCode: 500
+			);
+		}//end try
+	}//end restorePreview()
 
 	/**
 	 * Record a restore with the actor who made it.
@@ -692,12 +806,14 @@ class DeletedController extends Controller {
 	 *
 	 * @param ObjectEntity $object The object restored.
 	 * @param DeletionWindowInterface|null $window The window it was restored inside.
+	 * @param array<string, mixed> $extra Added context: the cascade's counts on the root, the root on a dependant.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
 	 */
-	private function recordRestore(ObjectEntity $object, mixed $window): void {
+	private function recordRestore(ObjectEntity $object, mixed $window, array $extra=[]): void {
 		$user = $this->services->access->userSession->getUser();
 		$actor = 'system';
 		$actorName = 'System';
@@ -714,6 +830,8 @@ class DeletedController extends Controller {
 		if ($window !== null) {
 			$context['restoredWithin'] = $window->toArray();
 		}
+
+		$context += $extra;
 
 		try {
 			$this->services->store->auditTrailMapper->recordObjectEvent(
