@@ -12,7 +12,16 @@
 
 ## 3. Tests
 
-- [ ] 3.1 `tests/e2e/ci/view-alert.spec.ts`: set a threshold on a view, push the count over it, see the notification once. (not run: e2e needs a live instance and a browser)
+- [x] 3.1 `tests/e2e/ci/view-alert.spec.ts`: set a threshold on a view, push the count over it, see the notification once. (not run: e2e needs a live instance and a browser)
+  > 2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e). The spec covers what HTTP reaches without
+  > cron: the alert saved and read back normalised (`every: 300`, no state), `operator`, `recipients` and `every`
+  > refused 422 naming the field with nothing written, a user the view is not shared with refused, `alert: null`
+  > clears it; 4 passed. The crossing was walked by hand on the same instance, forcing `ViewAlertSweepJob` between
+  > steps and ageing `alert_evaluated_at` past the 300 s interval: a view over its own register and schema with
+  > `gte 3` for `user:admin` on `nc-notification`; at 2 rows the sweep stores `armed, lastCount 2` and nobody is told;
+  > at 4 rows the first sweep fires, the bell shows "<view> is at 4" once, and two more sweeps over the standing
+  > backlog add nothing; back at 2 it re-arms with no message; at 4 again a second notification arrives. A user who
+  > is not a recipient gets none. The spec no longer waits for the nextcloud-vue field: the API is the declaration.
 - [x] 3.2 Unit tests for the validator, the state machine and the bounded pass.
 
 ## Status, 2026-09-18
