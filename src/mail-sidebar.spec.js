@@ -44,6 +44,17 @@ function mailPage() {
 	document.body.appendChild(marker)
 }
 
+/**
+ * Let the lazily loaded sidebar chunk resolve.
+ *
+ * @return {Promise<void>}
+ */
+async function settle() {
+	for (let i = 0; i < 10; i++) {
+		await Promise.resolve()
+	}
+}
+
 beforeEach(() => {
 	jest.clearAllMocks()
 	jest.useFakeTimers()
@@ -54,9 +65,10 @@ afterEach(() => {
 })
 
 describe('mail-sidebar entry', () => {
-	it('registers translations and the integration registry, then mounts on a Mail page', () => {
+	it('registers translations and the integration registry, then mounts on a Mail page', async () => {
 		mailPage()
 		load()
+		await settle()
 		expect(mockRegister).toHaveBeenCalledTimes(1)
 		expect(mockEnsure).toHaveBeenCalledTimes(1)
 		expect(mockCreateApp).toHaveBeenCalledWith({ name: 'MailSidebar' })
@@ -75,13 +87,17 @@ describe('mail-sidebar entry', () => {
 		expect(mockCreateApp).not.toHaveBeenCalled()
 	})
 
-	it('retries every second until the Mail page appears', () => {
+	it('retries every second until the Mail page appears, and loads nothing of the app before', async () => {
 		load()
 		expect(mockCreateApp).not.toHaveBeenCalled()
 		jest.advanceTimersByTime(1000)
+		await settle()
 		expect(mockCreateApp).not.toHaveBeenCalled()
+		expect(mockRegister).not.toHaveBeenCalled()
+		expect(mockEnsure).not.toHaveBeenCalled()
 		mailPage()
 		jest.advanceTimersByTime(1000)
+		await settle()
 		expect(mockCreateApp).toHaveBeenCalledTimes(1)
 	})
 
@@ -94,26 +110,29 @@ describe('mail-sidebar entry', () => {
 		expect(mockCreateApp).not.toHaveBeenCalled()
 	})
 
-	it('logs a failed mount instead of throwing', () => {
+	it('logs a failed mount instead of throwing, and leaves no empty host', async () => {
 		mailPage()
 		const error = jest.spyOn(console, 'error').mockImplementation(() => {})
 		mockMount.mockImplementationOnce(() => {
 			throw new Error('boom')
 		})
 		load()
+		await settle()
 		expect(error).toHaveBeenCalledWith(
 			'[OpenRegister] Mail sidebar mount failed:',
 			expect.any(Error),
 		)
+		expect(document.getElementById('openregister-mail-sidebar')).toBeNull()
 	})
 
-	it('waits for DOMContentLoaded while the document is loading', () => {
+	it('waits for DOMContentLoaded while the document is loading', async () => {
 		mailPage()
 		const state = jest.spyOn(document, 'readyState', 'get').mockReturnValue('loading')
 		load()
 		expect(mockCreateApp).not.toHaveBeenCalled()
 		state.mockRestore()
 		document.dispatchEvent(new Event('DOMContentLoaded'))
+		await settle()
 		expect(mockCreateApp).toHaveBeenCalledTimes(1)
 	})
 })
