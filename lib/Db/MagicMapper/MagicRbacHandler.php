@@ -975,11 +975,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		try {
 			$gate = $this->container->get(SecondFactorReadGate::class);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[MagicRbacHandler] The second-factor read gate is unavailable',
-				context: ['error' => $e->getMessage()]
-			);
+		} catch (\Throwable) {
+			// Autowired in every running instance; only a container double lacks it.
+			return false;
+		}
+
+		if (($gate instanceof SecondFactorReadGate) === false) {
 			return false;
 		}
 

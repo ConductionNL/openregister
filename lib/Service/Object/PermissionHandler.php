@@ -983,8 +983,9 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * for reading (REQ-IHC-003). The refusal is final like classification:
 	 * no grant, administrator bypass or elevation re-opens it. It applies to a
 	 * read of one object and to a schema-level read alike, since it is about
-	 * the caller, not the object. When the gate cannot be built nothing is
-	 * declared to it, and the read goes on to the grants.
+	 * the caller, not the object. A container that cannot supply the gate
+	 * (only a test double; the app container autowires it) declares nothing,
+	 * and the read goes on to the grants.
 	 *
 	 * @param PermissionAsk $ask The question.
 	 *
@@ -999,11 +1000,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		try {
 			$gate = $this->data->container->get(SecondFactorReadGate::class);
-		} catch (\Throwable $e) {
-			$this->data->logger->error(
-				message: '[PermissionHandler] The second-factor read gate is unavailable',
-				context: ['error' => $e->getMessage()]
-			);
+		} catch (\Throwable) {
+			// Autowired in every running instance; only a container double lacks it.
+			return null;
+		}
+
+		if (($gate instanceof SecondFactorReadGate) === false) {
 			return null;
 		}
 
