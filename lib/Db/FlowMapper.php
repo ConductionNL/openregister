@@ -306,6 +306,28 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	}//end findScheduled()
 
 	/**
+	 * The flows, enabled or not, whose graph holds a node of one type.
+	 *
+	 * A text match on the stored `nodes` JSON narrows the rows; the caller
+	 * still reads the node list itself, so a type named in another field
+	 * of a node never counts.
+	 *
+	 * @param string $nodeType The node type, e.g. `openregister.trigger-calendar`.
+	 *
+	 * @return array<int, Flow>
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
+	 */
+	public function findWithNodeType(string $nodeType): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->like('nodes', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($nodeType) . '%')));
+
+		return $this->findEntities(query: $qb);
+	}//end findWithNodeType()
+
+	/**
 	 * The ids of the flows one user owns.
 	 *
 	 * Feeds the run-history visibility rule: a caller sees the runs they

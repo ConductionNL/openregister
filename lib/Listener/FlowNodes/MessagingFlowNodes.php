@@ -26,6 +26,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface;
 
 /**
  * The messaging steps.
@@ -48,11 +49,13 @@ final readonly class MessagingFlowNodes {
 	 * @param SendNotificationNodeInterface $sendNotification The built-in "Send a notification" node.
 	 * @param SendEmailNodeInterface $sendEmail The built-in "Send an email" node.
 	 * @param SendTalkMessageNodeInterface $sendTalkMessage The built-in "Send a Talk message" node.
+	 * @param SurveyInviteNodeInterface    $surveyInvite    The built-in "Invite to a survey" node.
 	 */
 	public function __construct(
 		private SendNotificationNodeInterface $sendNotification,
 		private SendEmailNodeInterface $sendEmail,
 		private SendTalkMessageNodeInterface $sendTalkMessage,
+		private SurveyInviteNodeInterface $surveyInvite,
 	) {
 	}//end __construct()
 
@@ -66,6 +69,7 @@ final readonly class MessagingFlowNodes {
 			$this->sendNotification,
 			$this->sendEmail,
 			$this->sendTalkMessage,
+			$this->surveyInvite,
 		];
 
 	}//end nodes()

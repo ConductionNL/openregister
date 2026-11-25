@@ -65,6 +65,7 @@
 		"OCA\\OpenRegister\\Listener\\ObjectChangeListener",
 		"OCA\\OpenRegister\\Listener\\AutoTransitionRecordListener",
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\Listener\\FlowCalendarIndexListener",
 		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
@@ -105,6 +106,7 @@
 	],
 	"OCA\\OpenRegister\\Event\\ObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\Listener\\FlowCalendarIndexListener",
 		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
@@ -166,6 +168,7 @@
 		"OCA\\OpenRegister\\Listener\\ObjectChangeListener",
 		"OCA\\OpenRegister\\Listener\\AutoTransitionRecordListener",
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\Listener\\FlowCalendarIndexListener",
 		"OCA\\OpenRegister\\Listener\\CaseObjectEventListener",
 		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarChangedListener",
