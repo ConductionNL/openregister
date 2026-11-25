@@ -193,11 +193,11 @@ final class ConsistencyCheckShippedProbesTest extends TestCase {
 		$service = new ConsistencyCheckService($this->db);
 
 		$this->assertSame(
-			['slug' => 'runs-never-closed', 'table' => 'openregister_job_runs', 'action' => 'Mark the runs failed, naming the worker that did not come back.'],
+			['slug' => 'runs-never-closed', 'table' => 'openregister_job_runs', 'action' => 'Mark the runs failed, naming the worker that did not come back.', 'kind' => 'delete', 'column' => 'id'],
 			$service->repairPlan('runs-never-closed')
 		);
 		$this->assertSame(
-			['slug' => 'orphan-relations', 'table' => 'openregister_object_relations', 'action' => 'Delete the relation rows.'],
+			['slug' => 'orphan-relations', 'table' => 'openregister_object_relations', 'action' => 'Delete the relation rows.', 'kind' => 'delete', 'column' => 'id'],
 			$service->repairPlan('orphan-relations')
 		);
 	}

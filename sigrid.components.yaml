@@ -1734,7 +1734,7 @@ components:
   - name: Configuration
     include:
       - ".*/lib/Kernel/Contracts/Configuration/.*"
-      - ".*/lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConfigurationJobHandlesInterface|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|ImportRunRetentionJob|NameCacheWarmupJob|OneUseJobKeySweepJob|RecordedTimedJob|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php"
+      - ".*/lib/BackgroundJob/(BackfillCalendarLinksJob|BlobMigrationJob|CacheClearAndWarmJob|ConfigurationCheckJob|ConfigurationJobHandlesInterface|ConsistencyCheckJob|ExampleSetDailyRefreshJob|ImportPreviewRunner|ImportRunRetentionJob|IndexReconciliationJob|NameCacheWarmupJob|OneUseJobKeySweepJob|RecordedTimedJob|SeedDirectoryJob|SweepExpiredExportRunsJob|SyncConfigurationsJob)[.]php"
       - ".*/lib/BackgroundJob/Support/BackfillCalendarLinksSources[.]php"
       - ".*/lib/BackgroundJob/Support/ConfigurationCheckServices[.]php"
       - ".*/lib/BulkAction/(ExportWholeSetAction|WholeSetExportRun)[.]php"
@@ -1971,6 +1971,8 @@ components:
       - ".*/lib/Service/Operations/ConsistencyCheckServiceInterface[.]php"
       - ".*/lib/Service/Operations/ConsistencyRepairService[.]php"
       - ".*/lib/Service/Operations/ConsistencyRepairServiceInterface[.]php"
+      - ".*/lib/Service/Operations/IndexReconciliationProbes[.]php"
+      - ".*/lib/Service/Operations/IndexReconciliationReport[.]php"
       - ".*/lib/Service/Operations/JobAlertDelivery[.]php"
       - ".*/lib/Service/Operations/JobAlertService[.]php"
       - ".*/lib/Service/Operations/JobAlertServiceInterface[.]php"

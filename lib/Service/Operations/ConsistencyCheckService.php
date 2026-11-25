@@ -69,14 +69,21 @@ class ConsistencyCheckService implements ConsistencyCheckServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection                            $db     The connection every probe reads through.
-	 * @param array<string, array<string, mixed>>|null $probes The probes, or null for the shipped set.
+	 * @param IDBConnection                            $db          The connection every probe reads through.
+	 * @param array<string, array<string, mixed>>|null $probes      The probes, or null for the shipped set.
+	 * @param IndexReconciliationProbes|null           $indexProbes The search index probes, added to the shipped set.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		?array $probes = null,
+		?IndexReconciliationProbes $indexProbes = null,
 	) {
 		$this->probes = ($probes ?? $this->shippedProbes());
+		if ($probes === null && $indexProbes !== null) {
+			$this->probes = array_merge($this->probes, $indexProbes->probes());
+		}
 
 	}//end __construct()
 
@@ -141,8 +148,23 @@ class ConsistencyCheckService implements ConsistencyCheckServiceInterface {
 	 * @return array<string, mixed> The finding.
 	 *
 	 * @throws ConsistencyCheckWouldWriteException When the probe's query would write.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	private function run(string $slug, array $probe): array {
+		if (is_string($probe['skip'] ?? null) === true) {
+			// A probe that does not apply on this instance (vectorisation off) is
+			// reported as not run, never as clean.
+			return [
+				'slug' => $slug,
+				'title' => $probe['title'],
+				'description' => $probe['description'],
+				'count' => 0,
+				'objects' => [],
+				'unavailable' => $probe['skip'],
+			];
+		}
+
 		$build = $probe['query'];
 		$qb = $build($this->db->getQueryBuilder());
 
@@ -337,6 +359,7 @@ class ConsistencyCheckService implements ConsistencyCheckServiceInterface {
 	 * @return array<string, mixed>|null The repair plan, or null when no such probe.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function repairPlan(string $slug): ?array {
 		if (array_key_exists($slug, $this->probes) === false) {
@@ -347,6 +370,8 @@ class ConsistencyCheckService implements ConsistencyCheckServiceInterface {
 			'slug' => $slug,
 			'table' => $this->probes[$slug]['table'],
 			'action' => $this->probes[$slug]['repair'],
+			'kind' => ($this->probes[$slug]['repairKind'] ?? IndexReconciliationProbes::REPAIR_DELETE),
+			'column' => ($this->probes[$slug]['repairColumn'] ?? 'id'),
 		];
 
 	}//end repairPlan()

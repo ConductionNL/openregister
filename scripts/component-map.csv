@@ -4924,3 +4924,6 @@ Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
+Service/Operations/IndexReconciliationProbes.php,,Service,,,,,Configuration
+Service/Operations/IndexReconciliationReport.php,,Service,,,,,Configuration
+BackgroundJob/IndexReconciliationJob.php,,BackgroundJob,,,,,Configuration
