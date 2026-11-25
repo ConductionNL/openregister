@@ -1,7 +1,7 @@
 <?php
 
 /**
- * GenericStoreService keeps a remote registry's search answer for SEARCH_TTL seconds.
+ * GenericStoreService keeps a remote registry's search answer for StoreSearchCache::TTL seconds.
  *
  * Apps list store cards on paths every page load reads; uncached, each load
  * waited on the registry (up to the 10 s timeout when it is slow or down).
@@ -26,6 +26,7 @@ use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Service\StoreListing;
 use OCA\OpenRegister\AppHost\Service\StoreRegistryAccess;
+use OCA\OpenRegister\AppHost\Service\StoreSearchCache;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -104,9 +105,12 @@ final class GenericStoreSearchCacheTest extends TestCase {
 		}
 
 		return new GenericStoreService(
-			registry: new StoreRegistryAccess(clientService: $clientService, appConfig: $appConfig),
-			logger: $this->createMock(originalClassName: LoggerInterface::class),
-			cacheFactory: $caches
+			registry: new StoreRegistryAccess(
+				clientService: $clientService,
+				appConfig: $appConfig,
+				searchCache: new StoreSearchCache(cacheFactory: $caches)
+			),
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 	}//end service()
 
@@ -157,7 +161,7 @@ final class GenericStoreSearchCacheTest extends TestCase {
 		$this->assertSame(expected: 'ok', actual: $first['outcome']);
 		$this->assertSame(expected: $first, actual: $again);
 		$this->assertSame(expected: 1, actual: $this->requests);
-		$this->assertSame(expected: [GenericStoreService::SEARCH_TTL], actual: $this->ttls);
+		$this->assertSame(expected: [StoreSearchCache::TTL], actual: $this->ttls);
 	}//end testASecondSearchIsAnsweredFromTheCache()
 
 	/**

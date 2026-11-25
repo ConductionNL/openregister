@@ -39,12 +39,14 @@ final class StoreRegistryAccess {
 	 *
 	 * @param IClientService $clientService Nextcloud HTTP client factory.
 	 * @param IAppConfig     $appConfig     App config store (registry url / token / register).
+	 * @param StoreSearchCache $searchCache Keeps a remote registry's search answer for a minute.
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md
 	 */
 	public function __construct(
 		public readonly IClientService $clientService,
 		public readonly IAppConfig $appConfig,
+		public readonly StoreSearchCache $searchCache=new StoreSearchCache(),
 	) {
 	}//end __construct()
 }//end class
