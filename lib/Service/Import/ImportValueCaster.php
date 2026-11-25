@@ -190,10 +190,6 @@ class ImportValueCaster {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function integerValue(mixed $value): mixed {
-		if (is_int($value) === true) {
-			return $value;
-		}
-
 		$text = trim((string)$value);
 		if (preg_match('/^[+-]?\d+$/', $text) === 1) {
 			return (int)$text;
@@ -212,10 +208,6 @@ class ImportValueCaster {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	private function numberValue(mixed $value): mixed {
-		if (is_int($value) === true || is_float($value) === true) {
-			return $value;
-		}
-
 		$text = trim((string)$value);
 		if (is_numeric($text) === true) {
 			return (float)$text;
