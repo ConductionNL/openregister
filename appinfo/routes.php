@@ -104,13 +104,15 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // The runs of actions on this object, `action.run` and the older `action.macro`, newest first.
         ['name' => 'objectActions#history', 'url' => '/api/objects/{register}/{schema}/{id}/actions/history', 'verb' => 'GET',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
-        ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
-            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
+        // `{key}`, not `{action}`: the router keeps `action` for the controller
+        // method, so a route parameter of that name reaches the controller as null.
+        ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{key}', 'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
         // The same action on a selection: one run per object, reported per object.
         // Its own prefix, because `/api/objects/{register}/{schema}/...` with four
         // segments would be read as an object id by the routes above.
-        ['name' => 'objectActions#invokeOnSelection', 'url' => '/api/object-actions/{register}/{schema}/{action}', 'verb' => 'POST',
-            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'action' => '[^/]+']],
+        ['name' => 'objectActions#invokeOnSelection', 'url' => '/api/object-actions/{register}/{schema}/{key}', 'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'key' => '[^/]+']],
         // The actions offered on a selection (the `bulk` surface).
         ['name' => 'objectActions#selection', 'url' => '/api/object-actions/{register}/{schema}', 'verb' => 'GET',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],

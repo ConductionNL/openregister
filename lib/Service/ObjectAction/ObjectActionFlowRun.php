@@ -218,7 +218,7 @@ class ObjectActionFlowRun {
 		}
 
 		$changes = $this->engines->macros->changesOf(run: $start->run, flowUuid: $start->flowUuid);
-		$this->record(run: $run, outcome: $start->outcome(outcome: (string)$start->run->getStatus(), changes: $changes));
+		$this->record(run: $run, outcome: $start->outcome(outcome: $start->run->getOutcome(), changes: $changes));
 		if ($start->isCompleted() === false) {
 			return $this->answer(status: Http::STATUS_UNPROCESSABLE_ENTITY, body: $start->endedBody(key: $definition->key));
 		}
