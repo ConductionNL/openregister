@@ -1,0 +1,55 @@
+# buildiq live e2e, 25 Nov 2026 13:37-14:13Z, cloud live lane b-buildiq (sandbox: Nextcloud 34.0.6 + MariaDB + php -S with a front-controller router, OpenRegister main 55f2aa3e, buildiq development f648b2b1, ci-seed.sh, rate-limit protection off). 99 passed, 54 failed, 43 skipped, 279 did not run (the run stopped early). Failing tests below. Two are fixed in cloud/b-buildiq-automation-trigger-event (automations-flow-backend: 'Unknown trigger event "created"'; automation-runs: 'a node a token cannot leave'). app-chrome footer: spec fix in cloud/b-buildiq-e2e-app-chrome-marketplace. docudesk/integriq specs need those apps (sandbox).
+[chromium] › tests/e2e/app-api-docs.spec.ts:172:2 › operate-api-docs: the API tab of an app › the owner reads the schema's calls and downloads an OpenAPI 3 file, with nothing fetched from outside 
+[chromium] › tests/e2e/app-chrome.spec.ts:68:2 › app chrome (ADR-114) › the footer reads Documentation, Store, Features & roadmap, each with a glyph 
+[chromium] › tests/e2e/app-embed.spec.ts:222:2 › apps-embed-in-other-sites: an app shown inside the intranet › REQ-BQEM-001: the owner switches embedding on, a wildcard is refused, the intranet is stored 
+[chromium] › tests/e2e/app-flow-bindings.spec.ts:80:2 › app-flow-bindings › a flow attached with "Run on" runs when a record is updated, and the app page shows it 
+[chromium] › tests/e2e/app-languages.spec.ts:180:2 › experience-multilingual-apps: users see the app in their own language › REQ-BQML-003: a Dutch user sees the Dutch menu and column labels, and English where one is missing 
+[chromium] › tests/e2e/automation-runs.spec.ts:223:2 › logic-automation-run-log: the runs of an automation › REQ-BQRL-001, REQ-BQRL-002: a manual run is recorded and an editor reads it, newest first, with its summary 
+[chromium] › tests/e2e/automations-flow-backend.spec.ts:186:2 › automations run as OpenRegister flows › REQ-BQAR-002: a record step on object created writes a record 
+[chromium] › tests/e2e/automations-rbac.spec.ts:407:2 › automation-designer — RBAC (REQ-AUTD-008) › editor authors + enables an automation on a non-production (draft) version 
+[chromium] › tests/e2e/automations-rbac.spec.ts:454:2 › automation-designer — RBAC (REQ-AUTD-008) › editor gets 403 enabling on the production version; owner succeeds 
+[chromium] › tests/e2e/automations.spec.ts:400:2 › automation-designer — Automations page › REQ-AUTD-002: compose a manual automation with a condition + object-op 
+[chromium] › tests/e2e/automations.spec.ts:497:2 › automation-designer — Automations page › REQ-AUTD-005: hand-edit a compiled schedules entry surfaces a drift badge; Recompile (overwrite) restores it 
+[chromium] › tests/e2e/automations.spec.ts:523:2 › automation-designer — Automations page › REQ-AUTD-006: disable flips the enabled switch and re-enable restores it 
+[chromium] › tests/e2e/automations.spec.ts:542:2 › automation-designer — Automations page › REQ-AUTD-007: test panel dry-run shows would-be actions for a matching payload and "condition did not match" otherwise 
+[chromium] › tests/e2e/builder-host.spec.ts:46:2 › BuilderHost — hello-world journey › navigates to a hello-message detail page 
+[chromium] › tests/e2e/builder-undo-redo.spec.ts:396:2 › builder-undo-redo — schema designer (REQ-BUR-005) › REQ-BUR-005: undo a field add, undo a discard, and a save resets the schema session history 
+[chromium] › tests/e2e/connector-bound-pages.spec.ts:263:2 › integrations-connector-bound-pages: pages bound to an integriq endpoint render › REQ-BQCB-001: a connector-bound index page lists the endpoint's rows under the mapped columns 
+[chromium] › tests/e2e/connector-bound-pages.spec.ts:300:2 › integrations-connector-bound-pages: pages bound to an integriq endpoint render › REQ-BQCB-002: an endpoint that errors shows the error with Retry, not a blank page 
+[chromium] › tests/e2e/connector-bound-pages.spec.ts:320:2 › integrations-connector-bound-pages: pages bound to an integriq endpoint render › REQ-BQCB-003: a placed connector widget renders its two mapped columns on the published dashboard 
+[chromium] › tests/e2e/connector-widget-runtime.spec.ts:332:2 › openbuild-connector-widget-runtime: registry widgets render on the published route › REQ-CWR-004: a connector-data widget renders its projected table on /apps/buildiq/builder/{slug} 
+[chromium] › tests/e2e/connector-widget-runtime.spec.ts:353:2 › openbuild-connector-widget-runtime: registry widgets render on the published route › REQ-OCAS-006: a connector-data widget whose endpoint fails shows the error with Retry 
+[chromium] › tests/e2e/connector-widget-runtime.spec.ts:371:2 › openbuild-connector-widget-runtime: registry widgets render on the published route › REQ-CWR-002: an endpoint-bound object-table renders the rows at responsePath 
+[chromium] › tests/e2e/connector-widget-runtime.spec.ts:387:2 › openbuild-connector-widget-runtime: registry widgets render on the published route › REQ-OCAS-006: three widgets on one endpoint and query share one request 
+[chromium] › tests/e2e/connector-widget-runtime.spec.ts:402:2 › openbuild-connector-widget-runtime: registry widgets render on the published route › REQ-OCAS-006: a failed refresh after the TTL shows the cached rows with a notice 
+[chromium] › tests/e2e/copilot-assist.spec.ts:32:2 › Ask AI in the rule editor › asks for a rule condition, accepts it, and saves the rule 
+[chromium] › tests/e2e/create-app-from-spreadsheet.spec.ts:112:2 › Create an app from a spreadsheet (REQ-BQCV-001) › a maker starts an app from a spreadsheet 
+[chromium] › tests/e2e/createApplicationWizard.spec.ts:652:2 › Wizard — validation errors (task 8.6) › slug already in use shows server-side error; admin can edit and retry 
+[chromium] › tests/e2e/data-model-diagram.spec.ts:172:2 › Data model diagram (REQ-BQMD-001, -003, -004) › the diagram draws the boxes and the table lists the relations 
+[chromium] › tests/e2e/data-model-diagram.spec.ts:226:2 › Data model diagram (REQ-BQMD-001, -003, -004) › Enter on a focused box opens that schema in the designer 
+[chromium] › tests/e2e/export-flows-and-agents.spec.ts:330:2 › Exporting the flows an app is made of › an operator binds a flow in App settings and exports it 
+[chromium] › tests/e2e/export-github-credential.spec.ts:24:2 › Buildiq GitHub export credential picker › the GitHub target shows a credential picker and no token field 
+[chromium] › tests/e2e/first-time-setup.spec.ts:125:2 › first-time setup › an admin completes the wizard, finds the templates, and the tour reaches create-app 
+[chromium] › tests/e2e/form-dutch-formats.spec.ts:166:2 › buildiq form Dutch field formats › a colleague saving a wrong IBAN is refused with the message 
+[chromium] › tests/e2e/form-field-kinds.spec.ts:148:2 › forms-designer-file-camera-children-and-assign: field kinds › REQ-BQFK-001, REQ-BQFK-002, REQ-BQFK-005: a multi-file field with the back camera, added from the palette 
+[chromium] › tests/e2e/form-field-kinds.spec.ts:173:2 › forms-designer-file-camera-children-and-assign: field kinds › REQ-BQFK-004: the currency follows the country, and a field cannot fill itself 
+[chromium] › tests/e2e/form-live-values.spec.ts:248:2 › a running form prefills, calculates and checks as it is filled in › the applicant's e-mail is filled in for the signed-in colleague and can be edited 
+[chromium] › tests/e2e/form-smart-paste.spec.ts:139:2 › ai-smart-paste-into-forms: authoring smart paste › REQ-BQSP-001: a maker allows three fields 
+[chromium] › tests/e2e/form-smart-paste.spec.ts:156:2 › ai-smart-paste-into-forms: authoring smart paste › REQ-BQSP-002: a public form cannot use smart paste 
+[chromium] › tests/e2e/form-smart-paste.spec.ts:166:2 › ai-smart-paste-into-forms: authoring smart paste › REQ-BQSP-002: a removed field is caught 
+[chromium] › tests/e2e/form-smart-paste.spec.ts:174:2 › ai-smart-paste-into-forms: authoring smart paste › REQ-BQSP-003: the preview shows the control with a sample answer 
+[chromium] › tests/e2e/import-app.spec.ts:218:2 › lifecycle-import-app-and-cli: import an exported app › REQ-BQIC-001: the archive imports under a new slug with the same pages and menu, owned by the maker, and opens 
+[chromium] › tests/e2e/index-saved-views.spec.ts:189:2 › data-index-grid-and-saved-views: views for everyone on an index page › REQ-BQIX-003: a maker switches on saved views and adds a view for everyone 
+[chromium] › tests/e2e/index-views.spec.ts:252:2 › index page views and drag order › REQ-PEC-008 + REQ-PEC-009: the maker turns on the calendar and drag order, and the built app shows each record on its date 
+[chromium] › tests/e2e/integrations-page.spec.ts:150:2 › Integrations over the connection registry › lists the four declared connections, all of them Buildiq's 
+[chromium] › tests/e2e/integrations-page.spec.ts:167:2 › Integrations over the connection registry › reads Configured once a registry URL is saved 
+[chromium] › tests/e2e/integrations-page.spec.ts:179:2 › Integrations over the connection registry › reads Error naming the host once a search cannot reach the store 
+[chromium] › tests/e2e/integrations-page.spec.ts:206:2 › Integrations over the connection registry › sends Add integration to integriq instead of offering a form 
+[chromium] › tests/e2e/l10n-browser-catalogue.spec.ts:117:2 › l10n browser catalogue (buildiq) › the running app has the catalogue registered, and t() resolves through it 
+[chromium] › tests/e2e/mcp-read-dialect.spec.ts:36:3 › the read-only MCP dialect on the imported register › application-template keeps a search and get dialect with its filters 
+[chromium] › tests/e2e/mcp-read-dialect.spec.ts:36:3 › the read-only MCP dialect on the imported register › applicationVersion keeps a search and get dialect with its filters 
+[chromium] › tests/e2e/mcp-read-dialect.spec.ts:36:3 › the read-only MCP dialect on the imported register › built-app keeps a search and get dialect with its filters 
+[chromium] › tests/e2e/mcp-read-dialect.spec.ts:36:3 › the read-only MCP dialect on the imported register › export-job keeps a search and get dialect with its filters 
+[chromium] › tests/e2e/nc-dashboard-widgets.spec.ts:307:2 › publish-widgets-to-nc-dashboard: a promoted widget reaches the Nextcloud dashboard › an added promoted widget renders as a native dashboard panel with its title and content 
+[chromium] › tests/e2e/offline-app.spec.ts:260:2 › pages-installable-offline-and-mobile: an installable app that works offline › the run page links a web app manifest with the name, short name and colour the maker set, full screen at the run path 
+[chromium] › tests/e2e/page-actions.spec.ts:327:2 › pages-action-buttons: typed buttons on a detail page › a maker adds a "start a flow" button and status buttons, and the running page offers the button 
