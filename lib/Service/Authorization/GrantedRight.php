@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 
 /**
@@ -40,11 +41,13 @@ final class GrantedRight {
 	 * @param Schema      $schema   The schema the action is given on, as stored.
 	 * @param string      $action   The action given.
 	 * @param string|null $register The register, when the write names one.
+	 * @param ObjectEntity|null $object The one object the grant is given on, when it is an object share.
 	 */
 	public function __construct(
 		public readonly Schema $schema,
 		public readonly string $action,
 		public readonly ?string $register=null,
+		public readonly ?ObjectEntity $object=null,
 	) {
 	}//end __construct()
 
