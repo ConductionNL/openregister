@@ -32,7 +32,7 @@ Measured in the film take v3j (warm, pieter, :8076). The film cuts each wait to 
 - [x] #6830's body promises before/after numbers "in a comment below"; edit the body to say the A/B numbers instead: Cases usable 7992 -> 6380 ms, Inbox 6371 -> 3958 ms (with vs without the Files scripts).
 
 ## nextcloud-vue (main)
-- [ ] All 37 l10n catalogues are bundled statically into every app; load only the reader's language (dynamic import).
+- [ ] All 37 l10n catalogues are bundled statically into every app; load only the reader's language (dynamic import). NOTE 25 Nov 10:30Z (help-portaliq-2, looked, not built): src/l10n/index.js imports all 37 (540 KB raw); registerTranslations() and mountCnApp() are synchronous public API (mountCnApp returns {app, router} after app.mount), and @nextcloud/l10n t() is not reactive, so a dynamic import would leave every string English until a re-mount. Options: (a) registerTranslations() returns a Promise and mountCnApp gains an async twin that awaits it before mount, apps migrate one by one; (b) each app ships the library catalogue as its own Nextcloud l10n/<lang>.js (server injects only the user's language). Needs a fleet-wide contract choice, so left for a lane with a live check.
 - [ ] The whole ~2 MB stylesheet sits inside every app bundle (dossiq Cases spends ~1.3 s recalculating styles). Ship it once, not per app.
 
 ## openregister (via the OR fix lanes and integrator)
