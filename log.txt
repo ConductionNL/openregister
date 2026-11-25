@@ -4854,3 +4854,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T11:21:23Z or-fix-0 or-fix-5 start (cloud run, lanes K=0,5)
 2026-11-25T11:22:23Z session-20261125T104509-7b1770e5 cloud-or-reviewer-6: APPROVE 10550 (fast path, only main merge 1e257c72), 11142 (full: additive admin-only audit report endpoint); 11086 REVERIFY head conflicts with main 1e257c72 (listener golden, component map; no verdict); 10526 10614 11094 11126 11134 ledgered at head
 2026-11-25T11:23:39Z precheck-20261125T100507-543643c0 NORESULT tree d52e3b775a: checker floor not measured (exit 2)
+2026-11-25T11:23:45Z session-20261125T112345-de2bd66b or-fix-1 or-fix-6 start (cloud run, lanes K=1,6)
