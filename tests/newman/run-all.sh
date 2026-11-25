@@ -127,6 +127,7 @@ DOMAIN_ORDER=(
     "nlgov-conformance"
     "reply-threading"
     "run-migration"
+    "import-run-readback"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -240,6 +241,10 @@ declare -A DOMAIN_COLLECTIONS=(
     # migrate-run-between-versions 4.1: a run parked at a user task is migrated to a version that renamed the
     # step (422 without a mapping, a dry run that writes nothing, then the move), and its task completes there.
     [run-migration]="$REPO_ROOT/tests/integration/openregister-run-migration.postman_collection.json"
+    # runs-recorded-and-causes-named 4.4: an import run read back after it finished: its header and counts,
+    # a written row naming its object, refused rows with their reasons, the failing rows as CSV, the created
+    # object's audit entry naming the run, and a retry naming the original. Uploads the two CSVs beside it.
+    [import-run-readback]="$REPO_ROOT/tests/integration/openregister-import-run-readback.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

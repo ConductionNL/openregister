@@ -876,6 +876,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public const BREAK_GLASS_ANNOTATION = 'x-openregister-break-glass';
 
 	/**
+	 * The second-factor annotation: reading this schema's objects requires a verified second factor (REQ-IHC-003).
+	 *
+	 * @var string
+	 */
+	public const SECOND_FACTOR_ANNOTATION = 'x-openregister-second-factor';
+
+	/**
 	 * The property keys whose falsy value is a real one.
 	 *
 	 * An empty value is dropped by getSchemaObject(), because an empty `title`
