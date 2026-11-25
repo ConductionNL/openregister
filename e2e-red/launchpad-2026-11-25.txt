@@ -1,0 +1,204 @@
+[chromium] › node_modules/@conduction/nextcloud-vue/testing/performance.js:436:4 › performance budget (ADR-124) › Workspace is usable within its budget 
+[chromium] › tests/e2e/admin-full-width-page.spec.ts:141:6 › REQ-ADM-031 Nextcloud's settings point to the page › the Launchpad entry is one line and a link that opens the page 
+[chromium] › tests/e2e/admin-full-width-page.spec.ts:68:6 › REQ-ADM-030 the administration is a Launchpad page over the full width › beheer opens Administration settings from More and sees no left menu 
+[chromium] › tests/e2e/admin-full-width-page.spec.ts:82:6 › REQ-ADM-030 the administration is a Launchpad page over the full width › switching tabs changes the address, and Back and a deep link open the tab 
+[chromium] › tests/e2e/admin-roles-enforcement.spec.ts:489:6 › what each LaunchPad role may do › an editor creates a personal dashboard that is theirs and invisible to others 
+[chromium] › tests/e2e/admin-settings-ui.spec.ts:157:6 › REQ-ASET-008 the admin settings page › Settings > Administration lists LaunchPad and the entry opens its page 
+[chromium] › tests/e2e/admin-templates-distribution.spec.ts:574:6 › what the page shows on a first visit (REQ-TMPL-019) › with personal dashboards off the member sees the template itself, view only 
+[chromium] › tests/e2e/admin-templates-group-picker.spec.ts:133:5 › the target groups field offers the Nextcloud groups 
+[chromium] › tests/e2e/admin-templates-group-picker.spec.ts:150:5 › the admin adds mijn-werkdag on the Templates page and gives it to a group 
+[chromium] › tests/e2e/admin-templates-resync.spec.ts:326:6 › dry run (REQ-RESYNC-002) › a dry run lists every copy with its counts and writes, audits and notifies nothing 
+[chromium] › tests/e2e/admin-templates-template-widgets.spec.ts:165:6 › the admin edits a template's widgets (REQ-TMPL-007) › the admin adds a compulsory widget to a template 
+[chromium] › tests/e2e/admin-templates-template-widgets.spec.ts:185:6 › the admin edits a template's widgets (REQ-TMPL-007) › the admin removes a widget from a template and copies keep theirs 
+[chromium] › tests/e2e/admin-templates-template-widgets.spec.ts:216:6 › changing a template after distribution (REQ-TMPL-003, -006) › adding and repositioning template widgets leaves existing copies as they were 
+[chromium] › tests/e2e/admin-templates-template-widgets.spec.ts:252:6 › changing a template after distribution (REQ-TMPL-003, -006) › a widget the admin adds later reaches new copies only 
+[chromium] › tests/e2e/admin-templates-template-widgets.spec.ts:276:6 › re-sync after the admin deleted a template widget (REQ-RESYNC-003) › a widget the admin deleted from the template leaves the copies, own widgets stay 
+[chromium] › tests/e2e/admin-templates-ui.spec.ts:510:6 › deleting a compulsory widget from a copy (REQ-TMPL-023) › a message names the widget and nothing is sent or removed 
+[chromium] › tests/e2e/allowed-websites-list.spec.ts:422:5 › the upgrade merges the per-feature lists into the allowed websites with their purpose 
+[chromium] › tests/e2e/announcement-show-until.spec.ts:104:5 › the form does not go on without "Show until", and the server refuses it with 400 
+[chromium] › tests/e2e/announcements.spec.ts:114:5 › a notice without an end time is not published 
+[chromium] › tests/e2e/app-catalogue.spec.ts:173:6 › app catalogue (REQ-ACAT-002, REQ-ACAT-003, REQ-ACAT-004) › a group member adds the catalogue app as a tile from the add flow 
+[chromium] › tests/e2e/app-chrome.spec.ts:239:6 › app chrome (ADR-114) › the admin manifest pages redirect to where the admin surface is 
+[chromium] › tests/e2e/app-tile-widget.spec.ts:85:5 › an app tile links to an app in the viewer menu and names an app outside it as not available 
+[chromium] › tests/e2e/assigned-cases-widget.spec.ts:105:5 › the viewer's cases show with counts per status, deadline and status 
+[chromium] › tests/e2e/calendar-widget-rendering.spec.ts:312:6 › REQ-CAL-010 empty state and feedback › no events in range names the window, in English and in Dutch 
+[chromium] › tests/e2e/chart-presets.spec.ts:119:5 › entered values draw a donut with its total and a graph with bars and a line, without reading a register 
+[chromium] › tests/e2e/ci/dashboard-share-access.spec.ts:128:6 › REQ-SHARE-003 loading a shared dashboard › a view-only recipient loads the dashboard with all its placements and its own level 
+[chromium] › tests/e2e/ci/dashboard-share-access.spec.ts:309:6 › REQ-SHARE-010 revoke every share granted to one recipient › the owner revokes bob on her two dashboards and nothing on a dashboard she only receives 
+[chromium] › tests/e2e/ci/manifest-grants.spec.ts:119:6 › object grants surface a shared dashboard in the manifest › the recipient sees exactly the granted dashboard, and loses it on revoke 
+[chromium] › tests/e2e/ci/public-share-lifecycle.spec.ts:517:6 › the password gate › the wrong password is refused, the right one unlocks, and either transport carries it 
+[chromium] › tests/e2e/cli-commands.spec.ts:365:6 › REQ-CLI-001 namespace convention › occ list launchpad lists every command, prefixed, described and sorted 
+[chromium] › tests/e2e/clock-weather-widgets.spec.ts:452:6 › clock widget › a clock with no config is digital, dated, and in the user’s own zone and hour format 
+[chromium] › tests/e2e/clock-weather-widgets.spec.ts:552:6 › clock widget › a Dutch user’s clock writes the weekday and month in Dutch 
+[chromium] › tests/e2e/clock-weather-widgets.spec.ts:787:6 › weather widget › a user who may not view the dashboard gets 403 and no fetch; the owner gets the reading 
+[chromium] › tests/e2e/conditional-visibility-evaluation.spec.ts:955:6 › REQ-VIS-010 evaluation pipeline › a placement with isVisible 0 is hidden even though all three of its rules match 
+[chromium] › tests/e2e/conditional-visibility.spec.ts:230:6 › REQ-VIS-001 create a conditional rule › a time exclusion rule is stored, and hides the widget only while its window matches 
+[chromium] › tests/e2e/confluence-html-import.spec.ts:1121:6 › confluence-html-import › one failing page is rolled back, reported, logged, and the rest import 
+[chromium] › tests/e2e/confluence-html-import.spec.ts:700:6 › confluence-html-import › ?parentUuid slots every root page beneath it; an unknown one falls back to root 
+[chromium] › tests/e2e/cross-widget-filter-clicks.spec.ts:289:6 › widget clicks on the filter bus (REQ-CWF-001, REQ-CWF-002, REQ-CWF-003, REQ-CWF-005, REQ-CWF-007) › a pick on a second chart replaces the first chart's filter and says so in a toast 
+[chromium] › tests/e2e/cross-widget-filter-performance.spec.ts:315:7 › cross-widget filter performance on 50,000 objects (REQ-CWF-002) › bar charts: gemeente then wijk clicks refetch only the consumers, within 300 ms 
+[chromium] › tests/e2e/cross-widget-filter-telemetry.spec.ts:90:6 › filter telemetry (REQ-CWF-010) › with telemetry on, a bookmark and a reset are recorded without values 
+[chromium] › tests/e2e/cross-widget-filter.spec.ts:63:6 › cross-widget filter (REQ-CWF-003, REQ-CWF-006, REQ-CWF-007) › a filtered URL restores the same filters in a fresh browser context 
+[chromium] › tests/e2e/dashboard-acknowledgements.spec.ts:738:5 › a version above the published one is refused and leaves no receipt; lower ones are accepted 
+[chromium] › tests/e2e/dashboard-bulk-operations.spec.ts:368:6 › bulk delete (REQ-BULK-001, 007, 008) › three valid dashboards are hard-deleted with one audit event 
+[chromium] › tests/e2e/dashboard-deeplinking.spec.ts:166:6 › dashboard deep-linking (REQ-DDL-002..007) › a stale slug lands on a dashboard, not on a 404 
+[chromium] › tests/e2e/dashboard-icons.spec.ts:502:6 › dashboard-icons: the icon convention as rendered › a dashboard created through the UI stores DEFAULT_ICON, which is "ViewDashboard" and renders 
+[chromium] › tests/e2e/dashboard-icons.spec.ts:625:6 › dashboard-icons: the icon convention as rendered › a dashboard record with no icon key at all renders the default without throwing 
+[chromium] › tests/e2e/dashboard-icons.spec.ts:666:6 › dashboard-icons: the icon convention as rendered › only values starting with "/" or "http" are treated as URLs 
+[chromium] › tests/e2e/dashboard-kiosk-mode.spec.ts:1263:6 › REQ-KIOSK-005 unattended resilience › an entry whose fetch fails is skipped within 10 seconds, silently, and retried next loop 
+[chromium] › tests/e2e/dashboard-kiosk-mode.spec.ts:578:6 › REQ-KIOSK-001 chrome-less kiosk render flag › /s/{token}?kiosk=1 renders chrome-less for a visitor and keeps the password gate, expiry and read-only rules 
+[chromium] › tests/e2e/dashboard-kiosk-mode.spec.ts:704:6 › REQ-KIOSK-001 chrome-less kiosk render flag › ?kiosk=1 changes no permission check 
+[chromium] › tests/e2e/dashboard-language-content-ui.spec.ts:390:6 › REQ-LANGUI-002 the workspace page shows the reader's language › Jan, reading in Dutch, sees the Dutch name and description 
+[chromium] › tests/e2e/dashboard-language-content.spec.ts:373:6 › REQ-DASH-039 locale resolution and primary fallback › a reader in de-DE gets the de-DE variant 
+[chromium] › tests/e2e/dashboard-language-content.spec.ts:392:6 › REQ-DASH-039 locale resolution and primary fallback › a reader in nl-BE gets the nl variant by its language part 
+[chromium] › tests/e2e/dashboard-language-content.spec.ts:464:6 › REQ-DASH-039 locale resolution and primary fallback › availableLanguages lists every variant, sorted 
+[chromium] › tests/e2e/dashboard-language-content.spec.ts:800:6 › REQ-DASH-042 delete translation variant › the only variant cannot be deleted 
+[chromium] › tests/e2e/dashboard-locking.spec.ts:516:6 › REQ-LOCK-006 administrator override › after a force-release the administrator acquires the lock through the normal path 
+[chromium] › tests/e2e/dashboard-locking.spec.ts:655:6 › REQ-LOCK-008 a deleted dashboard takes its lock with it › a colleague's lock does not stop the owner deleting, is released, and his next save fails 
+[chromium] › tests/e2e/dashboard-reactions.spec.ts:640:6 › REQ-RXN-004 reactors by emoji › 150 reactors come back as 100, then 50 after cursor=100 
+[chromium] › tests/e2e/dashboard-sharing.spec.ts:274:6 › dashboard-sharing UI (REQ-SHARE-001/002/004) › recipient sees the shared dashboard in their switcher 
+[chromium] › tests/e2e/dashboard-store.spec.ts:407:7 › dashboard store › a non-admin account › is refused the registry config and the install, but may search 
+[chromium] › tests/e2e/dashboard-versioning-notes.spec.ts:131:6 › REQ-VERSUI-004 several changes in one save › Femke adds Inbox, removes Oud nieuws and goes from 8 to 12 columns: the note reads "Widget Inbox added and 2 more changes" 
+[chromium] › tests/e2e/dashboard-view-analytics-history.spec.ts:504:6 › a day passing › a view on the next day opens a new row and leaves the previous day as it was 
+[chromium] › tests/e2e/dashboard-view-analytics-jobs.spec.ts:197:6 › REQ-ANLT-003 the daily salt › a rotation overwrites the salt with a fresh 32-byte value and keeps no copy of the old one 
+[chromium] › tests/e2e/dashboard-view-analytics.spec.ts:1368:6 › the frontend view-event (REQ-ANLT-011) › with analytics off, opening a dashboard sends no view-event 
+[chromium] › tests/e2e/dashboards-crud.spec.ts:235:6 › REQ-DASH-001 create a personal dashboard › name and description are stored; grid columns stay 12 
+[chromium] › tests/e2e/dashboards-personal-layer.spec.ts:247:6 › dashboards — hide widgets for yourself (REQ-PERSUI-001..002) › "Show again" on one of two hidden widgets brings it back and the control reads "Hidden (1)" 
+[chromium] › tests/e2e/dashboards-publication.spec.ts:547:6 › dashboards — publication state (REQ-DASH-031..037, REQ-SCHEDUI-001..002) › the administrator sees another user's draft 
+[chromium] › tests/e2e/dashboards-refusals-and-guards.spec.ts:177:6 › REQ-DASH-004 / REQ-DASH-005 / REQ-DASH-006 ownership and columns › another user's activate is refused with 403 
+[chromium] › tests/e2e/dashboards-refusals-and-guards.spec.ts:235:6 › REQ-DASH-007 dashboard names › a second dashboard with the same name is created alongside the first 
+[chromium] › tests/e2e/dashboards-refusals-and-guards.spec.ts:290:6 › REQ-DASH-014 / REQ-DASH-015 the last dashboard of a group › deleting the only dashboard of a group is refused with 400 and its reason 
+[chromium] › tests/e2e/dashboards-refusals-and-guards.spec.ts:316:6 › REQ-DASH-014 / REQ-DASH-015 the last dashboard of a group › deleting the last dashboard of a group is refused with a toast that explains the guard 
+[chromium] › tests/e2e/default-widget-bundle.spec.ts:158:6 › default widget bundle (REQ-DWB-001, 002, 005, 006) › a new dashboard ships the four seeded placements and the grid shows them 
+[chromium] › tests/e2e/discover-server-services.spec.ts:112:5 › Deck is discovered, placed in one click and then marked as on this dashboard 
+[chromium] › tests/e2e/divider-widget-discovery.spec.ts:128:6 › REQ-DIV-001 the divider in the widget picker › the Add widget picker lists the divider with a title and an icon, fetching nothing for it 
+[chromium] › tests/e2e/divider-widget-discovery.spec.ts:160:6 › REQ-DIV-001 the divider in the widget picker › the divider is listed beside the Nextcloud widgets, and a plain user can add it 
+[chromium] › tests/e2e/effective-default-marker.spec.ts:146:6 › effective-default marker (REQ-EDM-001..005) › the star renders on the effective-default row only 
+[chromium] › tests/e2e/embedded-analytics.spec.ts:538:5 › a drill-down in the embed reaches the host page through the SDK 
+[chromium] › tests/e2e/files-widget-access.spec.ts:201:5 › upload and delete default to off, can be switched on, and only show where the viewer has the right 
+[chromium] › tests/e2e/footer-customization-override-defects.spec.ts:138:6 › per-dashboard footer override writes (REQ-FTR-006) › custom mode without footer HTML is refused with 400 
+[chromium] › tests/e2e/footer-customization-override-defects.spec.ts:165:6 › per-dashboard footer override writes (REQ-FTR-006) › switching custom to inherit clears the stored footer HTML 
+[chromium] › tests/e2e/footer-customization-override-defects.spec.ts:200:6 › per-dashboard footer override writes (REQ-FTR-006) › a view-only recipient is refused with 403; the owner may set custom 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:251:6 › global footer shown (REQ-FTR-001, REQ-FTR-002, REQ-FTR-004) › enabling the footer shows it on the next page load 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:269:6 › global footer shown (REQ-FTR-001, REQ-FTR-002, REQ-FTR-004) › disabling the footer hides it on every inherit dashboard but not on a custom one 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:302:6 › global footer shown (REQ-FTR-001, REQ-FTR-002, REQ-FTR-004) › an enabled HTML footer renders below the grid with the stored HTML 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:323:6 › global footer shown (REQ-FTR-001, REQ-FTR-002, REQ-FTR-004) › the sanitised HTML is what renders 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:337:6 › global footer shown (REQ-FTR-001, REQ-FTR-002, REQ-FTR-004) › a rendered external link carries rel and target 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:363:6 › structured footer rendering (REQ-FTR-003, REQ-FTR-004) › columns layout is a 3-column grid: logo+org, address lines, links+legal 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:412:6 › structured footer rendering (REQ-FTR-003, REQ-FTR-004) › inline layout is one separated row that wraps on a narrow screen 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:455:6 › structured footer rendering (REQ-FTR-003, REQ-FTR-004) › a partial config renders what it has and skips the rest 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:473:6 › structured footer rendering (REQ-FTR-003, REQ-FTR-004) › each configured link renders as an anchor in a list 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:491:6 › per-dashboard footer rendering (REQ-FTR-006) › an inherit dashboard renders the global footer 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:510:6 › per-dashboard footer rendering (REQ-FTR-006) › a hidden dashboard renders no footer while the global one is on 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:539:6 › per-dashboard footer rendering (REQ-FTR-006) › a custom dashboard renders its own sanitised footer to every viewer 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:618:6 › language variants (REQ-FTR-007) › a plain-string footer renders as-is for an nl viewer 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:629:6 › language variants (REQ-FTR-007) › an nl viewer sees the nl variant 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:638:6 › language variants (REQ-FTR-007) › a de viewer falls back to the dashboard primary language fr 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:651:6 › language variants (REQ-FTR-007) › a ja viewer on a de dashboard gets the first key, every time 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:664:6 › language variants (REQ-FTR-007) › an nl viewer sees the nl organisation of a structured footer 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:688:6 › print (REQ-FTR-008) › the footer is in print output, not fixed, and legible in grayscale 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:734:6 › print (REQ-FTR-008) › in print the footer is displayed with its colours and images 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:768:6 › print (REQ-FTR-008) › in print the footer follows the content once and is not split 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:801:6 › theme colours (REQ-FTR-009) › with no overrides the footer uses the theme colours 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:827:6 › theme colours (REQ-FTR-009) › admin colour overrides replace the theme colours 
+[chromium] › tests/e2e/footer-customization-render-defects.spec.ts:849:6 › theme colours (REQ-FTR-009) › a background override alone leaves the text on the theme colour 
+[chromium] › tests/e2e/grid-layout-accessible-name.spec.ts:109:5 › a focused widget is announced with its title, position and size 
+[chromium] › tests/e2e/grid-layout-accessible-name.spec.ts:127:5 › a widget titled "Team Announcements" is a group named "Widget: Team Announcements" 
+[chromium] › tests/e2e/grid-layout-defects.spec.ts:142:5 › a four-row widget on the 12-column grid is 4 x 60 + 3 x 8 = 264 px tall 
+[chromium] › tests/e2e/grid-layout-defects.spec.ts:159:5 › a failed layout save is reported and retried up to three times 
+[chromium] › tests/e2e/groupfolder-storage-backend.spec.ts:141:6 › groupfolder-storage-backend: no storage commands › No storage commands: occ lists no launchpad storage or groupfolder command 
+[chromium] › tests/e2e/header-widget.spec.ts:234:6 › REQ-HDR-006 file id image with ACL validation › a reader who cannot read the file sees the colour, with no error 
+[chromium] › tests/e2e/iframe-embed-widget.spec.ts:573:5 › a Power BI report renders live in a sandboxed frame and falls back when refused 
+[chromium] › tests/e2e/image-widget-scenarios.spec.ts:882:6 › image widget — a file-mode cell seen by someone who may not read the file › REQ-IMP-004: a file the viewer may not read 404s on preview and the cell falls back 
+[chromium] › tests/e2e/image-widget-scenarios.spec.ts:909:6 › image widget — a file-mode cell seen by someone who may not read the file › REQ-IMP-005: after a file share is revoked the cell falls back and the rest still works 
+[chromium] › tests/e2e/integrations-page.spec.ts:178:6 › Integrations over the connection registry › lists the six declared connections, all of them LaunchPad's 
+[chromium] › tests/e2e/keyboard-widget-repositioning.spec.ts:98:6 › keyboard-accessible widget repositioning (grid-layout) › SC 2.1.1: keyboard-only move repositions the widget and persists after reload 
+[chromium] › tests/e2e/launchpad-adopt-or-abstractions.spec.ts:121:6 › an OR-backed widget › a 503 shows a polite "Temporarily unavailable" state and retries on the next poll 
+[chromium] › tests/e2e/legacy-widget-bridge.spec.ts:288:5 › a legacy register() call is captured for mounting and still reaches the registrar installed before the bridge 
+[chromium] › tests/e2e/link-button-widget-form.spec.ts:275:6 › link button form: list editor (REQ-LBLM-006) › Add link appends an empty entry and opens a form modal for it 
+[chromium] › tests/e2e/link-button-widget-form.spec.ts:296:6 › link button form: list editor (REQ-LBLM-006) › Edit on the second link opens the single-link form pre-filled with it 
+[chromium] › tests/e2e/link-button-widget-form.spec.ts:335:6 › link button form: list editor (REQ-LBLM-006) › dragging B above A reorders the links to B, A, C 
+[chromium] › tests/e2e/link-button-widget.spec.ts:521:6 › link button: default styling (REQ-LBN-007) › empty colours fall back to the theme primary and primary-text variables 
+[chromium] › tests/e2e/live-data-tile-widget.spec.ts:445:5 › REQ-LIVETILE-002: an off-list host is refused at save, an allowed one persists the url config 
+[chromium] › tests/e2e/live-tile-lists.spec.ts:168:5 › the server maps the fixture into two rows of the named fields 
+[chromium] › tests/e2e/menu-widget-links.spec.ts:118:6 › menu widget — active item (REQ-MENU-006) › the item whose URL is the current page is highlighted, and so is its ancestor 
+[chromium] › tests/e2e/menu-widget-styles.spec.ts:289:6 › menu widget — tree style (REQ-MENU-005) › a parent shows a closed caret and its child is hidden 
+[chromium] › tests/e2e/menu-widget-styles.spec.ts:300:6 › menu widget — tree style (REQ-MENU-005) › clicking the caret turns it open and shows the child 
+[chromium] › tests/e2e/menu-widget-styles.spec.ts:328:6 › menu widget — tree style (REQ-MENU-005) › caret and label are separate: the caret only toggles, the label navigates 
+[chromium] › tests/e2e/more-menu.spec.ts:101:5 › the arrow keys follow the visual order, Settings last 
+[chromium] › tests/e2e/more-menu.spec.ts:135:5 › a dashboard picked under Dashboards opens, and stays open after a reload 
+[chromium] › tests/e2e/navigation-editor-org-active-item.spec.ts:230:5 › the section holding the active child opens by itself 
+[chromium] › tests/e2e/navigation-editor-org-api.spec.ts:113:6 › navigation-editor-org — position default (REQ-ONAV-004) › a fresh installation answers {position: "hidden"} 
+[chromium] › tests/e2e/navigation-editor-org-icon-name.spec.ts:63:5 › a bare icon name appears as inline text left of the label 
+[chromium] › tests/e2e/navigation-editor-org-panel.spec.ts:488:6 › navigation-editor-org — mobile layout (REQ-ONAV-010) › choosing a link in the drawer navigates and closes the drawer 
+[chromium] › tests/e2e/nc-dashboard-widget-proxy.spec.ts:168:6 › nc-dashboard-widget-proxy — the Nextcloud widget picker › REQ-NCDP-PICKER: eight discovered widgets render as eight icon cards in a grid, no <select> 
+[chromium] › tests/e2e/nc-dashboard-widget-proxy.spec.ts:207:6 › nc-dashboard-widget-proxy — the Nextcloud widget picker › REQ-NCDP-PICKER: clicking the third card selects it and saves its widget id 
+[chromium] › tests/e2e/nc-dashboard-widget-proxy.spec.ts:259:6 › nc-dashboard-widget-proxy — the Nextcloud widget picker › REQ-NCDP-PICKER: with no discovered widgets the picker says so and renders no cards 
+[chromium] › tests/e2e/nc-dashboard-widget-proxy.spec.ts:281:6 › nc-dashboard-widget-proxy — the Nextcloud widget picker › REQ-NCDP-PICKER: Tab enters the grid, ArrowRight moves focus and the roving tabindex, Enter selects 
+[chromium] › tests/e2e/no-navigation-panel.spec.ts:55:5 › the dashboard view has no panel and every destination in More 
+[chromium] › tests/e2e/no-navigation-panel.spec.ts:79:5 › the Marketplace has no panel, More at its top, and Dashboards leads back 
+[chromium] › tests/e2e/office-tiles.spec.ts:170:5 › the pack is placed from the add flow and a document created twice gives two files 
+[chromium] › tests/e2e/or-absent.spec.ts:217:5 › without OpenRegister the app, its dashboards, widgets and admin settings work, and nothing complains in the log 
+[chromium] › tests/e2e/phone-hidden-widgets-named.spec.ts:77:5 › at 390 px the notice names the widgets that are not phone-ready, with "Which?" 
+[chromium] › tests/e2e/public-live-widgets.spec.ts:143:5 › the kiosk playlist shows the news and the live data card without a login 
+[chromium] › tests/e2e/public-start-page-default-app.spec.ts:160:5 › an install or upgrade makes LaunchPad the default app only when none is set 
+[chromium] › tests/e2e/quicklinks-widget-form.spec.ts:365:6 › quicklinks widget: URL validation (REQ-QLNK-008) › a javascript: URL is flagged inline and refused by the server with 400 
+[chromium] › tests/e2e/quicklinks-widget-form.spec.ts:370:6 › quicklinks widget: URL validation (REQ-QLNK-008) › a data: URL is flagged inline and refused by the server with 400 
+[chromium] › tests/e2e/quicklinks-widget-interaction.spec.ts:168:6 › quicklinks widget: hover effects (REQ-QLNK-007) › border rings the hovered icon 2-3px in the link colour, else the primary colour 
+[chromium] › tests/e2e/responsive-grid-breakpoints.spec.ts:207:6 › a phone lays the dashboard out in reading order › on a 390 px phone the heading takes a row, its six tiles sit four and two under it, and the clock follows 
+[chromium] › tests/e2e/role-feature-permissions-fresh-install.spec.ts:94:5 › the default rule a fresh install seeds lets a user in no group add a text widget 
+[chromium] › tests/e2e/role-feature-permissions-upgrade.spec.ts:183:5 › an upgrade widens the old shipped default rule to every LaunchPad widget type, and keeps an edited one 
+[chromium] › tests/e2e/runtime-or-consumption.spec.ts:206:5 › without an html lang attribute the OR request sends _lang=en 
+[chromium] › tests/e2e/runtime-shell-canEdit.spec.ts:105:6 › REQ-SHELL-004: the dashboards are reached through More › More marks the open dashboard and the page has no dashboard select 
+[chromium] › tests/e2e/runtime-shell-canEdit.spec.ts:267:6 › ADR-023: fresh install is usable by non-admins › an ordinary user may list and read dashboards, but not touch admin surfaces 
+[chromium] › tests/e2e/runtime-shell-canEdit.spec.ts:315:6 › ADR-023: fresh install is usable by non-admins › an ordinary user may create a dashboard (REQ-ASET-003) 
+[chromium] › tests/e2e/runtime-shell.spec.ts:816:6 › REQ-SHELL-011: the admin page tour › an administrator's first visit starts the admin tour on the general settings 
+[chromium] › tests/e2e/runtime-shell.spec.ts:854:6 › REQ-SHELL-011: the admin page tour › Next five times walks General, Templates, Roles, Sharing, Kiosk and Demo data 
+[chromium] › tests/e2e/runtime-shell.spec.ts:885:6 › REQ-SHELL-011: the admin page tour › a finished admin tour does not start again 
+[chromium] › tests/e2e/scheduled-exports-delivery.spec.ts:380:6 › scheduled exports: retention (task 30) › @e2e scheduled-exports::artefacts-expire-audit-metadata-retained the janitor removes files older than 14 days and keeps the run record 
+[chromium] › tests/e2e/scheduled-exports.spec.ts:224:6 › scheduled exports: full workflow (task 27) › @e2e scheduled-exports::manual-run-with-user-tracking @e2e scheduled-exports::background-job-fires-and-updates-timestamps create, run now, history, preview, edit, switch off, no next fire 
+[chromium] › tests/e2e/setup-wizard.spec.ts:1016:6 › setup-wizard — completed instance and re-runs › Step 3 embeds the demo showcases with a checkbox each 
+[chromium] › tests/e2e/setup-wizard.spec.ts:1079:6 › setup-wizard — completed instance and re-runs › checked demos are installed on Next 
+[chromium] › tests/e2e/setup-wizard.spec.ts:1113:6 › setup-wizard — completed instance and re-runs › the demo selection survives Back without a second install 
+[chromium] › tests/e2e/setup-wizard.spec.ts:1138:6 › setup-wizard — completed instance and re-runs › a re-run does not re-install an installed demo 
+[chromium] › tests/e2e/setup-wizard.spec.ts:1169:6 › setup-wizard — completed instance and re-runs › Step 4 lists every group for the Dashboard Admin role 
+[chromium] › tests/e2e/setup-wizard.spec.ts:1190:6 › setup-wizard — completed instance and re-runs › selecting one group on Step 4 gives it the admin role 
+[chromium] › tests/e2e/setup-wizard.spec.ts:1217:6 › setup-wizard — completed instance and re-runs › one wizard run gives the admin role to one group only 
+[chromium] › tests/e2e/setup-wizard.spec.ts:713:6 › setup-wizard — completed instance and re-runs › a non-admin gets 403 from both wizard endpoints 
+[chromium] › tests/e2e/sharing-tab-embed-and-conversation.spec.ts:97:6 › Sharing tab: embed tokens and the conversation (REQ-EMB-011, REQ-LEAF-006) › create a token: shown once, listed as Active, with the iframe code; Withdraw revokes it 
+[chromium] › tests/e2e/shipped-template-update.spec.ts:125:5 › the member gets a copy and the listing offers no update yet 
+[chromium] › tests/e2e/spec-coverage/spec-coverage.spec.ts:501:6 › label widget – additional scenarios › label widget is listed in the Add-Widget modal 
+[chromium] › tests/e2e/spec-coverage/spec-coverage.spec.ts:508:6 › label widget – additional scenarios › label widget with default settings renders in a grid cell 
+[chromium] › tests/e2e/spec-coverage/spec-coverage.spec.ts:533:6 › label widget – additional scenarios › label widget with custom font size renders the custom size 
+[chromium] › tests/e2e/spec-coverage/spec-coverage.spec.ts:564:6 › label widget – additional scenarios › empty label content shows a placeholder or the save button is disabled 
+[chromium] › tests/e2e/spec-coverage/spec-coverage.spec.ts:583:6 › label widget – additional scenarios › label form disables the Add button when label text is empty 
+[chromium] › tests/e2e/spec-coverage/spec-coverage.spec.ts:600:6 › label widget – additional scenarios › very long label text does not overflow the widget cell 
+[chromium] › tests/e2e/spec-coverage/spec-coverage.spec.ts:635:6 › label widget – additional scenarios › label widget content is centred inside the grid cell 
+[chromium] › tests/e2e/template-hides-missing-register.spec.ts:101:5 › the ticket list is not shown and no error line appears 
+[chromium] › tests/e2e/template-reaches-member.spec.ts:122:5 › a new member of the group sees the template on their first visit 
+[chromium] › tests/e2e/text-display-widget-markdown.spec.ts:350:6 › text widget — sanitising parsed markdown (REQ-TXMD-003) › a <script> is stripped and the markdown bold after it is parsed 
+[chromium] › tests/e2e/text-display-widget.spec.ts:350:6 › text widget — cell layout (REQ-TXT-005) › long text scrolls inside the cell and both ends are reachable 
+[chromium] › tests/e2e/tile-launch-types.spec.ts:111:5 › someone who may not view the dashboard cannot fetch the file 
+[chromium] › tests/e2e/tiles-rendering-defects.spec.ts:119:5 › in edit mode a settings button labelled "Edit tile" sits at the top-right of the tile 
+[chromium] › tests/e2e/tiles-rendering-defects.spec.ts:143:5 › the tile editor has title, icon, icon type, colour and link fields and saves through the API 
+[chromium] › tests/e2e/video-widget-files.spec.ts:258:6 › video widget: file access (REQ-VID-006, REQ-VID-011) › a viewer who lost read access sees "Video not accessible" and no file URL reaches the page 
+[chromium] › tests/e2e/video-widget-files.spec.ts:359:6 › video widget: HTML5 playback options (REQ-VID-008, REQ-VID-011) › an autoplaying nc-file video carries autoplay and muted, and starts playing 
+[chromium] › tests/e2e/video-widget.spec.ts:593:6 › video widget: empty and invalid states (REQ-VID-011) › "not a valid URL" is refused by the parse endpoint, shown under the field, and blocks saving 
+[chromium] › tests/e2e/visibility-dialog.spec.ts:148:5 › View as a person in the group on a Tuesday at 10:00 says they see the widget, and why 
+[chromium] › tests/e2e/widget-calculated-fields.spec.ts:226:6 › widget calculated fields (REQ-CALC-003, REQ-CALC-004, REQ-CALC-008) › a widget shows its calculated values, an inline error for a failing field, and the other widgets still render 
+[chromium] › tests/e2e/widget-context-menu.spec.ts:129:6 › widget-context-menu (REQ-WDG-015..017) › REQ-WDG-017 right edge: popover stays within viewport when right-clicked near right edge 
+[chromium] › tests/e2e/widget-context-menu.spec.ts:172:6 › widget-context-menu (REQ-WDG-015..017) › REQ-WDG-017 bottom edge: popover stays within viewport when right-clicked near bottom edge 
+[chromium] › tests/e2e/widgets-canvas-search.spec.ts:216:6 › workspace canvas and the widget picker (REQ-WDG-027, REQ-WDG-028) › "Add widget" lists every available widget and places the chosen one on the active dashboard 
+[chromium] › tests/e2e/widgets-canvas-search.spec.ts:278:6 › workspace canvas and the widget picker (REQ-WDG-027, REQ-WDG-028) › typing "cal" narrows the widgets and the apps to the ones whose title contains it 
+[chromium] › tests/e2e/widgets-canvas-search.spec.ts:303:6 › workspace canvas and the widget picker (REQ-WDG-027, REQ-WDG-028) › clearing the search box brings every widget and app back 
+[chromium] › tests/e2e/widgets-context-menu-contract.spec.ts:354:6 › widget context menu (REQ-WDG-015..017) › near the bottom edge the popover is shifted up to stay on screen 
+[chromium] › tests/e2e/widgets-nc-widget.spec.ts:197:6 › nc-widget placement type (REQ-WDG-018..021) › the nc-widget sub-form lists the discovered widgets and needs one before Add 
+[chromium] › tests/e2e/widgets-nc-widget.spec.ts:316:6 › nc-widget placement type (REQ-WDG-018..021) › a callback that registers within the polling window takes over from the API list 
+[chromium] › tests/e2e/widgets-nc-widget.spec.ts:454:6 › nc-widget placement type (REQ-WDG-018..021) › horizontal mode renders wrapping ~120px cards with a 44px icon on top 
+[chromium] › tests/e2e/widgets-placements-api.spec.ts:330:6 › REQ-WDG-002 fetch widget items › a v2 widget answers with the items Nextcloud's v2 loader returns, in the widget item format 
+[chromium] › tests/e2e/widgets-reload-interval.spec.ts:164:6 › reload interval (REQ-WDG-029) › a 60 s reload interval fetches and shows the items again without reloading the page 
+[chromium] › tests/e2e/widgets-reload-interval.spec.ts:190:6 › reload interval (REQ-WDG-029) › with a reload interval of 0 the items are fetched once 
+[chromium] › tests/e2e/widgets-reload-interval.spec.ts:208:6 › reload interval (REQ-WDG-029) › switching to another dashboard stops the widget's refresh timer 
+[chromium] › tests/e2e/widgets-style-and-render.spec.ts:117:6 › REQ-WDG-008 the style editor › the style editor offers background, border style/width/colour/radius, padding and header colours 
+[chromium] › tests/e2e/wiki-widget.spec.ts:131:5 › the wiki lists recent pages as links, searches, and keeps a starred page across a reload 
+[chromium] › tests/e2e/work-packages-widget.spec.ts:124:5 › the widget lists the work packages as links with status and due date 
