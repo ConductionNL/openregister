@@ -4116,7 +4116,13 @@ OC.L10N.register(
     "No app declares a credential provider." : "No app declares a credential provider.",
     "Revoked" : "Revoked",
     "The decision could not be saved." : "The decision could not be saved.",
-    "The declared providers could not be loaded." : "The declared providers could not be loaded."
+    "The declared providers could not be loaded." : "The declared providers could not be loaded.",
+    "Could not load the workflow progress." : "Could not load the workflow progress.",
+    "Workflow progress" : "Workflow progress",
+    "Configure a scanner for the Antivirus for files app in the administration settings, under Security." : "Configure a scanner for the Antivirus for files app in the administration settings, under Security.",
+    "Install and enable the Antivirus for files app, then configure its scanner." : "Install and enable the Antivirus for files app, then configure its scanner.",
+    "Uploads are refused: no malware scanner is available." : "Uploads are refused: no malware scanner is available.",
+    "Uploads are scanned for malware with {engine}." : "Uploads are scanned for malware with {engine}."
 },
 "nplurals=2; plural=(n != 1);"
 );

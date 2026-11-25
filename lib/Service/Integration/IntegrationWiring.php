@@ -406,13 +406,13 @@ final class IntegrationWiring {
 	}//end buildSourceFetcherRegistry()
 
 	/**
-	 * Resolve every BuiltinProviders/* class and register it with the
-	 * shared IntegrationRegistry.
+	 * Install the loader that resolves every built-in provider and adds it
+	 * to the shared IntegrationRegistry on the registry's first read.
 	 *
 	 * Kept separate from the DI registration in register() because
-	 * addProvider() needs the registry instance — i.e. it has to run after
-	 * the container has fully bootstrapped. `boot()` is the canonical
-	 * post-registration hook for that.
+	 * addProvider() needs the registry instance. The providers are built
+	 * lazily because boot() runs on every Nextcloud request and most of
+	 * those never read the registry.
 	 *
 	 * @param mixed $server Server container (passed in from boot()).
 	 *
@@ -431,7 +431,11 @@ final class IntegrationWiring {
 			return;
 		}
 
-		self::addBuiltinProviders(server: $server, registry: $integrationRegistry);
+		$integrationRegistry->setBuiltinLoader(
+			static function () use ($server, $integrationRegistry): void {
+				self::addBuiltinProviders(server: $server, registry: $integrationRegistry);
+			}
+		);
 	}//end boot()
 
 	/**

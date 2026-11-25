@@ -4229,7 +4229,13 @@ OC.L10N.register(
     "No app declares a credential provider." : "Geen enkele app declareert een aanbieder van credentials.",
     "Revoked" : "Ingetrokken",
     "The decision could not be saved." : "Het besluit kon niet worden opgeslagen.",
-    "The declared providers could not be loaded." : "De gedeclareerde aanbieders konden niet worden geladen."
+    "The declared providers could not be loaded." : "De gedeclareerde aanbieders konden niet worden geladen.",
+    "Could not load the workflow progress." : "De voortgang van de workflow kon niet worden geladen.",
+    "Workflow progress" : "Voortgang van de workflow",
+    "Configure a scanner for the Antivirus for files app in the administration settings, under Security." : "Stel in de beheerinstellingen, onder Beveiliging, een scanner in voor de app Antivirus for files.",
+    "Install and enable the Antivirus for files app, then configure its scanner." : "Installeer en activeer de app Antivirus for files en stel daarna de scanner in.",
+    "Uploads are refused: no malware scanner is available." : "Uploads worden geweigerd: er is geen malwarescanner beschikbaar.",
+    "Uploads are scanned for malware with {engine}." : "Uploads worden op malware gescand met {engine}."
 },
 "nplurals=2; plural=(n != 1);"
 );
