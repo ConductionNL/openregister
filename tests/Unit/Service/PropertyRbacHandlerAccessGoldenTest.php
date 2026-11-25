@@ -123,6 +123,8 @@ class PropertyRbacHandlerAccessGoldenTest extends TestCase {
 				return $spec[1];
 			}
 		);
+		// Nextcloud's own administrator check, as it answers inside allowed_admin_ranges.
+		$groups->method('isAdmin')->willReturn(in_array('admin', ($spec[1] ?? []), true));
 		$matcher = $this->createMock(ConditionMatcher::class);
 		$matcher->method('filterOrganisationMatchForCreate')->willReturnCallback(
 			function (array $match) use (&$log) {

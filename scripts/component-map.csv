@@ -5105,6 +5105,10 @@ Service/Authorization/PermissionMatrixSubject.php,,Service,,,,,Core
 Controller/Support/StreamedTextResponse.php,,Controller,,,,,Core
 Controller/Support/PermissionsAuditMatrix.php,,Controller,,,,,Core
 Service/Authorization/PermissionMatrixSubjects.php,,Service,,,,,Core
+Service/RedactionPolicy/DetectionPatternValidator.php,,Service,,,,,Configuration
+Service/RedactionPolicy/DetectionPatternRunner.php,,Service,,,,,Configuration
+Listener/DetectionPatternValidationListener.php,,Listener,,,,,Configuration
+Kernel/Contracts/ObjectWriteValidatorInterface.php,,Kernel,,,,,Kernel
 Service/File/PublishedDigestReader.php,,Service,,,,,Files
 Listener/TaskDueSoonListener.php,,Listener,,,,,Processes
 Service/Task/TaskDueSoonWarning.php,,Service,,,,,Processes
@@ -5117,6 +5121,13 @@ Service/Resolver/Exception/ResolverConfigException.php,,Service,,,,,Kernel
 Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/CopySealerInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/ExportKeySealersInterface.php,,Kernel,,,,,Kernel
+Service/Exchange/ExportKeySealer.php,,Service,,,,,Configuration
+Service/Exchange/ExportKeySealers.php,,Service,,,,,Configuration
+Service/Archival/DestructionCopies.php,,Service,,,,,Compliance
+Service/Archival/DestructionCopy.php,,Service,,,,,Compliance
+Service/Archival/DestructionCopyTarget.php,,Service,,,,,Compliance
 Service/Flow/Timer/TimerCalendarSwitch.php,,Service,,,,,Processes
 Kernel/Contracts/AdministratorCheck.php,63,Kernel,Kernel,Kernel/Contracts/AdministratorCheck.php,0,,Kernel
 Migration/Version1Date20261125013000.php,,Migration,,,,,Platform
@@ -5138,6 +5149,8 @@ Service/Audit/AuditSealBacklogInterface.php,,Service,,,,,Compliance
 Service/Audit/AuditSealBacklogService.php,,Service,,,,,Compliance
 Service/Audit/AuditSealWindowInterface.php,,Service,,,,,Compliance
 Service/Flow/IFlowNodeRuntime.php,,Service,Flows,Flows/Service/Flow/IFlowNodeRuntime.php,0,,Processes
+Notifications/Service/Notification/RuleReachLedger.php,176,Notifications,Notifications,Notifications/Service/Notification/RuleReachLedger.php,0,,Notifications
+Notifications/Controller/NotificationRuleReachController.php,63,Notifications,Notifications,Notifications/Controller/NotificationRuleReachController.php,0,,Notifications
 Service/Audit/ReadRuleResolver.php,,Service,Core,,0,,Core
 Kernel/Contracts/ReadRuleMatch.php,,Kernel,,,,,Kernel
 Kernel/Contracts/ReadRuleResolverInterface.php,,Kernel,,,,,Kernel

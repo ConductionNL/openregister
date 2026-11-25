@@ -255,6 +255,8 @@ final class TokenCeilingTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn(['admin']);
+		// Nextcloud's own administrator check, as it answers inside allowed_admin_ranges.
+		$groupManager->method('isAdmin')->willReturn(true);
 
 		$block = self::schema()->getAuthorization();
 		if ($grant !== null) {

@@ -1168,8 +1168,10 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 */
 	public function hydrate(array $object, ?PropertyValidatorHandlerInterface $validator = null): static {
 		$object = $this->withExactKeysOnly(
-			object: $this->foldTopLevelExportable(
-				object: $this->foldTopLevelAnnotations(object: self::withHydrateDefaults(object: $object))
+			object: $this->foldTopLevelVocabularies(
+				object: $this->foldTopLevelExportable(
+					object: $this->foldTopLevelAnnotations(object: self::withHydrateDefaults(object: $object))
+				)
 			)
 		);
 
@@ -1959,6 +1961,48 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return $object;
 	}//end foldTopLevelExportable()
+
+	/**
+	 * Fold a top-level `linkRoles` and `partyKinds` into the configuration.
+	 *
+	 * Both are read from `configuration` only, and the entity has no field for
+	 * either, so a schema body declaring them at the top level, as
+	 * docs/Features/parties.md shows, saved with neither and in silence: every
+	 * role was then accepted and no kind was declared. They are folded the way
+	 * `exportable` is; an explicit `configuration` entry wins. The configuration
+	 * validator then checks them as if they had been written there.
+	 *
+	 * @param array<string, mixed> $object The hydrate input.
+	 *
+	 * @return array<string, mixed> The input with the vocabularies in its configuration.
+	 *
+	 * @spec openspec/specs/party-model/spec.md
+	 */
+	private function foldTopLevelVocabularies(array $object): array {
+		$present = array_values(array_filter(['linkRoles', 'partyKinds'], static fn (string $key): bool => array_key_exists($key, $object) === true));
+		if ($present === []) {
+			return $object;
+		}
+
+		$config = ($object['configuration'] ?? $this->configuration ?? []);
+		if (is_string($config) === true) {
+			$config = json_decode($config, true);
+		}
+
+		foreach ($present as $key) {
+			$value = $object[$key];
+			unset($object[$key]);
+			if (is_array($config) === true && array_key_exists($key, $config) === false) {
+				$config[$key] = $value;
+			}
+		}
+
+		if (is_array($config) === true) {
+			$object['configuration'] = $config;
+		}
+
+		return $object;
+	}//end foldTopLevelVocabularies()
 
 	/**
 	 * Dropped `x-openregister-*` annotation keys collected during the most

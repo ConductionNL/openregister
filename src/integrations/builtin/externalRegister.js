@@ -39,6 +39,14 @@ export function externalRegisterDescriptor({ CnExternalRegisterCard } = {}) {
 /**
  * Register the external register integration into the registry.
  *
+ * Registers at once with OpenRegister's own card. It used to import the
+ * @conduction/nextcloud-vue barrel first to look for a library card, and that
+ * dynamic import fetched a second ~8.6 MB copy of the whole library on every
+ * Nextcloud page (this runs from the global script). No library release ships
+ * `CnExternalRegisterCard`; when one does, pass it to
+ * {@link externalRegisterDescriptor} from a bundle that already holds the library.
+ *
+ * @spec openspec/changes/external-register-view-leaf/tasks.md#2-leaf
  * @param {object} registry The shared integration registry.
  * @return {void}
  */
@@ -51,11 +59,5 @@ export function registerExternalRegisterIntegration(registry) {
 		return
 	}
 
-	import('@conduction/nextcloud-vue')
-		.then((library) => {
-			registry.register(externalRegisterDescriptor(library))
-		})
-		.catch(() => {
-			// The library failed to load: the page renders without this leaf, as without any other.
-		})
+	registry.register(externalRegisterDescriptor())
 }
