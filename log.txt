@@ -5069,3 +5069,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-25T15:19:04Z integrator-20261125T131257-65b17e3c MERGED-TREE 957602f37d: 4 PRs, main now 934a492cf0 = tested tree
 2026-11-25T15:21:40Z precheck-20261125T151946-3a510b8f NORESULT tree d018c072bc: deps failed
+2026-11-25T15:24:23Z precheck-20261125T151814-ffad7297 RED tree 26d4272801 prs 1 front=skip: Tests: 67057, Assertions: 237990, Errors: 5, Failures: 2, Deprecations: 24, PHPUnit Deprec; first failures: OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicSearchHandlerRowToEntityTest::testRowHydratesTheRecordedEntity
