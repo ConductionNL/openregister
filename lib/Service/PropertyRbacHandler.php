@@ -433,8 +433,41 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 			$object = $this->paths->strip(path: $path, object: $object);
 		}
 
-		return $object;
+		return self::withoutFlatPathsUnder(object: $object, roots: array_merge($schema->getWriteOnlyProperties(), $paths));
 	}//end stripWriteOnlyProperties()
+
+	/**
+	 * The data without any flat dot-path key at or beneath a write-only root.
+	 *
+	 * The `relations` mirror (`@self.relations`, and the audit trail's copy of
+	 * it) is keyed by dot-path, `authorizationConfiguration.publicKey`, not by
+	 * property name: removing the bare name left a nested secret in it. A root
+	 * covers itself and every path beneath it. Object bodies hold no dotted
+	 * keys, so they are unaffected.
+	 *
+	 * @param array              $object The data
+	 * @param array<int, string> $roots  Write-only property names and dot-paths
+	 *
+	 * @return array The data without those keys
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+	 */
+	private static function withoutFlatPathsUnder(array $object, array $roots): array {
+		foreach (array_keys($object) as $key) {
+			if (is_string($key) === false || str_contains($key, '.') === false) {
+				continue;
+			}
+
+			foreach ($roots as $root) {
+				if ($key === $root || str_starts_with($key, $root . '.') === true) {
+					unset($object[$key]);
+					break;
+				}
+			}
+		}
+
+		return $object;
+	}//end withoutFlatPathsUnder()
 
 	/**
 	 * Remove the top-level `writeOnly: true` properties from outgoing object data.

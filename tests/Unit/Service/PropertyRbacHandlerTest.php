@@ -321,6 +321,30 @@ class PropertyRbacHandlerTest extends TestCase {
 		$this->assertSame($object, $result);
 	}
 
+	public function testWriteOnlyStripsTheDotPathMirrorBeneathIt(): void {
+		// The relations mirror (@self.relations) is keyed by dot-path. A secret
+		// nested in a write-only object property is mirrored under
+		// `authorizationConfiguration.publicKey`; the bare-name strip left it in.
+		$schema = $this->createSchema([
+			'name' => ['type' => 'string'],
+			'authorizationConfiguration' => ['type' => 'object', 'writeOnly' => true],
+			'authorizationType' => ['type' => 'string'],
+		]);
+		$relations = [
+			'name' => 'consumer',
+			'authorizationConfiguration.publicKey' => 'hs256-secret',
+			'authorizationConfiguration' => 'flat',
+			'authorizationType' => 'jwt',
+			'authorizationConfigurationNote.x' => 'not beneath the root',
+		];
+
+		$result = $this->handler->stripWriteOnlyProperties($schema, $relations);
+		$this->assertSame(
+			['name' => 'consumer', 'authorizationType' => 'jwt', 'authorizationConfigurationNote.x' => 'not beneath the root'],
+			$result
+		);
+	}
+
 	public function testWriteOnlyPropertyRemainsWritable(): void {
 		// writeOnly restricts READ only; a writeOnly property with no update
 		// authorization is freely writable (not reported as unauthorized).
