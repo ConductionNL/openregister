@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Event\FileRestrictionAdmitEvent;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\Node;
@@ -174,7 +175,11 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 			return true;
 		}
 
-		$check->groups ??= $this->callerGroups();
+		$check->groups        ??= $this->callerGroups();
+		$check->administrator ??= AdministratorCheck::isAdministrator(
+			groupManager: $this->caller->groupManager,
+			user: $this->caller->userSession->getUser()
+		);
 		// An anonymous caller is never admitted to a restricted file.
 		if ($check->callerIsNamed() === false) {
 			return false;
@@ -182,7 +187,8 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 
 		return $this->admits(
 			question: new FileRestrictionAdmitEvent(fileId: $fileId, userId: $check->userId, restriction: $restriction),
-			groups: $check->groups
+			groups: $check->groups,
+			administrator: $check->administrator
 		);
 	}//end verdictFor()
 
@@ -253,14 +259,17 @@ class FileRestrictionGuard implements FileRestrictionGuardInterface {
 	 * else only when an app's listener admits them on the same question.
 	 *
 	 * @param FileRestrictionAdmitEvent $question The file, the caller and the stored restriction.
-	 * @param list<string>              $groups   The caller's groups.
+	 * @param list<string>              $groups        The caller's groups.
+	 * @param bool                      $administrator Nextcloud's administrator verdict for the caller.
 	 *
 	 * @return bool True when admitted.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
-	private function admits(FileRestrictionAdmitEvent $question, array $groups): bool {
+	private function admits(FileRestrictionAdmitEvent $question, array $groups, bool $administrator): bool {
 		$userId = $question->getUserId();
 		$restriction = $question->getRestriction();
-		if (in_array('admin', $groups, true) === true
+		if ($administrator === true
 			|| in_array($userId, (array)($restriction['users'] ?? []), true) === true
 			|| array_intersect($groups, (array)($restriction['groups'] ?? [])) !== []
 		) {

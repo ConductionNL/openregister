@@ -33,11 +33,31 @@ final class ClassificationCaller {
 	 * @param string|null        $userId The caller, or null when anonymous.
 	 * @param array<int, string> $groups The groups they hold.
 	 * @param string             $action The action asked for.
+	 * @param bool|null          $administrator Nextcloud's administrator verdict, or null to read the groups.
 	 */
 	public function __construct(
 		public readonly ?string $userId,
 		public readonly array $groups,
 		public readonly string $action,
+		public readonly ?bool $administrator=null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the caller is an administrator.
+	 *
+	 * Nextcloud's verdict when one was passed, so an `admin` group member outside
+	 * `allowed_admin_ranges` is not an administrator; else group membership.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
+	 */
+	public function isAdministrator(): bool {
+		if ($this->administrator !== null) {
+			return $this->administrator;
+		}
+
+		return in_array('admin', $this->groups, true);
+	}//end isAdministrator()
 }//end class

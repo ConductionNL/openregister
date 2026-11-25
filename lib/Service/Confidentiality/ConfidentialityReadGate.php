@@ -138,12 +138,14 @@ final class ConfidentialityReadGate {
 	 * @param string|null          $userId   The caller, null when anonymous.
 	 * @param array<int, string>   $groups   The caller's groups.
 	 * @param string|null          $owner    The object's owner.
+	 * @param bool|null            $administrator Nextcloud's administrator verdict for the caller, or null to read the groups.
 	 *
 	 * @return bool True when the read is refused.
 	 *
 	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
-	public function refuses(Schema $schema, string $action, array $envelope, ?string $userId, array $groups, ?string $owner): bool {
+	public function refuses(Schema $schema, string $action, array $envelope, ?string $userId, array $groups, ?string $owner, ?bool $administrator=null): bool {
 		if ($action !== self::READ) {
 			return false;
 		}
@@ -154,7 +156,10 @@ final class ConfidentialityReadGate {
 		}
 
 		// The bypasses every authored rule has: the administrator and the owner.
-		if (in_array('admin', $groups, true) === true || ($userId !== null && $owner === $userId)) {
+		// A verdict from Nextcloud wins over the group list, so an `admin` member
+		// outside `allowed_admin_ranges` is not let past here.
+		$isAdministrator = ($administrator ?? in_array('admin', $groups, true));
+		if ($isAdministrator === true || ($userId !== null && $owner === $userId)) {
 			return false;
 		}
 

@@ -62,6 +62,17 @@ class RbacAccessCall {
 	public array $userGroups = [];
 
 	/**
+	 * Nextcloud's administrator verdict for the caller, set by whoever identified the caller.
+	 *
+	 * Null when nothing asked Nextcloud; the caller's groups are then read as
+	 * before. A verdict wins over the group list, so an `admin` group member
+	 * outside `allowed_admin_ranges` is not an administrator here.
+	 *
+	 * @var boolean|null
+	 */
+	public ?bool $administrator = null;
+
+	/**
 	 * The schema's resolved authorization block; null when it has none.
 	 *
 	 * @var array|null
@@ -118,9 +129,15 @@ class RbacAccessCall {
 	/**
 	 * Whether the caller is an administrator.
 	 *
-	 * @return bool True when the caller is in the admin group.
+	 * @return bool Nextcloud's verdict when one was set, else whether the caller is in the admin group.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function callerIsAdmin(): bool {
+		if ($this->administrator !== null) {
+			return $this->administrator;
+		}
+
 		return in_array('admin', $this->userGroups, true);
 	}//end callerIsAdmin()
 

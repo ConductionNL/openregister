@@ -968,7 +968,12 @@ class PermissionHandler implements PermissionHandlerInterface {
 		return $gate->refusal(
 			schema: $ask->schema,
 			object: $ask->object,
-			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
+			caller: new ClassificationCaller(
+				userId: $userId,
+				groups: $this->groupsOf(userId: $userId),
+				action: $ask->action,
+				administrator: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $userId)
+			)
 		) !== null;
 	}//end classificationRefuses()
 
@@ -1002,7 +1007,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 			envelope: $ask->object->getMatchEnvelope(),
 			userId: $userId,
 			groups: $this->groupsOf(userId: $userId),
-			owner: ($ask->objectOwner ?? $ask->object->getOwner())
+			owner: ($ask->objectOwner ?? $ask->object->getOwner()),
+			administrator: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $userId)
 		);
 	}//end confidentialityRefuses()
 

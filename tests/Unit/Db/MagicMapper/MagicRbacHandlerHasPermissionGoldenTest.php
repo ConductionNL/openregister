@@ -177,6 +177,8 @@ class MagicRbacHandlerHasPermissionGoldenTest extends TestCase {
 					return $groups;
 				}
 			);
+			// Nextcloud's own administrator check, as it answers inside allowed_admin_ranges.
+			$groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 		}
 
 		$handler = new MagicRbacHandler(

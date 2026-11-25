@@ -47,6 +47,13 @@ final class PropertyAccessRequest {
 	private array $userGroups = [];
 
 	/**
+	 * Nextcloud's administrator verdict for the user, or null when nothing asked Nextcloud.
+	 *
+	 * @var boolean|null
+	 */
+	private ?bool $administrator = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array $object   Object data for conditional matching.
@@ -65,28 +72,39 @@ final class PropertyAccessRequest {
 	/**
 	 * A copy for the given user.
 	 *
-	 * @param string|null        $userId     User id, null when anonymous.
-	 * @param array<int, string> $userGroups The user's group ids.
+	 * @param string|null        $userId        User id, null when anonymous.
+	 * @param array<int, string> $userGroups    The user's group ids.
+	 * @param bool|null          $administrator Nextcloud's administrator verdict, or null to read the groups.
 	 *
 	 * @return self The copy.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
-	public function withUser(?string $userId, array $userGroups): self {
+	public function withUser(?string $userId, array $userGroups, ?bool $administrator=null): self {
 		$copy = clone $this;
-		$copy->userId     = $userId;
-		$copy->userGroups = $userGroups;
+		$copy->userId        = $userId;
+		$copy->userGroups    = $userGroups;
+		$copy->administrator = $administrator;
 		return $copy;
 	}//end withUser()
 
 	/**
-	 * Whether the user is in the admin group.
+	 * Whether the user is an administrator.
+	 *
+	 * Nextcloud's verdict when the builder passed one, so an `admin` group member
+	 * outside `allowed_admin_ranges` is not an administrator; else group membership.
 	 *
 	 * @return bool
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#field-level-security
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
+		if ($this->administrator !== null) {
+			return $this->administrator;
+		}
+
 		return in_array('admin', $this->userGroups, true);
 	}//end isAdmin()
 

@@ -78,6 +78,8 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 		$userSession->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
+		// Nextcloud's own administrator check, as it answers inside allowed_admin_ranges.
+		$groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 
 		return new MagicRbacHandler(
 			identity: new MagicMapperIdentity(

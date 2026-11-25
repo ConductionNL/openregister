@@ -43,6 +43,16 @@ final class RbacPermissionCheck {
 	public array $userGroups = [];
 
 	/**
+	 * Nextcloud's administrator verdict for the caller, or null when nothing asked Nextcloud.
+	 *
+	 * A verdict wins over the group list, so an `admin` group member outside
+	 * `allowed_admin_ranges` is not an administrator here.
+	 *
+	 * @var boolean|null
+	 */
+	public ?bool $administrator = null;
+
+	/**
 	 * The object's data, null for a schema-level check.
 	 *
 	 * @var array|null
@@ -94,16 +104,19 @@ final class RbacPermissionCheck {
 	/**
 	 * Set the caller.
 	 *
-	 * @param string|null $userId     The caller's user ID.
-	 * @param string[]    $userGroups The caller's group IDs.
+	 * @param string|null  $userId        The caller's user ID.
+	 * @param string[]     $userGroups    The caller's group IDs.
+	 * @param boolean|null $administrator Nextcloud's administrator verdict, or null to read the groups.
 	 *
 	 * @return self This check.
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
-	public function forCaller(?string $userId, array $userGroups): self {
-		$this->userId     = $userId;
-		$this->userGroups = $userGroups;
+	public function forCaller(?string $userId, array $userGroups, ?bool $administrator=null): self {
+		$this->userId        = $userId;
+		$this->userGroups    = $userGroups;
+		$this->administrator = $administrator;
 		return $this;
 	}//end forCaller()
 
@@ -140,11 +153,16 @@ final class RbacPermissionCheck {
 	/**
 	 * Whether the caller is an administrator.
 	 *
-	 * @return bool True when the caller is in the `admin` group.
+	 * @return bool Nextcloud's verdict when one was set, else whether the caller is in the `admin` group.
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function callerIsAdmin(): bool {
+		if ($this->administrator !== null) {
+			return $this->administrator;
+		}
+
 		return in_array('admin', $this->userGroups, true);
 	}//end callerIsAdmin()
 

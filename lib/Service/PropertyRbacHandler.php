@@ -874,7 +874,9 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 *
 	 * @param PropertyAccessRequest $request The object and create flag.
 	 *
-	 * @return PropertyAccessRequest The request with the user and their groups
+	 * @return PropertyAccessRequest The request with the user, their groups and Nextcloud's administrator verdict
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function forCurrentUser(PropertyAccessRequest $request): PropertyAccessRequest {
 		$user = $this->caller->userSession->getUser();
@@ -883,7 +885,11 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 			$userGroups = $this->caller->groupManager->getUserGroupIds($user);
 		}
 
-		return $request->withUser(userId: $user?->getUID(), userGroups: $userGroups);
+		return $request->withUser(
+			userId: $user?->getUID(),
+			userGroups: $userGroups,
+			administrator: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $user)
+		);
 	}//end forCurrentUser()
 
 	/**
