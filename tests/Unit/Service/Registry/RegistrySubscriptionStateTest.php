@@ -132,10 +132,50 @@ class RegistrySubscriptionStateTest extends TestCase {
 		$this->assertSame([], $this->service->statesFor(['a']));
 	}
 
+	public function testTheConnectorsConfirmationMakesARequestedSubscriptionActive(): void {
+		$row = self::row('o-1', RegistrySubscription::STATE_REQUESTED);
+		$row->setRefusalReason('an earlier refusal');
+		$this->mapper->method('findLiveByIdentity')->with('brp', '999990019')->willReturn([$row]);
+		$this->guard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
+		$this->mapper->expects($this->once())->method('save')->with($row)->willReturnArgument(0);
+		$this->objects->expects($this->never())->method('patchObject');
+
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), [], 'vi-1', 'active'));
+
+		$this->assertSame(['matched' => 1, 'applied' => [], 'rejected' => []], $result);
+		$this->assertSame(RegistrySubscription::STATE_ACTIVE, $row->getState());
+		$this->assertNull($row->getRefusalReason());
+	}
+
+	public function testAConnectorThatCouldNotSubscribeLeavesTheSubscriptionFailedWithItsReason(): void {
+		$row = self::row('o-1', RegistrySubscription::STATE_REQUESTED);
+		$this->mapper->method('findLiveByIdentity')->willReturn([$row]);
+		$this->mapper->expects($this->once())->method('save')->with($row)->willReturnArgument(0);
+		$this->objects->expects($this->never())->method('patchObject');
+		$this->notifier->expects($this->never())->method('auditInboundUpdate');
+
+		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'x'], '', 'failed', 'BRP answered 403'));
+
+		$this->assertSame(['matched' => 1, 'applied' => [], 'rejected' => []], $result);
+		$this->assertSame(RegistrySubscription::STATE_FAILED, $row->getState());
+		$this->assertSame('BRP answered 403', $row->getRefusalReason());
+	}
+
+	public function testAFailedAnswerLeavesAnActiveSubscriptionAlone(): void {
+		$row = self::row('o-1', RegistrySubscription::STATE_ACTIVE);
+		$this->mapper->method('findLiveByIdentity')->willReturn([$row]);
+		$this->guard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
+		$this->mapper->expects($this->never())->method('save');
+
+		$this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), [], '', 'failed', 'gone'));
+
+		$this->assertSame(RegistrySubscription::STATE_ACTIVE, $row->getState());
+	}
+
 	public function testAPatchThatFailsToSaveIsRejectedLoggedAndNotRecorded(): void {
 		$failing = self::row('o-fail', RegistrySubscription::STATE_ACTIVE);
 		$working = self::row('o-ok', RegistrySubscription::STATE_REQUESTED);
-		$this->mapper->method('findActiveByIdentity')->with('brp', '999990019')->willReturn([$failing, $working]);
+		$this->mapper->method('findLiveByIdentity')->with('brp', '999990019')->willReturn([$failing, $working]);
 		$this->guard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
 		$this->objects->method('patchObject')->willReturnCallback(static function (ObjectPatch $patch, bool $_rbac = true, bool $_multitenancy = true): ObjectEntity {
 			$objectId = $patch->objectId;
