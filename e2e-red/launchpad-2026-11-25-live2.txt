@@ -1,0 +1,35 @@
+# launchpad e2e outside the 25 Nov red list, swept live by live-launchpad-2 (25 Nov 19:10-21:12Z)
+# Sandbox: NC 34.0.6, MariaDB, Redis (local+distributed+locking), php -S :8097 + router, OR 58479c0d0, launchpad development 1b7f648.
+# Sandbox settings needed: dav rateLimitCalendarCreation high; auth.bruteforce.protection.enabled=false and ratelimit.protection.enabled=false (else ~1000 logins throttle to 401/403);
+#   LAUNCHPAD_E2E_OCC="env -C <nc root> php occ". Run serially and alone: parallel runs as admin switch each other's active dashboard.
+# 188 files (1394 tests): 1074 passed first pass; the failed files rerun alone: 311 passed, 26 failed, 51 did not run (25 min cap).
+# Tags: PR <n> (open, merge queued) | OPEN <diagnosis> | SANDBOX <why>
+
+admin-templates-crud.spec.ts:377            PR #2086 app: clearDefaultTemplates() bumped updated_at on every template
+announcement-read-confirmation.spec.ts:130  PR #2090 app: announcement_key 36 chars, key is announcement-<uuid> (49) -> 500 on MariaDB/MySQL/PostgreSQL
+calendar-widget-config.spec.ts (9)          PR #2088 spec rewritten to the REQ-CAL-020 board form (#1905)
+ci/boot-and-manifest.spec.ts:102            PR #2089 manifest is cached 60 s (#1955): poll
+container-tile-sorting.spec.ts:209          PR #2087 group children are tile nodes since #2073: content.title
+launchpad-adopt-or-abstractions-keys:43     PR #2091 app: AdminSettingKey docblock + AnnouncementService alias
+image-widget.spec.ts (6), image-widget-clickthrough:73, image-widget-content-form:96
+                                            OPEN spec drives the pre-#1905 image form (.cn-image-widget-form__*, fit select); board form: source cards image-source-upload/url, data-testid image-file-input, 'Image URL' only after the url card, alt text required ('Text for who does not see the image'). Rewrite like #2088.
+launcher-tile-internal-address.spec.ts:218  OPEN label 'Address on the office network' not in the tile form any more (tile-form-board-sync)
+header-widget-content.spec.ts:98            OPEN verticalAlign top: header renders flex/flow-start/static, test wants justify-content or absolute positioning
+dashboard-edit-bar.spec.ts:117              OPEN choosing 8 columns leaves the grid at 12 (also :167 Versions tab shows 1 row where 2 expected, seen once)
+dashboard-theme-readonly.spec.ts:143        OPEN accent under Own look (first pass only; not rerun)
+dashboards-group-serialisation.spec.ts:100,113  OPEN group-scoped GET/list lack groupId (rerun alone)
+files-widget-actions.spec.ts:210            OPEN 50 MB upload progress
+grid-layout-rendering.spec.ts:198           OPEN tile edit control / tile editor (tile chrome)
+manifest-boot.spec.ts:62                    OPEN failing manifest fetch should degrade silently
+navigation-editor-org-read-defects.spec.ts:167  OPEN REQ-ONAV-007
+news-widget.spec.ts:173                     OPEN picker listing (picker structure since #1915?)
+people-widget-new-colleagues.spec.ts:229    OPEN REQ-PPL-014
+permissions.spec.ts:612                     OPEN add-only owner offered Delete in edit mode?
+phone-hidden-widgets-many.spec.ts:176       OPEN notice "and 2 more"
+section-heading-widget.spec.ts:54           OPEN
+setup-wizard-cli.spec.ts:306                OPEN full setup.yaml
+template-rollout-choices.spec.ts:153        OPEN Only add new widgets
+tile-quick-search-widget.spec.ts:581        OPEN bar rendered without a search placement?
+resource-serve.spec.ts:47, resource-uploads.spec.ts:440,540,646,1005,1135  OPEN (resource upload/serve; check php -S upload limits first)
+public-share-client-ip.spec.ts:315,335,356  SANDBOX throttling switched off in this rig (needs bruteforce/ratelimit on)
+not rerun (cap): tiles-add-tiles-dialog, tiles-form-board-sync, tiles-icon-only-app-tiles, tiles-launch-target, widgets-picker (failed in the first pass, 10 tests)
