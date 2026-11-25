@@ -65,6 +65,36 @@ final class MagicSchemaColumns {
 	];
 
 	/**
+	 * Whether a properties entry configures the schema rather than defining a property.
+	 *
+	 * A configuration keyword such as `required` is a list (or a string); a
+	 * property that happens to carry the same name, such as a field's own
+	 * `required` flag, is a definition object (`{"type": "boolean"}`) and gets
+	 * a column like any other. Skipping it by name alone left the table
+	 * without the column while the writer still wrote the value, so every save
+	 * of such an object failed ("column \"required\" ... does not exist").
+	 *
+	 * @param mixed $name   The entry's key.
+	 * @param mixed $config The entry's value.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md
+	 */
+	public static function isConfigurationEntry(mixed $name, mixed $config): bool {
+		if (in_array($name, self::CONFIGURATION_FIELDS, true) === false) {
+			return false;
+		}
+
+		// `$schema` and `$id` are never a property name, whatever they hold.
+		if (str_starts_with((string) $name, '$') === true) {
+			return true;
+		}
+
+		return is_array($config) === false || array_is_list($config) === true;
+	}//end isConfigurationEntry()
+
+	/**
 	 * Build the planner.
 	 *
 	 * @param LoggerInterface $logger Receives skipped properties and collisions.
@@ -137,7 +167,7 @@ final class MagicSchemaColumns {
 	 * @return bool
 	 */
 	private function isProperty(mixed $name, mixed $config): bool {
-		if (in_array($name, self::CONFIGURATION_FIELDS, true) === true) {
+		if (self::isConfigurationEntry(name: $name, config: $config) === true) {
 			return false;
 		}
 

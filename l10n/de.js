@@ -1749,6 +1749,7 @@ OC.L10N.register(
     "Manage SOLR collections (data stores) and assign them for objects and files." : "SOLR-Sammlungen (Datenspeicher) verwalten und sie Objekten und Dateien zuweisen.",
     "Manage SOLR ConfigSets (configuration templates) for your collections." : "SOLR-ConfigSets (Konfigurationsvorlagen) für Ihre Collections verwalten.",
     "Manage SOLR configsets (configuration templates) for your collections." : "SOLR-ConfigSets (Konfigurationsvorlagen) für Ihre Sammlungen verwalten.",
+    "Manage the grants on records the group does not own" : "Freigaben auf Datensätzen verwalten, die nicht der Gruppe gehören",
     "Manage webhooks for event-driven integrations" : "Webhooks für ereignisgesteuerte Integrationen verwalten",
     "Manage your account settings, security, and personal data." : "Verwalten Sie Ihre Kontoeinstellungen, Sicherheit und personenbezogenen Daten.",
     "Manage your applications and modules" : "Ihre Anwendungen und Module verwalten",
@@ -3888,6 +3889,9 @@ OC.L10N.register(
     "{days} day(s) left" : "noch {days} Tag(e)",
     "{days} day(s) remaining" : "{days} Tag(e) verbleibend",
     "{failed} failed, {stopped} stopped" : "{failed} fehlgeschlagen, {stopped} gestoppt",
+    "{group}, only for {schemas}" : "{group}, nur für {schemas}",
+    "{group}, only for {schemas} in register {register}" : "{group}, nur für {schemas} im Register {register}",
+    "{group}, only in register {register}" : "{group}, nur im Register {register}",
     "{label} of row {number}" : "{label} von Zeile {number}",
     "{matched} object(s) matched. {erased} erased." : "{matched} Objekt(e) gefunden. {erased} gelöscht.",
     "{minutes} minutes ago" : "vor {minutes} Minuten",
@@ -3919,7 +3923,19 @@ OC.L10N.register(
     "🔍 SOLR is a powerful enterprise search platform built on Apache Lucene..." : "🔍 SOLR ist eine leistungsfähige Enterprise-Suchplattform auf Basis von Apache Lucene...",
     "🔢 Vectorization Settings" : "🔢 Vektorisierungseinstellungen",
     "🚀 Auto-scaling can dynamically add or remove nodes based on load..." : "🚀 Autoskalierung kann Knoten je nach Last dynamisch hinzufügen oder entfernen...",
-    "🛡️ Security features include authentication, authorization, and SSL encryption..." : "🛡️ Zu den Sicherheitsfunktionen zählen Authentifizierung, Autorisierung und SSL-Verschlüsselung..."
+    "🛡️ Security features include authentication, authorization, and SSL encryption..." : "🛡️ Zu den Sicherheitsfunktionen zählen Authentifizierung, Autorisierung und SSL-Verschlüsselung...",
+    "Check by hand" : "Von Hand prüfen",
+    "Check Dutch API design rules" : "Niederländische API-Designregeln prüfen",
+    "Deviation: {reason}" : "Abweichung: {reason}",
+    "Deviations" : "Abweichungen",
+    "Dutch API design rules for {register}" : "Niederländische API-Designregeln für {register}",
+    "Not probed yet" : "Noch nicht getestet",
+    "Passed" : "Bestanden",
+    "Probe responses" : "Antworten testen",
+    "Responses probed {moment}." : "Antworten getestet am {moment}.",
+    "Ruleset {ruleset}, generated {moment}." : "Regelsatz {ruleset}, erstellt am {moment}.",
+    "The conformance report could not be read." : "Der Konformitätsbericht konnte nicht gelesen werden.",
+    "The responses could not be probed." : "Die Antworten konnten nicht getestet werden."
 },
 "nplurals=2; plural=(n != 1);"
 );
