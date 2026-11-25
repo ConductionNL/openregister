@@ -243,3 +243,4 @@ openregister#11152 0fb185866980b7c2628bedea676fc44f279d2a1d precheck-red alone o
 openregister#11252 b5c2cdc251855ea83df7a31c520bed7be3ce8495 auto-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#11253 9c064e3f8626ab02aa4846c9d7a1b2ef120c42c3 auto-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#11254 020692f816b7b6ce2494cb2ea93c9151c7d4b9c0 auto-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#11227 57f2092405daea29396de49fc1dd7c1467518f56 precheck-red alone on main: FAIL src/views/flows/pageShell.components.golden.spec.js
