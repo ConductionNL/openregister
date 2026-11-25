@@ -221,3 +221,4 @@ openregister#10635 df149781d139d86241b857d6584d81e939e39af8 auto-park: sbom: pac
 openregister#10640 ed7f06cd31dc3b2afe144000c02847936a365d95 auto-park: sbom: composer.lock changed without sbom.cdx.json
 openregister#11078 46b38f55248ca36237b43ddb1a47809c22e40b83 auto-park: sbom: composer.lock changed without sbom.cdx.json
 openregister#11079 bb6076f6e436a552e21f1dc62f8bb5a0b2c4d413 auto-park: sbom: composer.lock changed without sbom.cdx.json
+openregister#10550 d18005f100d4cf28ce789eb401dd3e1fc560048c auto-park: floor: module_coupling: 5.15 -> 5.13
