@@ -4290,7 +4290,11 @@ OC.L10N.register(
     "Unit" : "Eenheid",
     "Weekend" : "Weekenddag",
     "Working day" : "Werkdag",
-    "Works out, without saving or arming anything, when a term that starts at a chosen moment ends under the rules above." : "Berekent, zonder iets op te slaan of in te stellen, wanneer een termijn die op een gekozen moment begint eindigt volgens de regels hierboven."
+    "Works out, without saving or arming anything, when a term that starts at a chosen moment ends under the rules above." : "Berekent, zonder iets op te slaan of in te stellen, wanneer een termijn die op een gekozen moment begint eindigt volgens de regels hierboven.",
+    "Manage the grants on records the group does not own" : "Toekenningen beheren op records die niet van de groep zijn",
+    "{group}, only for {schemas}" : "{group}, alleen voor {schemas}",
+    "{group}, only for {schemas} in register {register}" : "{group}, alleen voor {schemas} in register {register}",
+    "{group}, only in register {register}" : "{group}, alleen in register {register}"
 },
 "nplurals=2; plural=(n != 1);"
 );
