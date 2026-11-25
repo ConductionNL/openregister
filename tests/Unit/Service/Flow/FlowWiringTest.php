@@ -127,6 +127,8 @@ use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Contract\ObjectTaskReaderInterface;
+use OCA\OpenRegister\Service\Task\ObjectTaskReader;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
@@ -490,6 +492,7 @@ final class FlowWiringTest extends TestCase {
 				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
 				SaveWarningsInterface::class               => SaveWarnings::class,
 				\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
+				ObjectTaskReaderInterface::class           => ObjectTaskReader::class,
 			],
 			actual: $this->aliases
 		);

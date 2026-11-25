@@ -28,6 +28,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\TranslationCompletenessInterface;
 use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaWriteRightsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -155,6 +156,7 @@ use OCA\OpenRegister\Service\Object\ObjectSlugBackfillServiceInterface;
 use OCA\OpenRegister\Service\Object\ObjectValidatorInterface;
 use OCA\OpenRegister\Service\Object\PermissionCacheInterface;
 use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Service\Object\SchemaWriteRights;
 use OCA\OpenRegister\Service\Object\PermissionEnforcementInterface;
 use OCA\OpenRegister\Service\Object\PermissionExplanationInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -471,6 +473,7 @@ final class CoreServiceBindings {
 		RemoteRecipientDenialInterface::class => PermissionHandler::class,
 		RenderObjectInterface::class => RenderObject::class,
 		RetentionDestructionInterface::class => RetentionDestruction::class,
+		SchemaWriteRightsInterface::class => SchemaWriteRights::class,
 		RevertHandlerInterface::class => RevertHandler::class,
 		RunLockReleaseInterface::class => RunLockRegistry::class,
 		ObjectSlugTargetInterface::class => ObjectSlugHandler::class,
