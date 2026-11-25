@@ -4674,7 +4674,7 @@ BackgroundJob/QualityAuditScheduleJob.php,,BackgroundJob,,,,,Compliance
 Service/Export/ExportPage.php,,Service,,,,,Configuration
 Service/Export/PublicExportResult.php,,Service,,,,,Configuration
 Service/Export/PublicExportService.php,,Service,,,,,Configuration
-Service/Export/SheetTitle.php,,Service,,,,,Core
+Service/Export/SheetTitle.php,,Service,,,,,Configuration
 Service/Export/SpreadsheetCell.php,,Service,,,,,Core
 Contract/ObjectFileReaderInterface.php,4,Contract,Contract,Contract/ObjectFileReaderInterface.php,1,,Kernel
 Service/File/ObjectFileReader.php,14,Service,Service,Service/File/ObjectFileReader.php,0,,Core
