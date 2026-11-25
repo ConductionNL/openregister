@@ -146,14 +146,57 @@ class LinkedRetentionConflictFinder {
 			);
 			foreach ($found as $linked) {
 				$this->archives[(string) $source->schema->getId()] = $source->schema->getArchive();
-				foreach (array_intersect($uuids, $this->relationUuids(object: $linked)) as $target) {
+				foreach (array_intersect($uuids, $this->pointedAt(linked: $linked, source: $source)) as $target) {
 					$byEntry[$target][(string) $linked->getUuid()] = $linked;
 				}
 			}
 		}
 
-		return array_map(static fn (array $links): array => array_values($links), $byEntry);
+		return $this->withFullRecords(byEntry: $byEntry, onList: $uuids);
 	}//end incomingLinks()
+
+	/**
+	 * The incoming links with each record read in full, in one batch.
+	 *
+	 * The row the relation query hands back is not the whole record: on a
+	 * magic table it comes without the retention block, and a link judged on
+	 * an empty retention reads as `linked-date-unknown` when it is in fact
+	 * kept permanently. The outgoing side already reads its links through
+	 * findMultiple(); the incoming side does the same, and keeps the row it
+	 * has for a record the batch does not return.
+	 *
+	 * @param array<string, array<string, ObjectEntity>> $byEntry The links, by entry uuid and then by link uuid.
+	 * @param array<int, string>                         $onList  The entries' uuids: links on the list are not read again.
+	 *
+	 * @return array<string, array<int, ObjectEntity>>
+	 *
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-a-destruction-list-names-the-linked-records-its-entries-clash-with
+	 */
+	private function withFullRecords(array $byEntry, array $onList): array {
+		$uuids = [];
+		foreach ($byEntry as $links) {
+			foreach (array_keys($links) as $uuid) {
+				$uuids[(string) $uuid] = true;
+			}
+		}
+
+		// A link on the list itself is dropped afterwards; it needs no read.
+		$uuids = array_diff_key($uuids, array_fill_keys($onList, true));
+
+		$full = [];
+		foreach ($this->loaded(uuids: array_keys($uuids)) as $record) {
+			$full[(string) $record->getUuid()] = $record;
+		}
+
+		$result = [];
+		foreach ($byEntry as $target => $links) {
+			foreach ($links as $uuid => $row) {
+				$result[$target][] = ($full[(string) $uuid] ?? $row);
+			}
+		}
+
+		return $result;
+	}//end withFullRecords()
 
 	/**
 	 * The records with the given uuids, in one batch.
@@ -167,7 +210,9 @@ class LinkedRetentionConflictFinder {
 			return [];
 		}
 
-		return $this->objects->findMultiple($uuids);
+		// Every stored column: the plain batch fills only the name, register,
+		// schema and data, and a conflict is decided on the retention block.
+		return $this->objects->findStoredAcrossAllMagicTables(uuids: $uuids);
 	}//end loaded()
 
 	/**
@@ -303,6 +348,41 @@ class LinkedRetentionConflictFinder {
 
 		return $this->archives[$schemaId];
 	}//end archiveOf()
+
+	/**
+	 * The uuids a record found for a referencing schema points at.
+	 *
+	 * The batched query selects the record BY the referencing fields, and the
+	 * record it hands back does not always carry its relations column (a
+	 * magic-table row hydrated by that query comes back with it empty), so the
+	 * values of those same fields are read as well as the relations. Without
+	 * them a decision found because its `zaak` names the case was then matched
+	 * to no entry, and the list showed no conflict.
+	 *
+	 * @param ObjectEntity      $linked The record the query returned.
+	 * @param ReferencingSchema $source The schema and the fields it was found through.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/retention-linked-destruction-conflict/specs/archival-destruction-workflow/spec.md#requirement-a-destruction-list-names-the-linked-records-its-entries-clash-with
+	 */
+	private function pointedAt(ObjectEntity $linked, ReferencingSchema $source): array {
+		$uuids = array_fill_keys($this->relationUuids(object: $linked), true);
+		$data  = ($linked->getObject() ?? []);
+		foreach ([$source->fieldName, ...$source->additionalFieldNames] as $field) {
+			foreach ((array) ($data[$field] ?? []) as $value) {
+				if (is_array($value) === true) {
+					$value = ($value['uuid'] ?? $value['id'] ?? null);
+				}
+
+				if (is_string($value) === true && $value !== '') {
+					$uuids[$value] = true;
+				}
+			}
+		}
+
+		return array_keys($uuids);
+	}//end pointedAt()
 
 	/**
 	 * The uuids an object's relations column holds.
