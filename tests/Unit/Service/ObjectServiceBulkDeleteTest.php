@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -67,6 +68,8 @@ use ReflectionClass;
  * Locks the accounting and the archival refusal of the bulk delete loop.
  */
 class ObjectServiceBulkDeleteTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * The archival retention annotation a schema carries to become immutable.
@@ -448,6 +451,7 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 		$this->inject('userSession', $session);
 		$this->inject('groupManager', $groupManager);

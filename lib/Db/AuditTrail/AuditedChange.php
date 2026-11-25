@@ -40,8 +40,11 @@ final class AuditedChange {
 	 * @param array|null        $cascadeContext Referential-integrity cascade context to fold into `changed`.
 	 * @param array             $marks          Named markers of where the change came from (a revert
 	 *                                          names the point it restored), folded into `changed`.
+	 * @param string|null       $ruleDigest     Digest of the read rule that granted a read, or null.
+	 * @param string|null       $ruleVersion    The schema version that rule belonged to, or null.
 	 *
 	 * @spec openspec/changes/history-revert-through-the-save-path/specs/content-versioning/spec.md
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
 	 */
 	public function __construct(
 		public readonly ?ObjectEntity $old = null,
@@ -49,6 +52,8 @@ final class AuditedChange {
 		public readonly ?string $action = null,
 		public readonly ?array $cascadeContext = null,
 		public readonly array $marks = [],
+		public readonly ?string $ruleDigest = null,
+		public readonly ?string $ruleVersion = null,
 	) {
 	}//end __construct()
 }//end class
