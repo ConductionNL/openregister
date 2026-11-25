@@ -53,6 +53,9 @@
 			</NcActions>
 		</template>
 
+		<!-- Where the bytes of managed files live (read-only) -->
+		<DocumentStoreStatus />
+
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -450,6 +453,87 @@
 						v-if="openAnonymiserHint"
 						:hint="openAnonymiserHint"
 						:installLink="openAnonymiserInstallLink" />
+
+					<!-- What each backend is measured to find, and does with the text (anonymisation-discloses-itself) -->
+					<div
+						v-for="row in disclosureRows"
+						:key="'disclosure-' + row.name"
+						class="backend-disclosure"
+						:data-testid="'backend-disclosure-' + row.name">
+						<h4 class="backend-disclosure-title">
+							{{ row.label }}
+						</h4>
+						<template v-if="row.accuracy.state === 'measured'">
+							<p class="setting-description">
+								{{ t('openregister', 'Measured on {corpus} version {version} with {detector}, {date}', { corpus: row.accuracy.corpus, version: row.accuracy.corpusVersion, detector: row.accuracy.detector, date: row.accuracy.measuredAt }) }}
+							</p>
+							<table class="backend-accuracy">
+								<thead>
+									<tr>
+										<th scope="col">
+											{{ t('openregister', 'Entity type') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Precision') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Recall') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Examples') }}
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="figure in row.accuracy.types" :key="figure.type">
+										<td>{{ figure.type }}</td>
+										<td>{{ figure.precision }}</td>
+										<td>{{ figure.recall }}</td>
+										<td>{{ figure.support }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</template>
+						<p v-else class="setting-description" :data-testid="'not-measured-' + row.name">
+							{{ t('openregister', '{detector} is not measured.', { detector: row.accuracy.detector }) }}
+						</p>
+
+						<div class="backend-statement">
+							<label :for="'training-use-' + row.name">{{ t('openregister', 'Training use') }}</label>
+							<select
+								:id="'training-use-' + row.name"
+								:value="statementDraft(row).trainingUse"
+								:disabled="!row.editable"
+								@change="setStatementDraft(row, 'trainingUse', $event.target.value)">
+								<option v-for="use in trainingUses" :key="use" :value="use">
+									{{ trainingUseLabel(use) }}
+								</option>
+							</select>
+							<label :for="'retention-' + row.name">{{ t('openregister', 'Retention') }}</label>
+							<input
+								:id="'retention-' + row.name"
+								type="text"
+								:value="statementDraft(row).retention"
+								:disabled="!row.editable"
+								:aria-describedby="'retention-hint-' + row.name"
+								@input="setStatementDraft(row, 'retention', $event.target.value)">
+							<NcButton
+								v-if="row.editable"
+								variant="secondary"
+								:disabled="savingStatement === row.name"
+								@click="saveStatement(row)">
+								{{ t('openregister', 'Save statement') }}
+							</NcButton>
+						</div>
+						<p :id="'retention-hint-' + row.name" class="setting-description">
+							{{ row.editable
+								? t('openregister', 'Retention is none, unknown or an ISO 8601 duration such as P30D.')
+								: t('openregister', 'Stated by the product: the text is not used for training and not kept.') }}
+						</p>
+						<p v-if="statementErrors[row.name]" class="backend-statement-error" role="alert">
+							{{ statementErrors[row.name] }}
+						</p>
+					</div>
 				</div>
 
 				<!-- Presidio API Configuration -->
@@ -793,11 +877,13 @@ import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import AnonymisationPipelineList from './AnonymisationPipelineList.vue'
 import ConnectionTestIcon from './ConnectionTestIcon.vue'
+import DocumentStoreStatus from './DocumentStoreStatus.vue'
 import LabeledSelect from './LabeledSelect.vue'
 import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
 import SettingsTextField from './SettingsTextField.vue'
 import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
+import { disclosureRows, isRetention, statementsPayload, TRAINING_USES } from './anonymisationDisclosure.js'
 import { saveMessageMethods } from './saveMessage.js'
 
 /**
@@ -1121,6 +1207,10 @@ const INITIAL_STATE = {
 
 	// Resolved backend state from GET /api/admin/anonymisation/backend-state.
 	backendState: null,
+	// Unsaved training-use and retention edits per backend (anonymisation-discloses-itself).
+	statementDrafts: {},
+	statementErrors: {},
+	savingStatement: null,
 	// Last probe error code for the openanonymiser backend (drives the install hint).
 	openAnonymiserError: null,
 	// Method name currently being probed via the test-connection endpoint.
@@ -1273,6 +1363,7 @@ export default {
 		AlertCircleIcon,
 		AnonymisationPipelineList,
 		ConnectionTestIcon,
+		DocumentStoreStatus,
 		DotsVertical,
 		LabeledSelect,
 		OpenAnonymiserHint,
@@ -1343,6 +1434,27 @@ export default {
 		showOpenAnonymiserConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
 			return methodId === 'openanonymiser'
+		},
+
+		/**
+		 * What the page says per backend: its measured accuracy for the current
+		 * detector version, and its training use and retention.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-precision-and-recall-are-measured-over-a-named-corpus-and-published-with-the-detector-version-req-adi-002
+		 */
+		disclosureRows() {
+			return disclosureRows(this.backendState, BACKEND_LABELS)
+		},
+
+		/**
+		 * The training-use values a statement can hold.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		trainingUses() {
+			return TRAINING_USES
 		},
 
 		/**
@@ -1450,6 +1562,76 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * A training-use value in words.
+		 *
+		 * @param {string} use excluded, permitted or unknown
+		 * @return {string}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		trainingUseLabel(use) {
+			const labels = {
+				excluded: t('openregister', 'Not used for training'),
+				permitted: t('openregister', 'May be used for training'),
+				unknown: t('openregister', 'Unknown'),
+			}
+			return labels[use] || use
+		},
+
+		/**
+		 * A backend's statement as being edited: the unsaved draft, else the stated one.
+		 *
+		 * @param {object} row A disclosure row.
+		 * @return {{trainingUse: string, retention: string}}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		statementDraft(row) {
+			return this.statementDrafts[row.name] || row.statement
+		},
+
+		/**
+		 * Change one field of a backend's draft statement.
+		 *
+		 * @param {object} row A disclosure row.
+		 * @param {string} field trainingUse or retention
+		 * @param {string} value The new value.
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		setStatementDraft(row, field, value) {
+			this.statementDrafts = { ...this.statementDrafts, [row.name]: { ...this.statementDraft(row), [field]: value } }
+		},
+
+		/**
+		 * Save a backend's training use and retention with the other stated ones;
+		 * a retention the server would not keep is refused here, before anything is sent.
+		 *
+		 * @param {object} row A disclosure row.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		async saveStatement(row) {
+			const draft = this.statementDraft(row)
+			if (!isRetention(draft.retention)) {
+				this.statementErrors = { ...this.statementErrors, [row.name]: t('openregister', 'Retention is none, unknown or an ISO 8601 duration such as P30D.') }
+				return
+			}
+			this.statementErrors = { ...this.statementErrors, [row.name]: '' }
+			this.savingStatement = row.name
+			try {
+				await this.settingsStore.saveFileSettings({
+					...this.fileSettingsPayload(),
+					anonymisation: { statements: statementsPayload(this.backendState, row.name, draft) },
+				})
+				const { [row.name]: saved, ...rest } = this.statementDrafts
+				this.statementDrafts = rest
+				await this.loadBackendState()
+			} catch {
+				this.statementErrors = { ...this.statementErrors, [row.name]: t('openregister', 'The statement could not be saved.') }
+			} finally {
+				this.savingStatement = null
+			}
+		},
+
 		/**
 		 * Store the chosen jurisdiction pattern sets and save.
 		 *
@@ -2385,5 +2567,39 @@ export default {
 	.stat-card {
 		transition: none;
 	}
+}
+.backend-disclosure {
+	margin-top: 12px;
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+}
+
+.backend-disclosure-title {
+	margin: 0 0 4px;
+	font-weight: bold;
+}
+
+.backend-accuracy {
+	border-collapse: collapse;
+	margin: 4px 0 8px;
+}
+
+.backend-accuracy th,
+.backend-accuracy td {
+	padding: 2px 12px 2px 0;
+	text-align: start;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.backend-statement {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.backend-statement-error {
+	color: var(--color-error-text);
 }
 </style>

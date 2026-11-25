@@ -165,4 +165,21 @@ class FormLinksControllerTest extends TestCase {
 		$this->assertSame(400, $response->getStatus());
 		$this->assertSame('Submission not linked', $response->getData()['error']);
 	}//end testDestroySubmissionReports400WhenTheServiceThrows()
+	public function testAFailingAvailableListingIsAGeneric500(): void {
+		$this->service->method('getAvailableForms')->willThrowException(new \RuntimeException('forms app down at db-host'));
+
+		$response = $this->controller->available();
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $response->getData());
+	}//end testAFailingAvailableListingIsAGeneric500()
+
+	public function testATypedFailureOnTheAvailableListingKeepsItsStatus(): void {
+		$this->service->method('getAvailableForms')->willThrowException(new \InvalidArgumentException('objectUuid is malformed'));
+
+		$response = $this->controller->available();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['message' => 'objectUuid is malformed', 'error' => 'invalid-argument'], $response->getData());
+	}//end testATypedFailureOnTheAvailableListingKeepsItsStatus()
 }//end class

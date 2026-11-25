@@ -61,13 +61,13 @@ exports[`ObjectsTab golden renders the linked objects and reloads when the messa
       <div class="or-mail-object-card__header"><span class="or-mail-object-card__kind"><span class="or-mail-object-card__schema">Zaken</span>
         <!--v-if--></span>
         <div data-stub="NcButton" variant="tertiary" aria-label="t:Remove connection to Zaak 1"><i data-icon="Close" size="20"></i></div>
-      </div><a class="or-mail-object-card__title" href="/index.php/apps/openregister/registers/2/5/u-1" target="_blank" title="t:Open connected item">Zaak 1</a>
+      </div><a class="or-mail-object-card__title" href="/index.php/apps/openregister/registers/2/5/u-1" title="t:Open connected item">Zaak 1</a>
       <!--v-if-->
     </div>
     <div class="or-mail-object-card">
       <div class="or-mail-object-card__header"><span class="or-mail-object-card__kind"><span class="or-mail-object-card__schema">Leads</span><span class="or-mail-object-card__id">#L-2</span></span>
         <div data-stub="NcButton" variant="tertiary" aria-label="t:Remove connection to Lead 2"><i data-icon="Close" size="20"></i></div>
-      </div><a class="or-mail-object-card__title" href="/apps/pipelinq/leads/u-2" target="_blank" title="t:Open connected item">Lead 2</a>
+      </div><a class="or-mail-object-card__title" href="/apps/pipelinq/leads/u-2" title="t:Open connected item">Lead 2</a>
       <p class="or-mail-object-card__sub">Met at the trade fair</p>
     </div>
   </div>
