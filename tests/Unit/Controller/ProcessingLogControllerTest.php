@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\ProcessingLogController;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ProcessingLogMapper;
@@ -64,6 +65,8 @@ use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ProcessingLogControllerTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * @var IRequest&MockObject
@@ -107,6 +110,7 @@ class ProcessingLogControllerTest extends TestCase {
 		$this->logMapper = $this->createMock(ProcessingLogMapper::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->organisationService = $this->createMock(OrganisationService::class);
 

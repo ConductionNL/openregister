@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\VerwerkingsactiviteitenController;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
@@ -44,6 +45,8 @@ use PHPUnit\Framework\TestCase;
  * Who is given which processing activities.
  */
 final class ProcessingActivitiesScopeTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * The recording of what an administrator is given.
@@ -137,6 +140,7 @@ final class ProcessingActivitiesScopeTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturn((($world['admin'] ?? false) === true) ? ['admin'] : ['users']);
 
 		$organisations = $this->createMock(OrganisationService::class);

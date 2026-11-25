@@ -73,6 +73,7 @@ final class ProcessingLogAccess {
 	 * @return JSONResponse|array{0: bool, 1: string|null} [isFg, organisationId] or a 401/403.
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function resolve(): JSONResponse|array {
 		$user = $this->access->user();
@@ -81,7 +82,7 @@ final class ProcessingLogAccess {
 		}
 
 		$groups = $this->access->groupIds(user: $user);
-		$isAdmin = in_array('admin', $groups, true);
+		$isAdmin = $this->access->isAdmin();
 		$isFg = in_array($this->policy->fgGroup(), $groups, true);
 
 		if ($isAdmin === false && $isFg === false) {

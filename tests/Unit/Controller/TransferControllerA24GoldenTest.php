@@ -129,6 +129,7 @@ class TransferControllerA24GoldenTest extends TestCase {
 		$expected = [
 			'index' => true,
 			'show' => true,
+			'eligible' => true,
 			'approve' => false,
 			'reject' => false,
 			'create' => false,
