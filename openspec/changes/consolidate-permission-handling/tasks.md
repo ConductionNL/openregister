@@ -36,8 +36,8 @@
   - An entity whose authorization grants `public` a verb permits an anonymous caller that verb; one that does not still refuses. Asserted as a pair, per verb.
   - **No entity gains access by this change.** Register/schema/agent entities declare no authorization today, so every one of them must still refuse an anonymous caller afterwards — asserted by name, not by count. A count passes while the wrong entity opened.
   - opencatalogi's public surfaces are unaffected: `publication/page` and `publication/publication` still serve an anonymous caller the same row counts as before (7 and 3 on the reference instance). This is the outage tripwire.
-- [ ] Implement
-- [ ] Test
+- [x] Implement (`EntityRbacTrait::publicPolicyAllows()`: an anonymous caller is admitted only where the organisation's authorization names `public` for the entity type and action; absence, `*`, other groups and the enforcement flag being off still refuse; a refusal is logged once per entity type, action and cause. The opencatalogi row-count tripwire is a live check, see Task 4)
+- [x] Test (`tests/Unit/Db/Tenancy/EntityPlanePublicGrantTest.php`, pair per verb and every entity type by name; the call-list pin in `EntityPlaneAnonymousPinTest` names the new branch)
 
 ### Task 4: Prove it on a live instance, both directions
 - **spec_ref**: `openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-a-refusal-and-a-grant-must-both-be-observable`
