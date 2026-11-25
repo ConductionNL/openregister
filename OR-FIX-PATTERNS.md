@@ -966,3 +966,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: in a second worktree, tests error 'Class OCA\OpenRegister\... not found' for classes the PR adds, or a check on 'main' passes/fails as the other tree did.
 - Cause: vendor/ symlinked to another checkout's vendor; composer's PSR-4 paths resolve from the real vendor dir, so lib/ of the OTHER checkout is autoloaded (phpstan too).
 - Fix: cp -a the saved ~/w/vendor-openregister-<hash> into each worktree; never symlink vendor.
+## Row-to-entity golden misses fields main added (or-fix-1, 25 Nov)
+- Symptom: MagicSearchHandlerRowToEntityTest::testRowHydratesTheRecordedEntity fails on a PR's own new case: actual has 'matchedFileId'/'matchedMember' that the expected lacks.
+- Cause: main added entity fields to every case in tests/Unit/Db/MagicMapper/fixtures/row-to-entity.php; a PR that added a case before that has the old field list.
+- Fix: after merging main, add the missing keys (NULL) after 'matchedFile' in the PR's case only (see #11171).
