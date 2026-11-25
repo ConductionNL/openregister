@@ -26,14 +26,28 @@ export function cardSize(gallery) {
 }
 
 /**
- * A thumbnail from Nextcloud's preview service for a file id, not the full file.
+ * A thumbnail of a file, not the full file.
+ *
+ * A file attached to a record lives in OpenRegister's own storage, where the
+ * person looking has no mount, so Nextcloud's preview service answers 404 for
+ * it. With the record known, the thumbnail comes from the record's own file
+ * preview route, which checks the reader's access to the record; without it,
+ * from Nextcloud's preview service.
  *
  * @param {number|string} fileId The file id.
  * @param {string} size The card size.
+ * @param {object|null} record The record the file is attached to, when known.
  * @return {string}
  */
-export function previewUrl(fileId, size) {
+export function previewUrl(fileId, size, record = null) {
 	const edge = THUMBNAIL_SIZE[size] ?? THUMBNAIL_SIZE.medium
+	const self = record?.['@self'] ?? {}
+	if (self.register && self.schema && (self.id ?? record?.id)) {
+		return generateUrl(
+			'/apps/openregister/api/objects/{register}/{schema}/{id}/files/{fileId}/preview?width={edge}&height={edge}',
+			{ register: self.register, schema: self.schema, id: self.id ?? record.id, fileId, edge },
+		)
+	}
 	return generateUrl('/core/preview?fileId={fileId}&x={edge}&y={edge}&a=1', { fileId, edge })
 }
 
@@ -44,25 +58,26 @@ export function previewUrl(fileId, size) {
  *
  * @param {*} value The cover field's value on the record.
  * @param {string} size The card size.
+ * @param {object|null} record The record the value belongs to, when known.
  * @return {string|null}
  */
-export function coverUrl(value, size) {
+export function coverUrl(value, size, record = null) {
 	if (Array.isArray(value)) {
 		for (const item of value) {
-			const url = coverUrl(item, size)
+			const url = coverUrl(item, size, record)
 			if (url) return url
 		}
 		return null
 	}
 	if (typeof value === 'number' || (typeof value === 'string' && /^\d+$/.test(value))) {
-		return previewUrl(value, size)
+		return previewUrl(value, size, record)
 	}
 	if (typeof value === 'string') {
 		return value.trim() === '' ? null : value
 	}
 	if (value && typeof value === 'object') {
 		if (value.id !== undefined && value.id !== null && /^\d+$/.test(String(value.id))) {
-			return previewUrl(value.id, size)
+			return previewUrl(value.id, size, record)
 		}
 		return value.downloadUrl || value.accessUrl || value.url || null
 	}
@@ -83,11 +98,11 @@ export function recordCover(record, gallery, schema) {
 	const imageField = schema?.configuration?.objectImageField
 	const size = cardSize(gallery)
 	if (field && record?.[field] !== undefined && record[field] !== null) {
-		const url = coverUrl(record[field], size)
+		const url = coverUrl(record[field], size, record)
 		if (url) return url
 	}
 	if (!field || field === imageField) {
-		return coverUrl(record?.['@self']?.image, size)
+		return coverUrl(record?.['@self']?.image, size, record)
 	}
 	return null
 }
@@ -135,4 +150,22 @@ export function gallerySchema(schema, gallery) {
 export function galleryCardFields(gallery) {
 	const fields = Array.isArray(gallery?.cardFields) ? gallery.cardFields : []
 	return fields.filter((field) => typeof field === 'string' && field !== '').slice(0, 4)
+}
+
+/**
+ * The record behind a card: the card without the cover it was given for display.
+ *
+ * A card is the record plus COVER_KEY. Handing the card itself to the record
+ * dialog, a copy or a template would show the cover as a property and write it
+ * into the record on a save.
+ *
+ * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-the-search-page-renders-a-gallery-view-as-cards
+ * @param {object} card A card from galleryCards().
+ * @return {object}
+ */
+export function recordOfCard(card) {
+	if (!card || typeof card !== 'object') return card
+	const record = { ...card }
+	delete record[COVER_KEY]
+	return record
 }
