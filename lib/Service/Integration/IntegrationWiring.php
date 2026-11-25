@@ -239,6 +239,9 @@ final class IntegrationWiring {
 		// Harvest protocols. OpenRegister registers its own fetchers through the
 		// same event an app uses to add one (app-harvest-fetchers-and-flow-node).
 		$context->registerEventListener(RegisterSourceFetchersEvent::class, SourceFetcherRegistrationListener::class);
+		// A removed or disabled person's owned webhooks are disabled, kept for review.
+		$context->registerEventListener(\OCP\User\Events\BeforeUserDeletedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
+		$context->registerEventListener(\OCP\User\Events\UserChangedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
 		// Inbound calendar changes refresh the link rows (calendar-leaf-inbound, REQ-CAL-INB-001).
 		CalendarLinkListenerRegistrar::register(context: $context);
 		foreach (self::BINDINGS as $contract => $service) {
