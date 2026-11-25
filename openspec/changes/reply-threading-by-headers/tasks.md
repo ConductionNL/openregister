@@ -30,7 +30,8 @@
       it in a queue nobody reads while the system looks healthy. Only a
       `threaded` result may be filed without a human.
       > 2026-11-14: the granted system scope is `ReplyThreadService::resolveAsSystem()`, published as `OCA\OpenRegister\Contract\ReplyThreadResolutionInterface` for an in-process intake. No route reaches it: `POST /api/emails/resolve` stays user-scoped, so an inbound request never resolves outside the caller's reach (ADR-099). The answer says `scope: system`; the header order and refusals are the same.
-- [ ] 2.2 `by-message` also matches by `rfcMessageId`.
+- [x] 2.2 `by-message` also matches by `rfcMessageId`.
+      > 2026-11-25: the by-message lookup is `GET /api/linked/mail/{entityId}` now. A Message-ID there (`<local@domain>`, brackets optional; a Mail reference `{account}/{message}` never carries an `@`) is answered by `MailMessageIdReverseLookup`: an exact match on `rfc_message_id`, each object read with RBAC and multitenancy on, so an unreadable object reads as no link, for an administrator and anybody else alike. No Mail account is asked for and the magic tables are not scanned. Rows say `matchedOn: Message-ID`. Tests: `tests/Unit/Controller/Support/MailMessageIdReverseLookupTest.php`, `tests/Unit/Controller/LinkedEntityMessageIdReverseLookupTest.php`.
 
 ## 3. Tests
 

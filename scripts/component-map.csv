@@ -305,6 +305,7 @@ Controller/IntegrationsController.php,96,Controller,Integrations,Integrations/Co
 Controller/LinkedEntityController.php,117,Controller,Integrations,Integrations/Controller/LinkedEntityController.php,0,,Integrations
 Controller/Support/LinkedEntityControllerServices.php,,Controller,,,,,Integrations
 Controller/Support/OwnMailReverseLookup.php,,Controller,,,,,Integrations
+Controller/Support/MailMessageIdReverseLookup.php,,Controller,,,,,Integrations
 Controller/ManifestController.php,83,Controller,Configuration,Configuration/Controller/ManifestController.php,0,,Configuration
 Controller/MapLinksController.php,124,Controller,Integrations,Integrations/Controller/MapLinksController.php,0,,Integrations
 Controller/Support/MapLinksControllerServices.php,,Controller,,,,,Integrations
