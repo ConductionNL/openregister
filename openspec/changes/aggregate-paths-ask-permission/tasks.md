@@ -55,6 +55,23 @@
   - The four dead facet handlers became an ASSERTION rather than an allowlist
     entry: the suite checks they remain uninstantiated, so the day one is wired
     up it has to answer the question.
-- [ ] 3.2 `tests/e2e/ci/aggregate-paths-ask-permission.spec.ts`.
-  - NOT WRITTEN. Left for the same lane as the reference-options work rather
-    than half-done here.
+- [x] 3.2 `tests/e2e/ci/aggregate-paths-ask-permission.spec.ts`.
+  - 2026-11-25: four tests green and one declared `test.fixme`, on a sandbox
+    Nextcloud 34 with MariaDB. The seeded colleague may list the schema but not
+    read `bedrag` or `oordeel`; the administrator is the control on every path,
+    so a refusal is the rule and not a broken fixture. A facet over either has
+    no buckets and no value anywhere in the facets answer; a sum and a grouping
+    over them answer 403 with no figure or group key; a grouping over the
+    ungoverned `soort` answers as before; a kanban board grouped on `oordeel`
+    draws for the administrator and is refused for the colleague with no column
+    heading in the answer.
+  - 📌 THE FIXME IS A FINDING. The first scenario also asks that a withheld
+    facet be NAMED under `withheld`. The list answer carries no `withheld` key:
+    the facet is dropped at the facetable-field source and nothing reports it,
+    so "no values" and "not yours" read the same. Not built here, because the
+    facet answer is cached per query rather than per caller and a per-caller
+    `withheld` list needs that settled first. The fixme shows in the skip column
+    until it is.
+  - Observed, not changed: on the sandbox a kanban board over a property with
+    no `enum` discovered no columns even for the administrator, so the spec
+    gives `oordeel` an enum and the control reads those columns.
