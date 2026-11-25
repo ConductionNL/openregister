@@ -371,3 +371,4 @@
 2026-11-25T14:50:08Z dev=987938d424 prs=11171,11176,11181,11185 Tests: 67036, Assertions: 237911, Errors: 9, Failures: 2, Warnings: 1, Deprecations: 25, PHPUnit Deprecations: 1, Skipped: 27. front=skip
 2026-11-25T15:05:43Z dev=1e7c46b1e1 prs=11171 Tests: 67036, Assertions: 237911, Errors: 9, Failures: 2, Deprecations: 23, PHPUnit Deprecations: 1, Skipped: 27. front=skip
 2026-11-25T15:24:19Z dev=934a492cf0 prs=11171 Tests: 67057, Assertions: 237990, Errors: 5, Failures: 2, Deprecations: 24, PHPUnit Deprecations: 1, Skipped: 27. front=skip
+2026-11-25T15:24:56Z dev=934a492cf0 prs=11195,11197,11202,11210 Tests: 67065, Assertions: 238015, Errors: 5, Failures: 1, Deprecations: 24, PHPUnit Deprecations: 1, Skipped: 27. front=skip
