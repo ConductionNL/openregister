@@ -228,3 +228,4 @@ openregister#11076 c42498d6a42bb586bba0fee8d823c262df59f345 auto-park: sbom: pac
 openregister#11076 85a7ef99258d49d25bd092d46c4fb221714da738 auto-park: sbom: sbom.cdx.json does not match package-lock.json (run hydra scripts/regen-sbom.sh)
 openregister#11005 6ea7c064040043891aa532f65e5301f19fb9cdda precheck-red alone on main: OCA\OpenRegister\Tests\Unit\AppInfo\BuiltinIntegrationProviderRegistrationTest::testEveryFactoryBuildsItsServi
 openregister#11055 289276bf438732cb6af7453b0cd018f519de46dd precheck-red alone on main: FAIL src/views/listActions.dom.golden.spec.js
+openregister#11075 7ab8891d18f15550c91019b5e040b5c6f63881c0 auto-park: sbom: package-lock.json changed without sbom.cdx.json
