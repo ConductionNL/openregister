@@ -216,10 +216,11 @@ class PortalPropertyMiddleware extends Middleware {
 			return $data;
 		}
 
-		$data['results'] = array_map(
-			fn (mixed $row): mixed => is_array($row) === true ? $this->policy->readable(properties: $properties, object: $row) : $row,
-			$data['results']
-		);
+		foreach ($data['results'] as $index => $row) {
+			if (is_array($row) === true) {
+				$data['results'][$index] = $this->policy->readable(properties: $properties, object: $row);
+			}
+		}
 
 		return $data;
 	}//end filtered()
@@ -245,7 +246,11 @@ class PortalPropertyMiddleware extends Middleware {
 			return [];
 		}
 
-		return is_array($properties) === true ? $properties : [];
+		if (is_array($properties) === false) {
+			return [];
+		}
+
+		return $properties;
 	}//end properties()
 
 	/**

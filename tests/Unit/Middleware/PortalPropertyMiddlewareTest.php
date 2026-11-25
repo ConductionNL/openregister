@@ -87,7 +87,7 @@ class PortalPropertyMiddlewareTest extends TestCase {
 	private function middleware(string $header, array $params = []): PortalPropertyMiddleware {
 		$params += ['register' => 'gemeente', 'schema' => 'case'];
 		$request = $this->createMock(originalClassName: IRequest::class);
-		$request->method('getHeader')->willReturnCallback(static fn (string $name): string => $name === 'X-Portal-Subject' ? $header : '');
+		$request->method('getHeader')->willReturnCallback(static fn (string $name): string => (['X-Portal-Subject' => $header][$name] ?? ''));
 		$request->method('getParam')->willReturnCallback(static fn (string $key, mixed $default = null): mixed => ($params[$key] ?? $default));
 		$request->method('getParams')->willReturn($params);
 
@@ -124,10 +124,15 @@ class PortalPropertyMiddlewareTest extends TestCase {
 		$case       = ['id' => 'case-1'] + self::STORED + ['@self' => ['id' => 'case-1']];
 
 		$shown = $middleware->afterController(controller: $this->objectsController(), methodName: 'show', response: new JSONResponse($case));
-		$this->assertSame(expected: ['id' => 'case-1', 'subject' => 'Bin not collected', 'phone' => '0612345678', '@self' => ['id' => 'case-1']], actual: $shown->getData());
+		$this->assertSame(
+			expected: ['id' => 'case-1', 'subject' => 'Bin not collected', 'phone' => '0612345678', '@self' => ['id' => 'case-1']],
+			actual: $shown->getData()
+		);
 
-		$listed = $middleware->afterController(controller: $this->objectsController(), methodName: 'index', response: new JSONResponse(['results' => [$case], 'total' => 1]));
-		$this->assertSame(expected: ['subject', 'phone'], actual: array_values(array_diff(array_keys($listed->getData()['results'][0]), ['id', '@self'])));
+		$list   = new JSONResponse(['results' => [$case], 'total' => 1]);
+		$listed = $middleware->afterController(controller: $this->objectsController(), methodName: 'index', response: $list);
+		$row    = $listed->getData()['results'][0];
+		$this->assertSame(expected: ['subject', 'phone'], actual: array_values(array_diff(array_keys($row), ['id', '@self'])));
 		$this->assertSame(expected: 1, actual: $listed->getData()['total']);
 	}//end testAPortalReadLeavesOutWhatThePortalMayNotSee()
 

@@ -74,6 +74,7 @@ class PortalPropertyPolicyTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnInternalNoteStaysOffThePortal(): void {
+		$props = $this->caseSchema()->getProperties();
 		$object = [
 			'id'           => 'case-1',
 			'subject'      => 'Bin not collected',
@@ -86,7 +87,7 @@ class PortalPropertyPolicyTest extends TestCase {
 
 		$this->assertSame(
 			expected: ['id' => 'case-1', 'subject' => 'Bin not collected', 'phone' => '0612345678', '@self' => ['id' => 'case-1']],
-			actual: (new PortalPropertyPolicy())->readable(properties: $this->caseSchema()->getProperties(), object: $object)
+			actual: (new PortalPropertyPolicy())->readable(properties: $props, object: $object)
 		);
 	}//end testAnInternalNoteStaysOffThePortal()
 
@@ -96,14 +97,18 @@ class PortalPropertyPolicyTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheResidentChangesOnlyWhatTheyMayChange(): void {
+		$props = $this->caseSchema()->getProperties();
 		$policy = new PortalPropertyPolicy();
 		$stored = ['subject' => 'Bin not collected', 'phone' => '0612345678', 'internalNote' => 'caller was rude'];
 
-		$this->assertSame(expected: ['subject'], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['subject' => 'changed'], existing: $stored));
-		$this->assertSame(expected: [], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '0699999999'], existing: $stored));
+		$this->assertSame(
+			expected: ['subject'],
+			actual: $policy->refusedChanges(properties: $props, incoming: ['subject' => 'changed'], existing: $stored)
+		);
+		$this->assertSame(expected: [], actual: $policy->refusedChanges(properties: $props, incoming: ['phone' => '0699999999'], existing: $stored));
 		$this->assertSame(
 			expected: ['subject', 'internalNote'],
-			actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '1', 'subject' => 'x', 'internalNote' => 'y'], existing: $stored)
+			actual: $policy->refusedChanges(properties: $props, incoming: ['phone' => '1', 'subject' => 'x', 'internalNote' => 'y'], existing: $stored)
 		);
 	}//end testTheResidentChangesOnlyWhatTheyMayChange()
 
@@ -131,10 +136,14 @@ class PortalPropertyPolicyTest extends TestCase {
 	 * @return void
 	 */
 	public function testACreateMaySetOnlyEditableProperties(): void {
+		$props = $this->caseSchema()->getProperties();
 		$policy = new PortalPropertyPolicy();
 
-		$this->assertSame(expected: ['subject'], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['subject' => 'new', 'phone' => '1'], existing: null));
-		$this->assertSame(expected: [], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '1'], existing: null));
+		$this->assertSame(
+			expected: ['subject'],
+			actual: $policy->refusedChanges(properties: $props, incoming: ['subject' => 'new', 'phone' => '1'], existing: null)
+		);
+		$this->assertSame(expected: [], actual: $policy->refusedChanges(properties: $props, incoming: ['phone' => '1'], existing: null));
 	}//end testACreateMaySetOnlyEditableProperties()
 
 	/**
@@ -143,17 +152,21 @@ class PortalPropertyPolicyTest extends TestCase {
 	 * @return void
 	 */
 	public function testAReplaceThatDropsAStoredValueIsAChange(): void {
+		$props = $this->caseSchema()->getProperties();
 		$policy = new PortalPropertyPolicy();
 		$stored = ['subject' => 'Bin not collected', 'phone' => '0612345678', 'internalNote' => 'caller was rude'];
 
 		$this->assertSame(
 			expected: ['subject', 'internalNote'],
-			actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '1'], existing: $stored, replace: true)
+			actual: $policy->refusedChanges(properties: $props, incoming: ['phone' => '1'], existing: $stored, replace: true)
 		);
-		$this->assertSame(expected: [], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '1'], existing: $stored, replace: false));
 		$this->assertSame(
 			expected: [],
-			actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: $stored + ['phone' => '1'], existing: $stored, replace: true)
+			actual: $policy->refusedChanges(properties: $props, incoming: ['phone' => '1'], existing: $stored, replace: false)
+		);
+		$this->assertSame(
+			expected: [],
+			actual: $policy->refusedChanges(properties: $props, incoming: $stored + ['phone' => '1'], existing: $stored, replace: true)
 		);
 	}//end testAReplaceThatDropsAStoredValueIsAChange()
 
