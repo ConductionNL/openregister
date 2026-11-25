@@ -156,6 +156,10 @@ final class MiddlewareWiring {
 		// read and list responses (schema-breaking-change-notice).
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware::class);
 
+		// A save that a `warn` validation let through carries the warning on
+		// its response (rules-compose-read-transitions-and-time, task 4.3b).
+		$context->registerMiddleware(SaveWarningsMiddleware::class);
+
 		// Counts, times and classifies each request for the request metrics
 		// (production-observability). Registered as the last app-scoped
 		// middleware: Nextcloud runs afterException in reverse order, so it
