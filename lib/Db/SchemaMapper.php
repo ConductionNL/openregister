@@ -1147,7 +1147,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		if ($everyRow === true) {
 			$remembered = $this->findCache->all(multitenancy: $_multitenancy);
 			if ($remembered !== null) {
-				return $remembered;
+				return array_values(array_filter($remembered, static fn ($entity): bool => $entity instanceof Schema));
 			}
 		}
 

@@ -616,7 +616,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		if ($everyRow === true) {
 			$remembered = $this->findCache->all(multitenancy: $_multitenancy);
 			if ($remembered !== null) {
-				return $remembered;
+				return array_values(array_filter($remembered, static fn ($entity): bool => $entity instanceof Register));
 			}
 		}
 
