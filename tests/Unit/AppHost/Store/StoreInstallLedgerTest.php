@@ -48,7 +48,7 @@ class StoreInstallLedgerTest extends TestCase {
 	 * @return StoreInstallLedger
 	 */
 	private function ledger(): StoreInstallLedger {
-		$config = $this->createMock(IAppConfig::class);
+		$config = $this->createMock(originalClassName: IAppConfig::class);
 		$config->method('getValueString')->willReturnCallback(
 			fn (string $app, string $key, string $default=''): string => ($this->values[$app][$key] ?? $default)
 		);
@@ -59,7 +59,7 @@ class StoreInstallLedgerTest extends TestCase {
 			}
 		);
 
-		return new StoreInstallLedger(appConfig: $config, logger: $this->createMock(LoggerInterface::class));
+		return new StoreInstallLedger(appConfig: $config, logger: $this->createMock(originalClassName: LoggerInterface::class));
 	}//end ledger()
 
 	/**
@@ -153,10 +153,10 @@ class StoreInstallLedgerTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailingWriteIsLoggedNotThrown(): void {
-		$config = $this->createMock(IAppConfig::class);
+		$config = $this->createMock(originalClassName: IAppConfig::class);
 		$config->method('getValueString')->willReturn('');
-		$config->method('setValueString')->willThrowException(new RuntimeException('db down'));
-		$logger = $this->createMock(LoggerInterface::class);
+		$config->method('setValueString')->willThrowException(exception: new RuntimeException(message: 'db down'));
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
 		$logger->expects($this->once())->method('error');
 
 		(new StoreInstallLedger(appConfig: $config, logger: $logger))->record(appId: 'larpinq', slug: 'a-set', target: 'world-1');
