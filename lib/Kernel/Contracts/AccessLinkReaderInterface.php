@@ -57,6 +57,22 @@ interface AccessLinkReaderInterface {
 	public function read(AccessLinkInterface $link, ?ObjectEntityInterface $object = null): ?array;
 
 	/**
+	 * The file a file link names, for its holder to download, or null.
+	 *
+	 * Null for a link of another subject type, a file the object does not
+	 * carry, and a restricted file: the same files {@see read()} refuses to
+	 * describe.
+	 *
+	 * @param AccessLinkInterface $link The link.
+	 * @param ObjectEntityInterface|null $object The subject, when the caller already resolved it.
+	 *
+	 * @return \OCP\Files\File|null The file, or null.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
+	 */
+	public function file(AccessLinkInterface $link, ?ObjectEntityInterface $object = null): ?\OCP\Files\File;
+
+	/**
 	 * One object, reduced to what an anonymous caller may read.
 	 *
 	 * Public because a link is not the only surface that answers without a
