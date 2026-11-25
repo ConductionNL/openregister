@@ -1,0 +1,45 @@
+# stackiq workflow e2e reds 2026-11-25 (b-stackiq live sandbox: NC 34, PostgreSQL 16, OR main, stackiq development after #2245). Full run: 30 passed, 48 failed, 9 skipped, 31 did not run. Fixed since: ai-systems 94/141, api-docs 50/65, connections all (see #2234 #2245).
+[chromium] › tests/e2e/workflows/api-docs.spec.ts:28:2 › API documentation › a supplier's developer reads the offered usage endpoint
+[chromium] › tests/e2e/workflows/application-components.spec.ts:135:1 › a component added from the application page names that application as Part of
+[chromium] › tests/e2e/workflows/ai-systems.spec.ts:120:1 › a high-risk system without a FRIA is listed with a warning and its page marks FRIA missing
+[chromium] › tests/e2e/workflows/application-interfaces.spec.ts:142:1 › an API added from the application page is listed there and on the APIs list
+[chromium] › tests/e2e/workflows/application-page.spec.ts:97:1 › a buyer reads the short description of a product on its page
+[chromium] › tests/e2e/workflows/archimate-round-trip-check.spec.ts:57:1 › the old round-trip endpoint is gone
+[chromium] › tests/e2e/workflows/architecture-assistant-views.spec.ts:232:1 › a draftView call hands back the editor link and the Views page lists the draft
+[chromium] › tests/e2e/workflows/architecture-decisions.spec.ts:173:1 › a recorded decision is listed as draft and its page shows the rejected alternative
+[chromium] › tests/e2e/workflows/assistant-actions.spec.ts:138:1 › filtering on the submit tool leaves one row whose record link opens the contract
+[chromium] › tests/e2e/workflows/change-entry-type.spec.ts:111:1 › a supplier turns an application into a service and it keeps its identifier and history
+[chromium] › tests/e2e/workflows/architecture-views.spec.ts:130:1 › the views list filters on drawn, imported and mine, and on tag and status (1.0m)
+[chromium] › tests/e2e/workflows/compliance-matrix.spec.ts:68:2 › compliance claim verification › evidence alone stays claimed; a reviewer outside the supplier verifies it; new evidence resets it
+[chromium] › tests/e2e/workflows/connection-suggestions.spec.ts:229:1 › the usage of X is offered the connection to Y and accepting adds it to the usage
+[chromium] › tests/e2e/workflows/compliance-documents.spec.ts:226:1 › a supplier publishes a processing agreement for all government readers
+[chromium] › tests/e2e/workflows/data-model.spec.ts:147:1 › the Data model page lists an own entity under Own and opens its page
+[chromium] › tests/e2e/workflows/crud-persistence.spec.ts:151:2 › Contactpersoon CRUD-persistence › create -> row appears (proves @resolve list loads real rows) (1.0m)
+[chromium] › tests/e2e/workflows/entry-wizard.spec.ts:132:1 › a new application goes through details, related records and the summary, then opens (1.0m)
+[chromium] › tests/e2e/workflows/future-state-scenarios.spec.ts:125:1 › the roadmap opens the plan comparison, which shows the planned replacement
+[chromium] › tests/e2e/workflows/future-state-scenarios.spec.ts:142:1 › a scenario that replaces a usage lists the change and compares it with source scenario
+[chromium] › tests/e2e/workflows/entry-wizard.spec.ts:155:1 › a new connection links the two applications chosen in the wizard (1.0m)
+[chromium] › tests/e2e/workflows/integrations-page.spec.ts:88:2 › Integrations over the connection registry › lists the declared connections, all of them stackiq's
+[chromium] › tests/e2e/workflows/integrations-page.spec.ts:114:2 › Integrations over the connection registry › reads Simulated once the null transport is saved, and not before
+[chromium] › tests/e2e/workflows/integrations-page.spec.ts:170:2 › Integrations over the connection registry › sends Add integration to integriq instead of offering a form
+[chromium] › tests/e2e/workflows/future-state-scenarios.spec.ts:174:1 › an adopted scenario is applied to the landscape once (1.0m)
+[chromium] › tests/e2e/workflows/move-to-organisation.spec.ts:188:1 › an administrator of both organisations moves two applications and they keep their pages
+[chromium] › tests/e2e/workflows/org-export-workflow.spec.ts:125:1 › export workflow: select a real org, toggle layers, run export -> request fires with the org + layers
+[chromium] › tests/e2e/workflows/maintenance.spec.ts:102:1 › announcing maintenance lists the window as planned on the product page (1.0m)
+[chromium] › tests/e2e/workflows/owner-attestation.spec.ts:268:1 › a round over the applications in use sends four requests and names the usage without an owner
+[chromium] › tests/e2e/workflows/maintenance.spec.ts:129:1 › the dashboard lists the window with its impact
+[chromium] › tests/e2e/workflows/portfolio-report.spec.ts:87:1 › a usage row shows 10,000 euro a year beside business value 4 and risk 2
+[chromium] › tests/e2e/workflows/maintenance.spec.ts:153:1 › Release moves the planned version into use (1.0m)
+[chromium] › tests/e2e/workflows/portfolio-value.spec.ts:122:1 › the mismatch filter lists a usage whose scores contradict its class and leaves out one that agrees (1.0m)
+[chromium] › tests/e2e/workflows/reference-component-coverage.spec.ts:126:1 › the GEMMA plate shows the overlap with both applications and the gap
+[chromium] › tests/e2e/workflows/process-mapping.spec.ts:171:1 › a new process with three steps lists them in position order and reads draft (1.0m)
+[chromium] › tests/e2e/workflows/reference-component-coverage.spec.ts:150:1 › a GEMMA view draws the overlap with both application names and the gap
+[chromium] › tests/e2e/workflows/process-mapping.spec.ts:206:1 › the usage page lists the step it supports with its process and opens the step page
+[chromium] › tests/e2e/workflows/process-mapping.spec.ts:246:1 › the process page draws three steps in position order and marks the decision step
+[chromium] › tests/e2e/workflows/review-moderation.spec.ts:157:2 › review moderation › the review form does not offer the status (1.0m)
+[chromium] › tests/e2e/workflows/saas-subscriptions.spec.ts:93:1 › a subscription bought outside IT shows with its yearly cost and department
+[chromium] › tests/e2e/workflows/process-mapping.spec.ts:262:1 › applying Activate makes the process active and the History tab shows it (1.0m)
+[chromium] › tests/e2e/workflows/view-products-enrichment.spec.ts:104:1 › Show products fetches the view with include_products and lists the products per node
+[chromium] › tests/e2e/workflows/vulnerability-versions.spec.ts:47:2 › vulnerability affected versions › the page of version 5.1 lists the vulnerability and the page of 5.2 does not
+[chromium] › tests/e2e/workflows/usages.spec.ts:110:1 › adding an application from its page creates a usage with the version picked (1.0m)
+[chromium] › tests/e2e/workflows/usages.spec.ts:155:1 › Go live moves a planned usage to In production (1.0m)
