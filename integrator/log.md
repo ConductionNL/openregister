@@ -181,3 +181,4 @@
 2026-11-25T23:00:41Z GREEN prs=11240,11289 main=eeb6c298ca integrator-cloud (merged; main now 64e00061a6)
 2026-11-25T23:05:49Z RED prs=11250,10156 main=64e00061a6 integrator-cloud (jest initial-data.golden EditSource snapshot; suspect #10156; #10451 #10526 build-conflict)
 2026-11-25T23:18:20Z GREEN prs=11250,10451 main=64e00061a6 integrator-cloud (merged; main now f7cc4367a5; #10526 build-conflict)
+2026-11-25T23:36:48Z GREEN prs=11260,11263,11270,11272,11292 main=f7cc4367a5 integrator-cloud (merged; main now 1079b4ab29)
