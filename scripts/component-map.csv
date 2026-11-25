@@ -3649,7 +3649,7 @@ Service/File/ArchiveListing.php,,Service,,,,,Files
 Service/File/ArchiveMemberEnumerator.php,,Service,,,,,Files
 Service/File/ArchiveWalk.php,,Service,,,,,Files
 Service/File/FetchedFile.php,,Service,,,,,Files
-Service/File/UrlFetchRefused.php,,Service,,,,,Files
+Service/File/UrlFetchRefused.php,,Service,,,,,Kernel
 Service/File/UrlFileFetcher.php,,Service,,,,,Files
 Service/File/UrlFileSource.php,,Service,,,,,Files
 Service/File/UrlStreamOpener.php,,Service,,,,,Files
@@ -4965,6 +4965,7 @@ Search/Service/Search/PlaceholderResolverInterface.php,,Search,,,,,Core
 Search/Service/Search/PlaceholderResolvers.php,,Search,,,,,Core
 Kernel/Contracts/CreateGuardInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/CreateCandidate.php,,Kernel,,,,,Kernel
+Kernel/Contracts/UrlFileFetchInterface.php,,Kernel,,,,,Kernel
 Files/Db/FileChunkSearch.php,,Files,,,,,Files
 Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
