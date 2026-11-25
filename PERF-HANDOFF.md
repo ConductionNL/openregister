@@ -41,7 +41,7 @@ Measured in the film take v3j (warm, pieter, :8076). The film cuts each wait to 
 
 ## openregister, later (security-sensitive or needs a decision: leave a note in the PR, do not merge without review)
 - [ ] Search rebuilds access control per query part (33-90 ms/request): per-request memo of the schema baseline authorization.
-- [ ] nextcloud-vue useLifecycleTransitions calls the deprecated /api/objects/{uuid}/available-actions (300 ms); switch to /{register}/{schema}/{id}/actions.
+- [ ] nextcloud-vue useLifecycleTransitions calls the deprecated /api/objects/{uuid}/available-actions (300 ms); switch to /{register}/{schema}/{id}/actions. TAKEN help-portaliq-2 (25 Nov 09:50Z)
 
 ## all apps
 - [ ] English catalogues map 99% of strings to themselves (dossiq 1.25 MB, integriq 489 KB): drop identity entries at build time. NOTE 24 Nov (cloud): thematiq done in #1967 (merged): scripts/build-l10n-js.js drops identity entries for en only, en.json stays complete, gate 103 still green; en.js 183 KB -> 1.6 KB. Other apps with the same generator can copy browserEntries() and tests/vitest/l10n-browser-catalogue.spec.js. versioniq done in #869 (merged 24 Nov): en.js 93.7 KB -> 4.3 KB. integriq done in #3877 (merged 24 Nov): en.js 502 KB -> 4.3 KB; first backfilled 310 en + 132 nl .js-only strings into .json, and its en.js-reading audits now use loadSourceCatalogue (en.js completed from en.json). dossiq done in #6878 (merged 24 Nov): en.js 1.29 MB -> 15.8 KB. hermiq done in #1976 (merged 24 Nov): en.js 394 KB -> 2.6 KB. larpinq done in #1189 (merged 25 Nov): en.js 76.4 KB -> 348 B; check-l10n-parity.js takes the frontend source keys from en.json completed by en.js. launchpad: TAKEN by helper-dossiq-3 (25 Nov 09:55Z).
