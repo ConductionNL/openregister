@@ -4579,3 +4579,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T00:42:03Z precheck-20261125T000814-67088704 CONFLICT-DEV #11020 a51302e3
 2026-11-25T00:42:16Z precheck-20261125T000814-67088704 CONFLICT-DEV #11070 bb16a9af
 2026-11-25T00:42:41Z precheck-20261125T000814-67088704 CONFLICT-DEV #11020 a51302e3
+2026-11-25T00:44:21Z integrator-20261124T231146-2f742f98 RED tree 7b0825a7e3 prs 3 front=ok: Tests: 65718, Assertions: 232637, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Service\File\DocumentReferenceMapTest::testEveryFileIdColumnIsMapped
