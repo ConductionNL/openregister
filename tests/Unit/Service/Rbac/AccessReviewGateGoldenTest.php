@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -249,4 +250,52 @@ class AccessReviewGateGoldenTest extends TestCase {
 			$this->assertSame($expected, $gate->resolve(new ObjectRef('reg', 'sch', 'id-1')));
 		}
 	}//end testResolveIsPinned()
+
+	/**
+	 * A lookup that finds no row the caller may read resolves to null, and the object is never asked for.
+	 *
+	 * The RBAC-bounded lookup in setObject() throws DoesNotExistException for an
+	 * unreadable row as for a missing one; it is the caller's 404, not a 500.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
+	 */
+	public function testResolveIsNullWhenTheLookupFindsNoReadableRow(): void {
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->expects($this->once())->method('setObject')->with('id-1')
+			->willThrowException(new DoesNotExistException('Object not found in magic table'));
+		$objectService->expects($this->never())->method('getObject');
+
+		$gate = $this->build(
+			$objectService,
+			$this->createMock(ObjectAccessReport::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class),
+			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class))
+		);
+
+		$this->assertNull($gate->resolve(new ObjectRef('reg', 'sch', 'id-1')));
+	}//end testResolveIsNullWhenTheLookupFindsNoReadableRow()
+
+	/**
+	 * Any other lookup failure is not turned into a 404.
+	 *
+	 * @return void
+	 */
+	public function testResolveLetsAnyOtherLookupFailurePropagate(): void {
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('setObject')->willThrowException(new RuntimeException('database gone'));
+
+		$gate = $this->build(
+			$objectService,
+			$this->createMock(ObjectAccessReport::class),
+			$this->createMock(IUserSession::class),
+			$this->createMock(IGroupManager::class),
+			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class))
+		);
+
+		$this->expectException(RuntimeException::class);
+		$gate->resolve(new ObjectRef('reg', 'sch', 'id-1'));
+	}//end testResolveLetsAnyOtherLookupFailurePropagate()
 }//end class
