@@ -119,6 +119,21 @@ interface SchemaMapperInterface {
 	public function findBySlugInIds(string $slug, array $schemaIds): ?Schema;
 
 	/**
+	 * Resolve a schema by a slug it answered to before a rename, scoped to a set of schema ids.
+	 *
+	 * Asked only after no schema in the set carries the slug now, so a current
+	 * slug always wins over a former one.
+	 *
+	 * @param string $slug      The slug the schema used to have.
+	 * @param int[]  $schemaIds The candidate schema ids (a register's schemas list).
+	 *
+	 * @return Schema|null The renamed schema within the id set, or null.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
+	 */
+	public function findByFormerSlugInIds(string $slug, array $schemaIds): ?Schema;
+
+	/**
 	 * Resolve a schema identifier (numeric id, uuid, or slug) within a set of schema ids.
 	 *
 	 * The register-scoped counterpart of {@see find()}: it matches the SAME

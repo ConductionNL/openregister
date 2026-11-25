@@ -146,4 +146,41 @@ class UrlFileFetcherTest extends TestCase {
 		$this->assertSame(30, UrlStreamOpener::OPTIONS['http']['timeout']);
 		$this->assertTrue(UrlStreamOpener::OPTIONS['http']['ignore_errors']);
 	}
+
+	public function testNotStrictReturnsAnEmptyBody(): void {
+		$this->serve(200, '');
+
+		$this->assertSame('', (new UrlFileFetcher($this->opener))->fetch(self::PUBLIC_URL, 1000, false));
+	}
+
+	public function testNotStrictReadsAnAnswerBelow400AndOneWithoutAStatusLine(): void {
+		foreach ([[302, 'moved'], [null, 'served']] as [$status, $body]) {
+			$this->opener = $this->createMock(UrlStreamOpener::class);
+			$this->serve($status, $body);
+
+			$this->assertSame($body, (new UrlFileFetcher($this->opener))->fetch(self::PUBLIC_URL, 1000, false));
+		}
+	}
+
+	public function testNotStrictStillRefusesAnAnswerOf400OrMore(): void {
+		$this->serve(404, 'not here');
+
+		try {
+			(new UrlFileFetcher($this->opener))->fetch(self::PUBLIC_URL, 1000, false);
+			$this->fail('a 404 should have been refused');
+		} catch (UrlFetchRefused $refusal) {
+			$this->assertSame(UrlFetchRefused::STATUS, $refusal->reason);
+		}
+	}
+
+	public function testNotStrictStillChecksTheAddressFirst(): void {
+		$this->opener->expects($this->never())->method('open');
+
+		try {
+			(new UrlFileFetcher($this->opener))->fetch('http://127.0.0.1/x', 1000, false);
+			$this->fail('a loopback address should have been refused');
+		} catch (UrlFetchRefused $refusal) {
+			$this->assertSame(UrlFetchRefused::REFUSED_ADDRESS, $refusal->reason);
+		}
+	}
 }

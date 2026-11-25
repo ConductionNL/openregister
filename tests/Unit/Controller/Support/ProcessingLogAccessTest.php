@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\ProcessingLogAccess;
 use OCA\OpenRegister\Controller\Support\ProcessingLogPolicy;
@@ -47,6 +48,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Controller\Support\ProcessingLogPolicy
  */
 class ProcessingLogAccessTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private function organisation(string $uuid): object {
 		return new class ($uuid) {
 			public function __construct(private string $uuid) {
@@ -72,6 +75,7 @@ class ProcessingLogAccessTest extends TestCase {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturn($fgGroup);
