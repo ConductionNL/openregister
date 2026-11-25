@@ -1002,9 +1002,9 @@ Event/OrganisationCreatedEvent.php,15,Event,Event,Event/OrganisationCreatedEvent
 Event/OrganisationDeletedEvent.php,14,Event,Event,Event/OrganisationDeletedEvent.php,0,,Core
 Event/OrganisationUpdatedEvent.php,22,Event,Event,Event/OrganisationUpdatedEvent.php,8,,Core
 Event/PermissionsDeclaringEvent.php,46,Event,Event,Event/PermissionsDeclaringEvent.php,0,,Kernel
-Event/PersonLinkUpdatedEvent.php,15,Event,Event,Event/PersonLinkUpdatedEvent.php,8,,Integrations
-Event/PersonLinkedEvent.php,15,Event,Event,Event/PersonLinkedEvent.php,12,,Integrations
-Event/PersonUnlinkedEvent.php,15,Event,Event,Event/PersonUnlinkedEvent.php,8,,Integrations
+Event/PersonLinkUpdatedEvent.php,15,Event,Event,Event/PersonLinkUpdatedEvent.php,8,,Kernel
+Event/PersonLinkedEvent.php,15,Event,Event,Event/PersonLinkedEvent.php,12,,Kernel
+Event/PersonUnlinkedEvent.php,15,Event,Event,Event/PersonUnlinkedEvent.php,8,,Kernel
 Event/ReferenceValidatedEvent.php,5,Event,Event,Event/ReferenceValidatedEvent.php,0,,Core
 Event/ReferenceValidationFailedEvent.php,5,Event,Event,Event/ReferenceValidationFailedEvent.php,0,,Core
 Event/RegisterCreatedEvent.php,14,Event,Event,Event/RegisterCreatedEvent.php,16,,Kernel
@@ -1276,6 +1276,7 @@ Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
 Formats/UuidFormat.php,25,Formats,Formats,Formats/UuidFormat.php,0,,Kernel
 Kernel/Contracts/AppContainerFinderInterface.php,7,Kernel,Kernel,Kernel/Contracts/AppContainerFinderInterface.php,0,,Kernel
 Kernel/Contracts/AppIdentity.php,6,Kernel,Kernel,Kernel/Contracts/AppIdentity.php,0,,Kernel
+Kernel/Contracts/ObjectRoleOccupantsInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/SchemaWriteRightsInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RegisterSchemaPairsInterface.php,38,Kernel,Kernel,Kernel/Contracts/RegisterSchemaPairsInterface.php,0,,Kernel
 Kernel/Contracts/AppSettingsInterface.php,42,Kernel,Kernel,Kernel/Contracts/AppSettingsInterface.php,0,,Kernel
@@ -1695,6 +1696,7 @@ Repair/CreateMissingRegisterFolders.php,43,Repair,Platform,Platform/Repair/Creat
 Repair/FillCalendarTimeZones.php,111,Repair,Flows,Flows/Repair/FillCalendarTimeZones.php,0,,Processes
 Repair/GrantExportWhereReadIsGranted.php,72,Repair,Platform,Platform/Repair/GrantExportWhereReadIsGranted.php,0,,Platform
 Repair/ImportCredentialBrokerRegister.php,12,Repair,Platform,Platform/Repair/ImportCredentialBrokerRegister.php,0,,Platform
+Repair/ImportReportTemplatesRegister.php,12,Repair,Platform,Platform/Repair/ImportReportTemplatesRegister.php,0,,Platform
 Repair/ImportDecisionTableRegister.php,14,Repair,Platform,Platform/Repair/ImportDecisionTableRegister.php,0,,Platform
 Repair/ImportDestructionListRegister.php,14,Repair,Platform,Platform/Repair/ImportDestructionListRegister.php,0,,Platform
 Repair/ImportDismissedPairRegister.php,14,Repair,Platform,Platform/Repair/ImportDismissedPairRegister.php,0,,Platform
@@ -1746,6 +1748,8 @@ Search/Controller/DuplicateController.php,209,Search,Search,Search/Controller/Du
 Search/Controller/GraphQLController.php,128,Search,Search,Search/Controller/GraphQLController.php,0,,Search
 Search/Controller/MapsOverviewController.php,86,Search,Search,Search/Controller/MapsOverviewController.php,0,,Search
 Search/Controller/ReportsController.php,106,Search,Search,Search/Controller/ReportsController.php,0,,Search
+Search/Controller/ReportTemplateController.php,80,Search,Search,Search/Controller/ReportTemplateController.php,0,,Search
+Search/Controller/Support/ReportGenerationFailures.php,30,Search,Search,Search/Controller/Support/ReportGenerationFailures.php,0,,Search
 Search/Controller/SearchController.php,90,Search,Search,Search/Controller/SearchController.php,0,,Search
 Search/Controller/Support/ViewPatch.php,49,Search,Search,Search/Controller/Support/ViewPatch.php,0,,Search
 Search/Controller/ViewsController.php,472,Search,Search,Search/Controller/ViewsController.php,0,,Search
@@ -1759,6 +1763,8 @@ Search/ObjectsProvider.php,340,Search,Platform,Platform/Search/ObjectsProvider.p
 Search/SearchProviderRegistrar.php,10,Search,Platform,Platform/Search/SearchProviderRegistrar.php,0,,Search
 Search/SearchRegistrar.php,50,Search,Search,Search/SearchRegistrar.php,0,,Search
 Search/SearchScopes.php,94,Search,Platform,Platform/Search/SearchScopes.php,0,,Search
+Search/SearchProviderIdentities.php,,Search,,,,,Search
+Search/SearchProviderIdentity.php,,Search,,,,,Search
 Search/SearchScopeCatalog.php,,Search,,,,,Search
 Search/Service/ActivityWindow.php,11,Search,Search,Search/Service/ActivityWindow.php,0,,Search
 Search/Service/Aggregation/AggregateChartData.php,167,Search,Search,Search/Service/Aggregation/AggregateChartData.php,0,,Search
@@ -1819,6 +1825,11 @@ Search/Service/RegisterSchemaPair.php,12,Search,Search,Search/Service/RegisterSc
 Search/Service/Reporting/HtmlReportWriter.php,154,Search,Search,Search/Service/Reporting/HtmlReportWriter.php,0,,Search
 Search/Service/Reporting/PdfReportWriter.php,21,Search,Search,Search/Service/Reporting/PdfReportWriter.php,0,,Search
 Search/Service/Reporting/ReportRenderService.php,153,Search,Search,Search/Service/Reporting/ReportRenderService.php,0,,Search
+Search/Service/Reporting/ReportPeriod.php,40,Search,Search,Search/Service/Reporting/ReportPeriod.php,0,,Search
+Search/Service/Reporting/ReportSectionRows.php,20,Search,Search,Search/Service/Reporting/ReportSectionRows.php,0,,Search
+Search/Service/Reporting/ReportSectionQuery.php,90,Search,Search,Search/Service/Reporting/ReportSectionQuery.php,0,,Search
+Search/Service/Reporting/ReportSectionSource.php,25,Search,Search,Search/Service/Reporting/ReportSectionSource.php,0,,Search
+Search/Service/Reporting/ReportTemplateGenerator.php,130,Search,Search,Search/Service/Reporting/ReportTemplateGenerator.php,0,,Search
 Search/Service/Reporting/SpreadsheetReportWriter.php,189,Search,Search,Search/Service/Reporting/SpreadsheetReportWriter.php,0,,Search
 Search/Service/Search/PlaceholderResolver.php,84,Search,Search,Search/Service/Search/PlaceholderResolver.php,0,301,Core
 Search/Service/Search/PropertySearchProfile.php,111,Search,Search,Search/Service/Search/PropertySearchProfile.php,1,273,Core
@@ -2195,6 +2206,11 @@ Service/Delegation/DelegationRefused.php,32,Service,Access,Access/Service/Delega
 Service/Delegation/DelegationResolver.php,127,Service,Access,Access/Service/Delegation/DelegationResolver.php,0,,Core
 Service/Delegation/DelegationService.php,92,Service,Access,Access/Service/Delegation/DelegationService.php,0,290,Core
 Service/Delegation/DelegationVerdict.php,50,Service,Access,Access/Service/Delegation/DelegationVerdict.php,0,387,Core
+Service/Deletion/CascadeRestoreItem.php,30,Service,Service,Service/Deletion/CascadeRestoreItem.php,0,,Core
+Service/Deletion/CascadeRestorePlan.php,45,Service,Service,Service/Deletion/CascadeRestorePlan.php,0,,Core
+Service/Deletion/CascadeRestoreRefusedException.php,30,Service,Service,Service/Deletion/CascadeRestoreRefusedException.php,0,,Core
+Service/Deletion/CascadeRestoreResult.php,25,Service,Service,Service/Deletion/CascadeRestoreResult.php,0,,Core
+Service/Deletion/CascadeRestoreService.php,200,Service,Service,Service/Deletion/CascadeRestoreService.php,0,,Core
 Service/Deletion/DeletedObjectAuthorizer.php,103,Service,Service,Service/Deletion/DeletedObjectAuthorizer.php,0,,Core
 Service/Deletion/DeletionServiceBundle.php,13,Service,Service,Service/Deletion/DeletionServiceBundle.php,0,,Core
 Service/Deletion/DeletionWindow.php,42,Service,Service,Service/Deletion/DeletionWindow.php,0,,Core
@@ -3797,6 +3813,7 @@ Db/ConfigurationMapperInterface.php,,Db,,,,,Configuration
 Db/ConfigurationSyncResult.php,,Db,,,,,Configuration
 Db/ConsumerMapperInterface.php,,Db,,,,,Integrations
 Db/ContactLinkMapperInterface.php,,Db,,,,,Integrations
+Service/ContactLinkRoleOccupants.php,,Service,,,,,Integrations
 Db/ContentReportMapperInterface.php,,Db,,,,,Compliance
 Db/CospendLinkMapperInterface.php,,Db,,,,,Integrations
 Db/DbRegistrar.php,,Db,,,,,Core
@@ -3951,7 +3968,7 @@ Event/AbstractConversationEvent.php,,Event,,,,,Kernel
 Event/AbstractDecisionRequestEvent.php,,Event,,,,,Processes
 Event/AbstractObjectEntityEvent.php,,Event,,,,,Kernel
 Event/AbstractOrganisationEvent.php,,Event,,,,,Core
-Event/AbstractPersonLinkEvent.php,,Event,,,,,Integrations
+Event/AbstractPersonLinkEvent.php,,Event,,,,,Kernel
 Event/AbstractRegisterEvent.php,,Event,,,,,Kernel
 Event/AbstractRegistrySubscriptionEvent.php,,Event,,,,,Core
 Event/AbstractSchemaEvent.php,,Event,,,,,Kernel
@@ -4355,6 +4372,8 @@ Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
+Migration/Version1Date20261114170000.php,85,Migration,,,,,Platform
+Migration/Version1Date20261115090000.php,96,Migration,,,,,Platform
 Controller/OperationsQueryController.php,,Controller,,,,,Core
 Search/Service/GraphQL/BoundedRun.php,,Search,,,,,Search
 Service/GraphQL/AdminQueryRunner.php,,Service,,,,,Search
@@ -4365,6 +4384,7 @@ Exception/NoTabularResultException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121170011.php,63,Migration,,,,,Platform
 Exception/FederatedShareNotDeliveredException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121180018.php,80,Migration,,,,,Platform
+Migration/Version1Date20261124193002.php,102,Migration,,,,,Platform
 Formats/EmailFormat.php,,Formats,,,,,Kernel
 Service/Schemas/SchemaCatalogue.php,,Service,,,,,Core
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Core
@@ -4526,6 +4546,8 @@ Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
 Db/SchemaMapper/AdministeredValidationCheck.php,,Db,,,,,Processes
 Controller/Support/CopyRun.php,,Controller,,,,,Core
+Listener/SlotOccupantAuditListener.php,97,Listener,Access,Access/Listener/SlotOccupantAuditListener.php,0,,Core
+Service/Rbac/PartyRoleSlotResolver.php,87,Service,Access,Access/Service/Rbac/PartyRoleSlotResolver.php,0,,Core
 Controller/Support/DestroyedTombstones.php,66,Controller,Service,Service/Controller/Support/DestroyedTombstones.php,0,,Core
 Kernel/Contracts/Value/DestructionQuery.php,25,Kernel,,,,,Kernel
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
@@ -4607,6 +4629,11 @@ Kernel/Contracts/MandateEvidenceInterface.php,,Kernel,Kernel,Kernel/Contracts/Ma
 Service/Task/TaskSubstitution.php,,Service,Work,Work/Service/Task/TaskSubstitution.php,0,,Processes
 BackgroundJob/TaskSubstitutionJob.php,,BackgroundJob,Work,Work/BackgroundJob/TaskSubstitutionJob.php,0,,Processes
 Listener/TaskAbsenceListener.php,,Listener,Flows,Flows/Listener/TaskAbsenceListener.php,0,,Processes
+Controller/BreakGlassController.php,58,Controller,Access,Access/Controller/BreakGlassController.php,0,,Core
+Service/Rbac/BreakGlassDeclaration.php,132,Service,Access,Access/Service/Rbac/BreakGlassDeclaration.php,0,,Core
+Service/Rbac/BreakGlassPolicy.php,45,Service,Access,Access/Service/Rbac/BreakGlassPolicy.php,0,,Core
+Service/Rbac/BreakGlassService.php,190,Service,Access,Access/Service/Rbac/BreakGlassService.php,0,,Core
+Service/Rbac/BreakGlassTake.php,67,Service,Access,Access/Service/Rbac/BreakGlassTake.php,0,,Core
 Service/Archival/DestructionListConflictRefresh.php,160,Service,Compliance,Compliance/Service/Archival/DestructionListConflictRefresh.php,0,,Compliance
 Service/Archival/LinkConflictsNotAcknowledgedException.php,75,Service,Compliance,Compliance/Service/Archival/LinkConflictsNotAcknowledgedException.php,0,,Compliance
 Migration/Version1Date20261114120000.php,,Migration,,,,,Platform
@@ -4863,6 +4890,7 @@ Notifications/Service/Webhook/CloudEventAttributes.php,,Notifications,,,,,Integr
 Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notifications,,,,,Integrations
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
+Db/SchemaMapper/SchemaRowCache.php,,Db,,,,,Core
 Db/MagicMapper/MagicSharePrincipals.php,,Db,,,,,Core
 Service/Schemas/SchemaRefInRegister.php,133,Service,Service,Service/Schemas/SchemaRefInRegister.php,0,,Kernel
 Service/Schemas/RowSchemaRefsInRegister.php,116,Service,Service,Service/Schemas/RowSchemaRefsInRegister.php,0,,Core
@@ -4932,4 +4960,6 @@ Service/Exchange/ExportKeySealers.php,,Service,,,,,Configuration
 Service/Archival/DestructionCopies.php,,Service,,,,,Compliance
 Service/Archival/DestructionCopy.php,,Service,,,,,Compliance
 Service/Archival/DestructionCopyTarget.php,,Service,,,,,Compliance
+Collaboration/ObjectMembership.php,,Collaboration,,,,,Platform
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
+Service/Flow/IFlowNodeRuntime.php,,Service,Flows,Flows/Service/Flow/IFlowNodeRuntime.php,0,,Processes

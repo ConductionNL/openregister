@@ -37,7 +37,7 @@ final class CalendarBatch {
 	 * @param string   $slug      The calendar that changed.
 	 * @param string   $version   Its object version.
 	 * @param iterable $timers    The candidate timers.
-	 * @param Closure  $supersede What to do with a timer whose moment moved: (FlowTimer):void.
+	 * @param Closure  $supersede What to do with a timer whose moment moved: (FlowTimer, string $reason):void.
 	 *
 	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md
 	 */
@@ -48,4 +48,22 @@ final class CalendarBatch {
 		public readonly Closure $supersede,
 	) {
 	}//end __construct()
+
+	/**
+	 * The supersession reason for a timer this batch moves: `calendar-changed`
+	 * followed by the calendar and the object version it changed to.
+	 *
+	 * The version rides in the reason, not in a new ledger column, so the
+	 * ledger row answers "which edit of which calendar moved this deadline"
+	 * without widening the record path every other supersession reason uses.
+	 * The reason still STARTS with `calendar-changed`, so a reader matching
+	 * the reason keeps matching.
+	 *
+	 * @return string The reason, e.g. `calendar-changed: nl-national version 7`.
+	 *
+	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md#requirement-a-calendar-change-re-projects-the-timers-that-depend-on-it
+	 */
+	public function reason(): string {
+		return sprintf('%s: %s version %s', CalendarRecomputeInterface::REASON, $this->slug, $this->version);
+	}//end reason()
 }//end class
