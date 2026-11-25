@@ -74,6 +74,15 @@ final class RoutePostureTest extends TestCase {
 	private const PUBLISHED_FORM = "the form's published state";
 
 	/**
+	 * A journey that answers only while it is published, refuses an anonymous
+	 * caller when its access asks for a sign-in or a trust level, and resumes
+	 * a saved anonymous run only with that run's resume token.
+	 *
+	 * @var string
+	 */
+	private const PUBLISHED_JOURNEY = "the journey's published state and access level, and a saved run's resume token";
+
+	/**
 	 * A public document carrying no per-user data.
 	 *
 	 * @var string
@@ -112,6 +121,8 @@ final class RoutePostureTest extends TestCase {
 		'Controller\\AccessLinkController::comment' => self::TOKEN,
 		'Controller\\AccessLinkController::open' => self::TOKEN,
 		'Controller\\AccessLinkController::upload' => self::TOKEN,
+		'Controller\\AccessLinkJourneyController::show' => self::TOKEN,
+		'Controller\\AccessLinkJourneyController::submit' => self::TOKEN,
 		'Controller\\AccessLinkPageController::show' => self::TOKEN,
 		'Controller\\ApiSurfaceController::capabilities' => self::PUBLIC_DOCUMENT,
 		'Controller\\ApiSurfaceController::versions' => self::PUBLIC_DOCUMENT,
@@ -132,6 +143,10 @@ final class RoutePostureTest extends TestCase {
 		'Controller\\FormsController::submit' => self::PUBLISHED_FORM,
 		'Controller\\FormsController::upload' => self::PUBLISHED_FORM,
 		'Controller\\IconController::mdi' => self::PUBLIC_DOCUMENT,
+		'Controller\\JourneyRunController::answer' => self::PUBLISHED_JOURNEY,
+		'Controller\\JourneyRunController::resume' => self::PUBLISHED_JOURNEY,
+		'Controller\\JourneyRunController::save' => self::PUBLISHED_JOURNEY,
+		'Controller\\JourneyRunController::start' => self::PUBLISHED_JOURNEY,
 		'Controller\\ManifestController::index' => self::PUBLIC_DOCUMENT,
 		'Controller\\McpController::discover' => self::PUBLIC_DOCUMENT,
 		'Controller\\OasController::conformance' => self::PUBLIC_DOCUMENT,
