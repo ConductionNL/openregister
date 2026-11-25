@@ -157,11 +157,15 @@ describe('every entry that reaches nextcloud-vue registers its translations', ()
 			return
 		}
 		const code = stripComments(fs.readFileSync(file, 'utf8'))
+		// The entry itself, or the module through which it reaches the library
+		// (an entry that loads its app lazily, such as userDashboard's umbrella,
+		// registers there, before anything renders).
+		const viaCode = stripComments(fs.readFileSync(importer, 'utf8'))
 		expect({
 			entry: name,
 			file: path.relative(ROOT, file),
 			reachesLibraryVia: path.relative(ROOT, importer),
-			registersTranslations: REGISTERS.test(code),
+			registersTranslations: REGISTERS.test(code) || REGISTERS.test(viaCode),
 		}).toEqual(expect.objectContaining({ registersTranslations: true }))
 	})
 

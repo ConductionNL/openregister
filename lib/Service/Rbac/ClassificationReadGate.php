@@ -137,7 +137,7 @@ final class ClassificationReadGate {
 	 */
 	private function clearanceRefusal(ClassificationScale $scale, string $objectId, array $data, ClassificationCaller $caller): ?string {
 		$clearance = $this->clearances->resolve(scale: $scale, principal: $caller->userId, groups: $caller->groups);
-		if (in_array('admin', $caller->groups, true) === true) {
+		if ($caller->isAdministrator() === true) {
 			$clearance = $this->clearances->forAdministrator(scale: $scale);
 		}
 

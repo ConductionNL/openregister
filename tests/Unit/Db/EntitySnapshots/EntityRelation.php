@@ -38,6 +38,9 @@ return array (
     'uncertain' => 'boolean',
     'archiveMember' => 'string',
     'createdAt' => 'datetime',
+    'redactionDecision' => 'string',
+    'decidedBy' => 'string',
+    'decidedAt' => 'datetime',
   ),
   'empty' => 
   array (
@@ -72,6 +75,9 @@ return array (
     'uncertain' => NULL,
     'archiveMember' => NULL,
     'createdAt' => NULL,
+    'redactionDecision' => 'undecided',
+    'decidedBy' => NULL,
+    'decidedAt' => NULL,
   ),
   'filled' => 
   array (
@@ -112,6 +118,9 @@ return array (
     'uncertain' => true,
     'archiveMember' => 'archiveMember-v',
     'createdAt' => '2026-01-02T03:04:05+00:00',
+    'redactionDecision' => 'redactionDecision-v',
+    'decidedBy' => 'decidedBy-v',
+    'decidedAt' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
   array (
@@ -146,6 +155,9 @@ return array (
     28 => 'uncertain',
     29 => 'archiveMember',
     30 => 'createdAt',
+    31 => 'redactionDecision',
+    32 => 'decidedBy',
+    33 => 'decidedAt',
   ),
   'refused' => 
   array (

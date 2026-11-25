@@ -36,8 +36,12 @@ namespace OCA\OpenRegister\Files\Service\File;
 
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\MetadataMask;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\MetadataMaskingSanitizerInterface;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\PptxSanitizer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\SanitizerInterface;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\XlsxSanitizer;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\ITempManager;
@@ -91,6 +95,8 @@ class OfficeDocumentSanitizer {
 		private readonly array $strategies = [
 			new DocxSanitizer(sentinel: self::SENTINEL),
 			new OdtSanitizer(sentinel: self::SENTINEL),
+			new XlsxSanitizer(sentinel: self::SENTINEL),
+			new PptxSanitizer(sentinel: self::SENTINEL),
 		],
 	) {
 	}//end __construct()
@@ -121,7 +127,12 @@ class OfficeDocumentSanitizer {
 	 * the copy, and returns the sanitised path plus the audit report. The
 	 * original Nextcloud file is untouched.
 	 *
-	 * @param int $fileId The Nextcloud file ID.
+	 * With a mask, a strategy that can mask metadata masks the descriptive
+	 * fields with the run's substitution map instead of the sentinel
+	 * (REQ-RRS-004); without one the run is unchanged.
+	 *
+	 * @param int               $fileId The Nextcloud file ID.
+	 * @param MetadataMask|null $mask   The anonymisation run's substitution map, or null.
 	 *
 	 * @throws SanitizationException On unsupported MIME, encryption, corrupt
 	 *                               zip, or internal failure.
@@ -130,7 +141,7 @@ class OfficeDocumentSanitizer {
 	 *
 	 * @spec openspec/specs/office-document-sanitization/spec.md
 	 */
-	public function sanitize(int $fileId): SanitizationResult {
+	public function sanitize(int $fileId, ?MetadataMask $mask = null): SanitizationResult {
 		$nodes = $this->rootFolder->getById($fileId);
 		if (count($nodes) === 0) {
 			throw new SanitizationException(
@@ -162,7 +173,7 @@ class OfficeDocumentSanitizer {
 		$this->copyToTemp(stream: $file->fopen('r'), tempPath: $tempPath);
 
 		try {
-			$report = $strategy->sanitize($tempPath, $tempPath);
+			$report = $this->runStrategy(strategy: $strategy, tempPath: $tempPath, mask: $mask);
 		} catch (SanitizationException $e) {
 			throw $e;
 		} catch (Throwable $e) {
@@ -185,6 +196,26 @@ class OfficeDocumentSanitizer {
 
 		return new SanitizationResult(path: $tempPath, report: $report);
 	}//end sanitize()
+
+	/**
+	 * Run the strategy in place on the temp copy, masking metadata when the
+	 * run brings a mask and the strategy can mask.
+	 *
+	 * @param SanitizerInterface $strategy The resolved strategy.
+	 * @param string             $tempPath The temp copy.
+	 * @param MetadataMask|null  $mask     The run's substitution map, or null.
+	 *
+	 * @return SanitizationReport The strategy's report.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	private function runStrategy(SanitizerInterface $strategy, string $tempPath, ?MetadataMask $mask): SanitizationReport {
+		if ($mask !== null && $strategy instanceof MetadataMaskingSanitizerInterface) {
+			return $strategy->sanitizeMasked(sourcePath: $tempPath, destPath: $tempPath, mask: $mask);
+		}
+
+		return $strategy->sanitize($tempPath, $tempPath);
+	}//end runStrategy()
 
 	/**
 	 * Resolve the first strategy supporting the MIME type.
@@ -222,6 +253,14 @@ class OfficeDocumentSanitizer {
 	private function extensionForMime(string $mimeType): string {
 		if ($mimeType === 'application/vnd.oasis.opendocument.text') {
 			return '.odt';
+		}
+
+		if ($mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+			return '.xlsx';
+		}
+
+		if ($mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+			return '.pptx';
 		}
 
 		return '.docx';
