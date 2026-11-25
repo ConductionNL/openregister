@@ -3795,7 +3795,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @return array<string, mixed> What may be saved.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 * @spec openspec/changes/object-body-may-carry-register-and-schema/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function submittableBody(array $object, mixed $schema = null): array {
 		// Filter out special parameters and reserved fields.
@@ -3831,7 +3831,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @return array<string, mixed> The declared routing words and their body values.
 	 *
-	 * @spec openspec/changes/object-body-may-carry-register-and-schema/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function declaredRoutingWords(mixed $schema): array {
 		if ($schema instanceof Schema === false) {
@@ -3859,7 +3859,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @return array<string, mixed> The body, or [] when there is none or it cannot be read.
 	 *
-	 * @spec openspec/changes/object-body-may-carry-register-and-schema/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function rawBody(): array {
 		$method = strtolower((string)$this->request->getMethod());
@@ -3889,7 +3889,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @return string The URL's value, or the given one when the request has no route parameters.
 	 *
-	 * @spec openspec/changes/object-body-may-carry-register-and-schema/specs/objects-crud/spec.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function routeParameter(string $name, string $given): string {
 		/** @psalm-suppress NoInterfaceProperties The concrete request carries urlParams. */
