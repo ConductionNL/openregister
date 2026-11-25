@@ -21,6 +21,7 @@ return [
 	'federation#createObject' => 'public-token: public share-token or anonymous flow, rate limited',
 	'federation#deleteObject' => 'public-token: public share-token or anonymous flow, rate limited',
 	'federation#updateObject' => 'public-token: public share-token or anonymous flow, rate limited',
+	'flowWebhook#receive' => 'header-credential: authenticated by the HMAC-SHA256 signature in the X-OpenRegister-Signature header',
 	'forms#submit' => 'public-token: public share-token or anonymous flow, rate limited',
 	'forms#upload' => 'public-token: public share-token or anonymous flow, rate limited',
 	'graphQL#execute' => 'cors-api: Nextcloud CORS handling refuses a cookie session without the token',
