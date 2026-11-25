@@ -5159,3 +5159,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-25T19:43:19Z precheck-20261125T181737-613489e9 NORESULT tree 2075630b8b prs 1: php-1.log: no Tests line
 2026-11-25T19:44:17Z session-20261125T194407-46ae154b or-builder-2: lease held by session-20261125T184434-06f2b21e until 21:03Z; run ended
+2026-11-25T19:44:18Z integrator-20261125T164649-6d3dd46c MERGED-TREE 32b45ef597: 3 PRs, main now 458b22618e = tested tree
