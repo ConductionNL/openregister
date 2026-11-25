@@ -5146,3 +5146,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T19:23:37Z integrator-20261125T164649-6d3dd46c GREEN tree bad34912f7 on dev 0e1d060912 prs 4 front=skip: Tests: 67249, Assertions: 238918, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
 2026-11-25T19:23:57Z integrator-20261125T164649-6d3dd46c PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-25T19:24:09Z precheck-20261125T191529-85ecfd26 AUTOPARK openregister#11253 9c064e3f sbom: package-lock.json changed without sbom.cdx.json (tree bdbde7ff30)
