@@ -39,6 +39,8 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
+use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkViewReaders;
 use OCA\OpenRegister\Tests\Unit\Support\FindCallShape;
@@ -167,6 +169,52 @@ class AccessLinkMintGuardTest extends TestCase {
 		$this->views->method('find')->willThrowException(new RuntimeException('denied'));
 
 		$this->assertFalse($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
+	}
+
+	/**
+	 * Build the guard with a reach check that answers as given.
+	 *
+	 * @param bool|null $reaches What reaches() answers, or null to throw.
+	 */
+	private function guardWithReach(?bool $reaches): AccessLinkMintGuard {
+		$reach = $this->createMock(ViewerReachCheckInterface::class);
+		$reach->method('currentUid')->willReturn('member');
+		$reach->method('reachOf')->with('member')->willReturn($this->createMock(ViewerReach::class));
+		if ($reaches === null) {
+			$reach->method('reaches')->willThrowException(new RuntimeException('no reach'));
+		} else {
+			$reach->expects($this->once())->method('reaches')->willReturn($reaches);
+		}
+
+		return new AccessLinkMintGuard(
+			objects: $this->objects,
+			viewReaders: new AccessLinkViewReaders(
+				views: $this->views,
+				catalog: new SchemaCatalog(registers: $this->registers, schemas: $this->schemas, tables: $this->createMock(MagicMapperInterface::class)),
+				reach: $reach
+			),
+		);
+	}
+
+	public function testAViewThatDoesNotReachTheCallerCannotBePublished(): void {
+		// Somebody else's private view in the caller's own organisation resolves
+		// under RBAC and multitenancy; the views endpoint answers the caller 404
+		// on it, and so must the guard.
+		$this->views->method('find')->willReturn($this->view(['registers' => [7], 'schemas' => [4]]));
+
+		$this->assertFalse($this->guardWithReach(reaches: false)->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
+	}
+
+	public function testAViewThatReachesTheCallerCanBePublished(): void {
+		$this->views->method('find')->willReturn($this->view(['registers' => [7], 'schemas' => [4]]));
+
+		$this->assertTrue($this->guardWithReach(reaches: true)->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
+	}
+
+	public function testAReachCheckThatFailsIsARefusal(): void {
+		$this->views->method('find')->willReturn($this->view(['registers' => [7], 'schemas' => [4]]));
+
+		$this->assertFalse($this->guardWithReach(reaches: null)->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
 	}
 
 	public function testAViewNamingARegisterTheCallerCannotReadCannotBePublished(): void {
