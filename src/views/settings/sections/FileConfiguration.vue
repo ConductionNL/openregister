@@ -53,6 +53,9 @@
 			</NcActions>
 		</template>
 
+		<!-- Whether uploads are scanned for malware, and the fix when they cannot be -->
+		<MalwareScanStatus />
+
 		<!-- Where the bytes of managed files live (read-only) -->
 		<DocumentStoreStatus />
 
@@ -879,6 +882,7 @@ import AnonymisationPipelineList from './AnonymisationPipelineList.vue'
 import ConnectionTestIcon from './ConnectionTestIcon.vue'
 import DocumentStoreStatus from './DocumentStoreStatus.vue'
 import LabeledSelect from './LabeledSelect.vue'
+import MalwareScanStatus from './MalwareScanStatus.vue'
 import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
 import SettingsTextField from './SettingsTextField.vue'
 import { freshState } from '../../../services/initialState.js'
@@ -1364,6 +1368,7 @@ export default {
 		AnonymisationPipelineList,
 		ConnectionTestIcon,
 		DocumentStoreStatus,
+		MalwareScanStatus,
 		DotsVertical,
 		LabeledSelect,
 		OpenAnonymiserHint,
