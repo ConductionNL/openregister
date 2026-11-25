@@ -410,6 +410,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'fileExtraction#cleanup', 'url' => '/api/files/cleanup', 'verb' => 'POST'],
         // near-duplicate-documents-by-text (REQ-NDT-002): before /api/files/{id}, which would take the literal.
         ['name' => 'duplicate#nearDuplicates', 'url' => '/api/files/near-duplicates', 'verb' => 'GET'],
+        // The attach picker: where the caller may save a file or a chat, and which objects match.
+        // Before /api/files/{id}, which would take the literal.
+        ['name' => 'attachTargets#index', 'url' => '/api/files/attach-targets', 'verb' => 'GET'],
         ['name' => 'fileExtraction#show', 'url' => '/api/files/{id}', 'verb' => 'GET'],
         ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
 
@@ -1878,6 +1881,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'registers#schemas', 'url' => '/api/registers/{id}/schemas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#model', 'url' => '/api/registers/{id}/model', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'oas#conformanceAll', 'url' => '/api/registers/oas/conformance', 'verb' => 'GET'],
+        ['name' => 'oas#conformance', 'url' => '/api/registers/{id}/oas/conformance', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'oas#probe', 'url' => '/api/registers/{id}/oas/conformance/probe', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
 

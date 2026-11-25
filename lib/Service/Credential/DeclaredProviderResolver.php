@@ -170,6 +170,60 @@ class DeclaredProviderResolver {
 	}//end resolve()
 
 	/**
+	 * Every discovered valid declaration as a provider picker may see it: never its rules or host.
+	 *
+	 * An invalid declaration admits nothing and is not offered; the administrator review
+	 * view reads the declarations itself and shows the reason.
+	 *
+	 * @return array<int, array{identifier: string, title: string, origin: string, status: string}>
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-the-provider-listing-exposes-origin-and-status-but-never-allow-rules
+	 */
+	public function listing(): array {
+		$out = [];
+		foreach ($this->loader->all() as $identifier => $declaration) {
+			$identifier = (string) $identifier;
+			if ($declaration['valid'] !== true) {
+				continue;
+			}
+
+			$title = trim((string) ($declaration['entry']['title'] ?? ''));
+			if ($title === '') {
+				$title = $identifier;
+			}
+
+			$out[] = [
+				'identifier' => $identifier,
+				'title'      => $title,
+				'origin'     => $declaration['app'],
+				'status'     => $this->resolve(identifier: $identifier)['status'],
+			];
+		}
+
+		return $out;
+	}//end listing()
+
+	/**
+	 * The app a declared identifier belongs to: the part before its first colon.
+	 *
+	 * Read from the identifier itself, so it still answers when the declaring app is
+	 * disabled and its declaration can no longer be discovered.
+	 *
+	 * @param string $identifier The `<appId>:<localId>` identifier.
+	 *
+	 * @return string The declaring app, or '' for an identifier outside the declared space.
+	 *
+	 * @spec openspec/changes/app-declared-credential-providers/specs/app-declared-credential-providers/spec.md#requirement-a-declared-provider-is-usable-only-by-the-app-that-declared-it
+	 */
+	public function declaringApp(string $identifier): string {
+		if ($this->isDeclaredIdentifier(identifier: $identifier) === false) {
+			return '';
+		}
+
+		return explode(':', $identifier, 2)[0];
+	}//end declaringApp()
+
+	/**
 	 * The admitted provider entry of a declared identifier, or null when it is not admitted.
 	 *
 	 * @param string $identifier The `<appId>:<localId>` identifier.
