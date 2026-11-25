@@ -19,6 +19,16 @@ jest.mock('./composables/useMailObserver.js', () => ({
 jest.mock('./composables/useAttachmentDrag.js', () => ({
 	useAttachmentDrag: jest.fn(),
 }))
+jest.mock('./composables/useSubjectLine.js', () => ({
+	useSubjectLine: jest.fn(),
+}))
+const mockAddToObject = {}
+jest.mock('./composables/useAddToObject.js', () => ({
+	useAddToObject: jest.fn((label, onAdd) => {
+		mockAddToObject.label = label
+		mockAddToObject.onAdd = onAdd
+	}),
+}))
 jest.mock('@nextcloud/axios', () => ({
 	__esModule: true,
 	default: { get: jest.fn() },
@@ -26,7 +36,10 @@ jest.mock('@nextcloud/axios', () => ({
 jest.mock('@nextcloud/router', () => ({
 	generateUrl: (path, params = {}) => path.replace(/{(\w+)}/g, (m, key) => params[key]),
 }))
-jest.mock('@nextcloud/l10n', () => ({ translate: (app, text) => text }))
+jest.mock('@nextcloud/l10n', () => ({
+	translate: (app, text, vars = {}) => text.replace(/{(\w+)}/g, (m, key) => vars[key] ?? m),
+	translatePlural: (app, one, many, count) => (count === 1 ? one : many).replace('%n', count),
+}))
 jest.mock('@nextcloud/vue', () => ({
 	NcButton: {
 		name: 'NcButton',
@@ -36,26 +49,37 @@ jest.mock('@nextcloud/vue', () => ({
 }))
 
 const mockLoadObjects = jest.fn()
+const mockUnlinkNow = jest.fn(() => Promise.resolve(true))
+const mockAddAttachment = jest.fn()
+const mockSearchFor = jest.fn()
 jest.mock('./components/ObjectsTab.vue', () => ({
 	name: 'ObjectsTab',
 	props: ['accountId', 'messageId'],
-	methods: { loadObjects: () => mockLoadObjects() },
+	emits: ['count', 'objects'],
+	methods: {
+		loadObjects: () => mockLoadObjects(),
+		unlinkNow: (uuid) => mockUnlinkNow(uuid),
+		addAttachment: (attachment) => mockAddAttachment(attachment),
+	},
 	render: () => null,
 }))
 jest.mock('./components/ActionsTab.vue', () => ({
 	name: 'ActionsTab',
 	props: ['accountId', 'messageId'],
 	emits: ['linked'],
+	methods: { searchFor: (term) => mockSearchFor(term) },
 	render: () => null,
 }))
 jest.mock('./components/EntitiesTab.vue', () => ({
 	name: 'EntitiesTab',
 	props: ['accountId', 'messageId'],
+	emits: ['search'],
 	render: () => null,
 }))
 
 jest.mock('vue-material-design-icons/ChevronDown.vue', () => ({ name: 'ChevronDown', render: () => null }))
-jest.mock('vue-material-design-icons/ChevronRight.vue', () => ({ name: 'ChevronRight', render: () => null }))
+jest.mock('vue-material-design-icons/ChevronUp.vue', () => ({ name: 'ChevronUp', render: () => null }))
+jest.mock('vue-material-design-icons/Check.vue', () => ({ name: 'Check', render: () => null }))
 jest.mock('vue-material-design-icons/Close.vue', () => ({ name: 'Close', render: () => null }))
 jest.mock('vue-material-design-icons/LinkVariant.vue', () => ({ name: 'LinkVariant', render: () => null }))
 jest.mock('vue-material-design-icons/TextSearch.vue', () => ({ name: 'TextSearch', render: () => null }))
@@ -138,20 +162,70 @@ describe('MailSidebar', () => {
 		expect(wrapper.findComponent({ name: 'EntitiesTab' }).exists()).toBe(false)
 	})
 
-	it('collapses on close and remembers it', async () => {
+	it('closes from its head and opens again from the pressed Connections button, and remembers it', async () => {
 		const wrapper = await mountSidebar()
+		const button = wrapper.find('.or-mail-connections-button')
+		expect(button.attributes('aria-pressed')).toBe('true')
 		await wrapper.find('.or-mail-panel__head button').trigger('click')
 		expect(localStorage.getItem(KEY)).toBe('true')
 		expect(wrapper.find('aside.or-mail-sidebar').exists()).toBe(false)
-		await wrapper.find('.or-mail-sidebar__collapsed-toggle').trigger('click')
+		expect(button.attributes('aria-pressed')).toBe('false')
+		await button.trigger('click')
 		expect(localStorage.getItem(KEY)).toBe('false')
 		expect(wrapper.find('aside.or-mail-sidebar').exists()).toBe(true)
 	})
 
-	it('starts collapsed when it was left collapsed', async () => {
+	it('starts closed when it was left closed', async () => {
 		localStorage.setItem(KEY, 'true')
 		const wrapper = await mountSidebar()
-		expect(wrapper.find('.or-mail-sidebar__collapsed-toggle').exists()).toBe(true)
+		expect(wrapper.find('aside.or-mail-sidebar').exists()).toBe(false)
+		expect(wrapper.find('.or-mail-connections-button').attributes('aria-pressed')).toBe('false')
+	})
+
+	it('counts the connections on the button, and forgets the count for the next mail', async () => {
+		const wrapper = await mountSidebar()
+		expect(wrapper.find('.or-mail-connections-button__count').exists()).toBe(false)
+		await wrapper.findComponent({ name: 'ObjectsTab' }).vm.$emit('count', 2)
+		expect(wrapper.find('.or-mail-connections-button__count').text()).toBe('2')
+		expect(wrapper.find('.or-mail-connections-button__count').attributes('aria-label')).toBe('2 connections')
+		mockObserved.messageId.value = 43
+		await flushPromises()
+		expect(wrapper.find('.or-mail-connections-button__count').exists()).toBe(false)
+	})
+
+	it('says what was connected, with Undo that takes it back', async () => {
+		const wrapper = await mountSidebar()
+		await wrapper.findComponent({ name: 'ActionsTab' }).vm.$emit('linked', {
+			schema: { title: 'Case' },
+			object: { id: 'u-1', identifier: '2026-4833' },
+		})
+		expect(wrapper.find('.or-mail-panel__connected').text()).toContain('Connected to case #2026-4833')
+		await wrapper.find('.or-mail-panel__undo').trigger('click')
+		await flushPromises()
+		expect(mockUnlinkNow).toHaveBeenCalledWith('u-1')
+		expect(wrapper.find('.or-mail-panel__connected').exists()).toBe(false)
+	})
+
+	it('keeps the line when Undo fails, and names a connection without a number plainly', async () => {
+		mockUnlinkNow.mockResolvedValueOnce(false)
+		const wrapper = await mountSidebar()
+		await wrapper.findComponent({ name: 'ActionsTab' }).vm.$emit('linked', { schema: { title: 'Case' }, object: { uuid: 'u-2' } })
+		expect(wrapper.find('.or-mail-panel__connected').text()).toContain('Connected to case')
+		await wrapper.find('.or-mail-panel__undo').trigger('click')
+		await flushPromises()
+		expect(wrapper.find('.or-mail-panel__connected').exists()).toBe(true)
+	})
+
+	it('hands a found value to the search, and labels the attachment action by the connected kind', async () => {
+		const wrapper = await mountSidebar()
+		await wrapper.find('.or-mail-panel__found-toggle').trigger('click')
+		await wrapper.findComponent({ name: 'EntitiesTab' }).vm.$emit('search', 'Lindelaan 14')
+		expect(mockSearchFor).toHaveBeenCalledWith('Lindelaan 14')
+		expect(mockAddToObject.label.value).toBe('')
+		await wrapper.findComponent({ name: 'ObjectsTab' }).vm.$emit('objects', [{ uuid: 'u-1', schema: 'Case' }])
+		expect(mockAddToObject.label.value).toBe('Add to case')
+		mockAddToObject.onAdd({ fileName: 'a.pdf' })
+		expect(mockAddAttachment).toHaveBeenCalledWith({ fileName: 'a.pdf' })
 	})
 
 	it('reloads the connections after a link', async () => {

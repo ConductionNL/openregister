@@ -72,7 +72,7 @@ describe('ObjectsTab.loadObjects', () => {
 		await ctx.loadObjects()
 		expect(axios.get).not.toHaveBeenCalled()
 		expect(ctx.objects).toEqual([])
-		expect(ctx.emitted).toEqual([['count', 0]])
+		expect(ctx.emitted).toEqual([['count', 0], ['objects', []]])
 	})
 
 	it('loads the objects linked to the message and counts them', async () => {
@@ -87,7 +87,7 @@ describe('ObjectsTab.loadObjects', () => {
 		expect(during).toBe(true)
 		expect(ctx.objects).toEqual([{ uuid: 'a' }, { uuid: 'b' }])
 		expect(ctx.loading).toBe(false)
-		expect(ctx.emitted).toEqual([['count', 2]])
+		expect(ctx.emitted).toEqual([['count', 2], ['objects', [{ uuid: 'a' }, { uuid: 'b' }]]])
 	})
 
 	it('reads an answer without results as no objects', async () => {
@@ -95,7 +95,7 @@ describe('ObjectsTab.loadObjects', () => {
 		const ctx = tab()
 		await ctx.loadObjects()
 		expect(ctx.objects).toEqual([])
-		expect(ctx.emitted).toEqual([['count', 0]])
+		expect(ctx.emitted).toEqual([['count', 0], ['objects', []]])
 	})
 
 	it('empties the list when loading fails', async () => {
@@ -104,7 +104,7 @@ describe('ObjectsTab.loadObjects', () => {
 		await ctx.loadObjects()
 		expect(ctx.objects).toEqual([])
 		expect(ctx.loading).toBe(false)
-		expect(ctx.emitted).toEqual([['count', 0]])
+		expect(ctx.emitted).toEqual([['count', 0], ['objects', []]])
 	})
 })
 
@@ -166,6 +166,16 @@ describe('ObjectsTab attachment upload', () => {
 		expect(() => tab().onAttachmentDragOver({})).not.toThrow()
 	})
 
+	it('marks the card being dragged over as the drop target, until the pointer leaves it', () => {
+		const ctx = tab()
+		ctx.onAttachmentDragOver({ dataTransfer: {} }, { uuid: 'u1' })
+		expect(ctx.dropTarget).toBe('u1')
+		ctx.onAttachmentDragLeave({ uuid: 'u2' })
+		expect(ctx.dropTarget).toBe('u1')
+		ctx.onAttachmentDragLeave({ uuid: 'u1' })
+		expect(ctx.dropTarget).toBeNull()
+	})
+
 	it('downloads the attachment and posts it to the object as a file', async () => {
 		const blob = new Blob(['%PDF'], { type: 'application/pdf' })
 		globalThis.fetch = jest.fn(() => Promise.resolve({ ok: true, blob: () => Promise.resolve(blob) }))
@@ -198,5 +208,54 @@ describe('ObjectsTab attachment upload', () => {
 		await expect(tab().uploadAttachmentToObject({ downloadUrl: '/a' }, TARGET))
 			.rejects.toThrow('Attachment download failed with status 404')
 		expect(axios.post).not.toHaveBeenCalled()
+	})
+})
+
+describe('ObjectsTab add and undo', () => {
+	it('adds an attachment to the first connected item, or the one named', async () => {
+		const ctx = tab({ objects: [{ uuid: 'a' }, { uuid: 'b' }] })
+		ctx.uploadDroppedAttachment = jest.fn()
+		await ctx.addAttachment({ fileName: 'x.pdf' })
+		expect(ctx.uploadDroppedAttachment).toHaveBeenCalledWith(JSON.stringify({ fileName: 'x.pdf' }), { uuid: 'a' })
+		await ctx.addAttachment({ fileName: 'y.pdf' }, 'b')
+		expect(ctx.uploadDroppedAttachment).toHaveBeenLastCalledWith(JSON.stringify({ fileName: 'y.pdf' }), { uuid: 'b' })
+		ctx.uploadDroppedAttachment.mockClear()
+		await tab({ objects: [] }).addAttachment({ fileName: 'z.pdf' })
+		expect(ctx.uploadDroppedAttachment).not.toHaveBeenCalled()
+	})
+
+	it('removes a connection at once for Undo and reloads, or reports a failure', async () => {
+		axios.delete.mockResolvedValueOnce({})
+		const ctx = tab()
+		ctx.loadObjects = jest.fn()
+		expect(await ctx.unlinkNow('u1')).toBe(true)
+		expect(axios.delete).toHaveBeenCalledWith('/apps/openregister/api/objects/u1/_linked/mail/7/42')
+		expect(ctx.loadObjects).toHaveBeenCalled()
+		axios.delete.mockRejectedValueOnce(new Error('down'))
+		expect(await ctx.unlinkNow('u1')).toBe(false)
+		expect(showError).toHaveBeenCalledWith('Failed to remove connection')
+	})
+})
+
+describe('ObjectsTab details', () => {
+	it('reads each connected item as an object and shows its rendered fields over the row', async () => {
+		axios.get.mockResolvedValueOnce({ data: { statusPublicLabel: 'Received', assignee: 'anouk', title: 'Ignored' } })
+		const ctx = tab({ objects: [{ uuid: 'u1', name: 'Case one', register: 2, schemaId: 5, statusLabel: 'Ontvangen' }, { uuid: 'u2' }] })
+		ctx.resolveNames = jest.fn()
+		await ctx.loadDetails()
+		expect(axios.get).toHaveBeenCalledTimes(1)
+		expect(axios.get).toHaveBeenCalledWith('/apps/openregister/api/objects/2/5/u1', { params: { _extend: 'status' } })
+		const merged = ctx.detail(ctx.objects[0])
+		expect(merged.statusPublicLabel).toBe('Received')
+		expect(merged.name).toBe('Case one')
+		expect(ctx.detail(ctx.objects[1])).toBe(ctx.objects[1])
+		expect(ctx.resolveNames).toHaveBeenCalledWith([{ statusPublicLabel: 'Received', assignee: 'anouk', title: 'Ignored' }])
+	})
+
+	it('keeps the row when the object cannot be read', async () => {
+		axios.get.mockRejectedValueOnce(new Error('403'))
+		const ctx = tab({ objects: [{ uuid: 'u1', register: 2, schemaId: 5 }] })
+		await ctx.loadDetails()
+		expect(ctx.details).toEqual({})
 	})
 })

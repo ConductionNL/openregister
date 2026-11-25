@@ -27,9 +27,19 @@
 
 ## 2. Plugins
 
-- [ ] 2.1 Files action "Add to object" with the object picker.
+- [x] 2.1 Files action "Add to object" with the object picker: `src/files/attachAction.js`
+      (registered from the Files script entry, offered on one readable node) opens
+      `src/dialogs/files/AttachToObjectDialog.vue`, which searches
+      `GET /api/files/attach-targets` (`AttachTargetsController` over
+      `AttachTargetSearch`, which feeds `AttachTargetFilter` the platform's update
+      verdict per schema; a schema holds files unless `allowFiles` is false) and
+      attaches through 1.1. Tests: `AttachTargetSearchTest` (6),
+      `AttachTargetsControllerTest` (3), `attachAction.spec.js` (8),
+      `AttachToObjectDialog.spec.js` (6).
 - [ ] 2.2 Talk conversation action "Save chat to object".
-- [ ] 2.3 Read `fileActions.attachTargets` from the consuming manifest.
+- [ ] 2.3 Read `fileActions.attachTargets` from the consuming manifest. (The route takes
+      `targets` and the picker a `targets` prop; reading them from a consuming app's
+      manifest is still open.)
 
 ## 3. Tests
 

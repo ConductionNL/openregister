@@ -1,6 +1,5 @@
 <template>
 	<section
-		v-if="loading || objects.length > 0"
 		class="or-tab-objects"
 		:aria-label="t('openregister', 'Connected to')">
 		<h4 class="or-mail-panel__section-title">
@@ -10,20 +9,22 @@
 			<NcLoadingIcon :size="20" />
 			<span>{{ t('openregister', 'Loading connections...') }}</span>
 		</div>
+		<p v-else-if="objects.length === 0" class="or-mail-object-empty">
+			{{ t('openregister', 'Not connected to anything yet.') }}
+		</p>
 		<div v-else class="or-mail-object-list">
 			<div
 				v-for="obj in objects"
 				:key="obj.uuid"
 				class="or-mail-object-card"
-				@dragover.prevent="onAttachmentDragOver"
+				:class="{ 'or-mail-object-card--drop-target': dropTarget === obj.uuid }"
+				@dragover.prevent="onAttachmentDragOver($event, obj)"
+				@dragleave="onAttachmentDragLeave(obj)"
 				@drop.prevent="onAttachmentDrop($event, obj)">
 				<div class="or-mail-object-card__header">
-					<span class="or-mail-object-card__schema">
-						<component
-							:is="schemaIconComponent(obj.schemaIcon)"
-							:size="16"
-							class="or-mail-object-card__icon" />
-						{{ obj.schema }}
+					<span class="or-mail-object-card__kind">
+						<span class="or-mail-object-card__schema">{{ obj.schema }}</span>
+						<span v-if="objectIdentifier(detail(obj))" class="or-mail-object-card__id">#{{ objectIdentifier(detail(obj)) }}</span>
 					</span>
 					<NcButton
 						variant="tertiary"
@@ -44,7 +45,15 @@
 					:title="t('openregister', 'Open connected item')">
 					{{ displayName(obj) }}
 				</a>
-				<p class="or-mail-object-card__drop">
+				<p v-if="objectSubline(detail(obj))" class="or-mail-object-card__sub">
+					{{ objectSubline(detail(obj)) }}
+				</p>
+				<ObjectStatus
+					class="or-mail-object-card__status"
+					:status="objectStatus(detail(obj))"
+					:handler="nameOf(objectHandler(detail(obj)))" />
+				<p v-if="dropTarget === obj.uuid" class="or-mail-object-card__drop">
+					<Paperclip :size="16" />
 					{{ t('openregister', 'Drop an attachment here to add it') }}
 				</p>
 			</div>
@@ -74,10 +83,13 @@ import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
+import Paperclip from 'vue-material-design-icons/Paperclip.vue'
 import RemoveConnectionDialog from '../../dialogs/mail/RemoveConnectionDialog.vue'
+import ObjectStatus from './ObjectStatus.vue'
 import { mailMessageTab } from '../composables/mailMessageTab.js'
 import { ATTACHMENT_MIME } from '../composables/useAttachmentDrag.js'
-import { schemaIconComponent } from '../icons.js'
+import { displayNameOf } from '../displayNames.js'
+import { objectHandler, objectIdentifier, objectStatus, objectSubline } from '../objectRow.js'
 
 /**
  * The toast for an attachment added to an object.
@@ -111,6 +123,8 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		Close,
+		ObjectStatus,
+		Paperclip,
 		RemoveConnectionDialog,
 	},
 
@@ -124,12 +138,66 @@ export default {
 			// Connection pending removal (null = dialog closed) + in-flight flag.
 			removeTarget: null,
 			removing: false,
+			// The card an attachment is being dragged over, which says it takes the drop.
+			dropTarget: null,
+			// Display names of handlers by user id, '' while being read.
+			names: {},
+			// Each connected item as the object API renders it, by uuid.
+			details: {},
 		}
 	},
 
 	methods: {
 		t,
-		schemaIconComponent,
+		objectIdentifier,
+		objectSubline,
+		objectStatus,
+		objectHandler,
+
+		/**
+		 * A handler's display name once read, else nothing yet.
+		 *
+		 * @param {string} uid The handler's user id.
+		 * @return {string}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		nameOf(uid) {
+			return uid ? (this.names[uid] || '') : ''
+		},
+
+		/**
+		 * Add a Mail attachment to a connected item, as a drop on its card does.
+		 * Without a uuid the first connected item takes it.
+		 *
+		 * @param {object} attachment The attachment, as the drag payload carries it.
+		 * @param {string} [uuid] The connected item.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async addAttachment(attachment, uuid) {
+			const obj = this.objects.find((candidate) => !uuid || candidate.uuid === uuid)
+			if (!obj) return
+			await this.uploadDroppedAttachment(JSON.stringify(attachment), obj)
+		},
+
+		/**
+		 * Remove a connection at once, for Undo right after it was made.
+		 *
+		 * @param {string} uuid The connected item.
+		 * @return {Promise<boolean>} Whether it was removed.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async unlinkNow(uuid) {
+			try {
+				const base = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail', { uuid })
+				await axios.delete(`${base}/${this.accountId}/${this.messageId}`)
+				this.loadObjects()
+				return true
+			} catch {
+				showError(t('openregister', 'Failed to remove connection'))
+				return false
+			}
+		},
+
 		/**
 		 * OR sometimes derives object names as a JSON-encoded locale map
 		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
@@ -242,6 +310,7 @@ export default {
 			if (!this.accountId || !this.messageId) {
 				this.objects = []
 				this.$emit('count', 0)
+				this.$emit('objects', [])
 				return
 			}
 
@@ -253,6 +322,64 @@ export default {
 			} finally {
 				this.loading = false
 				this.$emit('count', this.objects.length)
+				this.$emit('objects', this.objects)
+				this.resolveNames()
+				this.loadDetails()
+			}
+		},
+
+		/**
+		 * A connected item with what the object itself says (its status named
+		 * by the status object), over the lookup's raw row.
+		 *
+		 * @param {object} obj The connected item.
+		 * @return {object}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		detail(obj) {
+			const rendered = this.details[obj.uuid]
+			return rendered ? { ...obj, ...rendered, name: obj.name } : obj
+		},
+
+		/**
+		 * Read each connected item as an object with its status extended, for
+		 * the status's name and the handler. A failed read keeps the lookup's row.
+		 *
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async loadDetails() {
+			await Promise.all(this.objects.map(async (obj) => {
+				const target = uploadTargetOf(obj)
+				if (!target) return
+				try {
+					const response = await axios.get(generateUrl('/apps/openregister/api/objects/{register}/{schema}/{uuid}', {
+						register: target.register,
+						schema: target.schema,
+						uuid: target.objectId,
+					}), { params: { _extend: 'status' } })
+					if (response.data && typeof response.data === 'object') {
+						this.details = { ...this.details, [obj.uuid]: response.data }
+						this.resolveNames([response.data])
+					}
+				} catch {
+					// The lookup's row stays what the card shows.
+				}
+			}))
+		},
+
+		/**
+		 * Read the display names of the handlers of these items.
+		 *
+		 * @param {Array<object>} [objects] The items; the connected ones by default.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		resolveNames(objects = this.objects) {
+			for (const uid of new Set(objects.map(objectHandler).filter(Boolean))) {
+				if (this.names[uid] !== undefined) continue
+				this.names[uid] = ''
+				displayNameOf(uid).then((name) => {
+					this.names[uid] = name
+				})
 			}
 		},
 
@@ -299,12 +426,30 @@ export default {
 		},
 
 		/**
-		 * @param {DragEvent} event
+		 * A drag over a card: it takes a copy, and the card says it is the drop target.
+		 *
+		 * @param {DragEvent} event The drag event.
+		 * @param {object} [obj] The card's object.
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
-		onAttachmentDragOver(event) {
+		onAttachmentDragOver(event, obj) {
 			if (event.dataTransfer) {
 				event.dataTransfer.dropEffect = 'copy'
+			}
+			if (obj) {
+				this.dropTarget = obj.uuid
+			}
+		},
+
+		/**
+		 * The pointer left a card while dragging: it is no longer the drop target.
+		 *
+		 * @param {object} obj The card's object.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		onAttachmentDragLeave(obj) {
+			if (this.dropTarget === obj.uuid) {
+				this.dropTarget = null
 			}
 		},
 
@@ -314,6 +459,7 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async onAttachmentDrop(event, obj) {
+			this.dropTarget = null
 			const raw = event.dataTransfer?.getData(ATTACHMENT_MIME)
 			if (!raw) {
 				return

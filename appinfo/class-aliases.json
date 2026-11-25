@@ -1081,6 +1081,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Controller\\AttachTargetsController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\AttachTargetsController",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Controller\\FileSearchController": {
 			"class": "OCA\\OpenRegister\\Files\\Controller\\FileSearchController",
 			"eager": false,

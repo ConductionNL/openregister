@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Listener;
 
 use Closure;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper\AdministeredValidationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationChecks;
 use OCA\OpenRegister\Db\SchemaMapper\AdvisoryAnnotationRule;
 use OCA\OpenRegister\Db\SchemaMapper\CalculationAnnotationCheck;
@@ -31,18 +32,20 @@ use OCA\OpenRegister\Db\SchemaMapper\NamedConditionCheck;
 use OCA\OpenRegister\Db\SchemaMapper\PositionedDeclarationCheck;
 use OCA\OpenRegister\Db\SchemaMapper\ProcessDeclarationRefusals;
 use OCA\OpenRegister\Db\SchemaMapper\ReferenceLoopCheck;
+use OCA\OpenRegister\Db\SchemaMapper\RelativeTimeCalendarCheck;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidatorInterface;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
+use OCA\OpenRegister\Service\Rules\RelativeTimeEvaluation;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Adds the lifecycle, action, calculation, rule, reversibility and review checks.
+ * Adds the lifecycle, action, calculation, rule, administered-validation, relative-time, reversibility and review checks.
  *
  * Each runs in its slot of SchemaDeclarationOrder, so the schema save keeps
  * the order it had when the mapper ran these checks itself.
@@ -109,6 +112,10 @@ final class SchemaDeclarationChecksListener implements IEventListener {
 			SchemaDeclarationOrder::DEPENDENT_VALUES => static fn (Schema $schema) => $refusals->checkDependentValues(schema: $schema),
 			SchemaDeclarationOrder::REFERENCE_LOOPS => static fn (Schema $schema) => (new ReferenceLoopCheck())->check(schema: $schema),
 			SchemaDeclarationOrder::NAMED_CONDITIONS => static fn (Schema $schema) => (new NamedConditionCheck())->check(schema: $schema),
+			SchemaDeclarationOrder::ADMINISTERED_VALIDATIONS => static fn (Schema $schema) => (new AdministeredValidationCheck())->check(schema: $schema),
+			SchemaDeclarationOrder::RELATIVE_TIME_CALENDARS => static fn (Schema $schema) => (new RelativeTimeCalendarCheck(
+				time: self::relativeTime(container: $container)
+			))->check(schema: $schema),
 			SchemaDeclarationOrder::REVERSIBILITY => static fn (Schema $schema) => $refusals->checkReversibility(schema: $schema),
 			SchemaDeclarationOrder::REVIEW => static fn (Schema $schema) => $refusals->checkReview(schema: $schema),
 			SchemaDeclarationOrder::PARTY => static fn (Schema $schema, DiscardedAnnotations $discarded) => (new AdvisoryAnnotationChecks(
@@ -117,6 +124,23 @@ final class SchemaDeclarationChecksListener implements IEventListener {
 			))->checkContributed(schema: $schema, rule: self::partyRule()),
 		];
 	}//end checks()
+
+	/**
+	 * The `$age` evaluation, resolved on first use; none when the container cannot build it, which skips the calendar check.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return Closure|null
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private static function relativeTime(ContainerInterface $container): ?Closure {
+		if ($container->has(RelativeTimeEvaluation::class) === false) {
+			return null;
+		}
+
+		return static fn (): RelativeTimeEvaluation => $container->get(RelativeTimeEvaluation::class);
+	}//end relativeTime()
 
 	/**
 	 * The `x-openregister-party` annotation: advisory, validated by the party validator.

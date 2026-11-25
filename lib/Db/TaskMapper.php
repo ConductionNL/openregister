@@ -270,6 +270,28 @@ class TaskMapper extends QBMapper {
 	}//end findByKey()
 
 	/**
+	 * Every task on one object, open and finished, oldest first.
+	 *
+	 * Unscoped by caller: the published {@see \OCA\OpenRegister\Contract\ObjectTaskReaderInterface}
+	 * leaves the object's read rights to its caller.
+	 *
+	 * @param string $objectUuid The object's uuid.
+	 *
+	 * @return array<int, Task> The tasks, oldest first.
+	 *
+	 * @spec openspec/changes/object-task-reader/specs/flow-tasks/spec.md#requirement-a-consuming-app-reads-the-tasks-on-its-object
+	 */
+	public function findByObjectUuid(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('id', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByObjectUuid()
+
+	/**
 	 * Update a task ONLY while it is still open: the conditional write every
 	 * state-changing verb goes through.
 	 *

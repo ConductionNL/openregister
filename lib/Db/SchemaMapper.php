@@ -1488,6 +1488,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			SchemaDeclarationOrder::DEPARTMENT_MATRIX => static fn () => $access->checkDepartmentMatrix(schema: $schema),
 			SchemaDeclarationOrder::REVEAL_AUDIT => static fn () => $access->checkRevealAudit(schema: $schema),
 			SchemaDeclarationOrder::CLASSIFICATION => static fn () => $access->checkClassification(schema: $schema),
+			SchemaDeclarationOrder::BREAK_GLASS => static fn () => $access->checkBreakGlass(schema: $schema),
 			SchemaDeclarationOrder::CONFIDENTIALITY => static fn () => $access->checkConfidentiality(schema: $schema),
 		];
 	}//end accessSteps()

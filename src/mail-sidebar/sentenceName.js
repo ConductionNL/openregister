@@ -17,3 +17,16 @@ export function sentenceName(title) {
 	if (/^.[^A-Z]*$/.test(text) === false) return text
 	return text.charAt(0).toLocaleLowerCase() + text.slice(1)
 }
+
+/**
+ * What one item of a schema is called inside a sentence: the schema's
+ * `mailObjectName` ("work queue item") when it sets one, else its title in
+ * sentence case ("case").
+ *
+ * @param {object|null} schema The schema.
+ * @return {string}
+ */
+export function itemName(schema) {
+	const name = schema?.configuration?.mailObjectName
+	return typeof name === 'string' && name.trim() !== '' ? name.trim() : sentenceName(schema?.title)
+}

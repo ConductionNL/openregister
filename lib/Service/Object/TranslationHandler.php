@@ -121,6 +121,59 @@ class TranslationHandler implements TranslationHandlerInterface {
 	}//end resolveTranslationsForRender()
 
 	/**
+	 * The object name in the reader's language, when the stored name came from a translatable property.
+	 *
+	 * `@self.name` is written once at save time from the name property's first
+	 * language, so a reader in another language sees it untranslated next to a
+	 * translated property. When the stored name is one of the values of a
+	 * translatable property's language map, the property's resolved value is the
+	 * name this reader should see.
+	 *
+	 * @param array       $stored   The object data before translation, with its language maps.
+	 * @param array       $resolved The same data after resolveTranslationsForRender().
+	 * @param Schema      $schema   The object's schema.
+	 * @param string|null $name     The stored object name.
+	 *
+	 * @return string|null The translated name, or null when the stored name stays.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function translatedName(array $stored, array $resolved, Schema $schema, ?string $name): ?string {
+		if ($name === null || $name === '') {
+			return null;
+		}
+
+		$candidates = [];
+		foreach ($this->propertiesToResolve(schema: $schema) as $propName) {
+			$map = ($stored[$propName] ?? null);
+			$text = ($resolved[$propName] ?? null);
+			if ($this->isLanguageKeyedValue(value: $map) === false || is_string($text) === false || $text === '') {
+				continue;
+			}
+
+			if (in_array($name, $map, true) === true) {
+				$candidates[$propName] = $text;
+			}
+		}
+
+		// Several properties can carry the name in the source language (a title
+		// and an untranslated subject); the configured name field decides, else
+		// the first one that has a translation for this reader.
+		$nameField = ($schema->getConfiguration()['objectNameField'] ?? null);
+		if (is_string($nameField) === true && isset($candidates[$nameField]) === true) {
+			return $candidates[$nameField];
+		}
+
+		foreach ($candidates as $text) {
+			if ($text !== $name) {
+				return $text;
+			}
+		}
+
+		return null;
+	}//end translatedName()
+
+	/**
 	 * The translatable properties a render resolves: none when all translations are returned.
 	 *
 	 * @param Schema $schema The schema.

@@ -146,6 +146,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'objectOwnership#claim',         'url' => '/api/objects/{register}/{schema}/{id}/ownership/claim', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#assign',        'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#setOwnerGroup', 'url' => '/api/objects/{register}/{schema}/{id}/ownership/group', 'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // grants-that-follow-a-slot-a-relation-or-a-reason REQ-GSR-004: emergency access, taken with a reason.
+        ['name' => 'breakGlass#take',               'url' => '/api/objects/{register}/{schema}/{id}/break-glass',     'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#reassign',      'url' => '/api/ownership/reassign',                               'verb' => 'POST'],
 
         // A draft's owner makes it definitive (decision 216). An explicit action:
@@ -410,6 +412,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'fileExtraction#cleanup', 'url' => '/api/files/cleanup', 'verb' => 'POST'],
         // near-duplicate-documents-by-text (REQ-NDT-002): before /api/files/{id}, which would take the literal.
         ['name' => 'duplicate#nearDuplicates', 'url' => '/api/files/near-duplicates', 'verb' => 'GET'],
+        // The attach picker: where the caller may save a file or a chat, and which objects match.
+        // Before /api/files/{id}, which would take the literal.
+        ['name' => 'attachTargets#index', 'url' => '/api/files/attach-targets', 'verb' => 'GET'],
         ['name' => 'fileExtraction#show', 'url' => '/api/files/{id}', 'verb' => 'GET'],
         ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
 
@@ -1602,6 +1607,12 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'deleted#restore', 'url' => '/api/deleted/{id}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#restoreMultiple', 'url' => '/api/deleted/restore', 'verb' => 'POST'],
         [
+            'name' => 'deleted#restorePreview',
+            'url' => '/api/deleted/{id}/restore-preview',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
+        [
             'name' => 'deleted#destructionPreview',
             'url' => '/api/deleted/{id}/destruction-preview',
             'verb' => 'GET',
@@ -1875,6 +1886,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'registers#schemas', 'url' => '/api/registers/{id}/schemas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#model', 'url' => '/api/registers/{id}/model', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'oas#conformanceAll', 'url' => '/api/registers/oas/conformance', 'verb' => 'GET'],
+        ['name' => 'oas#conformance', 'url' => '/api/registers/{id}/oas/conformance', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'oas#probe', 'url' => '/api/registers/{id}/oas/conformance/probe', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
 

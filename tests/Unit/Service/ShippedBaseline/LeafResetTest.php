@@ -38,16 +38,25 @@ class LeafResetTest extends TestCase {
 		$this->assertFalse((new LeafReset(['a'], ''))->removes());
 		$this->assertFalse((new LeafReset(['a'], false))->removes());
 		$this->assertFalse((new LeafReset(['a'], []))->removes());
+		$this->assertFalse((new LeafReset(['a'], 0))->removes());
 	}
 
 	public function testBelowDropsTheFirstSegmentAndKeepsTheTarget(): void {
 		$reset = new LeafReset(['properties', 'age', 'title'], 'Age');
 
 		$below = $reset->below();
+		$this->assertNotSame($reset, $below);
 		$this->assertSame(['age', 'title'], $below->segments);
 		$this->assertSame('Age', $below->to);
 		$this->assertSame(['title'], $below->below()->segments);
 		$this->assertSame([], $below->below()->below()->below()->segments);
 		$this->assertSame(['properties', 'age', 'title'], $reset->segments);
+	}
+
+	public function testBelowTheLastSegmentLeavesNoSegments(): void {
+		$below = (new LeafReset(['type'], null))->below();
+
+		$this->assertSame([], $below->segments);
+		$this->assertTrue($below->removes());
 	}
 }
