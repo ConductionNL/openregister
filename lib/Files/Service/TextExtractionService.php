@@ -658,6 +658,22 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	}//end sharedOverlapLength()
 
 	/**
+	 * Extract a file's text again, chunk it and detect entities, even when its chunks are up to date.
+	 *
+	 * @param int $fileId The Nextcloud file id.
+	 *
+	 * @return void
+	 *
+	 * @throws NotFoundException If the file does not exist.
+	 * @throws Exception If the extraction fails.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md#requirement-an-administrator-reindexes-a-selection-and-watches-it-run-req-sqf-007
+	 */
+	public function reextractFile(int $fileId): void {
+		$this->extractFile(fileId: $fileId, options: new FileExtractionOptions(forceReExtract: true));
+	}//end reextractFile()
+
+	/**
 	 * Extract text from an object by object ID
 	 *
 	 * This method:

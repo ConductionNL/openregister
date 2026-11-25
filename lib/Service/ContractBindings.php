@@ -292,6 +292,8 @@ final class ContractBindings {
 		JobRunRecorderInterface::class => JobRunRecorder::class,
 		JobRunRecordingInterface::class => JobRunRecorder::class,
 		JobScheduleServiceInterface::class => JobScheduleService::class,
+		\OCA\OpenRegister\Service\Operations\ReindexSelectionServiceInterface::class
+			=> \OCA\OpenRegister\Service\Operations\ReindexSelectionService::class,
 		LinkedEntityServiceInterface::class => LinkedEntityService::class,
 		ManifestServiceInterface::class => ManifestService::class,
 		MapLinkServiceInterface::class => MapLinkService::class,

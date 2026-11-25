@@ -58,4 +58,9 @@ interface ConfigurationJobHandlesInterface {
 	 * The import preview runner's commit phase.
 	 */
 	public const IMPORT_PREVIEW_PHASE_COMMIT = ImportPreviewRunner::PHASE_COMMIT;
+
+	/**
+	 * Reindex of an administrator's selection of objects.
+	 */
+	public const REINDEX_SELECTION = ReindexSelectionJob::class;
 }//end interface

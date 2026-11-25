@@ -51,7 +51,7 @@ use Throwable;
  *
  * @spec openspec/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
  */
-class JobRunRecorder implements JobRunRecorderInterface {
+class JobRunRecorder implements JobRunRecorderInterface, JobRunProgressInterface {
 
 	/**
 	 * How much of a failure message the row keeps.
@@ -69,6 +69,13 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	 * @var array<string, int>
 	 */
 	private array $depth = [];
+
+	/**
+	 * The run this recorder holds open, per job class, while its work runs.
+	 *
+	 * @var array<string, RecordingRun>
+	 */
+	private array $openRuns = [];
 
 	/**
 	 * Constructor.
@@ -129,6 +136,43 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	}//end recordAct()
 
 	/**
+	 * Store a running job's progress as the details of its open run row.
+	 *
+	 * The row is the one this recorder opened for the job class, so the
+	 * progress lands on the run doing the work and on no other.
+	 *
+	 * @param string               $jobClass The job class whose run is open.
+	 * @param array<string, mixed> $details  The progress, as the run row's details.
+	 *
+	 * @return bool True when the row was written; false when no run of the class is open or the row could not be written.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md#requirement-an-administrator-reindexes-a-selection-and-watches-it-run-req-sqf-007
+	 */
+	public function progress(string $jobClass, array $details): bool {
+		$row = ($this->openRuns[$jobClass] ?? null)?->row;
+
+		if ($row === null) {
+			return false;
+		}
+
+		$row->setDetails($this->encodedDetails(details: $details));
+
+		try {
+			$this->runs->update($row);
+		} catch (Throwable $exception) {
+			$this->logger->warning(
+				message: '[JobRunRecorder] Could not write a run\'s progress',
+				context: ['job' => $jobClass, 'exception' => $exception]
+			);
+
+			return false;
+		}
+
+		return true;
+
+	}//end progress()
+
+	/**
 	 * Mark the job class as recording and open its row.
 	 *
 	 * @param string        $jobClass The job class.
@@ -139,8 +183,10 @@ class JobRunRecorder implements JobRunRecorderInterface {
 	private function start(string $jobClass, JobRunContext $context): RecordingRun {
 		$this->depth[$jobClass] = (($this->depth[$jobClass] ?? 0) + 1);
 		$row = $this->open(jobClass: $jobClass, context: $context);
+		$run = new RecordingRun(jobClass: $jobClass, row: $row, startedAt: microtime(true));
+		$this->openRuns[$jobClass] = $run;
 
-		return new RecordingRun(jobClass: $jobClass, row: $row, startedAt: microtime(true));
+		return $run;
 
 	}//end start()
 
@@ -160,13 +206,13 @@ class JobRunRecorder implements JobRunRecorderInterface {
 		} catch (Throwable $failure) {
 			$this->close(run: $run, failure: $this->describe(failure: $failure));
 			$this->alerts->observeFailure(jobClass: $run->jobClass);
-			unset($this->depth[$run->jobClass]);
+			unset($this->depth[$run->jobClass], $this->openRuns[$run->jobClass]);
 
 			throw $failure;
 		}
 
 		$this->close(run: $run, failure: null);
-		unset($this->depth[$run->jobClass]);
+		unset($this->depth[$run->jobClass], $this->openRuns[$run->jobClass]);
 
 		return $result;
 

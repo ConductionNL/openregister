@@ -37,6 +37,7 @@ use OCA\OpenRegister\BackgroundJob\JobHandles;
 use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
 use OCA\OpenRegister\BackgroundJob\ObjectTextExtractionJob;
 use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
+use OCA\OpenRegister\BackgroundJob\ReindexSelectionJob;
 use OCA\OpenRegister\BackgroundJob\RelatedRetentionRecalculationJob;
 use OCA\OpenRegister\BackgroundJob\SchemaRunJob;
 use OCA\OpenRegister\BackgroundJob\SourceRecordRecomputeJob;
@@ -79,6 +80,7 @@ final class F07JobHandlesTest extends TestCase {
 		ConfigurationJobHandlesInterface::IMPORT_PREVIEW_RUNNER => ImportPreviewRunner::class,
 		JobHandles::OBJECT_CLEANUP => ObjectCleanupJob::class,
 		ProcessesJobHandlesInterface::OBJECT_TEXT_EXTRACTION => ObjectTextExtractionJob::class,
+		ConfigurationJobHandlesInterface::REINDEX_SELECTION => ReindexSelectionJob::class,
 		ComplianceJobHandlesInterface::RELATED_RETENTION_RECALCULATION => RelatedRetentionRecalculationJob::class,
 		JobHandles::SCHEMA_RUN => SchemaRunJob::class,
 		ProcessesJobHandlesInterface::SOURCE_RECORD_RECOMPUTE => SourceRecordRecomputeJob::class,
