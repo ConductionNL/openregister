@@ -42,7 +42,6 @@
 				<a
 					class="or-mail-object-card__title"
 					:href="objectUrl(obj)"
-					target="_blank"
 					:title="t('openregister', 'Open connected item')">
 					{{ displayName(obj) }}
 				</a>

@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\Support\TmloControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -60,6 +61,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class TmloController extends Controller {
+	use HandlesExceptionsTrait;
+
 
 	/**
 	 * The archiefstatus values a summary counts, in response order.
@@ -387,7 +390,10 @@ class TmloController extends Controller {
 	 * Flattening it into the generic 'not found' would read as "your slug is
 	 * wrong", the one conclusion that is certainly false when duplicates
 	 * demonstrably exist. An unknown register/schema slug or id is a clean 404
-	 * instead of leaking the internal DBAL SQL through the generic 500.
+	 * instead of leaking the internal DBAL SQL through the generic 500. Any
+	 * other typed failure answers through handleApiException() with its own
+	 * status; an untyped one is a 500 naming the action, its message in the
+	 * server log only.
 	 *
 	 * @param Throwable $e The failure.
 	 * @param string $prefix The log and response prefix for an unexpected failure.
@@ -395,6 +401,8 @@ class TmloController extends Controller {
 	 * @return JSONResponse The mapped error.
 	 *
 	 * @throws Throwable When the failure is not an Exception (it is rethrown unchanged).
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
 	 */
 	private function failure(Throwable $e, string $prefix): JSONResponse {
 		if ($e instanceof SchemaNotInRegisterException) {
@@ -409,7 +417,11 @@ class TmloController extends Controller {
 			throw $e;
 		}
 
+		if ($this->exceptionStatus(e: $e) !== null) {
+			return $this->handleApiException(e: $e, context: $prefix);
+		}
+
 		$this->logger->error($prefix . ': ' . $e->getMessage(), ['exception' => $e]);
-		return new JSONResponse(['error' => $prefix . ': ' . $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+		return new JSONResponse(['error' => $prefix], Http::STATUS_INTERNAL_SERVER_ERROR);
 	}//end failure()
 }//end class
