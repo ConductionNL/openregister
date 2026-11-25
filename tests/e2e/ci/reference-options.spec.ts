@@ -233,6 +233,9 @@ test.describe('reference-options', () => {
 		// above, one of them is a second evaluator. Written as a non-administrator.
 		const owner = await pwRequest.newContext({
 			baseURL: resolveBaseUrl(),
+			// Empty on purpose: this file runs under the admin storage state, and
+			// its session cookie would otherwise win over the Basic header.
+			storageState: { cookies: [], origins: [] },
 			extraHTTPHeaders: {
 				Authorization: `Basic ${Buffer.from(`${OWNER}:${OWNER_PASS}`).toString('base64')}`,
 				'OCS-APIRequest': 'true',
