@@ -5100,6 +5100,13 @@ Service/Resolver/Exception/ResolverConfigException.php,,Service,,,,,Kernel
 Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/CopySealerInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/ExportKeySealersInterface.php,,Kernel,,,,,Kernel
+Service/Exchange/ExportKeySealer.php,,Service,,,,,Configuration
+Service/Exchange/ExportKeySealers.php,,Service,,,,,Configuration
+Service/Archival/DestructionCopies.php,,Service,,,,,Compliance
+Service/Archival/DestructionCopy.php,,Service,,,,,Compliance
+Service/Archival/DestructionCopyTarget.php,,Service,,,,,Compliance
 Service/Flow/Timer/TimerCalendarSwitch.php,,Service,,,,,Processes
 Kernel/Contracts/AdministratorCheck.php,63,Kernel,Kernel,Kernel/Contracts/AdministratorCheck.php,0,,Kernel
 Migration/Version1Date20261125013000.php,,Migration,,,,,Platform

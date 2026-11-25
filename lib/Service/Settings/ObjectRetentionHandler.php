@@ -94,6 +94,9 @@ class ObjectRetentionHandler implements ArchivalSettingsReaderInterface, Retenti
 		// restorable copy is written before it is destroyed; null writes none
 		// (import-preview-and-conflict-policy REQ-IPC-004).
 		'destructionCopyLocation' => null,
+		// Whether that copy is encrypted with the organisation's export key:
+		// `off`, `when-key` or `required` (exchange-encrypted-instance-export D-6).
+		'destructionCopyEncryption' => 'off',
 	];
 
 	/**
