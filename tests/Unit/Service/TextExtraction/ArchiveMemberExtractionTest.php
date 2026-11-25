@@ -24,6 +24,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
 
 use OCA\OpenRegister\Db\EntityRelationMapper;
+use OCA\OpenRegister\Db\EntityRelation;
+use OCA\OpenRegister\Db\GdprEntity;
+use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionStores;
+use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
+use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionBackends;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\DB\QueryBuilder\IExpressionBuilder;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -262,6 +270,105 @@ class ArchiveMemberExtractionTest extends TestCase {
 
 		$this->fail('no metadata chunk was stored');
 	}//end metadataChunk()
+
+	/**
+	 * Detection runs over each member's own chunks, and every relation it
+	 * stores names the member it was found in, against the archive file.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	public function testDetectionRunsPerMember(): void {
+		$this->extract(
+			'application/zip',
+			(string) file_get_contents(
+				$this->zip(
+					[
+						'brieven/bezwaar-2024.txt' => 'Bezwaar ingediend door jan@example.nl tegen de kapvergunning.',
+						'mail/antwoord.txt'        => 'Antwoord verstuurd aan piet@example.nl over de Lindelaan.',
+					]
+				)
+			)
+		);
+		$contentChunks = array_values(
+			array_filter($this->inserted, static fn (Chunk $chunk): bool => (($chunk->getPositionReference()['member'] ?? '') !== ''))
+		);
+		$this->assertCount(2, $contentChunks);
+
+		$relations = [];
+		$handler   = $this->recognitionHandler(relations: $relations);
+		foreach ($contentChunks as $index => $chunk) {
+			$chunk->setId(500 + $index);
+			$handler->extractFromChunk($chunk, ['method' => 'regex']);
+		}
+
+		$found = [];
+		foreach ($relations as $relation) {
+			$found[$relation->getArchiveMember()] = [$relation->getFileId(), $relation->getChunkId()];
+		}
+
+		$this->assertSame(
+			['brieven/bezwaar-2024.txt' => [77, 500], 'mail/antwoord.txt' => [77, 501]],
+			$found,
+			'each relation names its own member, on the archive file, through its own chunk'
+		);
+	}//end testDetectionRunsPerMember()
+
+	/**
+	 * A real entity recognition handler whose stored relations are collected.
+	 *
+	 * @param array<int, EntityRelation> $relations Collects the inserted relations.
+	 *
+	 * @return EntityRecognitionHandler
+	 */
+	private function recognitionHandler(array &$relations): EntityRecognitionHandler {
+		$expr = $this->createMock(IExpressionBuilder::class);
+		$expr->method('eq')->willReturn('condition');
+		$qb = $this->createMock(IQueryBuilder::class);
+		foreach (['select', 'from', 'where', 'andWhere', 'setMaxResults'] as $chained) {
+			$qb->method($chained)->willReturnSelf();
+		}
+
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('createNamedParameter')->willReturn('param');
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturn($qb);
+
+		$entities = $this->createMock(GdprEntityMapper::class);
+		$entities->method('findEntitiesPublic')->willThrowException(new DoesNotExistException('none'));
+		$entities->method('insert')->willReturnCallback(
+			static function (GdprEntity $entity): GdprEntity {
+				$entity->setId(9);
+				return $entity;
+			}
+		);
+
+		$relationMapper = $this->createMock(EntityRelationMapper::class);
+		$relationMapper->method('insert')->willReturnCallback(
+			static function (EntityRelation $relation) use (&$relations): EntityRelation {
+				$relations[] = $relation;
+				return $relation;
+			}
+		);
+
+		$settings = $this->createMock(SettingsService::class);
+		$settings->method('getFileSettingsOnly')->willReturn([]);
+
+		return new EntityRecognitionHandler(
+			stores: new EntityRecognitionStores(
+				chunkMapper: $this->createMock(ChunkMapper::class),
+				entityMapper: $entities,
+				entityRelationMapper: $relationMapper,
+				db: $db
+			),
+			backends: new EntityRecognitionBackends(
+				settingsService: $settings,
+				anonymisationBackendService: $this->createMock(AnonymisationBackendService::class)
+			),
+			logger: new NullLogger()
+		);
+	}//end recognitionHandler()
 
 	/**
 	 * The extraction status the sidebar returns over the stored chunks.
