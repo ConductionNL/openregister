@@ -4580,3 +4580,6 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T00:42:16Z precheck-20261125T000814-67088704 CONFLICT-DEV #11070 bb16a9af
 2026-11-25T00:42:41Z precheck-20261125T000814-67088704 CONFLICT-DEV #11020 a51302e3
 2026-11-25T00:44:21Z integrator-20261124T231146-2f742f98 RED tree 7b0825a7e3 prs 3 front=ok: Tests: 65718, Assertions: 232637, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\Service\File\DocumentReferenceMapTest::testEveryFileIdColumnIsMapped
+2026-11-25T00:47:23Z precheck-20261124T235704-0cd786d0 GREEN tree d6398f76d3 on dev fb766ac742 prs 1 front=ok: Tests: 65657, Assertions: 232403, Errors: 9, Failures: 2, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-25T00:49:33Z precheck-20261125T002723-c47de578 GREEN tree ae327e5b45 on dev fb766ac742 prs 1 front=ok: Tests: 65657, Assertions: 232403, Errors: 9, Failures: 2, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-25T00:52:44Z precheck-20261124T234023-5e48f803 GREEN tree e1135e681b on dev 0d540fff55 prs 1 front=skip: Tests: 65671, Assertions: 232449, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
