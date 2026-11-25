@@ -65,8 +65,9 @@ describe('EntitiesTab extraction', () => {
 				cc: [{ email: 'carol@example.com' }, null, { label: 'Dave' }],
 			}),
 		).toEqual([
-			['EMAIL', 'alice@example.com'],
+			// The sender comes first.
 			['PERSON', 'Alice'],
+			['EMAIL', 'alice@example.com'],
 			// A label equal to the address is not a person.
 			['EMAIL', 'bob@example.com'],
 			['EMAIL', 'carol@example.com'],
@@ -104,8 +105,8 @@ describe('EntitiesTab extraction', () => {
 				body: 'ALICE@EXAMPLE.COM',
 			}),
 		).toEqual([
-			['EMAIL', 'Alice@Example.com'],
 			['PERSON', 'Alice'],
+			['EMAIL', 'Alice@Example.com'],
 		])
 	})
 
@@ -166,32 +167,34 @@ describe('EntitiesTab loading', () => {
 })
 
 describe('EntitiesTab rendering', () => {
-	it('labels each known group and passes an unknown type through', () => {
+	it('names each kind in a word, the sender by its role', () => {
 		const vm = idleTab().vm
-		expect(['PERSON', 'EMAIL', 'PHONE', 'IBAN', 'URL', 'unknown', 'ORG'].map(vm.formatType)).toEqual([
-			't:People',
-			't:Email Addresses',
-			't:Phone Numbers',
-			't:IBANs',
-			't:Links',
-			't:Other',
-			'ORG',
-		])
+		const kinds = [
+			{ type: 'PERSON', role: 'sender' }, { type: 'PERSON' }, { type: 'ADDRESS' }, { type: 'EMAIL' },
+			{ type: 'PHONE' }, { type: 'IBAN' }, { type: 'URL' }, { type: 'ORG' },
+		].map(vm.kindLabel)
+		expect(kinds).toEqual(['t:sender', 't:person', 't:address', 't:email address', 't:phone number', 'IBAN', 't:link', 't:other'])
 	})
 
-	it('groups untyped entities as other and shows a confidence as a percentage', async () => {
+	it('lists each found value with its kind and a Search action that hands the value on', async () => {
 		const wrapper = idleTab()
 		await wrapper.setData({
 			entities: [
-				{ id: '1', type: 'PERSON', value: 'Alice', confidence: 0.876 },
-				{ id: '2', value: 'Something' },
+				{ id: '1', type: 'PERSON', value: 'Jana Koehler', role: 'sender' },
+				{ id: '2', type: 'ADDRESS', value: 'Lindelaan 14, Zuiddrecht' },
 			],
 		})
 
-		const groups = wrapper.findAll('.or-entity-group')
-		expect(groups.map((g) => g.find('.or-entity-group-title').text())).toEqual(['t:People', 't:Other'])
-		expect(groups[0].find('.or-entity-confidence').text()).toBe('88%')
-		expect(groups[1].find('.or-entity-value').text()).toBe('Something')
-		expect(groups[1].find('.or-entity-confidence').exists()).toBe(false)
+		const rows = wrapper.findAll('.or-entity-item')
+		expect(rows.map((row) => [row.find('.or-entity-value').text(), row.find('.or-entity-kind').text()])).toEqual([
+			['Jana Koehler', 't:sender'],
+			['Lindelaan 14, Zuiddrecht', 't:address'],
+		])
+		await rows[1].find('.or-entity-search').trigger('click')
+		expect(wrapper.emitted('search')).toEqual([['Lindelaan 14, Zuiddrecht']])
+	})
+
+	it('finds a Dutch street address in the body', () => {
+		expect(extract({ body: 'The light in front of Lindelaan 14, Zuiddrecht is out.' })).toEqual([['ADDRESS', 'Lindelaan 14, Zuiddrecht']])
 	})
 })
