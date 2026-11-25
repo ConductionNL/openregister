@@ -89,6 +89,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setArchiveMember(?string $archiveMember)
  * @method string|null getDecisionUuid()
  * @method void setDecisionUuid(?string $decisionUuid)
+ * @method string getRedactionDecision()
+ * @method void setRedactionDecision(string $redactionDecision)
+ * @method string|null getDecidedBy()
+ * @method void setDecidedBy(?string $decidedBy)
+ * @method DateTime|null getDecidedAt()
+ * @method void setDecidedAt(?DateTime $decidedAt)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  *
@@ -97,6 +103,29 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class EntityRelation extends Entity implements JsonSerializable, EntityRelationInterface {
+
+	/**
+	 * Nobody decided yet.
+	 */
+	public const DECISION_UNDECIDED = 'undecided';
+
+	/**
+	 * The value is redacted.
+	 */
+	public const DECISION_REDACT = 'redact';
+
+	/**
+	 * The value is released.
+	 */
+	public const DECISION_RELEASE = 'release';
+
+	/**
+	 * Every redaction decision.
+	 *
+	 * @var list<string>
+	 */
+	public const DECISIONS = [self::DECISION_UNDECIDED, self::DECISION_REDACT, self::DECISION_RELEASE];
+
 
 	/**
 	 * Entity ID.
@@ -335,6 +364,27 @@ class EntityRelation extends Entity implements JsonSerializable, EntityRelationI
 	protected ?DateTime $createdAt = null;
 
 	/**
+	 * The redaction decision: `undecided`, `redact` or `release` (PATCH key `decision`).
+	 *
+	 * @var string
+	 */
+	protected string $redactionDecision = self::DECISION_UNDECIDED;
+
+	/**
+	 * The UID of the person who took the redaction decision, null when nobody did.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $decidedBy = null;
+
+	/**
+	 * When the redaction decision was taken.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $decidedAt = null;
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
@@ -357,7 +407,8 @@ class EntityRelation extends Entity implements JsonSerializable, EntityRelationI
 	 *     anonymizedValue: null|string, bases: array|null,
 	 *     skipAnonymization: bool, decision: null|string,
 	 *     page: int|null, box: array|null, archiveMember: null|string,
- *     createdAt: null|string}
+ *     createdAt: null|string, redactionDecision: string,
+ *     decidedBy: null|string, decidedAt: null|string}
 	 */
 	public function jsonSerialize(): array {
 		return (new TypedFieldsJson())->renamed(json: (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)), names: ['decisionUuid' => 'decision']);
