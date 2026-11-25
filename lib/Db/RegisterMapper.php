@@ -594,6 +594,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 *
 	 * @psalm-return                                list<\OCA\OpenRegister\Db\Register>
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
 	 */
 	public function findAll(
 		int|null $limit = null,
@@ -609,10 +611,24 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			// $this->verifyRbacPermission('read', 'register');
 		}
 
+		// Every row, unfiltered, is read once per request: the save path asks it per object.
+		$everyRow = $limit === null && ($offset ?? 0) === 0 && empty($filters) === true && empty($searchConditions) === true;
+		if ($everyRow === true) {
+			$remembered = $this->findCache->all(multitenancy: $_multitenancy);
+			if ($remembered !== null) {
+				return array_values(array_filter($remembered, static fn ($entity): bool => $entity instanceof Register));
+			}
+		}
+
 		$qb = $this->listedQuery(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: ($offset ?? 0), filters: ($filters ?? [])));
 		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
 
-		return $this->findInTenancy(qb: $qb, multitenancy: $_multitenancy);
+		$registers = $this->findInTenancy(qb: $qb, multitenancy: $_multitenancy);
+		if ($everyRow === true) {
+			$this->findCache->rememberAll(multitenancy: $_multitenancy, entities: $registers);
+		}
+
+		return $registers;
 	}//end findAll()
 
 	/**
@@ -702,6 +718,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 
 		$entity = parent::insert(entity: $entity);
 		$this->registersBySchema = null;
+		$this->findCache->forgetAll();
 
 		// Dispatch creation event.
 		$this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent(register: $entity));
@@ -908,6 +925,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 
 		$entity = parent::update(entity: $entity);
 		$this->registersBySchema = null;
+		$this->findCache->forgetAll();
 
 		// Dispatch the update event only when the register actually changed. An
 		// app re-importing its unchanged register (setup wizard, example data)
@@ -979,6 +997,7 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		// Proceed with deletion if no objects are attached.
 		$result = parent::delete(entity: $entity);
 		$this->registersBySchema = null;
+		$this->findCache->forgetAll();
 
 		// Dispatch deletion event.
 		$this->eventDispatcher->dispatchTyped(

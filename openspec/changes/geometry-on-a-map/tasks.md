@@ -33,8 +33,10 @@
 - **acceptance_criteria**:
   - a functional administrator can declare a point, line, polygon, multipolygon or any geometry without editing JSON
   - the record form edits a geometry value
-- [ ] 3.1 Add `geo:point`, `geo:linestring`, `geo:polygon`, `geo:multipolygon` and `geo:geometry` to `formatSelect()` in `src/modals/schema/schemaPropertyForm.js` for type `object`, with translated labels.
-  - Done except the translated labels: `formatSelect('object')` offers the five formats (`GEO_FORMATS`) and the property modal enables the format select for objects. The select shows every format by its id, string formats included, so labels for all of them belong in one l10n pass across the locales.
+- [x] 3.1 Add `geo:point`, `geo:linestring`, `geo:polygon`, `geo:multipolygon` and `geo:geometry` to `formatSelect()` in `src/modals/schema/schemaPropertyForm.js` for type `object`, with translated labels.
+  - `formatSelect('object')` offers the five formats (`GEO_FORMATS`) and the property modal enables the format select for objects.
+  - Labels: `geoFormatOptions()` turns each format into `{id, label}` with a translated label (Point, Line, Polygon, Multipolygon, Any geometry), and the object select reduces an option to its id, so the property still stores `geo:point` and friends. The five keys are in all 37 bundles; the values identical to English (fr `Point`, de/sv/lb `Polygon` and `Multipolygon`) are recorded cognates. Tests: `schemaPropertyForm.spec.js` (labels, stored ids, a fresh list each call), `EditSchemaProperty.logic.spec.js` (the modal's select carries the labels and the reducer, the string select does not).
+  - The string formats keep showing under their ids (`date-time`, `ipv4`, `uuid`): they are the JSON Schema names an administrator types into a schema, not prose.
 - [x] 3.2 In `src/services/propertyEditor.js` `editorFor()`, route a `geo:*` property to a small map picker (`src/components/geo/GeometryEditor.vue`, Leaflet with the draw control from task 2.1) that writes GeoJSON, with a JSON text fallback.
   - done: `editorFor()` returns `geometry` for a `geo:*` property; ViewObject renders `src/components/geo/GeometryEditor.vue`: a Leaflet map with the draw control limited to the shapes the format allows (`src/services/geo/geometryValue.js`, a polygon drawn for a multipolygon is wrapped) and the JSON text as the fallback.
 - [x] 3.3 Red first: `src/services/propertyEditor.spec.js` returns the geometry editor for each `geo:*` format; a new `src/modals/schema/schemaPropertyForm.spec.js` lists the five formats.
