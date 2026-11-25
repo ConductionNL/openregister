@@ -298,7 +298,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 *
 	 * @param RbacAccessCall $call The call.
 	 *
-	 * @return array{groups: array<int, string>, userId: string|null, inheritFromPublic: bool, columns: RuleColumns}
+	 * @return array{groups: array<int, string>, userId: string|null, inheritFromPublic: bool, columns: RuleColumns, tableName: string|null}
 	 */
 	private function ruleCaller(RbacAccessCall $call): array {
 		return [
@@ -306,6 +306,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			'userId'            => $call->userId,
 			'inheritFromPublic' => $this->authenticatedInheritsPublic(schema: $call->schema),
 			'columns'           => $call->columns(),
+			'tableName'         => $call->tableName,
 		];
 	}//end ruleCaller()
 
@@ -649,7 +650,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		$denials = $this->denyResolver()->conditionalDenials(authorization: $call->authorization, action: $call->action, principals: $principals);
 		$negated = [];
 		foreach ($denials as $denial) {
-			$compiled = $this->denialPredicateSql(rule: $denial['rule'], columns: $columns);
+			$compiled = $this->denialPredicateSql(rule: $denial['rule'], columns: $columns, tableName: $call->tableName);
 			if ($compiled === null) {
 				$this->logUncompilableDenial(call: $call, principal: $denial['principal']);
 				return false;
@@ -683,17 +684,19 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * this table, gets null, so the caller denies the whole list: `NOT (1 = 0)`
 	 * would let every row through.
 	 *
-	 * @param mixed       $rule    The denial's rule.
-	 * @param RuleColumns $columns The columns a `match` key may name, with their table alias.
+	 * @param mixed       $rule      The denial's rule.
+	 * @param RuleColumns $columns   The columns a `match` key may name, with their table alias.
+	 * @param string|null $tableName The bare magic table; a property it lacks is excluded from
+	 *                                this match instead of failing the whole query.
 	 *
 	 * @return string|null The predicate, or null.
 	 */
-	private function denialPredicateSql(mixed $rule, RuleColumns $columns): ?string {
+	private function denialPredicateSql(mixed $rule, RuleColumns $columns, ?string $tableName = null): ?string {
 		if ($this->denialCompiles(rule: $rule, columns: $columns) === false) {
 			return null;
 		}
 
-		return $this->matchSql()->matchConditions(block: $rule['match'], columnPrefix: $columns->prefix);
+		return $this->matchSql()->matchConditions(block: $rule['match'], columnPrefix: $columns->prefix, tableName: $tableName);
 	}//end denialPredicateSql()
 
 	/**
@@ -2148,7 +2151,11 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return self::IMPOSSIBLE_SQL_CONDITION;
 		}
 
-		return $this->matchSql()->matchConditions(block: $block, columnPrefix: $caller['columns']->prefix);
+		return $this->matchSql()->matchConditions(
+			block: $block,
+			columnPrefix: $caller['columns']->prefix,
+			tableName: $caller['tableName']
+		);
 	}//end processConditionalRuleSql()
 
 	/**

@@ -50,6 +50,13 @@ final class RbacSqlDialect {
 	private ?bool $isMysqlCache = null;
 
 	/**
+	 * Per-process memo: bare table name => its real column names.
+	 *
+	 * @var array<string, string[]>
+	 */
+	private static array $tableColumnNamesCache = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container The container the connection is read from.
@@ -92,6 +99,54 @@ final class RbacSqlDialect {
 
 		return $this->isMysqlCache;
 	}//end isMysql()
+
+	/**
+	 * Whether a column genuinely exists on a magic table.
+	 *
+	 * A schema's authorization can name any property it ever declared, but a
+	 * schema shared across more than one register can be backed by tables
+	 * that drifted apart — one register's table carrying `publicatiedatum`/
+	 * `depublicatiedatum`, another's carrying the same concept under
+	 * `publicationDate`/`depublicationDate` instead. Building a reference to
+	 * whichever one this specific table does not have fails the database
+	 * query outright instead of excluding that one condition, taking down the
+	 * whole cross-schema listing for every schema in the request, not only
+	 * the misconfigured one.
+	 *
+	 * @param string $tableName  Bare magic table name.
+	 * @param string $columnName The bare (unquoted) column to check for.
+	 *
+	 * @return bool True when the column is present on this table.
+	 */
+	public function columnExists(string $tableName, string $columnName): bool {
+		if (isset(self::$tableColumnNamesCache[$tableName]) === false) {
+			self::$tableColumnNamesCache[$tableName] = $this->probeTableColumns(tableName: $tableName);
+		}
+
+		return in_array($columnName, self::$tableColumnNamesCache[$tableName], true);
+	}//end columnExists()
+
+	/**
+	 * Read a table's real column names from the connection.
+	 *
+	 * @param string $tableName Bare magic table name.
+	 *
+	 * @return string[] The column names, empty when they could not be read.
+	 */
+	private function probeTableColumns(string $tableName): array {
+		try {
+			$columns = $this->container->get(IDBConnection::class)
+				->getQueryBuilder()->getConnection()
+				->createSchemaManager()
+				->listTableColumns($tableName);
+			return array_keys($columns);
+		} catch (Throwable $e) {
+			// Introspection failing is not this check's problem to solve;
+			// nothing known to exist means every property match on this
+			// table fails closed until the next request tries again.
+			return [];
+		}
+	}//end probeTableColumns()
 
 	/**
 	 * Quote a value for safe use in raw SQL.
