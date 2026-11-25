@@ -4208,11 +4208,25 @@ OC.L10N.register(
     "Search for {value}" : "{value} zoeken",
     "sender" : "afzender",
     "Undo" : "Ongedaan maken",
+    "Action rights" : "Actierechten",
+    "Every signed-in user" : "Elke aangemelde gebruiker",
+    "Flow steps" : "Flowstappen",
+    "Needed by: {types}" : "Nodig voor: {types}",
+    "The action rights are saved." : "De actierechten zijn opgeslagen.",
+    "The action rights could not be loaded." : "De actierechten konden niet worden geladen.",
+    "The action rights could not be saved." : "De actierechten konden niet worden opgeslagen.",
+    "Who may create, change, run and read flows, and who may put a step that sends e-mail, notifications or Talk messages, or deletes objects, into a flow. Administrators always hold every right; a right with no group chosen is held by administrators alone." : "Wie flows mag aanmaken, wijzigen, uitvoeren en lezen, en wie een stap die e-mail, meldingen of Talk-berichten verstuurt of objecten verwijdert in een flow mag zetten. Beheerders hebben altijd elk recht; een recht zonder gekozen groep hebben alleen beheerders.",
     "Any geometry" : "Willekeurige geometrie",
     "Line" : "Lijn",
     "Multipolygon" : "Multipolygoon",
     "Point" : "Punt",
-    "Polygon" : "Polygoon"
+    "Polygon" : "Polygoon",
+    "Could not load the workflow progress." : "De voortgang van de workflow kon niet worden geladen.",
+    "Workflow progress" : "Voortgang van de workflow",
+    "Configure a scanner for the Antivirus for files app in the administration settings, under Security." : "Stel in de beheerinstellingen, onder Beveiliging, een scanner in voor de app Antivirus for files.",
+    "Install and enable the Antivirus for files app, then configure its scanner." : "Installeer en activeer de app Antivirus for files en stel daarna de scanner in.",
+    "Uploads are refused: no malware scanner is available." : "Uploads worden geweigerd: er is geen malwarescanner beschikbaar.",
+    "Uploads are scanned for malware with {engine}." : "Uploads worden op malware gescand met {engine}."
 },
 "nplurals=2; plural=(n != 1);"
 );

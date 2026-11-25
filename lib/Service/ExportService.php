@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
 use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Export\SheetTitle;
 use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -932,7 +933,7 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 		$spreadsheet = new Spreadsheet();
 		$spreadsheet->removeSheetByIndex(0);
 		$sheet = $spreadsheet->createSheet();
-		$sheet->setTitle($request->schema?->getSlug() ?? 'data');
+		$sheet->setTitle(SheetTitle::for(spreadsheet: $spreadsheet, slug: $request->schema?->getSlug()));
 
 		foreach ($this->getHeaders(schema: $request->schema, currentUser: $request->currentUser) as $col => $header) {
 			SpreadsheetCell::set(sheet: $sheet, coordinate: $col . '1', value: $header);
@@ -1010,6 +1011,9 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 	 * @param ExportRequest $request     The register, schema, filters and user of this sheet
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 *       (the sheet title is one the workbook accepts, whatever the slug)
 	 */
 	private function populateSheet(Spreadsheet $spreadsheet, ExportRequest $request): void {
 		// Capture register context so getHeaders / getObjectValue can
@@ -1017,13 +1021,7 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 		// properties (register-i18n Phase 3 wire-in).
 		$this->contextRegister = $request->register;
 		$sheet = $spreadsheet->createSheet();
-
-		$sheetTitle = 'data';
-		if ($request->schema !== null) {
-			$sheetTitle = $request->schema->getSlug();
-		}
-
-		$sheet->setTitle($sheetTitle);
+		$sheet->setTitle(SheetTitle::for(spreadsheet: $spreadsheet, slug: $request->schema?->getSlug()));
 
 		$headers = $this->getHeaders(schema: $request->schema, currentUser: $request->currentUser);
 		foreach ($headers as $col => $header) {

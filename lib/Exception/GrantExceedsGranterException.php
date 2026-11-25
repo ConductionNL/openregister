@@ -44,7 +44,7 @@ class GrantExceedsGranterException extends Exception {
 	/**
 	 * Build the refusal.
 	 *
-	 * @param array<int, array{register: string|null, schema: string, action: string}> $excess The rights given beyond the granter's own.
+	 * @param array<int, array{register: string|null, schema: string|null, action: string}> $excess The rights given beyond the granter's own; a null schema is a register-wide grant with no schema to judge it on.
 	 */
 	public function __construct(private readonly array $excess) {
 		parent::__construct(message: 'The grant gives rights the granter does not hold.');
@@ -53,7 +53,7 @@ class GrantExceedsGranterException extends Exception {
 	/**
 	 * The rights given beyond the granter's own.
 	 *
-	 * @return array<int, array{register: string|null, schema: string, action: string}> The excess.
+	 * @return array<int, array{register: string|null, schema: string|null, action: string}> The excess.
 	 *
 	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
 	 */
@@ -64,7 +64,7 @@ class GrantExceedsGranterException extends Exception {
 	/**
 	 * The answer body: the code and the excess.
 	 *
-	 * @return array{error: string, excess: array<int, array{register: string|null, schema: string, action: string}>} The body.
+	 * @return array{error: string, excess: array<int, array{register: string|null, schema: string|null, action: string}>} The body.
 	 *
 	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
 	 */

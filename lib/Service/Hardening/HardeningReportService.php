@@ -43,6 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Hardening;
 
+use OCA\OpenRegister\Kernel\Contracts\AddressAllowlistsInterface;
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\ApiVersion\ApiCapabilitiesService;
 use OCA\OpenRegister\Service\SecurityService;
@@ -176,7 +177,7 @@ class HardeningReportService implements HardeningReportServiceInterface {
 	}//end failingIds()
 
 	/**
-	 * What the platform is observed to do: brute-force state, throttled surfaces, origins and password policy.
+	 * What the platform is observed to do: brute-force state, throttled surfaces, origins, address allowlists and password policy.
 	 *
 	 * @return array<string, mixed> The observations.
 	 */
@@ -188,6 +189,11 @@ class HardeningReportService implements HardeningReportServiceInterface {
 			'throttledSurfaces' => ThrottledSurfaces::ALL,
 			'allowedOrigins' => $origins,
 			'reflectsAnyOrigin' => ($origins === []),
+			// REQ-IHC-003: an empty list is an unbound surface, said as such.
+			'addressAllowlists' => [
+				AddressAllowlistsInterface::ADMIN => $this->posture->policy->addressAllowlist(surface: AddressAllowlistsInterface::ADMIN),
+				AddressAllowlistsInterface::API => $this->posture->policy->addressAllowlist(surface: AddressAllowlistsInterface::API),
+			],
 			'passwordPolicyRuns' => $this->posture->platform->passwordPolicyRuns(),
 		];
 	}//end observed()

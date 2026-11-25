@@ -227,10 +227,10 @@
         "((`title` IN ('a')) OR `title` IS NULL)"
     ],
     "mysql raw array": [
-        "COALESCE(`tags`, '[]')::jsonb @> '[\"x\"]'::jsonb"
+        "JSON_CONTAINS(COALESCE(`tags`, '[]'), '[\"x\"]')"
     ],
     "mysql raw array list": [
-        "(COALESCE(`tags`, '[]')::jsonb @> '[\"x\"]'::jsonb OR COALESCE(`tags`, '[]')::jsonb @> '[\"y\"]'::jsonb)"
+        "(JSON_CONTAINS(COALESCE(`tags`, '[]'), '[\"x\"]') OR JSON_CONTAINS(COALESCE(`tags`, '[]'), '[\"y\"]'))"
     ],
     "mysql raw array contains": [
         "JSON_CONTAINS(COALESCE(`tags`, '[]'), '[{\"system\":\"decos\",\"identifier\":\"Z-1\",\"public\":true}]')"
