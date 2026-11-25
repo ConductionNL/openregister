@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
+use OCA\OpenRegister\Kernel\Contracts\EntryClosureCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
@@ -33,6 +34,7 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntryClosureService;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
@@ -117,6 +119,7 @@ final class NotificationsWiring {
 		ScheduledReportMapperInterface::class => ScheduledReportMapper::class,
 		NotificationAnnotationValidatorInterface::class => NotificationAnnotationValidator::class,
 		TaskTransitionNotifierInterface::class => TaskTransitionNotifier::class,
+		EntryClosureCheckInterface::class => EntryClosureService::class,
 	];
 
 	/**

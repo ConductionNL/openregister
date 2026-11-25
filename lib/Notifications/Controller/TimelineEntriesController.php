@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Notifications\Controller;
 
 use OCA\OpenRegister\Notifications\Controller\Support\TimelineEntriesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\EntriesClosedException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Db\TimelineEntry;
@@ -309,6 +310,8 @@ class TimelineEntriesController extends Controller {
 			$entries = $this->writer->writeToMany(objects: $objects, data: $data);
 		} catch (TimelineValidationException $e) {
 			return new JSONResponse(['message' => $e->getMessage(), 'errors' => $e->getErrors()], Http::STATUS_BAD_REQUEST);
+		} catch (EntriesClosedException $e) {
+			return new JSONResponse($e->toResponseBody(), $e->getHttpStatus());
 		} catch (Throwable $e) {
 			return $this->unexpected(exception: $e, context: 'create');
 		}

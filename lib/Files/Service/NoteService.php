@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\EntryClosureCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
@@ -111,6 +112,7 @@ class NoteService implements NoteServiceInterface {
 	 * @param NoteVersionService                 $versions        Keeps and reads what a note said before
 	 * @param NoteLockService|null               $lock            The lock rules of a note; built from these collaborators when omitted
 	 * @param IEventDispatcher|null              $events          Announces a saved note (ObjectNoteAddedEvent); none is announced without it
+	 * @param EntryClosureCheckInterface|null    $closures        Refuses a note on an object closed to new entries; none is refused without it
 	 *
 	 * @return void
 	 */
@@ -121,6 +123,7 @@ class NoteService implements NoteServiceInterface {
 		private readonly NoteVersionService $versions,
 		private readonly ?NoteLockService $lock = null,
 		private readonly ?IEventDispatcher $events = null,
+		private readonly ?EntryClosureCheckInterface $closures = null,
 	) {
 		$this->lockService = ($lock ?? new NoteLockService(commentsManager: $commentsManager, accounts: $accounts));
 	}//end __construct()
@@ -295,16 +298,21 @@ class NoteService implements NoteServiceInterface {
 	 * @param NoteAuthor $author The actor the note is filed under, e.g. type `users` or `openregister_links`.
 	 *
 	 * @throws Exception If the author is blank.
+	 * @throws \OCA\OpenRegister\Exception\EntriesClosedException If the object is closed to new entries.
 	 *
 	 * @return array<string, mixed> The created note.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 * @spec openspec/changes/notifications-new-notes-and-referrers/design.md
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
 	 */
 	public function postNote(NoteDraft $draft, NoteAuthor $author): array {
 		if (trim($author->type) === '' || trim($author->id) === '') {
 			throw new Exception('A note needs an actor');
 		}
+
+		// Before anything is created: a record closed to new entries takes no note (REQ-OAS-006).
+		$this->closures?->assertOpen(objectUuid: $draft->objectUuid);
 
 		$comment = $this->commentsManager->create(trim($author->type), trim($author->id), self::OBJECT_TYPE, $draft->objectUuid);
 

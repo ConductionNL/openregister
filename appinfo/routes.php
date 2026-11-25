@@ -1745,6 +1745,10 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'verb' => 'PATCH',
             'requirements' => ['id' => '[^/]+', 'entryId' => '[^/]+'],
         ],
+        // A record closed to new entries and notes (object-archive-state C29.4); DELETE reopens it.
+        ['name' => 'timelineClosure#show',   'url' => '/api/objects/{register}/{schema}/{id}/entries-closure', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timelineClosure#close',  'url' => '/api/objects/{register}/{schema}/{id}/entries-closure', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'timelineClosure#reopen', 'url' => '/api/objects/{register}/{schema}/{id}/entries-closure', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         [
             'name' => 'timelineEntries#source',
             'url' => '/api/objects/{register}/{schema}/{id}/timeline/{entryId}/source',

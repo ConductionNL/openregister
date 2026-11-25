@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files;
 
+use OCA\OpenRegister\Kernel\Contracts\EntryClosureCheckInterface;
 use OCA\OpenRegister\Service\File\AntivirusScannerAdapter;
 use OCA\OpenRegister\Service\File\AntivirusScannerInterface;
 use OCA\OpenRegister\Files\Db\ChunkIndexOverviewInterface;
@@ -171,7 +172,8 @@ final class FilesRegistrar
             ),
             visibility: $container->get(TimelineVisibilityServiceInterface::class),
             versions: $container->get(NoteVersionService::class),
-            events: $container->get('OCP\EventDispatcher\IEventDispatcher')
+            events: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+            closures: $container->get(EntryClosureCheckInterface::class)
         );
     }//end buildNoteService()
 }//end class

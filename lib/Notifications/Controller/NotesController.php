@@ -38,6 +38,7 @@ use OCA\OpenRegister\Notifications\Controller\Support\ObjectNote;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\InvalidNoteParentException;
 use OCA\OpenRegister\Files\Service\NoteJournalExporter;
+use OCA\OpenRegister\Exception\EntriesClosedException;
 use OCA\OpenRegister\Exception\NoteWriteRefusedException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\OfficeServerRequiredException;
@@ -714,6 +715,8 @@ class NotesController extends Controller {
 			);
 		} catch (InvalidNoteParentException $e) {
 			return new JSONResponse(data: ['error' => InvalidNoteParentException::MESSAGE], statusCode: 422);
+		} catch (EntriesClosedException $e) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: $e->getHttpStatus());
 		}
 
 		return $this->projected(target: $target, note: $note);

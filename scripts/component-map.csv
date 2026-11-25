@@ -1095,6 +1095,7 @@ Exception/NotAuthorizedException.php,13,Exception,Exception,Exception/NotAuthori
 Exception/NotImplementedException.php,5,Exception,Exception,Exception/NotImplementedException.php,15,,Kernel
 Exception/NoteEditForbiddenException.php,14,Exception,Exception,Exception/NoteEditForbiddenException.php,0,,Kernel
 Exception/NoteLockedException.php,17,Exception,Exception,Exception/NoteLockedException.php,0,,Kernel
+Exception/EntriesClosedException.php,,Exception,,,,,Kernel
 Exception/NoteWriteRefusedException.php,10,Exception,Exception,Exception/NoteWriteRefusedException.php,0,,Kernel
 Exception/OasValidationException.php,19,Exception,Exception,Exception/OasValidationException.php,0,,Core
 Exception/ObjectExistsException.php,19,Exception,Exception,Exception/ObjectExistsException.php,9,,Kernel
@@ -1299,6 +1300,7 @@ Kernel/Contracts/ObjectImporterInterface.php,49,Kernel,Kernel,Kernel/Contracts/O
 Kernel/Contracts/ObjectMergerInterface.php,14,Kernel,Kernel,Kernel/Contracts/ObjectMergerInterface.php,0,,Kernel
 Kernel/Contracts/ObjectNameCacheInterface.php,10,Kernel,Kernel,Kernel/Contracts/ObjectNameCacheInterface.php,0,,Kernel
 Kernel/Contracts/ObjectOperationsInterface.php,105,Kernel,Kernel,Kernel/Contracts/ObjectOperationsInterface.php,0,,Kernel
+Kernel/Contracts/EntryClosureCheckInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/ObjectReadCheckInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RegisterInterface.php,25,Kernel,Kernel,Kernel/Contracts/RegisterInterface.php,1,,Kernel
 Kernel/Contracts/ScheduledReportInterface.php,10,Kernel,Kernel,Kernel/Contracts/ScheduledReportInterface.php,0,,Kernel
@@ -1529,10 +1531,13 @@ Notifications/Controller/Support/TimelineEntriesDomain.php,16,Notifications,Noti
 Notifications/Controller/Support/TimelineEntriesVisibility.php,14,Notifications,Notifications,Notifications/Controller/Support/TimelineEntriesVisibility.php,0,,Notifications
 Notifications/Controller/TimelineAdminController.php,195,Notifications,Notifications,Notifications/Controller/TimelineAdminController.php,0,,Notifications
 Notifications/Controller/TimelineEntriesController.php,270,Notifications,Notifications,Notifications/Controller/TimelineEntriesController.php,0,,Notifications
+Controller/TimelineClosureController.php,,Controller,,,,,Notifications
 Notifications/Controller/WebPushController.php,81,Notifications,Notifications,Notifications/Controller/WebPushController.php,0,,Notifications
 Notifications/Db/DuplicateDispatchException.php,6,Notifications,Notifications,Notifications/Db/DuplicateDispatchException.php,0,,Notifications
 Notifications/Db/EntryReference.php,36,Notifications,Notifications,Notifications/Db/EntryReference.php,0,,Notifications
 Notifications/Db/EntryReferenceMapper.php,29,Notifications,Notifications,Notifications/Db/EntryReferenceMapper.php,0,,Notifications
+Notifications/Db/EntryClosure.php,,Notifications,,,,,Notifications
+Notifications/Db/EntryClosureMapper.php,,Notifications,,,,,Notifications
 Notifications/Db/Message.php,47,Notifications,Notifications,Notifications/Db/Message.php,0,404,Integrations
 Notifications/Db/MessageMapper.php,63,Notifications,Notifications,Notifications/Db/MessageMapper.php,0,353,Integrations
 Notifications/Db/MessageMapperInterface.php,15,Notifications,Notifications,Notifications/Db/MessageMapperInterface.php,0,,Integrations
@@ -1669,6 +1674,7 @@ Notifications/Service/Timeline/ReferenceSource.php,11,Notifications,Notification
 Notifications/Service/Timeline/TextBlockService.php,97,Notifications,Notifications,Notifications/Service/Timeline/TextBlockService.php,1,,Notifications
 Notifications/Service/Timeline/TimelineEntrySearchService.php,98,Notifications,Notifications,Notifications/Service/Timeline/TimelineEntrySearchService.php,0,,Notifications
 Notifications/Service/Timeline/TimelineEntryService.php,191,Notifications,Notifications,Notifications/Service/Timeline/TimelineEntryService.php,1,,Notifications
+Notifications/Service/Timeline/EntryClosureService.php,,Notifications,,,,,Notifications
 Notifications/Service/Timeline/TimelineKindService.php,171,Notifications,Notifications,Notifications/Service/Timeline/TimelineKindService.php,1,,Notifications
 Notifications/Service/Timeline/TimelinePermissionException.php,6,Notifications,Notifications,Notifications/Service/Timeline/TimelinePermissionException.php,0,,Notifications
 Notifications/Service/Timeline/TimelineValidationException.php,14,Notifications,Notifications,Notifications/Service/Timeline/TimelineValidationException.php,0,,Notifications
@@ -4385,6 +4391,7 @@ Migration/Version1Date20261121170011.php,63,Migration,,,,,Platform
 Exception/FederatedShareNotDeliveredException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121180018.php,80,Migration,,,,,Platform
 Migration/Version1Date20261124193002.php,102,Migration,,,,,Platform
+Migration/Version1Date20261125110000.php,,Migration,,,,,Platform
 Formats/EmailFormat.php,,Formats,,,,,Kernel
 Service/Schemas/SchemaCatalogue.php,,Service,,,,,Core
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Core
