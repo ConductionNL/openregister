@@ -4362,6 +4362,8 @@ Migration/Version1Date20261113190000.php,40,Migration,,,,,Platform
 Migration/Version1Date20261113200000.php,,Migration,,,,,Platform
 Migration/Version1Date20261113210000.php,85,Migration,,,,,Platform
 Migration/Version1Date20261113220000.php,69,Migration,,,,,Platform
+Migration/Version1Date20261114170000.php,85,Migration,,,,,Platform
+Migration/Version1Date20261115090000.php,96,Migration,,,,,Platform
 Controller/OperationsQueryController.php,,Controller,,,,,Core
 Search/Service/GraphQL/BoundedRun.php,,Search,,,,,Search
 Service/GraphQL/AdminQueryRunner.php,,Service,,,,,Search
@@ -4878,6 +4880,7 @@ Notifications/Service/Webhook/CloudEventAttributes.php,,Notifications,,,,,Integr
 Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notifications,,,,,Integrations
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
+Db/SchemaMapper/SchemaRowCache.php,,Db,,,,,Core
 Db/MagicMapper/MagicSharePrincipals.php,,Db,,,,,Core
 Service/Schemas/SchemaRefInRegister.php,133,Service,Service,Service/Schemas/SchemaRefInRegister.php,0,,Kernel
 Service/Schemas/RowSchemaRefsInRegister.php,116,Service,Service,Service/Schemas/RowSchemaRefsInRegister.php,0,,Core

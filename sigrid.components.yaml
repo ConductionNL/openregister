@@ -347,6 +347,7 @@ components:
       - ".*/lib/Db/SchemaMapper/SchemaReadTrace[.]php"
       - ".*/lib/Db/SchemaMapper/SchemaReferenceSearch[.]php"
       - ".*/lib/Db/SchemaMapper/SchemaRegisterReads[.]php"
+      - ".*/lib/Db/SchemaMapper/SchemaRowCache[.]php"
       - ".*/lib/Db/SchemaMapper/SubjectDeclarationRefusals[.]php"
       - ".*/lib/Db/SchemaRun/[^/]*"
       - ".*/lib/Db/StateHistory/[^/]*"
