@@ -56,6 +56,7 @@ final class EntityRelationFieldTypes {
 		'decisionUuid' => 'string',
 		'page' => 'integer',
 		'box' => 'json',
+		'archiveMember' => 'string',
 		'createdAt' => 'datetime',
 	];
 }//end class

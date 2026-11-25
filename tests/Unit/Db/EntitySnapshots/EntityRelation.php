@@ -29,6 +29,7 @@ return array (
     'decisionUuid' => 'string',
     'page' => 'integer',
     'box' => 'json',
+    'archiveMember' => 'string',
     'createdAt' => 'datetime',
   ),
   'empty' => 
@@ -55,6 +56,7 @@ return array (
     'decision' => NULL,
     'page' => NULL,
     'box' => NULL,
+    'archiveMember' => NULL,
     'createdAt' => NULL,
   ),
   'filled' => 
@@ -87,6 +89,7 @@ return array (
     array (
       'k' => 'box',
     ),
+    'archiveMember' => 'archiveMember-v',
     'createdAt' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
@@ -113,7 +116,8 @@ return array (
     19 => 'decisionUuid',
     20 => 'page',
     21 => 'box',
-    22 => 'createdAt',
+    22 => 'archiveMember',
+    23 => 'createdAt',
   ),
   'refused' => 
   array (
