@@ -95,6 +95,7 @@ use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
 use OCA\OpenRegister\Service\Audit\TokenAttributionInterface;
+use OCA\OpenRegister\Service\Audit\TokenContext;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferAttemptInterface;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
 use OCA\OpenRegister\Service\Edepot\EdepotTransferServiceInterface;
@@ -246,6 +247,7 @@ final class ComplianceServiceBindings {
 		OrganisationContextAttributionInterface::class => OrganisationContextAttribution::class,
 		PurposeAttributionInterface::class             => PurposeAttribution::class,
 		TokenAttributionInterface::class               => TokenAttribution::class,
+		\OCA\OpenRegister\Kernel\Contracts\CallingTokenInterface::class => TokenContext::class,
 		AuditRetentionResolverInterface::class         => AuditRetentionResolver::class,
 		SearchTrailServiceInterface::class             => SearchTrailService::class,
 		RetentionServiceInterface::class               => RetentionService::class,

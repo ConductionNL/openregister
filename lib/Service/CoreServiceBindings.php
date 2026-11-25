@@ -396,6 +396,7 @@ final class CoreServiceBindings {
 		DeclaredGroupInventoryInterface::class => DeclaredGroupInventoryService::class,
 		GrantableRightsIndexInterface::class => GrantableRightsIndex::class,
 		\OCA\OpenRegister\Service\Authorization\ActingHumanGuardInterface::class => \OCA\OpenRegister\Service\Authorization\ActingHumanGuard::class,
+		\OCA\OpenRegister\Kernel\Contracts\ActingHumanRecordInterface::class => \OCA\OpenRegister\Service\Authorization\ActingHumanContext::class,
 		GroupReconcilerInterface::class => GroupReconciler::class,
 		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface::class => GroupReconciler::class,
 		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface::class

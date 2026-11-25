@@ -26,8 +26,7 @@ namespace OCA\OpenRegister\Service\Authorization;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ActingHumanRefusedException;
-use OCA\OpenRegister\Service\Audit\TokenContext;
-use OCA\OpenRegister\Service\Audit\TokenIdentity;
+use OCA\OpenRegister\Kernel\Contracts\CallingTokenInterface;
 use OCA\OpenRegister\Service\Delegation\DelegationRequest;
 use OCA\OpenRegister\Service\Delegation\DelegationResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
@@ -35,7 +34,6 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Throwable;
 
 /**
  * The one check the object write path asks before a create, update or delete.
@@ -85,7 +83,7 @@ class ActingHumanGuard implements ActingHumanGuardInterface {
 	 * @param IAppConfig               $appConfig Holds the instance setting.
 	 * @param IRequest                 $request   Carries the acting-user header.
 	 * @param IUserSession             $session   The principal the request runs as.
-	 * @param TokenContext             $tokens    The token or Consumer the request came with.
+	 * @param CallingTokenInterface    $tokens    The token or Consumer the request came with.
 	 * @param MachineCredentialService $accounts  Says whether the principal is a service account.
 	 * @param DelegationResolver       $resolver  Judges whether the principal may act as the named human.
 	 * @param ActingHumanContext       $context   Receives the verified pair for the audit row.
@@ -97,7 +95,7 @@ class ActingHumanGuard implements ActingHumanGuardInterface {
 		private readonly IAppConfig $appConfig,
 		private readonly IRequest $request,
 		private readonly IUserSession $session,
-		private readonly TokenContext $tokens,
+		private readonly CallingTokenInterface $tokens,
 		private readonly MachineCredentialService $accounts,
 		private readonly DelegationResolver $resolver,
 		private readonly ActingHumanContext $context,
@@ -185,17 +183,17 @@ class ActingHumanGuard implements ActingHumanGuardInterface {
 			return null;
 		}
 
-		$uid      = (string)($this->session->getUser()?->getUID() ?? '');
-		$identity = $this->tokenIdentity();
-		if ($identity !== null) {
+		$uid   = (string)($this->session->getUser()?->getUID() ?? '');
+		$token = $this->tokens->callingToken();
+		if ($token !== null) {
 			$principal = $uid;
 			if ($principal === '') {
-				$principal = (string)($identity->ownerUid() ?? '');
+				$principal = (string)($token['ownerUid'] ?? '');
 			}
 
 			return [
 				'principal' => $principal,
-				'via' => (string)($identity->consumerUuid() ?? $identity->reference() ?? $identity->consumerName() ?? ''),
+				'via' => (string)($token['consumerUuid'] ?? $token['reference'] ?? $token['consumerName'] ?? ''),
 			];
 		}
 
@@ -209,27 +207,4 @@ class ActingHumanGuard implements ActingHumanGuardInterface {
 
 		return null;
 	}//end machineCaller()
-
-	/**
-	 * The token or Consumer the request came with, when it can be attributed.
-	 *
-	 * A browser session resolves to a mechanism and nothing else, and is a person.
-	 *
-	 * @return TokenIdentity|null The identity, or null.
-	 *
-	 * @spec openspec/changes/scoped-api-tokens-machine-callers/specs/auth-system/spec.md#requirement-a-machine-write-names-its-acting-human-when-the-instance-or-schema-requires-it-req-sat-006
-	 */
-	private function tokenIdentity(): ?TokenIdentity {
-		try {
-			$identity = $this->tokens->identity();
-		} catch (Throwable $unresolved) {
-			return null;
-		}
-
-		if ($identity === null || $identity->isAttributable() === false) {
-			return null;
-		}
-
-		return $identity;
-	}//end tokenIdentity()
 }//end class

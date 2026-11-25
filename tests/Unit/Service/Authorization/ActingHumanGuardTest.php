@@ -28,10 +28,12 @@ use OCA\OpenRegister\Db\DelegationGrant;
 use OCA\OpenRegister\Db\DelegationGrantMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\ActingHumanRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\ActingHumanRecordInterface;
 use OCA\OpenRegister\Service\Audit\NamedIdentifier;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
 use OCA\OpenRegister\Service\Audit\TokenContext;
 use OCA\OpenRegister\Service\Audit\TokenIdentity;
+use OCA\OpenRegister\Service\Audit\TokenResolver;
 use OCA\OpenRegister\Service\Authorization\ActingHumanContext;
 use OCA\OpenRegister\Service\Authorization\ActingHumanGuard;
 use OCA\OpenRegister\Service\Authorization\MachineCredentialService;
@@ -42,7 +44,6 @@ use OCP\IAppConfig;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -55,6 +56,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Authorization\ActingHumanContext
  * @covers \OCA\OpenRegister\Exception\ActingHumanRefusedException
  * @covers \OCA\OpenRegister\Service\Audit\TokenAttribution
+ * @covers \OCA\OpenRegister\Service\Audit\TokenContext
  */
 class ActingHumanGuardTest extends TestCase {
 
@@ -172,7 +174,7 @@ class ActingHumanGuardTest extends TestCase {
 		// The audit row the write produces carries the pair inside its sealed summary.
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			fn (string $id): object => ($id === ActingHumanContext::class) ? $this->context : throw new RuntimeException('no '.$id)
+			fn (string $id): object => ($id === ActingHumanRecordInterface::class) ? $this->context : throw new RuntimeException('no '.$id)
 		);
 		$row = new AuditTrail();
 		$row->setResultSummary(['purpose' => 'kept']);
@@ -193,6 +195,13 @@ class ActingHumanGuardTest extends TestCase {
 		self::assertSame(0, $this->storeAsked);
 		self::assertSame(['actingUser' => 'koppeling', 'actorVia' => 'pw-7'], $this->context->toArray());
 	}//end testAPersonalTokenActingForItsOwnerIsTheHuman()
+
+	public function testAnUnresolvableTokenIsNotReadAsAMachine(): void {
+		$resolver = $this->createMock(TokenResolver::class);
+		$resolver->method('resolve')->willThrowException(new RuntimeException('token store down'));
+
+		self::assertNull((new TokenContext(resolver: $resolver))->callingToken());
+	}//end testAnUnresolvableTokenIsNotReadAsAMachine()
 
 	public function testASessionUserIsNeverRefused(): void {
 		$this->token = new TokenIdentity(mechanism: 'session');
@@ -283,9 +292,11 @@ class ActingHumanGuardTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 
-		/** @var TokenContext&MockObject $tokens */
-		$tokens = $this->createMock(TokenContext::class);
-		$tokens->method('identity')->willReturnCallback(fn (): ?TokenIdentity => $this->token);
+		// The real request-scoped token context, claimed the way the authorisation layer claims it.
+		$resolver = $this->createMock(TokenResolver::class);
+		$resolver->method('resolve')->willReturn(null);
+		$tokens = new TokenContext(resolver: $resolver);
+		$tokens->claim(identity: $this->token);
 
 		$accounts = $this->createMock(MachineCredentialService::class);
 		$accounts->method('isServiceAccount')->willReturnCallback(fn (): bool => $this->serviceAccount);

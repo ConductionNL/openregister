@@ -22,6 +22,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Audit;
 
+use OCA\OpenRegister\Kernel\Contracts\CallingTokenInterface;
+use Throwable;
+
 /**
  * Carries the calling token for the length of one request.
  *
@@ -42,7 +45,7 @@ namespace OCA\OpenRegister\Service\Audit;
  *
  * @spec openspec/specs/enhanced-audit-trail/spec.md
  */
-class TokenContext {
+class TokenContext implements CallingTokenInterface {
 	/**
 	 * The identity the authorisation layer claimed for this request.
 	 *
@@ -108,6 +111,36 @@ class TokenContext {
 
 		return $this->resolved;
 	}//end identity()
+
+	/**
+	 * The calling token or Consumer, for a caller outside the audit trail.
+	 *
+	 * Only an attributable identity counts: a browser session resolves to a
+	 * mechanism and nothing else, and is a person, not a token. A resolution
+	 * that throws answers null, so a failed lookup is never read as a machine.
+	 *
+	 * @return array{reference: string|null, ownerUid: string|null, consumerUuid: string|null, consumerName: string|null}|null The credential.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens-machine-callers/specs/auth-system/spec.md#requirement-a-machine-write-names-its-acting-human-when-the-instance-or-schema-requires-it-req-sat-006
+	 */
+	public function callingToken(): ?array {
+		try {
+			$identity = $this->identity();
+		} catch (Throwable $unresolved) {
+			return null;
+		}
+
+		if ($identity === null || $identity->isAttributable() === false) {
+			return null;
+		}
+
+		return [
+			'reference' => $identity->reference(),
+			'ownerUid' => $identity->ownerUid(),
+			'consumerUuid' => $identity->consumerUuid(),
+			'consumerName' => $identity->consumerName(),
+		];
+	}//end callingToken()
 
 	/**
 	 * Forget both the claim and the cached resolution.

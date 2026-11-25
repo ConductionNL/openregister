@@ -4932,3 +4932,5 @@ Service/Authorization/ActingHumanGuardInterface.php,,Service,,,,,Core
 Service/Authorization/ActingHumanContext.php,,Service,,,,,Core
 Exception/ActingHumanRefusedException.php,,Exception,,,,,Core
 Service/Flow/IFlowNodeRuntime.php,,Service,Flows,Flows/Service/Flow/IFlowNodeRuntime.php,0,,Processes
+Kernel/Contracts/CallingTokenInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/ActingHumanRecordInterface.php,,Kernel,,,,,Kernel

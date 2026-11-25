@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
-use OCA\OpenRegister\Service\Authorization\ActingHumanContext;
+use OCA\OpenRegister\Kernel\Contracts\ActingHumanRecordInterface;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -128,7 +128,7 @@ class TokenAttribution implements TokenAttributionInterface {
 	 * @spec openspec/changes/scoped-api-tokens-machine-callers/specs/auth-system/spec.md#requirement-a-machine-write-names-its-acting-human-when-the-instance-or-schema-requires-it-req-sat-006
 	 */
 	private function applyActingHuman(AuditTrail $auditTrail): void {
-		$context = (new AuditRowAttribution())->requestContext(container: $this->container, class: ActingHumanContext::class);
+		$context = (new AuditRowAttribution())->requestContext(container: $this->container, class: ActingHumanRecordInterface::class);
 		$pair    = $context?->toArray();
 		if ($pair === null) {
 			return;

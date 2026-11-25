@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Authorization;
 
+use OCA\OpenRegister\Kernel\Contracts\ActingHumanRecordInterface;
+
 /**
  * The human a machine caller was verified to act for, and the credential it came through.
  *
@@ -35,7 +37,7 @@ namespace OCA\OpenRegister\Service\Authorization;
  *
  * @spec openspec/changes/scoped-api-tokens-machine-callers/specs/auth-system/spec.md#requirement-a-machine-write-names-its-acting-human-when-the-instance-or-schema-requires-it-req-sat-006
  */
-class ActingHumanContext {
+class ActingHumanContext implements ActingHumanRecordInterface {
 
 	/**
 	 * The verified acting user, or null when none was verified in this request.
