@@ -44,6 +44,7 @@ use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Kernel\Contracts\TextEntityDetectorInterface;
 
 /**
  * Entity Recognition Handler.
@@ -65,7 +66,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/text-extraction/spec.md#requirement-file-and-object-chunk-extraction-lifecycle
  */
-class EntityRecognitionHandler {
+class EntityRecognitionHandler implements TextEntityDetectorInterface {
 	/**
 	 * Entity type constants.
 	 */
@@ -526,6 +527,24 @@ class EntityRecognitionHandler {
 			);
 		}
 	}//end setRelationSource()
+
+	/**
+	 * Detect entities in a text with one backend method, at the organisation's
+	 * confidence threshold, without storing anything: what an evaluation run
+	 * scores (REQ-ADI-002).
+	 *
+	 * @param string $text   The text.
+	 * @param string $method The detection method.
+	 *
+	 * @return array<int, array> Detected entities with type, value, category, position and confidence.
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-precision-and-recall-are-measured-over-a-named-corpus-and-published-with-the-detector-version-req-adi-002
+	 */
+	public function detectInText(string $text, string $method): array {
+		$query = new EntityDetectionQuery(text: $text, entityTypes: null, confidenceThreshold: $this->confidenceThreshold(options: []));
+
+		return array_values($this->detectEntities(query: $query, method: $method));
+	}//end detectInText()
 
 	/**
 	 * Detect entities in text using specified method.

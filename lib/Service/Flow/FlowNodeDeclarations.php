@@ -58,6 +58,8 @@ final class FlowNodeDeclarations {
 
 			self::assertTyped(node: $node, id: $id);
 			$this->assertExitsCanAlwaysBeTaken(node: $node, id: $id);
+			self::assertRetryWithinCaps(node: $node, id: $id);
+			self::assertErrorBranchLeadsSomewhere(flow: $flow, node: $node, id: $id);
 
 			$nodes[$id] = $node;
 		}
@@ -153,6 +155,74 @@ final class FlowNodeDeclarations {
 
 		throw self::noElse(id: $id, exitCount: count($exits));
 	}//end assertExitsCanAlwaysBeTaken()
+
+	/**
+	 * A step's `retry` must stay within its caps: at most 10 extra attempts, at most an hour between them.
+	 *
+	 * @param array  $node The node.
+	 * @param string $id   Its id, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When `retry` is malformed or over a cap, naming the setting and the cap.
+	 *
+	 * @spec openspec/changes/flow-error-branch-and-step-retry/specs/flow-engine/spec.md
+	 */
+	private static function assertRetryWithinCaps(array $node, string $id): void {
+		$faults = FlowStepRetry::faults(retry: ($node['retry'] ?? null));
+		if ($faults === []) {
+			return;
+		}
+
+		throw new InvalidArgumentException(
+			message: sprintf('Flow node "%s" declares a retry the engine refuses: %s.', $id, implode('; ', $faults))
+		);
+	}//end assertRetryWithinCaps()
+
+	/**
+	 * A step that branches its failures must have an edge from its `error` output.
+	 *
+	 * Without one the failed items would have nowhere to go and be lost
+	 * without a trace, which is what `onError: "branch"` exists to prevent.
+	 * So it is refused when the flow is saved or published, not discovered at
+	 * run time.
+	 *
+	 * @param array  $flow The flow document.
+	 * @param array  $node The node.
+	 * @param string $id   Its id, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When a branching node has no `error` edge.
+	 *
+	 * @spec openspec/changes/flow-error-branch-and-step-retry/specs/flow-engine/spec.md
+	 */
+	private static function assertErrorBranchLeadsSomewhere(array $flow, array $node, string $id): void {
+		if (FlowErrorPolicy::branches(step: $node) === false) {
+			return;
+		}
+
+		foreach (($flow['edges'] ?? []) as $edge) {
+			if (is_array($edge) === false || trim((string)($edge['fromExit'] ?? '')) !== FlowErrorPolicy::ERROR_EXIT) {
+				continue;
+			}
+
+			$from = array_map(static fn (mixed $end): string => trim((string)$end), (array)($edge['from'] ?? []));
+			if (in_array($id, $from, true) === true) {
+				return;
+			}
+		}
+
+		throw new InvalidArgumentException(
+			message: sprintf(
+				'Flow node "%s" sets onError to "branch" but no edge leaves its "error" output (an edge from "%s" '
+				. 'with fromExit "error"). Its failed items would have nowhere to go; add that edge or choose '
+				. 'another onError policy.',
+				$id,
+				$id
+			)
+		);
+	}//end assertErrorBranchLeadsSomewhere()
 
 	/**
 	 * The refusal of a node whose exits are all conditional.

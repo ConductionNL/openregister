@@ -56,6 +56,18 @@ interface GeneratedIdentifierDeclarationInterface {
 	public function sequence(): string;
 
 	/**
+	 * The property whose value splits the counter, or null for one counter.
+	 *
+	 * Two objects whose property holds different values draw from different
+	 * counters, so each value numbers from one in each period.
+	 *
+	 * @return string|null The property name.
+	 *
+	 * @spec openspec/changes/generated-identifier-partition/specs/computed-fields/spec.md#requirement-a-sequence-may-count-separately-per-value-of-a-property
+	 */
+	public function getPartitionBy(): ?string;
+
+	/**
 	 * The period that keys the counter at a given moment.
 	 *
 	 * An empty string for `resetOn: never`, the four-digit year for

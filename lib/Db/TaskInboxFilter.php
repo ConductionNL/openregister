@@ -39,6 +39,8 @@ final class TaskInboxFilter {
 	 * @param string|null        $priority   Restrict to one priority.
 	 * @param string|null        $kind       When set, only tasks carrying this kind.
 	 * @param string|null        $term       When set, only tasks whose title or description holds every word of it.
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function __construct(
 		public readonly array $states = [],

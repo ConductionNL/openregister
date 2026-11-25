@@ -38,6 +38,7 @@ use OCA\OpenRegister\Service\Lifecycle\StateCrossing;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolverInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRulesInterface;
 use OCA\OpenRegister\Service\Lifecycle\StateSave;
+use OCA\OpenRegister\Service\Rules\NamedConditionScope;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
 use OCA\OpenRegister\Service\Rules\RuleTrace;
@@ -204,7 +205,10 @@ class StateFieldRuleListener implements IEventListener {
 			return null;
 		}
 
-		return $annotation;
+		// The schema's named conditions travel with the annotation, so a state's
+		// entry/exit condition and its field rules resolve `$condition` against
+		// the library the schema save checked.
+		return NamedConditionScope::withLibrary(annotation: $annotation, configuration: $schema->getConfiguration());
 	}//end stateAnnotationOf()
 
 	/**
@@ -507,9 +511,15 @@ class StateFieldRuleListener implements IEventListener {
 	 * @return RuleTrace The refused verdict, naming the field (or the condition's clause) and the message.
 	 */
 	private static function traceOf(array $refusal): RuleTrace {
+		$operand = (string)($refusal['field'] ?? ($refusal['clause'] ?? ''));
+		if (isset($refusal['unresolved']) === true) {
+			// A named condition that could not be resolved: name it, not the lifecycle field.
+			$operand = (string)($refusal['clause'] ?? $operand);
+		}
+
 		return new RuleTrace(
 			verdict: RuleVocabulary::VERDICT_REFUSED,
-			operand: (string)($refusal['field'] ?? ($refusal['clause'] ?? '')),
+			operand: $operand,
 			message: (string)($refusal['message'] ?? '')
 		);
 	}//end traceOf()

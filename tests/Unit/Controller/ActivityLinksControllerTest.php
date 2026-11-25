@@ -180,7 +180,41 @@ class ActivityLinksControllerTest extends TestCase {
 		$response = $this->controller->index('reg', 'sch', 'obj');
 
 		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $response->getData());
 	}//end testIndexReturns500OnUnexpectedException()
+
+	public function testAnUntypedFailureIsLoggedWithItsDetailNotReturned(): void {
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects($this->once())->method('error')->with($this->stringContains('DB failure at host db-1'), $this->anything());
+		$controller = ActivityLinksControllerFactory::create(
+			'openregister',
+			$this->request,
+			$this->filterService,
+			$this->objectService,
+			$this->visibility,
+			$logger,
+		);
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturn(null);
+		$this->filterService->method('getActivityEntries')->willThrowException(new Exception('DB failure at host db-1'));
+
+		$response = $controller->index('reg', 'sch', 'obj');
+
+		$this->assertSame([500, ['error' => 'Internal server error']], [$response->getStatus(), $response->getData()]);
+	}//end testAnUntypedFailureIsLoggedWithItsDetailNotReturned()
+
+	public function testATypedFailureOnTheFilterValuesKeepsItsStatus(): void {
+		$this->filterService->method('isActivityAvailable')->willReturn(true);
+		$this->mockObject();
+		$this->request->method('getParam')->willReturn('reg/sch/obj');
+		$this->filterService->method('getActivityTypes')->willThrowException(new \InvalidArgumentException('Unknown filter'));
+
+		$response = $this->controller->types();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['message' => 'Unknown filter', 'error' => 'invalid-argument'], $response->getData());
+	}//end testATypedFailureOnTheFilterValuesKeepsItsStatus()
 
 	public function testTypesReturns501WhenActivityUnavailable(): void {
 		$this->filterService->method('isActivityAvailable')->willReturn(false);

@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * The layer above each feature hands it what it needs.
@@ -93,7 +94,7 @@ class HierarchyAndMatrixReachTheirCallersTest extends TestCase {
 		$table->addColumn('parent_object', 'string', ['length' => 40, 'notnull' => false]);
 
 		$db = $this->createMock(IDBConnection::class);
-		$db->method('createSchema')->willReturn($dbal);
+		$this->catalogue(db: $db, dbal: $dbal);
 
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('findAll')->willReturn([$this->hierarchicalSchema()]);
@@ -161,7 +162,7 @@ class HierarchyAndMatrixReachTheirCallersTest extends TestCase {
 		$register->setSchemas([987]);
 
 		$db = $this->createMock(IDBConnection::class);
-		$db->method('createSchema')->willReturn(new DbalSchema());
+		$this->catalogue(db: $db, dbal: new DbalSchema());
 
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('findAll')->willReturn([$this->hierarchicalSchema()]);
@@ -268,4 +269,89 @@ class HierarchyAndMatrixReachTheirCallersTest extends TestCase {
 
 		$this->assertSame(['read' => ['authenticated']], $stripped);
 	}//end testTheMcpScopeIsStillStrippedFromAnActionList()
+
+	/**
+	 * The descender reads the magic tables' columns in one catalogue query of
+	 * this database, not with a schema introspection of every table.
+	 *
+	 * @return void
+	 */
+	public function testTheColumnsComeFromOneScopedCatalogueQuery(): void {
+		$register = new Register();
+		$register->setId(34);
+		$register->setSchemas([]);
+
+		$queries = [];
+		$db = $this->createMock(IDBConnection::class);
+		$db->expects($this->never())->method('createSchema');
+		$db->expects($this->once())->method('prepare')->willReturnCallback(
+			function (string $sql) use (&$queries): \OCP\DB\IPreparedStatement {
+				$result = $this->createMock(\OCP\DB\IResult::class);
+				$result->method('fetchAll')->willReturn(
+					[
+						['TABLE_NAME' => 'oc_openregister_table_34_987', 'COLUMN_NAME' => 'PARENT_OBJECT'],
+						['table_name' => 'oc_openregister_table_34_987', 'column_name' => '_uuid'],
+					]
+				);
+				$statement = $this->createMock(\OCP\DB\IPreparedStatement::class);
+				$statement->method('execute')->willReturnCallback(
+					function (array $params) use ($sql, &$queries, $result): \OCP\DB\IResult {
+						$queries[] = [$sql, $params];
+						return $result;
+					}
+				);
+				return $statement;
+			}
+		);
+
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('findAll')->willReturn([$this->hierarchicalSchema()]);
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('findAll')->willReturn([$register]);
+
+		$descender = new HierarchyDescender(
+			db: $db,
+			schemaMapper: $schemas,
+			registerMapper: $registers,
+			logger: $this->createMock(LoggerInterface::class)
+		);
+
+		$this->assertSame('openregister_table_34_987', $descender->hierarchicalTables()[0]['table'] ?? null);
+		$descender->hierarchicalTables();
+		$this->assertCount(1, $queries);
+		$this->assertStringContainsString('information_schema.columns', $queries[0][0]);
+		$this->assertStringContainsString('table_schema = DATABASE()', $queries[0][0]);
+		$this->assertSame(['%openregister_table_%'], $queries[0][1]);
+	}//end testTheColumnsComeFromOneScopedCatalogueQuery()
+
+	/**
+	 * Answer the descender's catalogue query from a DBAL schema, or fail it when there is none.
+	 *
+	 * @param IDBConnection&\PHPUnit\Framework\MockObject\MockObject $db   The database double.
+	 * @param DbalSchema|null                                        $dbal The tables and columns.
+	 *
+	 * @return void
+	 */
+	private function catalogue(IDBConnection $db, ?DbalSchema $dbal): void {
+		$db->method('prepare')->willReturnCallback(
+			function (string $sql) use ($dbal): \OCP\DB\IPreparedStatement {
+				if ($dbal === null) {
+					throw new RuntimeException('no schema');
+				}
+
+				$rows = [];
+				foreach ($dbal->getTables() as $table) {
+					foreach ($table->getColumns() as $column) {
+						$rows[] = ['table_name' => $table->getName(), 'column_name' => $column->getName()];
+					}
+				}
+
+				$result = $this->createMock(\OCP\DB\IResult::class);
+				$result->method('fetchAll')->willReturn($rows);
+				$statement = $this->createMock(\OCP\DB\IPreparedStatement::class);
+				$statement->method('execute')->willReturn($result);
+				return $statement;
+			}
+		);
+	}//end catalogue()
 }//end class

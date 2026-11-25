@@ -856,9 +856,12 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * first and only the ones not found there in every table. A reference
 	 * nearly always points into its own register, and one lookup across every
 	 * magic table is a UNION over all of them (1.7k tables: 1.5-3.6 s).
+	 * With schemas, the identifiers are looked up in those schemas' tables
+	 * before that: one table per schema instead of one per schema in the register.
 	 *
 	 * @param array $identifiers Array of object IDs/UUIDs to preload
 	 * @param int|null $registerId The register to look in first, or null for every table.
+	 * @param list<int>|null $schemaIds The schemas the objects belong to, looked in before the register; null when unknown.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -872,7 +875,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function preloadObjects(array $identifiers, ?int $registerId = null): array {
+	public function preloadObjects(array $identifiers, ?int $registerId = null, ?array $schemaIds = null): array {
 		if (empty($identifiers) === true) {
 			return [];
 		}
@@ -886,7 +889,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			return array_filter(array_map(fn ($id) => $this->cachedObject(identifier: $id), $identifiers), fn ($obj) => $obj !== null);
 		}
 
-		return $this->bulkLoadObjects(identifiers: array_values($identifiersToLoad), registerId: $registerId);
+		return $this->bulkLoadObjects(identifiers: array_values($identifiersToLoad), registerId: $registerId, schemaIds: $schemaIds);
 	}//end preloadObjects()
 
 	/**
@@ -907,14 +910,15 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 *
 	 * @param array<int|string> $identifiers The identifiers to load.
 	 * @param int|null          $registerId  The register to look in first.
+	 * @param list<int>|null    $schemaIds   The schemas to look in before the register.
 	 *
 	 * @return ObjectEntity[] The objects found.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function bulkLoadObjects(array $identifiers, ?int $registerId): array {
+	private function bulkLoadObjects(array $identifiers, ?int $registerId, ?array $schemaIds = null): array {
 		try {
-			$objects = $this->findForPreload(identifiers: $identifiers, registerId: $registerId);
+			$objects = $this->findForPreload(identifiers: $identifiers, registerId: $registerId, schemaIds: $schemaIds);
 			array_walk($objects, fn (ObjectEntity $object) => $this->cacheObject(object: $object));
 			$this->stats['preloads'] += count($objects);
 			return $objects;
@@ -928,38 +932,65 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	}//end bulkLoadObjects()
 
 	/**
-	 * Load objects by identifier, from one register's tables first when given.
+	 * Load objects by identifier: from the given schemas' tables first, then one register's tables, then every table.
 	 *
 	 * @param array<int|string> $identifiers The identifiers to load.
-	 * @param int|null $registerId The register to look in first.
+	 * @param int|null          $registerId  The register to look in first.
+	 * @param list<int>|null    $schemaIds   The schemas to look in before the register.
 	 *
 	 * @return ObjectEntity[] The objects found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function findForPreload(array $identifiers, ?int $registerId): array {
+	private function findForPreload(array $identifiers, ?int $registerId, ?array $schemaIds = null): array {
 		$mapper = $this->getObjectMapper();
+		if ($schemaIds !== null && $schemaIds !== []) {
+			$objects = $mapper->findMultipleAcrossAllMagicTables(uuids: $identifiers, schemaIdScope: $schemaIds);
+			$missing = self::notFound(identifiers: $identifiers, objects: $objects);
+			if ($missing === []) {
+				return $objects;
+			}
+
+			return array_merge($objects, $this->findForPreload(identifiers: $missing, registerId: $registerId));
+		}
+
 		if ($registerId === null) {
 			return $mapper->findMultiple($identifiers);
 		}
 
 		$objects = $mapper->findMultipleAcrossAllMagicTables(uuids: $identifiers, registerIdScope: $registerId);
-		$found = [];
-		foreach ($objects as $object) {
-			$found[(string)$object->getUuid()] = true;
-			$found[(string)$object->getId()] = true;
-		}
-
-		$missing = array_values(
-			array_filter(
-				$identifiers,
-				fn ($id) => isset($found[(string)$id]) === false
-			)
-		);
+		$missing = self::notFound(identifiers: $identifiers, objects: $objects);
 		if ($missing === []) {
 			return $objects;
 		}
 
 		return array_merge($objects, $mapper->findMultiple($missing));
 	}//end findForPreload()
+
+	/**
+	 * The identifiers that none of the objects answers to, by UUID or id.
+	 *
+	 * @param array<int|string> $identifiers The identifiers looked up.
+	 * @param ObjectEntity[]    $objects     The objects found.
+	 *
+	 * @return array<int|string> The identifiers not found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function notFound(array $identifiers, array $objects): array {
+		$found = [];
+		foreach ($objects as $object) {
+			$found[(string)$object->getUuid()] = true;
+			$found[(string)$object->getId()] = true;
+		}
+
+		return array_values(
+			array_filter(
+				$identifiers,
+				fn ($id) => isset($found[(string)$id]) === false
+			)
+		);
+	}//end notFound()
 
 	/**
 	 * Cache an object with memory management

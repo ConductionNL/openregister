@@ -484,6 +484,7 @@
             "errors": [
                 {
                     "property": null,
+                    "keyword": null,
                     "message": "read only",
                     "errors": []
                 }
@@ -498,6 +499,7 @@
             "errors": [
                 {
                     "property": null,
+                    "keyword": "type",
                     "message": "Invalid object",
                     "errors": {
                         "/": [

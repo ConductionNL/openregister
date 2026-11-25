@@ -329,6 +329,28 @@ class OrganisationMapperBehaviourTest extends TestCase {
 		$this->assertStringContainsString('WHERE uuid = :org_uuid', $this->preparedSql[0]);
 	}
 
+	public function testAParentChainIsReadOncePerRequestUntilAnOrganisationIsWritten(): void {
+		$this->preparedQueue = [['p1'], ['p9'], ['p2']];
+		$mapper = $this->mapper();
+		$this->assertSame(['p1'], $mapper->findParentChain('o1'));
+		$this->assertSame(['p1'], $mapper->findParentChain('o1'));
+		$this->assertSame(['p9'], $mapper->findParentChain('o9'));
+		$this->assertCount(2, $this->preparedSql);
+
+		$organisation = new Organisation();
+		$organisation->setName('New');
+		$mapper->insert($organisation);
+		$this->assertSame(['p2'], $mapper->findParentChain('o1'));
+		$this->assertCount(3, $this->preparedSql);
+	}
+
+	public function testAFailedParentChainIsNotKept(): void {
+		$this->preparedQueue = [new Exception('boom'), ['p1']];
+		$mapper = $this->mapper();
+		$this->assertSame([], $mapper->findParentChain('o1'));
+		$this->assertSame(['p1'], $mapper->findParentChain('o1'));
+	}
+
 	public function testChainsAreEmptyWhenTheQueryFails(): void {
 		$this->preparedQueue = [new Exception('boom'), new Exception('boom')];
 		$this->logger = $this->createMock(LoggerInterface::class);

@@ -677,12 +677,7 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	private function registerFromBundle(array $decoded, array $target): array {
 		if ($this->isRegisterBundle(decoded: $decoded) === false) {
-			throw new RegisterNotFoundException(
-				registerSlugOrId: $target['registerSlug'] ?? 'unknown',
-				code: 404,
-				remedies: 'Create the register first, or supply a full register bundle '
-					. '(a register definition together with its schemas) to auto-create it.'
-			);
+			throw RegisterNotFoundException::forImport(registerSlugOrId: $target['registerSlug'] ?? 'unknown');
 		}
 
 		return $this->autoCreateRegisterFromBundle(bundle: $decoded, schemaHint: $target['schema']);

@@ -28,7 +28,8 @@ use ReflectionNamedType;
  * Every service in a controller's services bundle reaches the controller.
  *
  * A controller keeps a bundled service in its own property, reads it through the
- * bundle it keeps in $services, or hands it to an object it builds and keeps.
+ * bundle it keeps in $services (public or private fields, so a Support collaborator
+ * such as OwnMailReverseLookup counts), or hands it to an object it builds and keeps.
  */
 class ControllerServicesWiringTest extends TestCase {
 	/**
@@ -164,7 +165,7 @@ class ControllerServicesWiringTest extends TestCase {
 			}
 
 			if ($this->isBundle(type: $object::class) === true
-				&& $this->reaches(held: array_values(get_object_vars($object)), leaf: $leaf) === true
+				&& $this->reaches(held: array_values(array_filter($this->propertiesOf(object: $object), 'is_object')), leaf: $leaf) === true
 			) {
 				return true;
 			}

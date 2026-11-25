@@ -14,4 +14,5 @@
 ## 3. Close
 
 - [x] 3.1 `docs/`: tasks in the search bar. Tell dossiq the change name for row 9.12. Docs written (`docs/features/search-and-faceting.md`, `docs/features/deep-link-registry.md#task-routes`); dossiq registers its task route with `taskUrlTemplate`.
-- [ ] 3.2 `@spec` tags; `openspec validate flow-task-search-provider --strict`.
+- [x] 3.2 `@spec` tags; `openspec validate flow-task-search-provider --strict`.
+  - 2026-11-24: every method the build added or changed names a requirement of this change's spec (the provider's methods pointed only at `tasks.md#task-2.1`; the term filter in `TaskMapper`, `TaskInboxCriteria`/`TaskInboxFilter`, the registrar and the task route in the deep-link registry had none). `--strict` refused the one requirement as over 500 characters; it is split into three (what the search finds, what a result carries and links to, never more than the inbox), each with its scenario. `openspec validate --strict`: valid.

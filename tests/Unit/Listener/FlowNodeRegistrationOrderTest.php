@@ -133,6 +133,7 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'LinkObjectNodeInterface',
 				$ns . 'ObjectReadNodeInterface',
 				$ns . 'AuditTrailNodeInterface',
+				$ns . 'ExtendInputNodeInterface',
 				$ns . 'FlowStateNodeInterface',
 				$ns . 'MapNodeInterface',
 				$ns . 'IterateNodeInterface',
@@ -149,6 +150,7 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'TriggerObjectNodeInterface',
 				$ns . 'TriggerScheduleNodeInterface',
 				$ns . 'TriggerManualNodeInterface',
+				$ns . 'TriggerCalendarNodeInterface',
 				// The code step registers last; it hides itself while its runner is absent.
 				$ns . 'CodeNodeInterface',
 			],

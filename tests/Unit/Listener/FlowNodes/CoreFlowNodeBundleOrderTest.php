@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
@@ -143,7 +144,7 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 	private function objects(): ObjectFlowNodes {
 		return new ObjectFlowNodes(
 			new ObjectChangeFlowNodes($this->node('objectWrite', ObjectWriteNodeInterface::class), $this->node('transition', TransitionNodeInterface::class), $this->node('tagObject', TagObjectNodeInterface::class)),
-			new ObjectLookupFlowNodes($this->node('linkObject', LinkObjectNodeInterface::class), $this->node('objectRead', ObjectReadNodeInterface::class), $this->node('auditTrail', AuditTrailNodeInterface::class)),
+			new ObjectLookupFlowNodes($this->node('linkObject', LinkObjectNodeInterface::class), $this->node('objectRead', ObjectReadNodeInterface::class), $this->node('auditTrail', AuditTrailNodeInterface::class), $this->node('extendInput', ExtendInputNodeInterface::class)),
 		);
 	}
 
@@ -206,9 +207,9 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 		$this->assertSame($this->pick(['merge', 'loop', 'subFlow', 'router']), $nodes);
 	}
 
-	public function testObjectsListWriteTransitionTagLinkReadAuditTrail(): void {
+	public function testObjectsListWriteTransitionTagLinkReadAuditTrailExtend(): void {
 		$nodes = $this->objects()->nodes();
-		$this->assertSame($this->pick(['objectWrite', 'transition', 'tagObject', 'linkObject', 'objectRead', 'auditTrail']), $nodes);
+		$this->assertSame($this->pick(['objectWrite', 'transition', 'tagObject', 'linkObject', 'objectRead', 'auditTrail', 'extendInput']), $nodes);
 	}
 
 	public function testCoreFlattensShapingBranchingRoutingThenObjects(): void {
@@ -222,7 +223,7 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 				'setFields', 'actionInputs', 'explode', 'filter',
 				'wait', 'awaitSignal', 'switch', 'end',
 				'merge', 'loop', 'subFlow', 'router',
-				'objectWrite', 'transition', 'tagObject', 'linkObject', 'objectRead', 'auditTrail',
+				'objectWrite', 'transition', 'tagObject', 'linkObject', 'objectRead', 'auditTrail', 'extendInput',
 			]),
 			$core->nodes()
 		);

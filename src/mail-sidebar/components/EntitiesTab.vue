@@ -6,27 +6,23 @@
 		<div v-else-if="entities.length === 0" class="or-tab-empty">
 			{{ t('openregister', 'No entities detected for this email.') }}
 		</div>
-		<div v-else>
-			<div
-				v-for="(group, type) in groupedEntities"
-				:key="type"
-				class="or-entity-group">
-				<h4 class="or-entity-group-title">
-					{{ formatType(type) }}
-				</h4>
-				<ul class="or-entity-list">
-					<li
-						v-for="entity in group"
-						:key="entity.id"
-						class="or-entity-item">
-						<span class="or-entity-value">{{ entity.value }}</span>
-						<span v-if="entity.confidence" class="or-entity-confidence">
-							{{ Math.round(entity.confidence * 100) }}%
-						</span>
-					</li>
-				</ul>
-			</div>
-		</div>
+		<ul v-else class="or-entity-list">
+			<li
+				v-for="entity in entities"
+				:key="entity.id"
+				class="or-entity-item">
+				<component :is="iconFor(entity)" :size="18" class="or-entity-icon" />
+				<span class="or-entity-value">{{ entity.value }}</span>
+				<span class="or-entity-kind">{{ kindLabel(entity) }}</span>
+				<button
+					type="button"
+					class="or-entity-search"
+					:aria-label="t('openregister', 'Search for {value}', { value: entity.value })"
+					@click="$emit('search', entity.value)">
+					{{ t('openregister', 'Search') }}
+				</button>
+			</li>
+		</ul>
 	</div>
 </template>
 
@@ -44,6 +40,13 @@ import axios from '@nextcloud/axios'
  */
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
+import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
+import BankOutline from 'vue-material-design-icons/BankOutline.vue'
+import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
+import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
+import MapMarkerOutline from 'vue-material-design-icons/MapMarkerOutline.vue'
+import PhoneOutline from 'vue-material-design-icons/PhoneOutline.vue'
+import Pound from 'vue-material-design-icons/Pound.vue'
 import { mailMessageTab } from '../composables/mailMessageTab.js'
 
 // Grounded extraction patterns — kept conservative to avoid false positives.
@@ -65,11 +68,26 @@ async function fetchMessageBody(messageId) {
 	return response.data?.data || response.data || {}
 }
 
+// A Dutch street address: a street name ending in a usual suffix, a house
+// number, and optionally ", Place".
+const ADDRESS_RE = /\b[A-Z][a-z]+(?:straat|laan|weg|plein|gracht|kade|dijk|singel|park|hof|steeg|pad|dreef|markt)\s\d+[a-z]?\b(?:,\s?[A-Z][a-z]+)?/g
+
+const ICONS = {
+	PERSON: AccountOutline,
+	ADDRESS: MapMarkerOutline,
+	EMAIL: EmailOutline,
+	PHONE: PhoneOutline,
+	IBAN: BankOutline,
+	URL: LinkVariant,
+}
+
 const PHONE_RE = /(?:(?:\+|00)\d{1,3}[\s-]?)?(?:\(0\)|0)?(?:[\s-]?\d){8,12}\d/g
 
 export default {
 	name: 'EntitiesTab',
+	components: { AccountOutline, BankOutline, EmailOutline, LinkVariant, MapMarkerOutline, PhoneOutline, Pound },
 	mixins: [mailMessageTab('loadEntities')],
+	emits: ['search'],
 
 	data() {
 		return {
@@ -78,39 +96,38 @@ export default {
 		}
 	},
 
-	computed: {
-		/**
-		 * @spec openspec/specs/mail-sidebar/spec.md
-		 */
-		groupedEntities() {
-			const groups = {}
-			for (const entity of this.entities) {
-				const type = entity.type || 'unknown'
-				if (!groups[type]) {
-					groups[type] = []
-				}
-				groups[type].push(entity)
-			}
-			return groups
-		},
-	},
-
 	methods: {
 		t,
 		/**
-		 * @param {string} type
+		 * What a found value is, in a word ("sender", "address").
+		 *
+		 * @param {object} entity The found value.
+		 * @return {string}
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
-		formatType(type) {
+		kindLabel(entity) {
+			if (entity.role === 'sender') return t('openregister', 'sender')
 			const labels = {
-				PERSON: t('openregister', 'People'),
-				EMAIL: t('openregister', 'Email Addresses'),
-				PHONE: t('openregister', 'Phone Numbers'),
-				IBAN: t('openregister', 'IBANs'),
-				URL: t('openregister', 'Links'),
-				unknown: t('openregister', 'Other'),
+				PERSON: t('openregister', 'person'),
+				ADDRESS: t('openregister', 'address'),
+				EMAIL: t('openregister', 'email address'),
+				PHONE: t('openregister', 'phone number'),
+				// An IBAN is called IBAN in every language: not wrapped, see CLAUDE.md (untranslatable strings).
+				IBAN: 'IBAN',
+				URL: t('openregister', 'link'),
 			}
-			return labels[type] || type
+			return labels[entity.type] || t('openregister', 'other')
+		},
+
+		/**
+		 * The icon of a found value, by its kind.
+		 *
+		 * @param {object} entity The found value.
+		 * @return {object}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		iconFor(entity) {
+			return ICONS[entity.type] || Pound
 		},
 
 		/**
@@ -156,13 +173,18 @@ export default {
 		extractEntities(envelope) {
 			const seen = new Set()
 			const out = []
-			const add = (type, value) => {
+			const add = (type, value, role) => {
 				const clean = (value || '').trim()
 				if (!clean) return
 				const key = `${type}:${clean.toLowerCase()}`
 				if (seen.has(key)) return
 				seen.add(key)
-				out.push({ id: key, type, value: clean })
+				out.push(role ? { id: key, type, value: clean, role } : { id: key, type, value: clean })
+			}
+
+			// The sender first: the board lists who wrote before what they wrote.
+			for (const p of envelope.from || []) {
+				if (p?.label && p.label !== p.email) add('PERSON', p.label, 'sender')
 			}
 
 			// Envelope participants — people (display names) and their addresses.
@@ -183,6 +205,7 @@ export default {
 					new DOMParser().parseFromString(body, 'text/html').body
 						.textContent || ''
 			}
+			for (const m of body.match(ADDRESS_RE) || []) add('ADDRESS', m)
 			for (const m of body.match(EMAIL_RE) || []) add('EMAIL', m)
 			for (const m of body.match(IBAN_RE) || [])
 				add('IBAN', m.replace(/\s+/g, ''))

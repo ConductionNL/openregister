@@ -39,6 +39,13 @@ class DeletedControllerTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 	private PermissionHandler&MockObject $permissionHandler;
 
+	/**
+	 * The controller's logger.
+	 *
+	 * @var \Psr\Log\LoggerInterface&\PHPUnit\Framework\MockObject\MockObject
+	 */
+	private \Psr\Log\LoggerInterface $logger;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -71,7 +78,8 @@ class DeletedControllerTest extends TestCase {
 			$this->createMock(originalClassName: AuditTrailMapper::class),
 			$deletion,
 			$authorizer,
-			$this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class)
+			$this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class),
+			$this->logger = $this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 	}
 
@@ -132,11 +140,27 @@ class DeletedControllerTest extends TestCase {
 
 	public function testStatisticsException(): void {
 		$this->objectMapper->method('countDeletedAcrossAllMagicTables')
-			->willThrowException(new \Exception('Error'));
+			->willThrowException(new \Exception('Error at db-host'));
+		$this->logger->expects($this->once())->method('error')->with(
+			'[' . DeletedController::class . '] Failed to get statistics: Error at db-host',
+			$this->anything()
+		);
 
 		$result = $this->controller->statistics();
 
+		// The cause goes to the server log, never into the response body.
 		$this->assertEquals(500, $result->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
+	}
+
+	public function testStatisticsTypedFailureKeepsItsStatus(): void {
+		$this->objectMapper->method('countDeletedAcrossAllMagicTables')
+			->willThrowException(new \OCA\OpenRegister\Exception\NotAuthorizedException('Not allowed to read the trash'));
+
+		$result = $this->controller->statistics();
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame(['message' => 'Not allowed to read the trash', 'error' => 'not-authorized'], $result->getData());
 	}
 
 	public function testTopDeleters(): void {

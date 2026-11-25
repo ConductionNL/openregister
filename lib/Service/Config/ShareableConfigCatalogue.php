@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Config;
 
 use OCA\OpenRegister\AppHost\Store\DeclaredShareableType;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ShareableConfigCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp;
 
 /**
  * Answers the store surface from the shareable type registry and the federated engine.
@@ -115,12 +116,19 @@ final class ShareableConfigCatalogue implements ShareableConfigCatalogueInterfac
 	 * @param string               $typeId The declared type id.
 	 * @param array<string, mixed> $bundle The bundle.
 	 * @param string               $source Where the bundle came from.
+	 * @param BundleObjectStamp|null $stamp The install target's stamp, applied after the signature check.
 	 *
 	 * @return array<string, mixed> The install report.
 	 *
 	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#requirement-a-configuration-install-must-run-through-its-owning-type
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
-	public function install(string $typeId, array $bundle, string $source): array {
-		return $this->federated->install(typeId: $typeId, bundle: $bundle, source: $source);
+	public function install(string $typeId, array $bundle, string $source, ?BundleObjectStamp $stamp = null): array {
+		$prepare = null;
+		if ($stamp !== null) {
+			$prepare = $stamp->applyTo(...);
+		}
+
+		return $this->federated->install(typeId: $typeId, bundle: $bundle, source: $source, prepare: $prepare);
 	}//end install()
 }//end class

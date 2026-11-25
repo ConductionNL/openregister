@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
+use OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IGroupManager;
@@ -73,6 +74,7 @@ final class IntegrationControllersWiringTest extends TestCase {
 			SchemaMapperInterface::class => SchemaMapperInterface::class,
 			TimelineVisibilityServiceInterface::class => TimelineVisibilityServiceInterface::class,
 			PermissionHandlerInterface::class => PermissionHandlerInterface::class,
+			IntegrationCreateIdempotency::class => IntegrationCreateIdempotency::class,
 		];
 	}//end served()
 
@@ -151,6 +153,7 @@ final class IntegrationControllersWiringTest extends TestCase {
 				TimelineVisibilityServiceInterface::class,
 				PermissionHandlerInterface::class,
 				'Psr\Log\LoggerInterface',
+				IntegrationCreateIdempotency::class,
 			],
 			$asked
 		);

@@ -35,11 +35,13 @@ final class ValidationInput {
 	 * @param array<string, mixed> $document The object as it would be saved.
 	 * @param array<string, mixed> $library  Named conditions in scope.
 	 * @param string               $language The caller's language.
+	 * @param string|null          $organisation The object's organisation, for the calendar a `$age` counts in.
 	 */
 	public function __construct(
 		public readonly array $document,
 		public readonly array $library,
 		public readonly string $language,
+		public readonly ?string $organisation = null,
 	) {
 	}//end __construct()
 }//end class

@@ -93,6 +93,17 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	private array $activeOrgUuidCache = [];
 
 	/**
+	 * Request-scoped parent chains by organisation uuid.
+	 *
+	 * Every multitenant read resolves the caller's organisation with its
+	 * parents, a recursive query that ran again for each query part of one
+	 * request. Dropped when this mapper writes an organisation.
+	 *
+	 * @var array<string, list<string>>
+	 */
+	private array $parentChainCache = [];
+
+	/**
 	 * App configuration, read for the default organisation and RBAC enforcement.
 	 *
 	 * @var IAppConfig
@@ -145,6 +156,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 		}
 
 		$entity = parent::insert(entity: $entity);
+		$this->parentChainCache = [];
 
 		// Dispatch creation event.
 		$this->entityEvents->organisationCreated(organisation: $entity);
@@ -185,6 +197,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 		}
 
 		$entity = parent::update(entity: $entity);
+		$this->parentChainCache = [];
 
 		// Dispatch update event.
 		$this->entityEvents->organisationUpdated(newOrganisation: $entity, oldOrganisation: $oldEntity ?? $entity);
@@ -201,6 +214,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	 */
 	public function delete(Entity $entity): Entity {
 		$entity = parent::delete(entity: $entity);
+		$this->parentChainCache = [];
 
 		// Dispatch deletion event.
 		$this->entityEvents->organisationDeleted(organisation: $entity);
@@ -719,6 +733,10 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 	 * @psalm-return list{0?: mixed,...}
 	 */
 	public function findParentChain(string $organisationUuid): array {
+		if (array_key_exists($organisationUuid, $this->parentChainCache) === true) {
+			return $this->parentChainCache[$organisationUuid];
+		}
+
 		// Use raw SQL for recursive CTE (Common Table Expression).
 		// This is more efficient than multiple queries for hierarchical data.
 		$sql = '
@@ -766,6 +784,7 @@ class OrganisationMapper extends QBMapper implements OrganisationMapperInterface
 				]
 			);
 
+			$this->parentChainCache[$organisationUuid] = $parents;
 			return $parents;
 		} catch (Exception $e) {
 			$this->logger->error(

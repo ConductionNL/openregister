@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -97,6 +98,49 @@ class ObjectReadAccessBehaviourTest extends TestCase {
 			$this->failingFind(failure: new DoesNotExistException('none'))->readableOrAmbiguous(register: '5', schema: '7', id: 'x')
 		);
 	}//end testMissingObjectIsNotReadable()
+
+	/**
+	 * isReadable() answers true for an object find() hands back, under the caller's RBAC and tenancy.
+	 *
+	 * @return void
+	 */
+	public function testIsReadableWhenFindAnswers(): void {
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->expects($this->once())->method('setRegister')->with('5');
+		$objects->expects($this->once())->method('setSchema')->with('7');
+		$objects->expects($this->once())->method('find')
+			->with('abc', $this->anything(), true, true)
+			->willReturn(new ObjectEntity());
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($this->createMock(IUser::class));
+		$access = new ObjectReadAccess(objectService: $objects, userSession: $session, schemaMapper: $this->createMock(SchemaMapperInterface::class));
+
+		$this->assertTrue($access->isReadable(ref: new ObjectRef(register: '5', schema: '7', id: 'abc')));
+	}//end testIsReadableWhenFindAnswers()
+
+	/**
+	 * isReadable() answers false for an ambiguous identifier and for a missing object.
+	 *
+	 * @return void
+	 */
+	public function testIsReadableAnswersFalseOnAmbiguityAndAbsence(): void {
+		$ref = new ObjectRef(register: '5', schema: '7', id: 'slug');
+		$this->assertFalse($this->failingFind(failure: new MultipleObjectsReturnedException('two'))->isReadable(ref: $ref));
+		$this->assertFalse($this->failingFind(failure: new DoesNotExistException('none'))->isReadable(ref: $ref));
+	}//end testIsReadableAnswersFalseOnAmbiguityAndAbsence()
+
+	/**
+	 * Without a session user nothing is readable and nothing is looked up.
+	 *
+	 * @return void
+	 */
+	public function testIsReadableWithoutSessionUserIsFalse(): void {
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->expects($this->never())->method('find');
+		$access = new ObjectReadAccess(objectService: $objects, userSession: $this->createMock(IUserSession::class), schemaMapper: $this->createMock(SchemaMapperInterface::class));
+
+		$this->assertFalse($access->isReadable(ref: new ObjectRef(register: '5', schema: '7', id: 'abc')));
+	}//end testIsReadableWithoutSessionUserIsFalse()
 
 	/**
 	 * schemaOf() finds the object's schema, or answers null when it cannot be read.

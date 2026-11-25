@@ -1144,6 +1144,7 @@
                 "errors": [
                     {
                         "property": null,
+                        "keyword": null,
                         "message": "bad",
                         "errors": []
                     }
@@ -1157,7 +1158,8 @@
                 "message": "Validation failed",
                 "errors": [
                     {
-                        "property": null,
+                        "property": "title",
+                        "keyword": "type",
                         "message": "bad",
                         "errors": {
                             "/title": [

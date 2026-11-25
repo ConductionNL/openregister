@@ -409,7 +409,8 @@
             "metadata": null,
             "linkedBy": "alice",
             "linkedAt": "string",
-            "rfcMessageId": null
+            "rfcMessageId": null,
+            "direction": "inbound"
         }
     },
     "LinkServiceCreateGoldenTest::testLinkEmailGolden no user": {
@@ -436,7 +437,8 @@
             "metadata": null,
             "linkedBy": "alice",
             "linkedAt": "string",
-            "rfcMessageId": null
+            "rfcMessageId": null,
+            "direction": "inbound"
         }
     },
     "LinkServiceCreateGoldenTest::testLinkEmailGolden uid from row": {
@@ -455,7 +457,8 @@
             "metadata": null,
             "linkedBy": "alice",
             "linkedAt": "string",
-            "rfcMessageId": null
+            "rfcMessageId": null,
+            "direction": "inbound"
         }
     },
     "LinkServiceCreateGoldenTest::testLinkEmailGolden uid given": {
@@ -474,7 +477,8 @@
             "metadata": null,
             "linkedBy": "alice",
             "linkedAt": "string",
-            "rfcMessageId": null
+            "rfcMessageId": null,
+            "direction": "inbound"
         }
     }
 }

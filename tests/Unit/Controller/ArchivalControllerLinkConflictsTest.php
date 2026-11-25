@@ -69,6 +69,8 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Controller\Support\ArchivalNomination
  * @uses   \OCA\OpenRegister\Controller\Support\ControllerSession
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\StatisticsScope
+ * @uses   \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ArchivalControllerLinkConflictsTest extends TestCase {
 

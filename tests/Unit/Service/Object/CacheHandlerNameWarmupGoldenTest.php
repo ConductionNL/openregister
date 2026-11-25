@@ -118,6 +118,17 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 			},
 			'preload failure' => fn () => $this->handler(['findMultiple' => new RuntimeException('down')])->preloadObjects([self::UUID_A, self::UUID_B]),
 			'preload in a register' => fn () => $this->handler(['acrossMagic' => [$a], 'findMultiple' => [$b]])->preloadObjects([self::UUID_A, self::UUID_B], 7),
+			'preload in the target schemas' => fn () => $this->handler(setup: ['acrossMagic' => [$a, $b]])->preloadObjects(
+				identifiers: [self::UUID_A, self::UUID_B],
+				registerId: 7,
+				schemaIds: [66]
+			),
+			'preload in the target schemas, the rest in the register, then everywhere' => fn () => $this->handler(
+				setup: ['acrossMagicSequence' => [[$a], [$b]], 'findMultiple' => []]
+			)->preloadObjects(identifiers: [self::UUID_A, self::UUID_B, self::UUID_C], registerId: 7, schemaIds: [66, 67]),
+			'preload with no target schemas reads the register' => fn () => $this->handler(
+				setup: ['acrossMagic' => [$a], 'findMultiple' => [$b]]
+			)->preloadObjects(identifiers: [self::UUID_A, self::UUID_B], registerId: 7, schemaIds: []),
 		];
 	}
 
@@ -286,8 +297,13 @@ class CacheHandlerNameWarmupGoldenTest extends TestCase {
 			$record('findMultiple', $ids);
 			return self::answer($setup['findMultiple'] ?? []);
 		});
-		$mapper->method('findMultipleAcrossAllMagicTables')->willReturnCallback(function (array $uuids, mixed ...$rest) use ($setup, $record) {
+		$sequence = ($setup['acrossMagicSequence'] ?? null);
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturnCallback(function (array $uuids, mixed ...$rest) use ($setup, $record, &$sequence) {
 			$record('acrossMagic', $uuids, $rest);
+			if ($sequence !== null) {
+				return self::answer(value: array_shift($sequence) ?? []);
+			}
+
 			return self::answer($setup['acrossMagic'] ?? []);
 		});
 		$mapper->method('findAllListed')->willReturnCallback(fn () => self::answer($setup['findAll'] ?? []));

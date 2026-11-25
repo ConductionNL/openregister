@@ -7176,7 +7176,7 @@
         "logs": [
             [
                 "warning",
-                "Schema \"golden-schema\" has invalid x-openregister-notifications (ignored at runtime, fix to enable): Notification \"first\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\"). Notification \"first\" must declare at least one channel. Notification \"first\" requires a subject string or per-locale map. Notification \"first\" must declare at least one recipient.",
+                "Schema \"golden-schema\" has invalid x-openregister-notifications (ignored at runtime, fix to enable): Notification \"first\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\"). Notification \"first\" must declare at least one channel. Notification \"first\" requires a subject string or per-locale map. Notification \"first\" must declare at least one recipient.",
                 {
                     "schema": "golden-schema"
                 }
@@ -7235,7 +7235,7 @@
         "logs": [
             [
                 "warning",
-                "Schema \"golden-schema\" has invalid x-openregister-notifications (ignored at runtime, fix to enable): Notification \"property\" must be an object. Notification \"properties\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\"). Notification \"properties\" must declare at least one channel. Notification \"properties\" requires a subject string or per-locale map. Notification \"properties\" must declare at least one recipient. Notification \"identity\" must be an object. Notification \"owned\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\"). Notification \"owned\" must declare at least one channel. Notification \"owned\" requires a subject string or per-locale map. Notification \"owned\" must declare at least one recipient.",
+                "Schema \"golden-schema\" has invalid x-openregister-notifications (ignored at runtime, fix to enable): Notification \"property\" must be an object. Notification \"properties\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\"). Notification \"properties\" must declare at least one channel. Notification \"properties\" requires a subject string or per-locale map. Notification \"properties\" must declare at least one recipient. Notification \"identity\" must be an object. Notification \"owned\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\"). Notification \"owned\" must declare at least one channel. Notification \"owned\" requires a subject string or per-locale map. Notification \"owned\" must declare at least one recipient.",
                 {
                     "schema": "golden-schema"
                 }

@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftTarget;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationLayer;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationSnapshot;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationValueStore;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
 use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDomainMap;
 use OCA\OpenRegister\Service\ConfigurationDeployment\SettingsDraftGate;
 use OCA\OpenRegister\Db\OrganisationMapper;
@@ -290,6 +291,84 @@ final class SettingsDraftGateTest extends TestCase {
 
 		$this->assertSame($straightThrough, $afterDeployment);
 	}//end testADraftedDomainReadsBackTheSameAsAStraightWrite()
+
+	public function testAnUnknownDomainWritesThroughEvenWhileDrafting(): void {
+		$this->appConfigValues[SettingsDraftGate::DRAFTING_KEY] = '1';
+
+		$drafts = $this->createMock(ConfigurationDraftService::class);
+		$drafts->expects($this->never())->method('openSet');
+		$drafts->expects($this->never())->method('draftValue');
+
+		$gate = new SettingsDraftGate($drafts, $this->store(), new SettingsDomainMap(), $this->appConfig(), 'openregister');
+
+		$this->assertTrue($gate->isDrafting());
+		$this->assertNull($gate->draftIfEnabled('no-such-domain', ['enabled' => false]));
+		$this->assertArrayNotHasKey(SettingsDraftGate::TARGET_SET_KEY, $this->appConfigValues);
+	}//end testAnUnknownDomainWritesThroughEvenWhileDrafting()
+
+	public function testAWriteNamingNoSettingIsPendingButStagesNothing(): void {
+		$this->appConfigValues[SettingsDraftGate::DRAFTING_KEY] = '1';
+
+		$drafts = $this->createMock(ConfigurationDraftService::class);
+		$drafts->expects($this->never())->method('openSet');
+		$drafts->expects($this->never())->method('draftValue');
+
+		$gate = new SettingsDraftGate($drafts, $this->store(), new SettingsDomainMap(), $this->appConfig(), 'openregister');
+		$pending = $gate->draftIfEnabled(SettingsDomainMap::DOMAIN_SETTINGS, ['unrelated' => true]);
+
+		$this->assertSame(
+			[
+				'pending' => true,
+				'domain' => SettingsDomainMap::DOMAIN_SETTINGS,
+				'draftSet' => null,
+				'drafts' => [],
+				'message' => 'drafting is on and this write named no setting, so nothing was staged',
+			],
+			$pending
+		);
+		$this->assertArrayNotHasKey(SettingsDraftGate::TARGET_SET_KEY, $this->appConfigValues);
+	}//end testAWriteNamingNoSettingIsPendingButStagesNothing()
+
+	public function testARememberedOpenSetTakesTheNextWrite(): void {
+		$this->appConfigValues[SettingsDraftGate::DRAFTING_KEY] = '1';
+		$this->appConfigValues[SettingsDraftGate::TARGET_SET_KEY] = 'set-old';
+
+		$targets = [];
+		$drafts = $this->createMock(ConfigurationDraftService::class);
+		$drafts->expects($this->once())->method('loadSet')->with('set-old')->willReturn($this->openSet('set-old'));
+		$drafts->expects($this->never())->method('openSet');
+		$drafts->method('draftValue')->willReturnCallback(
+			static function (ConfigurationDraftTarget $target, mixed $value) use (&$targets): ConfigurationDraft {
+				$targets[] = $target->setUuid;
+				return new ConfigurationDraft();
+			}
+		);
+
+		$gate = new SettingsDraftGate($drafts, $this->store(), new SettingsDomainMap(), $this->appConfig(), 'openregister');
+		$pending = $gate->draftIfEnabled(SettingsDomainMap::DOMAIN_RBAC, ['enabled' => false]);
+
+		$this->assertSame(['set-old'], $targets);
+		$this->assertSame('set-old', $pending['draftSet']['uuid']);
+		$this->assertSame(
+			'drafting is on, so nothing changed yet. Deploy the set "settings drafted on 2026-09-16" to make it live.',
+			$pending['message']
+		);
+		$this->assertSame('set-old', $this->appConfigValues[SettingsDraftGate::TARGET_SET_KEY]);
+	}//end testARememberedOpenSetTakesTheNextWrite()
+
+	public function testARememberedSetThatIsGoneOpensAFreshOne(): void {
+		$this->appConfigValues[SettingsDraftGate::DRAFTING_KEY] = '1';
+		$this->appConfigValues[SettingsDraftGate::TARGET_SET_KEY] = 'set-gone';
+
+		$drafts = $this->createMock(ConfigurationDraftService::class);
+		$drafts->method('loadSet')->willThrowException(new DeploymentRefusedException('unknown-set', 'no such set'));
+		$drafts->expects($this->once())->method('openSet')->willReturn($this->openSet('set-new'));
+
+		$gate = new SettingsDraftGate($drafts, $this->store(), new SettingsDomainMap(), $this->appConfig(), 'openregister');
+
+		$this->assertSame('set-new', $gate->targetSet()->getUuid());
+		$this->assertSame('set-new', $this->appConfigValues[SettingsDraftGate::TARGET_SET_KEY]);
+	}//end testARememberedSetThatIsGoneOpensAFreshOne()
 
 	private function handler(): ConfigurationSettingsHandler {
 		$groupManager = $this->createMock(IGroupManager::class);

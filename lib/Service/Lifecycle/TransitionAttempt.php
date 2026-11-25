@@ -40,12 +40,17 @@ final readonly class TransitionAttempt {
 	 *
 	 * @param LifecycleWrite $write The object after and before the write, its schema's slug and the lifecycle field.
 	 * @param TransitionMove $move  The transition's name and the states it moves between.
+	 * @param array<string, mixed> $conditions The schema's named conditions a rule may reference
+	 *                                         (`x-openregister-conditions`); empty refuses every reference.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public LifecycleWrite $write,
 		public TransitionMove $move,
+		public array $conditions = [],
 	) {
 	}//end __construct()
 }//end class

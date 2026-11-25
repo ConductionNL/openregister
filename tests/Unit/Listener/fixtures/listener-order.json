@@ -135,6 +135,9 @@
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener"
 	],
+	"OCA\\OpenRegister\\Event\\ObjectNoteAddedEvent": [
+		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener"
+	],
 	"OCA\\OpenRegister\\Event\\ObjectRevertedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener"
@@ -207,6 +210,15 @@
 	],
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"
+	],
+	"OCA\\OpenRegister\\Event\\PersonLinkUpdatedEvent": [
+		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\PersonLinkedEvent": [
+		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\PersonUnlinkedEvent": [
+		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\RegisterCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
@@ -380,6 +392,9 @@
 	],
 	"OCP\\User\\Events\\OutOfOfficeStartedEvent": [
 		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
+	],
+	"OCP\\User\\Events\\PostLoginEvent": [
+		"OCA\\OpenRegister\\Listener\\ServiceAccountLoginListener"
 	],
 	"OCP\\User\\Events\\UserCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"

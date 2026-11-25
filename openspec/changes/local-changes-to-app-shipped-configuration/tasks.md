@@ -10,9 +10,15 @@
       migration.
 - [x] 1.2a Schemas: recorded on create and moved on a guarded update, for
       `properties`, `required` and `authorization`.
-- [ ] 1.2b Registers and the declared configuration blocks. `KEY_REGISTER`
+- [x] 1.2b Registers and the declared configuration blocks. `KEY_REGISTER`
       exists and the store is subject-agnostic; the register import path is a
       second seam in the same 5,484-line handler and is its own task.
+      > second pass: `ShippedRegisterBaseline` records `title`, `description`,
+      > `authorization` and the declared `configuration` block of an app-shipped
+      > register at `register:<slug>` under `register.shippedBaseline`, after
+      > the row is written: on create and on an applied update, never on an
+      > import the version gate skipped. Recorded only; a guarded update of a
+      > register's parts and its divergence report are not built.
 - [x] 1.2c Annotations (`x-openregister-*`), as one more part,
       `configuration`, holding only keys of `AnnotationVocabulary::KEYS`
       (the keys that survive `setConfiguration()`), read from the top level
@@ -55,8 +61,17 @@
       part is a conflict, not a deletion.
 - [x] 3.3 `decisions` is a path list, per part, and each one writes a
       `configuration.conflict.decided` row on the trail.
-- [ ] 3.3b The surface an administrator takes that decision on. The service
+- [x] 3.3b The surface an administrator takes that decision on. The service
       accepts the decisions; nothing yet offers them.
+      > third pass: a guarded import now records its kept-local conflicts, each
+      > with both definitions, beside the baseline (`schema.shippedConflicts`),
+      > so the shipped definition is still there when somebody decides.
+      > `GET /api/schemas/{id}/shipped-baseline/conflicts` lists them and
+      > `POST /api/schemas/{id}/shipped-baseline/conflicts/accept` (`path`)
+      > takes the shipped definition for one part (`ShippedConflictService`,
+      > admin only): it writes only that leaf, moves the baseline at that path,
+      > drops the conflict and writes `configuration.conflict.decided` with the
+      > actor and both definitions. It refuses without a session. No UI page yet.
 - [x] 3.4 The guard has no throw in it, and `ImportHandler` treats an
       unresolvable guard as "import as before" rather than as a failure.
 

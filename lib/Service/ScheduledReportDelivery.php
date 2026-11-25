@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCP\IConfig;
 use OCP\Mail\IMailer;
+use OCP\L10N\IFactory;
 
 /**
  * How a finished report reaches people: through the owner (Files and
@@ -41,6 +42,7 @@ final class ScheduledReportDelivery {
 	 * @param IMailer                      $mailer Sends the email-delivery leg (deliveryMode email|both).
 	 * @param IConfig                      $config Resolves the instance's default mail sender.
 	 * @param ?AdminRecipientExpander     $adminRecipients Expands the @admins recipient token.
+	 * @param ?IFactory                   $l10nFactory     Renders the delivery mail in the owner's language.
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
@@ -49,6 +51,7 @@ final class ScheduledReportDelivery {
 		public readonly IMailer $mailer,
 		public readonly IConfig $config,
 		public readonly ?AdminRecipientExpander $adminRecipients = null,
+		public readonly ?IFactory $l10nFactory = null,
 	) {
 	}//end __construct()
 }//end class

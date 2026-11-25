@@ -126,9 +126,11 @@ final class MagicTableCreator {
 	 * @param array         $column The column definition.
 	 *
 	 * @return string The definition.
+	 *
+	 * @spec openspec/changes/put-preserve-key-order/specs/objects-crud/spec.md
 	 */
 	private function definition(MagicTableDdl $ddl, array $column): string {
-		$sql = new MagicColumnSql(isPostgres: $ddl->isPostgres, jsonAsText: $ddl->isMariaDb);
+		$sql = new MagicColumnSql(isPostgres: $ddl->isPostgres, jsonAsText: $ddl->isMariaDb, orderedJsonAsText: $ddl->reordersJsonKeys);
 		$colName = $sql->quote(name: $column['name']);
 		$def = $colName . ' ' . $sql->type(type: $column['type'], column: $column);
 

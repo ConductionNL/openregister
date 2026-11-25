@@ -85,6 +85,27 @@ class AuditEntryWriterTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testAnOrganisationIsStampedOnlyWhenGiven(): void {
+		$rows   = [];
+		$mapper = $this->createMock(originalClassName: AuditTrailMapperInterface::class);
+		$mapper->method('insertAuditTrails')->willReturnCallback(
+			static function (array $entries) use (&$rows): array {
+				$rows = $entries;
+				return $entries;
+			}
+		);
+
+		(new AuditEntryWriter(mapper: $mapper))->writeAuditEntries(
+			entries: [
+				new AuditEntry(uuid: 'u-1', action: 'query.run', user: 'alice', userName: 'Alice', changed: [], created: new DateTimeImmutable(), organisationId: 'org-7'),
+				new AuditEntry(uuid: 'u-2', action: 'query.run', user: 'alice', userName: 'Alice', changed: [], created: new DateTimeImmutable()),
+			]
+		);
+
+		$this->assertSame('org-7', $rows[0]->getOrganisationId());
+		$this->assertNull($rows[1]->getOrganisationId());
+	}//end testAnOrganisationIsStampedOnlyWhenGiven()
+
 	public function testAFailedWriteIsThrown(): void {
 		$mapper = $this->createMock(originalClassName: AuditTrailMapperInterface::class);
 		$mapper->method('insertAuditTrails')->willThrowException(new DBException('down'));

@@ -22,57 +22,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
+use OCA\OpenRegister\Kernel\Contracts\AnonymisationMethodsInterface;
+
 /**
  * The entity-recognition method values.
  *
  * Declared on an interface so the anonymisation settings endpoints and the
  * entity recognition handler can name the values without naming BackendState.
- * BackendState implements it, so BackendState::METHOD_* still resolves.
+ * BackendState implements it, so BackendState::METHOD_* still resolves. The
+ * values themselves are declared on the Kernel AnonymisationMethodsInterface.
  */
-interface BackendMethodsInterface {
-
-	/**
-	 * Regular-expression based recognition (always available fallback).
-	 */
-	public const METHOD_REGEX = 'regex';
-
-	/**
-	 * Microsoft Presidio HTTP backend.
-	 */
-	public const METHOD_PRESIDIO = 'presidio';
-
-	/**
-	 * OpenAnonymiser ExApp backend.
-	 */
-	public const METHOD_OPENANONYMISER = 'openanonymiser';
-
-	/**
-	 * LLM-based recognition backend.
-	 */
-	public const METHOD_LLM = 'llm';
-
-	/**
-	 * Hybrid backend composing regex + presidio + openanonymiser.
-	 */
-	public const METHOD_HYBRID = 'hybrid';
-
-	/**
-	 * Sentinel stored value meaning "no explicit operator choice yet".
-	 *
-	 * Resolved to a concrete method at state-query time (auto-select on first run).
-	 */
-	public const METHOD_AUTO = 'auto';
-
-	/**
-	 * The valid concrete method enum values.
-	 *
-	 * @var string[]
-	 */
-	public const METHODS = [
-		self::METHOD_REGEX,
-		self::METHOD_PRESIDIO,
-		self::METHOD_OPENANONYMISER,
-		self::METHOD_LLM,
-		self::METHOD_HYBRID,
-	];
+interface BackendMethodsInterface extends AnonymisationMethodsInterface {
 }//end interface

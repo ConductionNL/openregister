@@ -4148,7 +4148,7 @@ deptrac:
         - type: directory
           value: 'lib/AppHost/Store/Source/[^/]*$'
         - type: directory
-          value: 'lib/BackgroundJob/(CalendarLinkBackfillRun|ConnectionSeamReportJob|ContextChatSubmissionJob|HandoffQueueDrainJob|IntegrationsJobHandlesInterface|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
+          value: 'lib/BackgroundJob/(BackfillEmailLinkMessageIdJob|CalendarLinkBackfillRun|ConnectionSeamReportJob|ContextChatSubmissionJob|HandoffQueueDrainJob|IntegrationsJobHandlesInterface|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/OAuth2TokenRefreshServices[.]php$'
         - type: directory
@@ -4410,6 +4410,8 @@ deptrac:
         - type: directory
           value: 'lib/Notifications/Db/MessageMapperInterface[.]php$'
         - type: directory
+          value: 'lib/Notifications/Service/EmailLinkMessageIdBackfill[.]php$'
+        - type: directory
           value: 'lib/Notifications/Service/EmailLinkRequest[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/EmailLinkedSchemas[.]php$'
@@ -4419,6 +4421,8 @@ deptrac:
           value: 'lib/Notifications/Service/EmailService[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/EmailServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/OutboundMailLinkWriter[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/ReplyThreadService[.]php$'
         - type: directory
@@ -4755,6 +4759,8 @@ deptrac:
           value: 'lib/Service/File/UrlFileSource[.]php$'
         - type: directory
           value: 'lib/Service/File/UrlStreamOpener[.]php$'
+        - type: directory
+          value: 'lib/Service/Mail/[^/]*$'
         - type: directory
           value: 'lib/Service/Sharing/AccessLinkReaderFilters[.]php$'
         - type: directory
@@ -5387,8 +5393,6 @@ deptrac:
           value: 'lib/Service/Interaction/WatcherServiceInterface[.]php$'
         - type: directory
           value: 'lib/Service/Interaction/WatcherStore[.]php$'
-        - type: directory
-          value: 'lib/Service/Mail/[^/]*$'
         - type: directory
           value: 'lib/Service/Notification/AddressDeliveryServices[.]php$'
         - type: directory

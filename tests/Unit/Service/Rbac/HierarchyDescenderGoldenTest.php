@@ -178,11 +178,7 @@ final class HierarchyDescenderGoldenTest extends TestCase {
 		}
 
 		$db = $this->createMock(IDBConnection::class);
-		if ($schemaFails === true) {
-			$db->method('createSchema')->willThrowException(new RuntimeException('no schema'));
-		} else {
-			$db->method('createSchema')->willReturn($dbal);
-		}
+		$this->catalogue(db: $db, dbal: $schemaFails === true ? null : $dbal);
 
 		$db->method('getQueryBuilder')->willReturnCallback(fn () => $this->queryBuilder($rows));
 
@@ -480,7 +476,7 @@ final class HierarchyDescenderGoldenTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$dbal = new DbalSchema();
 		$dbal->createTable('oc_openregister_table_1_10')->addColumn('parent', 'string', ['length' => 40]);
-		$db->method('createSchema')->willReturn($dbal);
+		$this->catalogue(db: $db, dbal: $dbal);
 		$db->method('getQueryBuilder')->willThrowException(new RuntimeException('down'));
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);
@@ -549,4 +545,35 @@ final class HierarchyDescenderGoldenTest extends TestCase {
 			array_map(static fn (array $log): string => $log[2]['table'], $this->logs)
 		);
 	}//end testWhichRegistersClaimTheSchema()
+
+	/**
+	 * Answer the descender's catalogue query from a DBAL schema, or fail it when there is none.
+	 *
+	 * @param IDBConnection&\PHPUnit\Framework\MockObject\MockObject $db   The database double.
+	 * @param DbalSchema|null                                        $dbal The tables and columns.
+	 *
+	 * @return void
+	 */
+	private function catalogue(IDBConnection $db, ?DbalSchema $dbal): void {
+		$db->method('prepare')->willReturnCallback(
+			function (string $sql) use ($dbal): \OCP\DB\IPreparedStatement {
+				if ($dbal === null) {
+					throw new RuntimeException('no schema');
+				}
+
+				$rows = [];
+				foreach ($dbal->getTables() as $table) {
+					foreach ($table->getColumns() as $column) {
+						$rows[] = ['table_name' => $table->getName(), 'column_name' => $column->getName()];
+					}
+				}
+
+				$result = $this->createMock(\OCP\DB\IResult::class);
+				$result->method('fetchAll')->willReturn($rows);
+				$statement = $this->createMock(\OCP\DB\IPreparedStatement::class);
+				$statement->method('execute')->willReturn($result);
+				return $statement;
+			}
+		);
+	}//end catalogue()
 }//end class

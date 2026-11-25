@@ -30,6 +30,11 @@ namespace OCA\OpenRegister\Service\Lifecycle;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Kernel\Contracts\Core\FieldRulesSourceInterface;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
+use OCA\OpenRegister\Service\Rules\ConditionEvaluation;
+use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
+use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
+use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
+use OCA\OpenRegister\Service\Rules\NamedConditionScope;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -74,11 +79,20 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 	private array $memo = [];
 
 	/**
+	 * Resolves `$condition` references in a `when` or block `condition`.
+	 *
+	 * @var NamedConditionEvaluator
+	 */
+	private readonly NamedConditionEvaluator $named;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IUserSession $userSession The session naming the user a rule is resolved for.
 	 * @param IGroupManager $groupManager The group memberships a `groups` clause is tested against.
 	 * @param ConditionDialect $dialect The evaluator for a rule's `when` condition, in either dialect.
+	 * @param NamedConditionEvaluator|null $named The evaluator resolving named conditions; built over the
+	 *                                            same dialect when not given.
 	 *
 	 * @return void
 	 *
@@ -88,7 +102,9 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly ConditionDialect $dialect,
+		?NamedConditionEvaluator $named = null,
 	) {
+		$this->named = ($named ?? new NamedConditionEvaluator(dialect: $this->dialect, library: new NamedConditionLibrary()));
 	}//end __construct()
 
 	/**
@@ -167,6 +183,9 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 		if ($annotation === null) {
 			return new StateFieldRules();
 		}
+
+		// The schema's named conditions, so a `when` naming one resolves.
+		$annotation = NamedConditionScope::withLibrary(annotation: $annotation, configuration: $schema->getConfiguration());
 
 		$state = ($state ?? $this->stateOf(annotation: $annotation, data: $data));
 		if ($state === null) {
@@ -298,7 +317,11 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 			return new StateFieldRules(state: $state);
 		}
 
-		return $this->rulesFromBlock(block: $block, document: $this->document(data: $data, state: $state));
+		return $this->rulesFromBlock(
+			block: $block,
+			document: $this->document(data: $data, state: $state),
+			library: NamedConditionScope::libraryOf(annotation: $annotation)
+		);
 	}//end resolveFromAnnotation()
 
 	/**
@@ -306,17 +329,18 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 	 *
 	 * @param array<string, mixed> $block    The state's block.
 	 * @param array<string, mixed> $document The condition document; its `state` is the state the block belongs to.
+	 * @param array<string, mixed> $library  The schema's named conditions.
 	 *
 	 * @return StateFieldRules
 	 */
-	private function rulesFromBlock(array $block, array $document): StateFieldRules {
+	private function rulesFromBlock(array $block, array $document, array $library): StateFieldRules {
 		$state = $document['state'];
 
 		// The state block's own `condition` gates the whole block. It is the
 		// condition `RuleInventoryService` publishes for a `stateFieldRule`, so
 		// honouring it here is what keeps the operator's inventory honest: a
 		// rule listed as conditional must actually be conditional.
-		if ($this->blockConditionHolds(block: $block, document: $document) === false) {
+		if ($this->blockConditionHolds(block: $block, document: $document, library: $library) === false) {
 			return new StateFieldRules(state: $state);
 		}
 
@@ -325,7 +349,7 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 			return new StateFieldRules(state: $state);
 		}
 
-		[$resolved, $messages] = $this->collectFields(fields: $fields, document: $document);
+		[$resolved, $messages] = $this->collectFields(fields: $fields, document: $document, library: $library);
 
 		return new StateFieldRules(
 			state: $state,
@@ -343,23 +367,51 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 	 *
 	 * @param array<string, mixed> $block    The state's block.
 	 * @param array<string, mixed> $document The condition document.
+	 * @param array<string, mixed> $library  The schema's named conditions.
 	 *
 	 * @return bool
 	 */
-	private function blockConditionHolds(array $block, array $document): bool {
+	private function blockConditionHolds(array $block, array $document, array $library): bool {
 		$blockCondition = ($block['condition'] ?? null);
-		return $blockCondition === null || $this->dialect->holds(node: $blockCondition, document: $document) === true;
+		return $blockCondition === null || $this->conditionHolds(node: $blockCondition, document: $document, library: $library) === true;
 	}//end blockConditionHolds()
+
+	/**
+	 * Whether a rule's condition holds, resolving named conditions.
+	 *
+	 * 🔴 A named condition that cannot be resolved counts as HOLDING here, and
+	 * that is the closed direction for a field rule: the condition decides
+	 * whether a field is hidden, frozen or required, so an unresolvable one
+	 * keeps the restriction on rather than quietly lifting it. The schema save
+	 * refuses an undeclared name (1.3b), so this is reached only by a schema
+	 * stored before that check or written past the mapper.
+	 *
+	 * @param mixed                $node     The condition.
+	 * @param array<string, mixed> $document The condition document.
+	 * @param array<string, mixed> $library  The schema's named conditions.
+	 *
+	 * @return bool True when it holds, or when a named condition in it cannot be resolved.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function conditionHolds(mixed $node, array $document, array $library): bool {
+		try {
+			return $this->named->holds(node: $node, evaluation: new ConditionEvaluation(document: $document, library: $library, depth: 0));
+		} catch (ConditionRefusedException) {
+			return true;
+		}
+	}//end conditionHolds()
 
 	/**
 	 * The fields each kind names for this caller and object, and the first message per field.
 	 *
 	 * @param array<string, mixed> $fields   The block's `fields`.
 	 * @param array<string, mixed> $document The condition document.
+	 * @param array<string, mixed> $library  The schema's named conditions.
 	 *
 	 * @return array{0: array<string, array<string, string>>, 1: array<string, string>} [fields by kind, messages].
 	 */
-	private function collectFields(array $fields, array $document): array {
+	private function collectFields(array $fields, array $document, array $library): array {
 		$resolved = ['hidden' => [], 'readOnly' => [], 'required' => []];
 		$messages = [];
 
@@ -370,7 +422,7 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 			}
 
 			foreach ($entries as $entry) {
-				$names = $this->applicableFields(entry: $entry, document: $document);
+				$names = $this->applicableFields(entry: $entry, document: $document, library: $library);
 				// `+=` keeps the first message a field was given, and a field already listed.
 				$resolved[$kind] += array_combine($names, $names);
 				$messages        += self::messagesFor(entry: $entry, names: $names);
@@ -467,13 +519,14 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 	 *
 	 * @param mixed $entry The declared entry.
 	 * @param array<string, mixed> $document The evaluation document.
+	 * @param array<string, mixed> $library  The schema's named conditions.
 	 *
 	 * @return array<int, string> The field names, empty when the entry does not apply.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per tolerated spelling of
 	 *   `fields`, `field`, `when` and `condition`.
 	 */
-	private function applicableFields(mixed $entry, array $document): array {
+	private function applicableFields(mixed $entry, array $document, array $library): array {
 		if (is_array($entry) === false) {
 			return [];
 		}
@@ -482,7 +535,7 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 			return [];
 		}
 
-		if ($this->whenHolds(entry: $entry, document: $document) === false) {
+		if ($this->whenHolds(entry: $entry, document: $document, library: $library) === false) {
 			return [];
 		}
 
@@ -494,12 +547,13 @@ class StateFieldRuleResolver implements StateFieldRuleResolverInterface, FieldRu
 	 *
 	 * @param array<string, mixed> $entry    The rule entry.
 	 * @param array<string, mixed> $document The condition document.
+	 * @param array<string, mixed> $library  The schema's named conditions.
 	 *
 	 * @return bool
 	 */
-	private function whenHolds(array $entry, array $document): bool {
+	private function whenHolds(array $entry, array $document, array $library): bool {
 		$when = ($entry['when'] ?? ($entry['condition'] ?? null));
-		return $when === null || $this->dialect->holds(node: $when, document: $document) === true;
+		return $when === null || $this->conditionHolds(node: $when, document: $document, library: $library) === true;
 	}//end whenHolds()
 
 	/**

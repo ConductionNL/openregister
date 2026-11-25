@@ -230,13 +230,13 @@ class MagicMapperKeyOrderColumnTypeTest extends TestCase {
 	}//end testLegacyJsonMapsToPostgresJsonb()
 
 	/**
-	 * Both 'json' and 'json_ordered' collapse to MySQL JSON on non-PostgreSQL.
-	 * MySQL/MariaDB's JSON type stores documents in their original order, so
-	 * no platform-specific split is needed.
+	 * On MySQL 'json_ordered' is checked MEDIUMTEXT, not JSON: MySQL's JSON
+	 * type normalises documents and sorts object keys, which loses the order
+	 * a client saved.
 	 *
 	 * @return void
 	 */
-	public function testJsonOrderedMapsToMysqlJson(): void {
+	public function testJsonOrderedMapsToMysqlCheckedText(): void {
 		$mapper = $this->buildMapperWithoutConstructor();
 		$platform = $this->createMock(\Doctrine\DBAL\Platforms\MySQLPlatform::class);
 		$this->db->method('getDatabasePlatform')->willReturn($platform);
@@ -247,8 +247,10 @@ class MagicMapperKeyOrderColumnTypeTest extends TestCase {
 			['json_ordered', []]
 		);
 
-		$this->assertSame('JSON', $sql);
-	}//end testJsonOrderedMapsToMysqlJson()
+		// MySQL's JSON type sorts object keys, so ordered JSON is checked text there
+		// (openspec/changes/put-preserve-key-order).
+		$this->assertSame('MEDIUMTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin', $sql);
+	}//end testJsonOrderedMapsToMysqlCheckedText()
 
 	/**
 	 * findJsonbColumnsNeedingRetype() returns the column name when:

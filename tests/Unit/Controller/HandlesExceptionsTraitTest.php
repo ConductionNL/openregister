@@ -26,6 +26,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\Core\ServiceUnavailableExceptionInterface;
+use OCA\OpenRegister\Kernel\Contracts\UnavailableServiceExceptionInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http;
@@ -150,6 +151,20 @@ class HandlesExceptionsTraitTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
 	}//end testAnyServiceUnavailableExceptionAnswers503()
+
+	/**
+	 * The mapping matches the Kernel marker, which the Core marker extends, so it serves every area's controllers.
+	 *
+	 * @return void
+	 */
+	public function testTheKernelUnavailableMarkerAnswers503AndTheCoreMarkerExtendsIt(): void {
+		$this->assertTrue(is_a(ServiceUnavailableExceptionInterface::class, UnavailableServiceExceptionInterface::class, true));
+
+		$unavailable = new class('store offline') extends \RuntimeException implements UnavailableServiceExceptionInterface {
+		};
+		$response = $this->consumer($this->createMock(LoggerInterface::class))->translate($unavailable);
+		$this->assertSame(Http::STATUS_SERVICE_UNAVAILABLE, $response->getStatus());
+	}//end testTheKernelUnavailableMarkerAnswers503AndTheCoreMarkerExtendsIt()
 
 	/**
 	 * The AppHost exceptions carry the Core contract the mapping reads.

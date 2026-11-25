@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\IdempotentAnswerStoreInterface;
 use OCA\OpenRegister\Kernel\Contracts\ContactMatcherInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
@@ -224,6 +225,7 @@ use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormDestinationValidatorInterface;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
 use OCA\OpenRegister\Service\Form\FormIdempotencyStoreInterface;
+use OCA\OpenRegister\Service\Form\IdempotentAnswerStore;
 use OCA\OpenRegister\Service\Form\FormSubmitService;
 use OCA\OpenRegister\Service\Form\FormSubmitServiceInterface;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
@@ -412,6 +414,7 @@ final class ProcessesServiceBindings {
 		FormDefinitionResolverInterface::class           => FormDefinitionResolver::class,
 		FormDestinationValidatorInterface::class         => FormDestinationValidator::class,
 		FormIdempotencyStoreInterface::class             => FormIdempotencyStore::class,
+		IdempotentAnswerStoreInterface::class            => IdempotentAnswerStore::class,
 		FormSubmitServiceInterface::class                => FormSubmitService::class,
 		FormUploadStoreInterface::class                  => FormUploadStore::class,
 		OrganisationHaltServiceInterface::class          => OrganisationHaltService::class,

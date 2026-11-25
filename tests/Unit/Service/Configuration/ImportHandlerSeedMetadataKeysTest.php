@@ -99,6 +99,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugWrite
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\SlugRequest
  * @uses \OCA\OpenRegister\Service\Object\SaveObject\TemplateSource
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceResolver
  */
 class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	use BuildsObjectSlugHandler;

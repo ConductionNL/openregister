@@ -42,6 +42,7 @@ use OCA\OpenRegister\Dto\BulkRowCount;
 use OCA\OpenRegister\Dto\BulkSaveOutcomeInterface;
 use OCA\OpenRegister\Dto\BulkSaveOutcomes;
 use OCA\OpenRegister\Dto\StreamedRowCount;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\LockedException;
@@ -64,6 +65,7 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
 use OCA\OpenRegister\Service\Resilience\Sheddable;
@@ -79,7 +81,15 @@ use OCA\OpenRegister\Service\Resilience\Sheddable;
  * @spec openspec/specs/object-lifecycle/spec.md
  */
 class BulkController extends Controller {
+	use HandlesExceptionsTrait;
 	use ResolvesRegisterAndSchemaTrait;
+
+	/**
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	protected readonly ?LoggerInterface $logger;
 
 	/**
 	 * The most rows one atomic batch may carry. One transaction holds its locks
@@ -165,6 +175,7 @@ class BulkController extends Controller {
 		$this->groupManager = $services->platform->groupManager;
 		$this->db = $services->platform->db;
 		$this->schemaManageGate = $services->store->schemaManageGate;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -348,10 +359,7 @@ class BulkController extends Controller {
 
 			return $this->deleteResolved(resolved: $resolved);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Bulk delete operation failed: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Bulk delete operation failed');
 		}//end try
 	}//end delete()
 
@@ -758,10 +766,7 @@ class BulkController extends Controller {
 				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Bulk save operation failed: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Bulk save operation failed');
 		}//end try
 	}//end save()
 
@@ -979,7 +984,7 @@ class BulkController extends Controller {
 	 * retained records a 403 — deliberate refusals, not left to the generic 500.
 	 *
 	 * @param Exception $exception The failure.
-	 * @param string    $prefix    The message prefix of the generic 500.
+	 * @param string    $prefix    The log context of any other failure, which answers through handleApiException().
 	 *
 	 * @return JSONResponse The answer.
 	 */
@@ -996,10 +1001,7 @@ class BulkController extends Controller {
 			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
 		}
 
-		return new JSONResponse(
-			data: ['error' => $prefix . $exception->getMessage()],
-			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-		);
+		return $this->handleApiException(e: $exception, context: rtrim(string: $prefix, characters: ': '));
 	}//end tableDeleteFailure()
 
 	/**

@@ -2,7 +2,7 @@
 
 ## 1. Provider
 
-- [ ] 1.1 Add the `kind` field and file hits to the provider's result shape.
+- [x] 1.1 Add the `kind` field and file hits to the provider's result shape.
 - [x] 1.2 Parse scopes from the query and narrow the schema list before the
       PR 3528 chunk loop.
 - [x] 1.3 Advertise available scopes in the OCS capability.
@@ -10,7 +10,7 @@
 ## 2. Storage paths
 
 - [ ] 2.1 Backend path: query object and file collections in one round trip.
-- [ ] 2.2 Database path: file-chunk `LIKE` bounded by page size; name the
+- [x] 2.2 Database path: file-chunk `LIKE` bounded by page size; name the
       backend in the response.
 
 ## 3. Tests
@@ -96,3 +96,45 @@ more in `SearchScopesTest`, one provider-level `app:` test in
 The scopes were taken first because they are the half that is complete on its
 own: a caller can narrow a search today, and nothing about the result shape had
 to change to allow it.
+
+## What the third pass built: file hits (1.1) and the database path (2.2)
+
+`lib/Search/FileHitSearch.php` is the file arm. It asks the file-chunk table
+(`ChunkMapper::searchByKeyword()`, `source_type=file`, ranked on PostgreSQL and
+the unranked `LIKE` elsewhere) for at most one page of chunks, keeps one hit per
+file, and resolves each file to its owning object through `MagicMapper::find()`
+with RBAC and tenancy on. A file whose object the caller may not read, that is
+soft-deleted, or whose schema is not among the searched (searchable, scoped)
+schemas is no hit.
+
+`ObjectsProvider` marks every entry with the attributes `kind` (`object` or
+`file`) and `backend` (`database`). A file hit's title is the file name, its
+subline the excerpt around the term and the object's title, and its link the
+owning object's deep link; it also carries `fileId` and `fileName`.
+
+🔴 **ONE HIT, NOT TWO.** With the file arm wired the object arm no longer sets
+`_content_search`, which answered a file match as its OWNING OBJECT. Keeping
+both would list the same match twice, once as an object that does not contain
+the word. Without the file arm (a construction that does not pass it) the older
+widening stays.
+
+🔑 **FILE HITS RIDE ON THE FIRST PAGE ONLY**, after the object hits and bounded
+by the page size, so paging through the object hits never repeats them and the
+page boundary stays where the object arm put it.
+
+🔑 **`files` IS A KIND.** Alone it searches every searchable schema and answers
+file hits only; with place scopes it answers the file hits in those places. A
+`register` filter narrows file hits as it narrows object hits. The capability
+now offers `files`, after the place scopes, once anything is readable.
+
+Tests: `tests/Unit/Search/ContentSearchFileHitsTest.php` (7), through
+`ObjectsProvider::search()`; one assertion added to `SearchScopesCapabilityTest`.
+
+## Still not built
+
+- **2.1, the backend path.** There is no backend to query: the external
+  Solr/Elasticsearch tier was removed and `SearchBackendHandler` names
+  `database` as the only backend. The response already names the backend, so a
+  backend added later only has to answer the same shape.
+- **3.2, the e2e.** Needs a live instance with an attached, extracted file.
+

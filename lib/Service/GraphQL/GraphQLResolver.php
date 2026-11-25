@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Object\RelationLookup;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\BoundedQueryRunInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -144,14 +145,25 @@ class GraphQLResolver {
 	 *
 	 * @param Schema $schema The register schema
 	 * @param array $args Query arguments (filter, sort, search, fuzzy, first, offset, after, facets, selfFilter)
+	 * @param array|null $context The resolver context; carries a BoundedRun when the admin query console runs the query
 	 *
 	 * @return array<string, mixed> The connection result
 	 *
 	 * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
 	 */
-	public function resolveList(Schema $schema, array $args): array {
+	public function resolveList(Schema $schema, array $args, ?array $context = null): array {
 		// Check schema-level RBAC.
 		$this->checkSchemaPermission(schema: $schema, action: 'read');
+
+		// A bounded run (the admin query console) caps the rows across the whole
+		// document and refuses the rest once its deadline has passed. The cap
+		// and deadline ride in the context; an ordinary GraphQL request carries
+		// neither, so nothing here changes for it.
+		$bounded = ($context[BoundedQueryRunInterface::CONTEXT_KEY] ?? null);
+		if ($bounded instanceof BoundedQueryRunInterface === true) {
+			$bounded->assertWithinDeadline();
+			$args['first'] = $bounded->clampFirst(requested: (int) ($args['first'] ?? 20));
+		}
 
 		$register = $this->findRegisterForSchema(schema: $schema);
 		$request = new ListRequest(schema: $schema, register: $register, args: $args);
@@ -167,6 +179,10 @@ class GraphQLResolver {
 			if ($item instanceof ObjectEntity === true || is_array(value: $item) === true) {
 				$filteredResults[] = $this->filterProperties(schema: $schema, item: $item);
 			}
+		}
+
+		if ($bounded instanceof BoundedQueryRunInterface === true) {
+			$bounded->consume(rows: count($filteredResults));
 		}
 
 		$connection = new ListConnection(result: $result, request: $request);

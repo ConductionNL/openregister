@@ -40,6 +40,7 @@ use Stringable;
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicUnprocessedUploads
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicSharePrincipals
  * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\Schema
