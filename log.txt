@@ -4704,3 +4704,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T04:11:29Z session-20261125T032623-2e0f3b85 learniq builder: UNBLOCK 1 for today-first T3: nextcloud-vue #2346 (views[].visibleWhen, schema 2.200.0) draft, full jest running; learniq draft #2760 waits for its release
 2026-11-25T04:12:00Z precheck-20261125T021556-9b3c5d51 GREEN tree 4f5266b4fd on dev 9d807a8d7f prs 1 front=skip: Tests: 66044, Assertions: 233790, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-25T04:12:35Z precheck-20261125T021556-9b3c5d51 CONFLICT-DEV #10515 1e9f351f
+2026-11-25T04:12:44Z precheck-20261125T032724-4a6e09ce GREEN tree ef587047e3 on dev 9d807a8d7f prs 1 front=skip: Tests: 66044, Assertions: 233796, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
