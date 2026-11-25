@@ -23,9 +23,6 @@
 namespace OCA\OpenRegister\Mcp\Listener;
 
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
-use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
-use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
-use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Tool\McpProviderBridge;
@@ -44,6 +41,17 @@ use Psr\Log\LoggerInterface;
  * @template-implements IEventListener<ToolRegistrationEvent>
  */
 class ToolRegistrationListener implements IEventListener {
+
+	/**
+	 * The built-in MCP providers whose tools the hardcoded ToolRegistry entries
+	 * already cover. Named as strings and checked with is_a(), so the listener
+	 * does not depend on the three classes.
+	 */
+	private const COVERED_PROVIDERS = [
+		'OCA\\OpenRegister\\Mcp\\BuiltIn\\RegistersToolProvider',
+		'OCA\\OpenRegister\\Mcp\\BuiltIn\\SchemasToolProvider',
+		'OCA\\OpenRegister\\Mcp\\BuiltIn\\ObjectsToolProvider',
+	];
 
 	/**
 	 * Constructor
@@ -199,9 +207,13 @@ class ToolRegistrationListener implements IEventListener {
 			return true;
 		}
 
-		return $provider instanceof RegistersToolProvider
-			|| $provider instanceof SchemasToolProvider
-			|| $provider instanceof ObjectsToolProvider;
+		foreach (self::COVERED_PROVIDERS as $class) {
+			if (is_a($provider, $class) === true) {
+				return true;
+			}
+		}
+
+		return false;
 	}//end coveredByBuiltinEntries()
 
 	/**

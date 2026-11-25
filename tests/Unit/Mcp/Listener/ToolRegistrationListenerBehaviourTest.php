@@ -139,13 +139,13 @@ class ToolRegistrationListenerBehaviourTest extends TestCase {
 	 * @return void
 	 */
 	public function testOwnProvidersAreNotBridged(): void {
-		$registers = $this->createMock(RegistersToolProvider::class);
+		$registers = $this->createMock(originalClassName: RegistersToolProvider::class);
 		$registers->method('getAppId')->willReturn('openregister');
 		$registers->method('getTools')->willReturn([['id' => 'openregister.listRegisters']]);
-		$schemas = $this->createMock(SchemasToolProvider::class);
+		$schemas = $this->createMock(originalClassName: SchemasToolProvider::class);
 		$schemas->method('getAppId')->willReturn('openregister');
 		$schemas->method('getTools')->willReturn([['id' => 'openregister.listSchemas']]);
-		$objects = $this->createMock(ObjectsToolProvider::class);
+		$objects = $this->createMock(originalClassName: ObjectsToolProvider::class);
 		$objects->method('getAppId')->willReturn('openregister');
 		$objects->method('getTools')->willReturn([['id' => 'openregister.listObjects']]);
 
@@ -156,11 +156,11 @@ class ToolRegistrationListenerBehaviourTest extends TestCase {
 			$registers,
 			$schemas,
 			$objects,
-			$this->provider('openregister', [['id' => 'openregister.runFlow']]),
-			$this->provider('decidesk', [['id' => 'decidesk.list']]),
+			$this->provider(appId: 'openregister', tools: [['id' => 'openregister.runFlow']]),
+			$this->provider(appId: 'decidesk', tools: [['id' => 'decidesk.list']]),
 		]);
 
-		$this->assertSame(['openregister.runFlow', 'decidesk.list'], array_keys($this->dispatch()));
+		$this->assertSame(expected: ['openregister.runFlow', 'decidesk.list'], actual: array_keys($this->dispatch()));
 	}//end testOwnProvidersAreNotBridged()
 
 	/**
