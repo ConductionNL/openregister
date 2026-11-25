@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Object;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -88,6 +89,8 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private const GOLDEN = __DIR__.'/../../../fixtures/permission-handler/decision-flow-golden.json';
 
@@ -213,6 +216,7 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 		$manager = $this->createStub(IUserManager::class);
 		$manager->method('get')->willReturnCallback(static fn (string $uid): ?IUser => ($users[$uid] ?? null));
 		$groups = $this->createStub(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturnCallback(static fn (IUser $user): array => self::GROUPS[$user->getUID()]);
 		$editors = $this->createStub(IGroup::class);
 		$editors->method('getUsers')->willReturn([$users['alice'], $users['bob']]);

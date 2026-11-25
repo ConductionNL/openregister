@@ -2,6 +2,7 @@
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\Endpoint;
@@ -42,6 +43,8 @@ use Psr\Log\LoggerInterface;
  * and would fail loudly if it went missing again.
  */
 class TestableEndpointService extends EndpointService {
+	use AdminFollowsGroups;
+
 	public function __construct(
 		EndpointLogMapper $endpointLogMapper,
 		LoggerInterface $logger,
@@ -119,6 +122,7 @@ class EndpointServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->agentMapper = $this->createMock(AgentMapper::class);
 
 		$this->service = $this->buildService($this->agentMapper);

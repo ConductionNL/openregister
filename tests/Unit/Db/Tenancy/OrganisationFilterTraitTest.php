@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\Tenancy;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait;
 use OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait;
@@ -45,6 +46,8 @@ use Psr\Log\LoggerInterface;
  * A mapper-shaped host for the filter, with only the collaborators a case gives it.
  */
 final class OrganisationFilterHost {
+	use AdminFollowsGroups;
+
 	use TenancyIdentityTrait;
 	use OrganisationFilterTrait;
 
@@ -210,6 +213,8 @@ final class OrganisationFilterTraitTest extends TestCase {
 		);
 
 		$groupManager = $this->createMock(IGroupManager::class);
+
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		$deps = ['userSession' => $session, 'organisationMapper' => $organisations, 'appConfig' => $appConfig, 'groupManager' => $groupManager];

@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\VerwerkingsactiviteitenController;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
@@ -49,6 +50,8 @@ use PHPUnit\Framework\TestCase;
  * Who is given which activities and counts in the accountability report.
  */
 final class AccountabilityReportScopeTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * The recording of the administrator's report.
@@ -189,6 +192,7 @@ final class AccountabilityReportScopeTest extends TestCase {
 
 		$session = $this->createMock(IUserSession::class);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		if ($uid !== null) {
 			$user = $this->createMock(IUser::class);
 			$user->method('getUID')->willReturn($uid);

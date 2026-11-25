@@ -101,11 +101,7 @@ class AdminGate implements AdminGateInterface {
 			$uid = $user->getUID();
 		}
 
-		if ($uid === '') {
-			return false;
-		}
-
-		return $groupManager->isAdmin($uid);
+		return ($groupManager->isAdmin($uid) === true);
 	}//end isAdministrator()
 
 	/**

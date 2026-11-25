@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
@@ -52,6 +53,8 @@ use OCA\OpenRegister\Controller\Support\ProcessingLogControllerServices;
  * Allowed and refused outcomes of the processing-log API.
  */
 final class ProcessingLogControllerA24GoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * The log mapper of the controller under test.
@@ -115,6 +118,7 @@ final class ProcessingLogControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturn($groupIds);
 		$groups->method('isAdmin')->willReturn(false);
 

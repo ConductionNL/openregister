@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\ScopesController;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Db\Register;
@@ -46,6 +47,8 @@ use OCA\OpenRegister\Service\Object\ProvenanceRequest;
  * Pins what each caller (anonymous, member, admin) is told it may do, and every fallback.
  */
 class ScopesControllerA24GoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 	/**
 	 * The userSession of the case.
 	 *
@@ -87,6 +90,7 @@ class ScopesControllerA24GoldenTest extends TestCase {
 		parent::setUp();
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->registers = $this->createMock(RegisterMapperInterface::class);
 		$this->schemas = $this->createMock(SchemaMapperInterface::class);
 		$this->permissions = $this->createMock(PermissionHandlerInterface::class);

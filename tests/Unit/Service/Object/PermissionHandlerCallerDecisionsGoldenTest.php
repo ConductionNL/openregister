@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Object;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Service\Object\DenialQuestion;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -71,6 +72,8 @@ use Throwable;
  * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private const GOLDEN = __DIR__.'/../../../fixtures/permission-handler/caller-decisions-golden.json';
 
@@ -123,6 +126,7 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 		$manager = $this->createStub(IUserManager::class);
 		$manager->method('get')->willReturnCallback(static fn (string $uid): ?IUser => ($users[$uid] ?? null));
 		$groups = $this->createStub(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturnCallback(static fn (IUser $user): array => self::GROUPS[$user->getUID()]);
 
 		$matcher = $this->createStub(ConditionMatcher::class);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use Exception;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
@@ -51,6 +52,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
  * @package Unit\Controller
  */
 class ObjectsControllerTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private ObjectsController $controller;
 	private IRequest&MockObject $request;
@@ -88,6 +91,7 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->exportService = $this->createMock(ExportService::class);
 		$this->importService = $this->createMock(ImportService::class);
 		$this->writeRequestDispatcher = $this->createMock(originalClassName: IEventDispatcher::class);
