@@ -12,7 +12,7 @@
 
 ## 3. Page
 
-- [ ] 3.1 Add `src/views/operations/QueryConsoleSection.vue` to `OperationsConsoleIndex.vue`: query and variables editors on `vue-codemirror6`, run, result table with row count, truncation and duration, raw JSON toggle, and the two downloads (design D-5). Verify: `src/views/operations/QueryConsoleSection.spec.js` renders a fixture result, shows the truncation notice at 1,000 rows, and calls the export route with `format=csv`.
+- [x] 3.1 Add `src/views/operations/QueryConsoleSection.vue` to `OperationsConsoleIndex.vue`: query and variables editors on `vue-codemirror6`, run, result table with row count, truncation and duration, raw JSON toggle, and the two downloads (design D-5). Verify: `src/views/operations/QueryConsoleSection.spec.js` renders a fixture result, shows the truncation notice at 1,000 rows, and calls the export route with `format=csv`. (verified: src/views/operations/QueryConsoleSection.vue after Maintenance on the operations page, administrators only, editor loaded on demand; src/views/operations/QueryConsoleSection.spec.js renders a fixture result, the 1,000-row truncation notice, the CSV export call with format=csv, the READ_ONLY refusal and the raw JSON toggle. Texts in en, nl and de.)
 
 ## 4. Docs and end-to-end test
 

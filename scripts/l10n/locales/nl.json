@@ -125,6 +125,7 @@
 		"Markt": "The source string is already Dutch (market); a schema title in a Dutch municipal register.",
 		"Openbare verlichting": "The source string is already Dutch (public lighting); a schema title in a Dutch municipal register.",
 		"Wegen en paden": "The source string is already Dutch (roads and paths); a schema title in a Dutch municipal register.",
-		"Diagram": "The native word for a drawn diagram is spelled identically to English."
+		"Diagram": "The native word for a drawn diagram is spelled identically to English.",
+		"Query": "The GraphQL query the console runs. Dutch technical usage keeps \"query\" (see \"Extra queryparameters\"); \"zoekopdracht\" would mean a search, which this is not."
 	}
 }
