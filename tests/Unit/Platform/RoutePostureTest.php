@@ -134,6 +134,8 @@ final class RoutePostureTest extends TestCase {
 		'Controller\\IconController::mdi' => self::PUBLIC_DOCUMENT,
 		'Controller\\ManifestController::index' => self::PUBLIC_DOCUMENT,
 		'Controller\\McpController::discover' => self::PUBLIC_DOCUMENT,
+		'Controller\\OasController::conformance' => self::PUBLIC_DOCUMENT,
+		'Controller\\OasController::conformanceAll' => self::PUBLIC_DOCUMENT,
 		'Controller\\OasController::generate' => self::PUBLIC_DOCUMENT,
 		'Controller\\OasController::generateAll' => self::PUBLIC_DOCUMENT,
 		'Controller\\ObjectExportController::export' => self::OBJECT_RULE,

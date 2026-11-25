@@ -965,6 +965,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 *
 	 * @return bool True if user is in admin group
 	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
 		$user = $this->caller->userSession->getUser();
