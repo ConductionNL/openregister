@@ -8,8 +8,7 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 <template>
 	<NcDialog
 		v-if="navigationStore.modal === 'exportRegister'"
-		name="export-register-dialog"
-		:title="t('openregister', 'Export Objects')"
+		:name="t('openregister', 'Export Objects')"
 		size="small"
 		noClose>
 		<NcNoteCard v-if="error" type="error">
