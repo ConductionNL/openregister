@@ -34,10 +34,19 @@
       not the administrator who pressed Save: the edit and the supersession are
       different acts, and attributing thousands of them to one person reads as
       though they moved each deadline by hand.
-- [ ] 1.2b The calendar VERSION inside the ledger event. The reason string
+- [x] 1.2b The calendar VERSION inside the ledger event. The reason string
       carries `calendar-changed`; threading the version through
       `FlowTimerService::record()` means widening that signature, which touches
       every other supersession reason.
+      > 2026-11-24: built WITHOUT widening `record()`. `CalendarBatch::reason()`
+      > is `calendar-changed: <slug> version <version>`, `CalendarRecompute`
+      > hands it to the supersede action, and the job passes it to
+      > `FlowTimerService::supersede()` as the `TimerChange` reason, so the
+      > ledger row names the calendar version. The reason still starts with
+      > `calendar-changed` (ledger column is 1024 long).
+      > (`CalendarRecomputeTest::testTheSupersedeReasonCarriesTheCalendarVersion`,
+      > `testTheBatchReasonDiffersPerVersion`,
+      > `RecomputeTimersForCalendarJobTest::testTheOpenTimersAreSupersededAndTheVersionMarked`)
 
 ## 2. Observation and job
 
