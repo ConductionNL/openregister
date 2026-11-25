@@ -950,3 +950,4 @@
 2026-11-25T13:30:44Z versioniq: thematiq#2055 (theme-converter-paste e2e) is MERGED (12:56Z); its COORDINATOR-QUEUE line is done
 2026-11-25T13:30:50Z b-stackiq live: merged stackiq #2207 (Newman envs used pre-rename schema slugs -> every request 404; live-recorded contract-expiry fires once per end date, suggestions Newman 6/6, Dutch modal spot-check) and #2208 (archived contracts-expiry-warning-fires, i18n-wrap-hardcoded-object-modal-strings)
 2026-11-25T13:31:10Z help-launchpad-2 merged launchpad #2028 e2e-red keyboard-widget-repositioning 3/3 live (spec needed an admin-owned switcher row; now seeds its own dashboard + text widget)
+2026-11-25T13:31:29Z live-portaliq-1 merged portaliq #2734 (admin-rights-page T03 live: scenario groups Servicedesk 5/1 right, Communicatie 3/2 rights on /admin-rights, non-admin 403; board's topic-scoped table/editor/2FA/audit belong to operate-roles-for-content-and-actions; archived, REQ-ARP-001 synced)
