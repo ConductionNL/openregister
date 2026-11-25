@@ -73,6 +73,7 @@ use ReflectionClass;
  * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  * @uses \OCA\OpenRegister\Service\Configuration\ConfigurationImportRecords
  * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
+ * @uses \OCA\OpenRegister\Service\Configuration\SeedReferenceResolver
  */
 class ImportHandlerSeedDataGoldenTest extends TestCase {
 
