@@ -12,6 +12,7 @@ jest.mock('vue', () => ({
 jest.mock('./views/dashboard/DashboardIndex.vue', () => ({ __esModule: true, default: { name: 'Dashboard' } }))
 jest.mock('./views/register/RegistersIndex.vue', () => ({ __esModule: true, default: { name: 'RegistersIndex' } }))
 jest.mock('./views/register/RegisterDetail.vue', () => ({ __esModule: true, default: { name: 'RegisterDetail' } }))
+jest.mock('./views/register/RegisterApi.vue', () => ({ __esModule: true, default: { name: 'RegisterApi' } }))
 jest.mock('./views/schema/SchemasIndex.vue', () => ({ __esModule: true, default: { name: 'SchemasIndex' } }))
 jest.mock('./views/schema/SchemaDetails.vue', () => ({ __esModule: true, default: { name: 'SchemaDetails' } }))
 jest.mock('./views/source/SourcesIndex.vue', () => ({ __esModule: true, default: { name: 'SourcesIndex' } }))
@@ -52,6 +53,7 @@ const EXPECTED = [
 	['Dashboard', 'Dashboard'],
 	['RegistersIndex', 'RegistersIndex'],
 	['RegisterDetail', 'RegisterDetail'],
+	['RegisterApi', 'RegisterApi'],
 	['SchemasIndex', 'SchemasIndex'],
 	['SchemaDetails', 'SchemaDetails'],
 	['SourcesIndex', 'SourcesIndex'],

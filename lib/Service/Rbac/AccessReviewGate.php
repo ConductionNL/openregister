@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -77,7 +78,13 @@ class AccessReviewGate implements AccessReviewGateInterface {
 	public function resolve(ObjectRef $ref): ?ObjectEntity {
 		$this->objectService->setRegister((string)$ref->register);
 		$this->objectService->setSchema((string)$ref->schema);
-		$this->objectService->setObject($ref->id);
+		try {
+			$this->objectService->setObject($ref->id);
+		} catch (DoesNotExistException $e) {
+			// The lookup is RBAC-bounded: an unreadable row and a missing one
+			// both land here, and both are the caller's 404, not a 500.
+			return null;
+		}
 
 		return $this->currentObject();
 	}//end resolve()
