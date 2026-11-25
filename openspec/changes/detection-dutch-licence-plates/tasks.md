@@ -16,7 +16,8 @@
 
 ## 4. Tests and docs
 
-- [ ] 4.1 Add `tests/e2e/ci/licence-plate-detection.spec.ts`: upload a text file with a plate, a BSN and a case number, extract, read `GET /api/entities`, anonymise, and assert the placeholders.
+- [x] 4.1 Add `tests/e2e/ci/licence-plate-detection.spec.ts`: upload a text file with a plate, a BSN and a case number, extract, read `GET /api/entities`, anonymise, and assert the placeholders.
+  - 2026-11-25: 2 passed against a sandbox Nextcloud 34 on MariaDB with the regex method and the `nl` set: the plate is a `LICENSE_PLATE`, `111222333` an `SSN`, the case number `ZK-12-AB-34` no plate and `123456789` no SSN; for a Dutch reader the copy reads `[KENTEKEN: n]` and `[BSN: n]` and holds neither value. The scenario's `[KENTEKEN-1]` is corrected to `[KENTEKEN: 1]`, the shape every anonymisation spec pins and the code writes. Seen, not changed (not this change's code): the generic PHONE pattern `\+?[1-9]\d{1,14}` in `EntityRecognitionHandler::getRegexPatterns()` takes any run of two or more digits for a phone number, so `123456789` and the `12` and `34` of the case number are anonymised as `[TELEFOONNUMMER: n]`.
 - [ ] 4.2 Update `docs/features/ner-nlp-concepts.md` with the jurisdiction sets, the plate type, the guard and the setting, with a screenshot of the setting.
 
 Acceptance:

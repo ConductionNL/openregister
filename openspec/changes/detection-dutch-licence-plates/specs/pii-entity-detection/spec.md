@@ -15,14 +15,14 @@ translatable, reading `KENTEKEN` on a Dutch instance.
 - **AND** a text file whose content reads "Het voertuig met kenteken 12-GBK-3 stond geparkeerd"
 - **WHEN** the officer calls `POST /api/files/{fileId}/extract` and then `GET /api/entities`
 - **THEN** the response lists one entity with type `LICENSE_PLATE` and value `12-GBK-3`
-- @e2e exclude {specified only; task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e tests/e2e/ci/licence-plate-detection.spec.ts
 
 #### Scenario: the anonymised copy shows a Dutch placeholder
 
 - **GIVEN** the same file with its plate detected, on an instance whose language is Dutch
 - **WHEN** the officer calls `POST /api/files/{fileId}/anonymize`
-- **THEN** the anonymised copy reads `[KENTEKEN-1]` where the plate was, and the plate text appears nowhere in it
-- @e2e exclude {specified only; task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- **THEN** the anonymised copy reads `[KENTEKEN: 1]` where the plate was, and the plate text appears nowhere in it
+- @e2e tests/e2e/ci/licence-plate-detection.spec.ts
 
 ### Requirement: Jurisdiction identifiers come from a pattern set per country
 
@@ -44,7 +44,7 @@ SHALL call it rather than carry its own copy.
 - **GIVEN** a text holding "BSN 111222333" and "nummer 123456789"
 - **WHEN** the `nl` pattern set runs over it
 - **THEN** one `SSN` entity is returned, for `111222333`, and `123456789` is not flagged
-- @e2e exclude {specified only; task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e tests/e2e/ci/licence-plate-detection.spec.ts
 
 ### Requirement: A plate-shaped token is not a plate without proof
 
