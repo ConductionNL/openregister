@@ -165,6 +165,38 @@ class AggregationControllerTimeseriesTest extends TestCase {
 	}//end testHappyPathReturnsGroups()
 
 	/**
+	 * The report contract's period reaches the validator: `dateField`,
+	 * `from` and `to` are read from the request.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/aggregations-a-shipped-report-may-rely-on/specs/aggregation-api/spec.md#requirement-a-shipped-report-shall-be-able-to-rely-on-a-stable-count-by-aggregation
+	 */
+	public function testThePeriodOnANamedDateFieldReachesTheValidator(): void {
+		$params = ['field' => 'district', 'dateField' => 'startDate', 'from' => '2027-03-01', 'to' => '2027-04-01'];
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => ($params[$key] ?? $default)
+		);
+		$this->runner->method('findSchema')->willReturn($this->createMock(originalClassName: Schema::class));
+		$this->runner->method('runAdhocByRef')->willReturn(['groups' => [], 'backend' => 'sqlite', 'cached' => false]);
+
+		$seen = null;
+		$this->validator->expects($this->once())->method('validate')->willReturnCallback(
+			static function (array $input) use (&$seen): AggregationQuery {
+				$seen = $input;
+				return AggregationQuery::create(metric: 'count', layout: new AggregationLayout(groupBy: ['field' => 'district']));
+			}
+		);
+
+		$response = $this->controller->timeseries(register: 'reg', schema: 'sch');
+
+		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+		$this->assertSame(expected: 'startDate', actual: $seen['dateField']);
+		$this->assertSame(expected: '2027-03-01', actual: $seen['from']);
+		$this->assertSame(expected: '2027-04-01', actual: $seen['to']);
+	}//end testThePeriodOnANamedDateFieldReachesTheValidator()
+
+	/**
 	 * Register-not-found from runner → 404 (the runner's
 	 * `runAdhocByRef` resolves both register and schema; either
 	 * missing surfaces as RuntimeException).
