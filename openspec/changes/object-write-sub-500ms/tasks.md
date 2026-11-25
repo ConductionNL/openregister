@@ -124,6 +124,17 @@ that number is read, so "done" is a measurement rather than an opinion.
       *visibility of the result*, not *which row is loaded* — apply them after
       the map, never as part of its key). Target: ≤ 5 schema reads per create.
 
+      PARTLY BUILT (2026-11-14): the RBAC flag is out of `find()`'s cache key —
+      `find()` never used it to choose a row, so both RBAC settings now share
+      one entry. A schema found by its own primary key under the organisation
+      filter also answers the unfiltered lookup of that id. Still open: the
+      multitenancy flag is still in the key, because applying the organisation
+      filter to a cached value means re-implementing the trait's scope in PHP,
+      and the bulk and slug-scoped reads (`findMultipleOptimized`,
+      `findBySlugInIds`, `findInIds`) do not go through the map yet (they
+      return uncomposed rows, so sharing the map would change their values).
+      The ≤ 5 reads target is a live measurement.
+
 - [ ] **Task 3 — make the miss path cheap.**
       Only for reads that genuinely miss the map:
       - stop `SELECT *` where only metadata is needed — the `properties` blob
@@ -135,10 +146,61 @@ that number is read, so "done" is a measurement rather than an opinion.
         one arm the caller actually has — a disjunction over three columns
         cannot use an index on any of them.
 
-- [ ] **Task 4 — cross-request cache.**
+      PARTLY BUILT (2026-11-14): `find()` now queries one column per
+      statement — id (numeric identifiers only), then uuid, then slug —
+      stopping at the first hit, and `Version1Date20261114170000` creates
+      `idx_schemas_lower_slug ON (LOWER(slug))` on PostgreSQL and SQLite.
+      Still open: narrowing `SELECT *` needs the read-trace histogram to say
+      which callers want metadata only.
+      2026-11-14 (c4): `findInIds()` now walks the same one-column arms as
+      `find()` (id for a numeric identifier, then uuid, then slug), each
+      narrowed to the register's id set, first hit wins; the combined
+      `uuid OR LOWER(slug) OR id` builder is gone from `SchemaMapper`.
+      Pinned in `SchemaMapperIdentifierArmsTest` (4 tests) and the re-recorded
+      `schema-mapper-find-in-ids-golden.json`.
+      2026-11-15 (c5): the register half. `RegisterMapper::find()` walks the
+      same arms (`SchemaMapper::identifierArms()`), each under the
+      organisation filter, oldest row first, capped to one; the
+      before-filter probe only runs on a miss, so a hit is one query instead
+      of two. `Version1Date20261115090000` creates `idx_registers_lower_slug`
+      on PostgreSQL and SQLite. Pinned in `RegisterMapperIdentifierArmsTest`
+      (6 tests) and the re-recorded `register-mapper-find-golden.json` (same
+      outcomes and cache keys for every case). The combined builder is gone
+      from `RegisterMapper` too. Only the `SELECT *` narrowing remains.
+      2026-11-16 (c7): with the task 4 row cache, the id-set-scoped reads
+      (`findInIds()`, `findBySlugInIds()`) select only the probe columns too
+      and complete the row from the cache or one read by primary key, the way
+      `find()` does; without a local cache they read whole rows as before.
+      The bulk `findMultipleOptimized()` probes its id chunk narrowly too,
+      takes the rows the cache holds and reads only the rest, in one query
+      (`findMultiple()` already goes through `find()`). Pinned in
+      `SchemaMapperScopedRowCacheTest` (10). Still open: `findAll()` /
+      `findBySlug()` listings and which callers need metadata only.
+      2026-11-24 (main merge): main landed the same identifier arms through
+      `object-write-at-instance-floor` (#10520, `IdentifierArms`: numeric id,
+      then slug, then uuid; uuid-shaped uuid then slug; else slug then uuid).
+      This change now uses main's arms and keeps only what it adds on top:
+      the row cache, the narrow probes and the `LOWER(slug)` indexes.
+
+- [x] **Task 4 — cross-request cache.**
       APCu layer keyed on `schema.id + schema.updated`, so a cold worker does
       not repay the whole cost. Invalidated by the existing
       `clearFindCache()` mutation hook, extended to also drop the APCu entry.
+
+      BUILT (2026-11-16, c6): `SchemaRowCache` over the host-local memory
+      cache (`ICacheFactory::createLocal('openregister_schema_rows')`, APCu
+      where configured). With it, `find()`'s identifier arms select only
+      `id, uuid, slug, title, application, updated` (the columns that pick and
+      name the row); the stored row then comes from the cache under
+      `row:<id>:<updated>`, or from one read by primary key that is stored
+      for the next request. It caches the stored ROW, not the composed
+      schema: composition pulls in parents whose stamps are not in the key,
+      so it still runs per request. `clearFindCache()`, `update()` and
+      `delete()` drop every entry of the id; entries expire after 300 s; a
+      row without an `updated` stamp is never cached; a host without a local
+      cache reads whole rows exactly as before. Pinned in
+      `SchemaRowCacheTest` (7) and `SchemaMapperRowCacheTest` (6). The
+      saving on a cold worker is a live measurement (task 11).
 
 ## Reference resolution — the 4-second query
 
