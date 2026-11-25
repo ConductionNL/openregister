@@ -373,6 +373,23 @@ describe('EditOrganisation special rights', () => {
 		expect(wrapper.vm.selectedSpecialRights.llm_use).toEqual(GROUPS)
 	})
 
+	/**
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	it('keeps a grant_manage entry narrowed to a register when the picked groups change', async () => {
+		const narrowed = { group: 'records-service', register: 'records', schemas: ['private-note'] }
+		const wrapper = await mountFor({ ...STORED, authorization: { ...(STORED.authorization || {}), grant_manage: ['admin', narrowed] } })
+
+		expect(wrapper.vm.selectedSpecialRights.grant_manage.map((group) => group.id)).toEqual(['admin'])
+		expect(wrapper.vm.narrowedSpecialRights.grant_manage).toEqual([narrowed])
+
+		wrapper
+			.findComponent({ name: 'SpecialRightsTable' })
+			.vm.$emit('update', { right: 'grant_manage', groups: [GROUPS[1]] })
+
+		expect(wrapper.vm.organisationItem.authorization.grant_manage).toEqual([narrowed, 'staff'])
+	})
+
 	it('passes each select of the table on to its right', async () => {
 		const wrapper = await mountFor(STORED)
 		const selects = wrapper
