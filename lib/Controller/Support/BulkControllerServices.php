@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use Psr\Log\LoggerInterface;
+
 /**
  * The service bundles of the bulk API.
  *
@@ -33,12 +35,14 @@ final class BulkControllerServices {
 	 *
 	 * @param BulkStore    $store    The store bundle.
 	 * @param BulkPlatform $platform The platform bundle.
+	 * @param LoggerInterface|null $logger Logs the detail of a failed request (optional for older wiring).
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public function __construct(
 		public readonly BulkStore $store,
 		public readonly BulkPlatform $platform,
+		public readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 }//end class

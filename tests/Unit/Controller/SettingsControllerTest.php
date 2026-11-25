@@ -1056,7 +1056,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->assertSame(500, $response->getStatus());
 		$data = $response->getData();
-		$this->assertSame('Settings error', $data['error']);
+		$this->assertSame('Internal server error', $data['error']);
 	}
 
 	/**
@@ -1073,7 +1073,32 @@ class SettingsControllerTest extends TestCase {
 
 		$this->assertSame(500, $response->getStatus());
 		$data = $response->getData();
-		$this->assertSame('Update error', $data['error']);
+		$this->assertSame('Internal server error', $data['error']);
+	}
+
+	/**
+	 * The detail of an untyped update failure is logged, and a typed one keeps its status.
+	 *
+	 * @return void
+	 */
+	public function testUpdateLogsTheDetailAndKeepsATypedStatus(): void {
+		$this->settingsService
+			->method('updateSettings')
+			->willReturnOnConsecutiveCalls(
+				$this->throwException(new \RuntimeException('appconfig row locked')),
+				$this->throwException(new \InvalidArgumentException('retention must be a number'))
+			);
+		$this->logger->expects($this->once())->method('error')
+			->with($this->stringContains('Failed to update the settings: appconfig row locked'), $this->anything());
+
+		$untyped = $this->controller->update();
+		$typed = $this->controller->update();
+
+		$this->assertSame([500, ['error' => 'Internal server error']], [$untyped->getStatus(), $untyped->getData()]);
+		$this->assertSame(
+			[400, ['message' => 'retention must be a number', 'error' => 'invalid-argument']],
+			[$typed->getStatus(), $typed->getData()]
+		);
 	}
 
 	/**
@@ -1090,7 +1115,7 @@ class SettingsControllerTest extends TestCase {
 
 		$this->assertSame(500, $response->getStatus());
 		$data = $response->getData();
-		$this->assertSame('Load error', $data['error']);
+		$this->assertSame('Internal server error', $data['error']);
 	}
 
 	/**
@@ -1107,6 +1132,6 @@ class SettingsControllerTest extends TestCase {
 
 		$this->assertSame(500, $response->getStatus());
 		$data = $response->getData();
-		$this->assertSame('Rebase error', $data['error']);
+		$this->assertSame('Internal server error', $data['error']);
 	}
 }

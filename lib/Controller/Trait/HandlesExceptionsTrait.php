@@ -27,7 +27,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\ValidationException;
-use OCA\OpenRegister\Kernel\Contracts\Core\ServiceUnavailableExceptionInterface;
+use OCA\OpenRegister\Kernel\Contracts\UnavailableServiceExceptionInterface;
 use OCA\OpenRegister\Service\Resolver\Exception\MissingConfigException;
 use OCA\OpenRegister\Service\Resolver\Exception\PropertyNotFoundException;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -151,7 +151,7 @@ trait HandlesExceptionsTrait {
 		ArchivalImmutableException::class => Http::STATUS_FORBIDDEN,
 		// Foundation / configuration unavailable (ADR-049 fail-closed) → 503.
 		// The AppHost FoundationUnavailableException and ConfigurationMissingException implement it.
-		ServiceUnavailableExceptionInterface::class => Http::STATUS_SERVICE_UNAVAILABLE,
+		UnavailableServiceExceptionInterface::class => Http::STATUS_SERVICE_UNAVAILABLE,
 		MissingConfigException::class => Http::STATUS_SERVICE_UNAVAILABLE,
 	];
 
@@ -244,8 +244,11 @@ trait HandlesExceptionsTrait {
 	 * @return LoggerInterface|null The logger.
 	 */
 	private function exceptionLogger(): ?LoggerInterface {
-		if (property_exists($this, 'logger') === true && $this->logger instanceof LoggerInterface) {
-			return $this->logger;
+		// Read through get_object_vars(): a consumer without a (set) logger
+		// property simply has no 'logger' key.
+		$logger = (get_object_vars($this)['logger'] ?? null);
+		if ($logger instanceof LoggerInterface) {
+			return $logger;
 		}
 
 		return null;

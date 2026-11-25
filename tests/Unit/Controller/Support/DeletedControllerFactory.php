@@ -26,6 +26,7 @@ final class DeletedControllerFactory {
 	 * @param DeletionServiceBundle $deletion Constructor argument.
 	 * @param DeletedObjectAuthorizer $authorizer Constructor argument.
 	 * @param RenderObject $renderObject Constructor argument.
+	 * @param LoggerInterface|null $logger Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -38,6 +39,7 @@ final class DeletedControllerFactory {
 		\OCA\OpenRegister\Service\Deletion\DeletionServiceBundle $deletion,
 		\OCA\OpenRegister\Service\Deletion\DeletedObjectAuthorizer $authorizer,
 		\OCA\OpenRegister\Service\Object\RenderObject $renderObject,
+		?\Psr\Log\LoggerInterface $logger = null,
 	): array {
 		return [
 			$request,
@@ -52,6 +54,7 @@ final class DeletedControllerFactory {
 					authorizer: $authorizer,
 					renderObject: $renderObject,
 					userSession: $userSession,
+					logger: $logger,
 				),
 			),
 		];
