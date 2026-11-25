@@ -266,6 +266,7 @@ Controller/CredentialController.php,506,Controller,Integrations,Integrations/Con
 Controller/CredentialOauth2Controller.php,300,Controller,Integrations,Integrations/Controller/CredentialOauth2Controller.php,0,,Integrations
 Controller/CredentialOrganisationController.php,,Controller,,,,,Integrations
 Controller/CredentialProviderApprovalController.php,63,Controller,Integrations,Integrations/Controller/CredentialProviderApprovalController.php,0,,Integrations
+Controller/DeclaredCredentialProvidersController.php,,Controller,,,,,Integrations
 Controller/DataSubjectRequestController.php,117,Controller,Compliance,Compliance/Controller/DataSubjectRequestController.php,0,,Compliance
 Controller/DeckController.php,100,Controller,Integrations,Integrations/Controller/DeckController.php,0,,Integrations
 Controller/DeckLinksController.php,154,Controller,Integrations,Integrations/Controller/DeckLinksController.php,0,,Integrations
@@ -5049,6 +5050,7 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Service/Import/BaseImportPlanner.php,,Service,,,,,Configuration
 Service/Authorization/PermissionMatrixExport.php,,Service,,,,,Core
 Service/Authorization/PermissionMatrixExporter.php,,Service,,,,,Core
 Service/Authorization/PermissionMatrixProvenance.php,,Service,,,,,Core
@@ -5070,6 +5072,7 @@ Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
 Service/Flow/Timer/TimerCalendarSwitch.php,,Service,,,,,Processes
 Kernel/Contracts/AdministratorCheck.php,63,Kernel,Kernel,Kernel/Contracts/AdministratorCheck.php,0,,Kernel
+Migration/Version1Date20261125013000.php,,Migration,,,,,Platform
 Collaboration/ObjectMembership.php,,Collaboration,,,,,Platform
 Controller/ObjectTransferController.php,,Controller,,,,,Core
 Service/Organisation/ObjectGraphTransfer.php,,Service,,,,,Core
