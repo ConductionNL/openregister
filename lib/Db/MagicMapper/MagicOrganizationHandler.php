@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\DeclaredPair;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
 use OCA\OpenRegister\Service\TenancyCollaborators;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -239,7 +240,7 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 			return false;
 		}
 
-		return in_array('admin', $this->identity->groupManager->getUserGroupIds($user), true);
+		return AdminGate::isAdministrator(groupManager: $this->identity->groupManager, user: $user);
 	}//end isAdmin()
 
 	/**

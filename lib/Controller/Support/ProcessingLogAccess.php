@@ -81,7 +81,7 @@ final class ProcessingLogAccess {
 		}
 
 		$groups = $this->access->groupIds(user: $user);
-		$isAdmin = in_array('admin', $groups, true);
+		$isAdmin = $this->access->isAdmin();
 		$isFg = in_array($this->policy->fgGroup(), $groups, true);
 
 		if ($isAdmin === false && $isFg === false) {

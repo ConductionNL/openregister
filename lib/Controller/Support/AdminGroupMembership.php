@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -46,15 +47,6 @@ final class AdminGroupMembership {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public static function ofCaller(IUserSession $userSession, IGroupManager $groupManager): bool {
-		$user = $userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return in_array(
-			needle: 'admin',
-			haystack: $groupManager->getUserGroupIds($user),
-			strict: true
-		);
+		return AdminGate::isAdministrator(groupManager: $groupManager, user: $userSession->getUser());
 	}//end ofCaller()
 }//end class

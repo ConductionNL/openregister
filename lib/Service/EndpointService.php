@@ -29,6 +29,7 @@ use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
 use OCA\OpenRegister\Db\EndpointLogMapperInterface;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -325,12 +326,11 @@ class EndpointService implements EndpointServiceInterface {
 			return empty($endpoint->getGroups());
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($user);
-		if (in_array('admin', $userGroups) === true) {
+		if (AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user) === true) {
 			return true;
 		}
 
-		return $this->inAllowedGroup(userGroups: $userGroups, endpointGroups: $endpoint->getGroups());
+		return $this->inAllowedGroup(userGroups: $this->groupManager->getUserGroupIds($user), endpointGroups: $endpoint->getGroups());
 	}//end canExecuteEndpoint()
 
 	/**

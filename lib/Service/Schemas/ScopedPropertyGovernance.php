@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Schemas;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -112,13 +113,11 @@ class ScopedPropertyGovernance {
 			return false;
 		}
 
-		$groups = $this->groupManager->getUserGroupIds($user);
-
-		if (in_array('admin', $groups, true) === true) {
+		if (AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user) === true) {
 			return true;
 		}
 
-		return in_array($scope, $groups, true);
+		return in_array($scope, $this->groupManager->getUserGroupIds($user), true);
 	}//end mayAddAtScope()
 
 	/**

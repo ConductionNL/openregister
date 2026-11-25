@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\DenyRowTest;
 use OCA\OpenRegister\Service\Rbac\DenyQuestion;
 use OCA\OpenRegister\Service\Rbac\GrantLookup;
@@ -2528,7 +2529,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @return bool True if user is in admin group
 	 */
 	public function isAdmin(): bool {
-		return in_array('admin', $this->getCurrentUserGroups(), true);
+		return AdminGate::isAdministrator(groupManager: $this->groupManager, user: $this->userSession->getUser());
 	}//end isAdmin()
 
 	/**

@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface;
 use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\LogService;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -929,7 +930,7 @@ class AuditTrailController extends Controller {
 			return false;
 		}
 
-		return in_array('admin', $this->groupManager->getUserGroupIds($user));
+		return AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end inAdminGroup()
 
 	/**

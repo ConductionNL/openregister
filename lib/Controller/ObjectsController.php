@@ -118,6 +118,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\SchemaChangeReportingControllerInterf
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
 use OCA\OpenRegister\Service\WriteCause;
@@ -375,8 +376,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return false;
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($user);
-		return in_array('admin', $userGroups);
+		return AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end isCurrentUserAdmin()
 
 	/**

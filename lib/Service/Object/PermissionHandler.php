@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
@@ -662,7 +663,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			subject: new DraftSubject(object: $ask->object, schema: $ask->schema),
 			caller: new DraftCaller(
 				userId: $subject,
-				isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
+				isAdmin: AdminGate::isAdministrator(groupManager: $this->caller->groupManager, user: $subject),
 				commandLine: $this->isCommandLine()
 			)
 		);
@@ -996,7 +997,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		// Admin group always has all permissions.
-		if (in_array('admin', $check->userGroups) === true) {
+		if (AdminGate::isAdministrator(groupManager: $this->caller->groupManager, user: $check->userId) === true) {
 			return true;
 		}
 
@@ -1719,7 +1720,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$userId = $this->callerId(userId: $userId);
 		$userGroups = $this->groupsOf(userId: $userId);
-		if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
+		if (AdminGate::isAdministrator(groupManager: $this->caller->groupManager, user: $userId) === true) {
 			return null;
 		}
 
@@ -2261,7 +2262,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$caller->organisation       = $this->getActiveOrganisationForContext();
 		$caller->checksOrganisation = $this->organisationCheckApplies(multitenancy: $multitenancy, activeOrganisation: $caller->organisation);
-		$caller->isAdmin    = ($user !== null && in_array('admin', $this->caller->groupManager->getUserGroupIds($user), true) === true);
+		$caller->isAdmin    = AdminGate::isAdministrator(groupManager: $this->caller->groupManager, user: $user);
 		$caller->checksRbac = ($rbac === true && $caller->userId !== null);
 
 		return $caller;

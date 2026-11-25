@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCP\IUser;
 
 /**
@@ -82,10 +83,6 @@ final class GdprRegisterAccess {
 			return false;
 		}
 
-		return in_array(
-			needle: 'admin',
-			haystack: $this->groupIds(user: $user),
-			strict: true
-		);
+		return AdminGate::isAdministrator(groupManager: $this->session->groupManager, user: $user);
 	}//end isAdmin()
 }//end class

@@ -20,7 +20,9 @@
 
 namespace OCA\OpenRegister\Db\Tenancy;
 
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IUser;
 
 /**
  * The read-scoping half of MultiTenancyTrait, behind applyOrganisationFilter().
@@ -126,8 +128,7 @@ trait OrganisationFilterTrait {
 			return false;
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($user);
-		return in_array('admin', $userGroups);
+		return ($user instanceof IUser && AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user) === true);
 	}//end isUserAdmin()
 
 	/**

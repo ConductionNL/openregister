@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyValue;
 use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
@@ -972,7 +973,6 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 			return false;
 		}
 
-		$userGroups = $this->caller->groupManager->getUserGroupIds($user);
-		return in_array('admin', $userGroups, true);
+		return AdminGate::isAdministrator(groupManager: $this->caller->groupManager, user: $user);
 	}//end isAdmin()
 }//end class
