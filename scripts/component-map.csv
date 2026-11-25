@@ -4569,6 +4569,8 @@ Service/Anonymisation/DetectorEvaluationService.php,92,Service,Compliance,Compli
 Service/Anonymisation/DetectorEvaluationStore.php,87,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationStore.php,0,,Compliance
 Service/Anonymisation/EvaluationCorpus.php,128,Service,Compliance,Compliance/Service/Anonymisation/EvaluationCorpus.php,0,,Compliance
 Command/EvaluateDetectorCommand.php,,Command,,,,,Compliance
+Search/FileHitSearch.php,,Search,,,,,Search
+Kernel/Contracts/FileOwnerLookupInterface.php,,Kernel,,,,,Kernel
 Service/Import/RecordImport/FailedRowExport.php,,Service,,,,,Core
 Service/Import/RecordImport/ImportProgress.php,,Service,,,,,Core
 Controller/RecordImportController.php,,Controller,,,,,Core

@@ -2552,6 +2552,7 @@ components:
       - ".*/lib/Controller/(SettingsController)[.]php"
       - ".*/lib/Controller/Support/HybridSearchDiagnostics[.]php"
       - ".*/lib/Listener/(UniqueHintDeclarationCheckListener)[.]php"
+      - ".*/lib/Search/FileHitSearch[.]php"
       - ".*/lib/Search/ObjectsProvider[.]php"
       - ".*/lib/Search/ObjectsProviderOutput[.]php"
       - ".*/lib/Search/SearchProviderRegistrar[.]php"
