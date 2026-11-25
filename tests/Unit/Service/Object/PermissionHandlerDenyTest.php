@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Service\Object\DenialQuestion;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -99,6 +100,8 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\UndecidablePosture
  */
 class PermissionHandlerDenyTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * The match evaluator, shared so a conditional deny can be steered.
@@ -159,6 +162,7 @@ class PermissionHandlerDenyTest extends TestCase {
 		$userManager = $this->createMock(IUserManager::class);
 		$groupManager = $this->createMock(IGroupManager::class);
 
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		if ($userId === null) {
 			$userSession->method('getUser')->willReturn(null);
 			$userManager->method('get')->willReturn(null);

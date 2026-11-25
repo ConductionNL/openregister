@@ -15,4 +15,6 @@
 ## 3. Close
 
 - [ ] 3.1 `docs/`: declaring `subjectIdFields` so a data subject request finds your records. Tell learniq the change name (learniq #1787).
-- [ ] 3.2 `@spec` tags; `openspec validate dsar-finds-records-by-declared-subject-id --strict`.
+  - The `docs/` half is in place: `docs/features/dsar-declared-subject-id-fields.md` (built with 2.1). Open: telling learniq, which is that lane's handoff, not openregister code.
+- [x] 3.2 `@spec` tags; `openspec validate dsar-finds-records-by-declared-subject-id --strict`.
+  - 2026-11-24: every method the build added or changed carries `@spec` (the private helpers of `SubjectDeclaredFieldIndex` and `ProcessingAnnotationReader`, `ProcessingLogService::readAnnotation()`, the `SubjectRecords` constructor). `--strict` refused the one requirement as over 500 characters; it is split into three (discovery, what included an object, scoping and holds) with the same SHALLs and scenarios, plus a scenario for an object found by both sources (`testAnObjectFoundByBothSourcesCarriesBothReasons`). `openspec validate --strict`: valid.

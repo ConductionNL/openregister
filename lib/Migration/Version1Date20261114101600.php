@@ -162,11 +162,16 @@ class Version1Date20261114101600 extends TargetedMigrationStep {
 	/**
 	 * Whether any unique index on the table covers exactly the triple, under any name.
 	 *
-	 * @param ITable $table The link table.
+	 * Untyped on purpose: Nextcloud 35 hands an ITable, Nextcloud 32-34 a Doctrine
+	 * Table (OCP\DB\Schema\ITable does not exist there). Both answer getIndexes(),
+	 * and a native ITable type made the install fail on every supported release
+	 * below 35.
+	 *
+	 * @param ITable|\Doctrine\DBAL\Schema\Table $table The link table.
 	 *
 	 * @return bool
 	 */
-	private static function hasUniqueTriple(ITable $table): bool {
+	private static function hasUniqueTriple(object $table): bool {
 		$wanted = self::COLUMNS;
 		sort($wanted);
 

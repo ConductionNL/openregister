@@ -88,6 +88,18 @@ class RegistersControllerTest extends TestCase {
 	 */
 	private bool $currentUserIsAdmin = true;
 
+	/**
+	 * The grant ceiling the container hands out, when a test sets one.
+	 */
+	private ?\OCA\OpenRegister\Service\Authorization\GrantCeiling $grantCeiling = null;
+
+	/**
+	 * The schemas the ceiling's permission check was asked about, by slug and action.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $askedAbout = [];
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -129,6 +141,9 @@ class RegistersControllerTest extends TestCase {
 			}
 			if ($id === \OCA\OpenRegister\Service\Schemas\RegisterModelService::class) {
 				return $this->modelService;
+			}
+			if ($id === \OCA\OpenRegister\Service\Authorization\GrantCeiling::class) {
+				return $this->grantCeiling;
 			}
 			return null;
 		});
@@ -2444,5 +2459,162 @@ class RegistersControllerTest extends TestCase {
 
 		$this->assertSame(['total' => 5, 'size' => 50], $data['stats']['logs']);
 	}
+
+	/**
+	 * A register edit that gives an action the editor does not hold, on a schema
+	 * the register's block decides, is refused naming it; a schema with its own
+	 * block is not judged, because the register's block does not reach it.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testARegisterBlockBeyondTheEditorsRightsIsRefused(): void {
+		$this->editorHolds(actions: ['read', 'update']);
+		$this->managedRegister(schemas: [$this->schemaFor(id: 5, slug: 'publicatie'), $this->schemaFor(id: 6, slug: 'eigen', authorization: ['read' => ['eigen']])]);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['redactie'], 'delete' => ['redactie']]]);
+		$this->registerService->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame(
+			['error' => 'grant-exceeds-granter', 'excess' => [['register' => null, 'schema' => 'publicatie', 'action' => 'delete']]],
+			$result->getData()
+		);
+		$this->assertSame(['publicatie:delete'], $this->askedAbout);
+	}//end testARegisterBlockBeyondTheEditorsRightsIsRefused()
+
+	/**
+	 * A register edit within the editor's rights is stored as before.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testARegisterGrantWithinTheEditorsRightsIsStored(): void {
+		$this->editorHolds(actions: ['read', 'update']);
+		$this->managedRegister(schemas: [$this->schemaFor(id: 5, slug: 'publicatie')]);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['redactie'], 'update' => ['redactie']]]);
+		$this->registerService->expects($this->once())->method('updateFromArray')->willReturn($this->createRealRegister(1, 'Woo'));
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+	}//end testARegisterGrantWithinTheEditorsRightsIsStored()
+
+	/**
+	 * A manager cannot hand on manage through the register block either.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testARegisterManagerCannotGrantManage(): void {
+		$this->editorHolds(actions: ['read', 'update', 'manage']);
+		$this->managedRegister(schemas: [$this->schemaFor(id: 5, slug: 'publicatie')]);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin', 'redactie'], 'read' => ['redactie']]]);
+		$this->registerService->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame('manage', $result->getData()['excess'][0]['action']);
+	}//end testARegisterManagerCannotGrantManage()
+
+	/**
+	 * With no schema the register decides, a new grant cannot be shown to be
+	 * within the editor's rights and is refused, naming the register.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testARegisterGrantWithNoSchemaToJudgeIsRefused(): void {
+		$this->editorHolds(actions: ['read', 'update', 'delete']);
+		$this->managedRegister(schemas: []);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin'], 'read' => ['redactie'], 'delete' => ['redactie']]]);
+		$this->registerService->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(403, $result->getStatus());
+		$this->assertSame([['register' => 'woo', 'schema' => null, 'action' => 'delete']], $result->getData()['excess']);
+	}//end testARegisterGrantWithNoSchemaToJudgeIsRefused()
+
+	/**
+	 * An unchanged block, and an administrator's edit, are not judged.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAnUnchangedBlockAndAnAdministratorsEditAreNotJudged(): void {
+		$this->editorHolds(actions: []);
+		$this->managedRegister(schemas: [$this->schemaFor(id: 5, slug: 'publicatie')]);
+		$this->request->method('getParams')->willReturn(['title' => 'Woo', 'authorization' => ['manage' => ['admin'], 'read' => ['redactie']]]);
+		$this->registerService->method('updateFromArray')->willReturn($this->createRealRegister(1, 'Woo'));
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+		$this->assertSame([], $this->askedAbout);
+	}//end testAnUnchangedBlockAndAnAdministratorsEditAreNotJudged()
+
+	/**
+	 * An administrator may add any right through the register block.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	public function testAnAdministratorMayGrantBeyondTheRulesOnARegister(): void {
+		$this->editorHolds(actions: []);
+		$this->currentUserIsAdmin = true;
+		$this->managedRegister(schemas: [$this->schemaFor(id: 5, slug: 'publicatie')]);
+		$this->request->method('getParams')->willReturn(['authorization' => ['manage' => ['admin', 'redactie'], 'read' => ['redactie'], 'delete' => ['redactie']]]);
+		$this->registerService->method('updateFromArray')->willReturn($this->createRealRegister(1, 'Woo'));
+
+		$this->assertSame(200, $this->controller->update(1)->getStatus());
+		$this->assertSame([], $this->askedAbout);
+	}//end testAnAdministratorMayGrantBeyondTheRulesOnARegister()
+
+	/**
+	 * A signed-in non-administrator who holds these actions, through a real GrantCeiling.
+	 *
+	 * @param array<int, string> $actions The actions the editor holds on every schema.
+	 *
+	 * @return void
+	 */
+	private function editorHolds(array $actions): void {
+		$this->currentUserIsAdmin = false;
+		$permissions = $this->createMock(\OCA\OpenRegister\Service\Object\PermissionHandlerInterface::class);
+		$permissions->method('hasPermission')->willReturnCallback(function (\OCA\OpenRegister\Service\Object\PermissionAsk $ask) use ($actions): bool {
+			$this->askedAbout[] = $ask->schema->getSlug().':'.$ask->action;
+
+			return in_array($ask->action, $actions, true);
+		});
+		$this->grantCeiling = new \OCA\OpenRegister\Service\Authorization\GrantCeiling(groups: $this->groupManager, permissions: $permissions);
+	}//end editorHolds()
+
+	/**
+	 * The stored register `woo`, which the editor manages through group `admin`, holding these schemas.
+	 *
+	 * @param array<int, Schema> $schemas The schemas.
+	 *
+	 * @return void
+	 */
+	private function managedRegister(array $schemas): void {
+		$register = $this->createRealRegister(1, 'Woo');
+		$register->setSlug('woo');
+		$register->setAuthorization(['manage' => ['admin'], 'read' => ['redactie']]);
+		$this->setRegisterSchemas($register, array_map(static fn (Schema $schema): int => $schema->getId(), $schemas));
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('findMultiple')->willReturn($schemas);
+	}//end managedRegister()
+
+	/**
+	 * A schema.
+	 *
+	 * @param int        $id            The id.
+	 * @param string     $slug          The slug.
+	 * @param array|null $authorization Its own block, or null.
+	 *
+	 * @return Schema The schema.
+	 */
+	private function schemaFor(int $id, string $slug, ?array $authorization = null): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setSlug($slug);
+		$schema->setAuthorization($authorization);
+
+		return $schema;
+	}//end schemaFor()
 
 }

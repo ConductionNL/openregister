@@ -239,6 +239,10 @@
                 "root"
             ],
             [
+                "isAdmin",
+                "root"
+            ],
+            [
                 "updateFromArray",
                 7,
                 {
@@ -345,6 +349,10 @@
                 "root"
             ],
             [
+                "isAdmin",
+                "root"
+            ],
+            [
                 "updateFromArray",
                 7,
                 {
@@ -410,6 +418,10 @@
                 "root"
             ],
             [
+                "isAdmin",
+                "root"
+            ],
+            [
                 "updateFromArray",
                 7,
                 {
@@ -448,6 +460,10 @@
             [
                 "container",
                 "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
             ],
             [
                 "isAdmin",
@@ -569,6 +585,10 @@
                 "root"
             ],
             [
+                "isAdmin",
+                "root"
+            ],
+            [
                 "updateFromArray",
                 7,
                 {
@@ -639,6 +659,10 @@
             [
                 "container",
                 "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
             ],
             [
                 "isAdmin",
@@ -1190,6 +1214,10 @@
             [
                 "container",
                 "OCP\\IGroupManager"
+            ],
+            [
+                "isAdmin",
+                "root"
             ],
             [
                 "isAdmin",

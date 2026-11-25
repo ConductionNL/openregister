@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use ReflectionMethod;
 use OCA\OpenRegister\Service\Flow\FlowRunFrame;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 
 /**
  * Caller `alice` sends one row naming a stored row in a given state. The permission handler
@@ -136,6 +137,13 @@ class SaveObjectsStoredStateGuardTest extends TestCase {
 	 */
 	private FlowRunContext $flow;
 
+	/**
+	 * A run context other than the flow engine's stack, when a test sets one.
+	 *
+	 * @var CurrentFlowRunInterface|null
+	 */
+	private ?CurrentFlowRunInterface $runContext = null;
+
 	protected function setUp(): void {
 		$this->flow = new FlowRunContext();
 		$this->stored = new ObjectEntity();
@@ -192,7 +200,7 @@ class SaveObjectsStoredStateGuardTest extends TestCase {
 			stores: new BulkSaveStores(catalog: new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->createMock(RegisterMapper::class), schemas: $this->createMock(SchemaMapper::class), tables: $mapper), saveHandler: $this->createMock(SaveObject::class)),
 			session: new BulkSaveSession(userSession: $session, organisationService: $this->createMock(OrganisationService::class), groupManager: $this->createMock(IGroupManager::class)),
 			reporting: new BulkSaveReporting(logger: new NullLogger()),
-			checks: new BulkRowChecks(permissionHandler: $permissions, rowRules: new BulkRowRules(runContext: $this->flow))
+			checks: new BulkRowChecks(permissionHandler: $permissions, rowRules: new BulkRowRules(runContext: $this->runContext ?? $this->flow))
 		);
 	}//end handler()
 
@@ -226,6 +234,25 @@ class SaveObjectsStoredStateGuardTest extends TestCase {
 
 		$this->assertNull($this->screen());
 	}
+
+	/**
+	 * The bulk rules need only the Core port that names the writing run, not the flow engine's stack.
+	 *
+	 * @spec openspec/changes/functional-areas-depend-in-one-direction/specs/backend-modularity/spec.md#requirement-areas-reference-only-lower-areas
+	 */
+	public function testAnyCurrentRunPortAdmitsTheRunHoldingALock(): void {
+		$this->stored->setLocked(self::RUN_LOCK);
+		$this->runContext = new class(self::RUN) implements CurrentFlowRunInterface {
+			public function __construct(private readonly string $run) {
+			}
+
+			public function currentRunUuid(): ?string {
+				return $this->run;
+			}
+		};
+
+		$this->assertNull($this->screen());
+	}//end testAnyCurrentRunPortAdmitsTheRunHoldingALock()
 
 	public function testARunLockRefusesAPerson(): void {
 		$this->stored->setLocked(self::RUN_LOCK);
