@@ -4921,3 +4921,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T12:05:47Z precheck-20261125T114106-8d52f9af CONFLICT-DEV #11035 bf9e6900
 2026-11-25T12:07:15Z session-20261125T114252-d7fdc2f8 cloud-or-reviewer-5: APPROVE 10533 11069 11117 11141 (fast path), 10549 (fast path, golden rebased, passes), 11093 (main test adapted, touched tests pass), 11021 (duplicate l10n key removal), 11149 (docs); all 11 open non-draft N%8==5 main PRs have a verdict at head (11077 BLOCK stands); all merge clean with main 1c939e16
 2026-11-25T12:07:50Z session-20261125T111520-d3268794 live-launchpad-1 opened launchpad #1968 (initial-state measures + archive), #1972 (store descriptor for OR main: store search 500), #1973 (version note order per REQ-VERSUI-004), #1975 (no view-event with analytics off); verifying live next
+2026-11-25T12:08:43Z precheck-20261125T115455-da4d339e NORESULT tree f3e467c172: checker floor not measured (exit 2)
