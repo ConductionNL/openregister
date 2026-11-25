@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Service\Oas\NlGovConformanceService;
 use OCA\OpenRegister\Service\Oas\OasETagComputerInterface;
 use OCA\OpenRegister\Service\OasServiceInterface;
 
@@ -36,10 +37,12 @@ final class OasControllerServices {
 	 *
 	 * @param OasServiceInterface       $oasService   OAS service instance
 	 * @param ?OasETagComputerInterface $etagComputer Optional ETag computer for If-None-Match short-circuit
+	 * @param ?NlGovConformanceService  $conformance  The NLGov conformance report and response probe
 	 */
 	public function __construct(
 		public readonly OasServiceInterface $oasService,
 		public readonly ?OasETagComputerInterface $etagComputer = null,
+		public readonly ?NlGovConformanceService $conformance = null,
 	) {
 	}//end __construct()
 }//end class
