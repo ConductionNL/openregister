@@ -273,6 +273,7 @@ class GenericInitializeActionsTest extends TestCase {
 				'flow.node.send-notification' => ['admin'],
 				'flow.node.send-talk-message' => ['admin'],
 				'flow.node.object-delete'     => ['admin'],
+				'flow.code'                   => ['admin'],
 			],
 			$actionAuth->getMatrix()
 		);
