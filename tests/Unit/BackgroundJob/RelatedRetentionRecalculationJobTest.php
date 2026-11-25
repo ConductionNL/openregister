@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Listener\RelatedRetentionRecalculationListener;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
@@ -150,8 +151,22 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 			new RelatedRetentionLookup(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			new RelatedRetentionRules($this->index, $calculator, $retention),
 			$logger,
+			$this->systemScope(),
 		);
 	}//end setUp()
+
+	/**
+	 * An object port whose system scope is the real one.
+	 *
+	 * @return ObjectOperationsInterface The port.
+	 */
+	private function systemScope(): ObjectOperationsInterface {
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->method('runAsSystem')->willReturnCallback(
+			static fn (callable $operation): mixed => SystemOperationContext::run($operation)
+		);
+		return $objects;
+	}//end systemScope()
 
 	/**
 	 * A contact person of the client, created before the client had an end date.

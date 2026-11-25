@@ -30,7 +30,7 @@ use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionLookup;
 use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionRules;
 use OCA\OpenRegister\BackgroundJob\Support\RetentionDependantPlace;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\SystemOperationContext;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -53,10 +53,11 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory           $time   The clock
-	 * @param RelatedRetentionLookup $lookup Object, schema and register mappers
-	 * @param RelatedRetentionRules  $rules  Dependant index, reference calculator and retention service
-	 * @param LoggerInterface        $logger The logger
+	 * @param ITimeFactory              $time    The clock
+	 * @param RelatedRetentionLookup    $lookup  Object, schema and register mappers
+	 * @param RelatedRetentionRules     $rules   Dependant index, reference calculator and retention service
+	 * @param LoggerInterface           $logger  The logger
+	 * @param ObjectOperationsInterface $objects The object port, whose system scope the recalculation runs in
 	 *
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
@@ -65,6 +66,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 		private readonly RelatedRetentionLookup $lookup,
 		private readonly RelatedRetentionRules $rules,
 		private readonly LoggerInterface $logger,
+		private readonly ObjectOperationsInterface $objects,
 	) {
 		parent::__construct(time: $time);
 	}//end __construct()
@@ -114,7 +116,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
 	public function recalculateDependantsOf(string $uuid): int {
-		return SystemOperationContext::run(fn (): int => $this->recalculateAsSystem(uuid: $uuid));
+		return $this->objects->runAsSystem(fn (): int => $this->recalculateAsSystem(uuid: $uuid));
 	}//end recalculateDependantsOf()
 
 	/**
