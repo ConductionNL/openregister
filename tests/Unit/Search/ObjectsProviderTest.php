@@ -167,15 +167,29 @@ class ObjectsProviderTest extends TestCase {
 		// `scopes` joined `register` and `schema` in content-search-index.
 		// Asserted by NAME rather than by count, because a count tells the
 		// next reader nothing about which filter went missing.
-		// `provider` joined them in platform-search-provider.
-		$this->assertCount(4, $filters);
+		// `provider` (platform-search-provider) is supported but NOT defined
+		// here: it is Nextcloud's built-in IFilter::BUILTIN_PROVIDER, and a
+		// second definition makes SearchComposer throw "Filter name is
+		// already used" for the whole unified search.
+		$this->assertCount(3, $filters);
 		foreach ($filters as $filter) {
 			$this->assertInstanceOf(FilterDefinition::class, $filter);
 		}
 
 		$names = array_map(static fn (FilterDefinition $f): string => $f->name(), $filters);
-		$this->assertSame(['register', 'schema', 'scopes', 'provider'], $names);
+		$this->assertSame(['register', 'schema', 'scopes'], $names);
 		$this->assertContains('provider', $this->provider->getSupportedFilters());
+
+		$builtin = [
+			IFilter::BUILTIN_TERM,
+			IFilter::BUILTIN_SINCE,
+			IFilter::BUILTIN_UNTIL,
+			IFilter::BUILTIN_PERSON,
+			IFilter::BUILTIN_TITLE_ONLY,
+			IFilter::BUILTIN_PLACES,
+			IFilter::BUILTIN_PROVIDER,
+		];
+		$this->assertSame([], array_values(array_intersect($names, $builtin)), 'A custom filter may not reuse a built-in filter name.');
 	}
 
 	// --- Empty / short-circuit --------------------------------------------
