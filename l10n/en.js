@@ -4123,7 +4123,27 @@ OC.L10N.register(
     "Send request" : "Send request",
     "The API description could not be loaded." : "The API description could not be loaded.",
     "The request body is not valid JSON." : "The request body is not valid JSON.",
-    "This register has no schema operations yet." : "This register has no schema operations yet."
+    "This register has no schema operations yet." : "This register has no schema operations yet.",
+    "A start moment and a length are needed." : "A start moment and a length are needed.",
+    "Business days" : "Business days",
+    "Calculate" : "Calculate",
+    "Calendar days" : "Calendar days",
+    "Ends at {moment}" : "Ends at {moment}",
+    "Hours" : "Hours",
+    "If it ends on a day nobody works" : "If it ends on a day nobody works",
+    "Length of the term" : "Length of the term",
+    "Moved from {moment} by {rule}" : "Moved from {moment} by {rule}",
+    "No change" : "No change",
+    "Start moment" : "Start moment",
+    "The list shows the first days only; the end moment counts every day." : "The list shows the first days only; the end moment counts every day.",
+    "The next working day" : "The next working day",
+    "The previous working day" : "The previous working day",
+    "The term could not be worked out." : "The term could not be worked out.",
+    "Try a date" : "Try a date",
+    "Unit" : "Unit",
+    "Weekend" : "Weekend",
+    "Working day" : "Working day",
+    "Works out, without saving or arming anything, when a term that starts at a chosen moment ends under the rules above." : "Works out, without saving or arming anything, when a term that starts at a chosen moment ends under the rules above."
 },
 "nplurals=2; plural=(n != 1);"
 );

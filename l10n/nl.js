@@ -4236,7 +4236,27 @@ OC.L10N.register(
     "Send request" : "Verzoek versturen",
     "The API description could not be loaded." : "De API-beschrijving kon niet worden geladen.",
     "The request body is not valid JSON." : "De verzoekinhoud is geen geldige JSON.",
-    "This register has no schema operations yet." : "Dit register heeft nog geen schemabewerkingen."
+    "This register has no schema operations yet." : "Dit register heeft nog geen schemabewerkingen.",
+    "A start moment and a length are needed." : "Een startmoment en een lengte zijn nodig.",
+    "Business days" : "Werkdagen",
+    "Calculate" : "Berekenen",
+    "Calendar days" : "Kalenderdagen",
+    "Ends at {moment}" : "Eindigt op {moment}",
+    "Hours" : "Uren",
+    "If it ends on a day nobody works" : "Als hij eindigt op een dag waarop niemand werkt",
+    "Length of the term" : "Lengte van de termijn",
+    "Moved from {moment} by {rule}" : "Verschoven van {moment} door {rule}",
+    "No change" : "Geen wijziging",
+    "Start moment" : "Startmoment",
+    "The list shows the first days only; the end moment counts every day." : "De lijst toont alleen de eerste dagen; het eindmoment telt elke dag mee.",
+    "The next working day" : "De volgende werkdag",
+    "The previous working day" : "De vorige werkdag",
+    "The term could not be worked out." : "De termijn kon niet worden berekend.",
+    "Try a date" : "Een datum proberen",
+    "Unit" : "Eenheid",
+    "Weekend" : "Weekenddag",
+    "Working day" : "Werkdag",
+    "Works out, without saving or arming anything, when a term that starts at a chosen moment ends under the rules above." : "Berekent, zonder iets op te slaan of in te stellen, wanneer een termijn die op een gekozen moment begint eindigt volgens de regels hierboven."
 },
 "nplurals=2; plural=(n != 1);"
 );
