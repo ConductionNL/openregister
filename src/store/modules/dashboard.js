@@ -185,12 +185,14 @@ export const useDashboardStore = defineStore('dashboard', {
 					() => schemaStore.schemaItem?.id,
 				],
 				async () => {
-					// Fetch registers to update sidebar tables
-					await this.fetchRegisters()
-					// Fetch all chart data to update dashboard charts
-					await this.fetchAllChartData()
-					// Fetch all statistics to update audit trail sidebar
-					await this.fetchAllStatistics()
+					// Registers (sidebar tables), charts and statistics only read
+					// the active register/schema ids, not each other: load them
+					// side by side instead of one wave after another.
+					await Promise.all([
+						this.fetchRegisters(),
+						this.fetchAllChartData(),
+						this.fetchAllStatistics(),
+					])
 				},
 			)
 		},
@@ -347,17 +349,35 @@ export const useDashboardStore = defineStore('dashboard', {
 		},
 
 		/**
-		 * Preload dashboard data
+		 * Preload dashboard data: registers, charts and statistics, side by side
+		 * (none of them reads another's answer).
 		 *
 		 * @return {Promise<Array>}
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async preload() {
 			if (!this.isInitialized && !this.loading) {
-				await this.fetchRegisters()
-				await this.fetchAllChartData()
-				await this.fetchAllStatistics()
+				await Promise.all([
+					this.fetchRegisters(),
+					this.fetchAllChartData(),
+					this.fetchAllStatistics(),
+				])
 				this.isInitialized = true
+			}
+			return this.registers
+		},
+
+		/**
+		 * Load the register list once, for views that show only the registers
+		 * and their totals (the Registers sidebar), without the charts and
+		 * statistics `preload()` adds.
+		 *
+		 * @return {Promise<Array>}
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
+		 */
+		async preloadRegisters() {
+			if (!this.isInitialized && !this.loading && this.registers.length === 0) {
+				await this.fetchRegisters()
 			}
 			return this.registers
 		},
