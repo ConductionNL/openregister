@@ -5194,3 +5194,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T20:36:53Z session-20261125T175342-980825ae b-learniq: learniq #2813 (today-first T6) and #2814 (T5 + archive today-first-per-school-role) merged by the coordinator; their COORDINATOR-QUEUE lines are done
 2026-11-25T20:37:03Z precheck-20261125T181737-613489e9 NORESULT tree 6871cdbc90: checker floor not measured (exit 2)
 2026-11-25T20:37:03Z precheck-20261125T183212-36886908 GREEN tree 6093409193 on dev 27335744ae prs 1 front=skip: Tests: 67358, Assertions: 239326, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
+2026-11-25T20:39:51Z precheck-20261125T191529-85ecfd26 GREEN tree efcef2278e on dev 27335744ae prs 1 front=skip: Tests: 67363, Assertions: 239373, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
