@@ -187,7 +187,7 @@ class PdfImageBurner {
 		$xobjects = $this->dictionary(doc: $doc, value: ($this->resources(doc: $doc, page: $doc->get_page($page - 1))['XObject'] ?? null));
 		foreach ((array)($xobjects?->get_keys() ?? []) as $key) {
 			$oid = $this->reference(value: $xobjects[$key]);
-			$object = ($oid === null ? false : $doc->get_object($oid));
+			$object = $this->objectOf(doc: $doc, oid: $oid);
 			if (($object instanceof PDFObject) === true && $this->name(value: $object['Subtype']) === 'Image') {
 				$images[$oid] = $object;
 			}
@@ -207,12 +207,12 @@ class PdfImageBurner {
 	/**
 	 * The resource dictionary of a page, inherited from its parents when the page has none.
 	 *
-	 * @param PDFDoc           $doc  The document.
-	 * @param PDFObject|false  $page The page.
+	 * @param PDFDoc $doc  The document.
+	 * @param mixed  $page The page object, or false when the document has no such page.
 	 *
 	 * @return PDFValueObject|null The resources.
 	 */
-	private function resources(PDFDoc $doc, PDFObject|false $page): ?PDFValueObject {
+	private function resources(PDFDoc $doc, mixed $page): ?PDFValueObject {
 		$node = $page;
 		for ($depth = 0; $depth < 32 && ($node instanceof PDFObject) === true; $depth++) {
 			$resources = $this->dictionary(doc: $doc, value: ($node['Resources'] ?? null));
@@ -221,7 +221,7 @@ class PdfImageBurner {
 			}
 
 			$parent = $this->reference(value: ($node['Parent'] ?? null));
-			$node = ($parent === null ? false : $doc->get_object($parent));
+			$node = $this->objectOf(doc: $doc, oid: $parent);
 		}
 
 		return null;
@@ -302,7 +302,7 @@ class PdfImageBurner {
 		if (in_array($components, [1, 3], true) === false || $bits !== 8) {
 			throw new ImageRegionNotBurnableException(
 				fileName: $fileName,
-				reason: sprintf('the image\'s colour space %s at %d bits per component cannot be burned.', ($space === '' ? 'none' : $space), $bits),
+				reason: sprintf('the image\'s colour space %s at %d bits per component cannot be burned.', $this->orNone(text: $space), $bits),
 				region: $region
 			);
 		}
@@ -364,7 +364,7 @@ class PdfImageBurner {
 		if (is_string($samples) === false || strlen($samples) !== ($width * $height * $components) || $width < 1 || $height < 1) {
 			throw new ImageRegionNotBurnableException(
 				fileName: $fileName,
-				reason: sprintf('the image\'s encoding %s cannot be burned.', ($filters === [] ? 'none' : implode(', ', $filters))),
+				reason: sprintf('the image\'s encoding %s cannot be burned.', $this->orNone(text: implode(', ', $filters))),
 				region: $region
 			);
 		}
@@ -374,8 +374,13 @@ class PdfImageBurner {
 		for ($y = 0; $y < $height; $y++) {
 			for ($x = 0; $x < $width; $x++) {
 				$red = ord($samples[$offset]);
-				$green = ($components === 3 ? ord($samples[($offset + 1)]) : $red);
-				$blue = ($components === 3 ? ord($samples[($offset + 2)]) : $red);
+				$green = $red;
+				$blue = $red;
+				if ($components === 3) {
+					$green = ord($samples[($offset + 1)]);
+					$blue = ord($samples[($offset + 2)]);
+				}
+
 				imagesetpixel($raster, $x, $y, (($red << 16) | ($green << 8) | $blue));
 				$offset += $components;
 			}
@@ -439,13 +444,49 @@ class PdfImageBurner {
 		}
 
 		$oid = $this->reference(value: $value);
-		$object = ($oid === null ? false : $doc->get_object($oid));
+		$object = $this->objectOf(doc: $doc, oid: $oid);
 		if (($object instanceof PDFObject) === true && $object->get_value() instanceof PDFValueObject) {
 			return $object->get_value();
 		}
 
 		return null;
 	}//end dictionary()
+
+	/**
+	 * The object behind an id.
+	 *
+	 * @param PDFDoc   $doc The document.
+	 * @param int|null $oid The id, or none.
+	 *
+	 * @return PDFObject|false The object, or false when there is none.
+	 */
+	private function objectOf(PDFDoc $doc, ?int $oid): PDFObject|false {
+		if ($oid === null) {
+			return false;
+		}
+
+		$object = $doc->get_object($oid);
+		if (($object instanceof PDFObject) === false) {
+			return false;
+		}
+
+		return $object;
+	}//end objectOf()
+
+	/**
+	 * A text for a refusal, `none` when it is empty.
+	 *
+	 * @param string $text The text.
+	 *
+	 * @return string The text or `none`.
+	 */
+	private function orNone(string $text): string {
+		if ($text === '') {
+			return 'none';
+		}
+
+		return $text;
+	}//end orNone()
 
 	/**
 	 * The object id a value references.
