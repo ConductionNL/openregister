@@ -756,7 +756,7 @@ class FilesControllerTest extends TestCase {
 		$result = $this->controller->create('reg1', 'schema1', 'obj1');
 
 		$this->assertEquals(200, $result->getStatus());
-		$this->assertEquals(['id' => 1], $result->getData());
+		$this->assertEquals(['id' => 1, 'metadata' => ['malwareScan' => \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck::VERDICT]], $result->getData());
 	}
 
 	public function testCreateWithFilenameKey(): void {

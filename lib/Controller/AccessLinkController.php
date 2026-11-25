@@ -59,6 +59,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\File\MalwareScanRefusal;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
 use OCA\OpenRegister\Service\Sharing\LinkAct;
 use OCA\OpenRegister\Service\Sharing\LinkFile;
@@ -359,11 +360,14 @@ class AccessLinkController extends Controller {
 	 * @param LinkAct  $act  The admitted link and its subject
 	 * @param LinkFile $file The uploaded file
 	 *
-	 * @return JSONResponse 201 with the stored file, or a 400 when storing failed
+	 * @return JSONResponse 201 with the stored file, the malware scan's 422 or 503, or a 400 when storing failed
 	 */
 	private function storeUpload(LinkAct $act, LinkFile $file): JSONResponse {
 		try {
 			$stored = $this->acts->upload(act: $act, file: $file);
+		} catch (MalwareScanRefusal $refusal) {
+			// REQ-UMS-001: infected, or no scan could be made; nothing was stored.
+			return new JSONResponse($refusal->body, $refusal->status);
 		} catch (Throwable $failure) {
 			$this->logger->warning('[AccessLinkController] A link upload failed: ' . $failure->getMessage());
 

@@ -302,7 +302,7 @@ class ObjectFolderControllerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
-		$browser = new ObjectFolderBrowser(fileService: $this->fileService);
+		$browser = new ObjectFolderBrowser(fileService: $this->fileService, malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck());
 
 		return ObjectFolderControllerFactory::create(
 			$this->request,

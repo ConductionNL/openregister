@@ -194,7 +194,7 @@ class FilesCreateFromUrlTest extends TestCase {
 					eventDispatcher: $this->createMock(IEventDispatcher::class),
 					userSession: $session,
 				),
-				guards: new FileGuards(objectFileAccess: $this->access, fileAuditHandler: $this->audit),
+				guards: new FileGuards(objectFileAccess: $this->access, fileAuditHandler: $this->audit, malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck()),
 				editing: new FileEditing(),
 			)
 		);
@@ -245,7 +245,7 @@ class FilesCreateFromUrlTest extends TestCase {
 		$response = $this->controller($params)->create('reg', 'sch', 'obj');
 
 		$this->assertSame(200, $response->getStatus());
-		$this->assertSame(['id' => 77, 'title' => 'besluit.pdf', 'metadata' => $provenance], $response->getData());
+		$this->assertSame(['id' => 77, 'title' => 'besluit.pdf', 'metadata' => $provenance + ['malwareScan' => \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck::VERDICT]], $response->getData());
 		$this->assertSame('aGVsbG8=', $written);
 	}
 
@@ -362,6 +362,6 @@ class FilesCreateFromUrlTest extends TestCase {
 
 		$response = $this->controller(['name' => 'a.txt', 'content' => 'https://example.org/x.pdf'])->create('reg', 'sch', 'obj');
 
-		$this->assertSame(['id' => 5], $response->getData());
+		$this->assertSame(['id' => 5, 'metadata' => ['malwareScan' => \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck::VERDICT]], $response->getData());
 	}
 }

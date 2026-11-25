@@ -33,6 +33,7 @@ final class FilesControllerFactory {
 	 * @param ?AttachNodeHandler $attachNodeHandler Constructor argument.
 	 * @param ?FileWriteGuard $fileWriteGuard Constructor argument.
 	 * @param ?FileRestrictionGuard $fileRestrictions Constructor argument.
+	 * @param ?UploadMalwareCheck $malwareCheck The upload scan; a clean one when omitted.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -52,6 +53,7 @@ final class FilesControllerFactory {
 		?\OCA\OpenRegister\Files\Service\File\AttachNodeHandler $attachNodeHandler = null,
 		?\OCA\OpenRegister\Service\Object\FileWriteGuard $fileWriteGuard = null,
 		?\OCA\OpenRegister\Files\Service\File\FileRestrictionGuard $fileRestrictions = null,
+		?\OCA\OpenRegister\Service\File\UploadMalwareCheck $malwareCheck = null,
 	): array {
 		return [
 			$request,
@@ -73,6 +75,7 @@ final class FilesControllerFactory {
 					fileWriteGuard: $fileWriteGuard,
 					fileRestrictions: $fileRestrictions,
 					fileAuditHandler: $fileAuditHandler,
+					malwareCheck: ($malwareCheck ?? new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck()),
 				),
 				editing: new \OCA\OpenRegister\Files\Controller\Support\FileEditing(
 					officeSessionService: $officeSessionService,

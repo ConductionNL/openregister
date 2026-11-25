@@ -45,6 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\PortalTaskControllerServices;
+use OCA\OpenRegister\Service\File\MalwareScanRefusal;
 use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Exception\PortalSubjectException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
@@ -476,6 +477,7 @@ class PortalTaskController extends Controller {
 			DoesNotExistException::class => $this->absentTask(...),
 			TaskCompleteViaAppException::class => $this->completeElsewhere(...),
 			TaskConflictException::class => $this->taskClosed(...),
+			MalwareScanRefusal::class => static fn (MalwareScanRefusal $refusal): JSONResponse => new JSONResponse($refusal->body, $refusal->status),
 		];
 	}//end refusalShapes()
 

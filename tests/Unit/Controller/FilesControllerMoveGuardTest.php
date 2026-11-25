@@ -119,7 +119,7 @@ class FilesControllerMoveGuardTest extends TestCase {
 					eventDispatcher: $this->createMock(IEventDispatcher::class),
 					userSession: $session,
 				),
-				guards: new FileGuards(objectFileAccess: $access, moveGuard: $this->guard()),
+				guards: new FileGuards(objectFileAccess: $access, moveGuard: $this->guard(), malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck()),
 				editing: new FileEditing(),
 			)
 		);

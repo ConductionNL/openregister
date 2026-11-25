@@ -26,6 +26,7 @@ use OCA\OpenRegister\Files\Service\File\FileAuditHandler;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Files\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\DocumentStoreMoveGuard;
+use OCA\OpenRegister\Service\File\UploadMalwareCheck;
 use OCA\OpenRegister\Service\Object\FileWriteGuardInterface;
 
 /**
@@ -42,6 +43,7 @@ final class FileGuards {
 	 * @param ?FileRestrictionGuard $fileRestrictions The file restriction guard.
 	 * @param ?FileAuditHandler     $fileAuditHandler The file audit handler.
 	 * @param ?DocumentStoreMoveGuard $moveGuard      Holds uploads off a register being moved.
+	 * @param ?UploadMalwareCheck     $malwareCheck   Scans every upload before it is written; an upload is refused without it.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
@@ -51,6 +53,7 @@ final class FileGuards {
 		public readonly ?FileRestrictionGuard $fileRestrictions = null,
 		public readonly ?FileAuditHandler $fileAuditHandler = null,
 		public readonly ?DocumentStoreMoveGuard $moveGuard = null,
+		public readonly ?UploadMalwareCheck $malwareCheck = null,
 	) {
 	}//end __construct()
 }//end class

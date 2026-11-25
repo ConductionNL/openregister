@@ -26,6 +26,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\SecurityService;
 use OCA\OpenRegister\Service\File\DocumentStoreMoveGuard;
+use OCA\OpenRegister\Service\File\MalwareScanRefusal;
+use OCA\OpenRegister\Service\File\UploadMalwareCheck;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -170,6 +172,7 @@ class FilePropertyHandler {
 	 * @param LoggerInterface $logger Logger for logging operations
 	 * @param ObjectFilesInterface $fileService File service for file operations
 	 * @param DocumentStoreMoveGuard|null $moveGuard Holds file writes off a register being moved
+	 * @param UploadMalwareCheck|null $malwareCheck Scans each file before it is written; without it a file is refused
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
@@ -177,6 +180,7 @@ class FilePropertyHandler {
 		LoggerInterface $logger,
 		private readonly ObjectFilesInterface $fileService,
 		private readonly ?DocumentStoreMoveGuard $moveGuard = null,
+		private readonly ?UploadMalwareCheck $malwareCheck = null,
 	) {
 		$this->parts = new FilePropertyParts(logger: $logger, fileService: $fileService);
 	}//end __construct()
@@ -651,21 +655,30 @@ class FilePropertyHandler {
 	 *
 	 * @return int The ID of the created file.
 	 *
-	 * @throws Exception If the file cannot be stored, or the register is being moved.
+	 * @throws Exception          If the file cannot be stored, or the register is being moved.
+	 * @throws MalwareScanRefusal When the file is infected or could not be scanned; nothing is written.
+	 *
+	 * @spec openspec/changes/upload-malware-scan/specs/file-actions/spec.md#requirement-every-upload-is-scanned-by-files_antivirus-and-without-it-nothing-is-accepted-req-ums-001
 	 */
 	private function addFile(FileStoreRequest $request, array $fileData): int {
 		// REQ-RDS-004: nothing is written into a register whose documents are moving.
 		$this->moveGuard?->assertNotMoving(registerId: $request->objectEntity->getRegister());
 
+		// REQ-UMS-001: the bytes the pipeline will write are scanned before anything is written.
+		$fileName = $this->generateFileName(request: $request, extension: $fileData['extension']);
+		$check = ($this->malwareCheck ?? throw MalwareScanRefusal::unavailable());
+		$verdict = $check->scanPosted(fileName: $fileName, content: $fileData['content']);
+
 		$file = $this->fileService->addFile(
 			target: new FileTarget(object: $request->objectEntity),
 			upload: new FileUpload(
-				fileName: $this->generateFileName(request: $request, extension: $fileData['extension']),
+				fileName: $fileName,
 				content: $fileData['content'],
 				share: $request->fileConfig['autoShare'] ?? false,
 				tags: $this->prepareAutoTags(fileConfig: $request->fileConfig, propertyName: $request->propertyName)
 			)
 		);
+		$check->record(fileId: (int)$file->getId(), verdict: $verdict);
 
 		return $file->getId();
 	}//end addFile()

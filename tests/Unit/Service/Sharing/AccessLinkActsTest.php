@@ -48,6 +48,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\File\FileTarget
  * @uses \OCA\OpenRegister\Service\File\FileUpload
  * @uses \OCA\OpenRegister\Service\Sharing\LinkFile
+ * @uses \OCA\OpenRegister\Service\File\MalwareScanRefusal
  */
 class AccessLinkActsTest extends TestCase {
 
@@ -72,7 +73,7 @@ class AccessLinkActsTest extends TestCase {
 		$files = $this->createMock(ObjectFilesInterface::class);
 		$files->expects($this->never())->method('addFile');
 
-		$acts = new AccessLinkActs(notes: $notes, files: $files);
+		$acts = new AccessLinkActs(notes: $notes, files: $files, malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck());
 
 		$this->assertSame(['id' => 9], $acts->comment(act: new LinkAct(link: $link, object: $object), message: 'hello'));
 	}//end testCommentIsWrittenAsTheLink()
@@ -97,11 +98,25 @@ class AccessLinkActsTest extends TestCase {
 		$notes = $this->createMock(NoteServiceInterface::class);
 		$notes->expects($this->never())->method('postNote');
 
-		$acts = new AccessLinkActs(notes: $notes, files: $files);
+		$acts = new AccessLinkActs(notes: $notes, files: $files, malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck());
 
 		$this->assertSame(
-			['name' => 'a.pdf', 'shared' => false],
+			['name' => 'a.pdf', 'shared' => false, 'metadata' => ['malwareScan' => \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck::VERDICT]],
 			$acts->upload(act: new LinkAct(link: new AccessLink(), object: $object), file: new LinkFile(fileName: 'a.pdf', content: 'bytes'))
 		);
 	}//end testUploadIsStoredWithoutSharing()
+
+	/**
+	 * An infected link upload is refused and nothing is stored (REQ-UMS-001).
+	 *
+	 * @return void
+	 */
+	public function testAnInfectedUploadIsRefusedAndNotStored(): void {
+		$files = $this->createMock(ObjectFilesInterface::class);
+		$files->expects($this->never())->method('addFile');
+		$acts = new AccessLinkActs(notes: $this->createMock(NoteServiceInterface::class), files: $files, malwareCheck: \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck::refusing('eicar.com'));
+
+		$this->expectException(\OCA\OpenRegister\Service\File\MalwareScanRefusal::class);
+		$acts->upload(act: new LinkAct(link: new AccessLink(), object: new ObjectEntity()), file: new LinkFile(fileName: 'eicar.com', content: 'X5O!P'));
+	}//end testAnInfectedUploadIsRefusedAndNotStored()
 }//end class

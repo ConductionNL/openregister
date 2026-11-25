@@ -40,6 +40,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\NoteAuthor;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\MalwareScanRefusal;
+use OCA\OpenRegister\Service\File\UploadMalwareCheck;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
 
 /**
@@ -60,11 +62,13 @@ class AccessLinkActs implements AccessLinkActsInterface {
 	 * Constructor.
 	 *
 	 * @param NoteServiceInterface $notes Writes the comment.
-	 * @param ObjectFilesInterface $files Stores the file.
+	 * @param ObjectFilesInterface    $files        Stores the file.
+	 * @param UploadMalwareCheck|null $malwareCheck Scans a file before it is stored; without it a file is refused.
 	 */
 	public function __construct(
 		private readonly NoteServiceInterface $notes,
 		private readonly ObjectFilesInterface $files,
+		private readonly ?UploadMalwareCheck $malwareCheck = null,
 	) {
 
 	}//end __construct()
@@ -108,11 +112,15 @@ class AccessLinkActs implements AccessLinkActsInterface {
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-declares-its-capabilities-carries-an-expiry-and-may-carry-a-password-req-abl-002
 	 */
 	public function upload(LinkAct $act, LinkFile $file): array {
+		// REQ-UMS-001: the file is scanned before anything is written.
+		$check = ($this->malwareCheck ?? throw MalwareScanRefusal::unavailable());
+		$verdict = $check->scanPosted(fileName: $file->fileName, content: $file->content);
 		$stored = $this->files->addFile(
 			target: new FileTarget(object: $act->object),
 			upload: new FileUpload(fileName: $file->fileName, content: $file->content, share: false)
 		);
+		$check->record(fileId: (int)$stored->getId(), verdict: $verdict);
 
-		return $this->files->formatFile($stored);
+		return $check->withVerdict(formatted: $this->files->formatFile($stored), verdict: $verdict);
 	}//end upload()
 }//end class

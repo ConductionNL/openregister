@@ -171,7 +171,8 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$this->handler = new FilePropertyHandler(
 			$this->logger,
-			$this->fileService
+			$this->fileService,
+			malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck()
 		);
 	}
 

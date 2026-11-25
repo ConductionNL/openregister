@@ -2356,6 +2356,7 @@ Service/File/FolderManagementHandler.php,636,Service,Service,Service/File/Folder
 Service/File/MalwareScanGate.php,226,Service,Service,Service/File/MalwareScanGate.php,0,,Files
 Service/File/MalwareScanState.php,121,Service,Service,Service/File/MalwareScanState.php,0,,Files
 Service/File/MalwareScanRefusal.php,47,Service,Service,Service/File/MalwareScanRefusal.php,0,,Files
+Service/File/PostedFileContent.php,78,Service,Service,Service/File/PostedFileContent.php,0,,Files
 Service/File/ManagedFileOwnerLookup.php,33,Service,Service,Service/File/ManagedFileOwnerLookup.php,0,434,Core
 Service/File/ObjectFileFinder.php,135,Service,Service,Service/File/ObjectFileFinder.php,0,,Files
 Service/File/ObjectFileLookup.php,17,Service,Service,Service/File/ObjectFileLookup.php,0,,Files
@@ -4869,6 +4870,7 @@ Service/File/ReadFileSources.php,,Service,,,,,Files
 Service/File/ShareLinkRequest.php,,Service,,,,,Files
 Service/File/UpdateFileGuards.php,,Service,,,,,Files
 Service/File/UpdateFileLocator.php,,Service,,,,,Files
+Service/File/UploadMalwareCheck.php,153,Service,Service,Service/File/UploadMalwareCheck.php,0,,Files
 Db/AuditTrail/RevertOptions.php,,Db,,,,,Core
 Service/ObjectAction/ObjectActionElevationAttribution.php,,Service,,,,,Processes
 Listener/CoreListenerRegistrar.php,,Listener,,,,,Core
