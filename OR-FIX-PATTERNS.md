@@ -918,3 +918,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: BuiltinIntegrationProviderRegistrationTest::testEveryFactoryBuildsItsServiceFromTheExpectedEntries: arrays differ, Actual adds a class under one service (e.g. OCP\ICacheFactory on XwikiLinkService).
 - Cause: the PR added a parameter to the service and its entry in lib/Service/Integration/BuiltinIntegrationServices.php, but the test pins every factory's resolved entries.
 - Fix: add the class to that service's expected list in the test, in the Actual order (see #11005 228baa2c); BuiltinIntegrationServicesTableTest may also need its wiring hash recomputed.
+
+## New list-page action breaks listActions.dom.golden (or-fix-5)
+- Symptom: precheck-red 'FAIL src/views/listActions.dom.golden.spec.js', the Received snapshot adds an NcActionButton (e.g. 'Restore with related records' under 'deleted').
+- Cause: main pins every list page's action menu in one golden; a PR adding an action updates only its own view's snapshot.
+- Fix: on the PR merged with main, npx jest src/views/listActions.dom.golden.spec.js -u, check the diff only adds the PR's action, commit with the main merge (see #11055 18c4aaad).

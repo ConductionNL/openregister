@@ -4649,3 +4649,10 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T02:23:40Z session-20261125T022340-c2fea6fc or-fix-1 start
 2026-11-25T02:24:18Z precheck-20261125T021556-9b3c5d51 CONFLICT-DEV #11035 bf9e6900
 2026-11-25T02:24:32Z session-20261125T022432-ba664a66 or-fix-7: start; share needing work: 10537 11067 11107 (conflict), 10627 (sbom park)
+2026-11-25T02:25:44Z or-fix-8: run start; share 5968 10508 10568 11008 11068 11088 11108 11118
+2026-11-25T02:28:12Z integrator-20261124T231146-2f742f98 GREEN tree 69eab2cf42 on dev 0202f3a808 prs 3 front=ok: Tests: 65974, Assertions: 233573, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-25T02:28:22Z integrator-20261124T231146-2f742f98 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-25T02:29:07Z integrator-20261124T231146-2f742f98 MERGED-TREE 69eab2cf42: 3 PRs, main now 13bc5dc2f5 = tested tree
+2026-11-25T02:29:15Z precheck-20261125T021556-9b3c5d51 RED tree 2340416935 prs 1 front=red: Tests: 65986, Assertions: 233605, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Depreca; first failures: FAIL src/views/listActions.dom.golden.spec.js
+2026-11-25T02:30:32Z or-fix-9: share (N%10==9, base main, non-draft) = 10499 10529 10549 10639 11059 11069 11079 11089 11099 11119; none parked, BLOCKed or conflicting. Merged with main and checked (phpstan changed lib, Architecture, touched tests; jest+l10n for 11119): 11099 11059 11119 11089 11069 10549 all green (11119 l10n test/parity reds identical on main, inherited). No fixes needed. Precheck idle loop still blocked: gitleaks install refused (already in COORDINATOR-QUEUE 00:29Z).
