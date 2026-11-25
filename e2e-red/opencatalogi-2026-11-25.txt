@@ -1,0 +1,72 @@
+# opencatalogi live e2e, development cd290d4, NC34 nginx+php-fpm+MariaDB+Redis, OR main+#11225, live-opencatalogi-1 25 Nov 19:33-19:54Z: 191 passed / 71 failed / 45 skipped (workers=2)
+app-chrome.spec.ts :: the footer reads Documentation, Store, Features & roadmap, then Restart tutorial :: Error: expect(received).toBe(expected) // Object.is equality  Expected: 4 Received: 3[39
+app-chrome.spec.ts :: Store opens the hosted store surface, which this app writes no backend for :: Test timeout of 60000ms exceeded.
+attachment-reading.spec.ts :: an editor sees which scan search cannot read :: Error: expect(locator).toHaveText(expected) failed  Locator: getByRole('dialog').filter({ has: locator('
+data-file-import-failure-alert.spec.ts :: the editor follows the notification to the failed table :: Error: the editor has a notification naming the table  the editor has a notification naming the table  expect(received).toContain[2
+data-file-import-failure-alert.spec.ts :: Retry imports the table again and it fails again on the same row :: Error: the failed table of the first test  expect(received).toBeTruthy()  Received: undefined
+dataset-views.spec.ts :: an editor adds a bar chart :: Error: expect(locator).toBeVisible() failed  Locator: locator('[data-testid="publication-table-84247db0-2647-4556-
+dataset-views.spec.ts :: an editor reorders and removes a view :: Error: expect(received).toEqual(expected) // deep equality  - Expected  - 1 + Received  +
+dcat-catalogue-switch.spec.ts :: an administrator switches the DCAT feed on for a catalogue :: Test timeout of 60000ms exceeded.
+harvest-conflict-review.spec.ts :: an administrator picks a policy and OpenRegister stores its strategy :: Test timeout of 60000ms exceeded.
+harvest-conflict-review.spec.ts :: an editor merges one field and the item leaves the queue :: Test timeout of 60000ms exceeded.
+harvest-conflict-review.spec.ts :: a bulk keep-ours over two items empties the queue :: Test timeout of 60000ms exceeded.
+instance-staging-mode.spec.ts :: an administrator turns staging on :: Error: instance-staging-mode.spec.ts must not run on http://localhost:8080: it switches the whole instance to staging, which closes the public pages and holds e
+integrations-page.spec.ts :: lists the three declared connections, all of them OpenCatalogi's :: Error: list integriq/app_connection -> 404  expect(received).toBeTruthy()  Received: false
+integrations-page.spec.ts :: asks integriq to look again when the Woo-index registration is saved :: Error: expect(received).not.toBe(expected) // Object.is equality  Expected: not ""  C
+integrations-page.spec.ts :: sends Add integration to integriq instead of offering a form :: Error: expect(locator).toBeVisible() failed  Locator: locator('.cn-index-page') Expected: visible Timeout: 30000ms
+observability.spec.ts :: 6.1 an administrator reads the metrics as Prometheus text :: Error: Forbidden  expect(received).toBe(expected) // Object.is equality  Expected: 200 Receive
+observability.spec.ts :: 6.4 opencatalogi_info names the versions :: Error: nextcloud_version  expect(received).not.toBe(expected) // Object.is equality  Expected: 
+observability.spec.ts :: 6.5 opencatalogi_up is 1 :: Error: expect(received).toContain(expected) // indexOf  Expected value: "opencatalogi_up 1" Re
+observability.spec.ts :: 6.6 the directory and federation families are present :: Error: opencatalogi_directory_entries_total  expect(received).toContain(expected) // indexOf  Expected v
+organisations-page.spec.ts :: another user reads but cannot edit :: Error: expect(locator).toHaveCount(expected) failed  Locator:  locator('[data-testid="cn-detail-page-edi
+../../node_modules/@conduction/nextcloud-vue/testing/performance.js :: Dashboard is usable within its budget :: Error: Dashboard (/index.php/apps/opencatalogi/) never became usable on the priming load; still pending: GET http://localhost:8080/index.php/apps/openregister/a
+../../node_modules/@conduction/nextcloud-vue/testing/performance.js :: Search is usable within its budget :: Error: Search (/index.php/apps/opencatalogi/search) was usable in 4480 ms (median of 5148, 4440, 4480 ms), over its 300 ms budget Slowest requests during the wa
+../../node_modules/@conduction/nextcloud-vue/testing/performance.js :: Catalogs is usable within its budget :: Error: Catalogs (/index.php/apps/opencatalogi/catalogi) was usable in 1313 ms (median of 1908, 1313, 1288 ms), over its 300 ms budget Slowest requests during th
+../../node_modules/@conduction/nextcloud-vue/testing/performance.js :: Directory is usable within its budget :: Error: Directory (/index.php/apps/opencatalogi/directory) was usable in 1140 ms (median of 1839, 1140, 1060 ms), over its 300 ms budget Slowest requests during 
+../../node_modules/@conduction/nextcloud-vue/testing/performance.js :: Flows is usable within its budget :: Error: Flows (/index.php/apps/opencatalogi/flows) was usable in 1281 ms (median of 2123, 1281, 1247 ms), over its 300 ms budget Slowest requests during the warm
+plain-language.spec.ts :: a summary without its level is refused naming the level :: Error: expect(received).toBeGreaterThanOrEqual(expected)  Expected: >= 400 Received:    2
+public-and-community-surface.spec.ts :: the feed is readable without an account and is Atom :: Error: expect(received).toContain(expected) // indexOf  Expected value: 404 Received array: [
+publication-create.spec.ts :: An editor adds a publication :: Test timeout of 120000ms exceeded.
+publication-detail-for-the-portal.spec.ts :: an officer orders the documents by keyboard and the portal gets that order :: Error: publish: 404  expect(received).toBe(expected) // Object.is equality  Expected: true Rec
+publication-detail-for-the-portal.spec.ts :: a moderator sees a report :: Error: expect(received).toBe(expected) // Object.is equality  Expected: true Received: fa
+publication-draft-purge.spec.ts :: a draft and everything on it goes :: Test timeout of 60000ms exceeded.
+publication-inspection-and-the-national-indexes.spec.ts :: an administrator sees both halves of the preview before saving :: Error: expect(received).toBe(expected) // Object.is equality  Expected: true Received: fa
+publication-inspection-and-the-national-indexes.spec.ts :: a link inside its window serves only the chosen documents, and a closed one is gone :: Error: expect(received).toBe(expected) // Object.is equality  Expected: 200 Received: 404
+publication-inspection-and-the-national-indexes.spec.ts :: a withdrawal nothing acknowledged is outstanding, not done :: Error: expect(received).toBe(expected) // Object.is equality  Expected: 200 Received: 404
+publication-inspection-and-the-national-indexes.spec.ts :: an acknowledgement takes a withdrawal out of outstanding :: Error: expect(received).toBe(expected) // Object.is equality  Expected: 200 Received: 400
+publication-inspection-and-the-national-indexes.spec.ts :: a channel no withdrawal was sent to cannot acknowledge one :: Error: expect(received).toBe(expected) // Object.is equality  Expected: "unknown-channel" Rece
+publication-lifecycle.spec.ts :: one state on the list and the page :: Error: the list carries draft  expect(received).toBeTruthy()  Received: undefined
+publication-relations.spec.ts :: both sides read the relation :: Error: expect(locator).toBeVisible() failed  Locator: locator('[data-testid="cn-detail-page"]').first().getByText(
+publication-required-at-publish.spec.ts :: Two selected, one incomplete :: Error: seed prp-1795635874698 Budget 2027  expect(received).toBe(expected) // Object.is equality  Expect
+publication-schedule-guards.spec.ts :: a scheduled publication without the lift right :: Error: creating held: {"type":"about:blank","title":"Forbidden","status":403,"detail":"User 'oc-e2e-psg-mwwj8l7e' does not have permission to 'create' objects i
+publication-schema-added-field.spec.ts :: An administrator adds a case number :: Test timeout of 120000ms exceeded.
+publication-translations.spec.ts :: an editor adds an English title and summary as a translation :: Error: {"type":"about:blank","title":"Bad Request","status":400,"instance":"\/index.php\/apps\/openregister\/api\/objects\/26\/40\/9a54e75b-a252-4819-8aea-5f2bb
+publication-translations.spec.ts :: an English visitor reads English title and summary with a Dutch description :: Error: expect(received).toBe(expected) // Object.is equality  Expected: true Received: fa
+publication-translations.spec.ts :: the Languages card names the missing English description :: Error: expect(locator).toBeVisible() failed  Locator: getByTestId('publication-language-en') Expected: visible Tim
+publications-for-signed-in-readers.spec.ts :: an editor limits a publication to signed-in readers :: Error: expect(locator).toBeVisible() failed  Locator: getByTestId('publication-visibility-audience') Expected: vis
+publications-merge-and-migrate.spec.ts :: Merge needs exactly two :: Error: seed pmm-1795635990670 Decision on the Woo request about the Oostpolder wind farm  expect(received).toBe(expect
+publications-selection-actions.spec.ts :: Publish opens the publish dialog on the two selected publications :: Error: seed psa-1795635991948 publication 1  expect(received).toBe(expected) // Object.is equality  Expe
+publish-and-withdraw.spec.ts :: an editor withdraws a publication and publishes it again :: Error: expect(received).toBe(expected) // Object.is equality  Expected: true Received: fa
+publish-rights.spec.ts :: the editor is not offered the publish actions, the publisher is :: Error: editor creates a draft: {"type":"about:blank","title":"Forbidden","status":403,"detail":"User 'oc-e2e-editor-mwwjbd4o' does not have permission to 'creat
+responsible-organisation.spec.ts :: an editor sets the responsible organisation :: Error: expect(locator).toBeVisible() failed  Locator: getByText('Servicecentrum Drechtsteden pro-mwwjbh47').first(
+search-endpoint.spec.ts :: GET /api/search answers 200 with results :: Error: {"type":"about:blank","title":"Unprocessable Content","status":422,"detail":"A new object starts in \"draft\"; \"published\" cannot be set when it is cre
+spec-coverage/content-search-endpoint.spec.ts :: WOO-517 — a body-text-only match surfaces via ?_content=true and is absent without it :: Error: the anonymous caller must see the seeded publication itself — if this fails, anonymous visibility is broken and the content-search assertion below is mea
+spec-coverage/ooapi-directory-advertisement.spec.ts :: OOAPI-009 — an OOAPI-enabled catalog advertises an absolute ooapiEndpoint, and an identical disabled one advertises none :: Error: creating catalog "ooapi-adv-1795636080813-on" must succeed (got 422)  expect(received).toBe(expected) 
+spec-coverage/openapi-document.spec.ts :: API-DOC-003 — GET /api/openapi.json is anonymously reachable, returns JSON with CORS headers and the installed version :: Error: expect(received).toBe(expected) // Object.is equality  Expected: "3.1.0" Recei
+spec-coverage/page-components.spec.ts :: WooBatchDetail renders the batch heading, the four assessment counts and the Deck queue section :: Error: seeding a wooBatch must succeed (got 422)  expect(received).toBe(expected) // Object.is equality 
+theme-archive-hotspot.spec.ts :: the officer sees why :: Error: expect(locator).toHaveText(expected) failed  Locator: getByTestId('publication-visibility-archive
+value-list-curation.spec.ts :: an administrator puts the most used category first :: Error: expect(locator).toContainText(expected) failed  Locator: getByTestId('category-order-announcement
+woo-annual-report.spec.ts :: an officer generates the 2026 Woo annual report :: Test timeout of 60000ms exceeded.
+woo-category.spec.ts :: the category list holds the 18 codes with both names :: Error: expect(received).toBe(expected) // Object.is equality  Expected: 18 Received: 17[
+woo-document-assessment.spec.ts :: a batch opens from its row on the Woo batches page :: Test timeout of 60000ms exceeded.
+woo-document-assessment.spec.ts :: a move to Not public closed without a ground saves nothing :: Error: expect(locator).toContainText(expected) failed  Locator: locator('.woo-batch__column').filter({ h
+woo-document-assessment.spec.ts :: a move to Partly public with a ground is saved with that ground and shows the redaction state :: Test timeout of 60000ms exceeded.
+woo-index-mapping.spec.ts :: the readiness report names the mapping source :: Error: {"type":"about:blank","title":"Conflict","status":409,"detail":"not-configured","error":"not-configured"}  expect(received).t
+woo-index-mapping.spec.ts :: the settings page names the source :: Test timeout of 60000ms exceeded.
+woo-metadata-suggestions.spec.ts :: an editor accepts a suggestion and the field is filled :: Error: expect(locator).toBeVisible() failed  Locator: getByText('Besluit op het Woo-verzoek over de verbouwing van
+woo-national-output-assurance.spec.ts :: a group that does not exist is refused :: Error: [opencatalogi e2e] This spec must not run on http://localhost:8080. it creates a user and a group and changes the PLOOI channel source OPENCATALOGI_E2E_A
+woo-review-surface.spec.ts :: the reviewer sees each document as the public will :: Error: expect(locator).toHaveCount(expected) failed  Locator:  locator('.woo-review').getByText('Open th
+workflows/catalog-other-schema-objects.spec.ts :: a component opens on its detail page with its description per language :: Error: expect(locator).toContainText(expected) failed  Locator: locator('[data-testid="cn-detail-page"]'
+workflows/publication-crud-persistence.spec.ts :: Publication — create → read → update → delete persists in OpenRegister (store API) :: Error: publication appears in the publication collection  expect(received).toBe(expected) // Object.is equali
+workflows/publish-workflow.spec.ts :: Publish gate — a draft publication is visible to the author but EXCLUDED from the anonymous catalog directory :: Error: author sees the draft publication  expect(received).toContain(expected) // indexOf  Expected valu
+workflows/publish-workflow.spec.ts :: Public-group read — the `public` group read grant on the publication schema makes a publication readable by an anonymous OpenRegister caller (RBAC discoverability) :: Error: public-group read grant lets anon read the object  expect(received).toBe(expected) // Object.is equali
