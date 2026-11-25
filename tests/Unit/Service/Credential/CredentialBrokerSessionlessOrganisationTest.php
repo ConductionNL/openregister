@@ -77,6 +77,13 @@ class CredentialBrokerSessionlessOrganisationTest extends TestCase {
 	private const SECRET = 'ORG-VAULT-KEY-XYZ';
 
 	/**
+	 * The arguments of every credential lookup, in order.
+	 *
+	 * @var array<int, array<int|string, mixed>>
+	 */
+	private array $findCalls = [];
+
+	/**
 	 * An inject-only generic catalogue entry (no baseUrl, no allowRules).
 	 *
 	 * @return array<string, mixed>
@@ -115,6 +122,24 @@ class CredentialBrokerSessionlessOrganisationTest extends TestCase {
 		);
 
 		$this->assertSame(self::SECRET, $secret);
+	}
+
+	/**
+	 * Sessionless, the credential lookup is not tenant-filtered; with a session it is.
+	 *
+	 * A sessionless caller (a counterparty request answered as a token's principal,
+	 * a background job) has no active organisation, so a tenant-filtered lookup
+	 * found no organisation credential and every guard was skipped as "credential
+	 * not found". Guard 1 still decides on the asserted identity.
+	 */
+	public function testTheSessionlessLookupIsNotTenantFiltered(): void {
+		$this->findCalls = [];
+		$this->makeBroker(sessionUid: null)->resolveInjectable(self::UUID, 'openconnector', null, self::ORG_UUID);
+		$this->assertSame(false, $this->findCalls[0][3] ?? null, 'sessionless: unscoped lookup');
+
+		$this->findCalls = [];
+		$this->makeBroker(sessionUid: 'member')->resolveInjectable(self::UUID, 'openconnector', null, null);
+		$this->assertSame(true, $this->findCalls[0][3] ?? null, 'with a session: scoped to its tenant');
 	}
 
 	/**
@@ -246,7 +271,12 @@ class CredentialBrokerSessionlessOrganisationTest extends TestCase {
 		);
 
 		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('find')->willReturn($entity);
+		$objectService->method('find')->willReturnCallback(
+			function (mixed ...$args) use ($entity): ObjectEntity {
+				$this->findCalls[] = $args;
+				return $entity;
+			}
+		);
 
 		if ($store === null) {
 			$store = $this->createMock(CredentialStore::class);
