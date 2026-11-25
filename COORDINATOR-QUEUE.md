@@ -587,3 +587,4 @@ A product or access-control question that FINISH-ORDER.md DECISIONS does not ans
 - 2026-11-25T22:43:19Z live-opencatalogi-1 opencatalogi#3145 merge (squash): APP FIX failed-import message double HTML-escaped (&#39;) + data-file-import-failure-alert spec 2/2 live (with cron); jest 16/16. Merge refused by this session's permission check
 - 2026-11-25T22:45:16Z live-opencatalogi-1 opencatalogi#3146 merge (squash): dataset-views spec scrolls to the Tables section, 2/2 live twice. Merge refused by this session's permission check
 - 2026-11-25T22:45:21Z live-launchpad-2 launchpad#2113 CLOSED by me (contained in development via #2102, same garbage() change); drop its queue line
+- 2026-11-25T22:49:26Z live-opencatalogi-1 opencatalogi#3147 merge (squash): APP FIX file list Text column always empty (readings GET without requesttoken -> 412); jest 398 OK; e2e attachment-reading 1/1 live. Merge refused by this session's permission check
