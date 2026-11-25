@@ -375,6 +375,8 @@ final class CoreServiceBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Organisation\PromotionServiceInterface::class => \OCA\OpenRegister\Service\Organisation\PromotionService::class,
+		\OCA\OpenRegister\Service\Organisation\PromotionPackageReaderInterface::class => \OCA\OpenRegister\Service\Organisation\PromotionPackageReader::class,
 		\OCA\OpenRegister\Kernel\Contracts\SchemaReadRightInterface::class => \OCA\OpenRegister\Service\Object\SchemaReadRight::class,
 		ExpiredObjectStoreInterface::class => ExpiredObjectStore::class,
 		DerivedTranslationsInterface::class => TranslationStatusService::class,
