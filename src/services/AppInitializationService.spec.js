@@ -98,6 +98,17 @@ describe('AppInitializationService', () => {
 			expect(organisationStore.getActiveOrganisation).toHaveBeenCalledTimes(1)
 		})
 
+		it('starts the active-organisation read beside the list, not after it', async () => {
+			let answerList
+			organisationStore.refreshOrganisationList.mockReturnValue(new Promise((resolve) => { answerList = resolve }))
+			const init = initializeAppData()
+			// The list has not answered yet, and the active read is already out.
+			expect(organisationStore.getActiveOrganisation).toHaveBeenCalledTimes(1)
+			answerList()
+			await init
+			expect(errorSpy).not.toHaveBeenCalled()
+		})
+
 		it('swallows a views failure without logging an init error', async () => {
 			viewsStore.fetchViews.mockRejectedValue(new Error('views off'))
 			await expect(initializeAppData()).resolves.toBeUndefined()
@@ -122,6 +133,15 @@ describe('AppInitializationService', () => {
 			sourceStore.sourceList = [{ id: 1 }]
 			await reloadAppData()
 			allRefreshes().forEach((fn) => expect(fn).toHaveBeenCalledTimes(1))
+		})
+
+		it('re-reads the active organisation beside the list, not after it', async () => {
+			let answerList
+			organisationStore.refreshOrganisationList.mockReturnValue(new Promise((resolve) => { answerList = resolve }))
+			const reload = reloadAppData()
+			expect(organisationStore.getActiveOrganisation).toHaveBeenCalledTimes(1)
+			answerList()
+			await reload
 		})
 
 		it('swallows a views failure during reload', async () => {

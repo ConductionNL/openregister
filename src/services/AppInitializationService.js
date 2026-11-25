@@ -116,33 +116,42 @@ async function forceLoadSchemas() {
  * Load organisations if not already loaded.
  * Also fetches the active organisation from the user session.
  *
+ * The active organisation comes from the session, not from the list, so both
+ * reads start together: waiting for the list first put the active read in a
+ * second wave behind it (and behind the main-thread work the first wave
+ * triggers), ~190 ms after the list on a warm Registers load.
+ *
  * @return {Promise<void>}
  */
 async function loadOrganisations() {
+	const reads = []
 	if (
 		!organisationStore.organisationList
 		|| organisationStore.organisationList.length === 0
 	) {
-		await organisationStore.refreshOrganisationList()
+		reads.push(organisationStore.refreshOrganisationList())
 	}
 
 	// Always fetch the active organisation from session
 	if (!organisationStore.activeOrganisation) {
-		await organisationStore.getActiveOrganisation()
+		reads.push(organisationStore.getActiveOrganisation())
 	}
+
+	await Promise.all(reads)
 }
 
 /**
  * Force load organisations (always refreshes).
- * Also refetches the active organisation from the user session.
+ * Also refetches the active organisation from the user session, beside the list.
  *
  * @return {Promise<void>}
  */
 async function forceLoadOrganisations() {
-	await organisationStore.refreshOrganisationList()
-
-	// Always refetch the active organisation from session
-	await organisationStore.getActiveOrganisation()
+	await Promise.all([
+		organisationStore.refreshOrganisationList(),
+		// Always refetch the active organisation from session
+		organisationStore.getActiveOrganisation(),
+	])
 }
 
 /**
