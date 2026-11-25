@@ -40,12 +40,18 @@ final class AuditTrailSealedForm {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec exclude audit trail plumbing moved out of the entity, not a capability of its own
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-the-rule-digest-is-part-of-the-hash-chain
 	 */
 	public function serialise(array $values): array {
 		$form = ['id' => $values['id']];
 		foreach (AuditTrailFieldTypes::SEALED_FIELDS as $field) {
 			$form[$field] = $this->value(value: $values[$field]);
+		}
+
+		foreach (AuditTrailFieldTypes::SEALED_WHEN_SET as $field) {
+			if (($values[$field] ?? null) !== null) {
+				$form[$field] = $values[$field];
+			}
 		}
 
 		return $form;

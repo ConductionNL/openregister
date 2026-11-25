@@ -51,6 +51,7 @@ exports[`initial component data golden EditOrganisation starts from the recorded
   "loading": false,
   "loadingGroups": false,
   "loadingUsers": false,
+  "narrowedSpecialRights": {},
   "organisationItem": {
     "active": true,
     "description": "",
@@ -70,6 +71,7 @@ exports[`initial component data golden EditOrganisation starts from the recorded
   "selectedGroups": [],
   "selectedSpecialRights": {
     "agent_use": [],
+    "grant_manage": [],
     "llm_use": [],
   },
   "showAddUserDialog": false,
@@ -827,6 +829,10 @@ exports[`initial component data golden SearchSideBar starts from the recorded st
   "viewIsPublic": false,
   "viewName": "",
   "viewNameTouched": false,
+  "viewPresentation": {
+    "viewType": "table",
+  },
+  "viewPresentationErrors": {},
   "viewSearchQuery": "",
   "viewToDelete": null,
   "viewsStore": undefined,

@@ -22,7 +22,7 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
   - Built except the refusal of a root that holds another installation's managed folders
     (`testAForeignManagedRootIsRefused`): recognising "another installation" needs a marker in the root, and a file
     written into the shared tree is seen by the file listeners, so that choice is left open here.
-- [ ] 1.2 Report the store: `documentStore` in `SettingsService::getFileSettingsOnly()` (so
+- [x] 1.2 Report the store: `documentStore` in `SettingsService::getFileSettingsOnly()` (so
   `FileSettingsController::getFileSettings()` returns it), a read-only block at the top of
   `src/views/settings/sections/FileConfiguration.vue`, and `occ openregister:document-store:status`
   (`lib/Command/DocumentStoreStatusCommand.php`, registered in `appinfo/info.xml`). Load the hydra `writing` skill
@@ -35,6 +35,10 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
     read-only block in `FileConfiguration.vue`, whose labels need values in every locale, and the Playwright test.
   - Playwright `tests/e2e/document-store-status.spec.ts` (`@e2e file-actions::the-administrator-reads-where-documents-live`):
     the settings page shows `Open Registers`, the primary backend and "not separate".
+  - 2026-11-25: the read-only block was already on main (`DocumentStoreStatus.vue` inside `FileConfiguration.vue`,
+    `DocumentStoreStatus.spec.js`). `tests/e2e/document-store-status.spec.ts` is written: it reads `documentStore`
+    over `GET /api/settings/files`, asserts the scenario's GIVEN (root `Open Registers`, not separate) and that the
+    admin settings page shows that root, backend, storage and mount point. Not run here: it needs a live instance.
 - [x] 1.3 Guard the byte paths: `tests/Unit/Service/File/DocumentBytePathTest.php::testNoManagedFileIsReadByLocalPath`
   scans `lib/` for `getLocalFile(`, `getLocalFolder(`, `'datadirectory'` and fails naming file and line, with
   `Application::registerConfigurationServices()` and `Application::buildImportHandler()` as the named exception
