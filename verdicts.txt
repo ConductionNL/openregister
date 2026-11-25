@@ -5361,4 +5361,3 @@
 11069 2106f39e0291e98a9616b373d3e6b00b020368c8 APPROVE cloud-or-reviewer-5: fast path; since approved fa83a9b5 only a main merge (1e257c72); PR-side diff identical over the same 13 files; merges clean with main 1c939e16, no migration
 11117 0c019701f631e095e37c69e1ee50be837f1fa747 APPROVE cloud-or-reviewer-5: fast path; since approved b01b258c only a main merge (55f2aa3e); PR-side diff identical over the same 8 files; merges clean with main 1c939e16, no migration
 10533 47070247dc63611b7ff57bb11dc692b3058d9d0c APPROVE cloud-or-reviewer-5: fast path; since approved 5473faf2 only main merges; PR-side diff identical over the same 85 files; merges clean with main 1c939e16, no migration
-10533 47070247dc63611b7ff57bb11dc692b3058d9d0c REVERIFY or-fix-3: merged main 55f2aa3e, fixed ObjectsController use-block conflict (union); Architecture green, phpstan clean on changed lib files, 13 touched tests and all ObjectsController tests green; review needed
