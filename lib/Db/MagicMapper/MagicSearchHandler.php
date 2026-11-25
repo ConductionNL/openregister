@@ -192,6 +192,9 @@ class MagicSearchHandler {
 		'folder'             => 'scalar',
 		'application'        => 'scalar',
 		'size'               => 'scalar',
+		// The lifecycle status: without it every listed draft reads as an
+		// ordinary object, and the draft sweep can never find one.
+		'status'             => 'scalar',
 	];
 
 	/**
