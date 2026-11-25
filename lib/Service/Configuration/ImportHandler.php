@@ -152,7 +152,9 @@ class ImportHandler {
 	/**
 	 * Per schema id, the uuid of every seed object this seed pass stored or found, by its slug.
 	 *
-	 * @var array<string, array<string, string>>
+	 * Keys are int when the id or slug is numeric: PHP turns a numeric-string key into an int.
+	 *
+	 * @var array<int|string, array<int|string, string>>
 	 */
 	private array $seedObjectUuids = [];
 
