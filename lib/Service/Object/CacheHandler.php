@@ -281,6 +281,29 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	}//end openDistributedCaches()
 
 	/**
+	 * Count lookups of one cache for the metrics endpoint; counting never fails a lookup.
+	 *
+	 * @param string $cache The cache (`object`, `name`).
+	 * @param bool   $hit   Whether the lookups were answered from the cache.
+	 * @param int    $count The number of lookups; nothing is counted below 1.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/production-observability/specs/production-observability/spec.md#requirement-performance-baseline-metrics
+	 */
+	private function countLookups(string $cache, bool $hit, int $count=1): void {
+		if ($count < 1 || $this->runtime->metrics === null) {
+			return;
+		}
+
+		try {
+			$this->runtime->metrics->recordCacheLookup(cache: $cache, hit: $hit, count: $count);
+		} catch (\Throwable $e) {
+			return;
+		}
+	}//end countLookups()
+
+	/**
 	 * Get the MagicMapper lazily to break circular dependency.
 	 *
 	 * @return MagicMapperInterface The unified object mapper.
@@ -327,11 +350,13 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		// Check cache first.
 		if (($this->objectCache[$key] ?? null) !== null) {
 			$this->stats['hits']++;
+			$this->countLookups(cache: 'object', hit: true);
 			return $this->objectCache[$key];
 		}
 
 		// Cache miss - load from database (RBAC + multitenancy enforced by find()).
 		$this->stats['misses']++;
+		$this->countLookups(cache: 'object', hit: false);
 
 		try {
 			$object = $this->getObjectMapper()->find($identifier);
@@ -1678,6 +1703,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		}
 
 		$this->stats['name_misses']++;
+		$this->countLookups(cache: 'name', hit: false);
 
 		return $this->loadSingleName(identifier: $identifier);
 	}//end getSingleObjectName()
@@ -1729,6 +1755,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	private function cachedSingleName(string $key): ?array {
 		if (($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {
 			$this->stats['name_hits']++;
+			$this->countLookups(cache: 'name', hit: true);
 			return ['name' => ($this->visibleNames(candidates: [$key => $this->nameCache[$key]])[$key] ?? null)];
 		}
 
@@ -1757,6 +1784,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 
 			$this->rememberName(key: $key, entry: new CachedName(name: $envelope['n'], organisation: $envelope['o'], source: $envelope['s']));
 			$this->stats['name_hits']++;
+			$this->countLookups(cache: 'name', hit: true);
 			return ['name' => ($this->visibleNames(candidates: [$key => $envelope['n']])[$key] ?? null)];
 		} catch (\Exception $e) {
 			$this->runtime->logger->warning(
@@ -1910,6 +1938,8 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		// database can establish it.
 		$run = $this->collectCachedNames(identifiers: $identifiers);
 		$this->collectDistributedNames(run: $run);
+		$this->countLookups(cache: 'name', hit: true, count: (count($identifiers) - count($run->missing)));
+		$this->countLookups(cache: 'name', hit: false, count: count($run->missing));
 
 		if (empty($run->missing) === false) {
 			$this->loadNamesFromDatabase(run: $run);

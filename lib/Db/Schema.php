@@ -808,10 +808,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * Exactly the set OperatorEvaluator and MagicRbacHandler both evaluate; a
 	 * schema naming any other `$` operator in a match is refused at save.
+	 * `$memberOf` is resolved by ConditionMatcher into a `$in` over the caller's
+	 * membership set before either evaluates it (access-follows-membership).
 	 *
 	 * @var string[]
 	 */
-	public const MATCH_OPERATORS = ['$eq', '$ne', '$in', '$nin', '$contains', '$exists', '$gt', '$gte', '$lt', '$lte'];
+	public const MATCH_OPERATORS = ['$eq', '$ne', '$in', '$nin', '$contains', '$exists', '$gt', '$gte', '$lt', '$lte', '$memberOf'];
 
 	/**
 	 * The list-surface annotation: declared columns and search fields.

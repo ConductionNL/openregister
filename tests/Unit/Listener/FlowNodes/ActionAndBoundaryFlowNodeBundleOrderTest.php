@@ -161,6 +161,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 			$this->node('sendNotification', SendNotificationNodeInterface::class),
 			$this->node('sendEmail', SendEmailNodeInterface::class),
 			$this->node('sendTalkMessage', SendTalkMessageNodeInterface::class),
+			$this->node('surveyInvite', \OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface::class),
 		);
 	}
 
@@ -201,7 +202,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 
 	public function testMessagingListsNotificationEmailTalk(): void {
 		$nodes = $this->messaging()->nodes();
-		$this->assertSame($this->pick(['sendNotification', 'sendEmail', 'sendTalkMessage']), $nodes);
+		$this->assertSame($this->pick(['sendNotification', 'sendEmail', 'sendTalkMessage', 'surveyInvite']), $nodes);
 	}
 
 	public function testHumanTasksListUserTaskThenPortalTask(): void {
@@ -228,7 +229,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 		$this->assertSame(
 			$this->pick([
 				'flowState', 'map', 'iterate', 'decisionTable',
-				'sendNotification', 'sendEmail', 'sendTalkMessage',
+				'sendNotification', 'sendEmail', 'sendTalkMessage', 'surveyInvite',
 				'userTask', 'portalTask',
 				'lockObject', 'unlockObject',
 			]),

@@ -68,13 +68,8 @@ final class IntegrationRegistrar {
 	}//end register()
 
 	/**
-	 * Resolve every BuiltinProviders/* class and register it with the
-	 * shared IntegrationRegistry.
-	 *
-	 * Kept separate from the DI registration in register() because
-	 * addProvider() needs the registry instance — i.e. it has to run after
-	 * the container has fully bootstrapped. `boot()` is the canonical
-	 * post-registration hook for that.
+	 * Install the loader that adds every built-in provider to the shared
+	 * IntegrationRegistry on the registry's first read.
 	 *
 	 * @param mixed $server Server container (passed in from boot()).
 	 *

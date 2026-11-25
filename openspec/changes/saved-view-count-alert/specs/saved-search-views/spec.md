@@ -17,7 +17,6 @@ or a user with write on a shared view, SHALL set or clear it.
 - **GIVEN** a view update with `alert: {operator: "above", threshold: 10}`
 - **WHEN** it is saved
 - **THEN** the response is 422 naming `operator`
-- @e2e exclude {validator, covered by unit tests}
 
 ### Requirement: A view alert fires once per crossing and re-arms
 

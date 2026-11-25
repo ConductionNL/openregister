@@ -158,6 +158,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 					sendNotification: $mock(SendNotificationNode::class),
 					sendEmail: $mock(SendEmailNode::class),
 					sendTalkMessage: $mock(SendTalkMessageNode::class),
+					surveyInvite: $mock(\OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode::class),
 				)),
 				coordination: new CoordinationFlowNodes(humanTasks: new HumanTaskFlowNodes(
 					userTask: $mock(UserTaskNode::class),
@@ -203,7 +204,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
-		$this->assertCount(36, $registered, 'all thirty-six built-ins are registered');
+		$this->assertCount(37, $registered, 'all thirty-seven built-ins are registered');
 		$classes = array_map(static fn (IFlowNode $node): string => get_parent_class($node) ?: get_class($node), $registered);
 		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class, CaseOpenNode::class, CaseAdvanceNode::class, ActionInputsNode::class, TransitionNode::class, LinkObjectNode::class] as $waiter) {
 			$this->assertContains($waiter, $classes, "$waiter is registered");

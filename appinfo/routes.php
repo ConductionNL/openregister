@@ -47,6 +47,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
         // Approval plane of app-declared credential providers (app-declared-credential-providers 3.2):
         // administrators only. The identifier is `<appId>:<localId>`.
+        ['name' => 'declaredCredentialProviders#index', 'url' => '/api/credentials/providers/declared', 'verb' => 'GET'],
         ['name' => 'credentialProviderApproval#approve', 'url' => '/api/credentials/providers/{identifier}/approve', 'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
         ['name' => 'credentialProviderApproval#reject',  'url' => '/api/credentials/providers/{identifier}/reject',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
         ['name' => 'credentialProviderApproval#revoke',  'url' => '/api/credentials/providers/{identifier}/revoke',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
@@ -1514,6 +1515,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
         ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
         ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
+        // A whole base export: read it and propose the register it becomes; writes nothing (REQ-IPC-006).
+        ['name' => 'importPreview#proposeBase', 'url' => '/api/import-previews/base', 'verb' => 'POST'],
         ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#failed', 'url' => '/api/import-previews/{id}/failed', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
@@ -1677,6 +1680,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
+        // Whether a published file still matches its sealed digest (published-file-digest REQ-PFD-002).
+        ['name' => 'files#verifyDigest', 'url' => '/api/files/{fileId}/digest/verify', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 		['name' => 'files#office', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/office', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#officePage', 'url' => '/office/{register}/{schema}/{id}/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		// An object's folder for the files browser, subfolders included, through
@@ -2019,6 +2024,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'organisation#deprovision', 'url' => '/api/organisations/{uuid}/deprovision', 'verb' => 'PUT'],
         ['name' => 'organisation#retain', 'url' => '/api/organisations/{uuid}/retain', 'verb' => 'PUT'],
         ['name' => 'organisation#usage', 'url' => '/api/organisations/{uuid}/usage', 'verb' => 'GET'],
+        ['name' => 'organisation#promote', 'url' => '/api/organisations/{uuid}/promote', 'verb' => 'POST'],
 
         // Admin - Tenant isolation verification and metrics.
         ['name' => 'organisation#isolationVerify', 'url' => '/api/admin/isolation-verify', 'verb' => 'POST'],
@@ -2145,6 +2151,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		// Rapportage on-demand render endpoints (Phase 2).
 		// rapportage-bi-export: render a report template over a period. Literal, so before reports/{id}/render.
 		['name' => 'reportTemplate#generate', 'url' => '/api/reports/generate', 'verb' => 'POST'],
+		// rapportage-bi-export: the audit report of a register, an actor and a period, administrators only.
+		['name' => 'auditReport#audit', 'url' => '/api/reports/audit', 'verb' => 'GET'],
 		['name' => 'reports#render',  'url' => '/api/reports/{id}/render',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'reports#preview', 'url' => '/api/reports/{id}/preview', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
 		['name' => 'ui#templates', 'url' => '/templates', 'verb' => 'GET'],
@@ -2214,6 +2222,20 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 			'url' => '/api/surveys/{register}/{survey}/export',
 			'verb' => 'GET',
 			'requirements' => ['register' => '[^/]+', 'survey' => '[^/]+'],
+		],
+		// Answering a survey from its invitation link, with no account
+		// (survey-object REQ-SURV-002): read the form, submit the answers.
+		[
+			'name' => 'surveyAnswer#show',
+			'url' => '/api/public/surveys/{anchor}',
+			'verb' => 'GET',
+			'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+		],
+		[
+			'name' => 'surveyAnswer#submit',
+			'url' => '/api/public/surveys/{anchor}',
+			'verb' => 'POST',
+			'requirements' => ['anchor' => '[A-Za-z0-9]+'],
 		],
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
 		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],

@@ -29,7 +29,7 @@
 						<NcSelect
 							:modelValue="selected[row.right]"
 							:inputLabel="row.inputLabel"
-							:options="options"
+							:options="optionsFor(row)"
 							label="name"
 							trackBy="id"
 							:multiple="true"
@@ -37,6 +37,14 @@
 							@update:modelValue="
 								$emit('update', { right: row.right, groups: $event })
 							" />
+						<ul
+							v-if="narrowedOf(row).length > 0"
+							class="narrowed-entries"
+							:data-testid="`narrowed-${row.right}`">
+							<li v-for="(entry, index) in narrowedOf(row)" :key="index">
+								{{ narrowedEntryLabel(entry) }}
+							</li>
+						</ul>
 					</td>
 				</tr>
 			</tbody>
@@ -47,7 +55,7 @@
 <script>
 import { translate as t } from '@nextcloud/l10n'
 import { NcSelect } from '@nextcloud/vue'
-import { everyoneOption, SPECIAL_RIGHTS } from './organisationRights.js'
+import { everyoneOption, narrowedEntryLabel, SPECIAL_RIGHTS } from './organisationRights.js'
 
 /**
  * The table granting each special right to groups.
@@ -61,6 +69,7 @@ export default {
 	props: {
 		selected: { type: Object, required: true },
 		groups: { type: Array, required: true },
+		narrowed: { type: Object, default: () => ({}) },
 	},
 
 	emits: ['update'],
@@ -77,7 +86,33 @@ export default {
 		},
 	},
 
-	methods: { t },
+	methods: {
+		t,
+		narrowedEntryLabel,
+
+		/**
+		 * The choices under one right: everyone and the groups, or only the groups
+		 * for a right the server does not give to everyone.
+		 *
+		 * @param {object} row The right
+		 * @return {Array<object>} The options
+		 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+		 */
+		optionsFor(row) {
+			return row.allowsEveryone === false ? this.groups : this.options
+		},
+
+		/**
+		 * The narrowed entries of one right, shown under its picker and kept as stored.
+		 *
+		 * @param {object} row The right
+		 * @return {Array<object>} The entries
+		 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+		 */
+		narrowedOf(row) {
+			return Array.isArray(this.narrowed[row.right]) ? this.narrowed[row.right] : []
+		},
+	},
 }
 </script>
 
@@ -91,6 +126,13 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 	padding: 8px 0;
+}
+
+.narrowed-entries {
+	margin: 4px 0 0;
+	padding-inline-start: 20px;
+	list-style: disc;
+	color: var(--color-text-maxcontrast);
 }
 
 .special-rights-table {

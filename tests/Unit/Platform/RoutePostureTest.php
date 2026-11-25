@@ -102,12 +102,20 @@ final class RoutePostureTest extends TestCase {
 	private const OAUTH_STATE = 'the OAuth state issued when the connection was started';
 
 	/**
+	 * The metrics access guard: an administrator session, the scraper token or an allowed address.
+	 *
+	 * @var string
+	 */
+	private const METRICS_ACCESS = 'the metrics access guard: an administrator, the scraper bearer token or an allowed address, nobody without a guard';
+
+	/**
 	 * Every public routed method, relative to `OCA\OpenRegister\`, with what it relies on instead of a session.
 	 *
 	 * @var array<string, string>
 	 */
 	private const PUBLIC_METHODS = [
 		'AppHost\\Controller\\GenericHealthController::index' => self::PUBLIC_DOCUMENT,
+		'AppHost\\Controller\\GenericMetricsController::index' => self::METRICS_ACCESS,
 		'AppHost\\Controller\\GenericReadinessController::index' => self::PUBLIC_DOCUMENT,
 		'Controller\\AccessLinkController::comment' => self::TOKEN,
 		'Controller\\AccessLinkController::open' => self::TOKEN,
@@ -163,6 +171,8 @@ final class RoutePostureTest extends TestCase {
 		'Controller\\SchemasController::index' => self::PUBLIC_DOCUMENT,
 		'Controller\\SchemasController::resolveByImplements' => self::PUBLIC_DOCUMENT,
 		'Controller\\SchemasController::show' => self::PUBLIC_DOCUMENT,
+		'Controller\\SurveyAnswerController::show' => self::TOKEN,
+		'Controller\\SurveyAnswerController::submit' => self::TOKEN,
 		'Controller\\TagsController::getAllTags' => self::SESSION,
 		'Controller\\UserController::login' => self::CREDENTIALS,
 		'Controller\\UserController::logout' => self::SESSION,
@@ -190,6 +200,7 @@ final class RoutePostureTest extends TestCase {
 		'Files\\Controller\\FilesController::unlock' => self::OBJECT_RULE,
 		'Files\\Controller\\FilesController::update' => self::OBJECT_RULE,
 		'Files\\Controller\\FilesController::updateLabels' => self::OBJECT_RULE,
+		'Files\\Controller\\FilesController::verifyDigest' => self::PUBLISHED_FILE,
 		'Notifications\\Controller\\WebPushController::hexBadge' => self::PUBLIC_DOCUMENT,
 		'Notifications\\Controller\\WebPushController::hexIcon' => self::PUBLIC_DOCUMENT,
 		'Search\\Controller\\GraphQLController::execute' => self::OBJECT_RULE,
