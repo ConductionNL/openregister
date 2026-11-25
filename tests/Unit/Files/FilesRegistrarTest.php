@@ -65,7 +65,7 @@ class FilesRegistrarTest extends TestCase
             $expected[] = ['alias' => $contract, 'target' => $service];
         }
 
-        $this->assertCount(35, $expected);
+        $this->assertCount(36, $expected);
         $this->assertSame(ObjectFileAccess::class, FilesRegistrar::BINDINGS[ObjectFileRightsInterface::class]);
         $this->assertSame(expected: $expected, actual: $context->aliases);
     }//end testEveryInterfaceIsBoundToItsImplementation()
