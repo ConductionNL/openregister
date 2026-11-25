@@ -1,0 +1,712 @@
+{
+ "info": {
+  "_postman_id": "or-record-type-audit-2026-11-25",
+  "name": "OpenRegister Record Type Audit",
+  "description": "Schema and register changes on the audit trail, asserted over HTTP (change capability-rows-verified-c, task 2.3).\n\nWHAT IT ASSERTS: creating, changing and deleting a register and a schema each leave one audit row with the action (`register.created|updated|deleted`, `schema.created|updated|deleted`), the item's uuid and the acting administrator; a change row carries what changed.\n\nWHAT IT DOES NOT ASSERT: the before and after values of a change. The audit list masks `changed` for every reader; RecordTypeAuditListenerTest covers the values.\n\nHermetic: it creates its register and schema and removes both.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{admin_user}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{admin_password}}",
+    "type": "string"
+   }
+  ]
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "http://localhost",
+   "type": "string"
+  },
+  {
+   "key": "admin_user",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "admin_password",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "registerId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "registerUuid",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "schemaId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "schemaUuid",
+   "value": "",
+   "type": "string"
+  }
+ ],
+ "item": [
+  {
+   "name": "setUp: a register",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"record type audit register\", \"description\": \"capability-rows-verified-c task 2.3 fixture\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('registerId', String(pm.response.json().id));",
+       "pm.collectionVariables.set('registerUuid', String(pm.response.json().uuid));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the audit trail holds register.created for it",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails?action=register.created&_limit=100",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "audit-trails"
+     ],
+     "query": [
+      {
+       "key": "action",
+       "value": "register.created"
+      },
+      {
+       "key": "_limit",
+       "value": "100"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the audit trail answers', () => pm.response.to.have.status(200));",
+       "const row = (pm.response.json().results || []).find(r => r.registerUuid === pm.collectionVariables.get('registerUuid'));",
+       "pm.test('one register.created row names the register and the acting administrator', () => {",
+       "  pm.expect(row, 'no register.created row for this register').to.be.an('object');",
+       "  pm.expect(row.action).to.eql('register.created');",
+       "  pm.expect(row.user).to.eql(pm.collectionVariables.get('admin_user'));",
+       "});"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a schema",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"record type audit schema\", \"slug\": \"recordtypeauditschema\", \"properties\": {\"naam\": {\"type\": \"string\"}}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('schemaId', String(pm.response.json().id));",
+       "pm.collectionVariables.set('schemaUuid', String(pm.response.json().uuid));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the audit trail holds schema.created for it",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails?action=schema.created&_limit=100",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "audit-trails"
+     ],
+     "query": [
+      {
+       "key": "action",
+       "value": "schema.created"
+      },
+      {
+       "key": "_limit",
+       "value": "100"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the audit trail answers', () => pm.response.to.have.status(200));",
+       "const row = (pm.response.json().results || []).find(r => r.schemaUuid === pm.collectionVariables.get('schemaUuid'));",
+       "pm.test('one schema.created row names the schema and the acting administrator', () => {",
+       "  pm.expect(row, 'no schema.created row for this schema').to.be.an('object');",
+       "  pm.expect(row.action).to.eql('schema.created');",
+       "  pm.expect(row.user).to.eql(pm.collectionVariables.get('admin_user'));",
+       "});"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "change the schema's title",
+   "request": {
+    "method": "PUT",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"record type audit schema, renamed\", \"slug\": \"recordtypeauditschema\", \"properties\": {\"naam\": {\"type\": \"string\"}}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema is changed', () => pm.response.to.have.status(200));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the audit trail holds schema.updated for it",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails?action=schema.updated&_limit=100",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "audit-trails"
+     ],
+     "query": [
+      {
+       "key": "action",
+       "value": "schema.updated"
+      },
+      {
+       "key": "_limit",
+       "value": "100"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the audit trail answers', () => pm.response.to.have.status(200));",
+       "const row = (pm.response.json().results || []).find(r => r.schemaUuid === pm.collectionVariables.get('schemaUuid'));",
+       "pm.test('one schema.updated row names the schema and the acting administrator', () => {",
+       "  pm.expect(row, 'no schema.updated row for this schema').to.be.an('object');",
+       "  pm.expect(row.action).to.eql('schema.updated');",
+       "  pm.expect(row.user).to.eql(pm.collectionVariables.get('admin_user'));",
+       "  pm.expect(row.changed, 'a change row carries what changed').to.have.property('changes');",
+       "});"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "change the register's title",
+   "request": {
+    "method": "PUT",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers",
+      "{{registerId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"record type audit register, renamed\", \"description\": \"capability-rows-verified-c task 2.3 fixture\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the register is changed', () => pm.response.to.have.status(200));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the audit trail holds register.updated for it",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails?action=register.updated&_limit=100",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "audit-trails"
+     ],
+     "query": [
+      {
+       "key": "action",
+       "value": "register.updated"
+      },
+      {
+       "key": "_limit",
+       "value": "100"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the audit trail answers', () => pm.response.to.have.status(200));",
+       "const row = (pm.response.json().results || []).find(r => r.registerUuid === pm.collectionVariables.get('registerUuid'));",
+       "pm.test('one register.updated row names the register and the acting administrator', () => {",
+       "  pm.expect(row, 'no register.updated row for this register').to.be.an('object');",
+       "  pm.expect(row.action).to.eql('register.updated');",
+       "  pm.expect(row.user).to.eql(pm.collectionVariables.get('admin_user'));",
+       "  pm.expect(row.changed, 'a change row carries what changed').to.have.property('changes');",
+       "});"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the schema",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas",
+      "{{schemaId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema is deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the audit trail holds schema.deleted for it",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails?action=schema.deleted&_limit=100",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "audit-trails"
+     ],
+     "query": [
+      {
+       "key": "action",
+       "value": "schema.deleted"
+      },
+      {
+       "key": "_limit",
+       "value": "100"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the audit trail answers', () => pm.response.to.have.status(200));",
+       "const row = (pm.response.json().results || []).find(r => r.schemaUuid === pm.collectionVariables.get('schemaUuid'));",
+       "pm.test('one schema.deleted row names the schema and the acting administrator', () => {",
+       "  pm.expect(row, 'no schema.deleted row for this schema').to.be.an('object');",
+       "  pm.expect(row.action).to.eql('schema.deleted');",
+       "  pm.expect(row.user).to.eql(pm.collectionVariables.get('admin_user'));",
+       "});"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the register",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers",
+      "{{registerId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the register is deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the audit trail holds register.deleted for it",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/audit-trails?action=register.deleted&_limit=100",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "audit-trails"
+     ],
+     "query": [
+      {
+       "key": "action",
+       "value": "register.deleted"
+      },
+      {
+       "key": "_limit",
+       "value": "100"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the audit trail answers', () => pm.response.to.have.status(200));",
+       "const row = (pm.response.json().results || []).find(r => r.registerUuid === pm.collectionVariables.get('registerUuid'));",
+       "pm.test('one register.deleted row names the register and the acting administrator', () => {",
+       "  pm.expect(row, 'no register.deleted row for this register').to.be.an('object');",
+       "  pm.expect(row.action).to.eql('register.deleted');",
+       "  pm.expect(row.user).to.eql(pm.collectionVariables.get('admin_user'));",
+       "});"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

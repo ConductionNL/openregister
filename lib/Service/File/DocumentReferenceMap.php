@@ -80,6 +80,7 @@ final class DocumentReferenceMap {
 		'openregister_flow_steps.node_id' => 'The id of a node in a flow graph, a string the flow defines.',
 		'openregister_tasks.node_id' => 'The flow graph node that opened the task, not a Nextcloud node.',
 		'openregister_flow_timers.node_id' => 'The flow graph node a timer belongs to, not a Nextcloud node.',
+		'openregister_flow_moments.node_id' => 'The flow graph node a calendar moment belongs to, not a Nextcloud node.',
 		'openregister_task_sequences.node_id' => 'The flow graph node that opened the sequence, not a Nextcloud node.',
 		'openregister_run_object_locks.node_id' => 'The flow graph node holding the lock, not a Nextcloud node.',
 		'openregister_scheduled_reports.delivery_folder' => 'A folder path in the recipient\'s own Files, outside the managed tree.',

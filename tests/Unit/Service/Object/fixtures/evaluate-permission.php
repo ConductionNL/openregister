@@ -127,6 +127,7 @@ return array (
     'verdict' => false,
     'log' => 
     array (
+      0 => 'info: [PermissionHandler] Anonymous caller refused: to admit it, add the `public` group to the schema\'s authorization for this verb {"plane":"object","schemaId":"41","action":"create","cause":"no-rule","authorizationDeclared":false,"failClosedWrite":true}',
     ),
   ),
   'anonymous create public granted' => 
@@ -141,6 +142,7 @@ return array (
     'verdict' => false,
     'log' => 
     array (
+      0 => 'info: [PermissionHandler] Anonymous caller refused: to admit it, add the `public` group to the schema\'s authorization for this verb {"plane":"object","schemaId":"41","action":"update","cause":"no-rule","authorizationDeclared":true,"failClosedWrite":true}',
     ),
   ),
   'anonymous delete public granted' => 
@@ -162,6 +164,7 @@ return array (
     'verdict' => false,
     'log' => 
     array (
+      0 => 'info: [PermissionHandler] Anonymous caller refused: to admit it, add the `public` group to the schema\'s authorization for this verb {"plane":"object","schemaId":"41","action":"read","cause":"rule-refused","authorizationDeclared":true,"failClosedWrite":false}',
     ),
   ),
   'anonymous custom verb' => 

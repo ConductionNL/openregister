@@ -34,6 +34,8 @@ use OCA\OpenRegister\Service\Object\RetentionDestructionInterface;
 use OCA\OpenRegister\Service\Object\SaveObjectWriterInterface;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\CopySealerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ExportKeySealersInterface;
 use OCA\OpenRegister\Tests\Support\AuditTrailEvents;
 use OCP\IGroup;
 use OCP\IGroupManager;
@@ -134,6 +136,20 @@ class DestructionListRunBehaviourTest extends TestCase {
 	 * @var integer
 	 */
 	private int $frames = 0;
+
+	/**
+	 * The export-key sealer the list's organisation has, or null for none.
+	 *
+	 * @var CopySealerInterface|null
+	 */
+	private ?CopySealerInterface $sealer = null;
+
+	/**
+	 * Organisations the sealers were asked about.
+	 *
+	 * @var string[]
+	 */
+	private array $sealersAsked = [];
 
 	/**
 	 * Build a list object with the given status and entries.
@@ -298,6 +314,7 @@ class DestructionListRunBehaviourTest extends TestCase {
 			SaveObjectWriterInterface::class       => $saver,
 			INotificationManager::class            => $notifications,
 			IGroupManager::class                   => $groups,
+			ExportKeySealersInterface::class       => $this->sealers(),
 		];
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(fn (string $id): object => $services[$id]);
@@ -574,6 +591,100 @@ class DestructionListRunBehaviourTest extends TestCase {
 			$this->assertSame([['7', '8', 'a', null, false, false]], $this->deleted);
 		} finally {
 			@unlink($location . '/list-1/a.json');
+			@rmdir($location . '/list-1');
+			@rmdir($location);
+		}
+	}
+
+	/**
+	 * The sealers the run resolves for an encrypted copy, answering {@see $sealer}.
+	 *
+	 * @return ExportKeySealersInterface
+	 */
+	private function sealers(): ExportKeySealersInterface {
+		$sealers = $this->createMock(ExportKeySealersInterface::class);
+		$sealers->method('sealerFor')->willReturnCallback(
+			function (string $organisation): ?CopySealerInterface {
+				$this->sealersAsked[] = $organisation;
+				return $this->sealer;
+			}
+		);
+
+		return $sealers;
+	}
+
+	/**
+	 * A sealer that marks what it sealed, under a fixed fingerprint.
+	 *
+	 * @return CopySealerInterface
+	 */
+	private static function markingSealer(): CopySealerInterface {
+		return new class implements CopySealerInterface {
+			public function fingerprint(): string {
+				return '0123456789abcdef';
+			}
+
+			public function seal(string $plain): string {
+				return 'SEALED:' . strlen($plain);
+			}
+		};
+	}
+
+	/**
+	 * With `required` and no usable export key nothing is destroyed, and the
+	 * list's report names the organisation whose key is missing (D-6).
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
+	 */
+	public function testRequiredEncryptionWithoutAKeyDestroysNothingAndTheReportNamesTheKey(): void {
+		$location = sys_get_temp_dir() . '/or-destruction-copy-' . bin2hex(random_bytes(4));
+		mkdir($location);
+		$this->listObject('approved', [['uuid' => 'a'], ['uuid' => 'b']])->setOrganisation('org-1');
+		$a = $this->object('a');
+		$this->object('b');
+
+		try {
+			$this->makeRun(settings: ['destructionCopyLocation' => $location, 'destructionCopyEncryption' => 'required'])->execute('list-1');
+
+			$this->assertSame([], $this->deleted);
+			$this->assertSame([], $this->audits);
+			$this->assertSame(['archiefnominatie' => 'vernietigen'], $a->getRetention());
+			$final = $this->updates[1];
+			$this->assertSame([0, 2], [$final['destroyedCount'], $final['skippedErrors']]);
+			$this->assertStringContainsString('"org-1" has no usable export key', $final['copyRefusal']);
+			$this->assertSame(['org-1'], $this->sealersAsked);
+			$this->assertSame([], (array) glob($location . '/list-1/*'));
+		} finally {
+			@rmdir($location . '/list-1');
+			@rmdir($location);
+		}
+	}
+
+	/**
+	 * With a usable export key the copy is encrypted and the recorded
+	 * destruction names the copy and the key's fingerprint (D-6).
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
+	 */
+	public function testAnEncryptedCopyIsNamedWithItsKeyFingerprint(): void {
+		$location = sys_get_temp_dir() . '/or-destruction-copy-' . bin2hex(random_bytes(4));
+		mkdir($location);
+		$this->listObject('approved', [['uuid' => 'a']])->setOrganisation('org-1');
+		$this->object('a');
+		$this->sealer = self::markingSealer();
+
+		try {
+			$this->makeRun(settings: ['destructionCopyLocation' => $location, 'destructionCopyEncryption' => 'when-key'])->execute('list-1');
+
+			$copy = $location . '/list-1/a.json.orsetenc';
+			$this->assertStringStartsWith('SEALED:', (string) file_get_contents($copy));
+			$this->assertFileDoesNotExist($location . '/list-1/a.json');
+			$this->assertSame($copy, $this->audits[0][2]['copy']);
+			$this->assertSame('0123456789abcdef', $this->audits[0][2]['copyKeyFingerprint']);
+			$this->assertSame([['7', '8', 'a', null, false, false]], $this->deleted);
+			$this->assertArrayNotHasKey('copyRefusal', $this->updates[1]);
+		} finally {
+			@unlink($location . '/list-1/a.json.orsetenc');
 			@rmdir($location . '/list-1');
 			@rmdir($location);
 		}

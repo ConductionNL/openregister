@@ -13,7 +13,8 @@
 
 ## 3. Tests and docs
 
-- [ ] 3.1 Add `tests/e2e/ci/schema-change-notice.spec.ts`: a second user calls a schema's objects, a third follows it, an administrator attempts and then acknowledges a breaking change; both users see the notification and an object read carries the header.
+- [x] 3.1 Add `tests/e2e/ci/schema-change-notice.spec.ts`: a second user calls a schema's objects, a third follows it, an administrator attempts and then acknowledges a breaking change; both users see the notification and an object read carries the header.
+  - 2026-11-25: on a sandbox Nextcloud 34 on MariaDB the spec passed 4 of 4 with the notice job executed as it was queued: the 409 names `e2e-other` (who called the schema's objects by slug; a call by numeric ids is not attributed, as the service documents) and one follower (`e2e-owner`), the acknowledged change lands in the changelog, both users receive the notification (`noticeSentTo: 2`) and an object read carries `OpenRegister-Schema-Changed` and the changelog `Link`. The delivery check skips, naming why, on an instance whose web cron does not reach the queued job within two minutes (the sandbox's 2,200-job queue did not).
 - [~] 3.2 Document following a schema and the notice in `docs/features/`, with a screenshot of the notification.
   - Written: `docs/features/schema-change-notice.md` (the 409 with who is affected, acknowledging with `changeNotice`, the notice, following, the header) and its entry in `docs/features/README.md`. The notification screenshot needs a live run and is left open.
 

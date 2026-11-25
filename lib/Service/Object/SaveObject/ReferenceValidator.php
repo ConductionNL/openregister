@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\BrokenReference;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
+use OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -90,7 +91,7 @@ final class ReferenceValidator {
 	 */
 	private function validateProperty(ReferencePropertyRun $run): void {
 		$property = $run->property;
-		$run->strictness = (new ReferenceStrictness())->forProperty(property: $property);
+		$run->strictness = self::strictnessOf(property: $property);
 		$ref = $property['$ref'] ?? $property['items']['$ref'] ?? null;
 		$value = $run->data[$run->propertyName] ?? null;
 		if ($run->strictness === null || $ref === null || self::isSkipped(run: $run, value: $value) === true) {
@@ -101,6 +102,32 @@ final class ReferenceValidator {
 		$run->targetRegister = $property['register'] ?? $run->register;
 		$this->validateValues(run: $run, values: self::values(property: $property, value: $value));
 	}//end validateProperty()
+
+	/**
+	 * How strictly a property's references are checked, or null when they are not.
+	 *
+	 * The `validateReference` switch decides, except that a property declaring a
+	 * reference filter is always checked: a write outside the filter SHALL be
+	 * refused whatever client made it, and a filter that only held when its
+	 * author also switched on existence validation let any API client store a
+	 * value the picker would never offer. Such a property is strict unless it
+	 * asks for `warn` itself.
+	 *
+	 * @param array $property The property definition.
+	 *
+	 * @return string|null `error`, `warn`, or null.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 */
+	private static function strictnessOf(array $property): ?string {
+		$strictness = (new ReferenceStrictness())->forProperty(property: $property);
+		$filter     = ($property[ReferenceFilterDeclaration::ANNOTATION] ?? null);
+		if ($filter === null || $filter === [] || $strictness === 'warn') {
+			return $strictness;
+		}
+
+		return 'error';
+	}//end strictnessOf()
 
 	/**
 	 * Validate each non-empty value of the run's property.

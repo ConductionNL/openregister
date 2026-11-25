@@ -475,6 +475,7 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 	 * @return void
 	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
+	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md#requirement-the-record-reaches-a-person-not-only-a-log-req-rrn-03
 	 */
 	private function fireRule(RuleFiring $firing, string $trigger): void {
 		if ($this->ruleApplies(firing: $firing, trigger: $trigger) === false) {
@@ -513,9 +514,15 @@ class AnnotationNotificationDispatcher implements NotificationRuleDispatcherInte
 				);
 			}
 
+			if ($addressesReached > 0) {
+				$this->reachRecorder->reachedSomebody(ruleId: $firing->ruleId);
+			}
+
 			return;
 		}
 
+		// It reached somebody, so it no longer reads as unstaffed on the settings page.
+		$this->reachRecorder->reachedSomebody(ruleId: $firing->ruleId);
 		$this->resolveRuleDelivery(firing: $firing);
 		$this->dispatchBroadcasts(firing: $firing);
 

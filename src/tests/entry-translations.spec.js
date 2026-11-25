@@ -39,8 +39,8 @@ const IMPORT_SPECIFIER =
 /** The library itself or one of its JS subpaths. A stylesheet renders no label. */
 const LIBRARY = /^@conduction\/nextcloud-vue(\/|$)/
 
-/** The call an entry must make. */
-const REGISTERS = /\bregister(?:Library)?Translations\s*\(\s*\)/
+/** The call an entry must make (the lazy loader counts: it registers the same catalogue). */
+const REGISTERS = /\b(?:register(?:Library)?Translations|loadLibraryTranslations)\s*\(\s*\)/
 
 /**
  * Remove comments, so a commented-out call cannot satisfy the guard.
@@ -125,8 +125,12 @@ function webpackEntries() {
 	// and throws on a bare require without them.
 	process.env.npm_package_name = process.env.npm_package_name || 'openregister'
 	process.env.npm_package_version = process.env.npm_package_version || '0.0.0'
-	const config = require(path.join(ROOT, 'webpack.config.js'))
-	return Object.entries(config.entry).map(([name, value]) => [
+	const exported = require(path.join(ROOT, 'webpack.config.js'))
+	// One compilation per element when the config is an array (the global
+	// script builds on its own); their entries together are the app's entries.
+	const configs = Array.isArray(exported) ? exported : [exported]
+	const entry = Object.assign({}, ...configs.map((config) => config.entry))
+	return Object.entries(entry).map(([name, value]) => [
 		name,
 		path.resolve(ROOT, typeof value === 'string' ? value : value.import),
 	])
