@@ -126,6 +126,7 @@ DOMAIN_ORDER=(
     "public-export"
     "nlgov-conformance"
     "reply-threading"
+    "search-dutch-stemming"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -236,6 +237,9 @@ declare -A DOMAIN_COLLECTIONS=(
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
     # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
     [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
+    # search-dutch-language-quality 1.5: _search=omgevingsvergunningen finds "Omgevingsvergunning bouwen" where the
+    # database stems Dutch (PostgreSQL), and nothing where it does not; the capability says which.
+    [search-dutch-stemming]="$REPO_ROOT/tests/integration/openregister-search-dutch-stemming.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
