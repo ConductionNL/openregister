@@ -74,5 +74,8 @@ final class CapabilityRegistrar {
 		// AuthorizationCapability — the access scope kinds the engine enforces
 		// (access-owner-and-condition-scopes).
 		$context->registerCapability(AuthorizationCapability::class);
+		// SearchCapability — whether `_search` stems, and with which text
+		// search configuration (search-dutch-language-quality).
+		$context->registerCapability(SearchCapability::class);
 	}//end register()
 }//end class
