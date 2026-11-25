@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
+use OCA\OpenRegister\Kernel\Contracts\DefaultOrganisationInterface;
 use OCA\OpenRegister\Search\Db\ViewMapperInterface;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
@@ -366,6 +367,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			CaseItemMapperInterface::class => $this->caseItemMapper(),
 			IUserManager::class       => $this->createMock(IUserManager::class),
 			OrganisationServiceInterface::class => $this->organisationService(),
+			DefaultOrganisationInterface::class => $this->organisationService(),
 			default                   => $this->services[$id],
 		});
 		$files     = new ExampleSetFiles(container: $container);

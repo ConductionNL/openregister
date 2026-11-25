@@ -794,6 +794,9 @@ final class ListenerRegistrar {
 		// listener never fails the move: the projection is derived and
 		// rebuildable, the transition is not.
 		CoreListenerRegistrar::stateHistory(context: $context);
+
+		// The semantic provider list the integrations capability advertises follows schemas, registers and apps.
+		CoreListenerRegistrar::semanticProviders(context: $context);
 	}//end registerCacheEvictionListeners()
 
 	/**
@@ -831,6 +834,8 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectTransitionedEvent::class, StateEntryFreezeListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
+		// Queue-mode handoff drain on app enable: a provider may have appeared.
+		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
 	}//end registerProjectionAndHandoffListeners()
 
 	/**
