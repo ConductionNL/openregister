@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Middleware;
 
 use Exception;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
+use OCA\OpenRegister\Exception\RegistryLensException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -40,7 +41,7 @@ use OCP\AppFramework\Middleware;
 class RelatedRowFilterMiddleware extends Middleware {
 
 	/**
-	 * Map RelatedRowFilterNotSupportedException and ExplicitRevealQueryException onto a 400 response.
+	 * Map RelatedRowFilterNotSupportedException, ExplicitRevealQueryException and RegistryLensException onto a 400 response.
 	 *
 	 * @param Controller $controller The controller that was executing.
 	 * @param string     $methodName The controller method that was executing.
@@ -53,23 +54,27 @@ class RelatedRowFilterMiddleware extends Middleware {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the Middleware contract.
 	 *
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-subscription-state-and-freshness-are-query-lenses
 	 */
 	public function afterException(Controller $controller, string $methodName, Exception $exception): Response {
 		return $this->badRequestOrRethrow(exception: $exception);
 	}//end afterException()
 
 	/**
-	 * The 400 for a refused related-row or reveal query; anything else is rethrown.
+	 * The 400 for a refused related-row, reveal or registry-lens query; anything else is rethrown.
 	 *
 	 * @param Exception $exception The exception that was thrown.
 	 *
 	 * @return JSONResponse The 400 response.
 	 *
 	 * @throws Exception Rethrows every other exception.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-subscription-state-and-freshness-are-query-lenses
 	 */
 	private function badRequestOrRethrow(Exception $exception): JSONResponse {
 		if ($exception instanceof RelatedRowFilterNotSupportedException === false
 			&& $exception instanceof ExplicitRevealQueryException === false
+			&& $exception instanceof RegistryLensException === false
 		) {
 			throw $exception;
 		}
