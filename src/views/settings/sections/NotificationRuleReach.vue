@@ -4,7 +4,7 @@
 		:name="t('openregister', 'Notification rules that reached nobody')"
 		:description="t('openregister', 'Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients.')">
 		<p v-if="state === 'loading'" class="rule-reach__hint">
-			{{ t('openregister', 'Loading...') }}
+			{{ t('openregister', 'Loading…') }}
 		</p>
 		<p v-else-if="state === 'failed'" class="rule-reach__hint">
 			{{ t('openregister', 'Could not load which notification rules reached nobody.') }}
@@ -76,8 +76,7 @@ export default {
 				const rules = response?.data?.rulesReachingNobody
 				this.rules = Array.isArray(rules) ? rules : []
 				this.state = 'loaded'
-			} catch (error) {
-				console.error('Failed to load the notification rule reach record:', error)
+			} catch {
 				this.rules = []
 				this.state = 'failed'
 			}

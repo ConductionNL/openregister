@@ -44,11 +44,6 @@ async function section(answer) {
 describe('notification rule reach section', () => {
 	beforeEach(() => {
 		axios.get.mockReset()
-		jest.spyOn(console, 'error').mockImplementation(() => {})
-	})
-
-	afterEach(() => {
-		jest.restoreAllMocks()
 	})
 
 	it('reads the reach record from the administrator endpoint', async () => {
@@ -93,7 +88,7 @@ describe('notification rule reach section', () => {
 	it('shows it is loading until the record arrives', async () => {
 		const wrapper = await section(() => new Promise(() => {}))
 
-		expect(wrapper.text()).toContain('Loading...')
+		expect(wrapper.text()).toContain('Loading…')
 	})
 
 	it('treats a malformed answer as an empty record', async () => {
