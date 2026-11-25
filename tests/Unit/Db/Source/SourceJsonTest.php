@@ -99,7 +99,43 @@ class SourceJsonTest extends TestCase {
 			'updated' => '2026-11-15T09:30:00+00:00',
 			'created' => '2026-11-01T08:00:00+00:00',
 			'managedByConfiguration' => null,
+			'application' => null,
+			'config' => null,
+			'runAs' => null,
+			'schedule' => null,
+			'flowId' => null,
+			'identityProperty' => null,
+			'protectedFields' => null,
+			'provenance' => null,
+			'conflictRules' => null,
+			'maxItemsPerRun' => null,
 		], $json);
+	}
+
+	public function testHarvestFieldsAreEmittedAsGiven(): void {
+		$json = (new SourceJson())->serialise($this->fields([
+			'application' => 'pipelinq',
+			'config' => ['url' => 'https://feed'],
+			'runAs' => 'harvester',
+			'schedule' => '0 * * * *',
+			'flowId' => 7,
+			'identityProperty' => 'externalId',
+			'protectedFields' => ['notes'],
+			'provenance' => true,
+			'conflictRules' => ['title' => 'source-wins'],
+			'maxItemsPerRun' => 500,
+		]));
+
+		$this->assertSame('pipelinq', $json['application']);
+		$this->assertSame(['url' => 'https://feed'], $json['config']);
+		$this->assertSame('harvester', $json['runAs']);
+		$this->assertSame('0 * * * *', $json['schedule']);
+		$this->assertSame(7, $json['flowId']);
+		$this->assertSame('externalId', $json['identityProperty']);
+		$this->assertSame(['notes'], $json['protectedFields']);
+		$this->assertTrue($json['provenance']);
+		$this->assertSame(['title' => 'source-wins'], $json['conflictRules']);
+		$this->assertSame(500, $json['maxItemsPerRun']);
 	}
 
 	public function testTheAuthConfigItselfIsNeverEmitted(): void {
