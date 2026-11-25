@@ -747,6 +747,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return int How many rungs THIS call fired.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-each-escalation-rung-fires-exactly-once
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-task-nearing-its-deadline-warns-its-assignee-once
 	 */
 	public function fireRungs(FlowTimer $timer, DateTimeInterface $now): int {
 		if ($timer->getState() !== FlowTimer::STATE_ARMED || $timer->getFireAt() === null) {
@@ -789,7 +790,12 @@ class FlowTimerService implements FlowTimerControlInterface {
 			$this->subjects->dispatcher->dispatchTyped(
 				new FlowTimerFiredEvent(
 					timer: $timer,
-					firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: $transition, rungKey: (string)$rung['key']),
+					firing: new TimerFiring(
+						kind: FlowTimerFiredEvent::KIND_RUNG,
+						transition: $transition,
+						rungKey: (string)$rung['key'],
+						rungTrigger: (string)$rung['trigger']
+					),
 					notice: new EscalationNotice(
 						recipients: $recipients,
 						priority: (string)$rung['priority'],

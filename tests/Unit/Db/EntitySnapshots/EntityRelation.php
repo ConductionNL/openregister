@@ -36,6 +36,7 @@ return array (
     'capacityConfirmedAt' => 'datetime',
     'personMatch' => 'string',
     'uncertain' => 'boolean',
+    'archiveMember' => 'string',
     'createdAt' => 'datetime',
   ),
   'empty' => 
@@ -69,6 +70,7 @@ return array (
     'capacityConfirmedAt' => NULL,
     'personMatch' => NULL,
     'uncertain' => NULL,
+    'archiveMember' => NULL,
     'createdAt' => NULL,
   ),
   'filled' => 
@@ -108,6 +110,7 @@ return array (
     'capacityConfirmedAt' => '2026-01-02T03:04:05+00:00',
     'personMatch' => 'personMatch-v',
     'uncertain' => true,
+    'archiveMember' => 'archiveMember-v',
     'createdAt' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
@@ -141,7 +144,8 @@ return array (
     26 => 'capacityConfirmedAt',
     27 => 'personMatch',
     28 => 'uncertain',
-    29 => 'createdAt',
+    29 => 'archiveMember',
+    30 => 'createdAt',
   ),
   'refused' => 
   array (
