@@ -1,0 +1,770 @@
+{
+ "info": {
+  "_postman_id": "or-task-subject-identifier-2026-11-25",
+  "name": "OpenRegister Task Subject Identifier",
+  "description": "The task inbox names a task's subject by its identifier (change task-subject-identifier, task 1.5).\n\nWHAT IT ASSERTS: a task created on a case whose `identifier` is set carries `subject.identifier` in the create answer, in its `GET /api/flow-tasks` row and in `GET /api/flow-tasks/{uuid}`; a task on a case without one carries `subject.identifier: null` (CONTROL).\n\nHermetic: it creates its schema, register, cases and tasks; the tasks are cancelled (there is no task delete route) and the rest removed.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{admin_user}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{admin_password}}",
+    "type": "string"
+   }
+  ]
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "http://localhost",
+   "type": "string"
+  },
+  {
+   "key": "admin_user",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "admin_password",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "run",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "schemaId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "registerId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "caseUuid",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "bareUuid",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "taskUuid",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "bareTaskUuid",
+   "value": "",
+   "type": "string"
+  }
+ ],
+ "item": [
+  {
+   "name": "setUp: a case schema with an identifier",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"task subject zaak {{run}}\", \"slug\": \"tasksubject{{run}}\", \"properties\": {\"identifier\": {\"type\": \"string\"}, \"title\": {\"type\": \"string\"}}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "prerequest",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10));"
+      ]
+     }
+    },
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a register",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"task subject register {{run}}\", \"slug\": \"tasksubjectregister{{run}}\", \"schemas\": [{{schemaId}}]}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a case with an identifier",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"identifier\": \"ZAAK-{{run}}\", \"title\": \"Bouwvergunning Dorpsstraat 1\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('created', () => pm.response.to.have.status(201));",
+       "pm.collectionVariables.set('caseUuid', pm.response.json()['@self'].id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a case without one",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"Melding zonder kenmerk\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('created', () => pm.response.to.have.status(201));",
+       "pm.collectionVariables.set('bareUuid', pm.response.json()['@self'].id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "a task on the case",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "flow-tasks"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"Beoordeel aanvraag {{run}}\", \"objectUuid\": \"{{caseUuid}}\", \"assignee\": \"{{admin_user}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('created', () => pm.response.to.have.status(201));",
+       "pm.collectionVariables.set('taskUuid', pm.response.json().uuid);",
+       "pm.test('the created task names its subject with the identifier', () => pm.expect(pm.response.json().subject.identifier).to.eql('ZAAK-' + pm.collectionVariables.get('run')));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "a task on the case without an identifier (control)",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "flow-tasks"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"Bekijk melding {{run}}\", \"objectUuid\": \"{{bareUuid}}\", \"assignee\": \"{{admin_user}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('created', () => pm.response.to.have.status(201));",
+       "pm.collectionVariables.set('bareTaskUuid', pm.response.json().uuid);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the inbox rows carry subject.identifier",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks?_limit=200",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "flow-tasks"
+     ],
+     "query": [
+      {
+       "key": "_limit",
+       "value": "200"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('answered', () => pm.response.to.have.status(200));",
+       "const rows = pm.response.json().results || [];",
+       "const caseRow = rows.find(r => r.uuid === pm.collectionVariables.get('taskUuid'));",
+       "const bareRow = rows.find(r => r.uuid === pm.collectionVariables.get('bareTaskUuid'));",
+       "pm.test('the case task row carries the case identifier', () => { pm.expect(caseRow, 'task not listed').to.be.an('object'); pm.expect(caseRow.subject.identifier).to.eql('ZAAK-' + pm.collectionVariables.get('run')); });",
+       "pm.test('a subject without one carries null, not a guess', () => { pm.expect(bareRow, 'task not listed').to.be.an('object'); pm.expect(bareRow.subject.identifier).to.eql(null); });"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "one task read carries it too",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{taskUuid}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "flow-tasks",
+      "{{taskUuid}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('answered', () => pm.response.to.have.status(200));",
+       "pm.test('subject.identifier', () => pm.expect(pm.response.json().subject.identifier).to.eql('ZAAK-' + pm.collectionVariables.get('run')));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: cancel the task",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{taskUuid}}/cancel",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "flow-tasks",
+      "{{taskUuid}}",
+      "cancel"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"reason\": \"newman teardown\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('cancelled', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: cancel the control task",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{bareTaskUuid}}/cancel",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "flow-tasks",
+      "{{bareTaskUuid}}",
+      "cancel"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"reason\": \"newman teardown\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('cancelled', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the case",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{caseUuid}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "{{caseUuid}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the bare case",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{bareUuid}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "{{bareUuid}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the register",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers",
+      "{{registerId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the schema",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas",
+      "{{schemaId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}
