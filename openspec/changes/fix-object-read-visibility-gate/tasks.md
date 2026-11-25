@@ -49,11 +49,41 @@ behavioural change that is no longer being made.
 
 ## 4. Deferred — investigate before touching
 
-- [ ] 4.1 `resolveReadGroupIds()` treats a missing `read` key as broadcast; the
+- [x] 4.1 `resolveReadGroupIds()` treats a missing `read` key as broadcast; the
       list path treats it as owner-only. Establish whether `getReadableByUsers()`
       produces a wrong user-visible outcome as a result. Do not change it on the
       asymmetry alone — the same reasoning shortcut is what produced the first
       version of this proposal.
+      > 2026-11-25, established from the code, nothing changed. YES, two of its
+      > three callers give a wrong outcome for a non-empty block without `read`
+      > (e.g. `{"update": ["editors"]}`):
+      >
+      > - **The list path.** `MagicRbacHandler::ruleConditions()` ("an action
+      >   missing from a non-empty authorization block grants nothing") leaves
+      >   only the owner admits, so it admits the owner and administrators. `PermissionHandler::anyRuleEntryGrants()` says the same
+      >   for a single check.
+      > - **`getReadableByUsers()`** answers `[]` for that block, pinned by
+      >   `PermissionHandlerDecisionFlowGoldenTest::testAnOwnerOnlyReadTargetsTheOwnerAlone`
+      >   ("no read rule is still no targeted list"). The owner is not added: the
+      >   owner is only added after a non-null group list.
+      > - **`NotifyPushListener::dispatchPushes()`** pushes to each reader, so `[]`
+      >   pushes to NOBODY. The owner, the one person the list shows the record to,
+      >   gets no live update. This is under-delivery, not a disclosure (the payload
+      >   is action, slugs, uuid and version).
+      > - **`NotificationRecipientResolver::readableWatchers()`** reads `[]` as
+      >   open and keeps EVERY watcher (`NotificationRecipientResolverWatchersTest::testAnOpenReadRuleDropsNobody`).
+      >   A watcher who is not the owner (they followed before the block was
+      >   tightened, or as an administrator who later lost the role) keeps
+      >   receiving notifications about a record the list no longer shows them.
+      >   That is over-delivery, a disclosure of whatever the notification carries.
+      > - **`ContextChatSubmissionListener`** is NOT affected: it asks
+      >   `hasGroupPermission()` for an explicit `public` read first, which a block
+      >   without `read` refuses, so the record is never indexed.
+      >
+      > The fix is a behaviour change on an access path, so it is not made here.
+      > Whether `getReadableByUsers()` should answer the owner alone for a non-empty
+      > block without `read` (as the list path does) is a question in
+      > COORDINATOR-QUEUE.md.
 
 ## Withdrawn
 

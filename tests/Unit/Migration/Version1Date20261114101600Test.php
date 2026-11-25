@@ -206,4 +206,28 @@ class Version1Date20261114101600Test extends TestCase {
 		$this->assertSame(2, $this->deleted[0][0]);
 		$this->assertSame(1201, $this->deleted[2][199]);
 	}
+
+	/**
+	 * Nextcloud 32-34 hand the migration a Doctrine Table, not an OCP ITable.
+	 * A native ITable parameter type made the install of the app fail there.
+	 *
+	 * @return void
+	 */
+	public function testADoctrineTableFromNextcloudBelow35IsRead(): void {
+		$read = new \ReflectionMethod(Version1Date20261114101600::class, 'hasUniqueTriple');
+
+		$withIndex = new \Doctrine\DBAL\Schema\Table(
+			'oc_openregister_calendar_links',
+			[],
+			[new \Doctrine\DBAL\Schema\Index('idx_other', ['event_uid', 'object_uuid', 'calendar_uri'], true)]
+		);
+		$withoutIndex = new \Doctrine\DBAL\Schema\Table(
+			'oc_openregister_calendar_links',
+			[],
+			[new \Doctrine\DBAL\Schema\Index('idx_plain', ['object_uuid', 'calendar_uri', 'event_uid'], false)]
+		);
+
+		$this->assertTrue($read->invoke(null, $withIndex));
+		$this->assertFalse($read->invoke(null, $withoutIndex));
+	}
 }

@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\DsarController;
 use OCA\OpenRegister\Controller\Support\DsarControllerServices;
 use OCA\OpenRegister\Service\AvgComplianceServiceInterface;
@@ -39,6 +40,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class DsarControllerBehaviourTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/** @var DsarServiceInterface&MockObject The DSAR service. */
 	private DsarServiceInterface $dsar;
@@ -64,6 +67,7 @@ class DsarControllerBehaviourTest extends TestCase {
 		);
 		$session = $this->createMock(IUserSession::class);
 		$groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		if ($groups !== null) {
 			$user = $this->createMock(IUser::class);
 			$session->method('getUser')->willReturn($user);

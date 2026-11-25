@@ -198,28 +198,7 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import SettingsTab from '../../components/tabs/SettingsTab.vue'
 import { searchGroupsDebounced } from '../../services/groupSearch.js'
 import { objectStore, viewsStore } from '../../store/store.js'
-
-/**
- * The presentation refusal, keyed by the picker path it names.
- *
- * A view save refuses an unrenderable presentation (REQ-VIEW-PRES-01) with a
- * message that names its path — `kanban.groupByField`, `calendar.dateField`
- * or `calendar.endDateField`. The picker shows the message under that field.
- *
- * @param {string} message The server's refusal message.
- * @return {object} A map of picker path to message, empty when none matches.
- * @spec openspec/changes/saved-view-presentation-picker/specs/saved-search-views/spec.md#requirement-the-view-editor-sets-a-views-presentation-req-view-pres-06
- */
-function presentationErrorsFrom(message) {
-	const paths = ['kanban.groupByField', 'calendar.dateField', 'calendar.endDateField']
-	const errors = {}
-	for (const path of paths) {
-		if (typeof message === 'string' && message.includes(path)) {
-			errors[path] = message
-		}
-	}
-	return errors
-}
+import { presentationErrorsFrom } from './presentationErrors.js'
 
 /**
  * Ask Nextcloud for the users matching a search.

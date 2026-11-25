@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Trait;
 
+use OCA\OpenRegister\Controller\Support\FormerSlugSignal;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -58,6 +59,13 @@ use OCP\AppFramework\Db\DoesNotExistException;
  */
 trait ResolvesRegisterAndSchemaTrait {
 	/**
+	 * The Deprecation and Link headers when the last resolved path named its schema by a former slug.
+	 *
+	 * @var array<string, string>
+	 */
+	protected array $formerSlugHeaders = [];
+
+	/**
 	 * Resolve a register/schema path pair, given as one reference, to numeric ids.
 	 *
 	 * @param RegisterSchemaRef         $ref           The register and schema slugs, uuids or numeric ids from the path.
@@ -69,6 +77,7 @@ trait ResolvesRegisterAndSchemaTrait {
 	 * @throws SchemaNotFoundException   When the schema does not resolve in it.
 	 *
 	 * @spec openspec/specs/register-scoped-slug-resolution/spec.md
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
 	 */
 	protected function resolveRegisterSchemaRef(RegisterSchemaRef $ref, ObjectOperationsInterface $objectService): array {
 		// (1) Drop anything an earlier caller left on the shared service.
@@ -77,7 +86,14 @@ trait ResolvesRegisterAndSchemaTrait {
 		$this->setRegisterBlamingTheRightSide(ref: $ref, objectService: $objectService);
 		$this->setSchemaOrNotFound(schema: (string)$ref->schema, objectService: $objectService);
 
-		return $this->resolvedIdsAndEntities(objectService: $objectService);
+		$resolved = $this->resolvedIdsAndEntities(objectService: $objectService);
+		$this->formerSlugHeaders = FormerSlugSignal::headers(
+			register: (string)$ref->register,
+			schema: (string)$ref->schema,
+			resolved: $resolved['schemaEntity']
+		);
+
+		return $resolved;
 	}//end resolveRegisterSchemaRef()
 
 	/**
