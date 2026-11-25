@@ -27,8 +27,18 @@
 
 ## 3. Scoped second factor and address binding
 
-- [ ] 3.1 A register or schema declares that reading it requires a verified second factor (D-3).
-- [ ] 3.2 A principal without one is refused, naming the requirement.
+- [x] 3.1 A register or schema declares that reading it requires a verified second factor (D-3).
+      `"x-openregister-second-factor": true` in the schema's configuration (in the annotation
+      vocabulary, so a save keeps it) or in the configuration of any register holding the schema.
+      `SecondFactorReadGate` reads both, per request; a register lookup that fails counts as declared.
+      A verified second factor is an enabled Nextcloud provider other than backup codes, on a request
+      that did not sign in with an app password (Nextcloud enforces the factor, D-3).
+- [x] 3.2 A principal without one is refused, naming the requirement.
+      Final like classification, administrators included: `PermissionHandler::evaluatePermission()`
+      refuses the read, and `checkPermission()` throws `Reading schema '<title>' requires a verified
+      second factor` (or `register '<title>'`); both list paths in `MagicRbacHandler` return nothing.
+      Writes are not gated. Tests: `SecondFactorReadGateTest`, `PermissionHandlerSecondFactorTest`,
+      `MagicRbacSecondFactorTest`, `AnnotationKeysTest`.
 - [x] 3.3 An address allowlist on the administration surface and on the API, refusing blankly.
       `AddressAllowlist` (addresses and CIDR ranges, IPv4 and IPv6), one administered list per
       surface in `HardeningPolicy` (`hardening_admin_addresses`, `hardening_api_addresses`;
