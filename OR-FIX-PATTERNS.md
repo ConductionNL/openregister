@@ -962,3 +962,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## appinfo/info.xml <version> conflict: never resolve with --ours (or-fix-5, 25 Nov)
 - Symptom: a main merge conflicts only on the <version> line; after 'git checkout --ours appinfo/info.xml' the diff vs main also removes main's new <job>/<command> lines (e.g. SealAuditBacklogJob/Command, #10515).
 - Fix: git checkout --theirs appinfo/info.xml, then sed only the <version> to the PR's value (or one past main's when equal); git diff origin/main -- appinfo/info.xml must be the one version line. Rerun php scripts/check-migration-version-bump.php --base=origin/main.
+## Symlinked vendor loads the other checkout's lib (or-fix-3)
+- Symptom: in a second worktree, tests error 'Class OCA\OpenRegister\... not found' for classes the PR adds, or a check on 'main' passes/fails as the other tree did.
+- Cause: vendor/ symlinked to another checkout's vendor; composer's PSR-4 paths resolve from the real vendor dir, so lib/ of the OTHER checkout is autoloaded (phpstan too).
+- Fix: cp -a the saved ~/w/vendor-openregister-<hash> into each worktree; never symlink vendor.
