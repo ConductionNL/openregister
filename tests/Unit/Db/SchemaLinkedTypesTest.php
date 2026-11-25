@@ -192,6 +192,27 @@ class SchemaLinkedTypesTest extends TestCase {
 	}//end testUnknownLinkedTypeDroppedNotThrown()
 
 	/**
+	 * A list with one unknown id keeps its known ids (an app that is not
+	 * installed must not take the registered leaves with it), and the key
+	 * is still recorded so the import warns.
+	 *
+	 * @return void
+	 */
+	public function testUnknownLinkedTypeLeavesTheKnownOnes(): void {
+		$this->schema->setConfiguration(
+			[
+				'linkedTypes' => ['decidesk-decisions', 'calendar', 'deck'],
+				'objectNameField' => 'name',
+			]
+		);
+
+		$config = $this->schema->getConfiguration();
+		$this->assertSame(['calendar', 'deck'], $config['linkedTypes']);
+		$this->assertSame('name', $config['objectNameField']);
+		$this->assertContains('linkedTypes', $this->schema->consumeDroppedAnnotationKeys());
+	}//end testUnknownLinkedTypeLeavesTheKnownOnes()
+
+	/**
 	 * `linkedTypes` MUST be an array — strings and other scalars are
 	 * rejected at the configuration-validator layer.
 	 *
