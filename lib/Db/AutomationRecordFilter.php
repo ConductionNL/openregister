@@ -43,6 +43,16 @@ final class AutomationRecordFilter {
 	public const MAX_LIMIT = 500;
 
 	/**
+	 * The stored kind each outcome-route kind names.
+	 *
+	 * @spec openspec/changes/a-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did/specs/notificatie-engine/spec.md
+	 */
+	public const OUTCOME_KINDS = [
+		'notification' => AutomationRecord::KIND_NOTIFICATION,
+		'lifecycle'    => AutomationRecord::KIND_LIFECYCLE_ACTION,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string        $kind      The kind, or '' for both.
@@ -99,6 +109,30 @@ final class AutomationRecordFilter {
 			offset: max(0, (int)($params['offset'] ?? 0))
 		);
 	}//end fromParams()
+
+	/**
+	 * A filter from the outcome route's parameters: `keyPrefix` names the key
+	 * prefix (`key` is still read when it is absent), and `kind` takes the
+	 * outcome kinds `notification` and `lifecycle`.
+	 *
+	 * @param array<string, mixed> $params The query parameters.
+	 *
+	 * @return self The filter.
+	 *
+	 * @spec openspec/changes/a-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did/specs/notificatie-engine/spec.md
+	 */
+	public static function fromOutcomeParams(array $params): self {
+		if (array_key_exists('keyPrefix', $params) === true) {
+			$params['key'] = $params['keyPrefix'];
+		}
+
+		if (is_string($params['kind'] ?? null) === true) {
+			$kind           = trim($params['kind']);
+			$params['kind'] = (self::OUTCOME_KINDS[$kind] ?? $kind);
+		}
+
+		return self::fromParams(params: $params);
+	}//end fromOutcomeParams()
 
 	/**
 	 * The same filter at another page.

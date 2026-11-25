@@ -1105,6 +1105,13 @@ class FlowController extends Controller {
 
 		$body['warnings'] = $report['warnings'];
 
+		// Shown once: the secret of an incoming-webhook trigger the save just
+		// generated or rotated. No later read of the flow carries it.
+		$secrets = $this->flows->issuedWebhookSecrets();
+		if ($secrets !== []) {
+			$body['webhookSecrets'] = $secrets;
+		}
+
 		return $body;
 	}//end savedBody()
 

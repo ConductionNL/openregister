@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 276;
+	private const LISTENER_COUNT = 279;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -47,10 +47,12 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * (count 263 -> 264). The deadline warning then appended one TaskDueSoonListener
 	 * registration on FlowTimerFiredEvent, after CaseItemTimerListener (264 -> 265).
 	 * Then the cross-app semantic reference listeners (8 registrations, count 265 -> 273).
+	 * Then three FlowCalendarIndexListener registrations after FlowTriggerListener on the object
+	 * created, updated and deleted events (273 -> 276).
 	 * Then EntityEditAuditListener also took the three organisation events
-	 * (history-schema-and-settings-edits-audited), after the register events (count 273 -> 276).
+	 * (history-schema-and-settings-edits-audited), after the register events (count 276 -> 279).
 	 */
-	private const SEQUENCE_SHA256 = 'd2feb8b3aaefc3afcccc1f442ea601d117dd16aca7d0878cb271e92fadced2cf';
+	private const SEQUENCE_SHA256 = 'c133ea22d40c97a588b01423095474ced55593909154c9e806e42a4e98f9ba47';
 
 	/**
 	 * The registration calls, in call order, with every argument.
