@@ -27,4 +27,4 @@ search-quality.spec.ts:137 objects with no result type in the facet
 security-setting-announcement.spec.ts:164 changed credential announced
 service-hours-admin.spec.ts:97 / working-calendar-admin.spec.ts:131 admin UI forms (45 s timeouts)
 timeline-entries.spec.ts:267 undeclared kind refused
-upsert-on-key.spec.ts:149 anonymous upsert answers 412 CSRF, spec expects another refusal code
+upsert-on-key.spec.ts:149 FIXED by #11270 (spec sends OCS-APIRequest; 3/3)
