@@ -18,7 +18,7 @@ namespace Unit\Service\Anonymisation;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;

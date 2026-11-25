@@ -560,6 +560,28 @@ The panel SHALL follow the mail boards WpPanel, MlThreadPanel and MlLinkWorkPack
 
 ---
 
+### REQ-001b: An app's own create dialog for its schema
+
+An app that owns a schema MAY replace the panel's generic "New … from this mail" form with its own create dialog. It offers the dialog by pushing `{ register, schema, open }` onto `window.OCA.OpenRegister.mailCreateDialogs` from a script it loads on Mail's page; `register` and `schema` are slugs or ids, and the order in which the app's script and the panel load does not matter. `open(context)` SHALL show the app's dialog and resolve with the created object, or with null when the person cancels. The context carries `initialData` (the schema's `mailObjectTemplate` filled from the open mail), the `register` and `schema` objects, and `mail` (`{ accountId, messageId }`). The panel then connects the mail to the created object exactly as after its own form. Without an offered dialog for the schema, the panel keeps its generic form.
+
+#### Scenario: An app offers its own dialog
+- **GIVEN** an app has pushed a create dialog for register `dossiq` and schema `case`
+- **WHEN** the person presses "+ New case from this mail"
+- **THEN** the app's `open` MUST be called with the filled template, and the generic dialog MUST NOT open
+- **AND** when `open` resolves with an object, the panel MUST connect the mail to it
+
+#### Scenario: The app's dialog is cancelled or fails
+- **GIVEN** an offered dialog whose `open` resolves with null, or rejects
+- **WHEN** the person presses "+ New case from this mail"
+- **THEN** nothing MUST be connected, and a rejection MUST be reported as a failed create
+
+#### Scenario: No app offers a dialog
+- **GIVEN** no entry for the schema
+- **WHEN** the person presses "+ New … from this mail"
+- **THEN** the panel's generic create dialog MUST open as before
+
+---
+
 ### REQ-002: Path-based Mail-app URL routing (Mail 5.x+)
 
 The URL observer SHALL parse both legacy hash-based Mail-app URLs (`#/accounts/{accountId}/folders/{folder}/messages/{messageId}`) and path-based Mail 5.x URLs (`/apps/mail/box/{boxId}/thread/{threadId}` and `/apps/mail/box/{boxId}`). For path-based URLs the `boxId` segment MAY be numeric (mailbox id) or alphabetic (e.g. `priority`, `starred`). The observer SHALL extract `accountId`, `messageId`, and an `isMessageView` flag and SHALL trigger a debounced refresh on change.

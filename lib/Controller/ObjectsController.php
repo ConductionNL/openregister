@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FormerSlugSignal;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
@@ -63,6 +64,7 @@ use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -368,6 +370,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @psalm-return   bool
 	 * @phpstan-return bool
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function isCurrentUserAdmin(): bool {
 		$user = $this->userSession->getUser();
@@ -375,8 +379,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return false;
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($user);
-		return in_array('admin', $userGroups);
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -1260,10 +1263,13 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$listing = $this->buildListingScope(urlPath: $urlPath, resolved: $resolved);
 
 		if ($this->isServedFromMagicTable(resolved: $resolved) === true) {
-			return $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService));
+			$response = $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService));
+		} else {
+			$response = $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService));
 		}
 
-		return $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService));
+		// A schema named by a slug it has since given up still answers, and says where to go.
+		return FormerSlugSignal::apply(response: $response, headers: $this->formerSlugHeaders);
 	}//end index()
 
 	/**
@@ -3019,7 +3025,10 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		$services = $this->showServices(objectService: $objectService);
 
-		return $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
+		return FormerSlugSignal::apply(
+			response: $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services)),
+			headers: $this->formerSlugHeaders
+		);
 	}//end show()
 
 	/**
