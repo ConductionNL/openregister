@@ -5184,6 +5184,9 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			$this->objectService->setSchema(schema: $schema);
 
 			return $this->takeLock(id: $id);
+		} catch (LockedException $e) {
+			// Another holder has the lock: the canonical 423 naming them, as a write gets.
+			return $this->lockedResponse(exception: $e);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $e) {

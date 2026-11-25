@@ -30,6 +30,7 @@ use JsonSerializable;
 use OC\Files\Node\File;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity\ObjectEntityFieldTypes;
+use OCA\OpenRegister\Exception\LockedException;
 use OCP\AppFramework\Db\Entity;
 use OCP\IUserSession;
 
@@ -2208,7 +2209,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @param array{kind: string, runUuid: ?string, user: string, process: ?string, created: string, duration: ?int} $payload The
 	 *        caller's new lock payload.
 	 *
-	 * @throws Exception If the lock data is missing or another holder has the lock
+	 * @throws Exception If the lock data is missing
+	 * @throws LockedException If another holder has the lock
 	 *
 	 * @return array The payload keeping the current lock's creation time and, when none is given, its process.
 	 */
@@ -2219,7 +2221,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		}
 
 		if ($this->isLockedBySomeoneElse(userId: $payload['user'], runUuid: $payload['runUuid']) === true) {
-			throw new Exception(sprintf('Object is locked by %s', (string)$this->describeLockHolder()));
+			// A LockedException, so the lock endpoint answers 423 with the holder, not a 500.
+			throw LockedException::lockHeldBy(object: $this);
 		}
 
 		$payload['process'] = ($payload['process'] ?? $lock['process']);
