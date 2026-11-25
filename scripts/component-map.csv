@@ -1763,6 +1763,8 @@ Search/ObjectsProvider.php,340,Search,Platform,Platform/Search/ObjectsProvider.p
 Search/SearchProviderRegistrar.php,10,Search,Platform,Platform/Search/SearchProviderRegistrar.php,0,,Search
 Search/SearchRegistrar.php,50,Search,Search,Search/SearchRegistrar.php,0,,Search
 Search/SearchScopes.php,94,Search,Platform,Platform/Search/SearchScopes.php,0,,Search
+Search/SearchProviderIdentities.php,,Search,,,,,Search
+Search/SearchProviderIdentity.php,,Search,,,,,Search
 Search/SearchScopeCatalog.php,,Search,,,,,Search
 Search/Service/ActivityWindow.php,11,Search,Search,Search/Service/ActivityWindow.php,0,,Search
 Search/Service/Aggregation/AggregateChartData.php,167,Search,Search,Search/Service/Aggregation/AggregateChartData.php,0,,Search
