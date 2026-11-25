@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\GdprRegisterAccess;
 use OCP\IGroupManager;
@@ -40,10 +41,13 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Controller\Support\ControllerSession
  */
 class GdprRegisterAccessTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private function access(?IUser $user, array $groups = []): GdprRegisterAccess {
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		return new GdprRegisterAccess(new ControllerSession($userSession, $groupManager, $this->createMock(LoggerInterface::class)));
@@ -60,6 +64,7 @@ class GdprRegisterAccessTest extends TestCase {
 		$user        = $this->createMock(IUser::class);
 		$userSession = $this->createMock(IUserSession::class);
 		$groups      = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->expects($this->once())->method('getUserGroupIds')->with($user)->willReturn(['staff']);
 
 		$access = new GdprRegisterAccess(new ControllerSession($userSession, $groups, $this->createMock(LoggerInterface::class)));

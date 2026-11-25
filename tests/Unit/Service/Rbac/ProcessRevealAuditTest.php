@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Rbac;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldLists;
@@ -46,6 +47,8 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 class ProcessRevealAuditTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * The collector under test.
@@ -142,6 +145,7 @@ class ProcessRevealAuditTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturn(['admin']);
 
 		$states = $this->createMock(StateFieldRuleResolver::class);

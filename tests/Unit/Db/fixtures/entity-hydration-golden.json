@@ -166,6 +166,8 @@
                 "purpose": "text-purpose",
                 "consumer": "text-consumer",
                 "triggerObject": "text-triggerObject",
+                "ruleDigest": "text-ruleDigest",
+                "ruleVersion": "text-ruleVersion",
                 "category": "text-category"
             },
             "updated": [
@@ -208,6 +210,8 @@
                 "purpose",
                 "consumer",
                 "triggerObject",
+                "ruleDigest",
+                "ruleVersion",
                 "category"
             ]
         },
@@ -259,6 +263,8 @@
                 "purpose": "text-purpose",
                 "consumer": "text-consumer",
                 "triggerObject": "text-triggerObject",
+                "ruleDigest": "text-ruleDigest",
+                "ruleVersion": "text-ruleVersion",
                 "category": "text-category"
             },
             "updated": [
@@ -303,6 +309,8 @@
                 "purpose",
                 "consumer",
                 "triggerObject",
+                "ruleDigest",
+                "ruleVersion",
                 "category"
             ]
         }

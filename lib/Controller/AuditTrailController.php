@@ -39,6 +39,7 @@ use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
@@ -963,6 +964,8 @@ class AuditTrailController extends Controller {
 	 * Whether the session user is in the `admin` group, as the object API decides it.
 	 *
 	 * @return bool False without a session user.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function inAdminGroup(): bool {
 		$user = $this->userSession->getUser();
@@ -970,7 +973,7 @@ class AuditTrailController extends Controller {
 			return false;
 		}
 
-		return in_array('admin', $this->groupManager->getUserGroupIds($user));
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end inAdminGroup()
 
 	/**
