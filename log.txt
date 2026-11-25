@@ -4888,3 +4888,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T11:45:57Z or-fix-0 run done: #10260 merged main, conflicts (component-map/yaml/listener golden 266) fixed, info.xml dev.18 for its migration, new head b514f3bf REVERIFY; #10550 #11140 precheck GREEN; lane 5 left to the concurrent or-fix-5 session (active since 11:21Z, already fixed #10515 identically)
 2026-11-25T11:48:17Z precheck-20261125T094406-af1e29a6 GREEN tree 14e8913f29 on dev 1c939e16cd prs 1 front=skip: Tests: 66569, Assertions: 236169, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 25, PHPUnit Deprecations: 1, Skipped: 27.
 2026-11-25T11:48:39Z precheck-20261125T100507-543643c0 NORESULT tree 208a13953e: checker floor not measured (exit 2)
+2026-11-25T11:49:42Z precheck-20261125T114751-101d08d5 CONFLICT-DEV #10533 47070247
