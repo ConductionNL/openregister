@@ -102,3 +102,5 @@
 2026-11-24T23:46:42Z GREEN prs=11063,11073,11078,11098 main=7bf08ec0b9 integrator-cloud (merged; main now 06bd93550e)
 2026-11-24T23:56:52Z GREEN prs=10518,10496,10498 main=06bd93550e integrator-cloud (merged; main now b9f7ab7b8b; 10526 tree-conflict)
 2026-11-25T00:08:47Z AUTOPARK prs=10525,10529,10550,10965 main=b9f7ab7b8b integrator-cloud (parked 10550: floor module_coupling)
+2026-11-25T00:15:56Z GREEN prs=10525,10965 main=b9f7ab7b8b integrator-cloud (merged; main now c3d20aa1db)
+2026-11-25T00:20:01Z RED prs=10966,11005,11006,11015 main=c3d20aa1db integrator-cloud (RED tree 6cd5df5839 prs 4 front=skip: Tests: 65659, Assertions: 232403, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, )
