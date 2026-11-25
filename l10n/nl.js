@@ -4222,7 +4222,21 @@ OC.L10N.register(
     "Point" : "Punt",
     "Polygon" : "Polygoon",
     "Could not load the workflow progress." : "De voortgang van de workflow kon niet worden geladen.",
-    "Workflow progress" : "Voortgang van de workflow"
+    "Workflow progress" : "Voortgang van de workflow",
+    "Configure a scanner for the Antivirus for files app in the administration settings, under Security." : "Stel in de beheerinstellingen, onder Beveiliging, een scanner in voor de app Antivirus for files.",
+    "Install and enable the Antivirus for files app, then configure its scanner." : "Installeer en activeer de app Antivirus for files en stel daarna de scanner in.",
+    "Uploads are refused: no malware scanner is available." : "Uploads worden geweigerd: er is geen malwarescanner beschikbaar.",
+    "Uploads are scanned for malware with {engine}." : "Uploads worden op malware gescand met {engine}.",
+    "API page" : "API-pagina",
+    "Each operation of this register can be tried here. A call runs with the rights of the signed-in user and works on real data." : "Elke bewerking van dit register kan hier worden geprobeerd. Een aanroep draait met de rechten van de aangemelde gebruiker en werkt op echte gegevens.",
+    "GraphQL explorer" : "GraphQL-verkenner",
+    "Register API" : "Register-API",
+    "Request body (JSON)" : "Verzoekinhoud (JSON)",
+    "Response: {status}" : "Antwoord: {status}",
+    "Send request" : "Verzoek versturen",
+    "The API description could not be loaded." : "De API-beschrijving kon niet worden geladen.",
+    "The request body is not valid JSON." : "De verzoekinhoud is geen geldige JSON.",
+    "This register has no schema operations yet." : "Dit register heeft nog geen schemabewerkingen."
 },
 "nplurals=2; plural=(n != 1);"
 );

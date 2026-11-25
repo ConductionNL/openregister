@@ -4109,7 +4109,21 @@ OC.L10N.register(
     "Point" : "Point",
     "Polygon" : "Polygon",
     "Could not load the workflow progress." : "Could not load the workflow progress.",
-    "Workflow progress" : "Workflow progress"
+    "Workflow progress" : "Workflow progress",
+    "Configure a scanner for the Antivirus for files app in the administration settings, under Security." : "Configure a scanner for the Antivirus for files app in the administration settings, under Security.",
+    "Install and enable the Antivirus for files app, then configure its scanner." : "Install and enable the Antivirus for files app, then configure its scanner.",
+    "Uploads are refused: no malware scanner is available." : "Uploads are refused: no malware scanner is available.",
+    "Uploads are scanned for malware with {engine}." : "Uploads are scanned for malware with {engine}.",
+    "API page" : "API page",
+    "Each operation of this register can be tried here. A call runs with the rights of the signed-in user and works on real data." : "Each operation of this register can be tried here. A call runs with the rights of the signed-in user and works on real data.",
+    "GraphQL explorer" : "GraphQL explorer",
+    "Register API" : "Register API",
+    "Request body (JSON)" : "Request body (JSON)",
+    "Response: {status}" : "Response: {status}",
+    "Send request" : "Send request",
+    "The API description could not be loaded." : "The API description could not be loaded.",
+    "The request body is not valid JSON." : "The request body is not valid JSON.",
+    "This register has no schema operations yet." : "This register has no schema operations yet."
 },
 "nplurals=2; plural=(n != 1);"
 );

@@ -1,0 +1,777 @@
+{
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"info": {
+		"_postman_id": "openregister-in-or-empty-filter-v1",
+		"name": "OpenRegister inOrEmpty list filter",
+		"description": "# inOrEmpty list filter\n\nopenspec/changes/search-value-or-empty-filter task 2.1: `?<property>_inOrEmpty[]=<value>` (and `<property>[inOrEmpty][]=`) returns the objects whose property is one of the values or has no value (missing, null, empty string, empty array), with the page, the total and the next page computed on the same condition. A plain `in` filter is the control: it leaves the objects without a value out.\n\nSeeds its own register: 12 characters in Aldoria, 5 in Norheim, 3 with no setting; three items with a list property. Removes the register at the end.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "register_id",
+			"value": ""
+		},
+		{
+			"key": "schema_id",
+			"value": ""
+		},
+		{
+			"key": "item_schema_id",
+			"value": ""
+		},
+		{
+			"key": "aldoria",
+			"value": ""
+		},
+		{
+			"key": "norheim",
+			"value": ""
+		},
+		{
+			"key": "seed_i",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Setup: register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"In or empty {{run}}\",\"slug\":\"inorempty-{{run}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.collectionVariables.set('run', String(Date.now()));",
+							"pm.collectionVariables.set('aldoria', '0b6f2c34-0000-4000-8000-00000000a1d0');",
+							"pm.collectionVariables.set('norheim', '0b6f2c34-0000-4000-8000-0000000004e1');",
+							"pm.collectionVariables.set('seed_i', '0');"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('register_id', pm.response.json().id);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: character schema",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Character {{run}}\",\"slug\":\"character-{{run}}\",\"properties\":{\"name\":{\"type\":\"string\"},\"setting\":{\"type\":\"string\"}}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('schema_id', pm.response.json().id);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: item schema with a list property",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Item {{run}}\",\"slug\":\"item-{{run}}\",\"properties\":{\"name\":{\"type\":\"string\"},\"settings\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('item_schema_id', pm.response.json().id);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: attach the schemas",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{register_id}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"In or empty {{run}}\",\"slug\":\"inorempty-{{run}}\",\"schemas\":[{{schema_id}},{{item_schema_id}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Seed: one character",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/character-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"character-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{seed_body}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// 20 characters: 12 in Aldoria, 5 in Norheim, 3 with no setting (missing, null, empty string).",
+							"var i = Number(pm.collectionVariables.get('seed_i') || 0);",
+							"var body = { name: 'Character ' + i };",
+							"if (i < 12) { body.setting = pm.collectionVariables.get('aldoria'); }",
+							"else if (i < 17) { body.setting = pm.collectionVariables.get('norheim'); }",
+							"else if (i === 18) { body.setting = null; }",
+							"else if (i === 19) { body.setting = ''; }",
+							"pm.variables.set('seed_body', JSON.stringify(body));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"var i = Number(pm.collectionVariables.get('seed_i') || 0) + 1;",
+							"pm.collectionVariables.set('seed_i', String(i));",
+							"if (i < 20) { postman.setNextRequest('Seed: one character'); }"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Seed: item in Aldoria",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/item-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"item-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Aldoria item\",\"settings\":[\"{{aldoria}}\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Seed: item with no settings",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/item-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"item-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Shared item\",\"settings\":[]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Seed: item in Norheim",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/item-{{run}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"item-{{run}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Norheim item\",\"settings\":[\"{{norheim}}\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Baseline: all 20 characters",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/character-{{run}}?_limit=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"character-{{run}}"
+					],
+					"query": [
+						{
+							"key": "_limit",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the total is 20', function () { pm.expect(Number(pm.response.json().total)).to.equal(20); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Suffix form: one world plus the shared characters",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/character-{{run}}?setting_inOrEmpty[]={{aldoria}}&_limit=10",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"character-{{run}}"
+					],
+					"query": [
+						{
+							"key": "setting_inOrEmpty[]",
+							"value": "{{aldoria}}"
+						},
+						{
+							"key": "_limit",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });",
+							"var j = pm.response.json();",
+							"var aldoria = pm.collectionVariables.get('aldoria');",
+							"pm.test('the first page holds 10 characters', function () { pm.expect(j.results.length).to.equal(10); });",
+							"pm.test('none of them is from Norheim', function () { j.results.forEach(function (o) { pm.expect(o.setting).to.not.equal(pm.collectionVariables.get('norheim')); }); });",
+							"pm.test('each is from Aldoria or has no setting', function () { j.results.forEach(function (o) { pm.expect([aldoria, null, undefined, '']).to.include(o.setting); }); });",
+							"pm.test('the total is 15 (12 Aldoria + 3 without a setting)', function () { pm.expect(Number(j.total)).to.equal(15); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Bracket form answers the same",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/character-{{run}}?setting[inOrEmpty][]={{aldoria}}&_limit=10",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"character-{{run}}"
+					],
+					"query": [
+						{
+							"key": "setting[inOrEmpty][]",
+							"value": "{{aldoria}}"
+						},
+						{
+							"key": "_limit",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });",
+							"var j = pm.response.json();",
+							"var aldoria = pm.collectionVariables.get('aldoria');",
+							"pm.test('the first page holds 10 characters', function () { pm.expect(j.results.length).to.equal(10); });",
+							"pm.test('none of them is from Norheim', function () { j.results.forEach(function (o) { pm.expect(o.setting).to.not.equal(pm.collectionVariables.get('norheim')); }); });",
+							"pm.test('each is from Aldoria or has no setting', function () { j.results.forEach(function (o) { pm.expect([aldoria, null, undefined, '']).to.include(o.setting); }); });",
+							"pm.test('the total is 15 (12 Aldoria + 3 without a setting)', function () { pm.expect(Number(j.total)).to.equal(15); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "The second page holds the remaining 5",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/character-{{run}}?setting_inOrEmpty[]={{aldoria}}&_limit=10&_page=2",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"character-{{run}}"
+					],
+					"query": [
+						{
+							"key": "setting_inOrEmpty[]",
+							"value": "{{aldoria}}"
+						},
+						{
+							"key": "_limit",
+							"value": "10"
+						},
+						{
+							"key": "_page",
+							"value": "2"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var j = pm.response.json();",
+							"pm.test('5 on the second page', function () { pm.expect(j.results.length).to.equal(5); });",
+							"pm.test('none of them is from Norheim', function () { j.results.forEach(function (o) { pm.expect(o.setting).to.not.equal(pm.collectionVariables.get('norheim')); }); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Control: a plain in filter leaves the shared characters out",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/character-{{run}}?setting[]={{aldoria}}&_limit=1",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"character-{{run}}"
+					],
+					"query": [
+						{
+							"key": "setting[]",
+							"value": "{{aldoria}}"
+						},
+						{
+							"key": "_limit",
+							"value": "1"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the total is 12', function () { pm.expect(Number(pm.response.json().total)).to.equal(12); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "List property: one world plus the item without settings",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/inorempty-{{run}}/item-{{run}}?settings_inOrEmpty[]={{aldoria}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"inorempty-{{run}}",
+						"item-{{run}}"
+					],
+					"query": [
+						{
+							"key": "settings_inOrEmpty[]",
+							"value": "{{aldoria}}"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var names = pm.response.json().results.map(function (o) { return o.name; }).sort();",
+							"pm.test('the Aldoria item and the shared item, not the Norheim one', function () { pm.expect(names).to.eql(['Aldoria item', 'Shared item']); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Teardown: register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{register_id}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('answered', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204, 409]); });"
+						]
+					}
+				}
+			]
+		}
+	]
+}
