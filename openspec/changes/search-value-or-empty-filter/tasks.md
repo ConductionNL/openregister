@@ -8,8 +8,15 @@
 
 ## 2. Proof and docs
 
-- [ ] 2.1 Newman: `GET /api/objects/{register}/{schema}?setting_inOrEmpty[]=<world>` returns the world's rows and the unscoped rows, with a matching total.
-- [ ] 2.2 Document the operator in `docs/` in the filter table, and in `zoeken-filteren`.
+- [x] 2.1 Newman: `GET /api/objects/{register}/{schema}?setting_inOrEmpty[]=<world>` returns the world's rows and the unscoped rows, with a matching total.
+  > 2026-11-25: `tests/integration/openregister-in-or-empty-filter.postman_collection.json` seeds 12 characters in
+  > Aldoria, 5 in Norheim and 3 with no setting (missing, null, empty string), then: the suffix and the bracket form
+  > each answer a page of 10 with no Norheim row and total 15, page 2 holds the other 5, a plain `in` filter (the
+  > control) answers 12, and on a list property `settings_inOrEmpty[]` answers the Aldoria item and the `[]` item, not
+  > the Norheim one. Newman against Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e): 34 requests, 43 assertions, 0 failed.
+- [x] 2.2 Document the operator in `docs/` in the filter table, and in `zoeken-filteren`.
+  > The `docs/` half is in `docs/Features/search.md` (operator table and its own section) and `docs/api/objects.md`.
+  > The `zoeken-filteren` half is this change's delta spec, which lands in the main spec when the change is archived.
 
 Acceptance:
 - Existing operators return exactly what they returned before.

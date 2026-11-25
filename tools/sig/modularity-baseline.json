@@ -32,8 +32,7 @@
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php",
-  "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
-  "lib/Service/Object/SaveObject.php -> lib/Service/RetentionServiceInterface.php"
+  "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php"
  ],
  "exposed_files": [
   "lib/AppHost/AppHostRegistrar.php",
@@ -585,6 +584,7 @@
   "lib/Kernel/Contracts/Core/ReadableFileHitsInterface.php",
   "lib/Kernel/Contracts/Core/ReadableObjectHistoryInterface.php",
   "lib/Kernel/Contracts/Core/RecordArchivalReadingInterface.php",
+  "lib/Kernel/Contracts/Core/RecordRetentionStampsInterface.php",
   "lib/Kernel/Contracts/Core/RegisterAccessChangeLogInterface.php",
   "lib/Kernel/Contracts/Core/RegisterBundlesInterface.php",
   "lib/Kernel/Contracts/Core/RegisterFolderRecordsInterface.php",
@@ -1329,7 +1329,6 @@
   "lib/Service/RegisterScopedSchemaResolvers.php",
   "lib/Service/RegisterService.php",
   "lib/Service/RegisterServiceInterface.php",
-  "lib/Service/RetentionServiceInterface.php",
   "lib/Service/Rules/DependentValueDeclarationException.php",
   "lib/Service/Schema/IncomingDefinition.php",
   "lib/Service/Schema/SchemaChangeRecord.php",
