@@ -8,6 +8,8 @@
         "{schema} {title} deleted": "{schema} {title} verwijderd",
         "Object \"%1$s\" created": "Object \"%1$s\" aangemaakt",
         "Object \"%1$s\" updated": "Object \"%1$s\" bijgewerkt",
+        "New note on \"%1$s\"": "Nieuwe notitie bij \"%1$s\"",
+        "New note on \"%1$s\" in register \"%2$s\"": "Nieuwe notitie bij \"%1$s\" in register \"%2$s\"",
         "Object \"%1$s\" assigned to you": "Object \"%1$s\" aan je toegewezen",
         "3": "3",
         "30": "30",
