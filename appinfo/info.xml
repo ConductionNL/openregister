@@ -197,6 +197,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\ExpiredObjectSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowScheduleWorker</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowCalendarWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowTimerWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\CasePlanTimerRearmJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob</job>

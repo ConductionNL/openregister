@@ -26,8 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\AutomationRecord;
 use OCA\OpenRegister\Db\AutomationRecordFilter;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\AutomationOutcome;
 use OCA\OpenRegister\Service\AutomationRecordService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -101,4 +103,45 @@ class AutomationRecordsController extends Controller {
 			]
 		);
 	}//end index()
+
+	/**
+	 * What the caller's automations did, in the consuming-app shape.
+	 *
+	 * The same records and the same access rule as index(), projected through
+	 * AutomationOutcome: no message body, no recipient address, no per-channel
+	 * breakdown. Query: `keyPrefix`, `kind` (notification|lifecycle), `since`,
+	 * `until`, `limit` (max 500), `offset`; newest first.
+	 *
+	 * @return JSONResponse `results`, `limit` and `offset`; 401 when nobody is signed in; 500 when the store fails.
+	 *
+	 * @spec openspec/changes/a-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did/specs/notificatie-engine/spec.md#requirement-a-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function outcomes(): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: Http::STATUS_UNAUTHORIZED);
+		}
+
+		$filter = AutomationRecordFilter::fromOutcomeParams(params: $this->request->getParams());
+		try {
+			$records = $this->records->find($filter);
+		} catch (Throwable $e) {
+			unset($e);
+			return new JSONResponse(data: ['error' => 'Automation outcomes could not be read'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		$results = array_map(
+			static fn (AutomationRecord $record): array => AutomationOutcome::fromRecord(record: $record),
+			$records
+		);
+
+		return new JSONResponse(
+			data: [
+				'results' => $results,
+				'limit'   => $filter->limit,
+				'offset'  => $filter->offset,
+			]
+		);
+	}//end outcomes()
 }//end class

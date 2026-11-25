@@ -68,6 +68,9 @@
 		<!-- Push Notifications Status Section -->
 		<PushNotificationsConfiguration :pushStatus="pushStatus" />
 
+		<!-- Notification rules that reached nobody -->
+		<NotificationRuleReach />
+
 		<!-- LLM Configuration Section -->
 		<LlmConfiguration />
 
@@ -114,6 +117,7 @@ import LlmConfiguration from './sections/LlmConfiguration.vue'
 import LoadSheddingConfiguration from './sections/LoadSheddingConfiguration.vue'
 import LogIntegrity from './sections/LogIntegrity.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
+import NotificationRuleReach from './sections/NotificationRuleReach.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import PermissionMatrix from './sections/PermissionMatrix.vue'
 import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
@@ -154,6 +158,7 @@ export default {
 		ActionRights,
 		LogIntegrity,
 		PushNotificationsConfiguration,
+		NotificationRuleReach,
 		LlmConfiguration,
 		TranslationConfiguration,
 		LoadSheddingConfiguration,
