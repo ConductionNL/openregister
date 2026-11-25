@@ -352,6 +352,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'Settings\SeedReport#show', 'url' => '/api/settings/seed', 'verb' => 'GET'],
         ['name' => 'Settings\TranslationSettings#show', 'url' => '/api/settings/translation', 'verb' => 'GET'],
         ['name' => 'Settings\TranslationSettings#update', 'url' => '/api/settings/translation', 'verb' => 'PUT'],
+        // The text search configuration `_search` stems with on PostgreSQL (administrator only).
+        ['name' => 'Settings\SearchSettings#show', 'url' => '/api/settings/search', 'verb' => 'GET'],
+        ['name' => 'Settings\SearchSettings#update', 'url' => '/api/settings/search', 'verb' => 'PUT'],
         // Magic Table Sync endpoints.
         ['name' => 'tables#sync', 'url' => '/api/tables/sync/{registerId}/{schemaId}', 'verb' => 'POST', 'requirements' => ['registerId' => '[^/]+', 'schemaId' => '[^/]+']],
         ['name' => 'tables#syncAll', 'url' => '/api/tables/sync', 'verb' => 'POST'],
@@ -2189,6 +2192,21 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		// building, who made them, when their file stops existing and how
 		// often the register served it. No catch-all sibling sits on
 		// /api/exports, so nothing here can be swallowed by a {id} route.
+		// A survey's results and its export (survey-object): the response count
+		// always, the answers only for the survey's reader roles and, on an
+		// anonymous survey, only once its minimum is reached.
+		[
+			'name' => 'surveyResults#results',
+			'url' => '/api/surveys/{register}/{survey}/results',
+			'verb' => 'GET',
+			'requirements' => ['register' => '[^/]+', 'survey' => '[^/]+'],
+		],
+		[
+			'name' => 'surveyResults#export',
+			'url' => '/api/surveys/{register}/{survey}/export',
+			'verb' => 'GET',
+			'requirements' => ['register' => '[^/]+', 'survey' => '[^/]+'],
+		],
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
 		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
