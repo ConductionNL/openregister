@@ -150,6 +150,16 @@ class IntegrationWiringTest extends TestCase {
 		}
 	}//end testTheWebhookHelpersAreBoundByIntegrationsOnly()
 
+	/**
+	 * The request metrics port the middleware and the object cache type on is answered by the Integrations recorder.
+	 *
+	 * @return void
+	 */
+	public function testTheRequestMetricsPortIsAnsweredByTheRecorder(): void {
+		$this->assertSame(\OCA\OpenRegister\Service\Observability\RequestMetricsRecorder::class, IntegrationWiring::BINDINGS[\OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface::class]);
+		$this->assertTrue(is_a(\OCA\OpenRegister\Service\Observability\RequestMetricsRecorder::class, \OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface::class, true));
+	}//end testTheRequestMetricsPortIsAnsweredByTheRecorder()
+
 	public function testTheRegistryAndSemanticValidatorFactoriesBuildFromTheContainer(): void {
 		$this->registerAll();
 		$container = $this->createMock(ContainerInterface::class);
