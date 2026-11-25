@@ -148,3 +148,4 @@
 2026-11-25T14:08:12Z GREEN prs=11108,11193 main=df7349fe72 integrator-cloud (merged)
 2026-11-25T14:27:18Z RED prs=11051,11066,11067 main=d83ef9c562 integrator-cloud (ComponentDefinition/ComponentDependency architecture tests; split)
 2026-11-25T14:27:35Z GREEN prs=11051,11066 main=d83ef9c562 integrator-cloud (merged)
+2026-11-25T14:31:48Z RED prs=11067 main=2fc34e4540 integrator-cloud (failed-solo: architecture component tests, yaml not regenerated)
