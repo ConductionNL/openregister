@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 267;
+	private const LISTENER_COUNT = 275;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -46,11 +46,12 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Then the Collaboration team resource provider registration (CoreListenerRegistrar::teamResources)
 	 * (count 263 -> 264). The deadline warning then appended one TaskDueSoonListener
 	 * registration on FlowTimerFiredEvent, after CaseItemTimerListener (264 -> 265).
+	 * Then the cross-app semantic reference listeners (8 registrations, count 265 -> 273).
 	 * Then the ChangeGateListener took the decided approval sequences too,
 	 * on TaskSequenceCompletedEvent after the ApprovalChainAdvanceListener and on the new
-	 * TaskSequenceRejectedEvent (265 -> 267).
+	 * TaskSequenceRejectedEvent (273 -> 275).
 	 */
-	private const SEQUENCE_SHA256 = 'a6c97a83f6923a688b58c17cba7c1e531f02988fd92368b8203b720383659585';
+	private const SEQUENCE_SHA256 = '28f0c0da210ceb87553b15a9c46726a20a32194304ac283ebbb9eefaee461d50';
 
 	/**
 	 * The registration calls, in call order, with every argument.

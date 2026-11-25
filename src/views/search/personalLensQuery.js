@@ -43,8 +43,7 @@ export function lensSearchParams(index, lenses = TABLE_LENSES) {
 
 	params[LENS_KEYS[lens]] = true
 	if (lens === 'recent') {
-		params.sortKey = null
-		params.sortOrder = null
+		params._order = null
 	}
 
 	return params

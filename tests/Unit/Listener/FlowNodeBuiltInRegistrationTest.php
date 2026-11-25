@@ -141,6 +141,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 				$this->node(SendNotificationNodeInterface::class),
 				$this->node(SendEmailNodeInterface::class),
 				$this->node(SendTalkMessageNodeInterface::class),
+				$this->node(\OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface::class),
 			)),
 			new CoordinationFlowNodes(new HumanTaskFlowNodes(
 				$this->node(UserTaskNodeInterface::class),
@@ -178,7 +179,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent($registry));
 
-		$this->assertCount(36, $registered);
+		$this->assertCount(37, $registered);
 		$this->assertSame($this->expected, $registered);
 	}
 

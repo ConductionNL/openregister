@@ -26,6 +26,7 @@ jest.mock('@nextcloud/l10n', () => ({
 }))
 jest.mock('@nextcloud/vue', () => ({}))
 jest.mock('vue-material-design-icons/Api.vue', () => ({}))
+jest.mock('vue-material-design-icons/ClipboardCheckOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/CloudUploadOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({}))
 jest.mock('vue-material-design-icons/DotsHorizontal.vue', () => ({}))
@@ -115,6 +116,7 @@ describe('RegistersIndex.registerActions', () => {
 			[register],
 			[register],
 			[register],
+			[register],
 			[{ id: 1 }],
 		])
 		expect(navigationStore.setModal.mock.calls).toEqual([
@@ -124,6 +126,7 @@ describe('RegistersIndex.registerActions', () => {
 		expect(navigationStore.setDialog.mock.calls).toEqual([['deleteRegister']])
 		expect(vm.viewOasDoc.mock.calls).toEqual([[register]])
 		expect(vm.downloadOas.mock.calls).toEqual([[register]])
+		expect(vm.conformanceRegister).toBe(register)
 		expect(vm.$router.push.mock.calls).toEqual([['/registers/1']])
 	})
 })
