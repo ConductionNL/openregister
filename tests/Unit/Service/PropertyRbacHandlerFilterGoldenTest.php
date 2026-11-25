@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Service\ProtectedCarryForward;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\PropertyWriteCheck;
@@ -64,6 +65,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\SchemaProperty
  */
 final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * Property authorization blocks by property name.
@@ -204,6 +207,7 @@ final class PropertyRbacHandlerFilterGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturn($spec[1] ?? []);
 
 		$matcher = $this->createMock(ConditionMatcher::class);

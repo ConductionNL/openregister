@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\GraphQL;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use GraphQL\Type\Definition\FieldDefinition;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\ObjectType;
@@ -41,6 +42,8 @@ use Psr\Log\LoggerInterface;
  * Covers no metadata on purpose: it drives the generator through every collaborator it builds.
  */
 class GovernedPropertyDescriptionTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private const PROPERTIES = ['name', 'salary', 'notes', 'motto', 'badge', 'odd'];
 
 	private const GROUPS = ['alice' => ['hr'], 'bob' => ['staff'], 'root' => ['admin']];
@@ -66,6 +69,7 @@ class GovernedPropertyDescriptionTest extends TestCase {
 
 	private function rbac(IUserSession $session): PropertyRbacHandler {
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturnCallback(
 			static fn (IUser $user): array => self::GROUPS[$user->getUID()]
 		);

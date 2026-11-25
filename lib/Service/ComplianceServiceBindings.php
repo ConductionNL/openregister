@@ -30,6 +30,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordRetentionStampsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\SystemAuditLineInterface;
@@ -72,6 +73,11 @@ use OCA\OpenRegister\Service\Audit\AuditAggregationService;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
 use OCA\OpenRegister\Service\Audit\AuditEntryWriter;
 use OCA\OpenRegister\Service\Audit\AuditResealInterface;
+use OCA\OpenRegister\Service\Audit\AuditSealBacklogCursor;
+use OCA\OpenRegister\Service\Audit\AuditSealBacklogCursorInterface;
+use OCA\OpenRegister\Service\Audit\AuditSealBacklogInterface;
+use OCA\OpenRegister\Service\Audit\AuditSealBacklogService;
+use OCA\OpenRegister\Service\Audit\AuditSealWindowInterface;
 use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\AuditSinkInterface;
 use OCA\OpenRegister\Service\Audit\AuditSinkShipperInterface;
@@ -141,6 +147,7 @@ use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry;
 use OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistryInterface;
 use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepInterface;
 use OCA\OpenRegister\Service\Gdpr\Retention\RetentionSweepService;
+use OCA\OpenRegister\Kernel\Contracts\AddressAllowlistsInterface;
 use OCA\OpenRegister\Service\Hardening\AllowedOriginsInterface;
 use OCA\OpenRegister\Service\Hardening\ElevationService;
 use OCA\OpenRegister\Service\Hardening\ElevationServiceInterface;
@@ -237,6 +244,7 @@ final class ComplianceServiceBindings {
 		ArchivalAnnotationValidatorInterface::class    => ArchivalAnnotationValidator::class,
 		ElementMappingValidatorInterface::class        => ElementMappingValidator::class,
 		ElevationServiceInterface::class               => ElevationService::class,
+		AddressAllowlistsInterface::class              => HardeningPolicy::class,
 		AllowedOriginsInterface::class                 => HardeningPolicy::class,
 		HardeningFloorsInterface::class                => HardeningPolicy::class,
 		HardeningReportServiceInterface::class         => HardeningReportService::class,
@@ -249,9 +257,13 @@ final class ComplianceServiceBindings {
 		AuditRetentionResolverInterface::class         => AuditRetentionResolver::class,
 		SearchTrailServiceInterface::class             => SearchTrailService::class,
 		RetentionServiceInterface::class               => RetentionService::class,
+		RecordRetentionStampsInterface::class          => RetentionService::class,
 		ArchiveReferenceReaderInterface::class         => ArchiveActionDateCalculator::class,
 		AuditSealInterface::class                      => AuditHashService::class,
 		AuditRechainInterface::class                   => AuditHashService::class,
+		AuditSealWindowInterface::class                => AuditHashService::class,
+		AuditSealBacklogCursorInterface::class         => AuditSealBacklogCursor::class,
+		AuditSealBacklogInterface::class               => AuditSealBacklogService::class,
 		DpiaPatternDetectorInterface::class            => DpiaPatternDetectionService::class,
 		RetentionSweepInterface::class                 => RetentionSweepService::class,
 	];
