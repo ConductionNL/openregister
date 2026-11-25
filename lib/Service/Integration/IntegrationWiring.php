@@ -34,6 +34,7 @@ use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterfa
 use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\OutboundMailLinkRecorderInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarLinkListenerRegistrar;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationRecorder;
 use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -233,6 +234,8 @@ final class IntegrationWiring {
 		self::registerSeams(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
 		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
+		// Inbound calendar changes refresh the link rows (calendar-leaf-inbound, REQ-CAL-INB-001).
+		CalendarLinkListenerRegistrar::register(context: $context);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}

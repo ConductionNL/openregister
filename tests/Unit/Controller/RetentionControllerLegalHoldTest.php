@@ -44,7 +44,6 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\NullLogger;
 
 /**
  * A hold needs its object and a reason, carries the owner key when one is named, and is audited.
@@ -74,6 +73,13 @@ class RetentionControllerLegalHoldTest extends TestCase {
 	private IJobList&MockObject $jobList;
 
 	private ObjectEntity $object;
+
+	/**
+	 * Records what the controller logs.
+	 *
+	 * @var \Psr\Log\AbstractLogger&object{lines: list<array{0: mixed, 1: string}>}
+	 */
+	private \Psr\Log\AbstractLogger $logger;
 
 	/**
 	 * A controller whose request answers the given parameters.
@@ -106,6 +112,14 @@ class RetentionControllerLegalHoldTest extends TestCase {
 		$this->retentionService = $this->createMock(RetentionService::class);
 		$this->auditMapper      = $this->createMock(AuditTrailMapper::class);
 		$this->jobList          = $this->createMock(IJobList::class);
+		$this->logger           = new class extends \Psr\Log\AbstractLogger {
+			/** @var list<array{0: mixed, 1: string}> */
+			public array $lines = [];
+
+			public function log($level, \Stringable|string $message, array $context = []): void {
+				$this->lines[] = [$level, (string)$message];
+			}
+		};
 
 		return RetentionControllerFactory::create(
 			$request,
@@ -118,7 +132,7 @@ class RetentionControllerLegalHoldTest extends TestCase {
 			$this->createMock(DestructionService::class),
 			$this->jobList,
 			$session,
-			new NullLogger()
+			$this->logger
 		);
 	}
 
@@ -208,7 +222,7 @@ class RetentionControllerLegalHoldTest extends TestCase {
 		$this->assertSame(200, $controller->placeLegalHold()->getStatus());
 	}
 
-	public function testAnUnreadableObjectIs500AndNothingIsAudited(): void {
+	public function testAnUnknownObjectIs404AndNothingIsAudited(): void {
 		$controller = $this->controller(['objectId' => 'gone', 'reason' => 'Lawsuit 12']);
 		$this->objectMapper->method('find')->willThrowException(new DoesNotExistException('Object not found'));
 		$this->retentionService->expects($this->never())->method('placeHold');
@@ -216,8 +230,8 @@ class RetentionControllerLegalHoldTest extends TestCase {
 
 		$response = $controller->placeLegalHold();
 
-		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'Object not found'], $response->getData());
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame(['message' => 'Object not found', 'error' => 'does-not-exist'], $response->getData());
 	}
 
 	public function testReleasingWithoutAReasonIs400(): void {
@@ -262,7 +276,7 @@ class RetentionControllerLegalHoldTest extends TestCase {
 		$response = $controller->releaseLegalHold('obj-1');
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'Another matter still holds this object'], $response->getData());
+		$this->assertSame(['error' => 'Internal server error'], $response->getData());
 	}
 
 	public function testABulkHoldIsQueuedForTheSignedInUser(): void {
@@ -304,6 +318,10 @@ class RetentionControllerLegalHoldTest extends TestCase {
 		$response = $controller->placeBulkLegalHold();
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'queue down'], $response->getData());
+		$this->assertSame(['error' => 'Internal server error'], $response->getData());
+		$this->assertSame(
+			[['error', '[' . RetentionController::class . '] Bulk legal hold placement failed: queue down']],
+			$this->logger->lines
+		);
 	}
 }
