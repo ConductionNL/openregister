@@ -10,6 +10,7 @@
 
 - [x] 2.1 `lib/Search/FlowTasksProvider.php` (`IFilteringProvider`, id `openregister_flow_tasks`): results per D-3 and D-4, cursor paging; registered in `lib/AppInfo/Application.php` beside `ObjectsProvider`. Verify: `tests/Unit/Search/FlowTasksProviderTest.php` for a match, a refusal and a deep-link override.
 - [ ] 2.2 `tests/e2e/ci/flow-task-search.spec.ts`: create a task for the test user, search it in the top bar, open it. (live pass, decision 139)
+  - 2026-11-25: spec written and run on a sandbox Nextcloud 34 on MariaDB. On main it fails before reaching this provider: `GET /ocs/v2.php/search/providers` answers 500 ('Filter name is already used', `ObjectsProvider` redefines a built-in filter), so the header search hangs on 'Searching …' for every app. With openregister#11164 applied it passes (1 passed): the hit under the task title links to `/apps/openregister/flow-tasks/{uuid}` and opens the task page. Tick when #11164 is on main.
 
 ## 3. Close
 
