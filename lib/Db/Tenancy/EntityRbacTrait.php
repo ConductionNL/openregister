@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Db\Tenancy;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
+use OCA\OpenRegister\Service\Rbac\AuthorizationRuleEvaluator;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -202,20 +203,32 @@ trait EntityRbacTrait {
 	/**
 	 * Whether any of the user's groups, or the wildcard, is allowed.
 	 *
+	 * Delegated to the evaluator both planes share.
+	 *
 	 * @param array $userGroups    The user's group ids.
 	 * @param mixed $allowedGroups The allowed group ids.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
 	 */
 	private function groupsGrant(array $userGroups, mixed $allowedGroups): bool {
-		foreach ($userGroups as $groupId) {
-			if (in_array($groupId, $allowedGroups) === true) {
-				return true;
-			}
-		}
-
-		return in_array('*', $allowedGroups) === true;
+		return $this->entityRuleEvaluator()->anyGroupAllowed(userGroups: $userGroups, allowedGroups: $allowedGroups);
 	}//end groupsGrant()
+
+	/**
+	 * The shared reader of rule lists, the same one the object plane asks.
+	 *
+	 * A trait cannot be injected into, and the evaluator has no collaborators,
+	 * so a fresh one is equivalent to a shared one.
+	 *
+	 * @return AuthorizationRuleEvaluator The evaluator.
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
+	 */
+	private function entityRuleEvaluator(): AuthorizationRuleEvaluator {
+		return new AuthorizationRuleEvaluator();
+	}//end entityRuleEvaluator()
 
 	/**
 	 * Verify RBAC permission and throw exception if denied.

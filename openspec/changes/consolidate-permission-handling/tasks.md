@@ -26,8 +26,8 @@
   - One function answers "does this authorization block grant this group this verb", and both planes call it. `MultiTenancyTrait::hasRbacPermission()` becomes delegation, not a second implementation.
   - Task 1's tests pass UNCHANGED. This step is a refactor: if a behaviour test needed editing here, the extraction changed behaviour and the diff is wrong.
   - The anonymous fail-closed write rule (#1955) lives in the shared evaluator, so it cannot be honoured on one plane and forgotten on the other — which is the class of bug this whole change exists to remove.
-- [ ] Implement
-- [ ] Test
+- [x] Implement (`lib/Service/Rbac/AuthorizationRuleEvaluator.php`; `PermissionHandler::anonymousVerdict()` and `EntityRbacTrait::groupsGrant()` delegate to it, the fail-closed write set moved into it, the object plane's own `entryNamesGroup()` / `publicGroupExplicitlyGranted()` removed)
+- [x] Test (`tests/Unit/Service/Rbac/AuthorizationRuleEvaluatorTest.php`; Task 1's pins pass unchanged)
 
 ### Task 3: Honour `public` on the entity plane
 - **spec_ref**: `openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-an-entity-may-declare-anonymous-access-and-it-must-be-honoured`
