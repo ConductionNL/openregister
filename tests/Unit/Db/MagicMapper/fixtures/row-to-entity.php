@@ -1355,6 +1355,8 @@ return array (
         'childCount' => NULL,
         'parentHidden' => NULL,
         'matchedFile' => NULL,
+        'matchedFileId' => NULL,
+        'matchedMember' => NULL,
         'can' => NULL,
         'processingActivityId' => NULL,
         'importJobId' => NULL,
