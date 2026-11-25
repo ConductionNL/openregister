@@ -23,4 +23,7 @@ Decision 137. Owner openregister. Asked by dossiq
 
 ## 4. Live
 
-- [ ] 4.1 Live probe: create A, create B blocked by A for the same assignee, read the inbox (B absent, total excludes it), complete A, read again (B present, audit has `released`). (not run: needs the live instance after the migration; the NOT IN subquery's SQL is only proven on a real database)
+- [x] 4.1 Live probe: create A, create B blocked by A for the same assignee, read the inbox (B absent, total excludes it), complete A, read again (B present, audit has `released`). (not run: needs the live instance after the migration; the NOT IN subquery's SQL is only proven on a real database)
+  - Run 2026-11-25 on main against a sandbox Nextcloud 34.0.6 on MariaDB, as a non-admin assignee through `/api/flow-tasks`: B created with `blockedBy` A is absent from the inbox and from its total (the `NOT IN` predicate runs on MariaDB), present with `includeBlocked=true`; completing A puts B back in the default inbox and B's audit reads `create`, `released`. With `includeBlocked=true`, B read `blocked: false` while A was open, which is 4.2
+- [x] 4.2 `FlowWiring::buildTaskInboxService()` passes the blocker lookup (`TaskBlockerMapperInterface`) to `TaskInboxService`, so a row waiting on an open task carries `blocked: true` (found live in 4.1: the factory left it out, the service's `blockers` stayed null and every row read as not blocked)
+  - Test: FlowWiringTaskServicesTest::testTheTaskInboxIsBuiltWithTheBlockerLookup (red without the fix); live: B2 `blocked: true` while A2 is open, `false` after A2 completes

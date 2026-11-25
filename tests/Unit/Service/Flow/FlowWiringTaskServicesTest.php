@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Db\TaskBlockerMapperInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskSubstitution;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
@@ -100,6 +101,40 @@ final class FlowWiringTaskServicesTest extends TestCase {
 		$property = new \ReflectionProperty(TaskInboxService::class, 'substitution');
 		$this->assertInstanceOf(expected: TaskSubstitution::class, actual: $property->getValue($inbox));
 	}//end testTheTaskInboxIsBuiltWithTheSubstitutionService()
+
+	/**
+	 * The task inbox is built with the blocker lookup, so a row waiting on an
+	 * open task carries `blocked: true` (found live: without it every row read
+	 * as not blocked).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	public function testTheTaskInboxIsBuiltWithTheBlockerLookup(): void {
+		$context = new RecordingRegistrationContext();
+		FlowWiring::register(context: $context);
+
+		$asked     = [];
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use (&$asked) {
+				$asked[] = $id;
+				$class   = new ReflectionClass(objectOrClass: $id);
+				if ($class->isFinal() === true) {
+					return $class->newInstanceWithoutConstructor();
+				}
+
+				return $this->createMock(originalClassName: $id);
+			}
+		);
+
+		$inbox = $context->factories[TaskInboxService::class]($container);
+
+		$this->assertContains(needle: TaskBlockerMapperInterface::class, haystack: $asked);
+		$property = new \ReflectionProperty(TaskInboxService::class, 'blockers');
+		$this->assertInstanceOf(expected: TaskBlockerMapperInterface::class, actual: $property->getValue($inbox));
+	}//end testTheTaskInboxIsBuiltWithTheBlockerLookup()
 
 	/**
 	 * TaskService is still built when the container cannot build its write-back

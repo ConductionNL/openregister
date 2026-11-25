@@ -455,6 +455,8 @@ final class FlowWiring {
 	 * @param ContainerInterface $container The container.
 	 *
 	 * @return TaskInboxService
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	private static function buildTaskInboxService(ContainerInterface $container): TaskInboxService {
 			return new TaskInboxService(
@@ -467,6 +469,10 @@ final class FlowWiring {
 				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
 				// The per-row `can` list (record-tasks-tab D-4), asked of the
 				// same authorization service every verb's endpoint asks.
+				// Which blockers of a page are still open, for the derived
+				// `blocked` flag (a-task-may-wait-on-another-task 2.1); without
+				// it every row reads as not blocked.
+				blockers: $container->get(\OCA\OpenRegister\Db\TaskBlockerMapperInterface::class),
 				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class),
 				// Marks rows whose user assignee is away (assigneeAbsent,
 				// absentUntil), tasks-delegation-and-substitution task 3.4.
