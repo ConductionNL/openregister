@@ -112,7 +112,8 @@ export default {
 				ADDRESS: t('openregister', 'address'),
 				EMAIL: t('openregister', 'email address'),
 				PHONE: t('openregister', 'phone number'),
-				IBAN: t('openregister', 'IBAN'),
+				// An IBAN is called IBAN in every language: not wrapped, see CLAUDE.md (untranslatable strings).
+				IBAN: 'IBAN',
 				URL: t('openregister', 'link'),
 			}
 			return labels[entity.type] || t('openregister', 'other')
