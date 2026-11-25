@@ -121,10 +121,12 @@ DOMAIN_ORDER=(
     "duplicate-merge"
     "upsert-on-key"
     "draft-activation"
+    "object-grants"
     "anonymisation-disclosures"
     "organisation-audit"
     "public-export"
     "nlgov-conformance"
+    "reply-threading"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -224,6 +226,9 @@ declare -A DOMAIN_COLLECTIONS=(
     # 422 with findings, 409, 404), and OCSMiddleware turns a 403 from an
     # OCSController into a 200 that no unit test of the controller can see.
     [draft-activation]="$REPO_ROOT/tests/integration/openregister-draft-activation.postman_collection.json"
+    # an-object-lists-its-grants-with-their-origin 4.4/4.5: /grants is 404 for a caller who cannot read the
+    # record, 403 for a reader, 200 for the owner; /permissions and /shares keep their answers.
+    [object-grants]="$REPO_ROOT/tests/integration/openregister-object-grants.postman_collection.json"
     # REQ-ADI-005/006: file disclosures (reader 200, non-reader 403) and the admin pipeline report.
     [anonymisation-disclosures]="$REPO_ROOT/tests/newman/openregister-anonymisation-disclosures.postman_collection.json"
     [organisation-audit]="$REPO_ROOT/tests/newman/openregister-organisation-audit.postman_collection.json"
@@ -231,6 +236,8 @@ declare -A DOMAIN_COLLECTIONS=(
     [public-export]="$REPO_ROOT/tests/integration/openregister-public-export.postman_collection.json"
     # NLGov API design rules: the report is public (200 anonymous), the probe is administrator-only (403).
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
+    # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
+    [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

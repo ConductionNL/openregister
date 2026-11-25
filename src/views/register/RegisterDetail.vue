@@ -35,6 +35,20 @@ import {
 						]
 					: []
 			">
+			<!-- Header actions: the register's API page -->
+			<template v-if="register" #actions>
+				<NcButton
+					data-testid="register-api-action"
+					@click="
+						$router.push({
+							name: 'registerApi',
+							params: { id: register.id },
+						})
+					">
+					{{ t('openregister', 'API page') }}
+				</NcButton>
+			</template>
+
 			<!-- Error actions -->
 			<template #error-actions>
 				<NcButton @click="$router.push('/registers')">

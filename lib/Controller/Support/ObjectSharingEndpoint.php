@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
@@ -82,10 +83,35 @@ final class ObjectSharingEndpoint {
 		// unreadable object, and is left to propagate as it always has.
 		$this->objectService->setRegister((string)$ref->register);
 		$this->objectService->setSchema((string)$ref->schema);
-		$this->objectService->setObject($ref->id);
+		if ($this->aimAt(id: $ref->id) === false) {
+			return self::notFound();
+		}
 
 		return ($this->current() ?? self::notFound());
 	}//end resolve()
+
+	/**
+	 * Aim the service at the object, or false when its lookup finds no row the caller may read.
+	 *
+	 * The lookup is RBAC-bounded: a row the caller may not read and a row that
+	 * does not exist both answer DoesNotExistException. Either is the same 404
+	 * as an unreadable object, never a 500 that tells the two apart.
+	 *
+	 * @param string $id The object uuid.
+	 *
+	 * @return bool True when the service is aimed at a row.
+	 *
+	 * @spec openspec/changes/an-object-lists-its-grants-with-their-origin/specs/rbac-scopes/spec.md
+	 */
+	private function aimAt(string $id): bool {
+		try {
+			$this->objectService->setObject($id);
+		} catch (DoesNotExistException $e) {
+			return false;
+		}
+
+		return true;
+	}//end aimAt()
 
 	/**
 	 * The object the service is aimed at, or null when the caller cannot read it or it is missing.
