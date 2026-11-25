@@ -494,6 +494,30 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 	}//end testAnOwnerOnlyReadTargetsTheOwnerAlone()
 
 	/**
+	 * A read open to every signed-in user has no targeted list, like `public`; a named group still targets.
+	 *
+	 * `authenticated` is not a Nextcloud group. Resolved as one it had no members, so the
+	 * list held the owner alone and a watcher who could read the object was dropped as
+	 * having lost read on the first notification.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/tasks.md
+	 */
+	public function testAnAuthenticatedReadIsABroadcastNotTheOwnerAlone(): void {
+		$object = $this->bulkObject('r', ['owner' => 'carol', 'schema' => '5']);
+
+		$authenticated = $this->newHandler(['block' => ['read' => ['authenticated']]]);
+		$this->assertSame([], $authenticated->getReadableByUsers($object));
+
+		$withGroup = $this->newHandler(['block' => ['read' => ['editors', 'authenticated']]]);
+		$this->assertSame([], $withGroup->getReadableByUsers($object), 'authenticated beside a group still admits every signed-in user');
+
+		$group = $this->newHandler(['block' => ['read' => ['editors']]]);
+		$this->assertSame(['alice', 'bob', 'carol'], $group->getReadableByUsers($object), 'control: a named group still targets its members and the owner');
+	}//end testAnAuthenticatedReadIsABroadcastNotTheOwnerAlone()
+
+	/**
 	 * Every case.
 	 *
 	 * @return array<string, mixed>

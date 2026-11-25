@@ -2863,6 +2863,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *     and broadcast or skip push, depending on policy).
 	 *   - Authorization exists but object owner is known → always include the owner.
 	 *   - `public` group in the read list → empty array (caller should treat as broadcast).
+	 *   - `authenticated` in the read list → empty array (every signed-in user may read).
 	 *   - `admin` group in the read list → empty array (caller should treat as broadcast
 	 *     or resolve admin members separately).
 	 *
@@ -3026,16 +3027,24 @@ class PermissionHandler implements PermissionHandlerInterface {
 	}//end nonEmptyReadEntries()
 
 	/**
-	 * Whether a read group set admits everybody (`public`) or is admin-only (`admin`).
+	 * Whether a read group set admits everybody (`public`), every signed-in user
+	 * (`authenticated`) or is admin-only (`admin`).
+	 *
+	 * `authenticated` is a pseudo-group, not a Nextcloud group: resolved as one it
+	 * has no members, so the readable list would hold the owner alone and every
+	 * other reader would read as having lost access (a watcher would be dropped).
 	 *
 	 * @param array<int, string> $groupIds The read group ids.
 	 *
 	 * @return bool True when the set is a broadcast
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/tasks.md
 	 */
 	private function isBroadcastReadGroupSet(array $groupIds): bool {
-		return in_array('public', $groupIds, true) || in_array('admin', $groupIds, true);
+		return in_array('public', $groupIds, true)
+			|| in_array('authenticated', $groupIds, true)
+			|| in_array('admin', $groupIds, true);
 	}//end isBroadcastReadGroupSet()
 
 	/**

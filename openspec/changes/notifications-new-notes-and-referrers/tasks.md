@@ -18,6 +18,7 @@
 ## 3. Tests and docs
 
 - [ ] 3.1 Add `tests/e2e/ci/notify-new-note.spec.ts`: declare a `noteAdded` rule to watchers, watch a task as a second user, add a note as a third user, and assert the second user's notification and none for the author; then a `referrers` rule over a usage schema and a new version object.
+  - 2026-11-25, the `noteAdded` half: `tests/e2e/ci/notify-new-note.spec.ts`, run on a sandbox Nextcloud 34 on MariaDB, failed on main: on a schema read by `authenticated` the watcher was told nothing and unsubscribed, because `PermissionHandler::getReadableByUsers()` resolved `authenticated` as a Nextcloud group with no members, so the watcher read as having lost read. Fixed (`authenticated` is a broadcast read set, like `public`), the spec passes: the watcher is told 'e2e-owner commented on …', the author is not, the watcher stays subscribed. The `referrers` half is not written yet, so the task stays open.
 - [x] 3.2 Document the trigger and the kind in the notification docs under `docs/features/`, with the stackiq and planninq rules as examples.
       > 2026-11-14: `docs/features/webhooks-and-notifications.md`: the `noteAdded` trigger row, the `referrers` kind row, and the planninq and stackiq rules as examples.
 
