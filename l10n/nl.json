@@ -1020,6 +1020,7 @@
         "File name is required": "Bestandsnaam is verplicht",
         "File name is required (use \"name\" or \"filename\")": "Bestandsnaam is verplicht (gebruik \"name\" of \"filename\")",
         "File not available for anonymous access": "Bestand niet beschikbaar voor anonieme toegang",
+        "This file changed after it was published and is not served": "Dit bestand is na publicatie gewijzigd en wordt niet geleverd",
         "File not found": "Bestand niet gevonden",
         "File settings saved successfully": "Bestandsinstellingen succesvol opgeslagen",
         "File settings updated successfully": "Bestandsinstellingen succesvol bijgewerkt",

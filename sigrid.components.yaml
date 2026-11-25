@@ -2593,6 +2593,8 @@ components:
       - ".*/lib/Service/File/OfficeMediaBurner[.]php"
       - ".*/lib/Service/File/PublishedDigestReader[.]php"
       - ".*/lib/Service/File/PublishedDigestService[.]php"
+      - ".*/lib/Service/File/PublishedDownloadGuard[.]php"
+      - ".*/lib/Service/File/PublishedFileChangedException[.]php"
       - ".*/lib/Service/File/ReadFileHandler[.]php"
       - ".*/lib/Service/File/ReadFileSources[.]php"
       - ".*/lib/Service/File/ScopedContentSearchService[.]php"
