@@ -4629,3 +4629,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T02:01:49Z or-fix-2: main 6a98afdf59; share 10260@e9ad179a 11022@31a6d149 11092@8f065ee2 11112@e85d18a0: all merge clean with main, none parked, no BLOCK at head (10260/11022 REVERIFY awaiting review, 11092/11112 unreviewed); nothing to fix; precheck next 2 10: NONE left; deps needed --ignore-platform-req=php-64bit (psalm 7.16 vs php 8.3.6), queued for coordinator
 2026-11-25T02:02:11Z integrator-20261124T231146-2f742f98 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-25T02:02:56Z integrator-20261124T231146-2f742f98 MERGED-TREE 8aa9c43e5f: 3 PRs, main now 613a9b807f = tested tree
