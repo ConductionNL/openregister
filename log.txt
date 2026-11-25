@@ -4646,3 +4646,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T02:19:30Z or-fix-0 or-fix-0 done: fixed 11020 -> 2eb39891 and 11070 -> 9fff8e5d (main conflicts, REVERIFY); precheck GREEN 11090 11100 11020 11070 11120; rest of share green on main 0d540fff; 10640 park queued for the coordinator; 8450 left (coordinator-parked superseded)
 2026-11-25T02:22:04Z precheck-20261125T021556-9b3c5d51 RED tree 2fc032e48b prs 1 front=skip: Tests: 65955, Assertions: 233423, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Depreca; first failures: OCA\OpenRegister\Tests\Unit\AppInfo\BuiltinIntegrationProviderRegistrationTest::testEveryFactoryBuildsItsServi
 2026-11-25T02:23:01Z or-fix-9-20261125T022301-2d697312 or-fix-9 start: share 10499 10549 10639 11059 11069 11079 11089 11099 11119 vs main 0202f3a8; conflicting 10499 10549 11069 11089 11119
+2026-11-25T02:23:40Z session-20261125T022340-c2fea6fc or-fix-1 start
