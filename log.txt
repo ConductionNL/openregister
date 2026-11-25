@@ -4695,3 +4695,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T03:54:54Z integrator-20261125T031209-b842bbc3 MERGED-TREE 4b7441cdbf: 3 PRs, main now 9d807a8d7f = tested tree
 2026-11-25T04:00:23Z session-20261125T032623-2e0f3b85 learniq builder: merged #2758 (3HV-B mentorId; archived week-timetable-grid, personal-timetable 11 -> 13 requirements); run continues
 2026-11-25T04:01:13Z precheck-20261125T021556-9b3c5d51 GREEN tree cb4624ea2b on dev f7904f9dd7 prs 1 front=skip: Tests: 66041, Assertions: 233845, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-25T04:02:51Z precheck-20261125T032724-4a6e09ce GREEN tree de867804ad on dev f7904f9dd7 prs 1 front=skip: Tests: 66062, Assertions: 233847, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
