@@ -22,6 +22,10 @@ jest.mock('./components/files-sidebar/ExtractionTab.vue', () => ({
 	props: ['fileId'],
 	template: '<p class="extraction">{{ fileId }}</p>',
 }))
+const mockRegisterAttach = jest.fn()
+jest.mock('./files/attachAction.js', () => ({
+	registerAttachAction: () => mockRegisterAttach(),
+}))
 jest.mock('./components/files-sidebar/MailThreadTab.vue', () => ({
 	name: 'MailThreadTab',
 	props: ['fileId'],
@@ -86,6 +90,7 @@ describe('files-sidebar entry', () => {
 		await settle()
 		expect(mockRegister).not.toHaveBeenCalled()
 		expect(mockEnsure).not.toHaveBeenCalled()
+		expect(mockRegisterAttach).toHaveBeenCalledTimes(1)
 		expect(tabs.map((t) => [t.id, t.name])).toEqual([
 			['openregister-objects', 'Register objects'],
 			['openregister-extraction', 'Extraction'],

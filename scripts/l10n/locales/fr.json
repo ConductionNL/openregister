@@ -95,6 +95,7 @@
 		"Concept": "Same spelling and meaning in French; the SKOS term is used unchanged in French thesaurus language.",
 		"Monumental": "Same spelling and meaning in French as an adjective (here: listed as a monument).",
 		"Surface": "Same spelling and meaning in French.",
-		"Conversation": "Same spelling and meaning in French (une conversation), the usual word for a mail thread."
+		"Conversation": "Same spelling and meaning in French (une conversation), the usual word for a mail thread.",
+		"Point": "French writes the geometry shape 'point' identically; QGIS and Nextcloud fr use 'Point' for a point geometry."
 	}
 }

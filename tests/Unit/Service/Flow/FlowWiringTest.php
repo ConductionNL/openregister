@@ -89,6 +89,8 @@ use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
@@ -127,6 +129,8 @@ use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Contract\ObjectTaskReaderInterface;
+use OCA\OpenRegister\Service\Task\ObjectTaskReader;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
@@ -465,6 +469,7 @@ final class FlowWiringTest extends TestCase {
 				CodeRunnerClientInterface::class           => CodeRunnerClient::class,
 				TagObjectNodeInterface::class              => TagObjectNode::class,
 				AuditTrailNodeInterface::class             => AuditTrailNode::class,
+				ExtendInputNodeInterface::class            => ExtendInputNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
 				FacetWeekNumberingInterface::class         => FacetWeekNumbering::class,
@@ -490,6 +495,7 @@ final class FlowWiringTest extends TestCase {
 				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
 				SaveWarningsInterface::class               => SaveWarnings::class,
 				\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
+				ObjectTaskReaderInterface::class           => ObjectTaskReader::class,
 			],
 			actual: $this->aliases
 		);
