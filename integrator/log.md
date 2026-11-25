@@ -163,3 +163,4 @@
 2026-11-25T18:07:09Z GREEN prs=11199,11201,11208 main=bec7e11e2a integrator-cloud (merged; #11152 back as single later)
 2026-11-25T18:20:16Z GREEN prs=11194,11204,11205,11207 main=cf744dffce integrator-cloud (merged)
 2026-11-25T18:33:13Z GREEN prs=10614,11200,11209,11210 main=3035336d9d integrator-cloud (merged)
+2026-11-25T18:47:55Z GREEN prs=11217,11152,11206,11216 main=7edd219c7c integrator-cloud (merged)
