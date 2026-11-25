@@ -71,6 +71,20 @@ use OCP\AppFramework\Db\Entity;
  * @method void setPage(?int $page)
  * @method array|null getBox()
  * @method void setBox(?array $box)
+ * @method string|null getCapacity()
+ * @method void setCapacity(?string $capacity)
+ * @method string|null getCapacitySource()
+ * @method void setCapacitySource(?string $capacitySource)
+ * @method string|null getCapacityApplied()
+ * @method void setCapacityApplied(?string $capacityApplied)
+ * @method string|null getCapacityConfirmedBy()
+ * @method void setCapacityConfirmedBy(?string $capacityConfirmedBy)
+ * @method DateTime|null getCapacityConfirmedAt()
+ * @method void setCapacityConfirmedAt(?DateTime $capacityConfirmedAt)
+ * @method string|null getPersonMatch()
+ * @method void setPersonMatch(?string $personMatch)
+ * @method bool|null getUncertain()
+ * @method void setUncertain(?bool $uncertain)
  * @method string|null getDecisionUuid()
  * @method void setDecisionUuid(?string $decisionUuid)
  * @method DateTime getCreatedAt()
@@ -251,6 +265,55 @@ class EntityRelation extends Entity implements JsonSerializable, EntityRelationI
 	 * @var array|null
 	 */
 	protected ?array $box = null;
+
+	/**
+	 * The capacity suggested for a detected person (public-office, professional, private, unknown); null when not a person.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $capacity = null;
+
+	/**
+	 * Where the suggested capacity came from (officials-register, role-words, none).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $capacitySource = null;
+
+	/**
+	 * The capacity a reviewer confirmed; null while the suggestion is unconfirmed.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $capacityApplied = null;
+
+	/**
+	 * The user id of the reviewer who confirmed the capacity.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $capacityConfirmedBy = null;
+
+	/**
+	 * When the capacity was confirmed.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $capacityConfirmedAt = null;
+
+	/**
+	 * The persons register a detected person matched (its label, never a record id); null when none matched (REQ-DKP-003).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $personMatch = null;
+
+	/**
+	 * Whether a detected person also reads as a street or place name (REQ-DKP-003); the occurrence is kept for the reviewer.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $uncertain = null;
 
 	/**
 	 * Created at timestamp.

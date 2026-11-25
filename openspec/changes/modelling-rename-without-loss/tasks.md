@@ -8,8 +8,8 @@
 ## 2. Resolution
 
 - [x] 2.1 `SchemaMapper::findBySlug()` fallback to `formerSlugs` under the organisation filter, current slug first. Verify: unit tests for fallback and for a former slug taken by another schema.
-- [ ] 2.2 `Deprecation` and `Link` headers on object responses resolved through a former slug. Verify: API test on `GET /api/objects/{register}/{old-slug}`.
-- [ ] 2.3 Register import matches by former slug. Verify: import test that an app descriptor with the old slug updates the renamed schema and creates nothing.
+- [x] 2.2 `Deprecation` and `Link` headers on object responses resolved through a former slug. Verify: API test on `GET /api/objects/{register}/{old-slug}`.
+- [x] 2.3 Register import matches by former slug. Verify: import test that an app descriptor with the old slug updates the renamed schema and creates nothing.
 
 ## 3. Interface
 

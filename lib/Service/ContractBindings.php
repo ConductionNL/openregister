@@ -195,6 +195,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Kernel\Contracts\ExportKeySealersInterface::class => \OCA\OpenRegister\Service\Exchange\ExportKeySealers::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
+		\OCA\OpenRegister\Kernel\Contracts\CapacityPolicyReaderInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
 		TranslationBindingInterface::class => TranslationBindingDescription::class,
 		\OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface::class => \OCA\OpenRegister\Service\AuthenticationService::class,
 		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,

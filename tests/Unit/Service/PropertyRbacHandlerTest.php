@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Service\SchemaProperty;
@@ -19,6 +20,8 @@ use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 class PropertyRbacHandlerTest extends TestCase {
+	use AdminFollowsGroups;
+
 	use BuildsStateFieldRuleResolver;
 
 	private PropertyRbacHandler $handler;
@@ -30,6 +33,7 @@ class PropertyRbacHandlerTest extends TestCase {
 	protected function setUp(): void {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->conditionMatcher = $this->createMock(ConditionMatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
