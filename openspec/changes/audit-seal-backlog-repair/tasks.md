@@ -14,13 +14,16 @@
 
 ## 2. Driver
 
-- [ ] Add `AuditSealBacklogService` — the single driver shared by the command and the job
-- [ ] Implement the ascending unsealed-id cursor using the partial index
-- [ ] Implement window cutting bounded by BOTH `MAX_WINDOW_ROWS` and `MAX_WINDOW_SPAN`
+- [x] Add `AuditSealBacklogService` — the single driver shared by the command and the job
+      - `lib/Service/Audit/AuditSealBacklogService.php`; it seals in place only after the newest chain link (see design.md, "Decided during the build")
+- [x] Implement the ascending unsealed-id cursor using the partial index
+      - `AuditSealBacklogCursor::unsealedIdsAfter()`, predicate `hash IS NULL` as the index is built
+- [x] Implement window cutting bounded by BOTH `MAX_WINDOW_ROWS` and `MAX_WINDOW_SPAN`
       - a sparse region must not widen the range read
-- [ ] Drive `AuditHashService::sealRows()` once per window, committing per window
+- [x] Drive `AuditHashService::sealRows()` once per window, committing per window
       - windows are sequential; never concurrent (chain order is mandatory)
-- [ ] Return per-pass counters (rows sealed, windows processed, windows abandoned on lock)
+- [x] Return per-pass counters (rows sealed, windows processed, windows abandoned on lock)
+      - plus `stoppedBy` and `unsealedBehindChain`
 
 ## 3. Read-path efficiency
 
@@ -32,11 +35,11 @@
 
 ## 4. Surfaces
 
-- [ ] Add `occ openregister:audit:seal-backlog` with progress output and a `--limit` option
-- [ ] Add `SealAuditBacklogJob` (TimedJob) capped by both row count and wall-clock,
+- [x] Add `occ openregister:audit:seal-backlog` with progress output and a `--limit` option
+- [x] Add `SealAuditBacklogJob` (TimedJob) capped by both row count and wall-clock,
       exiting cleanly at the cap
       - the incident being fixed was an unbounded pass; do not reintroduce one
-- [ ] Register the command and the job, and ensure the job yields the seal lock
+- [x] Register the command and the job, and ensure the job yields the seal lock
       rather than starving foreground writes
 
 ## 5. Verification
@@ -48,14 +51,15 @@
 
 ## 6. Tests
 
-- [ ] Unit-test the driver: ascending order, span and count bounds, resumability,
+- [x] Unit-test the driver: ascending order, span and count bounds, resumability,
       and that a drained backlog re-runs as a no-op
-- [ ] Unit-test that sealed rows interleaved in a window are byte-identical after a pass
+- [x] Unit-test that sealed rows interleaved in a window are byte-identical after a pass
       - guards the false-tamper-alarm failure mode
 - [x] Unit-test the cutover classification in `verifyChain()` (both populations,
       plus a drained backlog restoring `valid: true`)
       - AuditHashSealCutoverTest, Version1Date20261124193002Test
-- [ ] Unit-test the job's caps and its lock-contention yield
+- [x] Unit-test the job's caps and its lock-contention yield
+      - AuditSealBacklogServiceTest, AuditSealBacklogCursorTest, AuditSealBacklogInterleaveTest, SealAuditBacklogJobTest, SealAuditBacklogCommandTest
 
 ## 7. Evidence
 
