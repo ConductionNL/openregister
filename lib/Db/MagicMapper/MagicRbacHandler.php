@@ -390,6 +390,50 @@ class MagicRbacHandler {
 	}//end statusColumnMissing()
 
 	/**
+	 * Per-process memo: bare table name => its real column names.
+	 *
+	 * @var array<string, string[]>
+	 */
+	private static array $tableColumnNamesCache = [];
+
+	/**
+	 * Whether a column a `match` rule names actually exists on this table.
+	 *
+	 * A schema's authorization can name any property it ever declared, but a
+	 * schema shared across more than one register can be backed by tables
+	 * that drifted apart — one register's table carrying `publicatiedatum`/
+	 * `depublicatiedatum`, another's carrying the same concept under
+	 * `publicationDate`/`depublicationDate` instead. Building a reference to
+	 * whichever one this specific table does not have fails the database
+	 * query outright (a 500) instead of excluding that one UNION arm, taking
+	 * down the whole cross-schema listing for every schema in the request,
+	 * not only the misconfigured one.
+	 *
+	 * @param string $tableName Bare magic table name.
+	 * @param string $columnName The (already snake_cased) column to check for.
+	 *
+	 * @return bool True when the column is present on this table.
+	 */
+	private function columnExistsOnTable(string $tableName, string $columnName): bool {
+		if (isset(self::$tableColumnNamesCache[$tableName]) === false) {
+			try {
+				$db = $this->container->get(\OCP\IDBConnection::class);
+				$columns = $db->getQueryBuilder()->getConnection()
+					->createSchemaManager()
+					->listTableColumns($tableName);
+				self::$tableColumnNamesCache[$tableName] = array_keys($columns);
+			} catch (\Throwable $e) {
+				// Introspection failing is not this check's problem to solve;
+				// nothing known to exist means every property match on this
+				// table fails closed until the next request tries again.
+				self::$tableColumnNamesCache[$tableName] = [];
+			}
+		}
+
+		return in_array($columnName, self::$tableColumnNamesCache[$tableName], true);
+	}//end columnExistsOnTable()
+
+	/**
 	 * The deny term for one list query, or `false` when nothing is visible.
 	 *
 	 * This is D22 made mechanical. A denial checked on a fetched page gives a
@@ -1841,7 +1885,8 @@ class MagicRbacHandler {
 				userGroups: $userGroups,
 				userId: $userId,
 				notPrivate: $notPrivate,
-				columnPrefix: $columnPrefix
+				columnPrefix: $columnPrefix,
+				tableName: $tableName
 			)
 		);
 
@@ -1973,6 +2018,8 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param string|null $tableName The bare magic table; a `match` property it lacks is excluded
+	 *                                from that one rule instead of failing the whole query.
 	 *
 	 * @return string[] SQL conditions to OR together.
 	 */
@@ -1983,6 +2030,7 @@ class MagicRbacHandler {
 		?string $userId,
 		string $notPrivate,
 		string $columnPrefix = '',
+		?string $tableName = null,
 	): array {
 		// Resolve whether authenticated users inherit `public` rights once.
 		$inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
@@ -1994,7 +2042,8 @@ class MagicRbacHandler {
 				rule: $rule,
 				userGroups: $userGroups,
 				userId: $userId,
-				inheritFromPublic: $inheritFromPublic
+				inheritFromPublic: $inheritFromPublic,
+				tableName: $tableName
 			);
 
 			if ($ruleResult === true) {
@@ -2027,6 +2076,8 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param string|null $tableName The bare magic table; a `match` property it lacks is excluded
+	 *                                from that one rule instead of failing the whole query.
 	 *
 	 * @return mixed True if unconditional access, SQL string for conditional, false if no access.
 	 *
@@ -2037,7 +2088,8 @@ class MagicRbacHandler {
 		array $userGroups,
 		?string $userId,
 		bool $inheritFromPublic,
-		string $columnPrefix = ''
+		string $columnPrefix = '',
+		?string $tableName = null
 	): mixed {
 		// Simple rule: just a group name string.
 		if (is_string($rule) === true) {
@@ -2052,7 +2104,8 @@ class MagicRbacHandler {
 				userGroups: $userGroups,
 				userId: $userId,
 				inheritFromPublic: $inheritFromPublic,
-				columnPrefix: $columnPrefix
+				columnPrefix: $columnPrefix,
+				tableName: $tableName
 			);
 		}
 
@@ -2070,6 +2123,8 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param string|null $tableName The bare magic table; a `match` property it lacks is excluded
+	 *                                from this rule instead of failing the whole query.
 	 *
 	 * @return mixed True if unconditional access, SQL string for conditional, false if no access.
 	 *
@@ -2080,7 +2135,8 @@ class MagicRbacHandler {
 		array $userGroups,
 		?string $userId,
 		bool $inheritFromPublic,
-		string $columnPrefix = ''
+		string $columnPrefix = '',
+		?string $tableName = null
 	): mixed {
 		$group = ($rule['group'] ?? null);
 		$match = $rule['match'] ?? null;
@@ -2118,7 +2174,7 @@ class MagicRbacHandler {
 		}
 
 		// Build SQL conditions for the match criteria.
-		return $this->buildMatchConditionsSql(match: $match, columnPrefix: $columnPrefix);
+		return $this->buildMatchConditionsSql(match: $match, columnPrefix: $columnPrefix, tableName: $tableName);
 	}//end processConditionalRuleSql()
 
 	/**
@@ -2129,14 +2185,16 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param string|null $tableName The bare magic table; a property it lacks is excluded from
+	 *                                this match instead of failing the whole query.
 	 *
 	 * @return string|null SQL expression or null if invalid.
 	 */
-	private function buildMatchConditionsSql(array $match, string $columnPrefix = ''): ?string {
+	private function buildMatchConditionsSql(array $match, string $columnPrefix = '', ?string $tableName = null): ?string {
 		$conditions = [];
 
 		foreach ($match as $property => $value) {
-			$condition = $this->buildPropertyConditionSql(property: $property, value: $value, columnPrefix: $columnPrefix);
+			$condition = $this->buildPropertyConditionSql(property: $property, value: $value, columnPrefix: $columnPrefix, tableName: $tableName);
 			if ($condition !== null) {
 				$conditions[] = $condition;
 			}
@@ -2164,10 +2222,12 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param string|null $tableName The bare magic table; a property it lacks is excluded from
+	 *                                this match instead of failing the whole query.
 	 *
 	 * @return string|null SQL expression or null.
 	 */
-	private function buildPropertyConditionSql(string $property, mixed $value, string $columnPrefix = ''): ?string {
+	private function buildPropertyConditionSql(string $property, mixed $value, string $columnPrefix = '', ?string $tableName = null): ?string {
 		// Convert camelCase property to snake_case column name.
 		// The prefix qualifies it with a table alias when this predicate is
 		// going inside a subquery over a SECOND table. Unqualified, the name
@@ -2175,7 +2235,23 @@ class MagicRbacHandler {
 		// right by accident and silently wrong the moment the related table
 		// does not carry the column: SQL then resolves it against the OUTER
 		// row, so the access check would pass by testing the wrong record.
-		$columnName = $columnPrefix . $this->propertyToColumnName(property: $property);
+		$bareColumnName = $this->propertyToColumnName(property: $property);
+		$columnName = $columnPrefix . $bareColumnName;
+
+		// A schema's authorization can name any property it ever declared, but
+		// a schema shared across more than one register can be backed by
+		// tables that drifted apart (openregister: one register's table
+		// carries `publicatiedatum`, another's carries `publicationDate`
+		// instead — the same schema, two different physical columns).
+		// Referencing a column this specific table does not have fails the
+		// whole query with a database error instead of excluding this one
+		// match; fail THIS condition closed instead, same as the dynamic-null
+		// case below.
+		if ($tableName !== null && $tableName !== ''
+			&& $this->columnExistsOnTable(tableName: $tableName, columnName: $bareColumnName) === false
+		) {
+			return self::IMPOSSIBLE_SQL_CONDITION;
+		}
 
 		// Resolve dynamic variables in the value.
 		$resolvedValue = $this->resolveDynamicValue(value: $value);
