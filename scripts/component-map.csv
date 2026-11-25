@@ -2495,6 +2495,8 @@ Service/Flow/Nodes/CodeNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Node
 Service/Flow/Nodes/DecisionTableNode.php,284,Service,Flows,Flows/Service/Flow/Nodes/DecisionTableNode.php,0,,Processes
 Service/Flow/Nodes/EndNode.php,59,Service,Flows,Flows/Service/Flow/Nodes/EndNode.php,0,,Processes
 Service/Flow/Nodes/ExplodeNode.php,86,Service,Flows,Flows/Service/Flow/Nodes/ExplodeNode.php,0,,Processes
+Service/Flow/Nodes/ExtendInputNode.php,180,Service,Flows,Flows/Service/Flow/Nodes/ExtendInputNode.php,0,,Processes
+Service/Flow/Nodes/ExtendInputNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Nodes/ExtendInputNodeInterface.php,0,,Processes
 Service/Flow/Nodes/FilterNode.php,94,Service,Flows,Flows/Service/Flow/Nodes/FilterNode.php,0,,Processes
 Service/Flow/Nodes/FlowStateNode.php,243,Service,Flows,Flows/Service/Flow/Nodes/FlowStateNode.php,0,,Processes
 Service/Flow/Nodes/IterateNode.php,136,Service,Flows,Flows/Service/Flow/Nodes/IterateNode.php,0,,Processes
@@ -4363,6 +4365,7 @@ Exception/NoTabularResultException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121170011.php,63,Migration,,,,,Platform
 Exception/FederatedShareNotDeliveredException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121180018.php,80,Migration,,,,,Platform
+Migration/Version1Date20261124193002.php,102,Migration,,,,,Platform
 Formats/EmailFormat.php,,Formats,,,,,Kernel
 Service/Schemas/SchemaCatalogue.php,,Service,,,,,Core
 Exception/GrantExceedsGranterException.php,,Exception,,,,,Core
@@ -4937,3 +4940,4 @@ Service/Resolver/Exception/ResolverConfigException.php,,Service,,,,,Kernel
 Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
+Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
