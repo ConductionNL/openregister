@@ -109,6 +109,7 @@ DOMAIN_ORDER=(
     "auth-matrix"
     "error-matrix"
     "files"
+    "file-text-read"
     "referential-integrity"
     "schema-migration"
     "flow-engine"
@@ -142,6 +143,10 @@ declare -A DOMAIN_COLLECTIONS=(
     [auth-matrix]="$REPO_ROOT/tests/integration/openregister-auth-matrix.postman_collection.json"
     [error-matrix]="$REPO_ROOT/tests/integration/openregister-error-matrix.postman_collection.json"
     [files]="$REPO_ROOT/tests/integration/openregister-files-domain.postman_collection.json"
+    # A file's extracted text goes to whoever can open the file: the owner
+    # reads it (200), a stranger gets the same 404 as for an id that does not
+    # exist (search-file-text-and-vector-facade 4.1).
+    [file-text-read]="$REPO_ROOT/tests/integration/openregister-file-text-read.postman_collection.json"
     [agent-cms]="$REPO_ROOT/tests/newman/agent-cms-testing.postman_collection.json"
     [federation]="$REPO_ROOT/tests/federation/federation-tests.postman_collection.json"
     [schema-migration]="$REPO_ROOT/tests/integration/openregister-schema-migration.postman_collection.json"
