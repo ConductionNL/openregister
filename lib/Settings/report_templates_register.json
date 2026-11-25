@@ -138,7 +138,7 @@
                 "filters": {
                   "type": "object",
                   "title": "Filters",
-                  "description": "Filters on top of the template's."
+                  "description": "Filters on top of the template's; a section naming its own register or schema does not take the template's filters."
                 },
                 "dateField": {
                   "type": "string",

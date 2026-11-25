@@ -79,7 +79,14 @@ final class ReportSectionSource {
 			throw new InvalidArgumentException('A report section MUST have a register and a schema, its own or the template\'s `dataSource`.');
 		}
 
-		$this->filter = array_merge(self::map(value: ($dataSource['filters'] ?? [])), self::map(value: ($section['filters'] ?? [])));
+		// A section that names its own register or schema counts elsewhere, so the
+		// template's filters (written for the template's schema) do not apply to it.
+		$inherited = self::map(value: ($dataSource['filters'] ?? []));
+		if (isset($section['register']) === true || isset($section['schema']) === true) {
+			$inherited = [];
+		}
+
+		$this->filter = array_merge($inherited, self::map(value: ($section['filters'] ?? [])));
 		$this->dateField = (string)($section['dateField'] ?? $template['dateField'] ?? ReportTemplateGenerator::DEFAULT_DATE_FIELD);
 	}//end __construct()
 

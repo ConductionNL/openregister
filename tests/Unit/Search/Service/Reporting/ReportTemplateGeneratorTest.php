@@ -184,6 +184,7 @@ class ReportTemplateGeneratorTest extends TestCase {
 		$this->assertSame('archief', $this->runs[0]['register']);
 		$this->assertSame('intrekking', $this->runs[0]['schema']);
 		$this->assertSame('withdrawn', $this->runs[0]['query']->filter['status']);
+		$this->assertSame(['status', 'withdrawnAt'], array_keys($this->runs[0]['query']->filter), 'the template filters stay with the template schema');
 		$this->assertArrayHasKey('withdrawnAt', $this->runs[0]['query']->filter);
 	}//end testASectionNamesItsOwnSourceAndFilters()
 
