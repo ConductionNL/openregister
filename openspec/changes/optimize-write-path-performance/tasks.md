@@ -47,3 +47,10 @@
     - re-save of the same 2 ids, one with new values and one byte-identical: `updated` bucket 2; two `update` audit rows, and the changed one records the real diff (`title` `one` -> `one changed`, `n` 1 -> 10), not old equal to new
     - events: the bulk endpoint always saves with `events: false` (the spec's "events disabled still writes audits"), so a create there adds no activity row while a single `POST /api/objects` adds one; the event dispatch itself stays covered by `SaveObjectsBulkSideEffectsTest`
     - observed, not changed here: the identical row is classified `updated`, not `unchanged`, because `MagicUpsertChunkRun::classifyExisting()` reads "unchanged" from an `_updated` older than the operation start and the upsert rewrites `_updated`; the spec's unchanged scenario holds for rows the mapper does classify `unchanged`
+  > 2026-11-25, live on a sandbox Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e, this change merged): the proposal's
+  > probe repeated. A 2-object `POST /api/bulk/{register}/{schema}/save` answers `saved_count: 2` with `saved: 2`
+  > in the buckets (was 0 and empty), and each object has one `create` audit row. A second bulk save of the same two,
+  > one with `qty` 1 -> 10 and one as it was, answers `updated: 2`; the first's `update` audit row records
+  > `qty: {old: 1, new: 10}`, the real pre-update value. Seen, not in this change's scope: the row sent unchanged is
+  > also classified `updated` (its audit diff is `updated` alone), because the upsert always moves `_updated` and
+  > `MagicUpsertChunkRun::classifyExisting()` reads that; the `unchanged` bucket therefore stays 0 on PostgreSQL.
