@@ -304,6 +304,7 @@ Controller/ImportPreviewController.php,305,Controller,Configuration,Configuratio
 Controller/IntegrationsController.php,96,Controller,Integrations,Integrations/Controller/IntegrationsController.php,0,,Integrations
 Controller/LinkedEntityController.php,117,Controller,Integrations,Integrations/Controller/LinkedEntityController.php,0,,Integrations
 Controller/Support/LinkedEntityControllerServices.php,,Controller,,,,,Integrations
+Controller/Support/OwnMailReverseLookup.php,,Controller,,,,,Integrations
 Controller/ManifestController.php,83,Controller,Configuration,Configuration/Controller/ManifestController.php,0,,Configuration
 Controller/MapLinksController.php,124,Controller,Integrations,Integrations/Controller/MapLinksController.php,0,,Integrations
 Controller/Support/MapLinksControllerServices.php,,Controller,,,,,Integrations
@@ -1296,6 +1297,7 @@ Kernel/Contracts/ObjectImporterInterface.php,49,Kernel,Kernel,Kernel/Contracts/O
 Kernel/Contracts/ObjectMergerInterface.php,14,Kernel,Kernel,Kernel/Contracts/ObjectMergerInterface.php,0,,Kernel
 Kernel/Contracts/ObjectNameCacheInterface.php,10,Kernel,Kernel,Kernel/Contracts/ObjectNameCacheInterface.php,0,,Kernel
 Kernel/Contracts/ObjectOperationsInterface.php,105,Kernel,Kernel,Kernel/Contracts/ObjectOperationsInterface.php,0,,Kernel
+Kernel/Contracts/ObjectReadCheckInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RegisterInterface.php,25,Kernel,Kernel,Kernel/Contracts/RegisterInterface.php,1,,Kernel
 Kernel/Contracts/ScheduledReportInterface.php,10,Kernel,Kernel,Kernel/Contracts/ScheduledReportInterface.php,0,,Kernel
 Kernel/Contracts/ScheduledReportsInterface.php,15,Kernel,Kernel,Kernel/Contracts/ScheduledReportsInterface.php,0,,Kernel
@@ -2864,6 +2866,8 @@ Service/Object/MigrationSide.php,14,Service,Service,Service/Object/MigrationSide
 Service/Object/MoveAddress.php,15,Service,Service,Service/Object/MoveAddress.php,0,,Core
 Service/Object/MoveObject.php,191,Service,Service,Service/Object/MoveObject.php,0,,Core
 Service/Object/CopyPayload.php,,Service,,,,,Core
+Service/Object/CopyObject.php,,Service,,,,,Core
+Service/Object/CopyFiles.php,,Service,,,,,Files
 Service/Object/DraftService.php,133,Service,Service,Service/Object/DraftService.php,0,,Core
 Service/Object/MovedObjectLookup.php,71,Service,Service,Service/Object/MovedObjectLookup.php,0,,Core
 Service/Object/MovedObjectLookupInterface.php,6,Service,Service,Service/Object/MovedObjectLookupInterface.php,0,,Core
@@ -4507,6 +4511,7 @@ Service/CalendarEvent/CalendarLinkListenerRegistrar.php,,Service,,,,,Integration
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Controller/Support/CopyRun.php,,Controller,,,,,Core
 Controller/Support/DestroyedTombstones.php,66,Controller,Service,Service/Controller/Support/DestroyedTombstones.php,0,,Core
 Kernel/Contracts/Value/DestructionQuery.php,25,Kernel,,,,,Kernel
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
@@ -4851,6 +4856,7 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/ObjectFileCopierInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/MailObjectBinding.php,,Kernel,,,,,Kernel
 Kernel/Contracts/OutboundMailLinkRecorderInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel
