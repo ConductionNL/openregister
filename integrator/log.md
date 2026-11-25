@@ -131,3 +131,4 @@
 2026-11-25T09:42:24Z GREEN prs=11059 main=51f2f1f526 integrator-cloud (merged; tree 84f67697a0; composer via composer-cloud.sh php-version fallback; gitleaks v8.30.0 via go install, apt 8.16 lacks 'dir'; stale cached secretscanning result removed; #11069 build-conflicted with #11059, retried next tree)
 2026-11-25T09:48:29Z RED prs=10156,10300,10499 main=51f2f1f526 integrator-cloud (jest initial-data.golden.spec.js EditSource snapshot gains runAs/schedule; suspect #10156; #10451 build-conflict)
 2026-11-25T10:01:31Z GREEN prs=10300,10499 main=c6eb5eb60b integrator-cloud (merged; tree a32d701230)
+2026-11-25T10:06:55Z RED prs=10156,10523 main=c6eb5eb60b integrator-cloud (same initial-data.golden EditSource snapshot; #10156 again)
