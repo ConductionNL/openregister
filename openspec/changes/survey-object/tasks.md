@@ -3,7 +3,8 @@
 ## 1. The schemas
 
 - [x] 1.1 Add `Survey`, `SurveyQuestion`, `SurveyInvitation` and `SurveyAnswerSet` to the register fragments.
-- [ ] 1.2 Version a survey on edit once it has answers, and keep the version on each answer set.
+- [x] 1.2 Version a survey on edit once it has answers, and keep the version on each answer set.
+  - already on main: SurveyWriteListener raises the version and keeps it on an updated answer set (SurveyWriteListenerTest)
 - [x] 1.3 PHPUnit on the version bump and on editing a survey with no answers.
 
 ## 2. Answering without an account
@@ -30,15 +31,20 @@
 
 - [x] 5.1 Declare anonymity at creation and refuse a later change.
 - [x] 5.2 Hold no respondent reference on an anonymous survey's answer sets.
-- [ ] 5.3 Withhold anonymous results below the configurable minimum, showing the count and the reason.
+- [x] 5.3 Withhold anonymous results below the configurable minimum, showing the count and the reason.
+  - `GET /api/surveys/{register}/{survey}/results` (SurveyResultsController over SurveyResults and SurveyRules::disclosure)
 - [ ] 5.4 Apply the survey's reader roles to answer sets.
-- [ ] 5.5 PHPUnit on the refusal, the withholding and the role check, probing with a reader who must be refused.
+- [x] 5.5 PHPUnit on the refusal, the withholding and the role check, probing with a reader who must be refused.
+  - SurveyResultsTest, SurveyResultsControllerTest; the anonymity-change refusal in SurveyWriteListenerTest
 
 ## 6. The export
 
-- [ ] 6.1 Export answer sets as rows with questions as columns, through the existing export path.
-- [ ] 6.2 Omit the respondent column entirely on an anonymous survey, and refuse below the minimum.
-- [ ] 6.3 PHPUnit on both export shapes.
+- [x] 6.1 Export answer sets as rows with questions as columns, through the existing export path.
+  - `GET /api/surveys/{register}/{survey}/export` (CSV): the existing SurveyExportShaper headers and rows, one column per question
+- [x] 6.2 Omit the respondent column entirely on an anonymous survey, and refuse below the minimum.
+  - refused with 403, the count and the reason
+- [x] 6.3 PHPUnit on both export shapes.
+  - SurveyResultsTest (attributed and anonymous tables, the refusal), SurveyResultsControllerTest (the CSV)
 
 ## 7. Handover
 
