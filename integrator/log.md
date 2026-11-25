@@ -109,3 +109,4 @@
 2026-11-25T00:39:57Z GREEN prs=11062,11090 main=fb766ac742 integrator-cloud (merged 11062,11090; main now 0d540fff55; merge rc=0)
 2026-11-25T00:44:25Z RED prs=10005,10513,10631,11016 main=0d540fff55 integrator-cloud (RED tree 7b0825a7e3 prs 3 front=ok: Tests: 65718, Assertions: 232637, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Sk)
 2026-11-25T00:58:48Z GREEN prs=10005,11016 main=0d540fff55 integrator-cloud (merged 10005,11016; main now 894bdac71c; merge rc=0)
+2026-11-25T01:02:57Z RED prs=10513 main=894bdac71c integrator-cloud (RED tree a6ae0a602e prs 1 front=skip: Tests: 65718, Assertions: 232637, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, )
