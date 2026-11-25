@@ -164,6 +164,8 @@ class MagicSearchHandler {
 	 * fallback is an empty array (`json`) or null (`json-or-null`).
 	 *
 	 * @var array<string, string>
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
 	private const ROW_METADATA_KINDS = [
 		'uuid'               => 'scalar',
