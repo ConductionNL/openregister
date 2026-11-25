@@ -47,8 +47,7 @@
 		"Host *": "Networking term, used unchanged in this locale, with the required-field marker.",
 		"Id": "Abbreviation of identifier, written the same way in this locale's technical UI.",
 		"myapp": "A literal example application id shown verbatim; not prose.",
-		"Survivor": "Master-data-management term for the record that survives a merge; used unchanged in data-governance language.",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in bg as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
+		"Survivor": "Master-data-management term for the record that survives a merge; used unchanged in data-governance language."
 	},
 	"corrections": {
 		"Run oversight checks before each step": "Informal 2nd-person-singular imperative replaced with the formal plural form. bg's measured register in this bundle is FORMAL and detectors/bg.js flags the singular imperative; the rest of the bundle already uses the -йте form.",

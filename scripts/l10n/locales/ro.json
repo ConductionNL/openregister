@@ -77,8 +77,7 @@
 		"Respondent": "Romanian uses the same Latin-derived word for a survey respondent, spelled exactly \"Respondent\"; the translation is the correct Romanian term, not an untranslated string.",
 		"Token": "Romanian borrows this term: docs/l10n-ui-translation.md lists Token among the ro borrowings alongside Webhook, Endpoint and Driver, and the bundle already ships \"Configurare token API\" and \"Token-uri API\".",
 		"Context": "Same spelling and meaning in Romanian.",
-		"Concept": "Same spelling and meaning in Romanian; the SKOS term is used unchanged in Romanian thesaurus language.",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in ro as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
+		"Concept": "Same spelling and meaning in Romanian; the SKOS term is used unchanged in Romanian thesaurus language."
 	},
 	"corrections": {
 		"Add Application": "Informal imperative 'Adaugă aplicație' replaced with the formal 'Adăugați aplicația'. The measured register for ro in this bundle is FORMAL and detectors/ro.js flags the 2nd-person-singular imperative; every other imperative here already uses the -ați/-eți form, so this was inconsistent with its own bundle.",

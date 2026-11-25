@@ -51,7 +51,6 @@
 		"{property} - {other}": "Two placeholders and a separating dash; nothing translatable.",
 		"Normal": "Same spelling and meaning in Portuguese (normal).",
 		"Token": "Established loan; Portuguese security and API writing uses 'o token' unchanged, and this bundle already writes 'Criar novo token'.",
-		"Monumental": "Same spelling and meaning in Portuguese as an adjective (here: listed as a monument).",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in pt as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
+		"Monumental": "Same spelling and meaning in Portuguese as an adjective (here: listed as a monument)."
 	}
 }

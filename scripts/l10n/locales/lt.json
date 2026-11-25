@@ -38,8 +38,7 @@
 		"objectType: object\naction: created": "Literal CloudEvents payload example; the field names are protocol tokens and are never translated.",
 		"myapp": "Literal example app id inside a code sample; an identifier, not prose, so Lithuanian leaves it as written.",
 		"{property} - {other}": "Two placeholders joined by a hyphen; nothing translatable remains in the value.",
-		"Id": "Identifier acronym in the source's own casing; invariant in Lithuanian, and the finished locales keep this casing rather than diverging on it alone.",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in lt as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
+		"Id": "Identifier acronym in the source's own casing; invariant in Lithuanian, and the finished locales keep this casing rather than diverging on it alone."
 	},
 	"corrections": {
 		"Apply redaction": "\"redagavimas\" is the same word this app uses for EDIT (\"Redaguoti\"), so a redaction control read as an edit control; corrected to \"užtemdymas\"",

@@ -50,8 +50,7 @@
 		"Avatar": "International term, unchanged in Estonian; Nextcloud core et renders it identically.",
 		"Link": "Same spelling and meaning in Estonian.",
 		"Register #{id}": "'Register' is identical in Estonian and the rest is a number sign and a placeholder.",
-		"Token": "'Token' is the established Estonian loanword for a signed credential and is already used unchanged elsewhere in this app (API-tokenid).",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in et as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
+		"Token": "'Token' is the established Estonian loanword for a signed credential and is already used unchanged elsewhere in this app (API-tokenid)."
 	},
 	"corrections": {
 		"Add a contact from any of your address books to associate it with this object.": "Formal 2nd-person-plural imperative replaced with the informal singular. et's measured register in this bundle is INFORMAL and detectors/et.js flags the -ge/-ke form; the rest of the bundle already uses the bare-stem imperative.",

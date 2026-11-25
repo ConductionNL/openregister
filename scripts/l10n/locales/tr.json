@@ -50,8 +50,7 @@
 		"Min ms": "Two abbreviations (minimum, milliseconds) shown as a compact column label; both are invariant in Turkish.",
 		"Port": "Networking term, used unchanged in Turkish.",
 		"Zookeeper Port": "Apache ZooKeeper product name plus the invariant term Port.",
-		"Normal": "Same spelling and meaning in Turkish (normal), an established loan.",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in tr as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
+		"Normal": "Same spelling and meaning in Turkish (normal), an established loan."
 	},
 	"corrections": {}
 }

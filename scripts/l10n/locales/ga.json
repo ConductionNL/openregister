@@ -49,8 +49,7 @@
 		"Id": "The same identifier acronym in the casing the source uses; kept rather than diverging from the ID record on casing alone.",
 		"myapp": "Literal example app id inside a code sample; an identifier rather than prose, so it is shown verbatim.",
 		"e.g., lib/settings/config.json": "A literal example file path shown verbatim; not prose. The lowercase sibling of the already-recorded lib/Settings/config.json.",
-		"e.g., lib/settings/register.json": "A literal example file path shown verbatim; not prose. The lowercase sibling of the already-recorded lib/Settings/register.json.",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in ga as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
+		"e.g., lib/settings/register.json": "A literal example file path shown verbatim; not prose. The lowercase sibling of the already-recorded lib/Settings/register.json."
 	},
 	"corrections": {
 		"Loading organisations...": "Was `Eagraíochtaí á luchtú…`, the only one of the bundle's 35 `Loading X...` keys not built as `Ag <verbal noun> <object>...` — the other 34 are, and it also carried the … glyph where the English source has three ASCII dots, against the bundle's own 41-of-42 practice of mirroring the source glyph. Normalised to `Ag luchtú eagraíochtaí...` so the progressive construction and the ellipsis convention both hold without an exception to explain."

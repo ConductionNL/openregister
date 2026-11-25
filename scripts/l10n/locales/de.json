@@ -88,6 +88,7 @@
 		"Text": "The field-type name \"Text\" is identical in German; the only non-identical options narrow it (\"Freitext\" = free text) or shift to a technical term (\"Zeichenkette\" = string), so the honest label is the same word.",
 		"Operator": "The engine's comparison/logic operator. German uses the identically-spelled international term \"operator\", capitalised as a German noun but spelled identically, so the value coincides with the English key; no distinct synonym exists.",
 		"Token": "Established loan; German security and API language uses 'das Token' unchanged, and this bundle already writes 'Neues Token erstellen'.",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in de as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
+		"Polygon": "German GIS uses 'das Polygon' for the shape; QGIS de renders it identically.",
+		"Multipolygon": "German GIS uses 'das Multipolygon'; QGIS de renders it identically."
 	}
 }

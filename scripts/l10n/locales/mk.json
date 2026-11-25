@@ -61,8 +61,7 @@
 		"myapp": "A literal example app id shown verbatim in a code sample; not prose. Every finished locale keeps it.",
 		"{property} - {other}": "Two placeholders and a hyphen. There is nothing translatable in it.",
 		"Id": "The same acronym as the recorded `ID` cognate, in the casing the source uses. Latin ID is what this bundle already writes inside Macedonian prose (`ID на објект`, `ID на регистар`).",
-		"Host *": "`Host` is kept Latin by this bundle's own SOLR values — `Hostname или IP адреса на SOLR серверот` — and the asterisk is a required-field marker.",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in mk as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym."
+		"Host *": "`Host` is kept Latin by this bundle's own SOLR values — `Hostname или IP адреса на SOLR серверот` — and the asterisk is a required-field marker."
 	},
 	"corrections": {
 		"Add Schema": "CAPS. Domain term capitalised where Macedonian sentence-cases. See capitalisationNote — measured 41:146 against this bundle own prose and 65:507 in its headings, against a family rate of 2:477 and 47:640.",

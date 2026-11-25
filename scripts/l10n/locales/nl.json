@@ -44,7 +44,6 @@
 		"Label": "Established loan, standard in Dutch UI language.",
 		"Labels": "Same loan; the Dutch plural is also 'labels'.",
 		"Links": "Established loan; the Dutch plural is also 'links'.",
-		"link": "Established loan, as for 'Links': Dutch UI calls a found web address a link.",
 		"Maximum": "Latin loan, identical in Dutch.",
 		"Metadata": "Same spelling and meaning in Dutch.",
 		"Minimum": "Latin loan, identical in Dutch.",
@@ -127,7 +126,6 @@
 		"Openbare verlichting": "The source string is already Dutch (public lighting); a schema title in a Dutch municipal register.",
 		"Wegen en paden": "The source string is already Dutch (roads and paths); a schema title in a Dutch municipal register.",
 		"Diagram": "The native word for a drawn diagram is spelled identically to English.",
-		"IBAN": "ISO 13616 acronym (International Bank Account Number), written unchanged in nl as an entity-kind label; the bundle's own 'IBANs' value keeps the acronym.",
 		"link": "Dutch uses the English loanword \"link\" for a hyperlink (as in \"deel de link\"); \"koppeling\" here would read as a data connection."
 	}
 }
