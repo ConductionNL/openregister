@@ -3607,9 +3607,9 @@ Search/,,Search,,,,,Search
 Sections/,,Sections,,,,,Platform
 Service/Aggregation/,,Service,,,,,Core
 Service/Anonymisation/,,Service,,,,,Compliance
-Service/Anonymisation/CapacityPolicy.php,,Service,,,,,Compliance
-Service/Anonymisation/CapacitySuggester.php,,Service,,,,,Compliance
-Service/Anonymisation/OfficialsSource.php,,Service,,,,,Compliance
+Service/Anonymisation/CapacitySuggester.php,,Service,,,,,Files
+Service/Anonymisation/OfficialsDirectory.php,,Service,,,,,Files
+Service/Anonymisation/OfficialsSource.php,,Service,,,,,Kernel
 Service/ApiCaller/,,Service,,,,,Platform
 Service/ApiVersion/,,Service,,,,,Core
 Service/Archival/,,Service,,,,,Compliance
@@ -4550,6 +4550,7 @@ Service/CalendarEvent/CalendarLinkListenerRegistrar.php,,Service,,,,,Integration
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Migration/Version1Date20261114100009.php,,Migration,,,,,Platform
 Db/SchemaMapper/AdministeredValidationCheck.php,,Db,,,,,Processes
 Controller/Support/CopyRun.php,,Controller,,,,,Core
 Listener/SlotOccupantAuditListener.php,97,Listener,Access,Access/Listener/SlotOccupantAuditListener.php,0,,Core
@@ -4614,6 +4615,12 @@ Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTra
 Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
 Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
 Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
+Exception/PersonRegisterPurposeMissingException.php,,Exception,,,,,Kernel
+Service/Anonymisation/PersonRegisterSource.php,,Service,,,,,Kernel
+Service/Anonymisation/RegisterNameReader.php,,Service,,,,,Files
+Service/Anonymisation/PersonRegisterMatcher.php,,Service,,,,,Files
+Service/Anonymisation/PersonRegisterRun.php,,Service,,,,,Files
+Migration/Version1Date20261114230000.php,,Migration,,,,,Platform
 Service/Rules/NamedConditionScope.php,,Service,,,,,Processes
 Service/Rules/RelativeTimeEvaluation.php,,Service,,,,,Processes
 Db/SchemaMapper/RelativeTimeCalendarCheck.php,,Db,,,,,Processes
@@ -4919,6 +4926,8 @@ Service/Lifecycle/TransitionCommand.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionRun.php,,Service,,,,,Processes
 Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
+Kernel/Contracts/CapacityPolicyReaderInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/CapacityPolicy.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AccessLinkNamesInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/ObjectReadRightsInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/ReferringObjectsInterface.php,,Kernel,,,,,Kernel
