@@ -36,4 +36,9 @@
       `object-level-sharing-and-private-scope` is keyed by object uuid and a
       flow is not an object, so this wants either a flow-shares table or the
       primitive widened. Named rather than approximated further.
-- [ ] 5.2 An e2e over the refusal, which needs two accounts on an instance. (live pass, decision 139)
+- [x] 5.2 An e2e over the refusal, which needs two accounts on an instance. (live pass, decision 139)
+      > 2026-11-25: `tests/e2e/ci/flow-run-refusal.spec.ts`, 3/3 green on a Nextcloud 34 + MariaDB
+      > sandbox. With `flow.update` narrowed to `admin`, `e2e-other` gets 403 naming the right on
+      > `POST /api/flows/{id}/run`, and is refused a retry of the owner's run; the owner and the
+      > administrator run it. Granted the right through `e2e-grantees`, the same colleague runs it.
+      > The spec puts back the groups it found on `flow.update`.
