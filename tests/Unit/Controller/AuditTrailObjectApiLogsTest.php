@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use Exception;
 use OCA\OpenRegister\Controller\AuditTrailController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -44,6 +45,8 @@ use Psr\Log\LoggerInterface;
  * The object API's history route on AuditTrailController.
  */
 class AuditTrailObjectApiLogsTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private IRequest&MockObject $request;
 
@@ -70,6 +73,7 @@ class AuditTrailObjectApiLogsTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->history = $this->createMock(ObjectHistoryForReaders::class);
 	}//end setUp()
