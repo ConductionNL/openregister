@@ -30,6 +30,7 @@ use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionLookup;
 use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionRules;
 use OCA\OpenRegister\BackgroundJob\Support\RetentionDependantPlace;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -52,10 +53,11 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	/**
 	 * Constructor.
 	 *
-	 * @param ITimeFactory           $time   The clock
-	 * @param RelatedRetentionLookup $lookup Object, schema and register mappers
-	 * @param RelatedRetentionRules  $rules  Dependant index, reference calculator and retention service
-	 * @param LoggerInterface        $logger The logger
+	 * @param ITimeFactory              $time    The clock
+	 * @param RelatedRetentionLookup    $lookup  Object, schema and register mappers
+	 * @param RelatedRetentionRules     $rules   Dependant index, reference calculator and retention service
+	 * @param LoggerInterface           $logger  The logger
+	 * @param ObjectOperationsInterface $objects The object port, whose system scope the recalculation runs in
 	 *
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
@@ -64,6 +66,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 		private readonly RelatedRetentionLookup $lookup,
 		private readonly RelatedRetentionRules $rules,
 		private readonly LoggerInterface $logger,
+		private readonly ObjectOperationsInterface $objects,
 	) {
 		parent::__construct(time: $time);
 	}//end __construct()
@@ -100,6 +103,12 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	/**
 	 * Recalculate and store every dependant of a source record.
 	 *
+	 * Runs as the system, whatever process runs the job. Under `occ` or system
+	 * cron the mappers already trust a caller without a user; a job run by a web
+	 * or AJAX cron request has no user either but is not trusted, so the relation
+	 * lookup kept only rows without an organisation and every dependant that has
+	 * one was silently left on its old date.
+	 *
 	 * @param string $uuid The source record's uuid
 	 *
 	 * @return int How many dependants got a new destruction date
@@ -107,6 +116,17 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
 	 */
 	public function recalculateDependantsOf(string $uuid): int {
+		return $this->objects->runAsSystem(fn (): int => $this->recalculateAsSystem(uuid: $uuid));
+	}//end recalculateDependantsOf()
+
+	/**
+	 * Recalculate and store every dependant of a source record, inside the system scope.
+	 *
+	 * @param string $uuid The source record's uuid
+	 *
+	 * @return int How many dependants got a new destruction date
+	 */
+	private function recalculateAsSystem(string $uuid): int {
 		$this->lookup->objectMapper->invalidateTableMemos();
 		$source = $this->lookup->objectMapper->find(identifier: $uuid, _rbac: false, _multitenancy: false);
 		$sourceSchema = $this->lookup->schemaMapper->find(id: (string)$source->getSchema(), _rbac: false, _multitenancy: false);
@@ -134,7 +154,7 @@ class RelatedRetentionRecalculationJob extends QueuedJob {
 		}//end foreach
 
 		return $changed;
-	}//end recalculateDependantsOf()
+	}//end recalculateAsSystem()
 
 	/**
 	 * Recalculate one batch of candidate dependants.

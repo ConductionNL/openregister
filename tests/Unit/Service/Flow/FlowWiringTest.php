@@ -56,6 +56,8 @@ use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowNamingDocumentsInterface;
+use OCA\OpenRegister\Service\Flow\FlowNamingDocuments;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\TaskRowSourceInterface;
@@ -85,6 +87,7 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
+use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
@@ -93,7 +96,13 @@ use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
@@ -142,7 +151,6 @@ use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface;
 use OCA\OpenRegister\Service\Rules\SaveWarnings;
-use OCA\OpenRegister\Service\ContractBindings;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowWiring
@@ -312,6 +320,22 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheFieldRulesPortIsAnsweredByTheStateResolver()
 
 	/**
+	 * The calendar and webhook trigger nodes are bound by their own area, not by the Configuration map.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
+	 */
+	public function testTheCalendarAndWebhookTriggerNodesAreBoundByTheFlowArea(): void {
+		self::assertSame(expected: TriggerCalendarNode::class, actual: (FlowWiring::BINDINGS[TriggerCalendarNodeInterface::class] ?? null));
+		self::assertSame(expected: TriggerWebhookNode::class, actual: (FlowWiring::BINDINGS[TriggerWebhookNodeInterface::class] ?? null));
+		self::assertTrue(condition: is_a(TriggerCalendarNode::class, TriggerCalendarNodeInterface::class, true));
+		self::assertTrue(condition: is_a(TriggerWebhookNode::class, TriggerWebhookNodeInterface::class, true));
+		self::assertArrayNotHasKey(key: TriggerCalendarNodeInterface::class, array: ContractBindings::BINDINGS);
+		self::assertArrayNotHasKey(key: TriggerWebhookNodeInterface::class, array: ContractBindings::BINDINGS);
+	}//end testTheCalendarAndWebhookTriggerNodesAreBoundByTheFlowArea()
+
+	/**
 	 * The read history port is answered by the read history service.
 	 *
 	 * @return void
@@ -457,6 +481,7 @@ final class FlowWiringTest extends TestCase {
 				ObjectWatchersInterface::class             => WatcherService::class,
 				NotificationRunRecorderInterface::class    => AutomationRecordWriter::class,
 				SchemaRenameWarningsInterface::class       => FlowTriggerRenameCheck::class,
+				FlowNamingDocumentsInterface::class        => FlowNamingDocuments::class,
 				SchemaFormDependentsInterface::class       => FormDependentsCheck::class,
 				ApprovalPositionFormCheckInterface::class  => ApprovalPositionFormGuard::class,
 				BuiltInToolProvidersInterface::class       => FlowBuiltInToolProviders::class,
@@ -465,9 +490,11 @@ final class FlowWiringTest extends TestCase {
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
+				TriggerWebhookNodeInterface::class         => TriggerWebhookNode::class,
 				CodeNodeInterface::class                   => CodeNode::class,
 				CodeRunnerClientInterface::class           => CodeRunnerClient::class,
 				TagObjectNodeInterface::class              => TagObjectNode::class,
+				SurveyInviteNodeInterface::class           => SurveyInviteNode::class,
 				AuditTrailNodeInterface::class             => AuditTrailNode::class,
 				ExtendInputNodeInterface::class            => ExtendInputNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,

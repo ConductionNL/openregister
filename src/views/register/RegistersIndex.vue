@@ -130,6 +130,11 @@ import {
 				<ActionMenu :actions="registerActions(row)" />
 			</template>
 		</CnIndexPage>
+
+		<NlGovConformanceDialog
+			v-if="conformanceRegister !== null"
+			:register="conformanceRegister"
+			@close="conformanceRegister = null" />
 	</NcAppContent>
 </template>
 
@@ -139,6 +144,7 @@ import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { NcActionButton, NcAppContent } from '@nextcloud/vue'
 import ApiIcon from 'vue-material-design-icons/Api.vue'
+import ClipboardCheckOutline from 'vue-material-design-icons/ClipboardCheckOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
@@ -147,6 +153,7 @@ import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 import RegisterFormFields from '../../components/register/RegisterFormFields.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ManagedBadge from '../../components/shared/ManagedBadge.vue'
+import NlGovConformanceDialog from '../../dialogs/register/NlGovConformanceDialog.vue'
 import IndexRowDescription from '../IndexRowDescription.vue'
 import {
 	headerListData,
@@ -297,6 +304,7 @@ export default {
 		CnIndexPage,
 		ManagedBadge,
 		RegisterSchemaCard,
+		NlGovConformanceDialog,
 	},
 
 	data() {
@@ -305,6 +313,7 @@ export default {
 			selectedRegisters: [],
 			schemaSelectOptions: [],
 			schemasLoading: false,
+			conformanceRegister: null,
 		}
 	},
 
@@ -491,6 +500,11 @@ export default {
 					icon: Download,
 					run: selected(() => this.downloadOas(register)),
 				},
+				{
+					label: t('openregister', 'Check Dutch API design rules'),
+					icon: ClipboardCheckOutline,
+					run: selected(() => this.openConformance(register)),
+				},
 			]
 		},
 
@@ -667,6 +681,16 @@ export default {
 				showError(t('openregister', 'Failed to download API specification'))
 				console.error('Error downloading OAS:', error)
 			}
+		},
+
+		/**
+		 * Open the Dutch API design rules report of a register.
+		 *
+		 * @param {object} register - register row
+		 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
+		 */
+		openConformance(register) {
+			this.conformanceRegister = register
 		},
 
 		/**

@@ -216,7 +216,7 @@ use the draft.
 
 ## Triggers
 
-A trigger is the node where a run begins. A flow may carry several. Four
+A trigger is the node where a run begins. A flow may carry several. Five
 trigger types ship:
 
 | Step id | Name in the palette | Config keys |
@@ -225,6 +225,7 @@ trigger types ship:
 | `openregister.trigger-schedule` | On a schedule | `cron`, `runAs` |
 | `openregister.trigger-manual` | When someone runs it | `next` |
 | `openregister.trigger-calendar` | At a date on a record | `register`, `schema`, `dateProperty`, `offset`, `workingCalendar`, `runAs` |
+| `openregister.trigger-webhook` | When another system calls | `runAs`, `token`, `rotateSecret` |
 
 **`openregister.trigger-object`** names exactly one `event`, one `register` and
 one `schema`. `event` must be `object.created`, `object.updated`,
@@ -302,6 +303,12 @@ optional `workingCalendar` names a calendar by its slug to count the offset in
 working time. `runAs` is required and must be an existing account, as for a
 scheduled run. The record is the run's subject. Publishing refuses a trigger
 that could never fire as written.
+
+**`openregister.trigger-webhook`** starts a run when another system posts a
+signed JSON body to the flow's own address. Saving the flow issues the `token`
+in that address and a signing secret, both shown once; `rotateSecret` replaces
+the secret on the next save. Runs act as `runAs`. Addresses, signing and answers:
+[Starting a flow from a date or from another system](../Features/flow-triggers.md).
 
 ### The event catalogue
 
@@ -646,6 +653,15 @@ decides whether an opt-out applies; empty means service mail.
 `conversation` (required, a token or an item field), `message` (required). The
 message is posted as the run's acting user, who must already be a participant.
 The step never adds anyone to a conversation; "not a participant" fails it.
+
+**`openregister.survey-invite`** (Invite to a survey). Sends one survey
+invitation per item, after an optional `delay` that suspends the run as the
+Wait step does. Keys: `register`, `survey`, `respondent` (required),
+`subject` (the item's own object when empty), `expiresIn` (default 30 days),
+`delay`. The outcome is put on the item under `surveyInvitation`, with the
+answering `url` for a sent invitation, so a following
+`openregister.send-email` step can mail the link. An invitation refused by the
+fatigue limit is recorded as blocked rather than sent.
 
 ### Steps from other apps
 

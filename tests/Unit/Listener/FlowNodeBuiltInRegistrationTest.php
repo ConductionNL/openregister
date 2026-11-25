@@ -82,6 +82,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
@@ -141,6 +142,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 				$this->node(SendNotificationNodeInterface::class),
 				$this->node(SendEmailNodeInterface::class),
 				$this->node(SendTalkMessageNodeInterface::class),
+				$this->node(\OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface::class),
 			)),
 			new CoordinationFlowNodes(new HumanTaskFlowNodes(
 				$this->node(UserTaskNodeInterface::class),
@@ -160,6 +162,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 				$this->node(TriggerScheduleNodeInterface::class),
 				$this->node(TriggerManualNodeInterface::class),
 				$this->node(TriggerCalendarNodeInterface::class),
+				$this->node(TriggerWebhookNodeInterface::class),
 			),
 		);
 
@@ -178,7 +181,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent($registry));
 
-		$this->assertCount(36, $registered);
+		$this->assertCount(38, $registered);
 		$this->assertSame($this->expected, $registered);
 	}
 

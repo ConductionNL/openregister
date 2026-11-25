@@ -53,6 +53,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
+use Psr\Container\ContainerInterface;
 use Opis\JsonSchema\ValidationResult;
 use Throwable;
 
@@ -113,13 +114,18 @@ class MoveObject implements MoveObjectInterface {
 	 *                                            values other records hold.
 	 * @param ObjectValidatorInterface        $validator Validation against a schema.
 	 * @param RelationAddressRewriteInterface $relations The relation rows that store the object's address.
-	 * @param FlowTimerControlInterface|null $timers    Moves the object's timers onto the calendar its new schema names.
+	 * @param ContainerInterface|null        $container Supplies the FlowTimerControlInterface that moves the
+	 *                                                  object's timers onto the calendar its new schema names.
+	 *                                                  Looked up on first use: the timer service reaches
+	 *                                                  ObjectService, which builds this class, so taking it
+	 *                                                  in the constructor closed a DI loop and the app could
+	 *                                                  not be enabled.
 	 */
 	public function __construct(
 		private readonly ObjectChangeRecording $recording,
 		private readonly ObjectValidatorInterface $validator,
 		private readonly RelationAddressRewriteInterface $relations,
-		private readonly ?FlowTimerControlInterface $timers=null,
+		private readonly ?ContainerInterface $container=null,
 	) {
 		$this->objects = $recording->objects;
 	}//end __construct()
@@ -436,6 +442,19 @@ class MoveObject implements MoveObjectInterface {
 	}//end rewriteRelations()
 
 	/**
+	 * The timer control, when the container offers one.
+	 *
+	 * @return FlowTimerControlInterface|null The timer control.
+	 */
+	private function timers(): ?FlowTimerControlInterface {
+		if ($this->container === null || $this->container->has(FlowTimerControlInterface::class) === false) {
+			return null;
+		}
+
+		return $this->container->get(FlowTimerControlInterface::class);
+	}//end timers()
+
+	/**
 	 * Move the object's timers onto the calendar its new schema names.
 	 *
 	 * Timers are keyed on the uuid, so they follow the object without being
@@ -453,13 +472,14 @@ class MoveObject implements MoveObjectInterface {
 	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
 	 */
 	private function recalendarTimers(ObjectMove $move): void {
-		if ($this->timers === null) {
+		$timers = $this->timers();
+		if ($timers === null) {
 			return;
 		}
 
 		$uuid = (string)$move->object->getUuid();
 		try {
-			$this->timers->recalendarForSubject(
+			$timers->recalendarForSubject(
 				subject: new TimerSubjectRef(type: self::TIMER_SUBJECT_TYPE, uuid: $uuid),
 				recordType: (string)$move->target->schema->getId(),
 				change: new TimerChange(reason: self::TIMER_REASON, actor: $move->actor)
