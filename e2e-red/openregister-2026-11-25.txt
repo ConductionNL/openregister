@@ -11,8 +11,8 @@ field-rules-by-state.spec.ts:259 object create 422 lifecycle-invalid-initial ("b
 flow-controls.spec.ts:251 / flow-lock-nodes.spec.ts:152 editor UI locators (2)
 form-destination.spec.ts:260 repeated Idempotency-Key (1)
 migration-pack-pages.spec.ts:416 and :1071 (2)
-notification-routing.spec.ts:241 role rule at save (1)
+notification-routing.spec.ts:241 role rule at save (1): spec expects 422; NotificationAnnotationCheck deliberately only warns (since 7 Nov, import safety). Needs a decision, queued
 object-as-hinge.spec.ts:252 address history reverse view (1)
 object-calendar-feed.spec.ts:252 deadline all-day event (1)
-object-watchers.spec.ts:170 watcher rule declaration (1)
-party-roles.spec.ts:251 two parties same role (1)
+object-watchers.spec.ts:170 watchers:'yes' expected 422, saved 201: same decision as notification-routing
+party-roles.spec.ts:251 FIXED by #11268 (top-level partyKinds/linkRoles dropped on save); then the next serial test is red: :340 'mail from a second address resolves' -> 404 'No party holds that address' (undiagnosed)
