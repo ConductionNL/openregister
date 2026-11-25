@@ -564,3 +564,4 @@
 2026-11-25T01:59:29Z help-filinq-1 skipped redaction-guarantees-from-the-engine: precondition unmet, openregister redaction-release-safeguards (0 ticked) and redaction-policy-as-data unmerged on OR development; both have other lanes' build branches (build/redaction-*)
 2026-11-25T01:59:29Z help-filinq-1 skipped propose-grondslag-per-entity-type: 7.1 owned by the OpenAnonymiser team (external system), 7.2/7.3 wait on it
 2026-11-25T01:59:29Z help-filinq-1 skipped companion-knows-the-open-document (live check only) and document-editing-tools 3.3 (needs a Euro-Office instance); every other filinq change with open tasks has a branch
+2026-11-25T02:06Z help-opencatalogi-1 built hermiq-ai-tooling createDraftPublication (allow-list, RBAC save, 10 tests) #2996 merged; left publish/depublish/archive (approval-source security question in COORDINATOR-QUEUE), attribution (OR AttributeToolProvider does not pass the acting agent to attribute tools), Task 5 e2e/live Hermiq check
