@@ -27,13 +27,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Operations;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\BackgroundJob\ConfigurationJobHandlesInterface;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
-use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
-use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCA\OpenRegister\Service\Operations\ReindexProgress;
 use OCA\OpenRegister\Service\Operations\ReindexRefusedException;
 use OCA\OpenRegister\Service\Operations\ReindexSelection;
@@ -52,17 +52,16 @@ use RuntimeException;
 #[CoversClass(ReindexSelection::class)]
 #[CoversClass(ReindexProgress::class)]
 #[CoversClass(ReindexRefusedException::class)]
-#[UsesClass(BulkJobSelection::class)]
+#[UsesClass(SearchOptions::class)]
+#[UsesClass(ObjectSelection::class)]
 #[UsesClass(ObjectEntity::class)]
 final class ReindexSelectionTest extends TestCase {
-
-	private BulkSelectionResolver&MockObject $resolver;
 
 	private ObjectOperationsInterface&MockObject $objects;
 
 	private TextExtractionServiceInterface&MockObject $extractor;
 
-	private FileMapperInterface&MockObject $files;
+	private ObjectFileRecordsInterface&MockObject $files;
 
 	private IAppConfig&MockObject $config;
 
@@ -71,10 +70,9 @@ final class ReindexSelectionTest extends TestCase {
 	private IUserManager&MockObject $users;
 
 	protected function setUp(): void {
-		$this->resolver = $this->createMock(BulkSelectionResolver::class);
 		$this->objects = $this->createMock(ObjectOperationsInterface::class);
 		$this->extractor = $this->createMock(TextExtractionServiceInterface::class);
-		$this->files = $this->createMock(FileMapperInterface::class);
+		$this->files = $this->createMock(ObjectFileRecordsInterface::class);
 		$this->config = $this->createMock(IAppConfig::class);
 		$this->jobs = $this->createMock(IJobList::class);
 		$this->users = $this->createMock(IUserManager::class);
@@ -82,7 +80,6 @@ final class ReindexSelectionTest extends TestCase {
 
 	private function service(): ReindexSelectionService {
 		return new ReindexSelectionService(
-			$this->resolver,
 			$this->objects,
 			$this->extractor,
 			$this->files,
@@ -97,6 +94,19 @@ final class ReindexSelectionTest extends TestCase {
 	 */
 	private function uuids(int $count): array {
 		return array_map(static fn (int $i): string => sprintf('uuid-%05d', $i), range(1, $count));
+	}
+
+	/**
+	 * @param list<string> $uuids
+	 * @return list<ObjectEntity>
+	 */
+	private function entities(array $uuids): array {
+		return array_map(static function (string $uuid): ObjectEntity {
+			$object = new ObjectEntity();
+			$object->setUuid($uuid);
+			$object->setId((int)substr($uuid, 5));
+			return $object;
+		}, $uuids);
 	}
 
 	private function refusalOf(array $params): ?string {
@@ -139,9 +149,9 @@ final class ReindexSelectionTest extends TestCase {
 	}
 
 	public function testMoreThanFiftyThousandIsRefused(): void {
-		$this->resolver->expects($this->once())->method('queryUuids')
-			->with($this->callback(static fn (BulkJobSelection $s): bool => $s->registerId === 3 && $s->schemaId === 7), ReindexSelectionService::MAX_OBJECTS)
-			->willReturn($this->uuids(count: 50001));
+		$this->objects->expects($this->once())->method('searchObjects')
+			->with($this->callback(static fn (array $q): bool => $q['@self'] === ['register' => 3, 'schema' => 7] && $q['_limit'] === 50001))
+			->willReturn($this->entities(uuids: $this->uuids(count: 50001)));
 		$this->jobs->expects($this->never())->method('add');
 		$this->config->expects($this->never())->method('setValueArray');
 
@@ -155,7 +165,9 @@ final class ReindexSelectionTest extends TestCase {
 	}
 
 	public function testExactlyFiftyThousandIsQueued(): void {
-		$this->resolver->method('queryUuids')->willReturn($this->uuids(count: 50000));
+		$this->objects->expects($this->once())->method('searchObjects')
+			->with(['status' => 'open', '@self' => ['register' => 3, 'schema' => 7], '_limit' => 50001])
+			->willReturn($this->entities(uuids: $this->uuids(count: 50000)));
 		$this->jobs->expects($this->once())->method('add');
 
 		$queued = $this->service()->start(params: ['register' => 3, 'schema' => 7, 'filters' => ['status' => 'open']], actor: 'admin');
@@ -165,7 +177,7 @@ final class ReindexSelectionTest extends TestCase {
 	}
 
 	public function testAnEmptySelectionIsRefused(): void {
-		$this->resolver->method('queryUuids')->willReturn([]);
+		$this->objects->method('searchObjects')->willReturn([]);
 		$this->jobs->expects($this->never())->method('add');
 
 		$this->expectException(ReindexRefusedException::class);
@@ -174,7 +186,7 @@ final class ReindexSelectionTest extends TestCase {
 	}
 
 	public function testStartStoresTheSelectionAndQueuesTheRunWithItsActor(): void {
-		$this->resolver->method('idsOf')->with(['ids' => ['a', 'b']])->willReturn(['a', 'b']);
+		$this->objects->expects($this->never())->method('searchObjects');
 		$stored = null;
 		$this->config->expects($this->once())->method('setValueArray')
 			->willReturnCallback(function (string $app, string $key, array $value, bool $lazy) use (&$stored): bool {
@@ -187,7 +199,7 @@ final class ReindexSelectionTest extends TestCase {
 		$queuedArgument = null;
 		$this->jobs->expects($this->once())->method('add')
 			->willReturnCallback(function (string $job, mixed $argument) use (&$queuedArgument): void {
-				$this->assertSame(ConfigurationJobHandlesInterface::REINDEX_SELECTION, $job);
+				$this->assertSame(JobHandles::REINDEX_SELECTION, $job);
 				$queuedArgument = $argument;
 			});
 
@@ -210,22 +222,13 @@ final class ReindexSelectionTest extends TestCase {
 				$this->assertSame($admin, $user);
 				return $operation();
 			});
-		$this->resolver->method('idsOf')->willReturn($uuids);
-		// uuid-00042 is no longer readable; the rest come back.
-		$this->resolver->method('hydrate')->willReturnCallback(static function (array $batch): array {
-			$found = [];
-			foreach ($batch as $uuid) {
-				if ($uuid === 'uuid-00042') {
-					continue;
-				}
-
-				$object = new ObjectEntity();
-				$object->setUuid($uuid);
-				$object->setId((int)substr($uuid, 5));
-				$found[$uuid] = $object;
-			}
-
-			return $found;
+		// uuid-00042 is no longer readable; the rest come back, a batch at a time.
+		$batches = [];
+		$this->objects->method('searchObjects')->willReturnCallback(function (array $query, bool $rbac, bool $multi, SearchOptions $options) use (&$batches): array {
+			$this->assertSame([], $query);
+			$batch = (array)$options->selection->ids;
+			$batches[] = count($batch);
+			return $this->entities(uuids: array_values(array_diff($batch, ['uuid-00042'])));
 		});
 		// Object 7 fails to extract; object 1 has two files, re-extracted with force.
 		$this->extractor->method('extractObject')->willReturnCallback(function (int $objectId, bool $forceReExtract): void {
@@ -262,6 +265,7 @@ final class ReindexSelectionTest extends TestCase {
 		);
 		$this->assertFalse($final['failuresTruncated']);
 		$this->assertSame([11, 12], $reextracted);
+		$this->assertSame([100, 100, 50], $batches);
 	}
 
 	public function testARunWhoseSelectionIsGoneFailsAndClearsItsKey(): void {
@@ -291,12 +295,13 @@ final class ReindexSelectionTest extends TestCase {
 		$selection = new ReindexSelection(kind: ReindexSelection::KIND_FILTER, registerId: 3, schemaId: 7, filters: ['a' => 'b']);
 		$this->assertEquals($selection, ReindexSelection::fromArray(stored: $selection->toArray()));
 
-		$bulk = $selection->bulkSelection();
-		$this->assertSame(['query' => ['a' => 'b']], $bulk->criteria);
-		$this->assertSame(3, $bulk->registerId);
-		$ids = (new ReindexSelection(kind: ReindexSelection::KIND_IDS, ids: ['x']))->bulkSelection();
-		$this->assertSame(['ids' => ['x']], $ids->criteria);
-		$this->assertNull($ids->schemaId);
+		$this->assertSame(['a' => 'b', '@self' => ['register' => 3, 'schema' => 7]], $selection->query());
+		$this->assertSame(['@self' => ['register' => 3, 'schema' => 7]], $selection->scope());
+		$paged = new ReindexSelection(kind: ReindexSelection::KIND_FILTER, registerId: 3, schemaId: 7, filters: ['_limit' => 5, '_extend' => ['x'], '@self' => ['owner' => 'bea', 'register' => 9]]);
+		$this->assertSame(['@self' => ['owner' => 'bea', 'register' => 3, 'schema' => 7]], $paged->query());
+		$ids = new ReindexSelection(kind: ReindexSelection::KIND_IDS, ids: ['x']);
+		$this->assertSame([], $ids->query());
+		$this->assertSame([], $ids->scope());
 
 		$this->expectException(ReindexRefusedException::class);
 		ReindexSelection::fromArray(stored: ['kind' => 'everything']);

@@ -24,13 +24,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Operations;
 
-use OCA\OpenRegister\BackgroundJob\ConfigurationJobHandlesInterface;
+use OCA\OpenRegister\BackgroundJob\JobHandles;
+use OCA\OpenRegister\Contract\ObjectSelection;
+use OCA\OpenRegister\Contract\SearchOptions;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Files\Db\FileMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
-use OCA\OpenRegister\Service\BulkJob\BulkSelectionResolver;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUserManager;
@@ -70,19 +71,17 @@ class ReindexSelectionService implements ReindexSelectionServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param BulkSelectionResolver          $resolver  Resolves an id list or a scoped query to uuids, and loads them.
-	 * @param ObjectOperationsInterface      $objects   Runs the run's reads as the administrator who started it.
+	 * @param ObjectOperationsInterface      $objects   Resolves and loads the selection, as the administrator who started it.
 	 * @param TextExtractionServiceInterface $extractor Re-extracts an object's and a file's text.
-	 * @param FileMapperInterface            $files     The files attached to an object.
+	 * @param ObjectFileRecordsInterface     $files     The files attached to an object.
 	 * @param IAppConfig                     $config    Holds the selection between start and run.
 	 * @param IJobList                       $jobs      Queues the run.
 	 * @param IUserManager                   $users     Finds the administrator when the run starts.
 	 */
 	public function __construct(
-		private readonly BulkSelectionResolver $resolver,
 		private readonly ObjectOperationsInterface $objects,
 		private readonly TextExtractionServiceInterface $extractor,
-		private readonly FileMapperInterface $files,
+		private readonly ObjectFileRecordsInterface $files,
 		private readonly IAppConfig $config,
 		private readonly IJobList $jobs,
 		private readonly IUserManager $users,
@@ -117,7 +116,7 @@ class ReindexSelectionService implements ReindexSelectionServiceInterface {
 
 		$runKey = bin2hex(random_bytes(8));
 		$this->config->setValueArray(app: AppIdentity::APP_ID, key: self::STORE_PREFIX.$runKey, value: $selection->toArray(), lazy: true);
-		$this->jobs->add(job: ConfigurationJobHandlesInterface::REINDEX_SELECTION, argument: ['run' => $runKey, 'actor' => $actor]);
+		$this->jobs->add(job: JobHandles::REINDEX_SELECTION, argument: ['run' => $runKey, 'actor' => $actor]);
 
 		return ['run' => $runKey, 'kind' => $selection->kind, 'total' => $total];
 
@@ -194,7 +193,7 @@ class ReindexSelectionService implements ReindexSelectionServiceInterface {
 	 * @return void
 	 */
 	private function reindexBatch(array $batch, ReindexSelection $selection, ReindexProgress $progress): void {
-		$objects = $this->resolver->hydrate(uuids: $batch, scope: $selection->bulkSelection());
+		$objects = $this->load(uuids: $batch, selection: $selection);
 
 		foreach ($batch as $uuid) {
 			$object = ($objects[$uuid] ?? null);
@@ -241,13 +240,58 @@ class ReindexSelectionService implements ReindexSelectionServiceInterface {
 	 * @return array<int, string> The uuids.
 	 */
 	private function uuidsOf(ReindexSelection $selection): array {
-		$bulk = $selection->bulkSelection();
-
 		if ($selection->kind === ReindexSelection::KIND_IDS) {
-			return $this->resolver->idsOf(criteria: $bulk->criteria);
+			return $selection->ids;
 		}
 
-		return $this->resolver->queryUuids(selection: $bulk, ceiling: self::MAX_OBJECTS);
+		$query = $selection->query();
+		$query['_limit'] = (self::MAX_OBJECTS + 1);
+
+		return array_keys($this->entitiesByUuid(found: $this->objects->searchObjects(query: $query)));
 
 	}//end uuidsOf()
+
+	/**
+	 * Load a batch of named objects, scoped to the selection's register and schema, keyed by uuid.
+	 *
+	 * An object the administrator may not read, or that is gone, does not come
+	 * back, and the batch counts it as failed.
+	 *
+	 * @param array<int, string> $uuids     The uuids of the batch.
+	 * @param ReindexSelection   $selection The selection.
+	 *
+	 * @return array<string, ObjectEntity> The objects, keyed by uuid.
+	 */
+	private function load(array $uuids, ReindexSelection $selection): array {
+		return $this->entitiesByUuid(
+			found: $this->objects->searchObjects(
+				query: $selection->scope(),
+				options: new SearchOptions(selection: new ObjectSelection(ids: $uuids))
+			)
+		);
+
+	}//end load()
+
+	/**
+	 * The objects of a search answer keyed by uuid, skipping anything that is no object.
+	 *
+	 * @param array<int|string, mixed>|int $found The search answer; a count is no objects.
+	 *
+	 * @return array<string, ObjectEntity> The objects, keyed by uuid.
+	 */
+	private function entitiesByUuid(array|int $found): array {
+		if (is_array($found) === false) {
+			return [];
+		}
+
+		$objects = [];
+		foreach ($found as $object) {
+			if ($object instanceof ObjectEntity) {
+				$objects[(string)$object->getUuid()] = $object;
+			}
+		}
+
+		return $objects;
+
+	}//end entitiesByUuid()
 }//end class

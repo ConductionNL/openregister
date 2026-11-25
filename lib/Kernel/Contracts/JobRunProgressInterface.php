@@ -6,8 +6,8 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\Operations
+ * @category Kernel
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Operations;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Write a running job's progress onto its open run row.

@@ -24,8 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Operations;
 
-use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
-
 /**
  * A register and schema, a register and schema with object list filters, or
  * a list of object ids: exactly one of the three.
@@ -37,6 +35,14 @@ use OCA\OpenRegister\Service\BulkJob\BulkJobSelection;
  * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md#requirement-an-administrator-reindexes-a-selection-and-watches-it-run-req-sqf-007
  */
 final readonly class ReindexSelection {
+
+	/**
+	 * Query keys that would page the selection or turn its entities into
+	 * rendered projections; a selection has no use for either.
+	 *
+	 * @var array<int, string>
+	 */
+	private const STRIPPED_QUERY_KEYS = ['_extend', '_fields', '_filter', '_unset', '_limit', '_offset', '_count', '_page'];
 
 	/**
 	 * Every object of one register and schema.
@@ -168,18 +174,49 @@ final readonly class ReindexSelection {
 	}//end fromArray()
 
 	/**
-	 * The selection in the shape the bulk selection resolver reads.
+	 * The object list query of a schema or filter selection: the filters,
+	 * stripped of paging and rendering keys, scoped to the register and schema.
 	 *
-	 * @return BulkJobSelection The id list or the query, scoped to the register and schema.
+	 * An id selection carries no scope, so its query is empty.
+	 *
+	 * @return array<string, mixed> The query.
 	 */
-	public function bulkSelection(): BulkJobSelection {
+	public function query(): array {
 		if ($this->kind === self::KIND_IDS) {
-			return new BulkJobSelection(criteria: ['ids' => $this->ids], registerId: null, schemaId: null);
+			return [];
 		}
 
-		return new BulkJobSelection(criteria: ['query' => $this->filters], registerId: $this->registerId, schemaId: $this->schemaId);
+		$query = $this->filters;
+		foreach (self::STRIPPED_QUERY_KEYS as $key) {
+			unset($query[$key]);
+		}
 
-	}//end bulkSelection()
+		$self = ($query['@self'] ?? []);
+		if (is_array($self) === false) {
+			$self = [];
+		}
+
+		$self['register'] = $this->registerId;
+		$self['schema'] = $this->schemaId;
+		$query['@self'] = $self;
+
+		return $query;
+
+	}//end query()
+
+	/**
+	 * The query that scopes a read of named objects to the selection's register and schema.
+	 *
+	 * @return array<string, mixed> The scope, empty for an id selection.
+	 */
+	public function scope(): array {
+		if ($this->kind === self::KIND_IDS) {
+			return [];
+		}
+
+		return ['@self' => ['register' => $this->registerId, 'schema' => $this->schemaId]];
+
+	}//end scope()
 
 	/**
 	 * The ids of an id selection: a non-empty list of non-empty ids, deduplicated.

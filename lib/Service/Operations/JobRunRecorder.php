@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Service\Operations;
 use DateTime;
 use OCA\OpenRegister\Db\JobRun;
 use OCA\OpenRegister\Db\JobRunMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\JobRunProgressInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 

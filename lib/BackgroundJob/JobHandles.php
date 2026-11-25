@@ -54,4 +54,9 @@ final class JobHandles {
 	 * Schema run job.
 	 */
 	public const SCHEMA_RUN = SchemaRunJob::class;
+
+	/**
+	 * Reindex of an administrator's selection of objects.
+	 */
+	public const REINDEX_SELECTION = ReindexSelectionJob::class;
 }//end class

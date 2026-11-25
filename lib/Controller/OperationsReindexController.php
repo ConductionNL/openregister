@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
-use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
 use OCA\OpenRegister\Service\Operations\ReindexRefusedException;
 use OCA\OpenRegister\Service\Operations\ReindexSelectionServiceInterface;
 use OCP\AppFramework\Controller;
@@ -39,9 +38,12 @@ use OCP\IUserSession;
  * Nextcloud refuses a non-administrator with 403 before this controller is
  * built, and CSRF stays required on the write.
  *
+ * Not reachable in maintenance mode, unlike the console's reads: a reindex
+ * writes the search index, and maintenance mode holds writes.
+ *
  * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md#requirement-an-administrator-reindexes-a-selection-and-watches-it-run-req-sqf-007
  */
-class OperationsReindexController extends Controller implements MaintenanceReachableInterface {
+class OperationsReindexController extends Controller {
 
 	/**
 	 * Constructor.

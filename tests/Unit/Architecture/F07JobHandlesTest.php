@@ -80,7 +80,7 @@ final class F07JobHandlesTest extends TestCase {
 		ConfigurationJobHandlesInterface::IMPORT_PREVIEW_RUNNER => ImportPreviewRunner::class,
 		JobHandles::OBJECT_CLEANUP => ObjectCleanupJob::class,
 		ProcessesJobHandlesInterface::OBJECT_TEXT_EXTRACTION => ObjectTextExtractionJob::class,
-		ConfigurationJobHandlesInterface::REINDEX_SELECTION => ReindexSelectionJob::class,
+		JobHandles::REINDEX_SELECTION => ReindexSelectionJob::class,
 		ComplianceJobHandlesInterface::RELATED_RETENTION_RECALCULATION => RelatedRetentionRecalculationJob::class,
 		JobHandles::SCHEMA_RUN => SchemaRunJob::class,
 		ProcessesJobHandlesInterface::SOURCE_RECORD_RECOMPUTE => SourceRecordRecomputeJob::class,

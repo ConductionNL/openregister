@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Operations\JobRunProgressInterface;
+use OCA\OpenRegister\Kernel\Contracts\JobRunProgressInterface;
 use OCA\OpenRegister\Service\Operations\ReindexSelectionServiceInterface;
 
 /**
