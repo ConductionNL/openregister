@@ -124,6 +124,33 @@ Every create, update, and delete produces an audit trail entry containing:
 | `ipAddress` | Client IP address |
 | `sessionId` | Nextcloud session or API token identifier |
 
+### Which rule allowed a read
+
+A `read` entry records who opened an object and when. When one of the schema's `read`
+rules let the reader see it, the entry also records **which** rule:
+
+| Field | Meaning |
+|---|---|
+| `ruleDigest` | SHA-256 (64 hex characters) of the canonical JSON of the matched rule entry, as declared on the schema |
+| `ruleVersion` | The schema version that rule belonged to at the time of the read |
+
+The rule named is the first entry in the schema's `read` list the reader matched, with its
+`group` and `match` as declared, not as resolved for this reader: two handlers reading their
+own meldingen under the same rule get the same digest. A read no rule mediated (an
+administrator, the object's owner, or a schema without read rules) has both fields `null`.
+
+**Proving which rule was in force.** Take the schema as it stood at `ruleVersion`, find the
+rule entry the reader matched, and compute its digest: sort the keys of every map
+(recursively; list order is kept), encode as compact JSON with unescaped slashes and unicode,
+and take SHA-256. A bare group name (`"behandelaars"`) is digested as the JSON string. The
+result equals `ruleDigest`. The rule may have changed since; the digest still names the one
+that applied.
+
+Both fields are part of the hash chain when present, so a digest cannot be altered, removed
+or added after sealing without `GET /api/audit-trails/verify` reporting the entry. When they
+are absent they are left out of the sealed form entirely, so entries written before the fields
+existed verify exactly as before.
+
 ### Retention
 
 - Audit trail entries have a minimum 10-year retention requirement

@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCP\IUserManager;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
@@ -70,6 +71,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\TenancyCollaborators
  */
 class MagicOrganizationHandlerGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private const SAAS = '{"saasMode":true}';
 
@@ -100,6 +103,8 @@ class MagicOrganizationHandlerGoldenTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$groups = $this->createMock(IGroupManager::class);
+
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturn($caller['user'] === 'admin' ? ['admin', 'users'] : ['users']);
 
 		$appConfig = $this->createMock(IAppConfig::class);
