@@ -25,6 +25,8 @@ final class TransferControllerFactory {
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param TransferListService $transferListService Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
+	 * @param RetentionServiceInterface|null $retention Constructor argument.
+	 * @param TransferListRunInterface|null $transferRun Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -36,6 +38,8 @@ final class TransferControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 		\OCA\OpenRegister\Service\Edepot\TransferListService $transferListService,
 		\OCP\IUserSession $userSession,
+		?\OCA\OpenRegister\Service\RetentionServiceInterface $retention=null,
+		?\OCA\OpenRegister\Service\Edepot\TransferListRunInterface $transferRun=null,
 	): array {
 		return [
 			$request,
@@ -44,6 +48,8 @@ final class TransferControllerFactory {
 				jobList: $jobList,
 				logger: $logger,
 				transferListService: $transferListService,
+				retention: $retention,
+				transferRun: $transferRun,
 			),
 			$userSession,
 		];

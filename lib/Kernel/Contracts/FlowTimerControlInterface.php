@@ -21,7 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
- * Cancels the timers of a run or a subject and supersedes one timer with a new anchor. Implemented by FlowTimerService.
+ * Cancels the timers of a run or a subject, supersedes one timer with a new anchor, and moves a
+ * subject's timers onto a new record type's calendar. Implemented by FlowTimerService.
  */
 interface FlowTimerControlInterface {
 
@@ -62,4 +63,21 @@ interface FlowTimerControlInterface {
 	 * @throws \OCA\OpenRegister\Exception\FlowTimerStateException When the timer is not open.
 	 */
 	public function supersede(TimerAnchorMove $move, TimerChange $change): FlowTimerInterface;
+
+	/**
+	 * The subject moved to another record type: move every OPEN timer whose
+	 * calendar its record type named onto the calendar the new one names. An
+	 * armed timer is superseded with the change's reason and keeps its anchor;
+	 * a suspended one is pointed at the new calendar in place. Timers whose
+	 * calendar did not come from the record type are not touched.
+	 *
+	 * @param TimerSubjectRef $subject    The subject type and uuid.
+	 * @param string          $recordType The schema the subject now has.
+	 * @param TimerChange     $change     Why, the acting identity, and the clock.
+	 *
+	 * @return int How many timers changed calendar.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function recalendarForSubject(TimerSubjectRef $subject, string $recordType, TimerChange $change): int;
 }//end interface

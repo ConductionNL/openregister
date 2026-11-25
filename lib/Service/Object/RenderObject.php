@@ -41,10 +41,10 @@ use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
@@ -2096,13 +2096,14 @@ class RenderObject implements RenderObjectInterface {
 	 * @return array<int, array<string, mixed>> The readable records.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 * @spec openspec/changes/functional-areas-depend-in-one-direction/specs/backend-modularity/spec.md#requirement-areas-reference-only-lower-areas
 	 */
 	private function withoutRestrictedFiles(array $fileRecords): array {
 		if ($this->runtime->container === null || $fileRecords === []) {
 			return $fileRecords;
 		}
 
-		$verdicts = $this->runtime->container->get(FileRestrictionGuardInterface::class)->readable(
+		$verdicts = $this->runtime->container->get(FileReadRestrictionInterface::class)->readable(
 			fileIds: array_map(static fn (array $record): int => (int)($record['fileid'] ?? 0), $fileRecords)
 		);
 

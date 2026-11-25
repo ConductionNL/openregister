@@ -29,7 +29,13 @@
 
 - [ ] 3.1 A register or schema declares that reading it requires a verified second factor (D-3).
 - [ ] 3.2 A principal without one is refused, naming the requirement.
-- [ ] 3.3 An address allowlist on the administration surface and on the API, refusing blankly.
+- [x] 3.3 An address allowlist on the administration surface and on the API, refusing blankly.
+      `AddressAllowlist` (addresses and CIDR ranges, IPv4 and IPv6), one administered list per
+      surface in `HardeningPolicy` (`hardening_admin_addresses`, `hardening_api_addresses`;
+      empty is unbound), `AddressAllowlistMiddleware` answering a bare 403 through the Kernel
+      contract `Kernel\Contracts\AddressAllowlistsInterface`, written through `PUT /api/hardening/controls`
+      (`addressAllowlists`) with elevation, audit, and a refusal of a list that would lock out
+      the address the change comes from; reported under `observed.addressAllowlists`.
 
 ## 4. Content safety
 

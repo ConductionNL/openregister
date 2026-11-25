@@ -37,6 +37,7 @@ use OCA\OpenRegister\Files\Controller\Support\FileObjectRoute;
 use OCA\OpenRegister\Files\Controller\Support\FileTransfer;
 use OCA\OpenRegister\Files\Controller\Support\FilesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\FileAddedEvent;
 use OCA\OpenRegister\Event\FileCopiedEvent;
 use OCA\OpenRegister\Event\FileLockedEvent;
 use OCA\OpenRegister\Event\FileMovedEvent;
@@ -63,6 +64,7 @@ use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\PublishedDigestReader;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FetchedFile;
 use OCA\OpenRegister\Service\File\UrlFetchRefused;
@@ -73,6 +75,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -231,6 +234,13 @@ class FilesController extends Controller {
 	private readonly ?FileRestrictionGuard $fileRestrictions;
 
 	/**
+	 * The seal of a published file, for its verify endpoint.
+	 *
+	 * @var PublishedDigestReader|null
+	 */
+	private readonly ?PublishedDigestReader $publishedDigests;
+
+	/**
 	 * Fetches a file to create from a URL (files-create-from-url).
 	 *
 	 * @var ?UrlFileSource
@@ -268,6 +278,7 @@ class FilesController extends Controller {
 		$this->fileWriteGuard = $services->guards->fileWriteGuard;
 		$this->fileRestrictions = $services->guards->fileRestrictions;
 		$this->moveGuard = $services->guards->moveGuard;
+		$this->publishedDigests = $services->guards->publishedDigests;
 
 		// Store dependencies for use in controller methods.
 		$this->fileService = $services->store->fileService;
@@ -1304,9 +1315,41 @@ class FilesController extends Controller {
 				tags: $tags
 			)
 		);
+		$this->dispatchFileAdded(object: $object, file: $file);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end addPostedFile()
+
+	/**
+	 * Tell listeners a file was added to the object, after it is stored.
+	 *
+	 * A listener that throws does not fail the add: the file is already in the
+	 * object's folder, so a listener handles and logs its own failures.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param File         $file   The added file.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-file-added-event/specs/file-actions/spec.md#requirement-adding-a-file-to-an-object-dispatches-an-event-req-ofae-001
+	 */
+	private function dispatchFileAdded(ObjectEntity $object, File $file): void {
+		$event = new FileAddedEvent(
+			objectUuid: (string)$object->getUuid(),
+			fileId: (int)$file->getId(),
+			data: [
+				'fileName' => $file->getName(),
+				'register' => $object->getRegister(),
+				'schema'   => $object->getSchema(),
+			]
+		);
+
+		try {
+			$this->eventDispatcher->dispatchTyped($event);
+		} catch (\Throwable) {
+			// This controller has no logger; a listener logs its own failure, and the add stands.
+		}
+	}//end dispatchFileAdded()
 
 	/**
 	 * Fetch the bytes at a URL and add them as a file, with where they came from.
@@ -1336,6 +1379,7 @@ class FilesController extends Controller {
 			upload: new FileUpload(fileName: $fileName, content: $fetched->stream(), share: $share, tags: $tags)
 		);
 		$this->urlFileSource->remember(fileId: (int)$file->getId(), fetched: $fetched);
+		$this->dispatchFileAdded(object: $object, file: $file);
 		$this->fileAuditHandler?->logFileAction(object: $object, fileId: (int)$file->getId(), action: 'file.fetched', data: $fetched->metadata());
 
 		return new JSONResponse(data: $this->withProvenance(formatted: $this->fileService->formatFile($file), fetched: $fetched));
@@ -1821,10 +1865,13 @@ class FilesController extends Controller {
 			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
 		}
 
-		return $this->fileService->addFile(
+		$stored = $this->fileService->addFile(
 			target: new FileTarget(object: $object),
 			upload: new FileUpload(fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags'])
 		);
+		$this->dispatchFileAdded(object: $object, file: $stored);
+
+		return $stored;
 	}//end storeUpload()
 
 	/**
@@ -1996,6 +2043,68 @@ class FilesController extends Controller {
 			return $this->errorResponse(e: $e);
 		}
 	}//end downloadById()
+
+	/**
+	 * Whether a published file's bytes still match the digest sealed when it was published (REQ-PFD-002).
+	 *
+	 * Answers `{recorded, current, verdict: identical|changed, auditRow: {uuid, hash, previousHash}}`
+	 * to anyone who may read the file, by the same checks as a download by id:
+	 * an anonymous caller only for a published file, a signed-in caller by the
+	 * object's read rule and the file's restriction. A file that is not
+	 * published has no seal to verify and answers 404.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return JSONResponse The verdict, or the refusal.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	#[PublicPage]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function verifyDigest(int $fileId): JSONResponse {
+		if ($this->callerMayFetch(fileId: $fileId) === false) {
+			return new JSONResponse(
+				data: ['error' => $this->translate(text: 'File not available for anonymous access')],
+				statusCode: 403
+			);
+		}
+
+		try {
+			return $this->digestVerdict(fileId: $fileId);
+		} catch (FileActionRefusal | NotFoundException $e) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
+		} catch (Exception $e) {
+			return $this->errorResponse(e: $e);
+		}
+	}//end verifyDigest()
+
+	/**
+	 * The verdict for a file the caller may read, or 404 when it is not published.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return JSONResponse The verdict.
+	 *
+	 * @throws FileActionRefusal When there is no such file for this caller.
+	 * @throws Exception When the file cannot be read.
+	 */
+	private function digestVerdict(int $fileId): JSONResponse {
+		$file = $this->fileService->getFileById($fileId);
+		if ($file === null) {
+			throw new FileActionRefusal(message: 'File not found', code: 404);
+		}
+
+		$this->downloadableFileObject(file: $file);
+
+		$answer = $this->publishedDigests?->verify(file: $file);
+		if ($answer === null) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'This file is not published')], statusCode: 404);
+		}
+
+		return new JSONResponse(data: $answer);
+	}//end digestVerdict()
 
 	/**
 	 * Stream a file by id, once its object rule and restriction allow the caller.

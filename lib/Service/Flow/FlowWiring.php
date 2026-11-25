@@ -92,6 +92,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
@@ -188,6 +190,7 @@ final class FlowWiring {
 		CodeNodeInterface::class => CodeNode::class,
 		CodeRunnerClientInterface::class => CodeRunnerClient::class,
 		TagObjectNodeInterface::class => TagObjectNode::class,
+		SurveyInviteNodeInterface::class => SurveyInviteNode::class,
 		AuditTrailNodeInterface::class => AuditTrailNode::class,
 		ExtendInputNodeInterface::class => ExtendInputNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
@@ -456,6 +459,9 @@ final class FlowWiring {
 	 * @param ContainerInterface $container The container.
 	 *
 	 * @return TaskInboxService
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 *       (the blocker mapper answers the derived `blocked` flag of each row)
 	 */
 	private static function buildTaskInboxService(ContainerInterface $container): TaskInboxService {
 			return new TaskInboxService(
@@ -466,6 +472,10 @@ final class FlowWiring {
 				// Reads a located task's subject from its own table instead
 				// of searching every magic table for it.
 				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
+				// Answers which blockers are still open, for the derived
+				// `blocked` flag (a-task-may-wait-on-another-task 2.1).
+				// Without it every row read blocked: false.
+				blockers: $container->get(\OCA\OpenRegister\Db\TaskBlockerMapperInterface::class),
 				// The per-row `can` list (record-tasks-tab D-4), asked of the
 				// same authorization service every verb's endpoint asks.
 				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class),

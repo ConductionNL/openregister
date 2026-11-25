@@ -1422,10 +1422,16 @@ class ImportHandler {
 	 * and scoping to the register's list alone made every later import create
 	 * a twin (dossiq, 29 Sep: 17 slugs twice).
 	 *
+	 * A schema of the register renamed since answers to its former slug, after
+	 * the current slugs, so an app update that still ships the old slug updates
+	 * the renamed schema and creates nothing.
+	 *
 	 * @param ImportedSchemaLookup $lookup            The schema data and the importing application id.
 	 * @param array                $registerSchemaIds Pre-import schema ids of the target register(s).
 	 *
 	 * @return Schema|null The schema already in scope, or null (create a new one).
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md
 	 */
 	private function resolveSchemaWithinRegisterScope(ImportedSchemaLookup $lookup, array $registerSchemaIds): ?Schema {
 		$data = $lookup->data;
@@ -1433,6 +1439,13 @@ class ImportHandler {
 		$existingSchema = $this->schemaMapper->findBySlugInIds(slug: $data['slug'], schemaIds: $registerSchemaIds);
 		if ($existingSchema !== null) {
 			return $existingSchema;
+		}
+
+		// A schema renamed since the app last shipped it answers to its former
+		// slug, so the update finds it instead of creating the old one again.
+		$renamed = $this->schemaMapper->findByFormerSlugInIds(slug: (string)$data['slug'], schemaIds: $registerSchemaIds);
+		if ($renamed !== null) {
+			return $renamed;
 		}
 
 		$orphan = $this->findOwnUnlinkedSchema(slug: (string)$data['slug'], appId: $appId);

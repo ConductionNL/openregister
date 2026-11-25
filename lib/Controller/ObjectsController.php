@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\FormerSlugSignal;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
@@ -63,6 +64,7 @@ use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -368,6 +370,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @psalm-return   bool
 	 * @phpstan-return bool
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function isCurrentUserAdmin(): bool {
 		$user = $this->userSession->getUser();
@@ -375,8 +379,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return false;
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($user);
-		return in_array('admin', $userGroups);
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -1260,10 +1263,13 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$listing = $this->buildListingScope(urlPath: $urlPath, resolved: $resolved);
 
 		if ($this->isServedFromMagicTable(resolved: $resolved) === true) {
-			return $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService));
+			$response = $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService));
+		} else {
+			$response = $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService));
 		}
 
-		return $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService));
+		// A schema named by a slug it has since given up still answers, and says where to go.
+		return FormerSlugSignal::apply(response: $response, headers: $this->formerSlugHeaders);
 	}//end index()
 
 	/**
@@ -3019,7 +3025,10 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		$services = $this->showServices(objectService: $objectService);
 
-		return $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
+		return FormerSlugSignal::apply(
+			response: $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services)),
+			headers: $this->formerSlugHeaders
+		);
 	}//end show()
 
 	/**
@@ -3234,6 +3243,11 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 				return ($this->movedShow(show: $show, read: $read) ?? $this->absentObject(show: $show, read: $read));
 			}
 
+			$moved = $this->movedShowOfFound(show: $show, entity: $objectEntity, read: $read);
+			if ($moved !== null) {
+				return $moved;
+			}
+
 			return $this->renderedShow(shown: new ShownEntity(show: $show, entity: $objectEntity, extend: $read->extend), read: $read);
 		} catch (DoesNotExistException $exception) {
 			return ($this->movedShow(show: $show, read: $read) ?? new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404));
@@ -3333,6 +3347,41 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $this->withMovedTo(response: $response, movedTo: $to);
 	}//end movedShow()
+
+	/**
+	 * The object at its new address, when find() answered the old one with an object that lives elsewhere.
+	 *
+	 * The object find() answers resolves a uuid across every table, so the old address of a moved
+	 * object is not a miss: it comes back with the object from its new table.
+	 * Rendering that as if it lived here would answer the bookmark without
+	 * saying where the object went, and under the old address's scope. So an
+	 * object whose own register or schema is not the one asked for is checked
+	 * against the move record and, when it moved from here, read again through
+	 * show() at its new address, exactly as a miss would be. An object that
+	 * lives where it was asked for never reaches the lookup, so the read path
+	 * of every other object stays as it was.
+	 *
+	 * @param ObjectShow        $show   The object asked for and its resolved scope.
+	 * @param ObjectEntity      $entity The object find() answered.
+	 * @param ObjectReadOptions $read   The caller's scope.
+	 *
+	 * @return JSONResponse|null The object with `@self.movedTo`, or null when it lives here or did not move from here.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-the-old-address-keeps-answering
+	 */
+	private function movedShowOfFound(ObjectShow $show, ObjectEntity $entity, ObjectReadOptions $read): ?JSONResponse {
+		if ($this->followingMove === true) {
+			return null;
+		}
+
+		$livesHere = (string)$entity->getRegister() === (string)($show->resolved['register'] ?? '')
+			&& (string)$entity->getSchema() === (string)($show->resolved['schema'] ?? '');
+		if ($livesHere === true) {
+			return null;
+		}
+
+		return $this->movedShow(show: $show, read: $read);
+	}//end movedShowOfFound()
 
 	/**
 	 * Name the new address on a found object, so the caller can update what it holds.
@@ -5450,8 +5499,9 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * under the caller's own rights and reported per link
 	 * ({@see \OCA\OpenRegister\Service\Object\CopyObject}). The create and
 	 * the links share one transaction: a refused create leaves nothing behind.
-	 * Copying files is not offered yet and is refused with 422 rather than
-	 * silently left out.
+	 * With `files` the attached files are copied after that transaction
+	 * commits, each reported on its own. A link kind the copy does not know is
+	 * refused with 422 rather than silently left out.
 	 *
 	 * @param string                    $register      The register.
 	 * @param string                    $schema        The schema.

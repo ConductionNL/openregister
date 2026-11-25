@@ -17,6 +17,9 @@ use OCA\OpenRegister\Service\Flow\IFlowOversightCheck;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Workflow\MarkingStore\MethodMarkingStore;
 
+// FlowSubject and RecordingDispatcher live beside FlowEngineTest; load them so this file also runs on its own.
+require_once __DIR__ . '/FlowEngineTest.php';
+
 /**
  * The pre-hop oversight gate, at the engine level.
  *
