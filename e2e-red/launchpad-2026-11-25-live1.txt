@@ -74,7 +74,7 @@ tests/e2e/more-menu.spec.ts:253:5 › a dashboard picked under Dashboards opens,
 tests/e2e/navigation-editor-org-active-item.spec.ts:230:5 › the section holding the active child opens by itself
     OPEN Error: expect(locator).toHaveAttribute(expected) failed
 tests/e2e/navigation-editor-org-icon-name.spec.ts:63:5 › a bare icon name appears as inline text left of the label
-    OPEN Error: expect(locator).toHaveText(expected) failed
+    OPEN spec vs app: OrgNavigationItem draws the icon as a glyph (CnDashboardIcon); the scenario (retrofit text) wants the name as text. Product call, not a test fix.
 tests/e2e/navigation-editor-org-panel.spec.ts:488:6 › navigation-editor-org — mobile layout (REQ-ONAV-010) › choosing a link in the drawer navigates and closes the drawer
     FIXED #2006
 tests/e2e/or-absent.spec.ts:217:5 › without OpenRegister the app, its dashboards, widgets and admin settings work, and nothing complains in the log
@@ -104,7 +104,7 @@ tests/e2e/sharing-tab-embed-and-conversation.spec.ts:97:6 › Sharing tab: embed
 tests/e2e/template-hides-missing-register.spec.ts:101:5 › the ticket list is not shown and no error line appears
     PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/text-display-widget-markdown.spec.ts:350:6 › text widget — sanitising parsed markdown (REQ-TXMD-003) › a <script> is stripped and the markdown bold after it is parsed
-    OPEN Error: expect(locator).toHaveText(expected) failed
+    OPEN library: nextcloud-vue text widget markdown: marked treats a line starting with <script> as a raw HTML block, so **bold** after it is never parsed; strip script/style before marked.parse (nextcloud-vue fix).
 tests/e2e/text-display-widget.spec.ts:350:6 › text widget — cell layout (REQ-TXT-005) › long text scrolls inside the cell and both ends are reachable
     OPEN Error: the first line must be reachable at the top
 tests/e2e/tiles-rendering-defects.spec.ts:121:5 › in edit mode a settings button labelled "Edit tile" sits at the top-right of the tile
@@ -137,3 +137,10 @@ tests/e2e/widgets-style-and-render.spec.ts:117:6 › REQ-WDG-008 the style edito
     OPEN Error: expect(locator).toBeVisible() failed
 tests/e2e/work-packages-widget.spec.ts:124:5 › the widget lists the work packages as links with status and due date
     PASS on development at #2026 (13:40Z rerun, router on)
+
+tests/e2e/dashboard-deeplinking.spec.ts:254:6 › … › switching pushes one history entry, and back returns to the previous dashboard
+    OPEN (newly visible after #2005: it never ran before) after Back the address is /apps/launchpad instead of the first dashboard slug; see Views.handleHistoryPopState / replaceUrlFromInitialState
+tests/e2e/tiles-form-board-sync.spec.ts:210 and :263 (tile-form-board-sync task 9)
+    OPEN Edit tile fields not in board order (boxes 3/4 y differ by 303 px); Sort order control not found on the group tile
+tests/e2e/live-data-tile-widget.spec.ts:497
+    OPEN test types into "Refresh interval (seconds)"; the board form (#1905) offers Refresh as a choice list: rewrite the test to the drawn control
