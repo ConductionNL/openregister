@@ -71,7 +71,7 @@ class FileRestrictionGuardTest extends TestCase {
 	 *
 	 * @return FileRestrictionGuard
 	 */
-	private function guardFor(?string $uid, array $groups = []): FileRestrictionGuard {
+	private function guardFor(?string $uid, array $groups = [], ?bool $administrator = null): FileRestrictionGuard {
 		$session = $this->createMock(IUserSession::class);
 		$user = null;
 		if ($uid !== null) {
@@ -82,6 +82,8 @@ class FileRestrictionGuardTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
+		// Nextcloud's own administrator check; by default as it answers inside allowed_admin_ranges.
+		$groupManager->method('isAdmin')->willReturn($administrator ?? in_array('admin', $groups, true));
 
 		return new FileRestrictionGuard(
 			store: $this->store,
@@ -114,6 +116,15 @@ class FileRestrictionGuardTest extends TestCase {
 		$this->dispatcher->expects($this->never())->method('dispatchTyped');
 		$this->assertTrue($this->guardFor('root', ['admin'])->mayRead(self::RESTRICTED));
 	}//end testAnAdministratorIsAdmitted()
+
+	/**
+	 * An `admin` group member Nextcloud does not count as an administrator (outside allowed_admin_ranges) is refused.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
+	 */
+	public function testAnAdminGroupMemberOutsideTheAllowedRangeIsRefused(): void {
+		$this->assertFalse($this->guardFor('root', ['admin'], false)->mayRead(self::RESTRICTED));
+	}//end testAnAdminGroupMemberOutsideTheAllowedRangeIsRefused()
 
 	public function testAnAnonymousCallerIsRefused(): void {
 		$this->dispatcher->expects($this->never())->method('dispatchTyped');

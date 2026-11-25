@@ -201,10 +201,11 @@ class ObjectOwnershipServiceTest extends TestCase {
 	 *
 	 * @param string|null $uid The caller, or null for anonymous.
 	 * @param string[] $groups Their groups.
+	 * @param bool|null $administrator Nextcloud's admin verdict; null answers as inside allowed_admin_ranges.
 	 *
 	 * @return void
 	 */
-	private function signIn(?string $uid, array $groups = []): void {
+	private function signIn(?string $uid, array $groups = [], ?bool $administrator = null): void {
 		if ($uid === null) {
 			$this->userSession->method('getUser')->willReturn(null);
 			return;
@@ -214,6 +215,8 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$user->method('getUID')->willReturn($uid);
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('getUserGroupIds')->willReturn($groups);
+		// Nextcloud's own administrator check, as it answers inside allowed_admin_ranges.
+		$this->groupManager->method('isAdmin')->willReturn($administrator ?? in_array('admin', $groups, true));
 	}//end signIn()
 
 	/**
@@ -392,6 +395,22 @@ class ObjectOwnershipServiceTest extends TestCase {
 		$this->expectException(NotAuthorizedException::class);
 		$this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false));
 	}//end testOnlyAnAdministratorMayAssignToSomebodyElse()
+
+	/**
+	 * An `admin` group member Nextcloud does not count as an administrator (outside allowed_admin_ranges) may not give a record away.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
+	 */
+	public function testAnAdminGroupMemberOutsideTheAllowedRangeMayNotAssign(): void {
+		$this->signIn('root', ['admin'], false);
+
+		$this->ownerWriter->expects($this->never())->method('writeOwner');
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->service->assign(record: new OwnedRecord(register: new Register(), schema: new Schema(), object: $this->record('uuid-1', 'alice')), handover: new OwnershipHandover(newOwner: 'carol', cascade: false));
+	}//end testAnAdminGroupMemberOutsideTheAllowedRangeMayNotAssign()
 
 	/**
 	 * A trusted system operation (an example-set install under occ, with no

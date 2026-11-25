@@ -232,6 +232,8 @@ class GrantManageSpecialRightTest extends TestCase {
 		$user->method('getUID')->willReturn($uid);
 		$this->userSession->method('getUser')->willReturn($user);
 		$this->groupManager->method('getUserGroupIds')->willReturn($groups);
+		// Nextcloud's own administrator check, as it answers inside allowed_admin_ranges.
+		$this->groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 	}//end signIn()
 
 	/**

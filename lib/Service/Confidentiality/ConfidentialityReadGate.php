@@ -137,7 +137,7 @@ final class ConfidentialityReadGate {
 	 * @param array<string, mixed> $envelope The object as conditions read it (its data plus `@self`).
 	 * @param string|null          $userId   The caller, null when anonymous.
 	 * @param array<int, string>   $groups   The caller's groups.
-	 * @param string|null          $owner    The object's owner.
+	 * @param string|null          $owner         The object's owner.
 	 * @param bool|null            $administrator Nextcloud's administrator verdict for the caller, or null to read the groups.
 	 *
 	 * @return bool True when the read is refused.
@@ -145,7 +145,15 @@ final class ConfidentialityReadGate {
 	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
 	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
-	public function refuses(Schema $schema, string $action, array $envelope, ?string $userId, array $groups, ?string $owner, ?bool $administrator=null): bool {
+	public function refuses(
+		Schema $schema,
+		string $action,
+		array $envelope,
+		?string $userId,
+		array $groups,
+		?string $owner,
+		?bool $administrator=null
+	): bool {
 		if ($action !== self::READ) {
 			return false;
 		}

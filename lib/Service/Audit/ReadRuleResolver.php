@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Audit;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\ReadRuleMatch;
 use OCA\OpenRegister\Kernel\Contracts\ReadRuleResolverInterface;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -112,7 +113,11 @@ final class ReadRuleResolver implements ReadRuleResolverInterface {
 			authorization: $schema->getAuthorization(),
 			version: $schema->getVersion(),
 			object: $object,
-			caller: new ReadRuleCaller(userId: $uid, groups: $groups)
+			caller: new ReadRuleCaller(
+				userId: $uid,
+				groups: $groups,
+				administrator: AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user)
+			)
 		);
 	}//end resolve()
 
@@ -165,7 +170,7 @@ final class ReadRuleResolver implements ReadRuleResolverInterface {
 			return false;
 		}
 
-		return in_array('admin', $caller->groups, true) === true || $object->getOwner() === $caller->userId;
+		return $caller->isAdministrator() === true || $object->getOwner() === $caller->userId;
 	}//end bypassesRules()
 
 	/**

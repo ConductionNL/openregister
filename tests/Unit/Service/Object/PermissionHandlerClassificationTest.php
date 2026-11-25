@@ -146,6 +146,8 @@ class PermissionHandlerClassificationTest extends TestCase {
 
 		$groupManager = $this->createMock(originalClassName: IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
+		// Nextcloud's own administrator check, as it answers inside allowed_admin_ranges.
+		$groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 
 		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturn(false);
