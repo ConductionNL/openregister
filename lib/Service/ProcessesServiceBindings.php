@@ -495,5 +495,6 @@ final class ProcessesServiceBindings {
 		UnlockObjectNodeInterface::class                 => UnlockObjectNode::class,
 		AutoTransitionPassInterface::class               => AutoTransitionPass::class,
 		FlowRunContextInterface::class                   => FlowRunContext::class,
+		\OCA\OpenRegister\Kernel\Contracts\FileExtractionQueueInterface::class => \OCA\OpenRegister\BackgroundJob\FileExtractionQueue::class,
 	];
 }//end class

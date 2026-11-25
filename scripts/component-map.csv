@@ -4927,3 +4927,5 @@ Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
 Service/Operations/IndexReconciliationProbes.php,,Service,,,,,Configuration
 Service/Operations/IndexReconciliationReport.php,,Service,,,,,Configuration
 BackgroundJob/IndexReconciliationJob.php,,BackgroundJob,,,,,Configuration
+Kernel/Contracts/FileExtractionQueueInterface.php,,Kernel,,,,,Kernel
+BackgroundJob/FileExtractionQueue.php,,BackgroundJob,,,,,Processes

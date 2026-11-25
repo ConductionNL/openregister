@@ -1259,7 +1259,7 @@ components:
       - ".*/lib/AppHost/Scheduling/ScheduleFlowStore[.]php"
       - ".*/lib/AppHost/Scheduling/ScheduleFlowStoreInterface[.]php"
       - ".*/lib/AppHost/Scheduling/ScheduleFlowSync[.]php"
-      - ".*/lib/BackgroundJob/(AnnotationNotificationDispatchJob|AutoTransitionJob|AutomationRecordRetentionJob|BulkJobRunner|CalendarRecomputeJobInterface|CasePlanTimerRearmJob|FileTextExtractionJob|FlowRunRecoveryServices|FlowRunRetentionJob|FlowRunWorker|FlowRunWorkerServices|FlowScheduleWorker|FlowTimerWorker|FormUploadPurgeJob|ObjectTextExtractionJob|ProcessesJobHandlesInterface|RecomputeTimersForCalendarJob|RecomputeTimersForCalendarJobServices|RuleRunRetentionJob|SourceRecordRecomputeJob|TaskSubstitutionJob|TemporalCalculationSweepJob|TranslationProjectionJob)[.]php"
+      - ".*/lib/BackgroundJob/(AnnotationNotificationDispatchJob|AutoTransitionJob|AutomationRecordRetentionJob|BulkJobRunner|CalendarRecomputeJobInterface|CasePlanTimerRearmJob|FileExtractionQueue|FileTextExtractionJob|FlowRunRecoveryServices|FlowRunRetentionJob|FlowRunWorker|FlowRunWorkerServices|FlowScheduleWorker|FlowTimerWorker|FormUploadPurgeJob|ObjectTextExtractionJob|ProcessesJobHandlesInterface|RecomputeTimersForCalendarJob|RecomputeTimersForCalendarJobServices|RuleRunRetentionJob|SourceRecordRecomputeJob|TaskSubstitutionJob|TemporalCalculationSweepJob|TranslationProjectionJob)[.]php"
       - ".*/lib/BackgroundJob/Support/AbandonedFlowClaim[.]php"
       - ".*/lib/BackgroundJob/Support/AutoTransitionServices[.]php"
       - ".*/lib/BackgroundJob/Support/BulkJobServices[.]php"

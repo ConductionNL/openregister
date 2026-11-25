@@ -24,9 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Operations;
 
-use OCA\OpenRegister\BackgroundJob\ProcessesJobHandlesInterface;
 use OCA\OpenRegister\Exception\RepairRefusedException;
-use OCP\BackgroundJob\IJobList;
+use OCA\OpenRegister\Kernel\Contracts\FileExtractionQueueInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -59,10 +58,10 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection            $db       The connection the repair writes through.
-	 * @param ConsistencyCheckService  $check    The read that says what is wrong.
-	 * @param JobRunRecorder           $recorder Where the act is recorded.
-	 * @param IJobList|null            $jobs     Where an index repair queues its extractions.
+	 * @param IDBConnection                     $db          The connection the repair writes through.
+	 * @param ConsistencyCheckService           $check       The read that says what is wrong.
+	 * @param JobRunRecorder                    $recorder    Where the act is recorded.
+	 * @param FileExtractionQueueInterface|null $extractions Where an index repair queues its extractions.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
@@ -70,7 +69,7 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 		private readonly IDBConnection $db,
 		private readonly ConsistencyCheckService $check,
 		private readonly JobRunRecorder $recorder,
-		private readonly ?IJobList $jobs = null,
+		private readonly ?FileExtractionQueueInterface $extractions = null,
 	) {
 	}//end __construct()
 
@@ -314,20 +313,20 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 	 *
 	 * @return int How many extractions were queued.
 	 *
-	 * @throws RepairRefusedException When no job list is wired.
+	 * @throws RepairRefusedException When no extraction queue is wired.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	private function queueFileExtractions(array $fileIds): int {
-		if ($this->jobs === null) {
+		if ($this->extractions === null) {
 			throw new RepairRefusedException(
-				message: 'This repair queues extractions, and no job list is available to queue them on.',
-				reason: 'no-job-list'
+				message: 'This repair queues extractions, and no extraction queue is available to queue them on.',
+				reason: 'no-extraction-queue'
 			);
 		}
 
 		foreach ($fileIds as $fileId) {
-			$this->jobs->add(ProcessesJobHandlesInterface::FILE_TEXT_EXTRACTION, ['file_id' => $fileId]);
+			$this->extractions->queueFileExtraction(fileId: $fileId);
 		}
 
 		return count($fileIds);
