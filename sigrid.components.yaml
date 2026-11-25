@@ -127,6 +127,7 @@ components:
       - ".*/lib/Controller/Support/DestructionListApproval[.]php"
       - ".*/lib/Controller/Support/DsarCasePlatform[.]php"
       - ".*/lib/Controller/Support/EmptyValueStripper[.]php"
+      - ".*/lib/Controller/Support/FormerSlugSignal[.]php"
       - ".*/lib/Controller/Support/GdprRegisterAccess[.]php"
       - ".*/lib/Controller/Support/GdprRegisterReplies[.]php"
       - ".*/lib/Controller/Support/GdprRequestParams[.]php"

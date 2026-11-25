@@ -330,6 +330,7 @@ Controller/ObjectShareLinkController.php,137,Controller,Integrations,Integration
 Controller/ObjectSharingController.php,205,Controller,Access,Access/Controller/ObjectSharingController.php,0,,Core
 Controller/ObjectStateController.php,121,Controller,Service,Service/Controller/ObjectStateController.php,0,,Core
 Controller/ObjectExportController.php,,Controller,,,,,Configuration
+Controller/Support/FormerSlugSignal.php,,Controller,,,,,Core
 Controller/ObjectsController.php,3385,Controller,Service,Service/Controller/ObjectsController.php,0,,Core
 Controller/OpenProjectLinksController.php,111,Controller,Integrations,Integrations/Controller/OpenProjectLinksController.php,0,,Integrations
 Controller/Support/OpenProjectLinksControllerServices.php,,Controller,,,,,Integrations
