@@ -24,8 +24,14 @@
 - [x] 3.4 `SharePrincipalDeriver::apply()` recomputes them on every write and DISCARDS any client-supplied value. 17 unit tests, including that clearing the share list clears the principals, and that the output serialises as a JSON ARRAY — a gappy integer key would encode as an object, which jsonb containment does not match, so the share would fail on the list path only
 - [x] 3.5 Applied and VERIFIED against the live database: `brokeredcredential` 7 -> 10 properties, `flow` 10 -> 14. No `force` flag was needed — the version bump is what opens the gate — but the bump had to clear the version in the DATABASE, not the one in the file (design D12)
 - [x] 3.6 Per-entry validation in `SharePrincipalDeriver::validEntries()`, failing closed per entry so one malformed entry is dropped without invalidating its siblings
-- [ ] 3.7 Backfill/repair step for the derived lists, so an object written before this change (or through a direct API write that bypasses the deriver) cannot sit with a stale one
-- [ ] 3.8 Wire `SharePrincipalDeriver::apply()` into the object write path so it cannot be bypassed — it exists and is tested, but nothing calls it yet (lands with the share APIs in groups 5 and 6)
+- [x] 3.7 Backfill/repair step for the derived lists, so an object written before this change (or through a direct API write that bypasses the deriver) cannot sit with a stale one
+      Done: `Repair/RepairSharedPrincipalLists` (post-migration, after the credential
+      register import) walks every brokered credential in pages of 200 as the system
+      and rewrites only those whose `sharedUsers`/`sharedGroups` differ from what
+      `sharedWith` derives (`Service/Sharing/SharePrincipalRepair`). Flows are not
+      walked yet: flow sharing (group 6) is not enabled, so no flow path derives them.
+- [x] 3.8 Wire `SharePrincipalDeriver::apply()` into the object write path so it cannot be bypassed — it exists and is tested, but nothing calls it yet (lands with the share APIs in groups 5 and 6)
+      > Wired at the table (2026-11-14): `MagicSharePrincipals` recomputes `sharedUsers` / `sharedGroups` in `MagicMapper::prepareObjectDataForTable()` (single writes) and `bulkUpsert()` (bulk, import), before encryption, for every schema declaring all three properties; other schemas pass through untouched. Fails closed: no resolvable deriver refuses the write. The flow share APIs (group 6) still need this only for their own response shape. Unit: `MagicSharePrincipalsTest` (10).
 
 ## 4. Credential sharing (broker guard chain)
 
