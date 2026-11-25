@@ -98,6 +98,11 @@
 							<ContentSaveOutline :size="20" />
 						</template>
 					</NcTextField>
+					<CnViewPresentationPicker
+						:schema="objectStore.searchSchema || null"
+						:value="viewPresentation"
+						:errors="viewPresentationErrors"
+						@input="onViewPresentationInput" />
 					<div class="saveViewFormActions">
 						<NcButton
 							variant="primary"
@@ -483,7 +488,7 @@
 </template>
 
 <script>
-import { CnIndexSidebar } from '@conduction/nextcloud-vue'
+import { CnIndexSidebar, CnViewPresentationPicker } from '@conduction/nextcloud-vue'
 import { getCurrentUser } from '@nextcloud/auth'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -509,6 +514,7 @@ import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline
 import SelectOption from '../../components/shared/SelectOption.vue'
 import DeleteView from '../../modals/view/DeleteView.vue'
 import EditView from '../../modals/view/EditView.vue'
+import { presentationErrorsFrom, saveFailureMessage } from '../../modals/view/presentationErrors.js'
 import { freshState } from '../../services/initialState.js'
 import {
 	navigationStore,
@@ -550,6 +556,8 @@ const INITIAL_STATE = {
 	viewDescription: '',
 	viewIsPublic: false,
 	viewIsDefault: false,
+	viewPresentation: { viewType: 'table' }, // How the new view shows its objects
+	viewPresentationErrors: {}, // A save refusal, under the picker field it names
 	activeViewName: '', // Editable name for the active view
 	// Edit view dialog
 	showEditDialog: false,
@@ -704,6 +712,7 @@ export default {
 	name: 'SearchSideBar',
 	components: {
 		CnIndexSidebar,
+		CnViewPresentationPicker,
 		NcAppSidebarTab,
 		NcSelect,
 		NcNoteCard,
@@ -1837,6 +1846,7 @@ export default {
 					isPublic: this.viewIsPublic,
 					isDefault: this.viewIsDefault,
 					configuration: this.viewConfiguration(),
+					presentation: this.viewPresentation,
 				}
 
 				const newView = await viewsStore.createView(viewData)
@@ -1854,6 +1864,7 @@ export default {
 				this.viewDescription = ''
 				this.viewIsPublic = false
 				this.viewIsDefault = false
+				this.resetViewPresentation()
 				this.showSaveForm = false
 
 				// Show success message
@@ -1862,6 +1873,8 @@ export default {
 				)
 			} catch (error) {
 				console.error('Error saving view:', error)
+				// A refused presentation stays in the form, under the field it names.
+				this.viewPresentationErrors = presentationErrorsFrom(saveFailureMessage(error))
 				OC.Notification.showTemporary(
 					this.t('openregister', 'Failed to save view: {error}', {
 						error: error.message,
@@ -1881,7 +1894,31 @@ export default {
 			this.viewName = ''
 			this.viewNameTouched = false
 			this.viewDescription = ''
+			this.resetViewPresentation()
 			this.showSaveForm = false
+		},
+
+		/**
+		 * Record the presentation chosen for the new view and clear a refusal shown on it.
+		 *
+		 * @param {object} presentation The presentation the picker emits.
+		 * @return {void}
+		 * @spec openspec/changes/saved-view-presentation-picker/tasks.md#2.2
+		 */
+		onViewPresentationInput(presentation) {
+			this.viewPresentation = presentation
+			this.viewPresentationErrors = {}
+		},
+
+		/**
+		 * Put the save form's presentation back to a table, with no refusal.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/saved-view-presentation-picker/tasks.md#2.2
+		 */
+		resetViewPresentation() {
+			this.viewPresentation = { viewType: 'table' }
+			this.viewPresentationErrors = {}
 		},
 
 		/**

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCP\IUserManager;
 use OCA\OpenRegister\Db\MagicMapper\MagicMapperIdentity;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -47,6 +48,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\TenancyCollaborators
  */
 class MagicOrganizationHandlerContextScopeTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * A handler whose caller is an admin (or nobody) with the given active organisations.
@@ -63,6 +66,8 @@ class MagicOrganizationHandlerContextScopeTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 
 		$groups = $this->createMock(IGroupManager::class);
+
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturn(['admin']);
 
 		$appConfig = $this->createMock(IAppConfig::class);

@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -53,6 +54,8 @@ use Psr\Log\LoggerInterface;
  * Locks the draft rule of PermissionHandler::hasPermission().
  */
 class PermissionHandlerDraftRuleTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * Build a handler for a caller.
@@ -75,6 +78,7 @@ class PermissionHandlerDraftRuleTest extends TestCase {
 		$userManager = $this->createMock(IUserManager::class);
 		$userManager->method('get')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('not available'));
