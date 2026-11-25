@@ -841,7 +841,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end clearFindCache()
 
 	/**
-	 * Drop the raw `$ref` loads and the register-scoped lookups of this request.
+	 * Drop the raw `$ref` loads, the register-scoped lookups and the full list of this request.
 	 *
 	 * @return void
 	 *
@@ -850,6 +850,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	private function forgetRequestLoads(): void {
 		$this->refCache    = [];
 		$this->scopedCache = [];
+		$this->findCache->forgetAll();
 	}//end forgetRequestLoads()
 
 	/**
@@ -1128,6 +1129,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @psalm-return                                  list<\OCA\OpenRegister\Db\Schema>
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
 	 */
 	public function findAll(
 		int|null $limit = null,
@@ -1139,6 +1142,15 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
+		// Every row, unfiltered, is read once per request: the save path asks it per object.
+		$everyRow = self::asksEveryRow(limit: $limit, offset: $offset, filters: $filters, searchConditions: $searchConditions);
+		if ($everyRow === true) {
+			$remembered = $this->findCache->all(multitenancy: $_multitenancy);
+			if ($remembered !== null) {
+				return $remembered;
+			}
+		}
+
 		$this->readTrace()->record(method: 'findAll');
 		$qb = $this->listedQuery(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? [])));
 		if (empty($searchConditions) === false) {
@@ -1148,8 +1160,29 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
 
-		return $this->findEntities(query: $qb);
+		$schemas = $this->findEntities(query: $qb);
+		if ($everyRow === true) {
+			$this->findCache->rememberAll(multitenancy: $_multitenancy, entities: $schemas);
+		}
+
+		return $schemas;
 	}//end findAll()
+
+	/**
+	 * Whether a list read asks for every row: no limit, offset, filter or search condition.
+	 *
+	 * @param int|null   $limit            The limit.
+	 * @param int|null   $offset           The offset.
+	 * @param array|null $filters          The column filters.
+	 * @param array|null $searchConditions The search conditions.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
+	 */
+	private static function asksEveryRow(?int $limit, ?int $offset, ?array $filters, ?array $searchConditions): bool {
+		return $limit === null && ($offset ?? 0) === 0 && empty($filters) === true && empty($searchConditions) === true;
+	}//end asksEveryRow()
 
 	/**
 	 * The schema list query for one page of column-filtered rows.
