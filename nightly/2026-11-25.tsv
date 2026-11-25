@@ -9,3 +9,4 @@ buildiq	01d41a3c	php=RED	Tests: 4265, Failures: 0, Errors: 0	phpmd,psalm,gates	j
 dossiq	0830cd672	php=RED	not run	composer-install	js=RED	vendor incomplete (same 3 GitHub zipballs 403); eslint 2 err; vitest 13/7409 fail in 12 files e.g. capabilityComparison
 learniq	df08493c	php=RED	Tests 7615/Failures 4/Errors 0	phpcs,phpmd,psalm,phpunit	js=n/a	phpunit: StubSignatureParity, HigherEducationExampleSet, PortalManifestGolden, OpenApiDocument; phpmd 186; psalm PHP<8.3.16
 planninq	41ef612d	php=RED	Tests 1340/Failures 0/Errors 0	psalm	js=GREEN	only psalm fails: needs PHP>=8.3.16 (env 8.3.6); phpcs/phpmd/phpstan clean; vitest 3638 passed
+hermiq	c534923a	php=RED	Tests: 6791, Failures: 0, Errors: 3	phpcs,phpmd,psalm,phpstan,phpunit	js=RED	ToolAccessRequestPropertyRulesTest: OR FieldRulesSourceInterface unresolvable; phpstan 4; eslint unpruned suppressions
