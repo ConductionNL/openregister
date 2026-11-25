@@ -11996,8 +11996,8 @@
       "type": "library",
       "name": "parser",
       "group": "@typescript-eslint",
-      "version": "8.71.2",
-      "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.71.2",
+      "version": "8.74.0",
+      "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.74.0",
       "licenses": [
         {
           "license": {
@@ -12005,15 +12005,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40typescript-eslint/parser@8.71.2",
+      "purl": "pkg:npm/%40typescript-eslint/parser@8.74.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.71.2.tgz",
+          "url": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.74.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "693b66663a7fc7782c187903b34e3fd48f24368801264a5069e19a3743df886e373730c4996da7f8e3f98a6f707ecbf25f4c8fd5465606b006b4305f1fd8c457"
+              "content": "79cafc01876283b6af564c5a1dd42fc479c827f98eca588ee06bffb9617cabaf6f05ec3fcf7b1ec6a0701d4657e55aa5f8db34c38b07ea004b9080866cebc990"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12034,8 +12034,8 @@
           "type": "library",
           "name": "scope-manager",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/scope-manager@8.71.2",
+          "version": "8.74.0",
+          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.74.0|@typescript-eslint/scope-manager@8.74.0",
           "licenses": [
             {
               "license": {
@@ -12043,15 +12043,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/scope-manager@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/scope-manager@8.74.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-8.74.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "605e30820e62517e4e6f2c2869cdbb079e85868ccc34585d2526e1d751f9181030981b5fc9186681342a5bdb5134d9870efb19d825fa506ce8cfe61f627d8b7a"
+                  "content": "92939da6ee02a56379537f28c777fbdbb0f059106d500561c9426da930587b981fdb0628c5a73b3e028fd78b71af137b20256d72394b7738ea7d18294a70cabd"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12072,8 +12072,8 @@
           "type": "library",
           "name": "types",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/types@8.71.2",
+          "version": "8.74.0",
+          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.74.0|@typescript-eslint/types@8.74.0",
           "licenses": [
             {
               "license": {
@@ -12081,15 +12081,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/types@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/types@8.74.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/types/-/types-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/types/-/types-8.74.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "cb9524977a15a7b7bf546c6a228117a1e6ff4688fbd4f009e161bf37f4468fe79e0ef2912ccd79906afd3228cb6cdd22d374b9db3c6edf567df04e605828492b"
+                  "content": "3299ccac90953693f58952fc3621e4419810a883011f97b00c650f061d69a905f016d3058ec975334dd07183d79afeacb42284885d0f37b0866d4d596d717310"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12110,8 +12110,8 @@
           "type": "library",
           "name": "typescript-estree",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/typescript-estree@8.71.2",
+          "version": "8.74.0",
+          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.74.0|@typescript-eslint/typescript-estree@8.74.0",
           "licenses": [
             {
               "license": {
@@ -12119,15 +12119,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/typescript-estree@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/typescript-estree@8.74.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.74.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "0e034e12c978a5d633c122fe37f0a5df7b57d47970dc5bc877bdcb9ca5dfabb8e7ac5daf88e127ed7f8fed1064912582566f7682759ddbc1880b9bc9b8b44478"
+                  "content": "c0bdf8f24ea5f760cd1be90f3f9ad5a4ac0d068cfb6b7c51672dd33ca735bb2990b6d77bbbb81c32fdde10d99cba1e028c2e263b71533340d8b2d1573320cbbb"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12148,8 +12148,8 @@
           "type": "library",
           "name": "visitor-keys",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/visitor-keys@8.71.2",
+          "version": "8.74.0",
+          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.74.0|@typescript-eslint/visitor-keys@8.74.0",
           "licenses": [
             {
               "license": {
@@ -12157,15 +12157,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/visitor-keys@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/visitor-keys@8.74.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-8.74.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "ce8ce5374500df66d21b6ce4280810c916126c4212568c94eafbe4298a366929f2ef80fc261e1ef8f3a427a2e4d1d95ecd98b9c7b4ed0fef3c5dbd3a201f2786"
+                  "content": "5d26663ad3146d608120cfb604ad77e05c8c1719a5975996da63cb93f3d2c18418cc620f320240a8bf76f54e2a5d58b32efed7ab96fbaf8d7fa3b3a66eec24d2"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12186,8 +12186,8 @@
           "type": "library",
           "name": "project-service",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/project-service@8.71.2",
+          "version": "8.74.0",
+          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.74.0|@typescript-eslint/project-service@8.74.0",
           "licenses": [
             {
               "license": {
@@ -12195,15 +12195,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/project-service@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/project-service@8.74.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/project-service/-/project-service-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/project-service/-/project-service-8.74.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "3ddebc1ac2d587965795c11c7053dd8523afb4767fd965345ec03cce65ce4b7175e7c95595c4cb85f43aaafb4bd51cdb3227b42a9f31b5b570020e277a328f1f"
+                  "content": "cff9b29ae13e26511e48522fdcca3bd04be01b5673ef81e5d080df1317d7bad01100ff37e1bb7e329a530fb9950309993b419dc5d3808b48db4da9bbe3d787ea"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12224,8 +12224,8 @@
           "type": "library",
           "name": "tsconfig-utils",
           "group": "@typescript-eslint",
-          "version": "8.71.2",
-          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.71.2|@typescript-eslint/tsconfig-utils@8.71.2",
+          "version": "8.74.0",
+          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.74.0|@typescript-eslint/tsconfig-utils@8.74.0",
           "licenses": [
             {
               "license": {
@@ -12233,15 +12233,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/tsconfig-utils@8.71.2",
+          "purl": "pkg:npm/%40typescript-eslint/tsconfig-utils@8.74.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/tsconfig-utils/-/tsconfig-utils-8.71.2.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/tsconfig-utils/-/tsconfig-utils-8.74.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "8f3e3d4c05a8926ffbc960fdfe8f37ee761ac7d0f200bc483ce2267489af573a3a71a9c10996338a7f33272a8d4799358fd2b50c4d1b56faf45d807ef7db8076"
+                  "content": "a74ef002e692e818c26203925ca262e1886f4e701fedf886dfb7bd4c77299d869012dd908934d86562b05053607918b2c2232e75ace1ce075d022ad9d06807b5"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12261,8 +12261,8 @@
         {
           "type": "library",
           "name": "semver",
-          "version": "7.8.5",
-          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.71.2|semver@7.8.5",
+          "version": "7.8.6",
+          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.74.0|semver@7.8.6",
           "licenses": [
             {
               "license": {
@@ -12270,15 +12270,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/semver@7.8.5",
+          "purl": "pkg:npm/semver@7.8.6",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz",
+              "url": "https://registry.npmjs.org/semver/-/semver-7.8.6.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "63bfca0ec6fc2e3a28669c1aa86cae94ee8342592c8029dc7211c693eb19218e1206f52870c044147e54af57c8e1d57e26f974c3a723bee71a222e34a6e462a0"
+                  "content": "f65a52494e0c972de6aedaeec0bb3578b2bafa0cdbcea78117044d8c88c4fbd2ee0e959d61cb6b4254377a3d489608bb8249e9b134673e82cff03a421ea1c827"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -12299,7 +12299,7 @@
           "type": "library",
           "name": "eslint-visitor-keys",
           "version": "5.0.1",
-          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.71.2|eslint-visitor-keys@5.0.1",
+          "bom-ref": "openregister@1.0.0|@typescript-eslint/parser@8.74.0|eslint-visitor-keys@5.0.1",
           "licenses": [
             {
               "license": {
@@ -21618,6 +21618,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/js-tokens"
