@@ -4901,6 +4901,10 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Command/ApiConformanceCommand.php,130,Command,Service,Service/Command/ApiConformanceCommand.php,0,,Core
+Service/Oas/NlGovConformanceReport.php,200,Service,Service,Service/Oas/NlGovConformanceReport.php,0,,Core
+Service/Oas/NlGovConformanceService.php,110,Service,Service,Service/Oas/NlGovConformanceService.php,0,,Core
+Service/Oas/NlGovResponseProbe.php,380,Service,Service,Service/Oas/NlGovResponseProbe.php,0,,Core
 Service/Resolver/Exception/ResolverConfigException.php,,Service,,,,,Kernel
 Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
