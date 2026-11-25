@@ -42,6 +42,11 @@
 - [x] 6.1 `composer check:strict` components green on changed files (phpcs/phpstan/phpmd clean; psalm per-file artifact + full-run results recorded in the change report).
 - [x] 6.2 Full unit suite in php:8.3 container: 14432 tests — 15 red, ALL pre-existing (base commit 40378fa37 has 29 red incl. the 14 fixed here; every remaining failure also fails on the pristine base export).
 - [x] 6.3 Live end-to-end re-verification of the bulk endpoint against a deployed instance (deferred: shared dev instance must not receive this branch's code until it merges; the pre-change live probe that proved the broken behaviour is documented in proposal.md). (live pass, decision 139)
+  - Run 2026-11-25 on main (the change is merged) against a sandbox Nextcloud 34.0.6 on MariaDB (`php -S`), `POST /api/bulk/{register}/{schema}/save` as the administrator on a fresh register and schema:
+    - create of 2 objects: `saved_count: 2`, `saved` bucket 2, statistics `saved: 2`; two `create` audit rows, `old: null` and the new values (the pre-change probe got `saved_count: 0`, empty buckets and no audit rows)
+    - re-save of the same 2 ids, one with new values and one byte-identical: `updated` bucket 2; two `update` audit rows, and the changed one records the real diff (`title` `one` -> `one changed`, `n` 1 -> 10), not old equal to new
+    - events: the bulk endpoint always saves with `events: false` (the spec's "events disabled still writes audits"), so a create there adds no activity row while a single `POST /api/objects` adds one; the event dispatch itself stays covered by `SaveObjectsBulkSideEffectsTest`
+    - observed, not changed here: the identical row is classified `updated`, not `unchanged`, because `MagicUpsertChunkRun::classifyExisting()` reads "unchanged" from an `_updated` older than the operation start and the upsert rewrites `_updated`; the spec's unchanged scenario holds for rows the mapper does classify `unchanged`
   > 2026-11-25, live on a sandbox Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e, this change merged): the proposal's
   > probe repeated. A 2-object `POST /api/bulk/{register}/{schema}/save` answers `saved_count: 2` with `saved: 2`
   > in the buckets (was 0 and empty), and each object has one `create` audit row. A second bulk save of the same two,
