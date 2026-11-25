@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Contract\FileTextReaderInterface;
 use OCA\OpenRegister\Contract\ObjectFileReaderInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\DbRegistrar;
@@ -27,6 +28,7 @@ use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Files\Service\TextExtraction\FileTextReader;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\ObjectFileReader;
 use OCA\OpenRegister\Service\Object\CacheHandler;
@@ -113,6 +115,14 @@ final class ServiceRegistrar {
 			ObjectFileReaderInterface::class,
 			function ($c) {
 				return $c->get(ObjectFileReader::class);
+			}
+		);
+
+		// The published text read of one file, for consuming apps (nothing stored).
+		$context->registerService(
+			FileTextReaderInterface::class,
+			function ($c) {
+				return $c->get(FileTextReader::class);
 			}
 		);
 	}//end registerRequestScoped()
