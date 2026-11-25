@@ -2127,6 +2127,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		// Rapportage on-demand render endpoints (Phase 2).
 		// rapportage-bi-export: render a report template over a period. Literal, so before reports/{id}/render.
 		['name' => 'reportTemplate#generate', 'url' => '/api/reports/generate', 'verb' => 'POST'],
+		// rapportage-bi-export: the audit report of a register, an actor and a period, administrators only.
+		['name' => 'auditReport#audit', 'url' => '/api/reports/audit', 'verb' => 'GET'],
 		['name' => 'reports#render',  'url' => '/api/reports/{id}/render',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'reports#preview', 'url' => '/api/reports/{id}/preview', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
 		['name' => 'ui#templates', 'url' => '/templates', 'verb' => 'GET'],

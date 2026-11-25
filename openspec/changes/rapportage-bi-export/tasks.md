@@ -63,7 +63,18 @@
       5-minute default TTL (the cache keeps the 60 s the aggregations-backend-native spec set; changing it is a
       decision for that spec) and caching template report files, which waits on report templates.
 - [ ] Implement: The system MUST support WOO transparency reporting
-- [ ] Implement: The system MUST support audit report generation
+- [x] Implement: The system MUST support audit report generation
+      DONE: `GET /api/reports/audit` (`AuditReportController`, administrators only through `AdministratorOnlyGate`:
+      401 without a user, 403 for anyone else, before anything is read) takes `register` (slug or id; unknown is a
+      404), `userId`, `from`, `to` (a date-only `to` covers the whole day; a bad date is a 400) and `format` (xlsx by
+      default, ods, csv; anything else is a 400). `AuditReport` reads the trail through the audit page query's
+      `collect()` (the audit page's own filters and period, up to 50,000 entries, and says when it was cut) and lists
+      one row per entry, newest first: timestamp, action, object UUID, object name, user ID, IP address and the names
+      of the changed fields (never their values). The summary (total, entries per action, the ten most active
+      objects) is counted from the same rows, so it always agrees with the list and honours the user filter, which
+      `DashboardService`'s statistics do not take. `AuditReportFile` writes an "Audit trail" and a "Summary" sheet
+      (CSV carries the entries only), and keeps a value that starts like a formula as text. Pinned in
+      `AuditReportTest`, `AuditReportFileTest` and `AuditReportControllerTest`.
 - [ ] Implement: The system MUST enforce multi-tenant reporting isolation
 - [ ] Implement: The system MUST provide an OData v4 endpoint for external BI tool integration
 - [ ] Implement: The system MUST support API access for external BI tools beyond OData

@@ -234,6 +234,7 @@ Controller/ArchivalHeldBackController.php,,Controller,,,,,Compliance
 Controller/ArchivalOverviewController.php,,Controller,,,,,Compliance
 Controller/AuditQueryController.php,109,Controller,Compliance,Compliance/Controller/AuditQueryController.php,0,,Compliance
 Controller/AuditSinkController.php,70,Controller,Compliance,Compliance/Controller/AuditSinkController.php,0,,Compliance
+Controller/AuditReportController.php,,Controller,,,,,Compliance
 Controller/AuditTrailController.php,557,Controller,Compliance,Compliance/Controller/AuditTrailController.php,0,,Compliance
 Controller/BagAddressController.php,55,Controller,Integrations,Integrations/Controller/BagAddressController.php,0,,Integrations
 Controller/BookmarkLinksController.php,138,Controller,Integrations,Integrations/Controller/BookmarkLinksController.php,0,,Integrations
@@ -1937,6 +1938,8 @@ Service/Audit/AuditAggregationService.php,61,Service,Compliance,Compliance/Servi
 Service/Audit/AuditSink.php,152,Service,Compliance,Compliance/Service/Audit/AuditSink.php,0,,Compliance
 Service/Audit/AuditSinkStatus.php,74,Service,Compliance,Compliance/Service/Audit/AuditSinkStatus.php,0,,Compliance
 Service/Audit/AccessLinkUseRecorder.php,,Service,,,,,Compliance
+Service/Audit/AuditReport.php,,Service,,,,,Compliance
+Service/Audit/AuditReportFile.php,,Service,,,,,Compliance
 Service/Audit/AuditTrailPageService.php,46,Service,Compliance,Compliance/Service/Audit/AuditTrailPageService.php,0,,Compliance
 Service/Audit/ContentReportService.php,143,Service,Compliance,Compliance/Service/Audit/ContentReportService.php,0,,Compliance
 Service/Audit/EntityEditAuditor.php,468,Service,Compliance,Compliance/Service/Audit/EntityEditAuditor.php,0,,Compliance
