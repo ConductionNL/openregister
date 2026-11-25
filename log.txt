@@ -5031,3 +5031,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T13:54:23Z integrator-20261125T131257-65b17e3c MERGED-TREE a11620b403: 5 PRs, main now df7349fe72 = tested tree
 2026-11-25T13:54:46Z or-fix-3/or-fix-8: run done; fixed #10533 -> 63dcdd73, #5968 -> 090fe4de (csv conflicts, REVERIFY); precheck GREEN lane3 11133 11143 11093 11153 11163 11173 11183, lane8 11178 11188 11108; shares empty; #10513 handled by a parallel or-fix-3 session (c423512d, approved)
 2026-11-25T13:55:03Z precheck-20261125T131122-70759a7e CONFLICT-DEV #11148 199b32a5
+2026-11-25T14:07:05Z integrator-20261125T131257-65b17e3c GREEN tree 1c8688f9d6 on dev df7349fe72 prs 2 front=ok: Tests: 66971, Assertions: 237704, Errors: 9, Failures: 2, Deprecations: 25, PHPUnit Deprecations: 1, Skipped: 27.
