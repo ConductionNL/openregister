@@ -431,6 +431,20 @@ is not offered, and a flow that holds one is refused at save, publish and run.
 A failing run fails the step, so its `onError` decides. In `perItem` mode each
 output keeps its input's place, so provenance survives the step.
 
+The refusal without the runner names it: the preflight reports the step as one
+that "cannot run on this instance" because it needs the `flow-code-runner` ExApp,
+rather than as a config it cannot read. Install the runner as an ExApp through
+AppAPI and enable it; the step appears in the palette once its health check
+answers. The step's run record keeps what ran: the `source` and its SHA-256
+`sourceHash`, the mode, the runner's duration and item counts, and the runner's
+log lines (also when the run failed), beside the items in and out every step
+records.
+
+Adding or changing a code step needs the `flow.code` right, which is seeded to
+administrators only; grant it to a group under Admin settings, Action rights. A
+maker without it gets a 403 naming `flow.code` on every save path, and an
+existing flow that holds a code step cannot be edited by them either.
+
 ### Branching and ending
 
 **`openregister.switch`** (Switch). No keys. Passes its items through unchanged;
@@ -502,6 +516,19 @@ object or entry that does not resolve fails the step.
 
 ```json
 { "object": "{{ uuid }}", "output": "history" }
+```
+
+**`openregister.extend-input`** (Extend references). Replaces the object
+references in chosen fields of each item with the objects they name. Keys:
+`properties` (required, a list or comma-separated text of fields; dots reach
+nested fields). A field holding a uuid, an id or a URL ending in one becomes the
+object; a field holding a list of them becomes the list of objects. A field that
+is absent, empty or already holds an object is left alone. The objects are read
+with the run's acting identity, and a reference that does not resolve fails the
+step rather than leaving the raw reference in place.
+
+```json
+{ "properties": ["owner", "case.documents"] }
 ```
 
 **`openregister.object-write`** (Write an object). Creates, updates, upserts or

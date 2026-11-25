@@ -526,6 +526,22 @@ interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
 	public function findObjectActions(string $objectUuid, AuditTrail\ActionLookupOptions $options): array;
 
 	/**
+	 * The entries a delete wrote for the objects it acted on, by the uuid of the object that triggered it.
+	 *
+	 * Reads the indexed `trigger_object` column, so the dependants of one
+	 * delete are one indexed lookup rather than a scan of the `changed` JSON.
+	 * Purged rows are left out: their evidence is gone.
+	 *
+	 * @param string                         $triggerObject The uuid of the object whose delete cascaded.
+	 * @param AuditTrail\ActionLookupOptions $options       The actions to return (every action when empty) and the row cap.
+	 *
+	 * @return array<int, AuditTrail> The matching rows, oldest first.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+	 */
+	public function findTriggeredActions(string $triggerObject, AuditTrail\ActionLookupOptions $options): array;
+
+	/**
 	 * Destruction entries created since a moment, oldest first, one page.
 	 *
 	 * @param DestructionQuery $query The moment, register, schema, actor and page.

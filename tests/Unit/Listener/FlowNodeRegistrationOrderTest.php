@@ -133,6 +133,7 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'LinkObjectNodeInterface',
 				$ns . 'ObjectReadNodeInterface',
 				$ns . 'AuditTrailNodeInterface',
+				$ns . 'ExtendInputNodeInterface',
 				$ns . 'FlowStateNodeInterface',
 				$ns . 'MapNodeInterface',
 				$ns . 'IterateNodeInterface',
