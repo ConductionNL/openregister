@@ -73,6 +73,7 @@ class BuiltinIntegrationProviderRegistrationTest extends TestCase {
 		'OCA\OpenRegister\Service\XwikiLinkService' => [
 			'OCA\OpenRegister\Db\XwikiLinkMapperInterface',
 			'OCA\OpenRegister\Service\LinkServiceRuntime',
+			'OCP\ICacheFactory',
 		],
 		'OCA\OpenRegister\Service\Integration\Providers\KvkProvider' => [
 			'OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter',
