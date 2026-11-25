@@ -131,15 +131,27 @@ class CredentialBrokerSessionlessOrganisationTest extends TestCase {
 	 * a background job) has no active organisation, so a tenant-filtered lookup
 	 * found no organisation credential and every guard was skipped as "credential
 	 * not found". Guard 1 still decides on the asserted identity.
+	 *
+	 * @return void
 	 */
 	public function testTheSessionlessLookupIsNotTenantFiltered(): void {
 		$this->findCalls = [];
-		$this->makeBroker(sessionUid: null)->resolveInjectable(self::UUID, 'openconnector', null, self::ORG_UUID);
-		$this->assertSame(false, $this->findCalls[0][3] ?? null, 'sessionless: unscoped lookup');
+		$this->makeBroker(sessionUid: null)->resolveInjectable(
+			credentialId: self::UUID,
+			appId: 'openconnector',
+			actingUserId: null,
+			actingOrganisationId: self::ORG_UUID
+		);
+		$this->assertSame(expected: false, actual: ($this->findCalls[0][3] ?? null), message: 'sessionless: unscoped lookup');
 
 		$this->findCalls = [];
-		$this->makeBroker(sessionUid: 'member')->resolveInjectable(self::UUID, 'openconnector', null, null);
-		$this->assertSame(true, $this->findCalls[0][3] ?? null, 'with a session: scoped to its tenant');
+		$this->makeBroker(sessionUid: 'member')->resolveInjectable(
+			credentialId: self::UUID,
+			appId: 'openconnector',
+			actingUserId: null,
+			actingOrganisationId: null
+		);
+		$this->assertSame(expected: true, actual: ($this->findCalls[0][3] ?? null), message: 'with a session: scoped to its tenant');
 	}
 
 	/**
