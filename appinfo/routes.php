@@ -1549,6 +1549,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
         // Automation run records (automation-run-records): notification and lifecycle-action outcomes, by key prefix.
         ['name' => 'automationRecords#index', 'url' => '/api/automation-records', 'verb' => 'GET'],
+        // The same records in the consuming-app shape (a-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did).
+        ['name' => 'automationRecords#outcomes', 'url' => '/api/automation-outcomes', 'verb' => 'GET'],
         // The bell's own verbs (`object-read-state`). A snooze postpones a
         // notice, an archive takes it out without claiming it was read, and a
         // thread is marked read as a whole. Each is scoped to the caller's own
