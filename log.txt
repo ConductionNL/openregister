@@ -5161,3 +5161,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T19:44:17Z session-20261125T194407-46ae154b or-builder-2: lease held by session-20261125T184434-06f2b21e until 21:03Z; run ended
 2026-11-25T19:44:18Z integrator-20261125T164649-6d3dd46c MERGED-TREE 32b45ef597: 3 PRs, main now 458b22618e = tested tree
 2026-11-25T19:47:53Z precheck-20261125T191529-85ecfd26 GREEN tree cebd03ccd7 on dev 119f481037 prs 1 front=skip: Tests: 67309, Assertions: 239152, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
+2026-11-25T19:48:56Z precheck-20261125T181737-613489e9 AUTOPARK openregister#11250 b4aed8d7 sbom: package-lock.json changed without sbom.cdx.json (tree 1fd2bea694)
