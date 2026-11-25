@@ -39,9 +39,10 @@ final class MetricSample {
 	 * Constructor.
 	 *
 	 * @param string $name Metric name (without `{app}_` prefix).
-	 * @param string $type Prometheus type (gauge|counter).
+	 * @param string $type Prometheus type (gauge|counter|histogram).
 	 * @param string $help HELP text.
-	 * @param array<int, array{labels: array<string,string>, value: float|int}> $samples Labelled samples.
+	 * @param array<int, array{labels: array<string,string>, value: float|int, suffix?: string}> $samples Labelled samples;
+	 *        a histogram point names its series (`_bucket`, `_sum`, `_count`) in `suffix`.
 	 */
 	public function __construct(
 		public readonly string $name,

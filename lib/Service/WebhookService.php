@@ -36,6 +36,7 @@ use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCA\OpenRegister\Db\Mapping;
 use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\Webhook;
+use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\DependencyBreakerInterface;
@@ -574,7 +575,7 @@ class WebhookService {
 		}
 
 		try {
-			$response = $this->sendRequest(delivery: $delivery, payload: $webhookPayload);
+			$response = $this->timedRequest(delivery: $delivery, payload: $webhookPayload, log: $webhookLog);
 			$this->countReceiverOutcome(key: $breakerKey, statusCode: (int) $response['status_code']);
 			return $recorder->recordResponse(delivery: $attempt, response: $response);
 		} catch (RequestException $e) {
@@ -588,6 +589,29 @@ class WebhookService {
 			return $recorder->recordUnexpectedFailure(delivery: $attempt, exception: $e);
 		}
 	}//end deliverWebhook()
+
+	/**
+	 * Send the request and stamp how long it took on the log, also when it throws.
+	 *
+	 * The duration feeds the `webhook_delivery_duration_seconds` histogram.
+	 *
+	 * @param WebhookDelivery $delivery The delivery
+	 * @param array           $payload  The payload to send
+	 * @param WebhookLog      $log      The log entry of this attempt
+	 *
+	 * @return array Status code and body from sendRequest()
+	 *
+	 * @spec openspec/changes/production-observability
+	 */
+	private function timedRequest(WebhookDelivery $delivery, array $payload, WebhookLog $log): array {
+		$started = hrtime(true);
+		try {
+			return $this->sendRequest(delivery: $delivery, payload: $payload);
+		} finally {
+			// phpcs:ignore CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
+			$log->setDurationMs((int) round((hrtime(true) - $started) / 1000000));
+		}
+	}//end timedRequest()
 
 	/**
 	 * The breaker key of a webhook's receiver host, or null when there is no breaker or no host.

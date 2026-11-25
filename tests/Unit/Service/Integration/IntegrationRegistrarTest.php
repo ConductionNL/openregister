@@ -148,7 +148,7 @@ class IntegrationRegistrarTest extends TestCase {
 	}//end testEveryFactoryBuildsItsService()
 
 	/**
-	 * boot() adds every built-in provider in order and logs and skips one that fails to resolve.
+	 * boot() installs a loader that adds every built-in provider in order and logs and skips one that fails to resolve.
 	 *
 	 * @return void
 	 */
@@ -180,8 +180,17 @@ class IntegrationRegistrarTest extends TestCase {
 
 		$registry->expects($this->exactly(26))->method('addProvider')->with($provider);
 		$logger->expects($this->once())->method('warning');
+		$loader = null;
+		$registry->method('setBuiltinLoader')->willReturnCallback(
+			static function (callable $installed) use (&$loader): void {
+				$loader = $installed;
+			}
+		);
 
 		IntegrationRegistrar::boot(server: $server);
+		$this->assertSame(expected: [], actual: $asked, message: 'boot() resolves no provider.');
+		$this->assertIsCallable(actual: $loader);
+		$loader();
 
 		$this->assertCount(expectedCount: 27, haystack: $asked);
 		$this->assertSame(expected: 'OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider', actual: $asked[0]);
