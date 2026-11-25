@@ -4518,6 +4518,7 @@ Service/CalendarEvent/CalendarLinkListenerRegistrar.php,,Service,,,,,Integration
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Db/SchemaMapper/AdministeredValidationCheck.php,,Db,,,,,Processes
 Controller/Support/CopyRun.php,,Controller,,,,,Core
 Controller/Support/DestroyedTombstones.php,66,Controller,Service,Service/Controller/Support/DestroyedTombstones.php,0,,Core
 Kernel/Contracts/Value/DestructionQuery.php,25,Kernel,,,,,Kernel
@@ -4577,6 +4578,13 @@ Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTra
 Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
 Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
 Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
+Service/Rules/NamedConditionScope.php,,Service,,,,,Processes
+Service/Rules/RelativeTimeEvaluation.php,,Service,,,,,Processes
+Db/SchemaMapper/RelativeTimeCalendarCheck.php,,Db,,,,,Processes
+Middleware/SaveWarningsMiddleware.php,,Middleware,,,,,Platform
+Service/Rules/SaveWarnings.php,,Service,,,,,Processes
+Kernel/Contracts/SaveWarningsInterface.php,,Kernel,,,,,Kernel
+Service/Rules/RelativeTimeSweep.php,,Service,,,,,Processes
 Migration/Version1Date20261121190000.php,,Migration,,,,,Platform
 BackgroundJob/BackfillEmailLinkMessageIdJob.php,,BackgroundJob,,,,,Integrations
 Notifications/Service/EmailLinkMessageIdBackfill.php,,Notifications,,,,,Integrations
@@ -4901,6 +4909,10 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Command/ApiConformanceCommand.php,130,Command,Service,Service/Command/ApiConformanceCommand.php,0,,Core
+Service/Oas/NlGovConformanceReport.php,200,Service,Service,Service/Oas/NlGovConformanceReport.php,0,,Core
+Service/Oas/NlGovConformanceService.php,110,Service,Service,Service/Oas/NlGovConformanceService.php,0,,Core
+Service/Oas/NlGovResponseProbe.php,380,Service,Service,Service/Oas/NlGovResponseProbe.php,0,,Core
 Service/Resolver/Exception/ResolverConfigException.php,,Service,,,,,Kernel
 Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel

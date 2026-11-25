@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+    "3" : "3",
+    "30" : "30",
     "%n are out of date" : "%n zijn verouderd",
     "%n declared in total" : "%n in totaal gedeclareerd",
     "%n entries have no hash yet" : "%n regels hebben nog geen hash",
@@ -19,8 +21,6 @@ OC.L10N.register(
     "({count} selected)" : "({count} geselecteerd)",
     ", {failed} failed" : ", {failed} mislukt",
     "0 = unlimited" : "0 = onbeperkt",
-    "3" : "3",
-    "30" : "30",
     "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete ALL objects for schema \"{schema}\":\n\n\\u2022 Active objects: {active}\n\\u2022 Soft-deleted objects: {deleted}\n\\u2022 Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?" : "\\u26A0\\uFE0F WAARSCHUWING PERMANENTE VERWIJDERING \\u26A0\\uFE0F\n\nU staat op het punt om ALLE objecten voor schema \"{schema}\" PERMANENT te verwijderen:\n\n\\u2022 Actieve objecten: {active}\n\\u2022 Zacht-verwijderde objecten: {deleted}\n\\u2022 Totaal: {total}\n\nDeze objecten worden volledig uit de database verwijderd en kunnen NIET worden hersteld.\n\nWeet u het absoluut zeker?",
     "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?" : "\\u26A0\\uFE0F WAARSCHUWING PERMANENTE VERWIJDERING \\u26A0\\uFE0F\n\nU staat op het punt om {count} zacht-verwijderde objecten voor schema \"{schema}\" PERMANENT te verwijderen.\n\nDeze objecten worden volledig uit de database verwijderd en kunnen NIET worden hersteld.\n\nWeet u het absoluut zeker?",
     "_%n background job records no outcome, so this list cannot show how it went._::_%n background jobs record no outcome, so this list cannot show how they went._" : ["%n achtergrondtaak legt geen uitkomst vast, dus deze lijst kan niet tonen hoe het is gegaan.","%n achtergrondtaken leggen geen uitkomst vast, dus deze lijst kan niet tonen hoe het is gegaan."],
@@ -1568,7 +1568,6 @@ OC.L10N.register(
     "Human-readable name of the concept scheme, as published by the source (e.g. \"Woo-informatiecategorieën\")." : "Leesbare naam van het conceptschema, zoals de bron die publiceert (bijvoorbeeld \"Woo-informatiecategorieën\").",
     "Human-readable title." : "Leesbare titel.",
     "Hybrid search readiness" : "Gereedheid voor hybride zoeken",
-    "IBAN" : "IBAN",
     "IBANs" : "IBAN's",
     "ID" : "ID",
     "Id" : "Id",
@@ -4157,7 +4156,25 @@ OC.L10N.register(
     "New {name} from this mail" : "Nieuwe {name} vanuit deze e-mail",
     "Fields marked * are required. The new {name} is connected to this mail." : "Velden met * zijn verplicht. De nieuwe {name} wordt aan deze e-mail gekoppeld.",
     "(optional)" : "(niet verplicht)",
-    "Create and connect" : "Aanmaken en koppelen"
+    "Create and connect" : "Aanmaken en koppelen",
+    "_%n connection_::_%n connections_" : ["%n koppeling","%n koppelingen"],
+    "_%n message_::_%n messages_" : ["%n bericht","%n berichten"],
+    "Add to {name}" : "Toevoegen aan {name}",
+    "address" : "adres",
+    "connected to {name}" : "gekoppeld aan {name}",
+    "Connected to {name} #{number}" : "Gekoppeld aan {name} #{number}",
+    "connected to {name} #{number}" : "gekoppeld aan {name} #{number}",
+    "Connecting" : "Koppelen",
+    "email address" : "e-mailadres",
+    "link" : "link",
+    "No {name} matches “{term}”." : "Geen {name} gevonden voor “{term}”.",
+    "Not connected to anything yet." : "Nog nergens aan gekoppeld.",
+    "other" : "overig",
+    "person" : "persoon",
+    "phone number" : "telefoonnummer",
+    "Search for {value}" : "{value} zoeken",
+    "sender" : "afzender",
+    "Undo" : "Ongedaan maken"
 },
 "nplurals=2; plural=(n != 1);"
 );
