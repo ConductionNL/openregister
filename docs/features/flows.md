@@ -663,6 +663,48 @@ answering `url` for a sent invitation, so a following
 `openregister.send-email` step can mail the link. An invitation refused by the
 fatigue limit is recorded as blocked rather than sent.
 
+### Steps that need a right
+
+Some steps reach people or remove data, so putting one in a flow is a right of
+its own, separate from the right to create or change flows:
+
+| Right | Needed by |
+| --- | --- |
+| `flow.node.send-email` | `openregister.send-email` |
+| `flow.node.send-notification` | `openregister.send-notification` |
+| `flow.node.send-talk-message` | `openregister.send-talk-message` |
+| `flow.node.object-delete` | `openregister.object-write` with `delete` |
+
+Administrators always hold every right. Anyone else needs the right through a
+group. Without it, the step is marked `locked` for them in the node catalogue
+(`GET /api/flow/node-catalog`) that the editor reads. Every save path refuses a
+flow that holds a step they may not place: create, update, publish, draft,
+adopt and BPMN import. The refusal is a 403 that names the step type and the
+right. The check covers the new document and the stored one, so a flow that
+already holds the step cannot be changed by someone without the right either.
+
+**Granting a right.** Administrators set the rights in **Administration
+settings → Open Register → Action rights**, grouped as Flows, Flow steps,
+Objects and Other. Each right shows what it allows and which step types need
+it, with a group picker. "Every signed-in user" is the open grant, and a right
+with no group chosen is held by administrators alone. The same matrix is served
+by `GET` and `PUT /api/settings/action-rights` (administrators only), with
+`groups` keyed by right. A `PUT` changes only the rights it names, and an
+unknown right is refused with a 400 that names it. `nodeRights` in the same
+body lets an administrator move a step type onto another right, or lift its
+requirement with `null`. The administrator's map wins over what the step
+declares. `GET /api/permissions` publishes the rights with their step types
+under `actions`, so other apps can read who may do what.
+
+![The Action rights section of the Open Register admin settings](../screenshots/openregister-action-rights.png)
+
+**On upgrade.** A repair step (`InitializeFlowNodeRights`) adds every declared
+step right that is missing from the matrix as `["admin"]`, and leaves every
+entry that already exists as it is. A customised `flow.create`, for example,
+keeps its groups. After the upgrade, only administrators can put these steps
+into a flow until an administrator grants them to a group. Flows that already
+hold such a step keep running. Changing one needs the right.
+
 ### Steps from other apps
 
 Other apps add steps to the palette through the same registration event
