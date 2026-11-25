@@ -63,10 +63,25 @@
 
 ## 7. Evidence
 
-- [ ] Measure a real drain on a seeded backlog and record rows/sec and peak memory
+- [x] Measure a real drain on a seeded backlog and record rows/sec and peak memory
       against the documented `~152 rows/min` baseline
       - the speed claim must be measured, not asserted
-- [ ] Update `openspec/specs/audit-hash-chain/spec.md` with the merged requirements
+      - 2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16 (php-cli, pcov off), fresh install of this branch:
+        108,000 unsealed rows seeded behind 307 sealed ones (`changed` ~5.3 KB of JSON each, TOAST-compressed
+        to 77 MB on disk). `occ openregister:audit:seal-backlog`: 108,000 rows in 54 windows, 21.3 s wall
+        clock, about 5,070 rows/s (304k rows/min against the ~152 rows/min baseline), peak RSS 168 MB
+        (`/usr/bin/time -v`). A re-run sealed 0 rows and the table's update count did not move.
+        `verifyChain()`: `valid: true`, `unsealedAfterCutover: 0`, `sealCutoverId: 1`; ten unsealed rows
+        added afterwards read `valid: false`, `unsealedAfterCutover: 10` until the next pass.
+      - Found on the way: a fresh install had neither `idx_audit_unsealed` nor the cutover marker.
+        Nextcloud runs a fresh install's migrations schema-only, which skips both post-schema steps.
+        `Repair/PrepareAuditSealing` runs them under `<install>` (first, so the cutover is 1) and under
+        `<post-migration>` (heals instances installed since); `PrepareAuditSealingTest`.
+      - Not measured: a backlog interleaved with sealed rows (the seed is one contiguous backlog) and
+        contention with foreground writes during the drain.
+- [x] Update `openspec/specs/audit-hash-chain/spec.md` with the merged requirements
+      - the three ADDED requirements and the cutover classification appended; the cutover text names
+        the install step
 
 ## Acceptance criteria
 
