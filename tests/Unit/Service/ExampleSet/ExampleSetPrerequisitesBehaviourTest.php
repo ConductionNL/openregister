@@ -216,6 +216,30 @@ class ExampleSetPrerequisitesBehaviourTest extends TestCase {
 	}//end testOrganisationsAreRecordedOnlyWhenCreated()
 
 	/**
+	 * An organisation created but not completed is still recorded, so remove deletes it, and its error is refused.
+	 *
+	 * @spec openspec/changes/cast-members-keep-the-default-organisation/specs/example-sets/spec.md
+	 *
+	 * @return void
+	 */
+	public function testACreatedOrganisationIsRecordedEvenWhenCompletingItFailed(): void {
+		$this->instance->method('ensure')->willReturn(
+			value: ['uuid' => 'u-new', 'created' => true, 'error' => 'its members could not join the default organisation: down']
+		);
+		$this->record->expects($this->once())->method('write')
+			->with('demo', ['registers' => [], 'organisations' => ['u-new']]);
+		$book = ['registers' => [], 'organisations' => []];
+
+		$result = $this->subject->ensure(plan: ['set' => 'demo', 'organisations' => [['slug' => 'waterland']]], record: $book);
+
+		$this->assertSame(
+			expected: ['OpenRegister organisation "waterland" could not be created or completed: its members could not join the default organisation: down'],
+			actual: $result['refusals']
+		);
+		$this->assertSame(expected: ['u-new'], actual: $book['organisations']);
+	}//end testACreatedOrganisationIsRecordedEvenWhenCompletingItFailed()
+
+	/**
 	 * The fill context carries the cast, the day, the service accounts by key, and the instance's organisations.
 	 *
 	 * @return void

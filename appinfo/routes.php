@@ -1683,6 +1683,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
+        // Whether a published file still matches its sealed digest (published-file-digest REQ-PFD-002).
+        ['name' => 'files#verifyDigest', 'url' => '/api/files/{fileId}/digest/verify', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 		['name' => 'files#office', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/office', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#officePage', 'url' => '/office/{register}/{schema}/{id}/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		// An object's folder for the files browser, subfolders included, through
@@ -2025,6 +2027,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'organisation#deprovision', 'url' => '/api/organisations/{uuid}/deprovision', 'verb' => 'PUT'],
         ['name' => 'organisation#retain', 'url' => '/api/organisations/{uuid}/retain', 'verb' => 'PUT'],
         ['name' => 'organisation#usage', 'url' => '/api/organisations/{uuid}/usage', 'verb' => 'GET'],
+        ['name' => 'organisation#promote', 'url' => '/api/organisations/{uuid}/promote', 'verb' => 'POST'],
 
         // Admin - Tenant isolation verification and metrics.
         ['name' => 'organisation#isolationVerify', 'url' => '/api/admin/isolation-verify', 'verb' => 'POST'],
@@ -2222,6 +2225,20 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 			'url' => '/api/surveys/{register}/{survey}/export',
 			'verb' => 'GET',
 			'requirements' => ['register' => '[^/]+', 'survey' => '[^/]+'],
+		],
+		// Answering a survey from its invitation link, with no account
+		// (survey-object REQ-SURV-002): read the form, submit the answers.
+		[
+			'name' => 'surveyAnswer#show',
+			'url' => '/api/public/surveys/{anchor}',
+			'verb' => 'GET',
+			'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+		],
+		[
+			'name' => 'surveyAnswer#submit',
+			'url' => '/api/public/surveys/{anchor}',
+			'verb' => 'POST',
+			'requirements' => ['anchor' => '[A-Za-z0-9]+'],
 		],
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
 		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],

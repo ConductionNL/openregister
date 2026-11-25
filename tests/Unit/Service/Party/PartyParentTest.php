@@ -60,13 +60,21 @@ final class PartyParentTest extends TestCase {
 		$answer = (new PartyParent())->parentOf(schema: $this->schema(party: ['kind' => 'organisation', 'parentProperty' => 'moeder', 'maxDepth' => 40]));
 
 		// The depth is the annotation's own; the tree walk applies its ceiling.
-		self::assertSame(['property' => 'moeder', 'maxDepth' => 40], $answer);
+		self::assertSame(['property' => 'moeder', 'maxDepth' => 40, 'nameProperty' => null], $answer);
+	}
+
+	public function testTheDeclaredNamePropertyIsAnswered(): void {
+		$party  = ['kind' => 'organisation', 'parentProperty' => 'moeder', 'nameProperty' => 'handelsnaam'];
+		$answer = (new PartyParent())->parentOf(schema: $this->schema(party: $party));
+
+		// A tree of parties names its nodes by it when an object has no name of its own.
+		self::assertSame(expected: 'handelsnaam', actual: $answer['nameProperty']);
 	}
 
 	public function testAMissingDepthFallsBackToThePartyModelsDefault(): void {
 		$answer = (new PartyParent())->parentOf(schema: $this->schema(party: ['kind' => 'organisation', 'parentProperty' => 'moeder']));
 
-		self::assertSame(['property' => 'moeder', 'maxDepth' => PartyDefinition::DEFAULT_MAX_DEPTH], $answer);
+		self::assertSame(['property' => 'moeder', 'maxDepth' => PartyDefinition::DEFAULT_MAX_DEPTH, 'nameProperty' => null], $answer);
 	}
 
 	public function testTheProcessesWiringBindsThePort(): void {

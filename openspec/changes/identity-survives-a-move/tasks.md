@@ -13,7 +13,9 @@
 
 ## 3. Tests
 
-- [ ] 3.1 `tests/e2e/ci/object-move.spec.ts`: move an object, open it at the old address, read the number.
+- [x] 3.1 `tests/e2e/ci/object-move.spec.ts`: move an object, open it at the old address, read the number.
+      2026-11-25: two tests, green on a sandbox Nextcloud 34 with MariaDB (2 passed). An object with a generated number, a create entry and a relation row is moved to a second schema declaring the same number; at the new address it keeps the number, its history holds `create` and `moved`, and the row points at the new schema. At the old address it answers 200 with the number and `@self.movedTo`.
+      🔴 THE OLD ADDRESS WAS NOT A MISS, AND THE E2E IS WHAT FOUND IT. `find()` resolves a uuid across every table, so the old URL came back 200 with the object from its new table and no `@self.movedTo`: the bookmark opened, and was never told to update. `MovedObjectLookup` was only asked on a miss, and the unit tests drove a mocked miss. Fixed in `ObjectsController::movedShowOfFound()`: an object whose own register or schema is not the one asked for is checked against the move record and, when it moved from here, read again through show() at its new address, as a miss would be; an object that lives where it was asked for never reaches the lookup. Tests: `ObjectsControllerMovedAddressTest` (+3; removing the call turns two red), and the e2e's second test is red on main and green with the fix.
 - [x] 3.2 Unit tests: identity kept, refusal, pointer, deep-link rewrite; Newman for the route.
 
 ## What was built

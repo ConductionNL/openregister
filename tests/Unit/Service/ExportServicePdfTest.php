@@ -58,6 +58,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
  * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtLogo
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtFont
+ * @uses \OCA\OpenRegister\Service\Export\DocumentStyleReader
  */
 class ExportServicePdfTest extends TestCase {
 
@@ -684,6 +686,69 @@ class ExportServicePdfTest extends TestCase {
 		$styles = $this->convertedOdtPart(part: 'styles.xml');
 		$this->assertStringContainsString('<draw:image xlink:href="Pictures/logo.png"', $styles);
 		$this->assertStringContainsString('Gemeente Hilversum', $styles);
+	}
+
+	/**
+	 * The profile's fonts are embedded per role; a font that fails to load (WOFF2)
+	 * leaves its role on the default font and the export still succeeds
+	 * (export-pdf-house-style, task 2.2).
+	 */
+	public function testTheProfilesFontsAreEmbeddedAndAFontThatFailsToLoadFallsBack(): void {
+		require_once __DIR__ . '/Export/Stubs/ThematiqDocumentStyleService.php';
+		require_once __DIR__ . '/Export/Stubs/ThematiqFontService.php';
+		require_once __DIR__ . '/Export/Odt/OdtFontTest.php';
+		$ttf = \OCA\OpenRegister\Tests\Unit\Service\Export\Odt\OdtFontTest::sfnt();
+		$profile = ['fonts' => [
+			'heading' => ['family' => 'Gemeente Kop', 'url' => '/apps/thematiq/fonts/custom-kop.woff2'],
+			'body' => ['family' => 'Gemeente Tekst', 'url' => '/apps/thematiq/fonts/custom-tekst.woff2'],
+		]];
+		$styleService = new class($profile) {
+
+			public function __construct(private array $profile) {
+			}
+
+			public function forUser(?string $uid): array {
+				return $this->profile;
+			}
+		};
+		$fontService = new class(['custom-kop' => 'wOF2' . substr($ttf, 4), 'custom-tekst' => $ttf]) {
+
+			public function __construct(private array $stored) {
+			}
+
+			public function readFontBytes(string $id): ?string {
+				return ($this->stored[$id] ?? null);
+			}
+		};
+		$appManager = $this->createMock(\OCP\App\IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$container = $this->createMock(\Psr\Container\ContainerInterface::class);
+		$container->method('get')->willReturnCallback(static fn (string $id): ?object => match ($id) {
+			DocumentStyleReader::STYLE_SERVICE => $styleService,
+			DocumentStyleReader::FONT_SERVICE => $fontService,
+			default => null,
+		});
+		$service = new ExportService(
+			$this->registerMapper,
+			$this->groupManager,
+			$this->objectService,
+			$this->cacheHandler,
+			$this->propertyRbacHandler,
+			$this->converter,
+			null,
+			new DocumentStyleReader($appManager, $container, new \Psr\Log\NullLogger())
+		);
+
+		$pdf = $service->renderTableToPdf(table: new RowsTable(title: 'Vergunningen', columns: ['naam' => 'Naam'], rows: [['naam' => 'A']]));
+
+		$this->assertSame('%PDF-1.7 converted', $pdf);
+		$this->assertSame($ttf, $this->convertedOdtPart(part: 'Fonts/body.ttf'));
+		$this->assertSame('', $this->convertedOdtPart(part: 'Fonts/heading.ttf'));
+		$content = $this->convertedOdtPart(part: 'content.xml');
+		$this->assertStringContainsString('<style:font-face style:name="OR_BodyFont" svg:font-family="\'Gemeente Tekst\'">', $content);
+		$this->assertStringNotContainsString('OR_HeadingFont', $content);
+		$this->assertStringContainsString('<style:style style:name="OR_H1" style:family="paragraph"><style:paragraph-properties fo:margin-bottom="0.15cm"/><style:text-properties style:font-name="Liberation Sans"', $content);
+		$this->assertStringContainsString('<style:style style:name="OR_Cell" style:family="paragraph"><style:paragraph-properties/><style:text-properties style:font-name="OR_BodyFont"', $content);
 	}
 
 	public function testWithoutAProfileTheExportKeepsThePlainLayout(): void {

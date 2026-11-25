@@ -92,6 +92,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
@@ -188,6 +190,7 @@ final class FlowWiring {
 		CodeNodeInterface::class => CodeNode::class,
 		CodeRunnerClientInterface::class => CodeRunnerClient::class,
 		TagObjectNodeInterface::class => TagObjectNode::class,
+		SurveyInviteNodeInterface::class => SurveyInviteNode::class,
 		AuditTrailNodeInterface::class => AuditTrailNode::class,
 		ExtendInputNodeInterface::class => ExtendInputNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
