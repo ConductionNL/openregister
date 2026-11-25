@@ -169,7 +169,7 @@ describe('SearchIndex list handlers', () => {
 		methodCall('handlePageChanged', {}, 3)
 		methodCall('handlePageSizeChanged', {}, 50)
 		expect(mockObjectStore.updateSearchParams.mock.calls).toEqual([
-			[{ sortKey: 'title', sortOrder: 'desc' }],
+			[{ _order: { title: 'desc' } }],
 			[{ page: 3 }],
 			[{ page: 1, limit: 50 }],
 		])

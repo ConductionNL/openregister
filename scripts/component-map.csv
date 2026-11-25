@@ -2560,6 +2560,8 @@ Service/Flow/Nodes/SubFlowNode.php,186,Service,Flows,Flows/Service/Flow/Nodes/Su
 Service/Flow/Nodes/SwitchNode.php,46,Service,Flows,Flows/Service/Flow/Nodes/SwitchNode.php,1,,Processes
 Service/Flow/Nodes/TagObjectNode.php,235,Service,Flows,Flows/Service/Flow/Nodes/TagObjectNode.php,0,,Processes
 Service/Flow/Nodes/TagObjectNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Nodes/TagObjectNodeInterface.php,0,,Processes
+Service/Flow/Nodes/SurveyInviteNode.php,,Service,,,,,Processes
+Service/Flow/Nodes/SurveyInviteNodeInterface.php,,Service,,,,,Processes
 Service/Flow/Nodes/TagStepConfig.php,38,Service,Flows,Flows/Service/Flow/Nodes/TagStepConfig.php,0,,Processes
 Service/Flow/Nodes/TransitionNode.php,85,Service,Flows,Flows/Service/Flow/Nodes/TransitionNode.php,0,,Processes
 Service/Flow/Nodes/TriggerManualNode.php,59,Service,Flows,Flows/Service/Flow/Nodes/TriggerManualNode.php,0,,Processes
@@ -3409,6 +3411,7 @@ Service/SharedSchemaDedupeService.php,225,Service,Configuration,Configuration/Se
 Service/Sharing/AccessLinkActs.php,36,Service,Access,Access/Service/Sharing/AccessLinkActs.php,1,,Core
 Service/Sharing/AccessLinkMintGuard.php,85,Service,Access,Access/Service/Sharing/AccessLinkMintGuard.php,0,,Core
 Service/Sharing/AccessLinkService.php,266,Service,Access,Access/Service/Sharing/AccessLinkService.php,1,,Core
+Service/Sharing/ObjectAccessLinks.php,,Service,,,,,Core
 Service/Sharing/AccessLinkSubject.php,30,Service,Access,Access/Service/Sharing/AccessLinkSubject.php,0,446,Core
 Service/Sharing/AccessLinkSubjectLinks.php,,Service,,,,,Core
 Service/Sharing/SharePrincipalDeriver.php,70,Service,Integrations,Integrations/Service/Sharing/SharePrincipalDeriver.php,0,,Core
@@ -3432,6 +3435,11 @@ Service/Survey/SurveyAnswerTable.php,45,Service,Work,Work/Service/Survey/SurveyA
 Service/Survey/SurveyResultsWithheldException.php,43,Service,Work,Work/Service/Survey/SurveyResultsWithheldException.php,0,,Processes
 Service/Survey/SurveyResults.php,177,Service,Work,Work/Service/Survey/SurveyResults.php,0,,Processes
 Service/Survey/SurveyRules.php,121,Service,Work,Work/Service/Survey/SurveyRules.php,0,,Processes
+Service/Survey/SurveyAnswerRefusedException.php,,Service,,,,,Processes
+Service/Survey/SurveyAnswerVisit.php,,Service,,,,,Processes
+Service/Survey/SurveyAnswering.php,,Service,,,,,Processes
+Service/Survey/SurveyInvitationRequest.php,,Service,,,,,Processes
+Service/Survey/SurveyInvitations.php,,Service,,,,,Processes
 Service/Survivorship/SourceRecordResolver.php,170,Service,Service,Service/Survivorship/SourceRecordResolver.php,0,,Core
 Service/Survivorship/SurvivorshipAnnotationValidator.php,140,Service,Service,Service/Survivorship/SurvivorshipAnnotationValidator.php,0,,Core
 Service/Survivorship/SurvivorshipResolver.php,271,Service,Service,Service/Survivorship/SurvivorshipResolver.php,0,,Core
@@ -4942,6 +4950,7 @@ Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes
 Service/AcceptLanguageHeader.php,,Service,,,,,Core
 Controller/Support/VerwerkingsactiviteitenControllerServices.php,,Controller,,,,,Compliance
 Controller/SurveyResultsController.php,200,Controller,Work,Work/Controller/SurveyResultsController.php,0,,Processes
+Controller/SurveyAnswerController.php,,Controller,,,,,Processes
 Files/Service/File/PipelineStepImplementers.php,,Files,,,,,Files
 Files/Service/TextExtraction/PatternSet/PatternSetVersion.php,,Files,,,,,Files
 Search/Service/StoredViewQueries.php,,Search,,,,,Search

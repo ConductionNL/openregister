@@ -35,7 +35,6 @@ SHALL NOT. An administrator SHALL receive the complete description.
 - **GIVEN** an administrator
 - **WHEN** they read the description
 - **THEN** every property is present
-- @e2e exclude {authorization, covered by unit tests}
 
 #### Scenario: an ungoverned schema is described in full
 
