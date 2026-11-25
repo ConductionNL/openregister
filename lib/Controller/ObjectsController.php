@@ -3646,13 +3646,15 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function create(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.create.in');
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
 
-		$object = $this->submittableBody(object: $this->interceptedBody(register: $register, schema: $schema));
+		$object = $this->submittableBody(object: $this->interceptedBody(register: $register, schema: $schema), schema: $resolved['schemaEntity'] ?? null);
 		$controls = new ObjectCreateControls(request: $this->request, caller: $this->writeCaller());
 		$create = new ObjectCreate(object: $object, resolved: $resolved, objectService: $objectService, controls: $controls);
 
@@ -3682,6 +3684,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 300, period: 60)]
 	public function validateSample(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -3702,7 +3706,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return $refusal;
 		}
 
-		$sample = $this->submittableBody(object: $this->request->getParams());
+		$sample = $this->submittableBody(object: $this->request->getParams(), schema: $resolved['schemaEntity'] ?? null);
 		unset($sample['id']);
 		if ($objectService instanceof ObjectServiceInterface === false) {
 			return new JSONResponse(data: ['message' => 'Validation is not available.'], statusCode: 500);
@@ -3780,13 +3784,20 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	/**
 	 * The body without control parameters and server-managed fields.
 	 *
+	 * `register` and `schema` are routing words and are dropped, unless the
+	 * schema declares them as properties of its own: then the value the body
+	 * itself carried is kept as data (a form definition names the register and
+	 * schema it targets).
+	 *
 	 * @param array<string, mixed> $object The body.
+	 * @param mixed                $schema The schema written to, when known.
 	 *
 	 * @return array<string, mixed> What may be saved.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/object-body-may-carry-register-and-schema/specs/objects-crud/spec.md
 	 */
-	private function submittableBody(array $object): array {
+	private function submittableBody(array $object, mixed $schema = null): array {
 		// Filter out special parameters and reserved fields.
 		// @todo shouldn't this be part of the object service?
 		// Allow @self metadata to pass through for organization activation.
@@ -3805,8 +3816,90 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		// cannot be injected via the single-object create path.
 		$object = $this->sanitiseSelfMetadata(data: $object);
 
-		return $object;
+		return array_merge($object, $this->declaredRoutingWords(schema: $schema));
 	}//end submittableBody()
+
+	/**
+	 * The `register` and `schema` values the request body itself carried, for
+	 * the ones the schema declares as properties.
+	 *
+	 * Nextcloud merges a JSON body over the route's parameters, so the merged
+	 * parameters cannot tell a body's `register` from the route's; the raw
+	 * body can.
+	 *
+	 * @param mixed $schema The schema written to, when known.
+	 *
+	 * @return array<string, mixed> The declared routing words and their body values.
+	 *
+	 * @spec openspec/changes/object-body-may-carry-register-and-schema/specs/objects-crud/spec.md
+	 */
+	private function declaredRoutingWords(mixed $schema): array {
+		if ($schema instanceof Schema === false) {
+			return [];
+		}
+
+		$declared = array_intersect(['register', 'schema'], array_keys($schema->getProperties() ?? []));
+		if ($declared === []) {
+			return [];
+		}
+
+		$raw = $this->rawBody();
+		$kept = [];
+		foreach ($declared as $key) {
+			if (array_key_exists($key, $raw) === true) {
+				$kept[$key] = $raw[$key];
+			}
+		}
+
+		return $kept;
+	}//end declaredRoutingWords()
+
+	/**
+	 * The decoded request body alone, without the route's or the query's parameters.
+	 *
+	 * @return array<string, mixed> The body, or [] when there is none or it cannot be read.
+	 *
+	 * @spec openspec/changes/object-body-may-carry-register-and-schema/specs/objects-crud/spec.md
+	 */
+	private function rawBody(): array {
+		$method = strtolower((string)$this->request->getMethod());
+		if (in_array($method, ['post', 'put', 'patch'], true) === false) {
+			return [];
+		}
+
+		try {
+			/** @psalm-suppress NoInterfaceProperties The concrete request answers post, put and patch with its decoded body. */
+			$body = $this->request->{$method};
+		} catch (\Throwable) {
+			return [];
+		}
+
+		return is_array($body) === true ? $body : [];
+	}//end rawBody()
+
+	/**
+	 * A route parameter as the URL gave it.
+	 *
+	 * Nextcloud hands a controller argument the merged request parameter, and a
+	 * JSON body merges over the route's: a body field `register` or `schema`
+	 * would otherwise move the write into the register and schema it names.
+	 *
+	 * @param string $name  The route parameter.
+	 * @param string $given The value the controller was handed.
+	 *
+	 * @return string The URL's value, or the given one when the request has no route parameters.
+	 *
+	 * @spec openspec/changes/object-body-may-carry-register-and-schema/specs/objects-crud/spec.md
+	 */
+	private function routeParameter(string $name, string $given): string {
+		/** @psalm-suppress NoInterfaceProperties The concrete request carries urlParams. */
+		$routed = $this->request->urlParams ?? null;
+		if (is_array($routed) === true && is_string($routed[$name] ?? null) === true && $routed[$name] !== '') {
+			return $routed[$name];
+		}
+
+		return $given;
+	}//end routeParameter()
 
 	/**
 	 * The refusal of an upsert that cannot run, or null.
@@ -4155,6 +4248,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function update(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.in');
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
@@ -4183,7 +4278,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private function updateOf(ObjectTarget $target): ObjectUpdate {
 		return new ObjectUpdate(
 			target: $target,
-			object: $this->submittableBody(object: $this->request->getParams()),
+			object: $this->submittableBody(object: $this->request->getParams(), schema: $target->resolved['schemaEntity'] ?? null),
 			caller: $this->writeCaller()
 		);
 	}//end updateOf()
@@ -4398,6 +4493,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function patch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -4405,7 +4502,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		}
 
 		$target = new ObjectTarget(id: $id, resolved: $resolved, objectService: $objectService);
-		$patch = new ObjectUpdate(target: $target, object: $this->submittableBody(object: $this->request->getParams()), caller: $this->caller());
+		$patch = new ObjectUpdate(target: $target, object: $this->submittableBody(object: $this->request->getParams(), schema: $resolved['schemaEntity'] ?? null), caller: $this->caller());
 		$this->logPatchScope(patch: $patch);
 
 		try {
@@ -4576,6 +4673,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function postPatch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -4583,7 +4682,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		}
 
 		$target = new ObjectTarget(id: $id, resolved: $resolved, objectService: $objectService);
-		$body = array_diff_key($this->submittableBody(object: $this->request->getParams()), ['id' => true]);
+		$body = array_diff_key($this->submittableBody(object: $this->request->getParams(), schema: $resolved['schemaEntity'] ?? null), ['id' => true]);
 		$patch = new ObjectUpdate(target: $target, object: $body, caller: $this->writeCaller());
 
 		try {
