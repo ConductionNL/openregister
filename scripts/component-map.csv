@@ -1475,6 +1475,8 @@ Mcp/Tool/SchemaTool.php,289,Mcp,Mcp,Mcp/Tool/SchemaTool.php,0,,Integrations
 Mcp/Tool/StreamingToolInstanceWrapper.php,60,Mcp,Mcp,Mcp/Tool/StreamingToolInstanceWrapper.php,0,,Integrations
 Mcp/Tool/ToolInterface.php,9,Mcp,Mcp,Mcp/Tool/ToolInterface.php,4,,Integrations
 Mcp/ToolScanSubject.php,15,Mcp,Mcp,Mcp/ToolScanSubject.php,0,,Integrations
+Middleware/AddressAllowlistMiddleware.php,,Middleware,,,,,Platform
+Middleware/AddressNotAllowedException.php,,Middleware,,,,,Platform
 Middleware/AnonymousEnvelopeMiddleware.php,26,Middleware,Platform,Platform/Middleware/AnonymousEnvelopeMiddleware.php,0,,Platform
 Middleware/ApiCallerMiddleware.php,77,Middleware,Platform,Platform/Middleware/ApiCallerMiddleware.php,0,,Platform
 Middleware/ApiVersionMiddleware.php,80,Middleware,Platform,Platform/Middleware/ApiVersionMiddleware.php,0,,Platform
@@ -2653,6 +2655,7 @@ Service/Handoff/HandoffContractBindingValidator.php,160,Service,Integrations,Int
 Service/Handoff/HandoffKindContracts.php,40,Service,Integrations,Integrations/Service/Handoff/HandoffKindContracts.php,0,419,Integrations
 Service/Handoff/HandoffMappingEvaluator.php,79,Service,Integrations,Integrations/Service/Handoff/HandoffMappingEvaluator.php,0,,Integrations
 Service/Handoff/HandoffService.php,587,Service,Integrations,Integrations/Service/Handoff/HandoffService.php,12,33,Integrations
+Service/Hardening/AddressAllowlist.php,,Service,,,,,Compliance
 Service/Hardening/ElevationRequiredException.php,23,Service,Compliance,Compliance/Service/Hardening/ElevationRequiredException.php,0,,Compliance
 Service/Hardening/ElevationService.php,99,Service,Compliance,Compliance/Service/Hardening/ElevationService.php,0,,Compliance
 Service/Hardening/HardeningAuditWriter.php,34,Service,Compliance,Compliance/Service/Hardening/HardeningAuditWriter.php,0,,Compliance
