@@ -2318,6 +2318,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// e-Depot transfer management.
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
+		// Before transfer#show, so `{id}` cannot swallow the literal segment.
+		['name' => 'transfer#eligible', 'url' => '/api/transfers/eligible', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
 		// The archivist's decision. A literal trailing segment, so `{id}` — which
