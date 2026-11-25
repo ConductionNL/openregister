@@ -46,8 +46,6 @@ use Psr\Log\LoggerInterface;
  * A mapper-shaped host for the filter, with only the collaborators a case gives it.
  */
 final class OrganisationFilterHost {
-	use AdminFollowsGroups;
-
 	use TenancyIdentityTrait;
 	use OrganisationFilterTrait;
 
@@ -128,6 +126,8 @@ final class OrganisationFilterHost {
  * @uses   \OCA\OpenRegister\Service\TenantLogRedactor
  */
 final class OrganisationFilterTraitTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private const ORG = 'aaaaaaaa-0000-0000-0000-000000000001';
 

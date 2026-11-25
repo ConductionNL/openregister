@@ -43,8 +43,6 @@ use Psr\Log\LoggerInterface;
  * and would fail loudly if it went missing again.
  */
 class TestableEndpointService extends EndpointService {
-	use AdminFollowsGroups;
-
 	public function __construct(
 		EndpointLogMapper $endpointLogMapper,
 		LoggerInterface $logger,
@@ -89,6 +87,8 @@ class TestableEndpointService extends EndpointService {
 }
 
 class EndpointServiceTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * @var EndpointLogMapper&MockObject
