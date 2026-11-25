@@ -158,3 +158,4 @@
 2026-11-25T15:37:13Z GREEN prs=11195,11197 main=934a492cf0 integrator-cloud (merged)
 2026-11-25T17:20:39Z GREEN prs=11215,11190,11202,11212 main=e2cc3a5483 integrator-cloud (merged; NORESULT x2 first: PHP 8.3.6 < psalm's 8.3.16 -> COMPOSER_IGNORE_PLATFORM_REQ=php-64bit; spectral bypassed proxy -> NODE_USE_ENV_PROXY=1)
 2026-11-25T17:35:28Z GREEN prs=11124,11171,11219,11220 main=0b78bd2c1a integrator-cloud (merged)
+2026-11-25T17:49:55Z GREEN prs=10549,11069,11127 main=e2903df63b integrator-cloud (merged; #11089 conflicted in tree, retried next)
