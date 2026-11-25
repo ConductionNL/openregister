@@ -29,6 +29,7 @@ use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaWriteRightsInterface;
+use OCA\OpenRegister\Kernel\Contracts\DefaultOrganisationInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -494,6 +495,7 @@ final class CoreServiceBindings {
 		ObjectStreamingSaveInterface::class => ObjectService::class,
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		OrganisationServiceInterface::class => OrganisationService::class,
+		DefaultOrganisationInterface::class => OrganisationService::class,
 		OrganisationUsageServiceInterface::class => OrganisationUsageService::class,
 		PropertyRbacHandlerInterface::class => PropertyRbacHandler::class,
 		QualityScorerInterface::class => QualityScorer::class,

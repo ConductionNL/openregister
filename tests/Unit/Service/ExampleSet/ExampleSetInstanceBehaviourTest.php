@@ -25,8 +25,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\DefaultOrganisationInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -161,11 +161,11 @@ class ExampleSetInstanceBehaviourTest extends TestCase {
 
 	private function instance(): ExampleSetInstance {
 		$container = $this->createMock(ContainerInterface::class);
-		$service   = $this->createMock(OrganisationServiceInterface::class);
+		$service   = $this->createMock(DefaultOrganisationInterface::class);
 		$service->method('ensureDefaultOrganisation')->willReturnCallback(fn (): Organisation => $this->defaultOrganisation());
 		$container->method('get')->willReturnMap(
 			[
-				[OrganisationServiceInterface::class, $service],
+				[DefaultOrganisationInterface::class, $service],
 				[OrganisationMapperInterface::class, $this->mapper],
 			]
 		);

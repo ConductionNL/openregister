@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
-use OCA\OpenRegister\Service\OrganisationServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\DefaultOrganisationInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use Psr\Container\ContainerInterface;
@@ -251,7 +251,11 @@ class ExampleSetInstance {
 		}
 
 		try {
-			$default = $this->container->get(OrganisationServiceInterface::class)->ensureDefaultOrganisation();
+			$default = $this->container->get(DefaultOrganisationInterface::class)->ensureDefaultOrganisation();
+			if ($default instanceof Organisation === false) {
+				return 'its members could not join the default organisation: it is not an organisation entity';
+			}
+
 			if ((string) $default->getUuid() === (string) $created->getUuid()) {
 				return '';
 			}
