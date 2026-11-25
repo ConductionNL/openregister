@@ -142,6 +142,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // two-segment `/api/objects/{register}/{schema}` create route first.
         // platform-collaboration-resources: the Nextcloud collections an object belongs to.
         ['name' => 'objectCollections#index', 'url' => '/api/objects/{register}/{schema}/{id}/collections', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectCollections#create', 'url' => '/api/objects/{register}/{schema}/{id}/collections', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectCollections#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/collections/{collectionId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'collectionId' => '\\d+']],
         ['name' => 'objectOwnership#show',          'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'GET',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#claim',         'url' => '/api/objects/{register}/{schema}/{id}/ownership/claim', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#assign',        'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
@@ -343,6 +345,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'Settings\SeedReport#show', 'url' => '/api/settings/seed', 'verb' => 'GET'],
         ['name' => 'Settings\TranslationSettings#show', 'url' => '/api/settings/translation', 'verb' => 'GET'],
         ['name' => 'Settings\TranslationSettings#update', 'url' => '/api/settings/translation', 'verb' => 'PUT'],
+        // The text search configuration `_search` stems with on PostgreSQL (administrator only).
+        ['name' => 'Settings\SearchSettings#show', 'url' => '/api/settings/search', 'verb' => 'GET'],
+        ['name' => 'Settings\SearchSettings#update', 'url' => '/api/settings/search', 'verb' => 'PUT'],
         // Magic Table Sync endpoints.
         ['name' => 'tables#sync', 'url' => '/api/tables/sync/{registerId}/{schemaId}', 'verb' => 'POST', 'requirements' => ['registerId' => '[^/]+', 'schemaId' => '[^/]+']],
         ['name' => 'tables#syncAll', 'url' => '/api/tables/sync', 'verb' => 'POST'],
@@ -2123,6 +2128,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'ui#reports', 'url' => '/reports', 'verb' => 'GET'],
 		['name' => 'ui#reportView', 'url' => '/reports/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		// Rapportage on-demand render endpoints (Phase 2).
+		// rapportage-bi-export: render a report template over a period. Literal, so before reports/{id}/render.
+		['name' => 'reportTemplate#generate', 'url' => '/api/reports/generate', 'verb' => 'POST'],
 		['name' => 'reports#render',  'url' => '/api/reports/{id}/render',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'reports#preview', 'url' => '/api/reports/{id}/preview', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
 		['name' => 'ui#templates', 'url' => '/templates', 'verb' => 'GET'],
@@ -2178,6 +2185,21 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		// building, who made them, when their file stops existing and how
 		// often the register served it. No catch-all sibling sits on
 		// /api/exports, so nothing here can be swallowed by a {id} route.
+		// A survey's results and its export (survey-object): the response count
+		// always, the answers only for the survey's reader roles and, on an
+		// anonymous survey, only once its minimum is reached.
+		[
+			'name' => 'surveyResults#results',
+			'url' => '/api/surveys/{register}/{survey}/results',
+			'verb' => 'GET',
+			'requirements' => ['register' => '[^/]+', 'survey' => '[^/]+'],
+		],
+		[
+			'name' => 'surveyResults#export',
+			'url' => '/api/surveys/{register}/{survey}/export',
+			'verb' => 'GET',
+			'requirements' => ['register' => '[^/]+', 'survey' => '[^/]+'],
+		],
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
 		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
