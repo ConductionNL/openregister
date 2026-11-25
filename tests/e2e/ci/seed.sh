@@ -26,6 +26,9 @@ set -euo pipefail
 
 PASSWORD='E2e-Share-Pass-123'
 
+# A malware scanner first: without one every upload is refused (upload-malware-scan).
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../integration/ci/files-antivirus.sh"
+
 # Two accounts, and both non-admin. Sharing an object to yourself proves nothing,
 # and task 4.0 of object-level-sharing-and-private-scope is specifically that an
 # OWNER who is not an administrator can set their own object's scope.

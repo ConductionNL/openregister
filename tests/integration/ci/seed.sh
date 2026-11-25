@@ -37,6 +37,9 @@ if ! curl -sf "http://127.0.0.1:${STUB_PORT}/api/tags" > /dev/null; then
 	exit 1
 fi
 
+# 0. A malware scanner: without one every upload is refused (upload-malware-scan).
+bash "${HERE}/files-antivirus.sh"
+
 php occ config:app:set openregister llm \
 	--value="{\"enabled\":true,\"chatProvider\":\"ollama\",\"ollamaConfig\":{\"url\":\"http://127.0.0.1:${STUB_PORT}\",\"chatModel\":\"newman-stub\"}}"
 
