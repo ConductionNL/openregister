@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationListTerm;
+use OCA\OpenRegister\Service\Rbac\SecondFactorReadGate;
 use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
@@ -838,6 +839,13 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	public function applyRbacFilters(RbacFilterCall $call): void {
 		$user = $this->identifyCaller(call: $call);
 
+		// A scope requiring a second factor is final, administrators included;
+		// only the userless system reads it without one.
+		if ($this->isTrustedSystemCaller(user: $user) === false && $this->secondFactorRefuses(schema: $call->schema, action: $call->action, userId: $call->userId) === true) {
+			$call->denyAll();
+			return;
+		}
+
 		// Admin users bypass all RBAC checks, and so does the userless system.
 		if ($call->callerIsAdmin() === true || $this->isTrustedSystemCaller(user: $user) === true) {
 			return;
@@ -942,6 +950,61 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		$call->qb->andWhere($call->qb->expr()->orX(...$conditions));
 	}//end applyAnyOf()
+
+	/**
+	 * Whether a read of this schema needs a second factor the caller lacks (REQ-IHC-003).
+	 *
+	 * The list half of {@see SecondFactorReadGate}: the find path refuses the
+	 * same caller the same schema in PermissionHandler. When the gate cannot be
+	 * built nothing is declared to it and the list goes on to the grants.
+	 *
+	 * @param Schema      $schema The schema read.
+	 * @param string      $action The action.
+	 * @param string|null $userId The caller.
+	 *
+	 * @return bool True when the list must return nothing.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorRefuses(Schema $schema, string $action, ?string $userId): bool {
+		if ($action !== 'read') {
+			return false;
+		}
+
+		try {
+			$gate = $this->container->get(SecondFactorReadGate::class);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[MagicRbacHandler] The second-factor read gate is unavailable',
+				context: ['error' => $e->getMessage()]
+			);
+			return false;
+		}
+
+		return $gate->readRefusal(schema: $schema, userId: $userId) !== null;
+	}//end secondFactorRefuses()
+
+	/**
+	 * Whether the raw-SQL list of one access call is clamped by the second-factor gate.
+	 *
+	 * The trusted system inside a system operation reads without one, as it
+	 * bypasses the rest of the filter.
+	 *
+	 * @param RbacAccessCall $call The schema, action and table of the read.
+	 *
+	 * @return bool True when the list must return nothing.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorClampsSql(RbacAccessCall $call): bool {
+		$user = $this->identifyCaller(call: $call);
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+		if ($this->isTrustedSystemCaller(user: $user) === true && SystemOperationContext::isActive() === true) {
+			return false;
+		}
+
+		return $this->secondFactorRefuses(schema: $call->schema, action: $call->action, userId: $call->userId);
+	}//end secondFactorClampsSql()
 
 	/**
 	 * Narrow the query to the classification labels the caller may see.
@@ -2181,6 +2244,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function accessConditions(RbacAccessCall $call): array {
+		if ($this->secondFactorClampsSql(call: $call) === true) {
+			return ['bypass' => false, 'conditions' => []];
+		}
+
 		if ($this->sqlFilterBypassed(call: $call) === true) {
 			return ['bypass' => true, 'conditions' => []];
 		}

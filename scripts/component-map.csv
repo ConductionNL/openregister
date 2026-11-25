@@ -3164,6 +3164,7 @@ Service/Rbac/ClassificationListTerm.php,125,Service,Access,Access/Service/Rbac/C
 Service/Rbac/ClassificationReadGate.php,152,Service,Access,Access/Service/Rbac/ClassificationReadGate.php,0,,Core
 Service/Rbac/ClassificationScale.php,219,Service,Access,Access/Service/Rbac/ClassificationScale.php,0,,Core
 Service/Rbac/ClearanceResolver.php,97,Service,Access,Access/Service/Rbac/ClearanceResolver.php,0,,Core
+Service/Rbac/SecondFactorReadGate.php,248,Service,Access,Access/Service/Rbac/SecondFactorReadGate.php,0,,Core
 Service/Rbac/CrossOrganisationMarkerChange.php,46,Service,Access,Access/Service/Rbac/CrossOrganisationMarkerChange.php,0,393,Core
 Service/Rbac/DefinitionWriteRights.php,34,Service,Access,Access/Service/Rbac/DefinitionWriteRights.php,0,433,Core
 Service/Rbac/DenyEnforcementMode.php,59,Service,Access,Access/Service/Rbac/DenyEnforcementMode.php,0,356,Core

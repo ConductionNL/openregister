@@ -1109,6 +1109,7 @@ components:
       - ".*/lib/Service/Rbac/ScopeAudit[.]php"
       - ".*/lib/Service/Rbac/ScopeAuditInterface[.]php"
       - ".*/lib/Service/Rbac/ScopeChange[.]php"
+      - ".*/lib/Service/Rbac/SecondFactorReadGate[.]php"
       - ".*/lib/Service/Rbac/SettingsChange[.]php"
       - ".*/lib/Service/Rbac/SettingsChangeAuditor[.]php"
       - ".*/lib/Service/Rbac/SettingsImport[.]php"

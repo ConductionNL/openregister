@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\AuthorizationRuleEvaluator;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
+use OCA\OpenRegister\Service\Rbac\SecondFactorReadGate;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
@@ -926,7 +927,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		if ($this->classificationRefuses(ask: $ask) === true || $this->confidentialityRefuses(ask: $ask) === true) {
+		if ($this->classificationRefuses(ask: $ask) === true
+			|| $this->confidentialityRefuses(ask: $ask) === true
+			|| $this->secondFactorRefusal(ask: $ask) !== null
+		) {
 			$this->lastRefusalFinal = true;
 			return false;
 		}
@@ -971,6 +975,40 @@ class PermissionHandler implements PermissionHandlerInterface {
 			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
 		) !== null;
 	}//end classificationRefuses()
+
+	/**
+	 * Why a read of this schema's objects needs a second factor this caller lacks, or null.
+	 *
+	 * A schema or a register holding it may require a verified second factor
+	 * for reading (REQ-IHC-003). The refusal is final like classification:
+	 * no grant, administrator bypass or elevation re-opens it. It applies to a
+	 * read of one object and to a schema-level read alike, since it is about
+	 * the caller, not the object. When the gate cannot be built nothing is
+	 * declared to it, and the read goes on to the grants.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return string|null The refusal, naming the requirement and its scope.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorRefusal(PermissionAsk $ask): ?string {
+		if ($ask->action !== 'read') {
+			return null;
+		}
+
+		try {
+			$gate = $this->data->container->get(SecondFactorReadGate::class);
+		} catch (\Throwable $e) {
+			$this->data->logger->error(
+				message: '[PermissionHandler] The second-factor read gate is unavailable',
+				context: ['error' => $e->getMessage()]
+			);
+			return null;
+		}
+
+		return $gate->readRefusal(schema: $ask->schema, userId: $this->callerId(userId: $ask->userId));
+	}//end secondFactorRefusal()
 
 	/**
 	 * Whether the schema's confidentiality block refuses this caller a read of this object.
@@ -2337,6 +2375,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 			->askedBy(userId: $options->userId, objectOwner: $options->objectOwner)
 			->about(object: $options->object, register: $options->register);
 		if ($this->permits(ask: $ask, _rbac: $_rbac) === false) {
+			$secondFactor = $this->secondFactorRefusal(ask: $ask);
+			if ($secondFactor !== null) {
+				throw new NotAuthorizedException(message: $secondFactor);
+			}
+
 			throw $this->notAuthorized(ask: $ask);
 		}
 	}//end checkPermission()
