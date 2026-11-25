@@ -184,5 +184,16 @@
 
 - [x] 4.1 Unit tests for the scope on read and write, the ceiling, the promotion and the retained values. (verified: tests/Unit/Service/Schemas/ScopedPropertyGovernanceTest.php, tests/Unit/Service/Schemas/ScopedPropertyDeclarationTest.php, tests/Unit/Db/SchemaSaveGovernsScopedPropertiesTest.php)
 - [x] 4.2 Unit tests for the filtered options, the refused out-of-filter write and the unresolved operand. (verified: lib/Service/Schemas/ReferenceOptionsReader.php, tests/Unit/Service/Schemas/ReferenceOptionsReaderTest.php, tests/Unit/Service/Schemas/ReferenceFilterMatchTest.php)
-- [ ] 4.3 An e2e over a reference offering only the contacts of the chosen organisation. (live pass, decision 139)
-- [ ] 4.4 Deduplication check (ADR-012) recorded in the PR body.
+- [x] 4.3 An e2e over a reference offering only the contacts of the chosen organisation. (live pass, decision 139)
+  - 2026-11-25: `tests/e2e/ci/reference-options.spec.ts` run for the first time, on a Nextcloud 34 +
+    MariaDB sandbox: 6/6 green with the fix that enforces a declared filter without
+    `validateReference` (its own PR), 5/6 without it (the out-of-filter write got 201). Two spec
+    corrections: the case is created with a title, because an empty body is refused before any
+    reference logic; and the write runs as `e2e-owner` without the admin session, because
+    administrators skip reference validation by default.
+- [x] 4.4 Deduplication check (ADR-012) recorded in the PR body.
+  - Recorded in the PR that ran 4.3. The options read runs the ordinary object search with `_rbac`
+    on; the save guard and the reader share `ReferenceFilterDeclaration::resolve()`; there is one
+    options route. `_ref[...]` (`ReferenceFilterParser`, query-filter-through-a-reference) filters a
+    list on a field of the referenced object at the caller's request; it is not a picker filter and
+    is not duplicated.
