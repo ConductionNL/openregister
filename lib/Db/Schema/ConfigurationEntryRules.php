@@ -64,9 +64,13 @@ final class ConfigurationEntryRules {
 	// by PlatformShareGate: true offers the schema's objects for platform sharing.
 // `federatable` is read by ShareGrantor: true lets the schema's objects be shared
 // with another instance (platform-cloud-federation-provider); absent means not.
+	// `collaborationResources` is read by ObjectResourceProvider: true lets the
+	// schema's objects join Nextcloud collections (platform-collaboration-resources).
+	// Off this list it was dropped on save, so no schema could opt in.
 	private const CONFIG_BOOL_FIELDS = [
 		'allowFiles',
 		'autoShare',
+		'collaborationResources',
 		'defaultAutoShare',
 		'exportable',
 		'federatable',
