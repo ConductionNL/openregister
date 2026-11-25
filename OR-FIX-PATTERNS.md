@@ -959,3 +959,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Fix: rebuild from main: git show origin/main:appinfo/info.xml, re-apply only the PR's own delta (git diff $(git merge-base origin/main <pr>) <pr> -- appinfo/info.xml: its version and its own job/command lines), xmllint, php scripts/check-migration-version-bump.php --base=origin/main (#10451).
 ## Unit runs 100x faster with --no-coverage (or-fix-1, 25 Nov)
 - phpunit-unit.xml collects coverage: every phpunit call spends ~34 s on the 248k-line coverage report. Pass --no-coverage: one Architecture file 34 s -> 0.2 s; all 204 Architecture files in ~4.5 min with xargs -P 4; tests/Unit/Service (38k tests) in ~4 min.
+## appinfo/info.xml <version> conflict: never resolve with --ours (or-fix-5, 25 Nov)
+- Symptom: a main merge conflicts only on the <version> line; after 'git checkout --ours appinfo/info.xml' the diff vs main also removes main's new <job>/<command> lines (e.g. SealAuditBacklogJob/Command, #10515).
+- Fix: git checkout --theirs appinfo/info.xml, then sed only the <version> to the PR's value (or one past main's when equal); git diff origin/main -- appinfo/info.xml must be the one version line. Rerun php scripts/check-migration-version-bump.php --base=origin/main.
