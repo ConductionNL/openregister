@@ -360,4 +360,36 @@ class DeclaredProviderResolverTest extends TestCase {
 
 		$this->assertSame('pending', $this->resolver()->resolve('alpha:codeberg')['status']);
 	}
+
+	public function testTheListingNamesEveryValidDeclarationWithItsOriginAndStatusOnly(): void {
+		$approved = $this->codeberg('beta');
+		$this->declare('alpha', ['alpha:codeberg' => $this->codeberg('alpha')]);
+		$this->declare('beta', ['beta:codeberg' => $approved]);
+		$this->decide($approved, 'approved', '2026-11-01T10:00:00+00:00');
+		$bad = $this->codeberg('gamma');
+		$bad['inject_only'] = true;
+		$this->declare('gamma', ['gamma:codeberg' => $bad]);
+
+		$this->assertSame(
+			[
+				['identifier' => 'alpha:codeberg', 'title' => 'Codeberg', 'origin' => 'alpha', 'status' => 'pending'],
+				['identifier' => 'beta:codeberg', 'title' => 'Codeberg', 'origin' => 'beta', 'status' => 'admitted'],
+			],
+			$this->resolver()->listing()
+		);
+	}
+
+	public function testTheListingIsEmptyWhenNoAppDeclares(): void {
+		$this->installed = ['openregister'];
+
+		$this->assertSame([], $this->resolver()->listing());
+	}
+
+	public function testTheDeclaringAppIsReadFromTheIdentifierEvenWhenTheAppIsGone(): void {
+		$resolver = $this->resolver();
+
+		$this->assertSame('alpha', $resolver->declaringApp('alpha:codeberg'));
+		$this->assertSame('alpha', $resolver->declaringApp('alpha:code:berg'));
+		$this->assertSame('', $resolver->declaringApp('github'));
+	}
 }
