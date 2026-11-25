@@ -44,6 +44,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\RunningNumbersInterface;
 use OCA\OpenRegister\Service\Object\ObjectEventGateInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationInterface;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclarationReader;
+use OCA\OpenRegister\Service\Schemas\IdentityRewriteScope;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IConfig;
@@ -315,7 +316,9 @@ class GeneratedIdentifierListener implements IEventListener {
 	 */
 	private function freeze(ObjectUpdatingEvent $event): void {
 		$old = $event->getOldObject();
-		if ($old === null) {
+		// The audited identifier scheme migration is the one writer that may
+		// change an issued value; it keeps the old one as a foreign identifier.
+		if ($old === null || IdentityRewriteScope::isActive() === true) {
 			return;
 		}
 

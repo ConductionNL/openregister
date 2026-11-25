@@ -163,6 +163,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\ImportRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\QualityAuditScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SealAuditBacklogJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\OneUseJobKeySweepJob</job>
 		<!--
 			Deletes the files of expired export runs and keeps the rows. An
@@ -602,6 +603,7 @@ Vrij en open source onder de EUPL-licentie.
 		     rollback tool, deliberately NOT a repair step. -->
 		<command>OCA\OpenRegister\Command\RollbackApprovalMigrationCommand</command>
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
+		<command>OCA\OpenRegister\Command\SealAuditBacklogCommand</command>
 		<!-- Read-only report: federated shares whose creator does not hold the rights the share grants. -->
 		<command>OCA\OpenRegister\Command\FederationShareRightsCommand</command>
 		<command>OCA\OpenRegister\Command\FederationSharesExpiringCommand</command>
