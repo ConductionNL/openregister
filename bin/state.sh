@@ -22,7 +22,7 @@ _g() { git -C "$ST" "$@"; }
 _now() { date -u +%s; }
 
 st_sync() {
-	_g fetch -q origin "$ST_BRANCH" || return 2
+	if [ -f "$(_g rev-parse --absolute-git-dir)/shallow" ]; then _g fetch -q --depth 400 origin "$ST_BRANCH" || return 2; else _g fetch -q origin "$ST_BRANCH" || return 2; fi
 	_g merge -q --no-edit "origin/$ST_BRANCH" >/dev/null 2>&1 && return 0
 	# Conflicts only in cache/ (derived data such as class-times.json): take the remote copy.
 	local unmerged
