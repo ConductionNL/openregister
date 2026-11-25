@@ -4991,6 +4991,9 @@ Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AdministratorCheck.php,63,Kernel,Kernel,Kernel/Contracts/AdministratorCheck.php,0,,Kernel
 Collaboration/ObjectMembership.php,,Collaboration,,,,,Platform
+Controller/ObjectTransferController.php,,Controller,,,,,Core
+Service/Organisation/ObjectGraphTransfer.php,,Service,,,,,Core
+Service/Organisation/ObjectGraphTransferRefusal.php,,Service,,,,,Core
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
 Service/Flow/IFlowNodeRuntime.php,,Service,Flows,Flows/Service/Flow/IFlowNodeRuntime.php,0,,Processes
 Service/Audit/ReadRuleResolver.php,,Service,Core,,0,,Core
