@@ -62,6 +62,7 @@ use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
+use OCA\OpenRegister\Kernel\Contracts\FileOwnerLookupInterface;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSizeTotalsInterface;
@@ -75,12 +76,14 @@ use OCA\OpenRegister\Kernel\Contracts\Core\RegisterFolderRecordsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ShareLinkUrlInterface;
 use OCA\OpenRegister\Kernel\Contracts\DocumentProcessingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\NoteServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectFileCopierInterface;
 use OCA\OpenRegister\Kernel\Contracts\Search\FileScopeInterface;
 use OCA\OpenRegister\Kernel\Contracts\TaggingHandlerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Service\Object\CopyFiles;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Kernel\Contracts\TextEntityDetectorInterface;
@@ -107,6 +110,7 @@ final class FilesRegistrar
         FileAccountInterface::class               => FileOwnershipHandler::class,
         FileAuditHandlerInterface::class          => FileAuditHandler::class,
         FileMapperInterface::class                => FileMapper::class,
+        FileOwnerLookupInterface::class           => FileMapper::class,
         FileSizeTotalsInterface::class            => FileMapper::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
         AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
@@ -117,6 +121,7 @@ final class FilesRegistrar
         FileTagCatalogueInterface::class          => FileServiceInterface::class,
         NcOfficeConverterInterface::class         => ConversionManagerConverter::class,
         NoteServiceInterface::class               => NoteService::class,
+        ObjectFileCopierInterface::class          => CopyFiles::class,
         ObjectFileRightsInterface::class          => ObjectFileAccess::class,
         ObjectFileRecordsInterface::class         => FileMapper::class,
         ObjectFilesArchiveInterface::class        => ObjectFilesArchive::class,

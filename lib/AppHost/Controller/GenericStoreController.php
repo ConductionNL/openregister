@@ -300,8 +300,49 @@ class GenericStoreController extends Controller {
 			return $refusal;
 		}
 
-		return $this->installItem(store: $store, slug: $slug);
+		// Where the install goes: a world, an administration. Only a target
+		// the app declared is accepted; an undeclared one is refused rather
+		// than ignored, so nothing lands somewhere the caller did not ask for.
+		$target  = ($this->stringParam(name: 'target') ?? '');
+		$refusal = $this->targetRefusal(store: $store, target: $target);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->installItem(store: $store, slug: $slug, target: $target);
 	}//end install()
+
+	/**
+	 * The refusal for an install target this store cannot take, or null when it can.
+	 *
+	 * @param StoreManifest $store  The declared store block.
+	 * @param string        $target The requested target, '' for none.
+	 *
+	 * @return JSONResponse|null 400 for an undeclared or malformed target; null otherwise.
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	private function targetRefusal(StoreManifest $store, string $target): ?JSONResponse {
+		if ($target === '') {
+			return null;
+		}
+
+		if ($store->installTarget->isDeclared() === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'This store does not install into a target.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($store->installTarget->isWellFormed(target: $target) === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'Malformed install target.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return null;
+	}//end targetRefusal()
 
 	/**
 	 * The refusal for an install this caller may not run, or null when every gate passes.
@@ -363,12 +404,13 @@ class GenericStoreController extends Controller {
 	/**
 	 * Resolve and install one item through the catalogue that owns it.
 	 *
-	 * @param StoreManifest $store The declared store block.
-	 * @param string        $slug  The remote item slug.
+	 * @param StoreManifest $store  The declared store block.
+	 * @param string        $slug   The remote item slug.
+	 * @param string        $target The chosen install target, '' for none.
 	 *
 	 * @return JSONResponse 200 with the install report; 404 when unresolved.
 	 */
-	private function installItem(StoreManifest $store, string $slug): JSONResponse {
+	private function installItem(StoreManifest $store, string $slug, string $target): JSONResponse {
 		$descriptor = $this->descriptor(store: $store);
 
 		$item = $this->resolveOrNull(descriptor: $descriptor, slug: $slug);
@@ -383,11 +425,14 @@ class GenericStoreController extends Controller {
 		// set arrives as registers, schemas, flows and objects rather than as
 		// rows of whichever schema the plane happened to allow.
 		if ($descriptor->isFederated() === true) {
-			return new JSONResponse(data: $this->services->sources->catalog->install(ref: $item), statusCode: Http::STATUS_OK);
+			return new JSONResponse(
+				data: $this->services->sources->catalog->install(ref: $item, stamp: $store->installTarget->stampFor(target: $target)),
+				statusCode: Http::STATUS_OK
+			);
 		}
 
 		return new JSONResponse(
-			data: $this->services->install->installer->install(store: $store, item: $item),
+			data: $this->services->install->installer->install(store: $store, item: $item, target: $target),
 			statusCode: Http::STATUS_OK
 		);
 	}//end installItem()
