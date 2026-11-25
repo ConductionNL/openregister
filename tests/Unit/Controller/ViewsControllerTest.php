@@ -162,7 +162,6 @@ class ViewsControllerTest extends TestCase {
 	public function testShowSuccess(): void {
 		$this->mockAuthenticatedUser();
 		$view = $this->createViewEntity();
-		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
 
 		$result = $this->controller->show('1');
@@ -171,9 +170,54 @@ class ViewsControllerTest extends TestCase {
 		$this->assertArrayHasKey('view', $result->getData());
 	}
 
+	/**
+	 * A view shared with a group the caller is in is read by them: the list
+	 * already lists it, so opening it must not answer 404.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function testShowAnswersAViewSharedWithTheCallersGroup(): void {
+		$this->mockAuthenticatedUser('member');
+		$this->groupManager->method('getUserGroupIds')->willReturn(['vergunningen']);
+		$view = $this->createViewEntity();
+		$view->setOwner('lead');
+		$view->setSharedWith([['group' => 'vergunningen', 'mode' => 'read']]);
+		$this->viewService->method('findById')->willReturn($view);
+		$this->viewService->expects($this->never())->method('find');
+
+		$result = $this->controller->show('1');
+
+		$this->assertEquals(200, $result->getStatus());
+		$this->assertSame('lead', $result->getData()['view']['owner']);
+		$this->assertSame('read', $result->getData()['view']['@self']['access'], 'a member is told the view is read-only for them');
+	}//end testShowAnswersAViewSharedWithTheCallersGroup()
+
+	/**
+	 * A private view of somebody else, shared with no group of the caller,
+	 * answers the 404 of a missing view, on show and on the board.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function testAViewThatDoesNotReachTheCallerIsA404(): void {
+		$this->mockAuthenticatedUser('stranger');
+		$this->groupManager->method('getUserGroupIds')->willReturn(['elsewhere']);
+		$this->request->method('getParams')->willReturn([]);
+		$view = $this->createViewEntity();
+		$view->setOwner('lead');
+		$view->setSharedWith([['group' => 'vergunningen', 'mode' => 'read']]);
+		$this->viewService->method('findById')->willReturn($view);
+
+		$this->assertEquals(404, $this->controller->show('1')->getStatus());
+		$this->assertEquals(404, $this->controller->kanban('1')->getStatus());
+	}//end testAViewThatDoesNotReachTheCallerIsA404()
+
 	public function testShowNotFound(): void {
 		$this->mockAuthenticatedUser();
-		$this->viewService->method('find')
+		$this->viewService->method('findById')
 			->willThrowException(new DoesNotExistException('not found'));
 
 		$result = $this->controller->show('999');
@@ -453,7 +497,7 @@ class ViewsControllerTest extends TestCase {
 
 	public function testShowException(): void {
 		$this->mockAuthenticatedUser();
-		$this->viewService->method('find')
+		$this->viewService->method('findById')
 			->willThrowException(new \Exception('Unexpected error'));
 
 		$this->logger->expects($this->once())->method('error');
@@ -1114,7 +1158,7 @@ class ViewsControllerTest extends TestCase {
 
 	public function testKanbanNotFound(): void {
 		$this->mockAuthenticatedUser();
-		$this->viewService->method('find')
+		$this->viewService->method('findById')
 			->willThrowException(new DoesNotExistException('not found'));
 
 		$result = $this->controller->kanban('999');
@@ -1127,7 +1171,6 @@ class ViewsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 
 		$view = $this->createViewEntity();
-		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
 
 		$board = [
@@ -1150,7 +1193,6 @@ class ViewsControllerTest extends TestCase {
 		$this->request->method('getParams')->willReturn([]);
 
 		$view = $this->createViewEntity();
-		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
 		$this->viewPresentationService->method('getKanbanBoard')
 			->willThrowException(new \InvalidArgumentException('View is not a kanban view (viewType is "table")'));
@@ -1189,7 +1231,6 @@ class ViewsControllerTest extends TestCase {
 		]);
 
 		$view = $this->createViewEntity();
-		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
 
 		$calendarResult = [
@@ -1213,7 +1254,6 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		$this->request->method('getParams')->willReturn(['rangeStart' => '2026-07-01', 'rangeEnd' => '2026-07-31']);
 		$view = $this->createViewEntity();
-		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
 		$this->viewPresentationService->expects($this->once())->method('getCalendarObjects')
 			->with($view, $this->callback(fn ($range) => $range->start === '2026-07-01' && $range->end === '2026-07-31'))
@@ -1237,7 +1277,6 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		$this->request->method('getParams')->willReturn(['start' => '2026-07-31', 'end' => '2026-07-01']);
 		$view = $this->createViewEntity();
-		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
 		$this->viewPresentationService->method('getCalendarObjects')
 			->willThrowException(new \InvalidArgumentException('The range ends before it starts'));
@@ -1252,7 +1291,6 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		$this->request->method('getParams')->willReturn(['start' => '2026-07-01', 'end' => '2026-07-31']);
 		$view = $this->createViewEntity();
-		$this->viewService->method('find')->willReturn($view);
 		$this->viewService->method('findById')->willReturn($view);
 		$this->viewPresentationService->method('getCalendarObjects')->willThrowException(new \RuntimeException('db down'));
 		$this->logger->expects($this->once())->method('error')
@@ -1270,7 +1308,7 @@ class ViewsControllerTest extends TestCase {
 			'start' => '2026-07-01',
 			'end' => '2026-07-31',
 		]);
-		$this->viewService->method('find')
+		$this->viewService->method('findById')
 			->willThrowException(new DoesNotExistException('not found'));
 
 		$result = $this->controller->calendar('999');
