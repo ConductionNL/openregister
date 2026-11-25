@@ -4679,3 +4679,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T03:23:55Z session-20261125T023653-95ccf353 or-fix-4: fixed 10614 -> e8eafdb3 (yaml), 10514 -> 73868ab0 (webhook allowlist+ownership merge, middleware, listener 261, factory arg order, en.js), 10504 -> a9db544d (BLOCK: Files binding count 36), all REVERIFY; 11064 11094 11084 green merged with main (inherited only), 11074 11104 approved clean; precheck-when-idle refused by the cloud permission check (gitleaks install), skipped
 2026-11-25T03:24:47Z integrator-20261125T031209-b842bbc3 NORESULT tree b07247e55c: deps failed
 2026-11-25T03:25:45Z or-fix-2 session start (lane 2 of 10)
+2026-11-25T03:29:57Z precheck-20261125T032724-4a6e09ce NORESULT tree a21b3fcfe1: deps failed
