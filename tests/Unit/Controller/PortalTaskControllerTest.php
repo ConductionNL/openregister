@@ -54,6 +54,7 @@ use RuntimeException;
  * HTTP status and body translation for every portal task route.
  *
  * @covers \OCA\OpenRegister\Controller\PortalTaskController
+ * @uses \OCA\OpenRegister\Service\File\MalwareScanRefusal
  * @uses \OCA\OpenRegister\Controller\Support\PortalTaskDomain
  * @uses \OCA\OpenRegister\Controller\Support\PortalTaskPlatform
  * @uses \OCA\OpenRegister\Controller\Support\PortalTaskControllerServices
@@ -294,6 +295,26 @@ class PortalTaskControllerTest extends TestCase {
 			}
 		}
 	}//end testCompletionRefusalsTranslateUniformly()
+
+	/**
+	 * A malware scan refusal keeps its own status and body: 422 for an infected file, 503 with no scanner (REQ-UMS-001).
+	 *
+	 * @return void
+	 */
+	public function testAMalwareScanRefusalAnswersWithItsOwnStatus(): void {
+		$this->subjectResolves();
+		$this->request->method('getUploadedFile')->willReturn(null);
+		foreach ([new \OCA\OpenRegister\Service\File\MalwareScanRefusal(status: 422, body: ['error' => 'malware-found', 'file' => 'eicar.com']), \OCA\OpenRegister\Service\File\MalwareScanRefusal::unavailable()] as $refusal) {
+			$portal = $this->createMock(PortalTaskService::class);
+			$portal->method('complete')->willThrowException($refusal);
+			$this->portal = $portal;
+
+			$response = $this->controller()->complete(uuid: 't-1');
+
+			$this->assertSame($refusal->status, $response->getStatus());
+			$this->assertSame($refusal->body, $response->getData());
+		}
+	}//end testAMalwareScanRefusalAnswersWithItsOwnStatus()
 
 	/**
 	 * A task completed through an app action answers 409 `complete-via-app`

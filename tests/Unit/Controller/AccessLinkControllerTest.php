@@ -601,6 +601,17 @@ class AccessLinkControllerTest extends TestCase {
 		$this->assertSame([Http::STATUS_BAD_REQUEST, ['message' => 'The file could not be stored.']], [$response->getStatus(), $response->getData()]);
 	}
 
+	public function testAnUploadTheMalwareScanRefusesAnswersWithItsStatusAndRecordsNoUse(): void {
+		$this->uploadable();
+		$this->params = ['name' => 'eicar.com', 'content' => 'x'];
+		$this->acts->method('upload')->willThrowException(new \OCA\OpenRegister\Service\File\MalwareScanRefusal(status: 422, body: ['error' => 'malware-found', 'file' => 'eicar.com']));
+		$this->links->expects($this->never())->method('recordUse');
+
+		$response = $this->controller->upload(anchor: 'a');
+
+		$this->assertSame([422, ['error' => 'malware-found', 'file' => 'eicar.com']], [$response->getStatus(), $response->getData()]);
+	}
+
 	public function testAStoredUploadAnswersTheStoredFileAndRecordsTheTrimmedName(): void {
 		$this->uploadable();
 		$this->params = ['name' => ' a.txt ', 'content' => 'x', 'encoding' => 'plain'];
