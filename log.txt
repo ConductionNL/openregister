@@ -4819,3 +4819,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 See "git help gc" for manual housekeeping.
 remote: error: GH013: Repository rule violations f; per-PR merges
 2026-11-25T10:45:55Z precheck-20261125T100507-543643c0 GREEN tree 4728be3b23 on dev 1e257c721f prs 1 front=skip: Tests: 66403, Assertions: 235279, Errors: 9, Failures: 1, Deprecations: 25, PHPUnit Deprecations: 1, Skipped: 27.
+2026-11-25T10:46:28Z integrator-20261125T091917-ff3156fa MERGED-TREE 43478a12db: 5 PRs, main now 03d2528a7e = tested tree
