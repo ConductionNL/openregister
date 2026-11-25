@@ -494,6 +494,7 @@ final class FlowWiringTest extends TestCase {
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 				SaveBoundaryInterface::class               => AutoTransitionPass::class,
 				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
+				\OCA\OpenRegister\Kernel\Contracts\BusinessTimeInterface::class => \OCA\OpenRegister\Service\Flow\Timer\BusinessTime::class,
 				SaveWarningsInterface::class               => SaveWarnings::class,
 				\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
 				ObjectTaskReaderInterface::class           => ObjectTaskReader::class,

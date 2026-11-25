@@ -214,6 +214,7 @@ final class FlowWiring {
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
 		SaveBoundaryInterface::class => AutoTransitionPass::class,
 		ElevationAttributionInterface::class => ObjectActionElevationAttribution::class,
+		\OCA\OpenRegister\Kernel\Contracts\BusinessTimeInterface::class => \OCA\OpenRegister\Service\Flow\Timer\BusinessTime::class,
 		\OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface::class => \OCA\OpenRegister\Service\Rules\SaveWarnings::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
 		// The published read of the tasks on an object (lib/Contract), for consuming apps.
