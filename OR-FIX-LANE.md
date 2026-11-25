@@ -1,5 +1,7 @@
 # K is the lane number given in your routine prompt; substitute it everywhere below.
 
+LIVE IN THE SANDBOX (Ruben, 25 Nov 2026 12:00 CET): live-only tasks are no longer skipped or parked. When a task needs a running Nextcloud, Playwright, Newman, axe, a browser or a seed check, bring up your own instance per LIVE-LANE.md section 1 (once per run, about 10 minutes) and do the task per its sections 2 and 3. This overrides every line below that says to skip live tasks or mark them 'written, runs in nightly'. Still skipped: product decisions not in FINISH-ORDER.md DECISIONS (decide and log them yourself per the 22 Nov delegation), and external systems the sandbox cannot run.
+
 PREINSTALLED (25 Nov 2026 09:00 CET): the cloud environment's setup script now installs gitleaks and a current PHP 8.3. Run `gitleaks version` and `php -v` first; when gitleaks answers and PHP is 8.3.16 or newer, skip every install step for them (never sudo-install), and go straight to the work.
 
 COORDINATOR AWAY (24 Nov 2026 20:00 CET, until Ruben is back): never wait for the coordinator. Anything only the coordinator can do (a refused merge, a release bump, an unanswered decision) goes as one line into COORDINATOR-QUEUE.md (format there), then continue with other work. Merge main/development into your own conflicting dependency PRs so they stay mergeable.
