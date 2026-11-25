@@ -4927,3 +4927,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T12:11:01Z session-20261125T114339-4ba64678 cloud-or-reviewer-6: APPROVE 11086 (fast path, only main merge); 10526 10614 REVERIFY-less heads conflict with main 92fa77c0 (components yaml; no verdict); 11150 11158 draft; 10550 11094 11126 11134 11142 ledgered at head; 10982 BLOCK stands
 2026-11-25T12:11:50Z precheck-20261125T121020-e377130d CONFLICT-DEV #10451 c3c8975f
 2026-11-25T12:12:01Z precheck-20261125T121020-e377130d NORESULT tree 2bf1b9d67a: deps failed
+2026-11-25T12:12:04Z precheck-20261125T094406-af1e29a6 CONFLICT-DEV #11086 61e64826
