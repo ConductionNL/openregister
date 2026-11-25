@@ -9039,6 +9039,17 @@
                 ]
             ],
             [
+                "schemaMapper.findMultiple",
+                [
+                    [
+                        9,
+                        6
+                    ],
+                    false,
+                    false
+                ]
+            ],
+            [
                 "schemaMapper.countBySlug",
                 [
                     "none"
