@@ -12,7 +12,6 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Files\Service\File\Pdf\PdfReachableSerialiser;
 use OCA\OpenRegister\Service\File\ImageBurner;
 use OCA\OpenRegister\Service\File\ImageRegion;
 use OCA\OpenRegister\Service\File\ImageRegionNotBurnableException;
@@ -31,7 +30,6 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(ImageBurner::class)]
 #[UsesClass(ImageRegion::class)]
 #[UsesClass(ImageRegionNotBurnableException::class)]
-#[UsesClass(PdfReachableSerialiser::class)]
 final class PdfImageBurnerTest extends TestCase {
 
 	private static function region(?int $page = 1, float $x = 0.0, float $y = 0.0): ImageRegion {

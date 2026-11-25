@@ -72,7 +72,6 @@ class ImageRedactionService {
 	 * @param ImageBurner                 $burner    Burns regions into pixels.
 	 * @param AnonymisationLogMapper|null $runs      Where detection runs are recorded; none records nothing.
 	 * @param OfficeMediaBurner|null      $media     Burns regions into the images of DOCX and ODT files.
-	 * @param PdfImageBurner|null         $pdf       Burns regions into the page images of PDF files.
 	 *
 	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md
 	 */
@@ -85,7 +84,6 @@ class ImageRedactionService {
 		private readonly ImageBurner $burner,
 		private readonly ?AnonymisationLogMapper $runs = null,
 		private readonly ?OfficeMediaBurner $media = null,
-		private readonly ?PdfImageBurner $pdf = null,
 	) {
 	}//end __construct()
 
@@ -267,7 +265,7 @@ class ImageRedactionService {
 	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
 	 */
 	public function burnsEmbeddedImages(string $mimeType): bool {
-		return OfficeMediaBurner::handles(mimeType: $mimeType) === true || PdfImageBurner::handles(mimeType: $mimeType) === true;
+		return OfficeMediaBurner::handles(mimeType: $mimeType) === true || $mimeType === ImageBurner::PDF_TYPE;
 	}//end burnsEmbeddedImages()
 
 	/**
@@ -290,8 +288,8 @@ class ImageRedactionService {
 	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
 	 */
 	public function burnEmbeddedImages(string $bytes, string $mimeType, array $regions, string $fileName): string {
-		if (PdfImageBurner::handles(mimeType: $mimeType) === true) {
-			return ($this->pdf ?? new PdfImageBurner(burner: $this->burner))->burn(bytes: $bytes, regions: $regions, fileName: $fileName);
+		if ($mimeType === ImageBurner::PDF_TYPE) {
+			return $this->burner->burnPdfPages(bytes: $bytes, regions: $regions, fileName: $fileName);
 		}
 
 		if (OfficeMediaBurner::handles(mimeType: $mimeType) === false) {

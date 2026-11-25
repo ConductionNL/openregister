@@ -33,7 +33,6 @@ use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
 use OCA\OpenRegister\Service\File\ImageRegionNotBurnableException;
-use OCA\OpenRegister\Service\File\PdfImageBurner;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
@@ -516,7 +515,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 */
 	private function isScannedPdfWithRegions(File $file): bool {
 		$images = $this->redaction->images;
-		if ($images === null || PdfImageBurner::handles(mimeType: (string)$file->getMimeType()) === false
+		if ($images === null || (string)$file->getMimeType() !== 'application/pdf'
 			|| $images->decidedRegions(file: $file) === []
 		) {
 			return false;

@@ -51,7 +51,6 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\File\ImageBurner
  * @covers \OCA\OpenRegister\Service\File\OfficeMediaBurner
  * @covers \OCA\OpenRegister\Service\File\PdfImageBurner
- * @uses   \OCA\OpenRegister\Files\Service\File\Pdf\PdfReachableSerialiser
  * @uses   \OCA\OpenRegister\Files\Db\AnonymisationLog
  * @uses   \OCA\OpenRegister\Service\File\ImageDetection
  * @uses   \OCA\OpenRegister\Service\File\ImageRegion

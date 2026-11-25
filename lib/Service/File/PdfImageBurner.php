@@ -26,7 +26,6 @@ use ddn\sapp\PDFDoc;
 use ddn\sapp\PDFObject;
 use ddn\sapp\pdfvalue\PDFValueObject;
 use GdImage;
-use OCA\OpenRegister\Files\Service\File\Pdf\PdfReachableSerialiser;
 use Throwable;
 
 /**
@@ -35,10 +34,10 @@ use Throwable;
  * A region's `page` is the 1-based PDF page and its box is relative to that
  * page's image, so the page must hold exactly one image XObject; a page with
  * none or with several is refused rather than guessed at. The burned image is
- * written uncompressed-then-Flate in the image's own colour space, without the
- * old stream's metadata, and the document is saved in full with only the
- * objects still reachable, so the original image stream is absent from the
- * output. No annotation or overlay is added.
+ * written Flate-compressed in the image's own colour space under the same
+ * object id, its XMP metadata stream is emptied, and the document is rebuilt
+ * in one revision, so the original image stream is absent from the output.
+ * No annotation or overlay is added.
  *
  * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-decided-regions-are-burned-into-the-pixels-req-ais-003
  */
@@ -97,14 +96,22 @@ class PdfImageBurner {
 		$doc = $this->load(bytes: $bytes, fileName: $fileName);
 		foreach ($this->regionsByPage(regions: $regions, pageCount: (int)$doc->get_page_count(), fileName: $fileName) as $page => $pageRegions) {
 			$image = $this->pageImage(doc: $doc, page: $page, fileName: $fileName, region: $pageRegions[0]);
+			$this->blankMetadata(doc: $doc, image: $image);
 			$doc->add_object($this->burnedImage(doc: $doc, image: $image, regions: $pageRegions, fileName: $fileName));
 		}
 
+		$serialised = false;
 		try {
-			return (new PdfReachableSerialiser())->serialise(doc: $doc);
-		} catch (Throwable $e) {
-			throw new ImageRegionNotBurnableException(fileName: $fileName, reason: 'the burned PDF could not be written: ' . $e->getMessage());
+			$serialised = $doc->to_pdf_file_s(rebuild: true);
+		} catch (Throwable) {
+			$serialised = false;
 		}
+
+		if (is_string($serialised) === false || $serialised === '') {
+			throw new ImageRegionNotBurnableException(fileName: $fileName, reason: 'the burned PDF could not be written.');
+		}
+
+		return $serialised;
 	}//end burn()
 
 	/**
@@ -226,6 +233,25 @@ class PdfImageBurner {
 
 		return null;
 	}//end resources()
+
+	/**
+	 * Empty the XMP metadata stream an image carries, so its old metadata does not survive the rebuild.
+	 *
+	 * @param PDFDoc    $doc   The document.
+	 * @param PDFObject $image The image XObject.
+	 *
+	 * @return void
+	 */
+	private function blankMetadata(PDFDoc $doc, PDFObject $image): void {
+		$metadata = $this->objectOf(doc: $doc, oid: $this->reference(value: ($image['Metadata'] ?? null)));
+		if ($metadata === false) {
+			return;
+		}
+
+		$blank = new PDFObject($metadata->get_oid(), ['Type' => '/Metadata', 'Subtype' => '/XML', 'Length' => 0]);
+		$blank->set_stream('', true);
+		$doc->add_object($blank);
+	}//end blankMetadata()
 
 	/**
 	 * Burn the regions into an image XObject and answer its replacement.
