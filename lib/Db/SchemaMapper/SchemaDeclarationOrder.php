@@ -224,6 +224,11 @@ final class SchemaDeclarationOrder {
 	public const CLASSIFICATION = 350;
 
 	/**
+	 * The break-glass declaration (grants-that-follow-a-slot-a-relation-or-a-reason).
+	 */
+	public const BREAK_GLASS = 355;
+
+	/**
 	 * The confidentiality.
 	 */
 	public const CONFIDENTIALITY = 360;
