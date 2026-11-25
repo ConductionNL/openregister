@@ -647,6 +647,15 @@ decides whether an opt-out applies; empty means service mail.
 message is posted as the run's acting user, who must already be a participant.
 The step never adds anyone to a conversation; "not a participant" fails it.
 
+**`openregister.survey-invite`** (Invite to a survey). Sends one survey
+invitation per item, after an optional `delay` that suspends the run as the
+Wait step does. Keys: `register`, `survey`, `respondent` (required),
+`subject` (the item's own object when empty), `expiresIn` (default 30 days),
+`delay`. The outcome is put on the item under `surveyInvitation`, with the
+answering `url` for a sent invitation, so a following
+`openregister.send-email` step can mail the link. An invitation refused by the
+fatigue limit is recorded as blocked rather than sent.
+
 ### Steps from other apps
 
 Other apps add steps to the palette through the same registration event
