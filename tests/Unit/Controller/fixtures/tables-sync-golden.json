@@ -319,8 +319,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to sync magic table",
-            "message": "register gone"
+            "error": "Failed to sync magic table"
         }
     },
     "sync: schema not in register": {
@@ -458,8 +457,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to sync magic table",
-            "message": "ddl failed"
+            "error": "Failed to sync magic table"
         }
     },
     "sync: unknown numeric schema": {
@@ -489,12 +487,19 @@
         "calls": [
             {
                 "registerMapper.findAll": []
+            },
+            {
+                "logger.error": [
+                    "[TablesController] Magic table sync of all registers failed",
+                    {
+                        "error": "db down"
+                    }
+                ]
             }
         ],
         "status": 500,
         "data": {
-            "error": "Failed to sync magic tables",
-            "message": "db down"
+            "error": "Failed to sync magic tables"
         }
     },
     "syncAll: mixed": {

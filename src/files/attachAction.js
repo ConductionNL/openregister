@@ -14,8 +14,6 @@
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { Permission, registerFileAction } from '@nextcloud/files'
 import { translate as t } from '@nextcloud/l10n'
-import { spawnDialog } from '@nextcloud/vue/functions/dialog'
-import AttachToObjectDialog from '../dialogs/files/AttachToObjectDialog.vue'
 
 export const ATTACH_ACTION_ID = 'openregister-add-to-object'
 
@@ -41,6 +39,12 @@ export const attachAction = {
 		&& Number.isInteger(nodes[0].fileid),
 	async exec({ nodes }) {
 		const node = nodes[0]
+		// The picker and its dialog load on first use, so the Files entry stays
+		// light on every page that carries it.
+		const [{ spawnDialog }, { default: AttachToObjectDialog }] = await Promise.all([
+			import(/* webpackChunkName: "files-sidebar-app" */ '@nextcloud/vue/functions/dialog'),
+			import(/* webpackChunkName: "files-sidebar-app" */ '../dialogs/files/AttachToObjectDialog.vue'),
+		])
 		const attached = await spawnDialog(AttachToObjectDialog, { nodeId: node.fileid })
 		if (!attached) {
 			// Closed without picking: not a failure, nothing to report.
