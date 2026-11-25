@@ -25,7 +25,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\CopySealerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * Writes the restorable copy of an object before it is destroyed.
@@ -45,6 +47,13 @@ use RuntimeException;
 final class DestructionCopyWriter {
 
 	/**
+	 * The file suffix of a copy written as an encrypted set.
+	 *
+	 * @var string
+	 */
+	public const SEALED_SUFFIX = '.json.orsetenc';
+
+	/**
 	 * Write the copy of one object and answer its path.
 	 *
 	 * @param string       $location The configured copy location: an absolute directory outside the application.
@@ -56,11 +65,62 @@ final class DestructionCopyWriter {
 	 * @throws RuntimeException When the copy cannot be written; the message names the location.
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md#requirement-a-destruction-writes-a-restorable-copy-first-req-ipc-004
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
 	 */
 	public function write(string $location, string $listUuid, ObjectEntity $object): string {
 		$directory = $this->listDirectory(location: $location, listUuid: $listUuid);
 		$path      = $directory . '/' . $this->safeName(name: (string) $object->getUuid()) . '.json';
 
+		$copy = $this->document(object: $object);
+		$this->put(target: new DestructionCopyTarget(path: $path, location: $location, uuid: (string) $object->getUuid()), bytes: $copy);
+
+		return $path;
+	}//end write()
+
+	/**
+	 * Write the copy of one object encrypted with an export key and answer its path.
+	 *
+	 * The same document {@see write()} writes, sealed as an encrypted set
+	 * before it touches the disk, so no plaintext copy is ever written. The
+	 * file is `<location>/<list uuid>/<object uuid>.json.orsetenc`.
+	 *
+	 * @param string              $location The configured copy location.
+	 * @param string              $listUuid The destruction list the object is destroyed under.
+	 * @param ObjectEntity        $object   The object about to be destroyed.
+	 * @param CopySealerInterface $sealer   Encrypts the document with the organisation's export key.
+	 *
+	 * @return string The path of the written copy.
+	 *
+	 * @throws RuntimeException When the copy cannot be sealed or written; the message names the location.
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
+	 */
+	public function writeSealed(string $location, string $listUuid, ObjectEntity $object, CopySealerInterface $sealer): string {
+		$directory = $this->listDirectory(location: $location, listUuid: $listUuid);
+		$path      = $directory . '/' . $this->safeName(name: (string) $object->getUuid()) . self::SEALED_SUFFIX;
+		$target    = new DestructionCopyTarget(path: $path, location: $location, uuid: (string) $object->getUuid());
+
+		try {
+			$sealed = $sealer->seal(plain: $this->document(object: $object));
+		} catch (Throwable $e) {
+			throw $this->unwritten(target: $target);
+		}
+
+		$this->put(target: $target, bytes: $sealed);
+
+		return $path;
+	}//end writeSealed()
+
+	/**
+	 * The copy as JSON: the object as the API serialises it plus its register and schema.
+	 *
+	 * @param ObjectEntity $object The object about to be destroyed.
+	 *
+	 * @return string The document; '' when it cannot be encoded.
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
+	 */
+	private function document(ObjectEntity $object): string {
 		$copy = json_encode(
 			[
 				'uuid'     => $object->getUuid(),
@@ -70,13 +130,42 @@ final class DestructionCopyWriter {
 			],
 			(JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR)
 		);
-		if ($copy === false || @file_put_contents($path, $copy, LOCK_EX) !== strlen($copy)) {
-			$message = 'The copy of object %s could not be written to the destruction copy location "%s".';
-			throw new RuntimeException(sprintf($message, (string) $object->getUuid(), $location));
-		}
 
-		return $path;
-	}//end write()
+		return (string) $copy;
+	}//end document()
+
+	/**
+	 * Write all of these bytes to the copy's path.
+	 *
+	 * @param DestructionCopyTarget $target Where the copy goes, and what a failure names.
+	 * @param string                $bytes  The copy.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When nothing or not all of it was written.
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
+	 */
+	private function put(DestructionCopyTarget $target, string $bytes): void {
+		if ($bytes === '' || @file_put_contents($target->path, $bytes, LOCK_EX) !== strlen($bytes)) {
+			throw $this->unwritten(target: $target);
+		}
+	}//end put()
+
+	/**
+	 * The failure of one copy, naming the location.
+	 *
+	 * @param DestructionCopyTarget $target The copy that was not written.
+	 *
+	 * @return RuntimeException The failure.
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
+	 */
+	private function unwritten(DestructionCopyTarget $target): RuntimeException {
+		$message = 'The copy of object %s could not be written to the destruction copy location "%s".';
+
+		return new RuntimeException(sprintf($message, $target->uuid, $target->location));
+	}//end unwritten()
 
 	/**
 	 * The list's directory under the location, made when absent.
