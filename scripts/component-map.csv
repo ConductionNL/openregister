@@ -4556,6 +4556,9 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Controller/Support/WebhookOwnership.php,,Controller,,,,,Integrations
+Service/Webhook/OwnedWebhookValidator.php,,Service,,,,,Integrations
+Listener/OwnedWebhooksEndWithOwnerListener.php,,Listener,,,,,Integrations
 Service/Anonymisation/DetectorEvaluation.php,233,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluation.php,0,,Compliance
 Service/Anonymisation/DetectorEvaluationService.php,92,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationService.php,0,,Compliance
 Service/Anonymisation/DetectorEvaluationStore.php,87,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationStore.php,0,,Compliance
@@ -4878,6 +4881,8 @@ Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel
 Service/ProcessesServiceBindings.php,,Service,,,,,Processes
 Service/ProcessesServiceRegistrar.php,,Service,,,,,Processes
 Service/Object/PermissionAsk.php,,Service,,,,,Kernel
+Kernel/Contracts/SchemaReadRightInterface.php,,Kernel,,,,,Kernel
+Service/Object/SchemaReadRight.php,,Service,,,,,Core
 Kernel/Contracts/BoundedQueryRunInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AdminQueryRunnerInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DependencyBreakerInterface.php,,Kernel,,,,,Kernel
