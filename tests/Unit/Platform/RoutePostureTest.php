@@ -198,6 +198,7 @@ final class RoutePostureTest extends TestCase {
 		'Files\\Controller\\FilesController::unlock' => self::OBJECT_RULE,
 		'Files\\Controller\\FilesController::update' => self::OBJECT_RULE,
 		'Files\\Controller\\FilesController::updateLabels' => self::OBJECT_RULE,
+		'Files\\Controller\\FilesController::verifyDigest' => self::PUBLISHED_FILE,
 		'Notifications\\Controller\\WebPushController::hexBadge' => self::PUBLIC_DOCUMENT,
 		'Notifications\\Controller\\WebPushController::hexIcon' => self::PUBLIC_DOCUMENT,
 		'Search\\Controller\\GraphQLController::execute' => self::OBJECT_RULE,

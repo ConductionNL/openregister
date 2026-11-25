@@ -7,8 +7,10 @@
 ## 2. Extraction and search (REQ-AMS-002)
 
 - [x] 2.1 Teach `FileHandler` / `TextExtractionService` to treat a zip as an archive (not a generic type) and extract members with the existing extractors in memory, writing chunks with `positionReference.member`. Verify: `tests/Unit/Service/TextExtraction/ArchiveMemberExtractionTest.php::testEachMemberGetsItsOwnChunks` through `TextExtractionService::extractFile()`, the path the background job takes.
-- [ ] 2.2 Run detection per member and store relations with the member path. Verify: `ArchiveMemberExtractionTest::testDetectionRunsPerMember`.
-- [ ] 2.3 Return member hits from the file search API and `lib/Search/` unified search provider with archive file id, member path and owning object, under the archive's read rights. Verify: `tests/Unit/Service/ArchiveMemberSearchTest.php::testAMemberHitNamesItsPath`, `testAMemberHitObeysTheArchiveFileRights`.
+- [x] 2.2 Run detection per member and store relations with the member path. Verify: `ArchiveMemberExtractionTest::testDetectionRunsPerMember`.
+      > 2026-11-25: detection already runs over the archive's chunks, one member per chunk; `EntityRecognitionHandler` now stores the chunk's member path on each relation in the new nullable `archive_member` column (`Version1Date20261125013000`; `member` is reserved in MySQL 8). `ArchiveMemberExtractionTest::testDetectionRunsPerMember` extracts a two-member zip and runs detection over its chunks: each relation names its own member, on the archive file, through its own chunk (red without the handler change).
+- [x] 2.3 Return member hits from the file search API and `lib/Search/` unified search provider with archive file id, member path and owning object, under the archive's read rights. Verify: `tests/Unit/Service/ArchiveMemberSearchTest.php::testAMemberHitNamesItsPath`, `testAMemberHitObeysTheArchiveFileRights`.
+      > 2026-11-25: `ChunkMapper::searchByKeyword()` (ranked and unranked) reads `position_reference` and puts the member path in the hit's `metadata.member`, so the hybrid file search API carries it; `ContentSearchHandler` sets `@self.matchedFile` (the zip), `matchedFileId` and `matchedMember` on the owning object's row, the owner looked up under RBAC and multitenancy as before; the unified search provider's subline ends in `archive.zip › member/path` (`ObjectSearchResultFormatter`). `tests/Unit/Service/ArchiveMemberSearchTest.php`: 4 of 7 red on main, 7 green on the branch.
 
 ## 3. Reporting (REQ-AMS-003)
 

@@ -11,7 +11,10 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Add `tests/e2e/ci/access-own-records.spec.ts`: two users create records in a schema with `read: ["@creator"]` and each lists only their own.
+- [x] 3.1 Add `tests/e2e/ci/access-own-records.spec.ts`: two users create records in a schema with `read: ["@creator"]` and each lists only their own.
+  > 2026-11-25: added; 3 passed against a sandbox Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e). `e2e-owner` and
+  > `e2e-other` each create two records under `read: ["@creator"]`; each lists only their own with total 2, a read of
+  > the other's record is 404 while their own is 200, and the administrator (the control) lists all four.
 - [x] 3.2 Document `@creator` and `conditions` in `docs/` beside the authorization block.
 
 Acceptance:

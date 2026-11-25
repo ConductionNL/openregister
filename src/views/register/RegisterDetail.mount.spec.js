@@ -27,6 +27,7 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 				'data-stats-title': this.statsTitle,
 				'data-stats-columns': this.statsColumns.map((column) => column.key).join(','),
 			}, [
+				slots.actions ? h('x-actions', slots.actions()) : null,
 				h('x-error-actions', slots['error-actions']()),
 				slots['stats-rows'] ? h('table', h('tbody', slots['stats-rows']())) : null,
 				h('x-body', slots.default()),
@@ -205,6 +206,21 @@ describe('RegisterDetail mounted', () => {
 		await wrapper.find('x-error-actions button').trigger('click')
 
 		expect(router.push).toHaveBeenCalledWith('/registers')
+	})
+
+	it('opens the register\'s API page from the header', async () => {
+		const wrapper = await mounted({ id: 4, title: 'Zaken', schemas: [] })
+		router.push.mockClear()
+
+		await wrapper.find('x-actions [data-testid="register-api-action"]').trigger('click')
+
+		expect(router.push).toHaveBeenCalledWith({ name: 'registerApi', params: { id: 4 } })
+	})
+
+	it('offers no API action while the register is missing', async () => {
+		const wrapper = await mounted(null)
+
+		expect(wrapper.find('x-actions').exists()).toBe(false)
 	})
 
 	it('shows the dashboard\'s own error while it is loading', async () => {

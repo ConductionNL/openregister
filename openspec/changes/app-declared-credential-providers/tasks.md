@@ -28,7 +28,8 @@
 
 ## 5. Admin UI
 
-- [ ] 5.1 Add a "Declared providers" section to the credential admin settings listing declared providers with origin, status, resolved host and the full method+path rule set, plus approve / reject / revoke actions and an auto-admitted (narrowing) label.
+- [x] 5.1 Add a "Declared providers" section to the credential admin settings listing declared providers with origin, status, resolved host and the full method+path rule set, plus approve / reject / revoke actions and an auto-admitted (narrowing) label.
+  - Built 2026-11-25: `GET /api/credentials/providers/declared` (`DeclaredCredentialProvidersController`, `AuthorizedAdminSetting` plus the in-body administrator check the decision routes use) answers `DeclaredProviderResolver::review()`: every discovered declaration with origin, status, lane, `autoAdmitted` (narrowing), host, base URL, the full method+path rule set and, for an invalid one, the reason. The admin Settings page shows it as the "Declared credential providers" section (`src/views/settings/sections/DeclaredCredentialProviders.vue`): approve and reject on a pending one, approve on a rejected or revoked one, revoke on an approved one, nothing on one admitted by itself or an invalid one. Tests: `DeclaredProviderResolverTest` (review), `DeclaredCredentialProvidersControllerTest`, `DeclaredCredentialProviders.spec.js`. Nine new strings in all 37 bundles.
 
 ## 6. Tests and verification
 

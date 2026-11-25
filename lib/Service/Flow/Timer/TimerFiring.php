@@ -35,11 +35,15 @@ final class TimerFiring {
 	 * @param string      $kind       `rung` or `expiry` (FlowTimerFiredEvent::KIND_*).
 	 * @param string      $transition The named transition raised.
 	 * @param string|null $rungKey    The rung's stable key, for a rung fire.
+	 * @param string|null $rungTrigger The rung's trigger (preBreach, slaBreached or postBreach), for a rung fire.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-task-nearing-its-deadline-warns-its-assignee-once
 	 */
 	public function __construct(
 		public readonly string $kind,
 		public readonly string $transition,
 		public readonly ?string $rungKey = null,
+		public readonly ?string $rungTrigger = null,
 	) {
 	}//end __construct()
 }//end class

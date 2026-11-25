@@ -107,7 +107,7 @@ final class DbalColumnCriterion {
 			return;
 		}
 
-		$params  = array_map(static fn (mixed $item): string => $qb->createNamedParameter($item), $list);
+		$params  = array_map(static fn (mixed $item): string => (string) $qb->createNamedParameter($item), $list);
 		$keyword = match ($operator) { 'in' => ' IN (', default => ' NOT IN (' };
 		$qb->andWhere($this->quoted . $keyword . implode(', ', $params) . ')');
 	}//end inList()
