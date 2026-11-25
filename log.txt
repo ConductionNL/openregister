@@ -4942,3 +4942,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T12:15:16Z precheck-20261125T100507-543643c0 CONFLICT-DEV #11119 cfdc0e20
 2026-11-25T12:15:31Z precheck-20261125T092731-e310afa6 GREEN tree 3efed75857 on dev 76bbb15a14 prs 1 front=skip: Tests: 66669, Assertions: 236234, Errors: 9, Failures: 2, Deprecations: 23, PHPUnit Deprecations: 1, Skipped: 27.
 2026-11-25T12:16:11Z precheck-20261125T114751-101d08d5 GREEN tree fdb2b1757f on dev 76bbb15a14 prs 1 front=skip: Tests: 66647, Assertions: 236173, Errors: 9, Failures: 1, Deprecations: 25, PHPUnit Deprecations: 1, Skipped: 27.
+2026-11-25T12:21:56Z precheck-20261125T094406-af1e29a6 GREEN tree 8486e0c333 on dev 7997381d75 prs 1 front=skip: Tests: 66714, Assertions: 236807, Errors: 9, Failures: 1, Deprecations: 23, PHPUnit Deprecations: 1, Skipped: 27.
