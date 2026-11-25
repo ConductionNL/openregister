@@ -66,6 +66,7 @@ use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
+use OCA\OpenRegister\Kernel\Contracts\PortalPropertyScopedControllerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -167,7 +168,7 @@ use OCA\OpenRegister\Service\Object\VerbListing;
  *
  * @spec openspec/specs/aggregation-api/spec.md
  */
-class ObjectsController extends Controller implements SchemaChangeReportingControllerInterface {
+class ObjectsController extends Controller implements SchemaChangeReportingControllerInterface, PortalPropertyScopedControllerInterface {
 	use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 	use ResolvesRegisterAndSchemaTrait;
 

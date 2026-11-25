@@ -29,14 +29,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Schemas;
 
-use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\PortalPropertyPolicyInterface;
 
 /**
  * The read and write rules of the `portal` property key.
  *
  * @spec openspec/changes/a-property-says-what-the-portal-may-do-with-it/specs/schema-property-exploration/spec.md#requirement-a-property-declares-what-the-portal-may-do-with-it
  */
-final class PortalPropertyPolicy {
+final class PortalPropertyPolicy implements PortalPropertyPolicyInterface {
 
 	/**
 	 * The property key.
@@ -111,16 +111,15 @@ final class PortalPropertyPolicy {
 	 * A key the schema does not declare is left out too, since nobody
 	 * declared it may be shown. The id and the `@self` metadata stay.
 	 *
-	 * @param Schema               $schema The object's schema.
-	 * @param array<string, mixed> $object The object as the API renders it.
+	 * @param array<string, mixed> $properties The schema's property definitions by name.
+	 * @param array<string, mixed> $object     The object as the API renders it.
 	 *
 	 * @return array<string, mixed> The object without the properties the portal may not see.
 	 *
 	 * @spec openspec/changes/a-property-says-what-the-portal-may-do-with-it/specs/schema-property-exploration/spec.md#scenario-an-internal-note-stays-off-the-portal
 	 */
-	public function readable(Schema $schema, array $object): array {
-		$properties = self::propertiesOf(schema: $schema);
-		$visible    = [];
+	public function readable(array $properties, array $object): array {
+		$visible = [];
 		foreach ($object as $key => $value) {
 			if (in_array($key, self::ENVELOPE_KEYS, true) === true
 				|| self::levelOf(definition: ($properties[$key] ?? null)) !== self::NONE
@@ -141,17 +140,16 @@ final class PortalPropertyPolicy {
 	 * equal to the stored one is no change. Keys starting with `_` and the
 	 * envelope keys are request options and metadata, never a property.
 	 *
-	 * @param Schema                    $schema   The object's schema.
-	 * @param array<string, mixed>      $incoming The values the write sends.
-	 * @param array<string, mixed>|null $existing The stored values, null for a create.
-	 * @param bool                      $replace  Whether the write replaces the object (PUT) rather than merging (PATCH, POST).
+	 * @param array<string, mixed>      $properties The schema's property definitions by name.
+	 * @param array<string, mixed>      $incoming   The values the write sends.
+	 * @param array<string, mixed>|null $existing   The stored values, null for a create.
+	 * @param bool                      $replace    Whether the write replaces the object (PUT) rather than merging (PATCH, POST).
 	 *
 	 * @return array<int, string> The refused property names; empty when the write may go ahead.
 	 *
 	 * @spec openspec/changes/a-property-says-what-the-portal-may-do-with-it/specs/schema-property-exploration/spec.md#scenario-the-resident-changes-only-what-they-may-change
 	 */
-	public function refusedChanges(Schema $schema, array $incoming, ?array $existing, bool $replace = false): array {
-		$properties = self::propertiesOf(schema: $schema);
+	public function refusedChanges(array $properties, array $incoming, ?array $existing, bool $replace = false): array {
 		$stored     = ($existing ?? []);
 		$candidates = array_keys($incoming);
 		if ($replace === true) {
@@ -219,20 +217,4 @@ final class PortalPropertyPolicy {
 	private static function isPropertyKey(string $key): bool {
 		return $key !== '' && str_starts_with($key, '_') === false && in_array($key, self::ENVELOPE_KEYS, true) === false;
 	}//end isPropertyKey()
-
-	/**
-	 * The schema's property definitions by name.
-	 *
-	 * @param Schema $schema The schema.
-	 *
-	 * @return array<string, mixed> The definitions.
-	 */
-	private static function propertiesOf(Schema $schema): array {
-		$properties = $schema->getProperties();
-		if (is_array($properties) === false) {
-			return [];
-		}
-
-		return $properties;
-	}//end propertiesOf()
 }//end class

@@ -86,7 +86,7 @@ class PortalPropertyPolicyTest extends TestCase {
 
 		$this->assertSame(
 			expected: ['id' => 'case-1', 'subject' => 'Bin not collected', 'phone' => '0612345678', '@self' => ['id' => 'case-1']],
-			actual: (new PortalPropertyPolicy())->readable(schema: $this->caseSchema(), object: $object)
+			actual: (new PortalPropertyPolicy())->readable(properties: $this->caseSchema()->getProperties(), object: $object)
 		);
 	}//end testAnInternalNoteStaysOffThePortal()
 
@@ -99,11 +99,11 @@ class PortalPropertyPolicyTest extends TestCase {
 		$policy = new PortalPropertyPolicy();
 		$stored = ['subject' => 'Bin not collected', 'phone' => '0612345678', 'internalNote' => 'caller was rude'];
 
-		$this->assertSame(expected: ['subject'], actual: $policy->refusedChanges(schema: $this->caseSchema(), incoming: ['subject' => 'changed'], existing: $stored));
-		$this->assertSame(expected: [], actual: $policy->refusedChanges(schema: $this->caseSchema(), incoming: ['phone' => '0699999999'], existing: $stored));
+		$this->assertSame(expected: ['subject'], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['subject' => 'changed'], existing: $stored));
+		$this->assertSame(expected: [], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '0699999999'], existing: $stored));
 		$this->assertSame(
 			expected: ['subject', 'internalNote'],
-			actual: $policy->refusedChanges(schema: $this->caseSchema(), incoming: ['phone' => '1', 'subject' => 'x', 'internalNote' => 'y'], existing: $stored)
+			actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '1', 'subject' => 'x', 'internalNote' => 'y'], existing: $stored)
 		);
 	}//end testTheResidentChangesOnlyWhatTheyMayChange()
 
@@ -118,7 +118,7 @@ class PortalPropertyPolicyTest extends TestCase {
 		$this->assertSame(
 			expected: [],
 			actual: (new PortalPropertyPolicy())->refusedChanges(
-				schema: $this->caseSchema(),
+				properties: $this->caseSchema()->getProperties(),
 				incoming: ['subject' => 'Bin not collected', 'phone' => '1', '_extend' => ['x'], '@self' => ['status' => 'x'], 'id' => 'case-1'],
 				existing: $stored
 			)
@@ -133,8 +133,8 @@ class PortalPropertyPolicyTest extends TestCase {
 	public function testACreateMaySetOnlyEditableProperties(): void {
 		$policy = new PortalPropertyPolicy();
 
-		$this->assertSame(expected: ['subject'], actual: $policy->refusedChanges(schema: $this->caseSchema(), incoming: ['subject' => 'new', 'phone' => '1'], existing: null));
-		$this->assertSame(expected: [], actual: $policy->refusedChanges(schema: $this->caseSchema(), incoming: ['phone' => '1'], existing: null));
+		$this->assertSame(expected: ['subject'], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['subject' => 'new', 'phone' => '1'], existing: null));
+		$this->assertSame(expected: [], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '1'], existing: null));
 	}//end testACreateMaySetOnlyEditableProperties()
 
 	/**
@@ -148,12 +148,12 @@ class PortalPropertyPolicyTest extends TestCase {
 
 		$this->assertSame(
 			expected: ['subject', 'internalNote'],
-			actual: $policy->refusedChanges(schema: $this->caseSchema(), incoming: ['phone' => '1'], existing: $stored, replace: true)
+			actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '1'], existing: $stored, replace: true)
 		);
-		$this->assertSame(expected: [], actual: $policy->refusedChanges(schema: $this->caseSchema(), incoming: ['phone' => '1'], existing: $stored, replace: false));
+		$this->assertSame(expected: [], actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: ['phone' => '1'], existing: $stored, replace: false));
 		$this->assertSame(
 			expected: [],
-			actual: $policy->refusedChanges(schema: $this->caseSchema(), incoming: $stored + ['phone' => '1'], existing: $stored, replace: true)
+			actual: $policy->refusedChanges(properties: $this->caseSchema()->getProperties(), incoming: $stored + ['phone' => '1'], existing: $stored, replace: true)
 		);
 	}//end testAReplaceThatDropsAStoredValueIsAChange()
 
@@ -163,13 +163,12 @@ class PortalPropertyPolicyTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnObjectValueInAnotherKeyOrderIsNoChange(): void {
-		$schema = new Schema();
-		$schema->setProperties(['address' => ['type' => 'object', 'portal' => 'read']]);
+		$properties = ['address' => ['type' => 'object', 'portal' => 'read']];
 
 		$this->assertSame(
 			expected: [],
 			actual: (new PortalPropertyPolicy())->refusedChanges(
-				schema: $schema,
+				properties: $properties,
 				incoming: ['address' => ['city' => 'Utrecht', 'street' => 'Plein']],
 				existing: ['address' => ['street' => 'Plein', 'city' => 'Utrecht']]
 			)

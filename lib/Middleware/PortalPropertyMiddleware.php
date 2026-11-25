@@ -35,13 +35,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use Exception;
-use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\PortalPropertyRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\PortalPropertyPolicyInterface;
+use OCA\OpenRegister\Kernel\Contracts\PortalPropertyScopedControllerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Service\Schemas\PortalPropertyPolicy;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -91,13 +90,13 @@ class PortalPropertyMiddleware extends Middleware {
 	 * @param IRequest                  $request The request.
 	 * @param SchemaMapperInterface     $schemas Resolves the route's schema.
 	 * @param ObjectOperationsInterface $objects Reads the stored object a write would change, through RBAC.
-	 * @param PortalPropertyPolicy      $policy  The portal rules.
+	 * @param PortalPropertyPolicyInterface $policy The portal rules.
 	 */
 	public function __construct(
 		private readonly IRequest $request,
 		private readonly SchemaMapperInterface $schemas,
 		private readonly ObjectOperationsInterface $objects,
-		private readonly PortalPropertyPolicy $policy,
+		private readonly PortalPropertyPolicyInterface $policy,
 	) {
 	}//end __construct()
 
@@ -118,9 +117,8 @@ class PortalPropertyMiddleware extends Middleware {
 			return;
 		}
 
-		$schema  = $this->schema();
 		$refused = $this->policy->refusedChanges(
-			schema: ($schema ?? new Schema()),
+			properties: $this->properties(),
 			incoming: $this->body(),
 			existing: $this->stored(methodName: $methodName),
 			replace: self::WRITES[$methodName]
@@ -156,8 +154,7 @@ class PortalPropertyMiddleware extends Middleware {
 		}
 
 		// A schema that cannot be resolved shows nothing but the envelope.
-		$schema = ($this->schema() ?? new Schema());
-		$response->setData($this->filtered(methodName: $methodName, data: $data, schema: $schema));
+		$response->setData($this->filtered(methodName: $methodName, data: $data, properties: $this->properties()));
 
 		return $response;
 	}//end afterController()
@@ -195,10 +192,10 @@ class PortalPropertyMiddleware extends Middleware {
 	 *
 	 * @param Controller $controller The controller.
 	 *
-	 * @return bool True for ObjectsController with the header set.
+	 * @return bool True for an objects controller with the header set.
 	 */
 	private function applies(Controller $controller): bool {
-		return $controller instanceof ObjectsController && trim($this->request->getHeader(self::HEADER)) !== '';
+		return $controller instanceof PortalPropertyScopedControllerInterface && trim($this->request->getHeader(self::HEADER)) !== '';
 	}//end applies()
 
 	/**
@@ -206,13 +203,13 @@ class PortalPropertyMiddleware extends Middleware {
 	 *
 	 * @param string               $methodName `index`, or a call that answers with one object.
 	 * @param array<string, mixed> $data       The answer.
-	 * @param Schema               $schema     The route's schema.
+	 * @param array<string, mixed> $properties The route schema's property definitions.
 	 *
 	 * @return array<string, mixed> The filtered answer.
 	 */
-	private function filtered(string $methodName, array $data, Schema $schema): array {
+	private function filtered(string $methodName, array $data, array $properties): array {
 		if ($methodName !== 'index') {
-			return $this->policy->readable(schema: $schema, object: $data);
+			return $this->policy->readable(properties: $properties, object: $data);
 		}
 
 		if (is_array($data['results'] ?? null) === false) {
@@ -220,7 +217,7 @@ class PortalPropertyMiddleware extends Middleware {
 		}
 
 		$data['results'] = array_map(
-			fn (mixed $row): mixed => is_array($row) === true ? $this->policy->readable(schema: $schema, object: $row) : $row,
+			fn (mixed $row): mixed => is_array($row) === true ? $this->policy->readable(properties: $properties, object: $row) : $row,
 			$data['results']
 		);
 
@@ -228,26 +225,28 @@ class PortalPropertyMiddleware extends Middleware {
 	}//end filtered()
 
 	/**
-	 * The route's schema, or null when it cannot be resolved.
+	 * The route schema's property definitions, or none when the schema cannot be resolved.
 	 *
-	 * Read past RBAC and multitenancy: only its property declarations are
-	 * used, and whether the caller may reach its objects is the controller's
-	 * decision.
+	 * Read past RBAC and multitenancy: only the declarations are used, and
+	 * whether the caller may reach the objects is the controller's decision.
+	 * No definitions means every property reads as `none`: fail closed.
 	 *
-	 * @return Schema|null The schema.
+	 * @return array<string, mixed> The definitions by name.
 	 */
-	private function schema(): ?Schema {
+	private function properties(): array {
 		$id = $this->request->getParam('schema');
 		if (is_string($id) === false && is_int($id) === false) {
-			return null;
+			return [];
 		}
 
 		try {
-			return $this->schemas->find($id, _rbac: false, _multitenancy: false);
+			$properties = $this->schemas->find($id, _rbac: false, _multitenancy: false)->getProperties();
 		} catch (Throwable $e) {
-			return null;
+			return [];
 		}
-	}//end schema()
+
+		return is_array($properties) === true ? $properties : [];
+	}//end properties()
 
 	/**
 	 * The values the write sends, without the route parameters.
