@@ -91,6 +91,7 @@ class FilesRegistrarTest extends TestCase
         $this->assertSame(RegisterFolderRecorder::class, FilesRegistrar::BINDINGS[RegisterFolderRecordsInterface::class]);
         $this->assertSame(FileOwnershipHandler::class, FilesRegistrar::BINDINGS[FileAccountInterface::class]);
         $this->assertSame(ObjectFilesArchive::class, FilesRegistrar::BINDINGS[ObjectFilesArchiveInterface::class]);
+        $this->assertSame(\OCA\OpenRegister\Service\Object\CopyFiles::class, FilesRegistrar::BINDINGS[\OCA\OpenRegister\Kernel\Contracts\ObjectFileCopierInterface::class]);
         $this->assertTrue(is_subclass_of(FileOwnershipHandlerInterface::class, FileAccountInterface::class));
         $this->assertSame(FileMapper::class, FilesRegistrar::BINDINGS[FileOwnerLookupInterface::class]);
         $this->assertTrue(is_subclass_of(FileMapperInterface::class, FileOwnerLookupInterface::class));
