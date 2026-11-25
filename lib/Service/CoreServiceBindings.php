@@ -29,6 +29,7 @@ use OCA\OpenRegister\Kernel\Contracts\EntityEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaWriteRightsInterface;
+use OCA\OpenRegister\Kernel\Contracts\DefaultOrganisationInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -321,6 +322,8 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectAccessLinksInterface;
+use OCA\OpenRegister\Service\Sharing\ObjectAccessLinks;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
@@ -375,6 +378,8 @@ final class CoreServiceBindings {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Service\Organisation\PromotionServiceInterface::class => \OCA\OpenRegister\Service\Organisation\PromotionService::class,
+		\OCA\OpenRegister\Service\Organisation\PromotionPackageReaderInterface::class => \OCA\OpenRegister\Service\Organisation\PromotionPackageReader::class,
 		\OCA\OpenRegister\Kernel\Contracts\SchemaReadRightInterface::class => \OCA\OpenRegister\Service\Object\SchemaReadRight::class,
 		ExpiredObjectStoreInterface::class => ExpiredObjectStore::class,
 		DerivedTranslationsInterface::class => TranslationStatusService::class,
@@ -494,6 +499,7 @@ final class CoreServiceBindings {
 		ObjectStreamingSaveInterface::class => ObjectService::class,
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		OrganisationServiceInterface::class => OrganisationService::class,
+		DefaultOrganisationInterface::class => OrganisationService::class,
 		OrganisationUsageServiceInterface::class => OrganisationUsageService::class,
 		PropertyRbacHandlerInterface::class => PropertyRbacHandler::class,
 		QualityScorerInterface::class => QualityScorer::class,
@@ -567,6 +573,7 @@ final class CoreServiceBindings {
 		AccessLinkActsInterface::class => AccessLinkActs::class,
 		AccessLinkMintGuardInterface::class => AccessLinkMintGuard::class,
 		AccessLinkServiceInterface::class => AccessLinkService::class,
+		ObjectAccessLinksInterface::class => ObjectAccessLinks::class,
 		AccessLinkSubjectInterface::class => AccessLinkSubject::class,
 		SharePrincipalDeriverInterface::class => SharePrincipalDeriver::class,
 		SourceRecordResolverInterface::class => SourceRecordResolver::class,

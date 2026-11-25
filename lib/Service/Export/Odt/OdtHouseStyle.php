@@ -28,7 +28,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Export\Odt;
 
 /**
- * The table header colours, footer lines and header logo of a house style.
+ * The table header colours, footer lines, header logo and fonts of a house style.
  *
  * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
  */
@@ -55,14 +55,68 @@ final class OdtHouseStyle {
 	 * @param string|null  $headText       The table header text colour as `#rrggbb`, or null for the default.
 	 * @param list<string> $footerLines    The footer lines printed above the page number.
 	 * @param OdtLogo|null $logo           The logo in the page header, or null for none.
+	 * @param OdtFont|null $headingFont    The embedded heading font, or null for the default font.
+	 * @param OdtFont|null $bodyFont       The embedded body font, or null for the default font.
 	 */
 	public function __construct(
 		public readonly ?string $headBackground = null,
 		public readonly ?string $headText = null,
 		public readonly array $footerLines = [],
 		public readonly ?OdtLogo $logo = null,
+		public readonly ?OdtFont $headingFont = null,
+		public readonly ?OdtFont $bodyFont = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The embedded fonts of this style, heading first.
+	 *
+	 * @return list<OdtFont>
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
+	 */
+	public function fonts(): array {
+		return array_values(array_filter([$this->headingFont, $this->bodyFont]));
+	}//end fonts()
+
+	/**
+	 * A style with the fonts added per role, or the style unchanged when there are none.
+	 *
+	 * A font goes to the role it was read for; a role without a font keeps the
+	 * default font. Fonts alone are a house style: the result is null only when
+	 * the style is null and no font was given.
+	 *
+	 * @param self|null     $style The style so far, or null.
+	 * @param list<OdtFont> $fonts The fonts that could be embedded.
+	 *
+	 * @return self|null
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
+	 */
+	public static function withFonts(?self $style, array $fonts): ?self {
+		$heading = null;
+		$body = null;
+		foreach ($fonts as $font) {
+			if ($font->role === OdtFont::ROLE_HEADING) {
+				$heading = $font;
+			} else if ($font->role === OdtFont::ROLE_BODY) {
+				$body = $font;
+			}
+		}
+
+		if ($heading === null && $body === null) {
+			return $style;
+		}
+
+		return new self(
+			headBackground: $style?->headBackground,
+			headText: $style?->headText,
+			footerLines: ($style->footerLines ?? []),
+			logo: $style?->logo,
+			headingFont: $heading,
+			bodyFont: $body
+		);
+	}//end withFonts()
 
 	/**
 	 * A style with the logo added, or the style unchanged when there is no logo.
@@ -85,7 +139,9 @@ final class OdtHouseStyle {
 			headBackground: $style?->headBackground,
 			headText: $style?->headText,
 			footerLines: ($style->footerLines ?? []),
-			logo: $logo
+			logo: $logo,
+			headingFont: $style?->headingFont,
+			bodyFont: $style?->bodyFont
 		);
 	}//end withLogo()
 

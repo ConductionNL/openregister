@@ -167,15 +167,42 @@ class ObjectsProviderTest extends TestCase {
 		// `scopes` joined `register` and `schema` in content-search-index.
 		// Asserted by NAME rather than by count, because a count tells the
 		// next reader nothing about which filter went missing.
-		// `provider` joined them in platform-search-provider.
-		$this->assertCount(4, $filters);
+		// `provider` (platform-search-provider) is supported but NOT declared:
+		// it is Nextcloud's built-in filter, see the next test.
+		$this->assertCount(3, $filters);
 		foreach ($filters as $filter) {
 			$this->assertInstanceOf(FilterDefinition::class, $filter);
 		}
 
 		$names = array_map(static fn (FilterDefinition $f): string => $f->name(), $filters);
-		$this->assertSame(['register', 'schema', 'scopes', 'provider'], $names);
+		$this->assertSame(['register', 'schema', 'scopes'], $names);
 		$this->assertContains('provider', $this->provider->getSupportedFilters());
+	}
+
+	/**
+	 * No custom filter reuses a built-in filter name.
+	 *
+	 * Nextcloud's search composer throws "Filter name is already used" for one,
+	 * while it loads the providers, so the provider list answers 500 and this
+	 * provider's search 400 on the whole instance.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	public function testNoCustomFilterReusesABuiltInFilterName(): void {
+		$builtIn = [
+			\OCP\Search\IFilter::BUILTIN_TERM,
+			\OCP\Search\IFilter::BUILTIN_SINCE,
+			\OCP\Search\IFilter::BUILTIN_UNTIL,
+			\OCP\Search\IFilter::BUILTIN_TITLE_ONLY,
+			\OCP\Search\IFilter::BUILTIN_PERSON,
+			\OCP\Search\IFilter::BUILTIN_PLACES,
+			\OCP\Search\IFilter::BUILTIN_PROVIDER,
+		];
+		$names = array_map(static fn (FilterDefinition $f): string => $f->name(), $this->provider->getCustomFilters());
+
+		$this->assertSame([], array_values(array_intersect($names, $builtIn)));
 	}
 
 	// --- Empty / short-circuit --------------------------------------------

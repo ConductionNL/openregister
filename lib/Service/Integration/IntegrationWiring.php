@@ -117,6 +117,7 @@ final class IntegrationWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Kernel\Contracts\IntegrationPromotionRowsInterface::class => PromotionIntegrationRows::class,
 		AccountConsumerInterface::class => AccountConsumerLookup::class,
 		AppDeepLinksInterface::class => DeepLinkRegistryService::class,
 		CloudEventFormatterInterface::class => CloudEventFormatter::class,

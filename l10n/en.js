@@ -4168,7 +4168,12 @@ OC.L10N.register(
     "Responses probed {moment}." : "Responses probed {moment}.",
     "Ruleset {ruleset}, generated {moment}." : "Ruleset {ruleset}, generated {moment}.",
     "The conformance report could not be read." : "The conformance report could not be read.",
-    "The responses could not be probed." : "The responses could not be probed."
+    "The responses could not be probed." : "The responses could not be probed.",
+    "Could not load which notification rules reached nobody." : "Could not load which notification rules reached nobody.",
+    "Every notification rule reached at least one recipient." : "Every notification rule reached at least one recipient.",
+    "Notification rules that reached nobody" : "Notification rules that reached nobody",
+    "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients.",
+    "Times reached nobody: {count}. Last on {date}." : "Times reached nobody: {count}. Last on {date}."
 },
 "nplurals=2; plural=(n != 1);"
 );
