@@ -4550,3 +4550,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T00:07:00Z precheck-20261124T234023-5e48f803 CONFLICT-DEV #10526 bbe9e922
 2026-11-25T00:08:34Z integrator-20261124T231146-2f742f98 AUTOPARK openregister#10550 d18005f1 floor: module_coupling: 5.15 -> 5.13 (tree 30b35deef3)
 2026-11-25T00:08:56Z or-fix-0 or-fix-0 run: share (11100 11040 11020 10640 10550 10540 10530 10300 10260 8450 5968; 10280 9880 skipped by rule) checked against main 037f95a8: all merge clean except 8450 (coordinator-parked superseded, left); main's 71 new/changed tests + each PR's own tests green on 11020 10550 10540 10530 10300 10260 5968 (11020/10550 also Architecture green); nothing to fix, no pushes. 10640 re-auto-parked by the integrator although regen-sbom --check on its head says current: queued for the coordinator again.
+2026-11-25T00:10:37Z precheck-20261124T235704-0cd786d0 CONFLICT-DEV #11022 3423c45e
