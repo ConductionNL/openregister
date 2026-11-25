@@ -1947,7 +1947,7 @@ class FilesController extends Controller {
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
 			$file = $this->routedFile(object: $this->writableObject(id: $id), fileId: $fileId);
-			return $this->updateFromRequest(fileId: $fileId, fileName: $file->getName());
+			return $this->updateFromRequest(fileId: $fileId, fileName: (string)$file->getName());
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
 		}

@@ -144,7 +144,7 @@ final class ObjectFolderUploadsTest extends TestCase {
 			}
 		);
 
-		return new ObjectFolderUploads(new ObjectFolderBrowser($this->fileService));
+		return new ObjectFolderUploads(new ObjectFolderBrowser(fileService: $this->fileService, malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck()));
 	}//end uploads()
 
 	public function testEachFileIsStoredOrRejectedOnItsOwn(): void {

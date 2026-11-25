@@ -472,6 +472,6 @@ class FilePropertyHandlerStoreGoldenTest extends TestCase {
 			}
 		);
 
-		return new FilePropertyHandler($logger, $fileService);
+		return new FilePropertyHandler($logger, $fileService, malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck());
 	}//end handler()
 }//end class

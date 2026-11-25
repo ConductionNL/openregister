@@ -37,7 +37,7 @@ class FilePropertyMoveGuardTest extends TestCase {
 		$config->method('getValueString')->willReturnCallback(
 			fn (string $app, string $key, string $default = ''): string => ($moving === true && $key === 'document_store_moving_5') ? '1' : $default
 		);
-		return new FilePropertyHandler(new NullLogger(), $files, new DocumentStoreMoveGuard($config));
+		return new FilePropertyHandler(new NullLogger(), $files, new DocumentStoreMoveGuard($config), new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck());
 	}
 
 	private function request(): FileStoreRequest {

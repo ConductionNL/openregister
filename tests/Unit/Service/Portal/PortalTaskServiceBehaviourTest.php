@@ -90,7 +90,8 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 		$this->service = new PortalTaskService(
 			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: $temporal),
 			files: $this->files,
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck()
 		);
 	}//end setUp()
 

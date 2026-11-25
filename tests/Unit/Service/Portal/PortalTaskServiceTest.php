@@ -129,7 +129,8 @@ class PortalTaskServiceTest extends TestCase {
 		$this->service = new PortalTaskService(
 			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck()
 		);
 	}//end setUp()
 
@@ -346,7 +347,8 @@ class PortalTaskServiceTest extends TestCase {
 			$service = new PortalTaskService(
 				sources: new PortalTaskSources(tasks: $tasks, mapper: $this->mapper, inbox: new TaskInboxService(tasks: $this->mapper, logger: new NullLogger()), temporal: new TaskTemporalProjection()),
 				files: $this->files,
-				logger: new NullLogger()
+				logger: new NullLogger(),
+				malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck()
 			);
 			try {
 				$service->complete(subject: $subject, uuid: 't-1', completion: new PortalCompletion(files: $files));
@@ -430,7 +432,8 @@ class PortalTaskServiceTest extends TestCase {
 		$service = new PortalTaskService(
 			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: $inbox, temporal: new TaskTemporalProjection()),
 			files: $this->files,
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck()
 		);
 
 		$this->mapper->method('findOpenExternalForParty')->willReturn([$this->task()]);

@@ -72,7 +72,7 @@ class AccessLinkActsTest extends TestCase {
 		$files = $this->createMock(ObjectFilesInterface::class);
 		$files->expects($this->never())->method('addFile');
 
-		$acts = new AccessLinkActs(notes: $notes, files: $files);
+		$acts = new AccessLinkActs(notes: $notes, files: $files, malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck());
 
 		$this->assertSame(['id' => 9], $acts->comment(act: new LinkAct(link: $link, object: $object), message: 'hello'));
 	}//end testCommentIsWrittenAsTheLink()
@@ -97,10 +97,10 @@ class AccessLinkActsTest extends TestCase {
 		$notes = $this->createMock(NoteServiceInterface::class);
 		$notes->expects($this->never())->method('postNote');
 
-		$acts = new AccessLinkActs(notes: $notes, files: $files);
+		$acts = new AccessLinkActs(notes: $notes, files: $files, malwareCheck: new \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck());
 
 		$this->assertSame(
-			['name' => 'a.pdf', 'shared' => false],
+			['name' => 'a.pdf', 'shared' => false, 'metadata' => ['malwareScan' => \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck::VERDICT]],
 			$acts->upload(act: new LinkAct(link: new AccessLink(), object: $object), file: new LinkFile(fileName: 'a.pdf', content: 'bytes'))
 		);
 	}//end testUploadIsStoredWithoutSharing()
