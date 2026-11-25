@@ -152,3 +152,4 @@
 2026-11-25T14:46:06Z GREEN prs=11092,11114,11119,11141 main=2fc34e4540 integrator-cloud (merged)
 2026-11-25T14:50:28Z RED prs=11171,11176,11181,11185 main=987938d424 integrator-cloud (MagicSearchHandlerRowToEntityTest; suspect #11171)
 2026-11-25T15:02:03Z GREEN prs=11176,11181,11185 main=987938d424 integrator-cloud (merged)
+2026-11-25T15:06:01Z RED prs=11171 main=1e7c46b1e1 integrator-cloud (failed-solo: MagicSearchHandlerRowToEntityTest)
