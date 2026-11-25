@@ -345,6 +345,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'Settings\SeedReport#show', 'url' => '/api/settings/seed', 'verb' => 'GET'],
         ['name' => 'Settings\TranslationSettings#show', 'url' => '/api/settings/translation', 'verb' => 'GET'],
         ['name' => 'Settings\TranslationSettings#update', 'url' => '/api/settings/translation', 'verb' => 'PUT'],
+        // The text search configuration `_search` stems with on PostgreSQL (administrator only).
+        ['name' => 'Settings\SearchSettings#show', 'url' => '/api/settings/search', 'verb' => 'GET'],
+        ['name' => 'Settings\SearchSettings#update', 'url' => '/api/settings/search', 'verb' => 'PUT'],
         // Magic Table Sync endpoints.
         ['name' => 'tables#sync', 'url' => '/api/tables/sync/{registerId}/{schemaId}', 'verb' => 'POST', 'requirements' => ['registerId' => '[^/]+', 'schemaId' => '[^/]+']],
         ['name' => 'tables#syncAll', 'url' => '/api/tables/sync', 'verb' => 'POST'],
@@ -2316,6 +2319,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// e-Depot transfer management.
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
+		// Before transfer#show, so `{id}` cannot swallow the literal segment.
+		['name' => 'transfer#eligible', 'url' => '/api/transfers/eligible', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
 		// The archivist's decision. A literal trailing segment, so `{id}` — which

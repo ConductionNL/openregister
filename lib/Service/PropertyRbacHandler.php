@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\Rbac\WriteOnlyValue;
 use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
@@ -964,7 +965,7 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 	 *
 	 * @return bool True if user is in admin group
 	 *
-	 * @spec exclude Trivial admin-group membership check helper; no business logic.
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
 		$user = $this->caller->userSession->getUser();
@@ -972,7 +973,6 @@ class PropertyRbacHandler implements PropertyRbacHandlerInterface {
 			return false;
 		}
 
-		$userGroups = $this->caller->groupManager->getUserGroupIds($user);
-		return in_array('admin', $userGroups, true);
+		return AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $user);
 	}//end isAdmin()
 }//end class

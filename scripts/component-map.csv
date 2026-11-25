@@ -330,6 +330,7 @@ Controller/ObjectShareLinkController.php,137,Controller,Integrations,Integration
 Controller/ObjectSharingController.php,205,Controller,Access,Access/Controller/ObjectSharingController.php,0,,Core
 Controller/ObjectStateController.php,121,Controller,Service,Service/Controller/ObjectStateController.php,0,,Core
 Controller/ObjectExportController.php,,Controller,,,,,Configuration
+Controller/Support/FormerSlugSignal.php,,Controller,,,,,Core
 Controller/ObjectsController.php,3385,Controller,Service,Service/Controller/ObjectsController.php,0,,Core
 Controller/OpenProjectLinksController.php,111,Controller,Integrations,Integrations/Controller/OpenProjectLinksController.php,0,,Integrations
 Controller/Support/OpenProjectLinksControllerServices.php,,Controller,,,,,Integrations
@@ -1214,6 +1215,7 @@ Files/Service/File/Pdf/StructureMeasurement.php,51,Files,Files,Files/Service/Fil
 Files/Service/File/PdfDocumentSanitizer.php,94,Files,Files,Files/Service/File/PdfDocumentSanitizer.php,0,,Files
 Files/Service/File/PdfSanitizationReport.php,29,Files,Files,Files/Service/File/PdfSanitizationReport.php,0,,Files
 Files/Service/File/PdfSanitizationResult.php,10,Files,Files,Files/Service/File/PdfSanitizationResult.php,0,,Files
+Files/Service/FileTextFacade.php,171,Files,Files,Files/Service/FileTextFacade.php,0,,Files
 Files/Service/NoteReplies.php,73,Files,Files,Files/Service/NoteReplies.php,0,,Files
 Kernel/Contracts/StructurePreservation.php,35,Kernel,Kernel,Kernel/Contracts/StructurePreservation.php,0,427,Kernel
 Files/Service/File/PlaceholderIdTranslator.php,47,Files,Files,Files/Service/File/PlaceholderIdTranslator.php,2,,Files
@@ -3649,7 +3651,7 @@ Service/File/ArchiveListing.php,,Service,,,,,Files
 Service/File/ArchiveMemberEnumerator.php,,Service,,,,,Files
 Service/File/ArchiveWalk.php,,Service,,,,,Files
 Service/File/FetchedFile.php,,Service,,,,,Files
-Service/File/UrlFetchRefused.php,,Service,,,,,Files
+Service/File/UrlFetchRefused.php,,Service,,,,,Kernel
 Service/File/UrlFileFetcher.php,,Service,,,,,Files
 Service/File/UrlFileSource.php,,Service,,,,,Files
 Service/File/UrlStreamOpener.php,,Service,,,,,Files
@@ -4474,10 +4476,11 @@ Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
 Service/File/OcrWordLocator.php,,Service,,,,,Files
 Service/File/OcrWords.php,,Service,,,,,Core
 Service/File/OfficeMediaBurner.php,,Service,,,,,Files
+Service/File/PdfImageBurner.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Core
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
-Service/Audit/RuleDigest.php,96,Service,Compliance,Compliance/Service/Audit/RuleDigest.php,0,,Compliance
+Service/Audit/RuleDigest.php,96,Service,Core,,0,,Core
 Service/Object/ObjectSaveCheck.php,8,Service,Service,Service/Object/ObjectSaveCheck.php,0,,Core
 Service/Object/ObjectSaveChecks.php,26,Service,Service,Service/Object/ObjectSaveChecks.php,0,,Core
 Service/Object/SampleValidationErrors.php,48,Service,Service,Service/Object/SampleValidationErrors.php,0,,Core
@@ -4920,6 +4923,11 @@ Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notificatio
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Db/SchemaMapper/SchemaRowCache.php,,Db,,,,,Core
+Capabilities/SearchCapability.php,,Capabilities,,,,,Platform
+Service/Search/TextSearchConfiguration.php,,Service,,,,,Kernel
+Controller/Settings/SearchSettingsController.php,,Controller,,,,,Configuration
+Migration/Version1Date20261121150000.php,,Migration,,,,,Platform
+Service/Search/SearchSnippetAttacher.php,,Service,,,,,Core
 Db/MagicMapper/MagicSharePrincipals.php,,Db,,,,,Core
 Service/Schemas/SchemaRefInRegister.php,133,Service,Service,Service/Schemas/SchemaRefInRegister.php,0,,Kernel
 Service/Schemas/RowSchemaRefsInRegister.php,116,Service,Service,Service/Schemas/RowSchemaRefsInRegister.php,0,,Core
@@ -4933,6 +4941,11 @@ Service/User/UserPlatform.php,,Service,,,,,Core
 Service/User/UserStorage.php,,Service,,,,,Core
 Notifications/Controller/Support/GroupAdministration.php,,Notifications,,,,,Notifications
 Service/MappingRun.php,,Service,,,,,Integrations
+Notifications/Db/ReminderProgress.php,64,Notifications,Notifications,Notifications/Db/ReminderProgress.php,0,,Notifications
+Notifications/Service/Notification/ReminderPlan.php,270,Notifications,Notifications,Notifications/Service/Notification/ReminderPlan.php,0,,Notifications
+Notifications/Service/Notification/ReminderDecision.php,84,Notifications,Notifications,Notifications/Service/Notification/ReminderDecision.php,0,,Notifications
+Notifications/BackgroundJob/ScheduledReminders.php,184,Notifications,Notifications,Notifications/BackgroundJob/ScheduledReminders.php,0,,Notifications
+Migration/Version1Date20261114100003.php,84,Migration,,,,,Platform
 Service/RegisterSearch.php,,Service,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
 Service/Lifecycle/SystemApproval.php,,Service,,,,,Processes
@@ -4956,6 +4969,9 @@ Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel
 Service/ProcessesServiceBindings.php,,Service,,,,,Processes
 Service/ProcessesServiceRegistrar.php,,Service,,,,,Processes
 Service/Object/PermissionAsk.php,,Service,,,,,Kernel
+Kernel/Contracts/BusinessCalendarInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/BusinessTimeInterface.php,,Kernel,,,,,Kernel
+Service/Flow/Timer/BusinessTime.php,,Service,,,,,Processes
 Kernel/Contracts/SchemaReadRightInterface.php,,Kernel,,,,,Kernel
 Service/Object/SchemaReadRight.php,,Service,,,,,Core
 Kernel/Contracts/BoundedQueryRunInterface.php,,Kernel,,,,,Kernel
@@ -4971,6 +4987,7 @@ Search/Service/Search/PlaceholderResolverInterface.php,,Search,,,,,Core
 Search/Service/Search/PlaceholderResolvers.php,,Search,,,,,Core
 Kernel/Contracts/CreateGuardInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/CreateCandidate.php,,Kernel,,,,,Kernel
+Kernel/Contracts/UrlFileFetchInterface.php,,Kernel,,,,,Kernel
 Files/Db/FileChunkSearch.php,,Files,,,,,Files
 Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
@@ -4985,6 +5002,12 @@ Service/Resolver/Exception/ResolverConfigException.php,,Service,,,,,Kernel
 Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/AdministratorCheck.php,63,Kernel,Kernel,Kernel/Contracts/AdministratorCheck.php,0,,Kernel
 Collaboration/ObjectMembership.php,,Collaboration,,,,,Platform
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
 Service/Flow/IFlowNodeRuntime.php,,Service,Flows,Flows/Service/Flow/IFlowNodeRuntime.php,0,,Processes
+Service/Audit/ReadRuleResolver.php,,Service,Core,,0,,Core
+Kernel/Contracts/ReadRuleMatch.php,,Kernel,,,,,Kernel
+Kernel/Contracts/ReadRuleResolverInterface.php,,Kernel,,,,,Kernel
+Service/Audit/ReadRuleCaller.php,,Service,Core,,0,,Core
+Migration/Version1Date20261124210000.php,,Migration,,,,,Compliance
