@@ -251,17 +251,23 @@ class ObjectsProvider implements IFilteringProvider {
 	 *
 	 * @return FilterDefinition[]
 	 *
-	 * @psalm-return   list{FilterDefinition, FilterDefinition, FilterDefinition, FilterDefinition}
+	 * `provider` is not declared here although `getSupportedFilters()` lists it:
+	 * it is one of Nextcloud's built-in filters (`IFilter::BUILTIN_PROVIDER`), a
+	 * string like ours. Declaring a built-in name again makes Nextcloud's search
+	 * composer throw "Filter name is already used" while it loads the providers,
+	 * which fails the provider list and every search through this provider.
+	 *
+	 * @psalm-return   list{FilterDefinition, FilterDefinition, FilterDefinition}
 	 * @phpstan-return list<\OCP\Search\FilterDefinition>
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/platform-search-provider/specs/platform-search-provider/spec.md
 	 */
 	public function getCustomFilters(): array {
 		return [
 			new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
 			new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
 			new FilterDefinition(name: 'scopes', type: FilterDefinition::TYPE_STRING),
-			new FilterDefinition(name: 'provider', type: FilterDefinition::TYPE_STRING),
 		];
 	}//end getCustomFilters()
 
