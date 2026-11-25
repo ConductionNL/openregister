@@ -146,3 +146,4 @@
 2026-11-25T13:40:20Z GREEN prs=10537,11163,11173,11177 main=03495635ac integrator-cloud (merged; first run NORESULT deps: psalm 7 vs platform php 8.3, vendor installed with --ignore-platform-req=php)
 2026-11-25T13:54:30Z GREEN prs=11172,11178,11182,11183,11187 main=d6c3981f5f integrator-cloud (merged; #11188 conflicted in tree)
 2026-11-25T14:08:12Z GREEN prs=11108,11193 main=df7349fe72 integrator-cloud (merged)
+2026-11-25T14:27:18Z RED prs=11051,11066,11067 main=d83ef9c562 integrator-cloud (ComponentDefinition/ComponentDependency architecture tests; split)
