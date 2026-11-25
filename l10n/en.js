@@ -4109,7 +4109,9 @@ OC.L10N.register(
     "Line" : "Line",
     "Multipolygon" : "Multipolygon",
     "Point" : "Point",
-    "Polygon" : "Polygon"
+    "Polygon" : "Polygon",
+    "Could not load the workflow progress." : "Could not load the workflow progress.",
+    "Workflow progress" : "Workflow progress"
 },
 "nplurals=2; plural=(n != 1);"
 );

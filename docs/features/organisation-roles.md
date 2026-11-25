@@ -639,6 +639,66 @@ Unchanged properties are **skipped** during update validation — this allows PA
 
 During object creation, property authorization rules apply **except** for organisation matching. This is because there is no existing object to match the organisation against yet. Other match conditions (like `$userId`) still apply on create.
 
+
+### Example: a salary field
+
+An `employee` schema where everyone who may read the record sees the name and
+the department, the `hr` group reads the salary, and only `payroll` may change
+it:
+
+```json
+{
+  "properties": {
+    "name": { "type": "string" },
+    "department": { "type": "string" },
+    "salary": {
+      "type": "number",
+      "authorization": {
+        "read": ["hr", "payroll"],
+        "update": ["payroll"]
+      }
+    }
+  }
+}
+```
+
+What each reader gets on `GET /api/objects/{register}/{schema}/{id}`:
+
+| Reader | `salary` in the answer | `@self.readOnlyProperties` | `PATCH {"salary": 4200}` |
+|--------|------------------------|----------------------------|--------------------------|
+| member of `payroll` | yes | absent | saved |
+| member of `hr` | yes | `["salary"]` | 403 |
+| anyone else who may read the record | no, silently left out | absent | 403 |
+| administrator | yes | absent | saved |
+
+Write both `read` and `update`. A property whose `authorization` names only
+`read` places no rule on `update`, so the field would stay writable for every
+user who may update the record, including users who cannot read it.
+
+A rule is a group name (`"hr"`), `public`, `authenticated`, or a conditional
+rule with `match` (see [Rule Structure](#rule-structure)). A property without
+`authorization` renders, saves and reads exactly as before.
+
+### What the client is told
+
+- **`@self.readOnlyProperties`** lists the properties this reader may read but
+  not change, for this object (a rule's `match` is evaluated against the
+  stored record). It is only present when the list is non-empty: an
+  administrator, or a schema without property authorization, carries nothing.
+  A form uses it to disable those inputs.
+- **A refused write answers 403** and names the properties, so a client can
+  tell a forbidden field from a server fault:
+
+```json
+{
+  "error": "You are not authorized to modify the following properties: salary",
+  "properties": ["salary"]
+}
+```
+
+The list is a hint. The API refuses a forbidden read or write whether or not a
+user interface shows the field.
+
 ### Extended Objects
 
 Property authorization is applied recursively to extended/nested objects. Each object is evaluated against its own schema's property authorization rules.
