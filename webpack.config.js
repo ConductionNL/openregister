@@ -55,11 +55,12 @@ if (!isDev) {
 	// editor workers, which no other page needs, so sharing chunks would put them
 	// in the vendor chunk every app page loads.
 	//
-	// `integrationGlobal` is deliberately EXCLUDED from splitting: it is injected
-	// on EVERY Nextcloud page via addInitScript, so sharing chunks with it would
-	// (a) pull this app's vendor code onto every page of the whole instance and
-	// (b) create a second webpack runtime co-loading shared chunks with the
-	// page's real entry. Keeping it self-contained preserves today's behaviour.
+	// `integrationGlobal` is injected on EVERY Nextcloud page via addInitScript,
+	// so sharing chunks with it would (a) pull this app's vendor code onto every
+	// page of the whole instance and (b) create a second webpack runtime
+	// co-loading shared chunks with the page's real entry. It is built in its
+	// own compilation (end of this file); it stays listed here so the rule holds
+	// should it ever be put back into this one.
 	// Split a chunk only when every entry it is reached from shares chunks.
 	// A worker is its own unnamed entry point, so the explorer's editor workers
 	// stay self-contained too.
@@ -76,30 +77,17 @@ if (!isDev) {
 		.flatMap((group) => entriesOf(group))
 		.every((entry) => typeof entry.name === 'string' && !selfContainedEntries.includes(entry.name))
 
-	// The global script's own lazy chunks (the integration tabs and cards it
-	// registers, loaded when one first renders) share ONE vendor chunk among
-	// themselves. Without it each lazy chunk carried its own copy of every
-	// dependency (~6 MB each, 200 chunks), because the script's initial chunk
-	// no longer holds them. Only chunks reached from integrationGlobal alone
-	// qualify, so nothing here is shared with another entry's runtime.
-	const onlyGlobalLazy = (chunk) => !chunk.canBeInitial()
-		&& [...chunk.groupsIterable]
-			.flatMap((group) => entriesOf(group))
-			.every((entry) => entry.name === 'integrationGlobal')
-
 	webpackConfig.optimization.splitChunks = {
 		chunks: (chunk) => sharesChunks(chunk),
 		cacheGroups: {
+			// Initial chunks only. A lazy chunk's dependencies stay with it (or
+			// in webpack's default async splits), so a view or tab loaded on
+			// demand does not grow the vendor chunk every page loads.
 			vendor: {
 				test: /[\\/]node_modules[\\/]/,
 				name: 'openregister-vendor',
+				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk),
 				priority: 10,
-			},
-			globalLazyVendor: {
-				test: /[\\/]node_modules[\\/]/,
-				chunks: onlyGlobalLazy,
-				name: 'openregister-global-lazy-vendor',
-				priority: 20,
 			},
 		},
 	}
@@ -394,8 +382,11 @@ webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(
 // deleted the flow-operator script. It was picked up as a deletion and shipped
 // in a PR at least once (#2381) before being caught.
 const KEPT_STATIC_ASSETS = ['openregister-push-', 'openregister-flow-operator']
+// The global script is emitted by its own compilation (below) into the same
+// js/ folder: each compilation cleans only its own files.
+const isGlobalScriptAsset = (asset) => asset.startsWith('openregister-integration-global') || asset.startsWith('openregister-global-')
 webpackConfig.output.clean = {
-	keep: (asset) => KEPT_STATIC_ASSETS.some((name) => asset.includes(name)),
+	keep: (asset) => isGlobalScriptAsset(asset) || KEPT_STATIC_ASSETS.some((name) => asset.includes(name)),
 }
 
 // Code-splitting (frontend-code-splitting-and-fetch-efficiency): dynamically
@@ -406,4 +397,64 @@ webpackConfig.output.clean = {
 // load correctly whether the app lives under apps/ or custom_apps/.
 webpackConfig.output.publicPath = 'auto'
 
-module.exports = webpackConfig
+// The global script (integrationGlobal) is built as its OWN compilation.
+//
+// It runs on every Nextcloud page, so its initial chunk holds only the
+// registry bootstrap; every integration tab and card it registers is a lazy
+// chunk. In a shared compilation those lazy chunks are the SAME chunk groups
+// as the main entry's (both reach the library's builtin descriptors), so their
+// dependencies could be left out only when both parents already held them:
+// with a small global script, every one of them carried the whole dependency
+// tree again (~6 MB each, ~200 chunks; the build ran out of memory). A second
+// compilation gives the global script its own chunk graph: its lazy chunks
+// share one `openregister-global-lazy-vendor` chunk, fetched the first time a
+// tab it registered renders, and the main entries build exactly as before.
+// Its own uniqueName gives it its own chunk-loading global, so the two
+// webpack runtimes on one page never install each other's chunks.
+const { integrationGlobal, ...pageEntries } = webpackConfig.entry
+webpackConfig.entry = pageEntries
+
+const globalConfig = {
+	...webpackConfig,
+	name: 'integrationGlobal',
+	entry: { integrationGlobal },
+	output: {
+		...webpackConfig.output,
+		clean: { keep: (asset) => !isGlobalScriptAsset(asset) },
+		uniqueName: 'openregisterGlobal',
+		chunkFilename: appId + '-global-[name].js?v=[contenthash]',
+	},
+	// Without the entrypoints manifest: the global script is one file, added
+	// by IntegrationGlobalScriptListener with Util::addInitScript.
+	plugins: [
+		new VueLoaderPlugin(),
+		...webpackConfig.plugins.filter((p) => !(p instanceof VueLoaderPlugin) && p.constructor !== Object),
+	],
+	optimization: {
+		...webpackConfig.optimization,
+		...(isDev
+			? {}
+			: {
+				splitChunks: {
+					chunks: 'async',
+					cacheGroups: {
+						default: false,
+						defaultVendors: false,
+						vendor: {
+							// Modules two or more lazy chunks share (src/shims too:
+							// the floating-ui shim was copied into each). A module
+							// one chunk uses stays in it, so the reader's l10n
+							// catalogue, loaded at boot, stays its own small chunk.
+							test: /[\\/](node_modules|src[\\/]shims)[\\/]/,
+							name: 'lazy-vendor',
+							chunks: 'async',
+							minChunks: 2,
+							enforce: true,
+						},
+					},
+				},
+			}),
+	},
+}
+
+module.exports = [webpackConfig, globalConfig]
