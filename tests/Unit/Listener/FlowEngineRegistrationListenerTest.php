@@ -66,6 +66,32 @@ final class FlowEngineRegistrationListenerTest extends TestCase {
 	}//end testTheOperationIsResolvedByItsClassName()
 
 	/**
+	 * Registering the operation also queues the static script that gives the
+	 * Flow rule builder its flow-name input, and that script is shipped.
+	 *
+	 * Without the script the operation still appears in Flow settings, but an
+	 * administrator has nowhere to type the flow name, so the rule cannot be
+	 * saved from the UI. Runs in its own process for the same reason as above.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/visual-flow-builder/tasks.md
+	 */
+	#[RunInSeparateProcess]
+	public function testRegisteringTheOperationQueuesTheFlowNameInput(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($this->createMock(IOperation::class));
+
+		(new FlowEngineRegistrationListener($container))->handle(
+			new RegisterOperationsEvent($this->createMock(IManager::class))
+		);
+
+		$scripts = (new \ReflectionProperty(\OCP\Util::class, 'scripts'))->getValue();
+		$this->assertContains('openregister/js/openregister-flow-operator', $scripts['openregister'] ?? []);
+		$this->assertFileExists(dirname(__DIR__, 3) . '/js/openregister-flow-operator.js');
+	}//end testRegisteringTheOperationQueuesTheFlowNameInput()
+
+	/**
 	 * Any other event registers nothing.
 	 *
 	 * @return void

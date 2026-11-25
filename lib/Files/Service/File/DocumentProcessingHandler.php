@@ -33,7 +33,6 @@ use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
 use OCA\OpenRegister\Service\File\ImageRegionNotBurnableException;
-use OCA\OpenRegister\Service\File\OfficeMediaBurner;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use OCP\Files\File;
@@ -342,7 +341,9 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 *
 	 * A standalone image (PNG, JPEG, TIFF, WebP) never takes the text path: its
 	 * decided regions are burned into the pixels through the image seam
-	 * (REQ-AIS-004), see {@see anonymizeImage()}.
+	 * (REQ-AIS-004), see {@see anonymizeImage()}. So is a scanned PDF without a
+	 * text layer that has decided regions; a PDF with a text layer has its text
+	 * replaced and its page images burned in the same output.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/specs/tag-preserving-redaction/spec.md
@@ -355,6 +356,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		if (($node instanceof File) === true
 			&& in_array((string)$node->getMimeType(), ImageRedactionService::STANDALONE_TYPES, true) === true
 		) {
+			return $this->anonymizeImage(file: $node);
+		}
+
+		if (($node instanceof File) === true && $this->isScannedPdfWithRegions(file: $node) === true) {
 			return $this->anonymizeImage(file: $node);
 		}
 
@@ -419,10 +424,12 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			);
 		}
 
-		// The images inside a DOCX or ODT go through the image seam in the same
+		// The images inside a DOCX, ODT or PDF go through the image seam in the same
 		// call, so the output carries replaced text and burned images (REQ-AIS-004).
-		if (($node instanceof File) === true && OfficeMediaBurner::handles(mimeType: (string)$node->getMimeType()) === true) {
-			$this->burnOfficeImages(source: $node, output: $anonymizedFile);
+		if (($node instanceof File) === true
+			&& $this->redaction->images?->burnsEmbeddedImages(mimeType: (string)$node->getMimeType()) === true
+		) {
+			$this->burnEmbeddedImages(source: $node, output: $anonymizedFile);
 		}
 
 		// Flip the source's EntityRelation rows to `anonymized = 1` so the
@@ -493,13 +500,42 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	}//end anonymizeImage()
 
 	/**
-	 * Burn the decided image regions of a DOCX or ODT into its `_anonymized` output.
+	 * Whether a file is a PDF without a text layer whose decided image regions are its redaction.
+	 *
+	 * Such a scan carries its personal data only in its page images, so the text
+	 * path, which refuses a PDF without a text layer, has nothing to replace: the
+	 * regions are burned instead. A PDF that cannot be read here is left to the
+	 * text path, whose refusal names the reason.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return bool True for a scanned PDF with decided regions, the image seam being available.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 */
+	private function isScannedPdfWithRegions(File $file): bool {
+		$images = $this->redaction->images;
+		if ($images === null || (string)$file->getMimeType() !== 'application/pdf'
+			|| $images->decidedRegions(file: $file) === []
+		) {
+			return false;
+		}
+
+		try {
+			return trim($this->extractPdfText(content: (string)$file->getContent())) === '';
+		} catch (Exception) {
+			return false;
+		}
+	}//end isScannedPdfWithRegions()
+
+	/**
+	 * Burn the decided image regions of a DOCX, ODT or PDF into its `_anonymized` output.
 	 *
 	 * Without the image seam, or without decided regions, the output stays as the
 	 * text path wrote it. When a region cannot be burned, the output is deleted
 	 * before the refusal is rethrown, so no half-redacted copy is left behind.
 	 *
-	 * @param File $source The office file.
+	 * @param File $source The DOCX, ODT or PDF.
 	 * @param File $output Its `_anonymized` sibling, as the text path wrote it.
 	 *
 	 * @throws \OCA\OpenRegister\Service\File\ImageRegionNotBurnableException When a region cannot be burned.
@@ -508,7 +544,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 *
 	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
 	 */
-	private function burnOfficeImages(File $source, File $output): void {
+	private function burnEmbeddedImages(File $source, File $output): void {
 		$images = $this->redaction->images;
 		if ($images === null) {
 			return;
@@ -520,7 +556,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		}
 
 		try {
-			$burned = $images->burnOfficeMedia(
+			$burned = $images->burnEmbeddedImages(
 				bytes: (string)$output->getContent(),
 				mimeType: (string)$source->getMimeType(),
 				regions: $regions,
@@ -533,7 +569,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		$output->putContent($burned);
 		$this->markStepRan(step: PipelineSteps::IMAGE_BURNER);
-	}//end burnOfficeImages()
+	}//end burnEmbeddedImages()
 
 	/**
 	 * Reset any report/residuals/placeholder-map/structure-result from a

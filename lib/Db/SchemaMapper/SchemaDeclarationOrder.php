@@ -164,6 +164,11 @@ final class SchemaDeclarationOrder {
 	public const SEARCH_RESULT = 230;
 
 	/**
+	 * The team-resources declaration (Platform).
+	 */
+	public const TEAM_RESOURCES = 235;
+
+	/**
 	 * The retention annotation.
 	 */
 	public const RETENTION = 240;
