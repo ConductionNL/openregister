@@ -5868,9 +5868,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * This method efficiently searches all magic tables for multiple UUIDs in batch.
 	 * It's optimized for performance by searching all UUIDs in each table with a single query.
 	 *
-	 * @param array    $uuids           Array of UUIDs to search for.
-	 * @param bool     $includeDeleted  Whether to include soft-deleted objects.
-	 * @param int|null $registerIdScope Only look in this register's tables (null: every table).
+	 * @param array          $uuids           Array of UUIDs to search for.
+	 * @param bool           $includeDeleted  Whether to include soft-deleted objects.
+	 * @param int|null       $registerIdScope Only look in this register's tables (null: every table).
+	 * @param list<int>|null $schemaIdScope   Only look in these schemas' tables, in any register (null: every schema).
 	 *
 	 * @return ObjectEntity[] Array of found objects (may be fewer than requested if some not found).
 	 */
@@ -5878,8 +5879,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		array $uuids,
 		bool $includeDeleted = false,
 		?int $registerIdScope = null,
+		?array $schemaIdScope = null,
 	): array {
-		return $this->findMultipleAcross(lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted), registerIdScope: $registerIdScope);
+		return $this->findMultipleAcross(
+			lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted),
+			registerIdScope: $registerIdScope,
+			schemaIdScope: $schemaIdScope
+		);
 	}//end findMultipleAcrossAllMagicTables()
 
 	/**
@@ -5887,11 +5893,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param UuidBatchLookup $lookup          The uuids and whether soft-deleted rows count.
 	 * @param int|null        $registerIdScope Restrict the scan to one register's tables.
+	 * @param list<int>|null  $schemaIdScope   Restrict the scan to these schemas' tables.
 	 *
 	 * @return array The found objects.
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function findMultipleAcross(UuidBatchLookup $lookup, ?int $registerIdScope=null): array {
+	public function findMultipleAcross(UuidBatchLookup $lookup, ?int $registerIdScope=null, ?array $schemaIdScope=null): array {
 		$uuids          = $lookup->uuids;
 		$includeDeleted = $lookup->includeDeleted;
 
@@ -5903,6 +5910,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$scan = new MagicCrossTableScan(label: 'findMultipleAcrossAllMagicTables');
 		$scan->includeDeleted = $includeDeleted;
 		$scan->registerIdScope = $registerIdScope;
+		$scan->schemaIdScope = $schemaIdScope;
 		$scan->predicate = '_uuid IN (' . implode(',', array_fill(0, count($uuids), '?')) . ')';
 		$scan->parameters = $uuids;
 
@@ -6533,11 +6541,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			$registerId = (int)$matches[1];
-			if ($scan->registerIdScope !== null && $registerId !== $scan->registerIdScope) {
+			$schemaId = (int)$matches[2];
+			if (($scan->registerIdScope !== null && $registerId !== $scan->registerIdScope)
+				|| ($scan->schemaIdScope !== null && in_array($schemaId, $scan->schemaIdScope, true) === false)
+			) {
 				continue;
 			}
 
-			$scan->tables[$fullTableName] = ['registerId' => $registerId, 'schemaId' => (int)$matches[2]];
+			$scan->tables[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
 		}
 	}//end listCrossTableScanTables()
 
