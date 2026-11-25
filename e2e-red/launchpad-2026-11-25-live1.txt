@@ -144,3 +144,9 @@ tests/e2e/tiles-form-board-sync.spec.ts:210 and :263 (tile-form-board-sync task 
     OPEN Edit tile fields not in board order (boxes 3/4 y differ by 303 px); Sort order control not found on the group tile
 tests/e2e/live-data-tile-widget.spec.ts:497
     OPEN test types into "Refresh interval (seconds)"; the board form (#1905) offers Refresh as a choice list: rewrite the test to the drawn control
+
+# 23:52Z rerun by live-launchpad-1 (new run: NC 34 MariaDB+APCu, php -S :8097 + router, OR main, launchpad development d6d9c728)
+widget-context-menu.spec.ts (3) + widgets-context-menu-contract.spec.ts (10): PASS 13/13 (bottom-edge reds green; WidgetContextMenu fits the measured box)
+menu-widget-links, navigation-editor-org-active-item, tiles-rendering-defects, dashboard-acknowledgements, dashboard-deeplinking, dashboard-edit-bar, header-widget-content, manifest-boot, section-heading-widget, phone-hidden-widgets-many, news-widget, dashboards-group-serialisation, navigation-editor-org-read-defects, widget-calculated-fields, visibility-dialog, more-menu: PASS (97 passed in one batch)
+permissions.spec.ts:620 FIXED #2118 (spec: cogItems Escape on the menu; Escape + trigger click reopened it), 19/19 live x2; merge queued
+launchpad-adopt-or-abstractions.spec.ts:171 OPEN known: waits nc-vue release (PATCH X-Translation-Target-Language)
