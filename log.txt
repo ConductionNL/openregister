@@ -5127,3 +5127,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T18:47:52Z integrator-20261125T164649-6d3dd46c MERGED-TREE f4b8b7b0ef: 4 PRs, main now 973cd85b27 = tested tree
 2026-11-25T18:48:52Z precheck-20261125T181737-613489e9 NORESULT tree 08512e4399: checker floor not measured (exit 2)
 2026-11-25T18:49:46Z precheck-20261125T181737-613489e9 CONFLICT-DEV #11145 6447df14
+2026-11-25T18:53:26Z integrator-20261125T164649-6d3dd46c RED tree 68b58279dd prs 4 front=red: Tests: 67355, Assertions: 239398, Errors: 5, Failures: 1, Warnings: 1, Deprecations: 4, PH; first failures: FAIL src/services/initial-data.golden.spec.js
