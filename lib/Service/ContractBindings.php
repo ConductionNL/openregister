@@ -206,6 +206,8 @@ final class ContractBindings {
 		ConfigurationKeyRegistryInterface::class => ConfigurationKeyRegistry::class,
 		DeploymentPreviewServiceInterface::class => DeploymentPreviewService::class,
 		DeploymentServiceInterface::class => DeploymentService::class,
+		\OCA\OpenRegister\Service\ConfigurationDeployment\PromotionServiceInterface::class => \OCA\OpenRegister\Service\ConfigurationDeployment\PromotionService::class,
+		\OCA\OpenRegister\Service\ConfigurationDeployment\PromotionPackageReaderInterface::class => \OCA\OpenRegister\Service\ConfigurationDeployment\PromotionPackageReader::class,
 		\OCA\OpenRegister\Service\Connection\ConnectionReporterInterface::class => \OCA\OpenRegister\Service\Connection\ConnectionReporter::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		CaseTokenServiceInterface::class => CaseTokenService::class,

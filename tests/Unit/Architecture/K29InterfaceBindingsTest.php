@@ -21,6 +21,10 @@ namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftService;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionPackageReader;
+use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionPackageReaderInterface;
+use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionService;
+use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionServiceInterface;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\CoreServiceBindings;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidationService;
@@ -41,6 +45,8 @@ final class K29InterfaceBindingsTest extends TestCase {
 	public static function bindings(): array {
 		return [
 			'configuration drafts' => [ConfigurationDraftsInterface::class, ConfigurationDraftService::class],
+			'configuration promotion' => [PromotionServiceInterface::class, PromotionService::class],
+			'promotion package reader' => [PromotionPackageReaderInterface::class, PromotionPackageReader::class],
 			'schema revalidator' => [SchemaRevalidatorInterface::class, SchemaRevalidationService::class],
 		];
 	}//end bindings()

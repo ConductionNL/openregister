@@ -2128,6 +2128,12 @@ Service/ConfigurationDeployment/ConfigurationValueStore.php,155,Service,Configur
 Service/ConfigurationDeployment/DeploymentPreviewService.php,138,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentPreviewService.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentRefusedException.php,38,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentRefusedException.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentService.php,260,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentService.php,0,,Configuration
+Service/ConfigurationDeployment/PromotionComponent.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/PromotionPackageReader.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/PromotionPackageReaderInterface.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/PromotionRemap.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/PromotionService.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/PromotionServiceInterface.php,,Service,,,,,Configuration
 Service/ConfigurationDeployment/SettingsDomainMap.php,,Service,,,,,Configuration
 Service/ConfigurationDeployment/SettingsDraftGate.php,,Service,,,,,Configuration
 Service/ConfigurationService.php,457,Service,Configuration,Configuration/Service/ConfigurationService.php,200,47,Configuration

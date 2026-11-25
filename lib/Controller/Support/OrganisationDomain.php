@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditorInterface;
@@ -41,6 +42,9 @@ final class OrganisationDomain {
 	 * @param OrganisationUsageServiceInterface $usageService        Measures an organisation's usage
 	 * @param ?GrantChangeAuditorInterface      $grantAuditor        Records a change of who holds the special right
 	 *                                                               `grant_manage`. Null only in legacy fixtures.
+	 * @param ?PromotionServiceInterface        $promotion           Promotes configuration to the next OTAP environment. Null only in legacy fixtures.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md#8-promotion-between-environments-row-op-otap
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
@@ -49,6 +53,7 @@ final class OrganisationDomain {
 		public readonly TenantLifecycleServiceInterface $tenantLifecycle,
 		public readonly OrganisationUsageServiceInterface $usageService,
 		public readonly ?GrantChangeAuditorInterface $grantAuditor = null,
+		public readonly ?PromotionServiceInterface $promotion = null,
 	) {
 	}//end __construct()
 }//end class

@@ -45,6 +45,8 @@ use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Db\TenantUsage\UsageRange;
 use OCA\OpenRegister\Db\TenantUsageMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Service\ConfigurationDeployment\DeploymentRefusedException;
+use OCA\OpenRegister\Service\ConfigurationDeployment\PromotionServiceInterface;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\OrganisationUsageServiceInterface;
 use OCA\OpenRegister\Service\Organisation\NewOrganisation;
@@ -194,6 +196,13 @@ class OrganisationController extends Controller {
 	private readonly ?OrganisationEditAuditorInterface $lifecycleAuditor;
 
 	/**
+	 * Promotes configuration to the next OTAP environment. Null only in legacy fixtures.
+	 *
+	 * @var ?PromotionServiceInterface
+	 */
+	private readonly ?PromotionServiceInterface $promotion;
+
+	/**
 	 * OrganisationController constructor
 	 *
 	 * @param IRequest $request HTTP request
@@ -207,6 +216,7 @@ class OrganisationController extends Controller {
 		$this->usageService = $services->domain->usageService;
 		$this->lifecycleAuditor = $services->auditing->lifecycleAuditor;
 		$this->grantAuditor = $services->domain->grantAuditor;
+		$this->promotion = $services->domain->promotion;
 		$this->organisationService = $services->domain->organisationService;
 		$this->organisationMapper = $services->mappers->organisationMapper;
 		$this->logger = $services->session->logger;
@@ -1542,6 +1552,43 @@ class OrganisationController extends Controller {
 
 		return Http::STATUS_INTERNAL_SERVER_ERROR;
 	}//end lifecycleStatus()
+
+	/**
+	 * Promote this organisation's configuration to a later OTAP environment.
+	 *
+	 * Admin only: the administrator check runs before either organisation is
+	 * looked up, so a refused caller learns nothing about them. The package
+	 * lands in the target as a draft set; nothing goes live until that set is
+	 * approved and deployed.
+	 *
+	 * @param string      $uuid               The organisation promoted from.
+	 * @param string|null $targetOrganisation The organisation promoted to.
+	 *
+	 * @return JSONResponse 201 with the landed set, 400 against the OTAP order or without a target, 403, 404 or 409.
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md#8-promotion-between-environments-row-op-otap
+	 */
+	public function promote(string $uuid, ?string $targetOrganisation = null): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(data: ['error' => 'Only administrators can promote configuration'], statusCode: Http::STATUS_FORBIDDEN);
+		}
+
+		if ($this->promotion === null) {
+			return new JSONResponse(data: ['error' => 'Configuration promotion is not available'], statusCode: Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		if ($targetOrganisation === null || trim($targetOrganisation) === '') {
+			return new JSONResponse(data: ['error' => 'targetOrganisation is required'], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+
+		try {
+			$result = $this->promotion->promote(sourceUuid: $uuid, targetUuid: trim($targetOrganisation));
+		} catch (DeploymentRefusedException $exception) {
+			return new JSONResponse(data: $exception->toResponseBody(), statusCode: $exception->getStatusCode());
+		}
+
+		return new JSONResponse(data: $result, statusCode: Http::STATUS_CREATED);
+	}//end promote()
 
 	/**
 	 * Get usage data for an organisation.
