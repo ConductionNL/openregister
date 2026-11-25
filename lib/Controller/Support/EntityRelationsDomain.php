@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCA\OpenRegister\Service\Decision\RelationDecisionServiceInterface;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 
 /**
@@ -38,6 +39,7 @@ final class EntityRelationsDomain {
 	 * @param PermissionHandlerInterface       $permissionHandler  RBAC verdict for object-bound relations.
 	 * @param RelationDecisionServiceInterface $relationDecisions  Takes the decision as its own object, under the ownership rule.
 	 * @param DecisionVisibilityInterface      $decisionVisibility Masks a decision the caller may not see (REQ-ROD-002).
+	 * @param ManagedFileOwnerLookup|null      $fileOwners         The object that owns a file in OpenRegister's own tree.
 	 *
 	 * @spec openspec/specs/entity-relation-grondslagen/spec.md
 	 */
@@ -45,6 +47,7 @@ final class EntityRelationsDomain {
 		public readonly PermissionHandlerInterface $permissionHandler,
 		public readonly RelationDecisionServiceInterface $relationDecisions,
 		public readonly DecisionVisibilityInterface $decisionVisibility,
+		public readonly ?ManagedFileOwnerLookup $fileOwners = null,
 	) {
 	}//end __construct()
 }//end class

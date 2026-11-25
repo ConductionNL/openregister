@@ -50,6 +50,7 @@ final class EntityRelationsControllerFactory {
 		\OCA\OpenRegister\Service\Decision\RelationDecisionService $relationDecisions,
 		\OCA\OpenRegister\Service\Decision\DecisionVisibility $decisionVisibility,
 		\OCP\IGroupManager $groupManager,
+		?\OCA\OpenRegister\Service\File\ManagedFileOwnerLookup $fileOwners = null,
 	): array {
 		return [
 			$request,
@@ -69,6 +70,7 @@ final class EntityRelationsControllerFactory {
 					permissionHandler: $permissionHandler,
 					relationDecisions: $relationDecisions,
 					decisionVisibility: $decisionVisibility,
+					fileOwners: $fileOwners,
 				),
 				platform: new \OCA\OpenRegister\Controller\Support\EntityRelationsPlatform(
 					session: new \OCA\OpenRegister\Controller\Support\ControllerSession(

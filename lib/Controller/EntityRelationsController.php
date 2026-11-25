@@ -58,6 +58,8 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCA\OpenRegister\Service\Decision\RelationDecisionServiceInterface;
+use OCA\OpenRegister\Service\File\DocumentStore;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
@@ -146,6 +148,13 @@ class EntityRelationsController extends Controller {
 	private readonly DecisionVisibilityInterface $decisionVisibility;
 
 	/**
+	 * The object that owns a file in OpenRegister's own tree.
+	 *
+	 * @var ManagedFileOwnerLookup|null
+	 */
+	private readonly ?ManagedFileOwnerLookup $fileOwners;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request Current request.
@@ -166,6 +175,7 @@ class EntityRelationsController extends Controller {
 		$this->logger = $services->platform->session->logger;
 		$this->relationDecisions = $services->domain->relationDecisions;
 		$this->decisionVisibility = $services->domain->decisionVisibility;
+		$this->fileOwners = $services->domain->fileOwners;
 	}//end __construct()
 
 	/**
@@ -368,9 +378,13 @@ class EntityRelationsController extends Controller {
 	}//end isPositiveId()
 
 	/**
-	 * File-bound authz: the file MUST be reachable in the acting user's
-	 * user-folder and writable (isUpdateable). Mirrors how the rest of
-	 * OR's per-file authz reads.
+	 * File-bound authz: the file reachable in the acting user's user-folder
+	 * and writable (isUpdateable), or a file of an object the user may update.
+	 *
+	 * An object's files live in the openregister account's home, not in the
+	 * reader's, so the user-folder check alone refused every reviewer of an
+	 * object's file. Such a file follows its object's `update` rule, the same
+	 * verdict an object-bound relation gets.
 	 *
 	 * @param int $fileId Nextcloud file node id.
 	 * @param string $userId Acting user UID.
@@ -382,7 +396,7 @@ class EntityRelationsController extends Controller {
 			$userFolder = $this->rootFolder->getUserFolder($userId);
 			$nodes = $userFolder->getById($fileId);
 			if (empty($nodes) === true) {
-				return false;
+				return $this->canUpdateFileObject(fileId: $fileId, userId: $userId);
 			}
 
 			$node = $nodes[0];
@@ -423,12 +437,54 @@ class EntityRelationsController extends Controller {
 	 * @return bool
 	 */
 	private function canUpdateObject(EntityRelation $relation, string $userId): bool {
-		$schemaId = $relation->getSchemaId();
 		$object = $this->resolveRelationObject(relation: $relation);
 		if ($object === null) {
 			return false;
 		}
 
+		return $this->mayUpdate(object: $object, schemaId: $relation->getSchemaId(), userId: $userId);
+	}//end canUpdateObject()
+
+	/**
+	 * Whether the user may update the object that owns a file in OpenRegister's own tree.
+	 *
+	 * @param int    $fileId The file.
+	 * @param string $userId Acting user UID.
+	 *
+	 * @return bool False when the file is not found, belongs to no object, or the object refuses.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md
+	 */
+	private function canUpdateFileObject(int $fileId, string $userId): bool {
+		if ($this->fileOwners === null) {
+			return false;
+		}
+
+		// An object's files live in the openregister account's home; read from
+		// the root, the lookup sees only the acting user's own mounts.
+		$node = $this->rootFolder->getUserFolder(DocumentStore::ACCOUNT)->getFirstNodeById($fileId);
+		if ($node instanceof File === false) {
+			return false;
+		}
+
+		$object = $this->fileOwners->find(file: $node);
+		if ($object === null) {
+			return false;
+		}
+
+		return $this->mayUpdate(object: $object, schemaId: null, userId: $userId);
+	}//end canUpdateFileObject()
+
+	/**
+	 * Whether the user holds `update` on the object, under its schema's rules.
+	 *
+	 * @param ObjectEntity $object   The object.
+	 * @param string|null  $schemaId The schema the relation names, or null for the object's own.
+	 * @param string       $userId   Acting user UID.
+	 *
+	 * @return bool
+	 */
+	private function mayUpdate(ObjectEntity $object, ?string $schemaId, string $userId): bool {
 		$resolvedSchemaId = (string)$object->getSchema();
 		if ($schemaId !== null) {
 			$resolvedSchemaId = $schemaId;
@@ -438,7 +494,7 @@ class EntityRelationsController extends Controller {
 			schemaId: $resolvedSchemaId,
 			warning: new AuthDenialWarning(
 				message: '[EntityRelationsController] Object-bound auth check could not load schema, denying',
-				context: ['object_id' => $relation->getObjectId(), 'schema_id' => $resolvedSchemaId]
+				context: ['object_id' => $object->getId(), 'schema_id' => $resolvedSchemaId]
 			)
 		);
 		if ($resolvedSchema === null) {
@@ -450,7 +506,7 @@ class EntityRelationsController extends Controller {
 				->askedBy(userId: $userId, objectOwner: $object->getOwner())
 				->about(object: $object, register: null)
 		);
-	}//end canUpdateObject()
+	}//end mayUpdate()
 
 	/**
 	 * Resolve the relation's object, disambiguated by register and schema when given.
