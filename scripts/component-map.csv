@@ -152,6 +152,7 @@ BulkAction/BulkActionInterface.php,15,BulkAction,Flows,Flows/BulkAction/BulkActi
 BulkAction/BulkActionInvoker.php,,BulkAction,,,,,Processes
 BulkAction/BulkActionResult.php,32,BulkAction,Flows,Flows/BulkAction/BulkActionResult.php,46,459,Processes
 BulkAction/LegacyBulkActionInterface.php,,BulkAction,,,,,Processes
+Controller/OrganisationPromotionController.php,,Controller,,,,,Configuration
 Controller/Support/ApplicationsControllerServices.php,,Controller,,,,,Configuration
 Controller/Support/ConnectionReporting.php,,Controller,,,,,Configuration
 BulkAction/ExportWholeSetAction.php,158,BulkAction,Configuration,Configuration/BulkAction/ExportWholeSetAction.php,0,173,Configuration
@@ -1638,6 +1639,10 @@ Notifications/Service/Notification/ScheduledFilterParser.php,368,Notifications,N
 Notifications/Service/Notification/ScheduledFilterPosition.php,41,Notifications,Notifications,Notifications/Service/Notification/ScheduledFilterPosition.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageAudit.php,57,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageAudit.php,0,,Notifications
 Kernel/Contracts/ObjectActivityAuditInterface.php,,Kernel,,,,,Kernel
+Service/ConfigurationDeployment/PromotionComponent.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/PromotionPackageReader.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/PromotionService.php,,Service,,,,,Configuration
+Service/ConfigurationDeployment/PromotionServiceInterface.php,,Service,,,,,Configuration
 Service/Object/ObjectActivityAudit.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessagePolicy.php,74,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessagePolicy.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageStore.php,60,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageStore.php,0,,Notifications

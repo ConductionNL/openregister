@@ -63,6 +63,13 @@ class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 	public const ACTION_UPDATED = 'organisation.updated';
 
 	/**
+	 * The typed action a configuration promotion writes, in the source and in the target.
+	 *
+	 * @var string
+	 */
+	public const ACTION_PROMOTED = 'organisation.configuration_promoted';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param AuditEntryWriterInterface $auditEntries The audit trail, which seals every entry it writes.
@@ -114,6 +121,35 @@ class OrganisationLifecycleAuditor implements OrganisationEditAuditorInterface {
 			$this->write(organisation: $organisation, change: new OrganisationChange(action: self::ACTION_UPDATED, changed: $changed));
 		}
 	}//end recordUpdate()
+
+	/**
+	 * Record a configuration promotion, once in the source and once in the target organisation.
+	 *
+	 * Both entries name the draft set the configuration landed in, the other
+	 * organisation and the number of components per kind, so either
+	 * organisation's history answers where its configuration went or came from.
+	 *
+	 * @param Organisation       $source  The organisation whose configuration was promoted.
+	 * @param Organisation       $target  The organisation it landed in as a draft set.
+	 * @param string             $setUuid The draft set.
+	 * @param array<string, int> $counts  Components per kind.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md
+	 */
+	public function recordPromotion(Organisation $source, Organisation $target, string $setUuid, array $counts): void {
+		$promotion = ['draftSet' => $setUuid, 'counts' => $counts];
+
+		$this->write(
+			organisation: $source,
+			change: new OrganisationChange(action: self::ACTION_PROMOTED, changed: ['promotedTo' => $target->getUuid()] + $promotion)
+		);
+		$this->write(
+			organisation: $target,
+			change: new OrganisationChange(action: self::ACTION_PROMOTED, changed: ['promotedFrom' => $source->getUuid()] + $promotion)
+		);
+	}//end recordPromotion()
 
 	/**
 	 * The fields whose value differs, by name: `{old, new}`.
