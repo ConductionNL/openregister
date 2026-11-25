@@ -3,7 +3,8 @@
 ## 1. Move
 
 - [x] 1.1 `MoveObject` handler: RBAC on both sides, target validation with generated properties kept, transactional row move, pointer row in the source, `moved` audit entry.
-- [ ] 1.2 Route `POST .../move`; timers superseded with reason `moved`; presence and locks carried.
+- [x] 1.2 Route `POST .../move`; timers superseded with reason `moved`; presence and locks carried.
+      The route is `objects#move`. Presence and locks are keyed on the uuid, so they come along (D-1), and a locked object is refused before the move. Timers are keyed on the uuid too, except for the one thing a schema decides: a timer whose working calendar was named by the record type it was armed on (`WorkingCalendarScope::SCOPE_RECORD_TYPE`). After a completed move `MoveObject` calls `FlowTimerControlInterface::recalendarForSubject()`. An armed timer of that kind is superseded with reason `moved` onto the calendar the target schema names (falling back to the unit or instance calendar when it names none), keeping its anchor, running segment and consumed time, so the deadline is re-projected. A suspended one is pointed at the new calendar in place, since resume measures against it. A failure is logged and does not undo the move. Tests: `FlowTimerRecalendarTest` (7) and `MoveObjectTest` (+3).
 
 ## 2. Addresses
 
@@ -52,9 +53,8 @@ a date.
   entry is what says where it went.
 - **1.2's timers, presence and locks.** All three are keyed on the uuid, which
   does not change, so they follow the object without being touched — that is
-  design D-1 and it is why the list in the spec reads as "kept" rather than
-  "migrated". Timers superseded with reason `moved` would only matter if a
-  timer were bound to the schema, and none is.
+  design D-1. The one exception, a timer whose calendar was named by its
+  record type, was built later: see 1.2 above.
 - **2.2, relation deep-link rewriting**, was built in the second pass, once
   the old address answered (2.1): see 2.2 above.
 - **3.1, the e2e, and the Newman request of 3.2.** Both need a live instance.

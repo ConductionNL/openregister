@@ -21,7 +21,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
- * Cancels the timers of a run or a subject, supersedes one timer with a new anchor, and moves a subject's timers onto a new record type's calendar. Implemented by FlowTimerService.
+ * Cancels the timers of a run or a subject, supersedes one timer with a new anchor, and moves a
+ * subject's timers onto a new record type's calendar. Implemented by FlowTimerService.
  */
 interface FlowTimerControlInterface {
 
