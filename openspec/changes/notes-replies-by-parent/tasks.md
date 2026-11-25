@@ -8,7 +8,8 @@
 
 ## 2. Proof and docs
 
-- [ ] 2.1 Add `tests/e2e/ci/note-replies.spec.ts`: add a note, reply to it through the API, and read both with the reply's `parentId`.
+- [x] 2.1 Add `tests/e2e/ci/note-replies.spec.ts`: add a note, reply to it through the API, and read both with the reply's `parentId`.
+      > 2026-11-25: three tests, green on a sandbox Nextcloud 34 with MariaDB (3 passed). The admin asks, the seeded non-admin `e2e-other` replies with `parentId`, and the list reads the question with `replyCount` 1 and the reply naming it; a reply to another record's note is refused with 422 and the fixed sentence and writes nothing; after the question is deleted the reply is still listed with `parentDeleted` true. Mutation-checked: always answering `parentDeleted: false` in `NoteReplies::fields()` turns the third test red.
 - [x] 2.2 Document replies in `docs/` beside notes.
 
 Acceptance:

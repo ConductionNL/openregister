@@ -342,8 +342,33 @@ class SchemaMigrationController extends Controller {
 		}
 
 		$request = new MigrationRequest(schemaId: $id, registerId: $registerId, plan: $plan);
-		return new JSONResponse(['results' => $this->domain->migrationService->previewSample(request: $request, sampleSize: $this->sampleSize())]);
+		return new JSONResponse(
+			[
+				'results' => $this->domain->migrationService->previewSample(request: $request, sampleSize: $this->sampleSize()),
+				'warnings' => $this->renameWarnings(plan: $plan),
+			]
+		);
 	}//end previewMigration()
+
+	/**
+	 * The flows, notification rules and saved views that still name what the plan renames.
+	 *
+	 * Warnings only: the run does not rewrite them, so the administrator sees
+	 * them before running. Empty when the plan renames nothing.
+	 *
+	 * @param array $plan The migration plan.
+	 *
+	 * @return array The warnings.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/tasks.md#1.2
+	 */
+	private function renameWarnings(array $plan): array {
+		if ($this->domain->renameWarnings === null) {
+			return [];
+		}
+
+		return $this->domain->renameWarnings->forPlan(plan: $plan);
+	}//end renameWarnings()
 
 	/**
 	 * Execute a migration plan over a schema's population (background).

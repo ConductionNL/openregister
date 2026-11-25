@@ -31,6 +31,7 @@ use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -68,6 +69,13 @@ class ObjectsControllerMovedAddressTest extends TestCase {
 	 */
 	private array $finds = [];
 
+	/**
+	 * What the first find() answers instead of a miss: the object from whichever table it lives in.
+	 *
+	 * @var ObjectEntity|null
+	 */
+	private ?ObjectEntity $foundElsewhere = null;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -76,6 +84,10 @@ class ObjectsControllerMovedAddressTest extends TestCase {
 		$this->objectService->method('find')->willReturnCallback(
 			function (string $id, $options) {
 				$this->finds[] = [$id, $options->register, $options->schema];
+				if ($this->foundElsewhere !== null && count($this->finds) === 1) {
+					return $this->foundElsewhere;
+				}
+
 				throw new DoesNotExistException('not here');
 			}
 		);
@@ -146,5 +158,67 @@ class ObjectsControllerMovedAddressTest extends TestCase {
 
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame([['old-slug', 'zaken', 'persoon'], ['the-uuid', '7', '4']], $this->finds);
+	}
+
+	/**
+	 * find() resolves a uuid across tables, so the old address of a moved object
+	 * comes back FOUND, from its new table. That is still the old address, and it
+	 * is read again at the new one rather than rendered here without saying so.
+*
+	 * @return void
+	 */
+	public function testAnObjectFoundInAnotherTableIsReadAgainAtItsNewAddress(): void {
+		$this->foundElsewhere = $this->entityAt(register: 9, schema: 5);
+		$this->lookup->expects($this->once())->method('movedFrom')->with('the-uuid', '7', '4', true)
+			->willReturn(['register' => '9', 'schema' => '5', 'uuid' => 'the-uuid', 'movedAt' => '2026-10-01T09:00:00+00:00']);
+
+		$this->controller->show('the-uuid', 'zaken', 'persoon', $this->objectService);
+
+		$this->assertSame([['the-uuid', 'zaken', 'persoon'], ['the-uuid', '9', '5']], $this->finds);
+	}
+
+	/**
+	 * An object that lives where it was asked for never reaches the move lookup.
+*
+	 * @return void
+	 */
+	public function testAnObjectThatLivesHereIsNotLookedUp(): void {
+		$this->foundElsewhere = $this->entityAt(register: 7, schema: 4);
+		$this->lookup->expects($this->never())->method('movedFrom');
+
+		try {
+			$this->controller->show('the-uuid', 'zaken', 'persoon', $this->objectService);
+		} catch (\Throwable $e) {
+			// Rendering is not under test here; only that no lookup was made.
+		}
+
+		$this->assertSame([['the-uuid', 'zaken', 'persoon']], $this->finds);
+	}
+
+	/**
+	 * An object in another table that did not move from here is not rerouted.
+*
+	 * @return void
+	 */
+	public function testAnObjectElsewhereThatDidNotMoveFromHereIsNotRerouted(): void {
+		$this->foundElsewhere = $this->entityAt(register: 9, schema: 5);
+		$this->lookup->expects($this->once())->method('movedFrom')->willReturn(null);
+
+		try {
+			$this->controller->show('the-uuid', 'zaken', 'persoon', $this->objectService);
+		} catch (\Throwable $e) {
+			// Rendering is not under test here; only that no second read was made.
+		}
+
+		$this->assertSame([['the-uuid', 'zaken', 'persoon']], $this->finds);
+	}
+
+	private function entityAt(int $register, int $schema): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid('the-uuid');
+		$entity->setRegister((string) $register);
+		$entity->setSchema((string) $schema);
+
+		return $entity;
 	}
 }//end class
