@@ -88,6 +88,9 @@
 
 		<EdepotHostKeyConfiguration />
 
+		<!-- Export keys of the encrypted instance set: create, rotate, delete -->
+		<ExportKeysConfiguration />
+
 		<!-- Federated configuration sharing: sources, trusted keys, publish/install groups -->
 		<FederatedTrustConfiguration />
 
@@ -110,6 +113,7 @@ import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import CacheManagement from './sections/CacheManagement.vue'
 import DeclaredCredentialProviders from './sections/DeclaredCredentialProviders.vue'
 import EdepotHostKeyConfiguration from './sections/EdepotHostKeyConfiguration.vue'
+import ExportKeysConfiguration from './sections/ExportKeysConfiguration.vue'
 import FederatedTrustConfiguration from './sections/FederatedTrustConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
 import FlowConfiguration from './sections/FlowConfiguration.vue'
@@ -165,6 +169,7 @@ export default {
 		FileConfiguration,
 		ApiTokenConfiguration,
 		EdepotHostKeyConfiguration,
+		ExportKeysConfiguration,
 		FederatedTrustConfiguration,
 		DeclaredCredentialProviders,
 		Dialogs,
