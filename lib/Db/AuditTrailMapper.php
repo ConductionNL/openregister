@@ -2653,6 +2653,34 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end findObjectActions()
 
 	/**
+	 * The entries a delete wrote for the objects it acted on, by the uuid of the object that triggered it.
+	 *
+	 * @param string              $triggerObject The uuid of the object whose delete cascaded.
+	 * @param ActionLookupOptions $options       The actions to return (every action when empty) and the row cap.
+	 *
+	 * @return array<int, AuditTrail> The matching rows, oldest first.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+	 */
+	public function findTriggeredActions(string $triggerObject, ActionLookupOptions $options): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('trigger_object', $qb->createNamedParameter($triggerObject)))
+			->andWhere($qb->expr()->isNull('purged_at'))
+			->orderBy('id', 'ASC')
+			->setMaxResults($options->limit);
+
+		if ($options->actions !== []) {
+			$qb->andWhere(
+				$qb->expr()->in('action', $qb->createNamedParameter($options->actions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findTriggeredActions()
+
+	/**
 	 * Destruction entries created since a moment, oldest first, one page.
 	 *
 	 * Ordered on `created` and then `id`, so consecutive pages neither repeat
