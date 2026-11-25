@@ -223,3 +223,4 @@ openregister#11078 46b38f55248ca36237b43ddb1a47809c22e40b83 auto-park: sbom: com
 openregister#11079 bb6076f6e436a552e21f1dc62f8bb5a0b2c4d413 auto-park: sbom: composer.lock changed without sbom.cdx.json
 openregister#10550 d18005f100d4cf28ce789eb401dd3e1fc560048c auto-park: floor: module_coupling: 5.15 -> 5.13
 openregister#11108 3f60e1eba905139460e084c941b67240e3e693e7 precheck-red alone on main: FAIL src/store/defaultShapes.golden.spec.js
+openregister#11076 fbe34f46da797102864a8a9b673e3a9e89e18286 precheck-red alone on main: 
