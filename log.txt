@@ -4823,3 +4823,4 @@ remote: error: GH013: Repository rule violations f; per-PR merges
 2026-11-25T10:46:32Z precheck-20261125T100507-543643c0 NORESULT tree b4b3b6209c prs 1: php-1.log: no Tests line
 2026-11-25T10:46:46Z precheck-20261125T092731-e310afa6 GREEN tree 4550d29d5b on dev 1e257c721f prs 1 front=ok: Tests: 66403, Assertions: 235279, Errors: 9, Failures: 1, Deprecations: 23, PHPUnit Deprecations: 1, Skipped: 27.
 2026-11-25T10:47:03Z precheck-20261125T100507-543643c0 NORESULT tree 9eafde1f97 prs 1: php-1.log: no Tests line
+2026-11-25T10:47:32Z precheck-20261125T100507-543643c0 NORESULT tree a680d428b9 prs 1: php-1.log: no Tests line
