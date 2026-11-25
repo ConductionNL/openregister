@@ -65,6 +65,8 @@ final class TaskSerialisationGoldenTest extends TestCase {
 		'routingFallback' => 'string',
 		'onBehalfOf' => 'string',
 		'mandate' => 'string',
+		'requiredMandate' => 'string',
+		'mandateEvidence' => 'json',
 		'requester' => 'string',
 		'watchers' => 'json',
 		'startAt' => 'datetime',
@@ -137,6 +139,8 @@ final class TaskSerialisationGoldenTest extends TestCase {
 		'routingFallback' => null,
 		'onBehalfOf' => null,
 		'mandate' => null,
+		'requiredMandate' => null,
+		'mandateEvidence' => null,
 		'requester' => null,
 		'watchers' => null,
 		'startAt' => null,
@@ -215,6 +219,10 @@ final class TaskSerialisationGoldenTest extends TestCase {
 		'routingFallback' => 'routingFallback-v',
 		'onBehalfOf' => 'onBehalfOf-v',
 		'mandate' => 'mandate-v',
+		'requiredMandate' => 'requiredMandate-v',
+		'mandateEvidence' => [
+			'k' => 'mandateEvidence',
+		],
 		'requester' => 'requester-v',
 		'watchers' => [
 			'k' => 'watchers',

@@ -83,6 +83,11 @@ class AggregatePathsAskPermissionTest extends TestCase {
 		// returns no value to anybody.
 		'lib/Db/MagicMapper/MagicTableIndexer.php' => 'creates indexes from property definitions, reads no value',
 
+		// Counts duplicate `_uuid` values per object table for a repair step and
+		// an occ command, so the unique index can be added. A metadata column,
+		// not a schema property; the count goes to the administrator's log only.
+		'lib/Service/Object/UniqueUuidIndex.php' => 'counts duplicate uuids for the unique-index repair, reads no schema property',
+
 		// Validate or persist a CONFIGURATION that names a property. They never
 		// read a value. `ViewService` checks a kanban groupByField exists;
 		// `TimeseriesRequestValidator` checks a request's shape.

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Event\DraftUpdatedEvent;
 use OCA\OpenRegister\Event\FlowRunTerminalEvent;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectNoteAddedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
@@ -56,6 +57,8 @@ use OCA\OpenRegister\Notifications\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Search\Listener\Registrar\SearchListenerRegistrar;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\User\Events\OutOfOfficeEndedEvent;
+use OCP\User\Events\OutOfOfficeStartedEvent;
 
 /**
  * Subscribes every OpenRegister listener to its events.
@@ -163,6 +166,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, NotificationDeclarationCheckListener::class);
 		$context->registerEventListener(SchemaDeclarationChecksEvent::class, McpDeclarationChecksListener::class);
 		SearchListenerRegistrar::declarationChecks(context: $context);
+		CoreListenerRegistrar::teamResources(context: $context);
 	}//end registerSchemaDeclarationChecks()
 
 	/**
@@ -282,6 +286,12 @@ final class ListenerRegistrar {
 		// own transaction committed (the listener skips uncommitted dispatches);
 		// a failure here costs latency, never the completion.
 		$context->registerEventListener(TaskTerminalEvent::class, UserTaskTerminalListener::class);
+
+		// Substitution (tasks-delegation-and-substitution, design D-5): an
+		// absence that starts or ends only queues TaskSubstitutionJob, which
+		// moves the person's open tasks to the stand-in or gives untouched ones back.
+		$context->registerEventListener(OutOfOfficeStartedEvent::class, TaskAbsenceListener::class);
+		$context->registerEventListener(OutOfOfficeEndedEvent::class, TaskAbsenceListener::class);
 
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): a terminal task (TaskMapper, both write paths) or a terminal run
@@ -708,6 +718,7 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
+		$context->registerEventListener(ObjectNoteAddedEvent::class, AnnotationNotificationListener::class);
 
 		// Object-lifecycle flow triggers have ONE listener: FlowTriggerListener,
 		// registered above with the other flow triggers. EventCatalogListener

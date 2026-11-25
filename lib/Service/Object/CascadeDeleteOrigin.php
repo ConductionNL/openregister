@@ -26,16 +26,19 @@ final readonly class CascadeDeleteOrigin {
 	/**
 	 * Constructor.
 	 *
-	 * @param string      $userId            The user performing the deletion.
-	 * @param string      $cascadeSource     The uuid of the root object triggering the cascade.
-	 * @param string|null $triggerSchemaSlug The schema slug of the root object, for the audit row.
-	 * @param string|null $organisationId    The active organisation, for the deletion attribution.
+	 * @param string                  $userId            The user performing the deletion.
+	 * @param string                  $cascadeSource     The uuid of the root object triggering the cascade.
+	 * @param string|null             $triggerSchemaSlug The schema slug of the root object, for the audit row.
+	 * @param string|null             $organisationId    The active organisation, for the deletion attribution.
+	 * @param \DateTimeImmutable|null $evidenceUntil     The end of the root's recovery window: the evidence
+	 *                                                   of a reference this cascade clears lasts that long.
 	 */
 	public function __construct(
 		public string $userId,
 		public string $cascadeSource,
 		public ?string $triggerSchemaSlug,
 		public ?string $organisationId = null,
+		public ?\DateTimeImmutable $evidenceUntil = null,
 	) {
 	}//end __construct()
 

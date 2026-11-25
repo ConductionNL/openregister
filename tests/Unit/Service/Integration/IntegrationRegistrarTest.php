@@ -53,6 +53,8 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\XwikiLinkService',
 				'OCA\OpenRegister\Service\Integration\Providers\KvkProvider',
 				'OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider',
+				'OCA\OpenRegister\Service\Integration\Providers\ExternalRegisterProvider',
+				'OCA\OpenRegister\Service\Integration\ExternalRegisterLookup',
 				'OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider',
 				'OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider',
 				'OCA\OpenRegister\Service\OpenProjectLinkService',
@@ -91,6 +93,7 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Schema\SchemaMigrationService',
 				'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
 				'OCA\OpenRegister\Contract\EmailLinkReaderInterface',
+				'OCA\OpenRegister\Contract\ReplyThreadResolutionInterface',
 				'OCA\OpenRegister\Service\Credential\CredentialStore',
 				'OCA\OpenRegister\Service\Sync\SourceFetcherRegistry',
 				'OCA\OpenRegister\Controller\IntegrationsController',
@@ -101,6 +104,14 @@ class IntegrationRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				['event' => 'OCA\OpenRegister\Event\ObjectWriteRequestEvent', 'listener' => 'OCA\OpenRegister\Listener\WebhookRequestInterceptionListener'],
+				['event' => 'OCP\User\Events\BeforeUserDeletedEvent', 'listener' => 'OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener'],
+				['event' => 'OCP\User\Events\UserChangedEvent', 'listener' => 'OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectCreatedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectUpdatedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectMovedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectRestoredEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectDeletedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectDeletedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectMovedToTrashEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectDeletedListener'],
 			],
 			actual: $context->listeners
 		);
@@ -166,14 +177,14 @@ class IntegrationRegistrarTest extends TestCase {
 			}
 		);
 
-		$registry->expects($this->exactly(25))->method('addProvider')->with($provider);
+		$registry->expects($this->exactly(26))->method('addProvider')->with($provider);
 		$logger->expects($this->once())->method('warning');
 
 		IntegrationRegistrar::boot(server: $server);
 
-		$this->assertCount(expectedCount: 26, haystack: $asked);
+		$this->assertCount(expectedCount: 27, haystack: $asked);
 		$this->assertSame(expected: 'OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider', actual: $asked[0]);
-		$this->assertSame(expected: 'OCA\OpenRegister\Service\Integration\Providers\TimeProvider', actual: $asked[25]);
+		$this->assertSame(expected: 'OCA\OpenRegister\Service\Integration\Providers\TimeProvider', actual: $asked[26]);
 	}//end testBootAddsTheProvidersAndSkipsOneThatFails()
 
 	/**

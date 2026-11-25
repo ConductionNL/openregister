@@ -56,6 +56,7 @@ final class FederatedShareSerialisationGoldenTest extends TestCase {
 		'created' => 'datetime',
 		'updated' => 'datetime',
 		'expiresAt' => 'datetime',
+		'crosses' => 'json',
 	];
 
 	/**
@@ -82,6 +83,7 @@ final class FederatedShareSerialisationGoldenTest extends TestCase {
 		'created' => null,
 		'updated' => null,
 		'expiresAt' => null,
+		'crosses' => null,
 	];
 
 	/**
@@ -110,6 +112,9 @@ final class FederatedShareSerialisationGoldenTest extends TestCase {
 		'created' => '2026-01-02T03:04:05+00:00',
 		'updated' => '2026-01-02T03:04:05+00:00',
 		'expiresAt' => '2026-01-02T03:04:05+00:00',
+		'crosses' => [
+			'k' => 'crosses',
+		],
 	];
 
 	/**

@@ -166,7 +166,7 @@ class SchemaImportControllerA24GoldenTest extends TestCase {
 			->with('[SchemaImportController] Failed to persist imported schema', ['error' => 'db']);
 
 		$this->assertSame([422, ['error' => 'no such type']], $this->pair($this->controller->import('ggm')));
-		$this->assertSame([500, ['error' => 'Failed to persist the imported schema: db']], $this->pair($this->controller->import('ggm')));
+		$this->assertSame([500, ['error' => 'Failed to persist the imported schema']], $this->pair($this->controller->import('ggm')));
 	}
 
 	public function testImportPersistsAndAssociatesWithTheTargetRegister(): void {
@@ -302,6 +302,6 @@ class SchemaImportControllerA24GoldenTest extends TestCase {
 
 		$this->assertSame('1.0.0', $schema->getVersion());
 		$this->assertSame(['importSource' => ['dialect' => 'ggm']], $schema->getConfiguration());
-		$this->assertSame([500, ['error' => 'Failed to persist the imported schema: locked']], $this->pair($response));
+		$this->assertSame([500, ['error' => 'Failed to persist the imported schema']], $this->pair($response));
 	}
 }

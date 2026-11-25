@@ -106,4 +106,21 @@ class PermissionReportScopeTest extends TestCase {
 
 		$this->assertSame($all, $this->scope->schemas(null));
 	}
+	public function testASchemaSlugIsLookedUpInsideTheNarrowedRegister(): void {
+		$register = new Register();
+		$register->setSchemas([36]);
+		$own = new Schema();
+		$this->schemas->expects($this->once())->method('findBySlugInIds')->with('agent', [36])->willReturn($own);
+		$this->schemas->expects($this->never())->method('find');
+
+		$this->assertSame([$own], $this->scope->schemas('agent', $register));
+	}
+
+	public function testWithoutANarrowedRegisterTheSlugStaysGlobal(): void {
+		$one = new Schema();
+		$this->schemas->expects($this->never())->method('findBySlugInIds');
+		$this->schemas->expects($this->once())->method('find')->with('agent')->willReturn($one);
+
+		$this->assertSame([$one], $this->scope->schemas('agent'));
+	}
 }//end class

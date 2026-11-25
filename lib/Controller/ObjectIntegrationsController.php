@@ -52,7 +52,9 @@ use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Integration\DeclaresListExtraKeys;
+use OCA\OpenRegister\Service\Integration\IdempotencyConflictException;
 use OCA\OpenRegister\Service\Integration\IntegrationCatalogueInterface;
+use OCA\OpenRegister\Service\Integration\IntegrationCreateIdempotency;
 use OCA\OpenRegister\Service\Integration\IntegrationProviderInvoker;
 use OCA\OpenRegister\Service\Integration\PaginatedResults;
 use OCA\OpenRegister\Service\Integration\QueryTimeContract;
@@ -122,6 +124,13 @@ class ObjectIntegrationsController extends Controller {
 	private RelationsObjectLookup $lookup;
 
 	/**
+	 * Runs a create once per Idempotency-Key.
+	 *
+	 * @var IntegrationCreateIdempotency
+	 */
+	private IntegrationCreateIdempotency $idempotency;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                             $request  Current request.
@@ -142,6 +151,7 @@ class ObjectIntegrationsController extends Controller {
 		$this->visibility = $services->access->visibility;
 		$this->permissions = $services->access->permissions;
 		$this->logger = $services->logger;
+		$this->idempotency = $services->idempotency;
 		$this->lookup = new RelationsObjectLookup(objects: $services->domain->objectService);
 	}//end __construct()
 
@@ -424,7 +434,10 @@ class ObjectIntegrationsController extends Controller {
 	/**
 	 * POST /api/objects/{register}/{schema}/{id}/integrations/{integrationId}
 	 *
-	 * Creates a new linked thing for the object.
+	 * Creates a new linked thing for the object. A create sent again under
+	 * the same `Idempotency-Key` header gets the first answer and creates
+	 * nothing (header `Idempotent-Replayed: true`, else `false`); a key that is taken by a
+	 * running create, another user or another payload answers 409.
 	 *
 	 * @param string $register Register slug or numeric id.
 	 * @param string $schema Schema slug or numeric id.
@@ -434,20 +447,54 @@ class ObjectIntegrationsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
+	 * @spec openspec/specs/integration-registry/spec.md
 	 */
 	#[NoAdminRequired]
 	public function create(string $register, string $schema, string $id, string $integrationId): JSONResponse {
-		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? self::created(
-			response: $this->dispatch(
-				integrationId: $integrationId,
-				callback: fn ($provider) => (new IntegrationProviderInvoker())->create(
-					$provider,
-					new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid()),
-					$this->collectPayload()
-				)
-			)
+		return $this->guardObjectUpdate(route: new ObjectLinkRoute(register: $register, schema: $schema, id: $id)) ?? $this->createOnce(
+			integrationId: $integrationId,
+			object: new ObjectRef(register: $register, schema: $schema, id: $this->guardedUuid())
 		);
 	}//end create()
+
+	/**
+	 * Run a create through its provider, once per Idempotency-Key when one is sent.
+	 *
+	 * Called only once the access guard allowed the call, so a replayed answer
+	 * is never handed to somebody who may not update the object.
+	 *
+	 * @param string    $integrationId Integration id.
+	 * @param ObjectRef $object        The object the linked thing is created on.
+	 *
+	 * @return JSONResponse 201 with the answer (`Idempotent-Replayed` says whether it was remembered), 409 for a taken key, or the failure's status.
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
+	 */
+	private function createOnce(string $integrationId, ObjectRef $object): JSONResponse {
+		$payload = $this->collectPayload();
+		$replayed = false;
+		$response = self::created(
+			response: $this->dispatch(
+				integrationId: $integrationId,
+				callback: function ($provider) use ($integrationId, $object, $payload, &$replayed): array {
+					$result = $this->idempotency->run(
+						key: (string)$this->request->getHeader('Idempotency-Key'),
+						integrationId: $integrationId,
+						object: $object,
+						payload: $payload,
+						create: fn (): array => (new IntegrationProviderInvoker())->create($provider, $object, $payload)
+					);
+					$replayed = $result['replayed'];
+
+					return $result['answer'];
+				}
+			)
+		);
+
+		$response->addHeader('Idempotent-Replayed', json_encode($replayed));
+
+		return $response;
+	}//end createOnce()
 
 	/**
 	 * PUT /api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}
@@ -558,6 +605,8 @@ class ObjectIntegrationsController extends Controller {
 			return new JSONResponse($body, Http::STATUS_OK);
 		} catch (\InvalidArgumentException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (IdempotencyConflictException $e) {
+			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_CONFLICT);
 		} catch (\Throwable $e) {
 			return $this->respondThrown(exception: $e, integrationId: $integrationId);
 		}

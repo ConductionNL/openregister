@@ -266,4 +266,26 @@ class ObjectServiceScopeContextGoldenTest extends TestCase
 
         $this->assertSame(['clear', 'stream'], $calls);
     }
+
+    public function testStreamingSaveHandsItsDryRunModeToTheSaveHandler(): void
+    {
+        $modes  = [];
+        $save   = $this->createMock(SaveObject::class);
+        $status = (new ReflectionMethod(SaveObject::class, 'saveObjectsStreaming'))->getReturnType()->getName();
+        $save->expects($this->exactly(2))->method('saveObjectsStreaming')->willReturnCallback(
+            function (StreamingSave $handed) use (&$modes, $status) {
+                $modes[] = $handed->dryRun;
+                return $this->createMock($status);
+            }
+        );
+
+        $service = $this->serviceWith(
+            ['saveHandler' => $save, 'currentRegister' => null, 'currentSchema' => null, 'currentSchemaRef' => null]
+        );
+
+        $service->saveObjectsStreaming(new StreamingSave(null, null, [['title' => 'row']], dryRun: true));
+        $service->saveObjectsStreaming(new StreamingSave(null, null, [['title' => 'row']]));
+
+        $this->assertSame([true, false], $modes);
+    }
 }

@@ -44,6 +44,42 @@ interface WebhookMapperInterface {
 	public function createFromArray(array $data): Webhook;
 
 	/**
+	 * Create a webhook owned by a person from array.
+	 *
+	 * The owner is set from the given user id, never from the data.
+	 *
+	 * @param array  $data  Webhook data
+	 * @param string $owner The owner's user id
+	 *
+	 * @return Webhook
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	public function createOwnedFromArray(array $data, string $owner): Webhook;
+
+	/**
+	 * The webhooks one user owns, in the active organisation.
+	 *
+	 * @param string $uid The owner's user id
+	 *
+	 * @return Webhook[]
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-a-person-with-the-right-may-own-webhook-subscriptions
+	 */
+	public function findOwnedBy(string $uid): array;
+
+	/**
+	 * Disable every webhook one user owns, in every organisation.
+	 *
+	 * @param string $uid The owner's user id
+	 *
+	 * @return int How many webhooks were disabled
+	 *
+	 * @spec openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping/spec.md#requirement-an-owned-webhook-delivers-only-what-its-owner-may-read
+	 */
+	public function disableOwnedBy(string $uid): int;
+
+	/**
 	 * Delete a webhook
 	 *
 	 * @param Entity $entity Webhook entity to delete

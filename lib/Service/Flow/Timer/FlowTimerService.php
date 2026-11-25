@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Service\Flow\Timer;
 use DateTime;
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use OCA\OpenRegister\Db\FlowTimer\TimerSubject;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
@@ -160,7 +161,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		}
 
 		$timer = $this->factory()->build(config: $config, act: $act);
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 
 		// Arm-time validation is AUTHORITATIVE: resolve the ladder and check
 		// every preBreach rung on the timeline before anything is written.
@@ -229,7 +230,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$priorFireAt = $timer->getFireAt();
 		$consumed = $this->arithmetic->calculator->measure(
 			span: new CalendarSpan(from: $timer->getRunningSince(), to: $act->now, calendar: $calendar),
@@ -288,7 +289,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 
 		return $this->transactional(
 			mutation: function () use ($timer, $calendar, $decision, $act, $now): FlowTimer {
@@ -414,7 +415,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			);
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $prior->getCalendarSlug(), organisation: $prior->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $prior)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$successor = $this->factory()->successor(
 			scope: new FlowTimerScope(timer: $prior, calendar: $calendar),
 			act: $act
@@ -529,7 +530,10 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @param FlowTimer $timer The timer.
 	 * @param DateTimeInterface|null $now The clock.
 	 *
-	 * @return array{overdue: bool, remaining: float, unit: string, overdueBy: float|null, fireAt: string|null, state: string} The derivation.
+	 * @return array{
+	 *     overdue: bool, remaining: float, unit: string, overdueBy: float|null, fireAt: string|null, state: string,
+	 *     unrolledAt: string|null, rolledBy: mixed, timeZone: string, fireAtLocal: string|null, unrolledAtLocal: string|null
+	 * } The derivation.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-overdue-is-derived-from-the-clock-and-never-stored
 	 */
@@ -552,8 +556,34 @@ class FlowTimerService implements FlowTimerControlInterface {
 			// defend.
 			'unrolledAt' => $timer->getUnrolledAt()?->format('c'),
 			'rolledBy' => $timer->getRolledBy(),
+			// The instants stay UTC; beside them the date as the organisation
+			// reads it, in the calendar's zone and naming it (calendar-time-zone
+			// 2.3), so a handler is not left converting a statutory deadline.
+			'timeZone' => $scope->calendar->getTimezone(),
+			'fireAtLocal' => $this->localDate(moment: $timer->getFireAt(), zone: $scope->calendar->getTimezone()),
+			'unrolledAtLocal' => $this->localDate(moment: $timer->getUnrolledAt(), zone: $scope->calendar->getTimezone()),
 		];
 	}//end describe()
+
+	/**
+	 * An instant as a local date in a zone, naming the zone: `2027-06-30 23:59 Europe/Amsterdam`.
+	 *
+	 * @param DateTimeInterface|null $moment The instant, or null.
+	 * @param string                 $zone   The IANA zone.
+	 *
+	 * @return string|null The local date, or null when there is no instant.
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	private function localDate(?DateTimeInterface $moment, string $zone): ?string {
+		if ($moment === null) {
+			return null;
+		}
+
+		$local = (new DateTimeImmutable('@'.$moment->format('U')))->setTimezone(new DateTimeZone($zone));
+
+		return $local->format('Y-m-d H:i').' '.$zone;
+	}//end localDate()
 
 	/**
 	 * How far an armed timer is past its fire moment, or null when it is not.
@@ -661,7 +691,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 			return 0;
 		}
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$ladder = $this->arithmetic->ladder->resolveLadder(timer: $timer);
 		$firedKeys = $this->firedKeys(timerUuid: (string)$timer->getUuid());
 		$subject = $this->projection()->subjectTask(timer: $timer);
@@ -761,7 +791,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$act = $grant->act;
 		$extension->assertValid();
 
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		$added = $this->arithmetic->calculator->convert(
 			conversion: new UnitConversion(
 				value: (float)$extension->amount,
@@ -1001,9 +1031,29 @@ class FlowTimerService implements FlowTimerControlInterface {
 		// later is reading the ledger.
 		$event->setUnrolledAt($timer->getUnrolledAt());
 		$event->setRolledBy($timer->getRolledBy());
+		$event->setTimeZone($this->ledgerZone(timer: $timer));
 		$event->setCreated($this->mutable(value: $entry->moment));
 		$this->storage->events->insert($event);
 	}//end record()
+
+	/**
+	 * The zone of the calendar a timer counts in, for its ledger row, or null
+	 * when the calendar cannot be resolved: the row is still written, since
+	 * the history matters more than its local dates (calendar-time-zone 2.3).
+	 *
+	 * @param FlowTimer $timer The timer.
+	 *
+	 * @return string|null The IANA zone.
+	 *
+	 * @spec openspec/changes/calendar-time-zone/specs/flow-business-timers/spec.md
+	 */
+	private function ledgerZone(FlowTimer $timer): ?string {
+		try {
+			return $this->scope(timer: $timer)->calendar->getTimezone();
+		} catch (Throwable) {
+			return null;
+		}
+	}//end ledgerZone()
 
 	/**
 	 * Run a mutation in one transaction.
@@ -1057,7 +1107,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * @return FlowTimerScope The scope.
 	 */
 	private function scope(FlowTimer $timer): FlowTimerScope {
-		$calendar = $this->arithmetic->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->arithmetic->calendars);
 		return new FlowTimerScope(timer: $timer, calendar: $calendar);
 	}//end scope()
 

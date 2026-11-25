@@ -15,9 +15,7 @@
  *    broker injects the token it custodies (in Doriath's vault where installed,
  *    the Nextcloud vault otherwise). The token never enters this service.
  *  - **Trust is an org allowlist.** Installing from a source outside the org's
- *    allowlist is refused. An empty allowlist means "not yet enforced" (an
- *    instance opts in by populating it), so this is safe to ship before every
- *    org has curated its sources.
+ *    allowlist is refused, and an empty allowlist allows no source.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -86,18 +84,57 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	private const GITHUB_API = 'https://api.github.com';
 
 	/**
+	 * Outcome of discoverOutcome(): GitHub answered the search.
+	 *
+	 * @var string
+	 */
+	public const DISCOVERY_OK = 'ok';
+
+	/**
+	 * Outcome of discoverOutcome(): GitHub refused the search for its rate limit (403 or 429).
+	 *
+	 * @var string
+	 */
+	public const DISCOVERY_RATE_LIMITED = 'rate_limited';
+
+	/**
+	 * Outcome of discoverOutcome(): the search failed for any other reason.
+	 *
+	 * @var string
+	 */
+	public const DISCOVERY_UNREACHABLE = 'unreachable';
+
+	/**
+	 * The most bytes one fetchPackage() read returns (16 MiB).
+	 *
+	 * @var int
+	 */
+	public const MAX_PACKAGE_BYTES = 16777216;
+
+	/**
+	 * The most files a file-by-file fetchPackage() read fetches.
+	 *
+	 * @var int
+	 */
+	public const MAX_PACKAGE_FILES = 4096;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FederatedConfigTransport    $transport The credential, signing and HTTP collaborators federated config sharing talks through.
 	 * @param ShareableConfigTypeRegistry $registry  The contributed types.
 	 * @param IAppConfig                  $appConfig Reads the org source allowlist.
 	 * @param LoggerInterface             $logger    The logger.
+	 * @param GitHubRepoReader|null       $repoReader    Reads packages out of repositories; built from the transport when null.
+	 * @param GitHubTreeCommitter|null    $treeCommitter Commits many files at once; built from the transport when null.
 	 */
 	public function __construct(
 		private readonly FederatedConfigTransport $transport,
 		private readonly ShareableConfigTypeRegistry $registry,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		private readonly ?GitHubRepoReader $repoReader = null,
+		private readonly ?GitHubTreeCommitter $treeCommitter = null,
 	) {
 	}//end __construct()
 
@@ -143,6 +180,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @param string $typeId The shareable type id.
 	 * @param array $bundle A bundle produced by a type of this id.
 	 * @param string $source Where the bundle came from (a repo/source id), for the allowlist.
+	 * @param (callable(array): array)|null $prepare Runs on the verified bundle before it is imported, such as stamping an install target.
 	 *
 	 * @return array The install result.
 	 *
@@ -150,10 +188,17 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @throws RuntimeException When the source is not allowlisted.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
-	public function install(string $typeId, array $bundle, string $source = ''): array {
+	public function install(string $typeId, array $bundle, string $source = '', ?callable $prepare = null): array {
 		$this->assertSourceAllowed(source: $source);
 		$this->assertBundleVouchedFor(bundle: $bundle);
+
+		// Preparation runs AFTER the signature check: the publisher signed
+		// what it published, and where it lands is this organisation's choice.
+		if ($prepare !== null) {
+			$bundle = $prepare($bundle);
+		}
 
 		return $this->typeOrFail(typeId: $typeId)->deserialise(bundle: $bundle);
 	}//end install()
@@ -238,6 +283,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @param array $selection What to share.
 	 * @param ConfigPublishTarget $target Where to publish: repo, path, branch and visibility of a created repo.
 	 * @param string $credentialId The broker credential id custodying the GitHub token.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array `{published: true, path, status}`.
 	 *
@@ -245,8 +292,19 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function publish(string $typeId, array $selection, ConfigPublishTarget $target, string $credentialId): array {
-		$destination = new BrokeredPublishTarget(target: $target, credentialId: $credentialId);
+	public function publish(
+		string $typeId,
+		array $selection,
+		ConfigPublishTarget $target,
+		string $credentialId,
+		?string $appId = null,
+		?string $actingUserId = null
+	): array {
+		$destination = new BrokeredPublishTarget(
+			target: $target,
+			credentialId: $credentialId,
+			identity: BrokerIdentity::of(appId: $appId, actingUserId: $actingUserId)
+		);
 
 		return $this->publishBundle(request: new ConfigPublishRequest(typeId: $typeId, selection: $selection, destination: $destination));
 	}//end publish()
@@ -294,11 +352,12 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		$target = $request->destination->target;
 		$result = $this->transport->broker->request(
 			credentialId: $request->destination->credentialId,
-			appId: self::APP_ID,
+			appId: $request->destination->identity->appId,
 			method: 'PUT',
 			path: sprintf('/repos/%s/contents/%s', $target->repo, ltrim($target->path, '/')),
 			headers: ['Accept' => 'application/vnd.github+json'],
-			body: $this->contentsBody(request: $request, bundle: $bundle)
+			body: $this->contentsBody(request: $request, bundle: $bundle),
+			actingUserId: $request->destination->identity->actingUserId
 		);
 
 		$status = (int)($result['status'] ?? 0);
@@ -326,6 +385,67 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 			]
 		);
 	}//end contentsBody()
+
+	/**
+	 * Publish many files into a GitHub repository as ONE commit (G4).
+	 *
+	 * Unlike {@see publish()}, which writes one bundle file with the contents
+	 * API, this builds a Git Data commit on the branch tip's tree, so files
+	 * outside the package survive, an existing repository can be updated
+	 * (a republish, a bundle re-sync), and the new commit's sha comes back.
+	 * The repository is created when absent, with the target's visibility and
+	 * description; the request's topics are added to the repository's own.
+	 * A request made {@see RepoFilesPublish::onlyIntoANewRepository()} refuses a
+	 * repository that exists, and fails when it cannot create one, so it never
+	 * writes into a repository it did not create.
+	 *
+	 * @param RepoFilesPublish $request The files, the message, the target and the broker credential.
+	 *
+	 * @return array{published: true, repo: string, branch: string, commit: string, files: int}
+	 *
+	 * @throws RuntimeException When the repository exists for a new-only request, cannot be created
+	 *                          for one, no file is publishable, or a GitHub call fails.
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function publishFiles(RepoFilesPublish $request): array {
+		$destination = $request->destination();
+		$repo        = $destination->target->repo;
+		if ($request->requiresNewRepository() === true) {
+			if ($this->repoExists(destination: $destination) === true) {
+				throw new RuntimeException(sprintf('The repository %s already exists.', $repo));
+			}
+
+			if ($this->createRepo(destination: $destination) === false) {
+				throw new RuntimeException(sprintf('The repository %s could not be created.', $repo));
+			}
+		} else {
+			$this->ensureRepo(destination: $destination);
+		}
+
+		if ($request->topics !== []) {
+			$this->setTopics(destination: $destination, topics: $request->topics);
+		}
+
+		$written = $this->treeCommitter()->commit(destination: $destination, files: $request->files, message: $request->message);
+
+		return [
+			'published' => true,
+			'repo' => $repo,
+			'branch' => $destination->target->branch,
+			'commit' => $written['commit'],
+			'files' => $written['files'],
+		];
+	}//end publishFiles()
+
+	/**
+	 * The tree committer: the injected one, else one over this service's transport.
+	 *
+	 * @return GitHubTreeCommitter
+	 */
+	private function treeCommitter(): GitHubTreeCommitter {
+		return ($this->treeCommitter ?? new GitHubTreeCommitter(transport: $this->transport, logger: $this->logger));
+	}//end treeCommitter()
 
 	/**
 	 * Ensure a GitHub repository exists, creating it when absent.
@@ -372,7 +492,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		try {
 			$existing = $this->transport->broker->request(
 				credentialId: $destination->credentialId,
-				appId: self::APP_ID,
+				appId: $destination->identity->appId,
+				actingUserId: $destination->identity->actingUserId,
 				method: 'GET',
 				path: sprintf('/repos/%s/%s', $owner, $name),
 				headers: ['Accept' => 'application/vnd.github+json']
@@ -385,7 +506,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	}//end repoExists()
 
 	/**
-	 * Create the repo: as an org repo first, then in the authenticated user's namespace.
+	 * Create the repo: as an org repo first, then in the authenticated user's namespace
+	 * unless the target switched that fallback off.
 	 *
 	 * @param BrokeredPublishTarget $destination The target (`owner/repo`, privacy) and the broker credential.
 	 *
@@ -393,7 +515,12 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 */
 	private function createRepo(BrokeredPublishTarget $destination): bool {
 		$owner = $destination->ownerAndName()[0];
-		foreach ([sprintf('/orgs/%s/repos', $owner), '/user/repos'] as $createPath) {
+		$createPaths = [sprintf('/orgs/%s/repos', $owner)];
+		if ($destination->target->allowsUserNamespaceFallback() === true) {
+			$createPaths[] = '/user/repos';
+		}
+
+		foreach ($createPaths as $createPath) {
 			if ($this->tryCreateRepo(createPath: $createPath, destination: $destination) === true) {
 				return true;
 			}
@@ -414,7 +541,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		try {
 			$created = $this->transport->broker->request(
 				credentialId: $destination->credentialId,
-				appId: self::APP_ID,
+				appId: $destination->identity->appId,
+				actingUserId: $destination->identity->actingUserId,
 				method: 'POST',
 				path: $createPath,
 				headers: ['Accept' => 'application/vnd.github+json'],
@@ -428,12 +556,19 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	}//end tryCreateRepo()
 
 	/**
-	 * Set a repository's discovery topics (best-effort).
+	 * Add discovery topics to a repository, keeping the topics it already has (best-effort).
+	 *
+	 * GitHub's PUT /topics replaces the whole list, so the existing topics are
+	 * read first and the union is written: publishing into an existing
+	 * repository must not drop that repository's own discovery topics. A list
+	 * that cannot be read counts as empty.
 	 *
 	 * @param BrokeredPublishTarget $destination The target (`owner/repo`) and the broker credential.
-	 * @param array<int, string>    $topics      The topics to set.
+	 * @param array<int, string>    $topics      The topics to add.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/federated-config-sharing/spec.md
 	 */
 	private function setTopics(BrokeredPublishTarget $destination, array $topics): void {
 		$repo = $destination->target->repo;
@@ -446,11 +581,12 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		try {
 			$this->transport->broker->request(
 				credentialId: $credentialId,
-				appId: self::APP_ID,
+				appId: $destination->identity->appId,
+				actingUserId: $destination->identity->actingUserId,
 				method: 'PUT',
 				path: sprintf('/repos/%s/topics', $repo),
 				headers: ['Accept' => 'application/vnd.github+json'],
-				body: (string)json_encode(['names' => $names])
+				body: (string)json_encode(['names' => self::mergedTopics(topics: $names, existing: $this->existingTopics(destination: $destination))])
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -462,6 +598,58 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	}//end setTopics()
 
 	/**
+	 * The repository's current topic names, [] when they cannot be read.
+	 *
+	 * @param BrokeredPublishTarget $destination The target (`owner/repo`) and the broker credential.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function existingTopics(BrokeredPublishTarget $destination): array {
+		try {
+			$answer = $this->transport->broker->request(
+				credentialId: $destination->credentialId,
+				appId: $destination->identity->appId,
+				actingUserId: $destination->identity->actingUserId,
+				method: 'GET',
+				path: sprintf('/repos/%s/topics', $destination->target->repo),
+				headers: ['Accept' => 'application/vnd.github+json']
+			);
+		} catch (Throwable $e) {
+			return [];
+		}
+
+		$decoded = json_decode((string)($answer['body'] ?? ''), true);
+		if ((int)($answer['status'] ?? 0) !== 200 || is_array($decoded['names'] ?? null) === false) {
+			return [];
+		}
+
+		return $decoded['names'];
+	}//end existingTopics()
+
+	/**
+	 * The new topics plus every other non-empty existing topic, once each, sorted.
+	 *
+	 * @param array<int, string> $topics   The topics to add.
+	 * @param array<int, mixed>  $existing The repository's existing topic names.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/specs/federated-config-sharing/spec.md
+	 */
+	private static function mergedTopics(array $topics, array $existing): array {
+		$names = [];
+		foreach (array_merge($topics, $existing) as $name) {
+			$name = trim((string)$name);
+			if ($name !== '' && in_array($name, $names, true) === false) {
+				$names[] = $name;
+			}
+		}
+
+		sort($names);
+		return $names;
+	}//end mergedTopics()
+
+	/**
 	 * Discover published bundles across GitHub by their type's discovery topic.
 	 *
 	 * Discovery is public data (GitHub topic search), so it runs anonymously by
@@ -471,13 +659,15 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @param string $topic The discovery topic to search for.
 	 * @param string|null $credentialId Optional broker credential for an authenticated search.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array<int, array<string, mixed>> The discovered repositories as
 	 *                                          `{repo, name, description, url, stars, updated, topics}` cards.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function discover(string $topic, ?string $credentialId = null): array {
+	public function discover(string $topic, ?string $credentialId = null, ?string $appId = null, ?string $actingUserId = null): array {
 		$topic = trim($topic);
 		if ($topic === '') {
 			return [];
@@ -486,7 +676,11 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		$path = '/search/repositories?q=' . rawurlencode('topic:' . $topic) . '&sort=updated&per_page=50';
 
 		try {
-			$body = $this->githubGet(path: $path, credentialId: $credentialId);
+			$body = $this->githubGet(
+				path: $path,
+				credentialId: $credentialId,
+				identity: BrokerIdentity::of(appId: $appId, actingUserId: $actingUserId)
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[FederatedConfigService] discovery failed for topic ' . $topic . ': ' . $e->getMessage(),
@@ -497,6 +691,153 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 
 		return $this->repoCards(body: $body);
 	}//end discover()
+
+	/**
+	 * Discover published bundles and say how the search went (see the interface).
+	 *
+	 * @param string              $topic        The discovery topic to search for.
+	 * @param string              $term         A free-text term searched together with the topic; '' for none.
+	 * @param string|null         $credentialId Optional broker credential for an authenticated search.
+	 * @param BrokerIdentity|null $identity     The app and acting user the broker call is made for; OpenRegister when null.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>, brokerUsed: bool, rateLimited: bool, status: int}
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function discoverOutcome(string $topic, string $term = '', ?string $credentialId = null, ?BrokerIdentity $identity = null): array {
+		$topic = trim($topic);
+		if ($topic === '') {
+			return $this->discoveryAnswer(read: self::readResult(status: 200, body: '', brokerUsed: false), cards: []);
+		}
+
+		$read = $this->githubRead(
+			path: self::discoveryPath(topic: $topic, term: trim($term)),
+			credentialId: $credentialId,
+			identity: ($identity ?? BrokerIdentity::of())
+		);
+		if ($read['ok'] === false) {
+			$this->logger->warning(
+				message: '[FederatedConfigService] discovery failed for topic ' . $topic . ' with HTTP ' . $read['status'],
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return $this->discoveryAnswer(read: $read, cards: []);
+		}
+
+		return $this->discoveryAnswer(read: $read, cards: $this->repoCards(body: $read['body']));
+	}//end discoverOutcome()
+
+	/**
+	 * The repository-search path for a topic, with the free-text term beside it.
+	 *
+	 * @param string $topic The discovery topic.
+	 * @param string $term  The trimmed term, '' for none.
+	 *
+	 * @return string
+	 */
+	private static function discoveryPath(string $topic, string $term): string {
+		$query = 'topic:' . $topic;
+		if ($term !== '') {
+			$query .= ' ' . $term;
+		}
+
+		return '/search/repositories?q=' . rawurlencode($query) . '&sort=updated&per_page=50';
+	}//end discoveryPath()
+
+	/**
+	 * The answer of discoverOutcome() for a read and the cards built from it.
+	 *
+	 * @param array{ok: bool, status: int, body: string, rateLimited: bool, brokerUsed: bool} $read  The read.
+	 * @param array<int, array<string, mixed>>                                               $cards The cards.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>, brokerUsed: bool, rateLimited: bool, status: int}
+	 */
+	private function discoveryAnswer(array $read, array $cards): array {
+		$outcome = self::DISCOVERY_OK;
+		if ($read['rateLimited'] === true) {
+			$outcome = self::DISCOVERY_RATE_LIMITED;
+		} else if ($read['ok'] === false) {
+			$outcome = self::DISCOVERY_UNREACHABLE;
+		}
+
+		return [
+			'outcome' => $outcome,
+			'cards' => $cards,
+			'brokerUsed' => $read['brokerUsed'],
+			'rateLimited' => $read['rateLimited'],
+			'status' => $read['status'],
+		];
+	}//end discoveryAnswer()
+
+	/**
+	 * GET a GitHub API path with its status: through the broker with a
+	 * credential, and anonymously without one or when the broker refuses.
+	 *
+	 * @param string         $path         The API path (with query string).
+	 * @param string|null    $credentialId The broker credential, or null/'' for anonymous.
+	 * @param BrokerIdentity $identity     Who a brokered read is made for.
+	 *
+	 * @return array{ok: bool, status: int, body: string, rateLimited: bool, brokerUsed: bool}
+	 */
+	private function githubRead(string $path, ?string $credentialId, BrokerIdentity $identity): array {
+		if ($credentialId !== null && $credentialId !== '') {
+			try {
+				$result = $this->transport->broker->request(
+					credentialId: $credentialId,
+					appId: $identity->appId,
+					method: 'GET',
+					path: $path,
+					headers: ['Accept' => 'application/vnd.github+json'],
+					actingUserId: $identity->actingUserId
+				);
+				return self::readResult(status: (int)($result['status'] ?? 0), body: (string)($result['body'] ?? ''), brokerUsed: true);
+			} catch (Throwable $e) {
+				$this->logger->debug(
+					message: '[FederatedConfigService] broker refused a read, retrying anonymously: ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+		}
+
+		return $this->anonymousRead(path: $path);
+	}//end githubRead()
+
+	/**
+	 * GET a GitHub API path anonymously, with its status; status 0 when the request failed.
+	 *
+	 * @param string $path The API path (with query string).
+	 *
+	 * @return array{ok: bool, status: int, body: string, rateLimited: bool, brokerUsed: bool}
+	 */
+	private function anonymousRead(string $path): array {
+		try {
+			$response = $this->transport->clientService->newClient()->get(
+				self::GITHUB_API . $path,
+				['headers' => ['Accept' => 'application/vnd.github+json'], 'http_errors' => false]
+			);
+			return self::readResult(status: $response->getStatusCode(), body: (string)$response->getBody(), brokerUsed: false);
+		} catch (Throwable $e) {
+			return self::readResult(status: 0, body: '', brokerUsed: false);
+		}
+	}//end anonymousRead()
+
+	/**
+	 * A read's result from its status and body.
+	 *
+	 * @param int    $status     The HTTP status, 0 when no answer came.
+	 * @param string $body       The response body.
+	 * @param bool   $brokerUsed Whether the broker carried the read.
+	 *
+	 * @return array{ok: bool, status: int, body: string, rateLimited: bool, brokerUsed: bool}
+	 */
+	private static function readResult(int $status, string $body, bool $brokerUsed): array {
+		return [
+			'ok' => ($status >= 200 && $status < 300),
+			'status' => $status,
+			'body' => $body,
+			'rateLimited' => ($status === 403 || $status === 429),
+			'brokerUsed' => $brokerUsed,
+		];
+	}//end readResult()
 
 	/**
 	 * The discovery cards of a repository-search response body; non-array items are skipped.
@@ -522,18 +863,20 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * GET a GitHub API path: through the broker with a credential, anonymously otherwise.
 	 *
 	 * @param string      $path         The API path (with query string).
-	 * @param string|null $credentialId The broker credential, or null/'' for anonymous.
+	 * @param string|null    $credentialId The broker credential, or null/'' for anonymous.
+	 * @param BrokerIdentity $identity     Who a brokered read is made for.
 	 *
 	 * @return string The response body.
 	 */
-	private function githubGet(string $path, ?string $credentialId): string {
+	private function githubGet(string $path, ?string $credentialId, BrokerIdentity $identity): string {
 		if ($credentialId !== null && $credentialId !== '') {
 			$result = $this->transport->broker->request(
 				credentialId: $credentialId,
-				appId: self::APP_ID,
+				appId: $identity->appId,
 				method: 'GET',
 				path: $path,
-				headers: ['Accept' => 'application/vnd.github+json']
+				headers: ['Accept' => 'application/vnd.github+json'],
+				actingUserId: $identity->actingUserId
 			);
 			return (string)($result['body'] ?? '');
 		}
@@ -591,6 +934,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 * @param string $repo The `owner/repo`.
 	 * @param string $path The bundle file path within the repo.
 	 * @param string|null $credentialId Optional broker credential for an authenticated read.
+	 * @param string|null $appId The app the broker calls are made for; OpenRegister when null.
+	 * @param string|null $actingUserId The acting user for a sessionless call, or null.
 	 *
 	 * @return array The decoded bundle.
 	 *
@@ -598,11 +943,71 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
-	public function fetchBundle(string $repo, string $path, ?string $credentialId = null): array {
+	public function fetchBundle(
+		string $repo,
+		string $path,
+		?string $credentialId = null,
+		?string $appId = null,
+		?string $actingUserId = null
+	): array {
 		return $this->fetchPublishedBundle(
-			request: new BundleFetchRequest(repo: trim($repo), path: ltrim(trim($path), '/'), credentialId: $credentialId)
+			request: new BundleFetchRequest(
+				repo: trim($repo),
+				path: ltrim(trim($path), '/'),
+				credentialId: $credentialId,
+				brokerIdentity: BrokerIdentity::of(appId: $appId, actingUserId: $actingUserId)
+			)
 		);
 	}//end fetchBundle()
+
+	/**
+	 * Read a package's files out of a GitHub repository at a ref (G3).
+	 *
+	 * Unlike {@see fetchBundle()}, which reads one JSON file, this reads every
+	 * file the caller names — a markdown package and the auxiliary files beside
+	 * it, or a bundle's `skills/` and `agents/` trees — with ONE tarball download
+	 * where it can, and falls back to the tree and one contents read per file
+	 * when it cannot. A brokered read that the broker refuses is retried
+	 * anonymously. The files are returned as they are; decoding a format is the
+	 * calling type's job.
+	 *
+	 * @param string              $repo         The `owner/repo`.
+	 * @param string|null         $ref          A branch, tag or commit; the default branch when null.
+	 * @param array<int, string>  $paths        Exact paths, and prefixes ending in `/`; [] reads every file.
+	 * @param string|null         $credentialId Optional broker credential for an authenticated read.
+	 * @param BrokerIdentity|null $identity     The app and acting user a brokered read names; OpenRegister when null.
+	 *
+	 * @return array{files: array<string, string>, truncated: bool, source: string} `source` is `archive`,
+	 *                                                                              `tree`, or `none` when
+	 *                                                                              the repository could not be read.
+	 *
+	 * @throws RuntimeException When the repository or the ref is not a safe GitHub coordinate.
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function fetchPackage(
+		string $repo,
+		?string $ref = null,
+		array $paths = [],
+		?string $credentialId = null,
+		?BrokerIdentity $identity = null
+	): array {
+		return $this->repoReader()->files(
+			read: GitHubRepoRead::of(repo: $repo, ref: $ref, credentialId: $credentialId, identity: $identity),
+			paths: $paths,
+			maxBytes: self::MAX_PACKAGE_BYTES,
+			maxFiles: self::MAX_PACKAGE_FILES
+		);
+	}//end fetchPackage()
+
+	/**
+	 * The package reader: the injected one, else one over this service's transport.
+	 *
+	 * @return GitHubRepoReader
+	 */
+	private function repoReader(): GitHubRepoReader {
+		return ($this->repoReader ?? new GitHubRepoReader(transport: $this->transport, extractor: new GitHubArchiveExtractor(), logger: $this->logger));
+	}//end repoReader()
 
 	/**
 	 * Read and decode the bundle file a fetch request names.
@@ -619,7 +1024,7 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 		}
 
 		try {
-			$body = $this->githubGet(path: $request->contentsPath(), credentialId: $request->credentialId);
+			$body = $this->githubGet(path: $request->contentsPath(), credentialId: $request->credentialId, identity: $request->identity());
 		} catch (Throwable $e) {
 			throw new RuntimeException(sprintf('Could not fetch %s from %s: %s', $request->path, $request->repo, $e->getMessage()));
 		}
@@ -755,8 +1160,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	/**
 	 * Whether a source may be installed from.
 	 *
-	 * An empty allowlist is "not yet enforced" — an org opts into enforcement by
-	 * populating it — so this is safe to ship before every org curates sources.
+	 * An empty allowlist allows nothing: an organisation installs only from the
+	 * sources it has listed. An empty source is never allowed.
 	 *
 	 * @param string $source The source id (a repo, an org).
 	 *
@@ -766,8 +1171,8 @@ class FederatedConfigService implements FederatedConfigServiceInterface {
 	 */
 	public function isSourceAllowed(string $source): bool {
 		$raw = trim($this->appConfig->getValueString(self::APP_ID, self::ALLOWLIST_KEY, ''));
-		if ($raw === '') {
-			return true;
+		if ($raw === '' || $source === '') {
+			return false;
 		}
 
 		$allow = array_filter(array_map('trim', explode(',', $raw)));

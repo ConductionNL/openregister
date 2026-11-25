@@ -42,6 +42,7 @@ use OCA\OpenRegister\Dto\BulkRowCount;
 use OCA\OpenRegister\Dto\BulkSaveOutcomeInterface;
 use OCA\OpenRegister\Dto\BulkSaveOutcomes;
 use OCA\OpenRegister\Dto\StreamedRowCount;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\LockedException;
@@ -55,6 +56,8 @@ use OCA\OpenRegister\Service\Object\BatchOperationStatusInterface;
 use OCA\OpenRegister\Service\Object\SaveObject\StreamingSave;
 use OCA\OpenRegister\Service\Rbac\RbacCollaborators;
 use OCA\OpenRegister\Service\Rbac\SchemaManageGateInterface;
+use OCA\OpenRegister\Service\Schemas\RowSchemaRefsInRegister;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -62,8 +65,10 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
 
 /**
  * Bulk operations controller for OpenRegister
@@ -76,7 +81,15 @@ use OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults;
  * @spec openspec/specs/object-lifecycle/spec.md
  */
 class BulkController extends Controller {
+	use HandlesExceptionsTrait;
 	use ResolvesRegisterAndSchemaTrait;
+
+	/**
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	protected readonly ?LoggerInterface $logger;
 
 	/**
 	 * The most rows one atomic batch may carry. One transaction holds its locks
@@ -162,6 +175,7 @@ class BulkController extends Controller {
 		$this->groupManager = $services->platform->groupManager;
 		$this->db = $services->platform->db;
 		$this->schemaManageGate = $services->store->schemaManageGate;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -239,6 +253,19 @@ class BulkController extends Controller {
 			statusCode: Http::STATUS_FORBIDDEN
 		);
 	}//end refusedRowSchemas()
+
+	/**
+	 * The pass that pins a mixed-schema row's slug to the register's own schema.
+	 *
+	 * @return RowSchemaRefsInRegister The pass.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function rowSchemaRefs(): RowSchemaRefsInRegister {
+		return new RowSchemaRefsInRegister(
+			lookup: new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper)
+		);
+	}//end rowSchemaRefs()
 
 	/**
 	 * The schema manage gate, built from this controller's collaborators when none was injected.
@@ -321,6 +348,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
+	#[Sheddable]
 	public function delete(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
@@ -331,10 +359,7 @@ class BulkController extends Controller {
 
 			return $this->deleteResolved(resolved: $resolved);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Bulk delete operation failed: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Bulk delete operation failed');
 		}//end try
 	}//end delete()
 
@@ -718,6 +743,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
+	#[Sheddable]
 	public function save(string $register, string $schema): JSONResponse {
 		try {
 			// Resolve slugs to numeric IDs.
@@ -740,10 +766,7 @@ class BulkController extends Controller {
 				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Bulk save operation failed: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Bulk save operation failed');
 		}//end try
 	}//end save()
 
@@ -777,6 +800,13 @@ class BulkController extends Controller {
 				data: ['error' => 'Invalid input. "objects" array is required.'],
 				statusCode: Http::STATUS_BAD_REQUEST
 			);
+		}
+
+		// A mixed-schema row's slug is pinned to the register's own schema once, so the
+		// rights check below and the save read the same schema.
+		if ($isMixedSchema === true) {
+			$objects = $this->rowSchemaRefs()->scope(objects: $objects, register: $resolved['register']);
+			$data['objects'] = $objects;
 		}
 
 		$refused = $this->refusedRowSchemas(isMixedSchema: $isMixedSchema, objects: $objects);
@@ -852,6 +882,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
+	#[Sheddable]
 	public function deleteSchema(string $register, string $schema): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -953,7 +984,7 @@ class BulkController extends Controller {
 	 * retained records a 403 — deliberate refusals, not left to the generic 500.
 	 *
 	 * @param Exception $exception The failure.
-	 * @param string    $prefix    The message prefix of the generic 500.
+	 * @param string    $prefix    The log context of any other failure, which answers through handleApiException().
 	 *
 	 * @return JSONResponse The answer.
 	 */
@@ -970,10 +1001,7 @@ class BulkController extends Controller {
 			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN);
 		}
 
-		return new JSONResponse(
-			data: ['error' => $prefix . $exception->getMessage()],
-			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-		);
+		return $this->handleApiException(e: $exception, context: rtrim(string: $prefix, characters: ': '));
 	}//end tableDeleteFailure()
 
 	/**
@@ -992,6 +1020,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
 	 */
+	#[Sheddable]
 	public function deleteSchemaObjects(string $register, string $schema): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -1060,6 +1089,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-schema-wide-object-deletion-is-refused-on-an-archival-schema
 	 */
+	#[Sheddable]
 	public function deleteRegister(string $register): JSONResponse {
 		$refusal = $this->wholeTableDeleteRefusal();
 		if ($refusal !== null) {
@@ -1131,6 +1161,7 @@ class BulkController extends Controller {
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
+	#[Sheddable]
 	public function runSchemaValidation(string $schema): JSONResponse {
 		try {
 			// Validate input.

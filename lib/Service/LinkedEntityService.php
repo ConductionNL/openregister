@@ -448,7 +448,7 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 	/**
 	 * A reverse-lookup result row for a linked object, with the owning app's detail
 	 * route when one is registered in the deep-link registry (null falls the frontend
-	 * back to OpenRegister's own page).
+	 * back to OpenRegister's own page), its record number and its description.
 	 *
 	 * @param Schema       $schema The object's schema
 	 * @param ObjectEntity $object The linked object
@@ -463,6 +463,10 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'entityType' => 'object',
 			'uuid' => $object->getUuid(),
 			'name' => $object->getName(),
+			'identifier' => $this->recordNumber(object: $object),
+			'description' => $this->objectDescription(schema: $schema, object: $object),
+			'status' => $this->firstPlainValue(object: $object, fields: ['statusLabel', 'statusPublicLabel', 'statusName']),
+			'assignee' => $this->firstPlainValue(object: $object, fields: ['assignee', 'handler']),
 			'schema' => $schema->getTitle(),
 			'schemaId' => $schemaId,
 			'schemaIcon' => $schema->getIcon(),
@@ -470,6 +474,66 @@ class LinkedEntityService implements LinkedEntityServiceInterface {
 			'url' => $this->deepLink(object: $object, schemaId: $schemaId),
 		];
 	}//end objectResult()
+
+	/**
+	 * The object's description: its own, else the field the schema names as its
+	 * description (`objectDescriptionField`), or null.
+	 *
+	 * @param Schema       $schema The object's schema
+	 * @param ObjectEntity $object The linked object
+	 *
+	 * @return string|null The description
+	 */
+	private function objectDescription(Schema $schema, ObjectEntity $object): ?string {
+		$description = $object->getDescription();
+		if (is_string($description) === true && $description !== '') {
+			return $description;
+		}
+
+		$field = ($schema->getConfiguration()['objectDescriptionField'] ?? null);
+		if (is_string($field) === false) {
+			return null;
+		}
+
+		$value = ($object->getObject()[$field] ?? null);
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		return $value;
+	}//end objectDescription()
+
+	/**
+	 * The object's record number: its `identifier`, `number` or `reference` field,
+	 * the first that holds a plain value, or null.
+	 *
+	 * @param ObjectEntity $object The linked object
+	 *
+	 * @return string|null The record number
+	 */
+	private function recordNumber(ObjectEntity $object): ?string {
+		return $this->firstPlainValue(object: $object, fields: ['identifier', 'number', 'reference']);
+	}//end recordNumber()
+
+	/**
+	 * The first of these fields of the object that holds a plain value, or null.
+	 *
+	 * @param ObjectEntity  $object The linked object
+	 * @param array<string> $fields The fields, in order
+	 *
+	 * @return string|null The value
+	 */
+	private function firstPlainValue(ObjectEntity $object, array $fields): ?string {
+		$data = $object->getObject();
+		foreach ($fields as $field) {
+			$value = ($data[$field] ?? null);
+			if ((is_string($value) === true || is_int($value) === true) && (string)$value !== '') {
+				return (string)$value;
+			}
+		}
+
+		return null;
+	}//end firstPlainValue()
 
 	/**
 	 * The owning app's detail route for an object, or null when none is registered.

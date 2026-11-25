@@ -41,6 +41,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
+use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -60,6 +62,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityReadGate;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
@@ -846,6 +849,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return;
 		}
 
+		// Confidentiality narrows ahead of the schema's rules too, and holds even
+		// where an undecidable posture leaves the rest of the query open.
+		if ($this->applyConfidentiality(call: $call) === false) {
+			return;
+		}
+
 		// The checks run in order, and each one that clamps the query ends it.
 		if ($this->resolveCallAuthorization(call: $call) === false || $this->applyDenyRules(call: $call) === false) {
 			return;
@@ -956,6 +965,76 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		return true;
 	}//end applyClassification()
+
+	/**
+	 * Narrow the query to the rows the schema's confidentiality block admits.
+	 *
+	 * @param RbacFilterCall $call The filter application, its caller identified.
+	 *
+	 * @return bool False when nothing is admitted and the query was clamped to no rows.
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
+	 */
+	private function applyConfidentiality(RbacFilterCall $call): bool {
+		$term = $this->confidentialityTermSql(call: $call);
+		if ($term === false) {
+			$call->denyAll();
+			return false;
+		}
+
+		if ($term !== null) {
+			$call->qb->andWhere($call->qb->createFunction($term));
+		}
+
+		return true;
+	}//end applyConfidentiality()
+
+	/**
+	 * The confidentiality term every read row must satisfy, as raw SQL.
+	 *
+	 * The caller's owner admits OR-ed with the conditions the block derives
+	 * (ConfidentialityRule::readRules()), each compiled exactly as an authored
+	 * `{group, match}` rule is, `$now` included. The term is AND-ed with the
+	 * schema's own authorization: it restricts, it never grants. The derived
+	 * everyone condition applies to every caller, whatever the schema says
+	 * about inheriting `public` rights, because it can only narrow.
+	 *
+	 * @param RbacAccessCall $call The call, its caller identified.
+	 *
+	 * @return string|false|null The term; false when nothing is admitted; null when the block does not apply.
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
+	 */
+	private function confidentialityTermSql(RbacAccessCall $call): string|false|null {
+		if ($call->action !== ConfidentialityReadGate::READ) {
+			return null;
+		}
+
+		$rule = ConfidentialityReadGate::ruleFor(schema: $call->schema);
+		if ($rule === null) {
+			return null;
+		}
+
+		ConfidentialityReadGate::logFailClosed(logger: $this->logger, schema: $call->schema, rule: $rule);
+		$caller     = array_merge($this->ruleCaller(call: $call), ['inheritFromPublic' => true]);
+		$conditions = $this->ownerAdmitConditionsSql(call: $call);
+		foreach ($rule->readRules() as $derived) {
+			$condition = $this->processAuthorizationRuleSql(rule: $derived, caller: $caller);
+			if ($condition === true) {
+				return null;
+			}
+
+			if (is_string($condition) === true) {
+				$conditions[] = $condition;
+			}
+		}
+
+		if ($conditions === []) {
+			return false;
+		}
+
+		return '(' . implode(' OR ', array_map(static fn (string $condition): string => "({$condition})", $conditions)) . ')';
+	}//end confidentialityTermSql()
 
 	/**
 	 * The classification term every listed row must satisfy, as raw SQL.
@@ -2111,22 +2190,33 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return ['bypass' => false, 'conditions' => []];
 		}
 
+		$confidentiality = $this->confidentialityTermSql(call: $call);
+		if ($confidentiality === false) {
+			return ['bypass' => false, 'conditions' => []];
+		}
+
 		$result = $this->unclassifiedAccessConditions(call: $call);
-		if ($classification === null) {
+		$terms  = array_values(array_filter([$classification, $confidentiality], static fn (?string $term): bool => $term !== null));
+		if ($terms === []) {
 			return $result;
 		}
 
-		// Classification is final: it narrows every condition, and an open
-		// result becomes the one condition that every row is classified low enough.
+		// Classification is final and confidentiality restricts: both narrow every
+		// condition, and an open result becomes the one condition both admit.
 		if ($result['bypass'] === true) {
-			return ['bypass' => false, 'conditions' => [$classification]];
+			return ['bypass' => false, 'conditions' => [implode(' AND ', array_map(static fn (string $term): string => "({$term})", $terms))]];
 		}
 
-		return ['bypass' => false, 'conditions' => $this->withDenyTerm(conditions: $result['conditions'], denyTerm: $classification)];
+		$conditions = $result['conditions'];
+		foreach ($terms as $term) {
+			$conditions = $this->withDenyTerm(conditions: $conditions, denyTerm: $term);
+		}
+
+		return ['bypass' => false, 'conditions' => $conditions];
 	}//end accessConditions()
 
 	/**
-	 * The bypass flag and the SQL conditions of one access call before classification; fails closed.
+	 * The bypass flag and the SQL conditions of one access call before classification and confidentiality; fails closed.
 	 *
 	 * @param RbacAccessCall $call The schema, action, column prefix and table of the read, its caller identified.
 	 *
@@ -2437,9 +2527,11 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * Check if current user is admin
 	 *
 	 * @return bool True if user is in admin group
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
-		return in_array('admin', $this->getCurrentUserGroups(), true);
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $this->userSession->getUser());
 	}//end isAdmin()
 
 	/**
@@ -2867,7 +2959,11 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 				message: '[MagicRbacHandler] PermissionHandler unavailable, using schema auth directly',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
 			);
-			return RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization());
+			// The same reading resolveAuthorization() applies, so the fallback
+			// does not treat `@creator` as a group or ignore `conditions`.
+			return (new AuthorizationBlock())->normalise(
+				authorization: RbacCollaborators::withoutMcpScope(authorization: $schema->getAuthorization())
+			);
 		}
 	}//end resolveSchemaAuthorization()
 

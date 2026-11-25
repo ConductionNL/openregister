@@ -59,6 +59,25 @@ class FacetResultsTest extends TestCase {
 		$this->assertSame([3 => ['title' => 'Jaar']], $results->facets);
 	}//end testATitleWithoutAFacetStillNamesTheField()
 
+	/**
+	 * A facet over a referenced field sits under `_ref.<property>.<field>`, beside the others, and is timed.
+	 *
+	 * @return void
+	 */
+	public function testAReferenceFacetIsKeptUnderItsPropertyAndField(): void {
+		$results = new FacetResults(microtime(true), []);
+
+		$results->putReferenceField('aanvrager', 'woonplaats', ['type' => 'terms', 'buckets' => []], microtime(true));
+		$results->putReferenceField('aanvrager', 'naam', ['type' => 'terms', 'buckets' => [['key' => 'Ada']]], microtime(true));
+
+		$this->assertSame(
+			['_ref' => ['aanvrager' => ['woonplaats' => ['type' => 'terms', 'buckets' => []], 'naam' => ['type' => 'terms', 'buckets' => [['key' => 'Ada']]]]]],
+			$results->facets
+		);
+		$this->assertArrayHasKey('_ref.aanvrager.woonplaats', $results->times);
+		$this->assertArrayHasKey('_ref.aanvrager.naam', $results->times);
+	}//end testAReferenceFacetIsKeptUnderItsPropertyAndField()
+
 	public function testWithoutSelfConfigNoSelfFacetsAreComputed(): void {
 		$results = new FacetResults(microtime(true), ['@self' => 'not-a-list']);
 		$called = 0;

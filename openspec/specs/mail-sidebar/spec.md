@@ -76,6 +76,26 @@ The existing `EmailsController` provides forward lookups (object -> emails). The
 - **WHEN** the request is processed
 - **THEN** the response MUST return HTTP 400 with `{"error": "Invalid account ID or message ID"}`
 
+#### Scenario: A non-admin reads the links of mail in their own Mail account
+- **GIVEN** a user who is not an administrator owns Mail account 1, and message `1/42` is linked (`_mail`) to object `abc-123`, which they may read, and to object `def-456`, which they may not read
+- **WHEN** they send a GET request to `/api/linked/mail/1/42`
+- **THEN** the account's owner MUST be checked against the session user BEFORE anything is looked up
+- **AND** every object MUST be resolved under the caller's RBAC and multitenancy before it is returned, so the response lists `abc-123` and leaves out `def-456`
+- **AND** register, schema and organisation rows MUST be left out for a non-admin
+
+#### Scenario: A non-admin asks for mail in somebody else's Mail account
+- **GIVEN** Mail account 2 belongs to another user
+- **WHEN** a non-admin sends a GET request to `/api/linked/mail/2/42`, or names no account (`/api/linked/mail/x`)
+- **THEN** the response MUST be HTTP 403 and nothing MUST be looked up
+
+#### Scenario: A non-admin asks for a type other than mail
+- **WHEN** a non-admin sends a GET request to `/api/linked/deck/7`
+- **THEN** the response MUST be HTTP 403 (admin only, unchanged)
+
+#### Scenario: An administrator's reverse lookup is unchanged
+- **WHEN** an administrator sends a GET request to `/api/linked/{type}/{entityId}`
+- **THEN** the full reverse lookup MUST be returned as before
+
 ---
 
 ### Requirement: Sender-based object discovery API
@@ -473,6 +493,10 @@ The sidebar MUST handle API errors, network failures, and unexpected states grac
 
 ### REQ-001: Three-tab sidebar layout (Objects / Link / Entities)
 
+> **SUPERSEDED by REQ-001a (One panel drawn as the mail boards), below.** The
+> tabs, the `NcAppSidebar` shell and the auto-selected tab are gone; the
+> scenarios below record what was built before.
+
 The sidebar panel SHALL render its content inside an `NcAppSidebar` with three `NcAppSidebarTab` children, in this order: (1) **Objects** — the linked-objects list previously specified, (2) **Link** — the search-and-link affordance (replaces the inline "Link to Object" button), (3) **Entities** — the entity-extraction view (see REQ-004). The active tab SHALL be controlled via `active.sync` and the Objects tab SHALL be the default on first render.
 
 #### Rationale
@@ -506,6 +530,55 @@ The original spec described "Linked Objects" + "Related Cases" sections flowing 
 
 #### Notes
 - **Spec consolidation**: this REQ supersedes the "Linked Objects + Related Cases" two-section layout described in the existing "Sidebar panel UI with linked objects display" requirement. The Related-Cases content was not implemented as its own tab — sender-based suggestions remain inside the Objects tab via `useEmailLinks.suggestedObjects`. Future work: rename / split the existing REQ to reflect the tab refactor; flagged as a follow-up.
+
+---
+
+### REQ-001a: One panel drawn as the mail boards
+
+The panel SHALL follow the mail boards WpPanel, MlThreadPanel and MlLinkWorkPackage on identity.conduction.nl/screens: one column, no tabs. From top to bottom: a 48px head with a small uppercase caption ("Connections") and a close button over a hairline; the subject of the open mail; a "Connected to" group with one card per connected item (its kind, its name as a link, a remove button), each card a drop target for Mail attachments; per kind of item a label, a search field ("Number or words") with its matches as rows under it, and a "+ New {name} from this mail" row; and a "Found in this mail" row that folds out the found names, addresses and numbers (REQ-004). The panel docks at the right edge under the header, 400px wide, and Mail's content ends where it starts. There is no panel, and no reopen tab, while no email is open.
+
+#### Scenario: Panel for an open mail with one connection
+- **GIVEN** an open mail connected to one case
+- **WHEN** the panel renders
+- **THEN** it MUST show the caption head, the mail's subject, a "Connected to" card for the case, the search field and "+ New ... from this mail" row per kind, and the folded "Found in this mail" row
+- **AND** dropping an attachment on the case card MUST add it to the case
+
+#### Scenario: Panel for a mail without connections
+- **GIVEN** an open mail connected to nothing
+- **WHEN** the panel renders
+- **THEN** the "Connected to" group MUST NOT render, and the search fields MUST follow the subject directly
+
+#### Scenario: No mail open
+- **GIVEN** the inbox with no mail open
+- **WHEN** the page renders
+- **THEN** the panel root MUST carry `or-mail-sidebar-root--idle` and neither the panel nor its reopen tab MUST show
+
+#### Scenario: Subject unavailable
+- **GIVEN** Mail does not answer `GET /apps/mail/api/messages/{id}`
+- **WHEN** the panel renders
+- **THEN** the subject MUST be left out and the rest of the panel MUST render
+
+---
+
+### REQ-001b: An app's own create dialog for its schema
+
+An app that owns a schema MAY replace the panel's generic "New … from this mail" form with its own create dialog. It offers the dialog by pushing `{ register, schema, open }` onto `window.OCA.OpenRegister.mailCreateDialogs` from a script it loads on Mail's page; `register` and `schema` are slugs or ids, and the order in which the app's script and the panel load does not matter. `open(context)` SHALL show the app's dialog and resolve with the created object, or with null when the person cancels. The context carries `initialData` (the schema's `mailObjectTemplate` filled from the open mail), the `register` and `schema` objects, and `mail` (`{ accountId, messageId }`). The panel then connects the mail to the created object exactly as after its own form. Without an offered dialog for the schema, the panel keeps its generic form.
+
+#### Scenario: An app offers its own dialog
+- **GIVEN** an app has pushed a create dialog for register `dossiq` and schema `case`
+- **WHEN** the person presses "+ New case from this mail"
+- **THEN** the app's `open` MUST be called with the filled template, and the generic dialog MUST NOT open
+- **AND** when `open` resolves with an object, the panel MUST connect the mail to it
+
+#### Scenario: The app's dialog is cancelled or fails
+- **GIVEN** an offered dialog whose `open` resolves with null, or rejects
+- **WHEN** the person presses "+ New case from this mail"
+- **THEN** nothing MUST be connected, and a rejection MUST be reported as a failed create
+
+#### Scenario: No app offers a dialog
+- **GIVEN** no entry for the schema
+- **WHEN** the person presses "+ New … from this mail"
+- **THEN** the panel's generic create dialog MUST open as before
 
 ---
 

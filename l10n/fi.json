@@ -3312,7 +3312,9 @@
         "Object \"%1$s\" assigned to you": "Objekti \"%1$s\" on määritetty sinulle",
         "Audit trail export ready": "Kirjausketjun vienti on valmis",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Kirjausketjun vienti (%1$s merkintää) tallennettiin kohteeseen %2$s%3$s.",
-        "Open Files": "Avaa Tiedostot"
+        "Open Files": "Avaa Tiedostot",
+        "Its ancestor %1$s has appraisal %2$s": "Sen ylempi tietue %1$s on arvonmääritykseltään %2$s",
+        "Its ancestor %s could not be read": "Sen ylempää tietuetta %s ei voitu lukea"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

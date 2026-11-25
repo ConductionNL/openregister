@@ -6,8 +6,10 @@
 - [x] 1.4 Explicit permission bit mapping; an unmapped bit is refused naming the bit (D-2).
 - [x] 1.5 A schema declaration opting its objects into platform sharing, defaulting to out (D-3).
 - [ ] 2.1 `tests/e2e/ci/platform-share-provider.spec.ts`: share an object, find it in shared with you, fail an update on a read share.
-- [ ] 2.2 Unit tests: one share in both lists, the refused bit, the opted-out schema.
-- [ ] 2.3 `openspec validate platform-share-provider --strict`.
+- [x] 2.2 Unit tests: one share in both lists, the refused bit, the opted-out schema.
+      - refused bit and opted-out schema: `PlatformShareRoutingListenerTest`, `PlatformSharePermissions` tests; one share in the object's own list: `ObjectShareReaderTest::testAShareMadeThroughThePlatformSurfaceIsListedOnce` (core's shared-with-you half is core's list, checked live in 2.1)
+- [x] 2.3 `openspec validate platform-share-provider --strict`.
+      - 2026-11-24: `openspec validate platform-share-provider --strict` (OpenSpec 2.2.0) reports the change valid.
 - [ ] 3.1 Hand over to the dossiq lane: declare the shareable schemas, build no sharing surface.
 
 > **Measured 2026-11-13.** 1.3–1.5 are built: `PlatformSharePermissions` (read and
@@ -23,3 +25,14 @@
 > through the gate (e.g. `BeforeShareCreatedEvent::setError()` on an object folder),
 > which needs a folder-to-object lookup and live verification. The opted-out half of
 > 2.2 and the refused-bit half are covered; "one share in both lists" waits on 1.1.
+
+> **Second pass, 2026-11-13.** The platform sharing surface on an object folder now
+> goes through the gate: `PlatformShareRoutingListener` (on `BeforeShareCreatedEvent`,
+> only for requests to the platform sharing API) finds the object whose recorded folder
+> is the shared node, then refuses with the event's error when the schema has not opted
+> in, or when a permission bit maps to no object verb, naming the bit. OpenRegister's
+> own grant, link and sharer-view writes go through their own routes and are not gated.
+> Since the share created there is the core folder share the object's own share list
+> reads, no second store exists. 1.1/1.2 stay unticked: no `IShareProvider` is
+> registered, for the reason above, and the routing still needs live verification
+> together with 2.1.

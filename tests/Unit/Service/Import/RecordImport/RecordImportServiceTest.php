@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Import\RecordImport\ColumnMapper;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordFileReader;
+use OCA\OpenRegister\Service\Import\RecordImport\ImportProgress;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordImportRequest;
 use OCA\OpenRegister\Service\Import\RecordImport\RecordImportService;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
@@ -69,6 +70,13 @@ class RecordImportServiceTest extends TestCase {
 	private array $saved = [];
 
 	/**
+	 * The dry-run mode the streaming save was called with.
+	 *
+	 * @var boolean|null
+	 */
+	private ?bool $dryRun = null;
+
+	/**
 	 * The file written by a test.
 	 *
 	 * @var string
@@ -95,6 +103,7 @@ class RecordImportServiceTest extends TestCase {
 			function (StreamingSave $save): BatchOperationStatus {
 				$this->assertSame(7, $save->register->getId());
 				$this->assertSame(9, $save->schema->getId());
+				$this->dryRun = $save->dryRun;
 				$status = new BatchOperationStatus();
 				$index = -1;
 				foreach ($save->rows as $row) {
@@ -155,6 +164,34 @@ class RecordImportServiceTest extends TestCase {
 		$this->assertSame(1, $result['referenceCacheMisses']);
 		$this->assertSame(1, $result['referenceCacheHits']);
 		$this->assertSame('No identifying column is nominated: every row will be created as a new object.', $result['statement']);
+		$this->assertFalse($this->dryRun);
+		$this->assertFalse($result['dryRun']);
+	}
+
+	public function testADryRunStreamsTheSameRowsInDryRunModeAndReportsWhatWouldHappen(): void {
+		$this->streamingSave();
+		$existing = new ObjectEntity();
+		$existing->setUuid('uuid-a1');
+		$this->objects->method('searchObjects')->willReturnCallback(
+			static fn (array $query): array => ($query['reference'] === 'A-1' ? [$existing] : [])
+		);
+
+		$result = $this->service()->dryRun($this->request("ref,Plaats,note
+A-1,Utrecht,x
+BAD,Zeist,y
+A-3,Ede,z
+", 'reference'));
+
+		$this->assertTrue($this->dryRun);
+		$this->assertTrue($result['dryRun']);
+		$this->assertSame(
+			[['reference' => 'A-1', 'city' => 'Utrecht', 'id' => 'uuid-a1'], ['reference' => 'BAD', 'city' => 'Zeist'], ['reference' => 'A-3', 'city' => 'Ede']],
+			$this->saved
+		);
+		$this->assertSame([1, 1, 1], [$result['createdCount'], $result['updatedCount'], $result['failedCount']]);
+		$this->assertSame([['line' => 3, 'reason' => 'reference is not valid']], $result['failures']);
+		$this->assertSame(['uuid-a1'], $result['updated']);
+		$this->assertSame([], $result['created'], 'A row that was not created has no identifier to report.');
 	}
 
 	public function testARowMatchingOneObjectByTheIdentifierUpdatesIt(): void {
@@ -221,5 +258,60 @@ class RecordImportServiceTest extends TestCase {
 
 		$this->assertSame([['city' => 'Utrecht']], $this->saved);
 		$this->assertSame(1, $result['createdCount']);
+	}
+
+	/**
+	 * A CSV of this many rows, each with its own reference.
+	 *
+	 * @param int $rows The row count.
+	 *
+	 * @return string
+	 */
+	private static function rowsCsv(int $rows): string {
+		$csv = "ref,Plaats,note\n";
+		for ($i = 1; $i <= $rows; $i++) {
+			$csv .= 'R-' . $i . ",Utrecht,x\n";
+		}
+
+		return $csv;
+	}
+
+	public function testAnImportWithAProgressKeyReportsEveryFiftyRowsAndTheEnd(): void {
+		$this->streamingSave();
+		$progress = $this->createMock(ImportProgress::class);
+		$reports  = [];
+		$progress->expects($this->exactly(3))->method('report')->willReturnCallback(
+			static function (string $key, int $rows, bool $done = false) use (&$reports): void {
+				$reports[] = [$key, $rows, $done];
+			}
+		);
+		$plain   = $this->request(self::rowsCsv(120), null);
+		$request = new RecordImportRequest($plain->path, $plain->format, $plain->register, $plain->schema, $plain->mapping, 'key-1');
+
+		$result = (new RecordImportService($this->objects, new RecordFileReader(), $progress))->import($request);
+
+		$this->assertSame(120, $result['createdCount']);
+		$this->assertSame([['key-1', 50, false], ['key-1', 100, false], ['key-1', 120, true]], $reports);
+	}
+
+	public function testRefusedRowsCountAsRead(): void {
+		$this->streamingSave();
+		$this->objects->method('searchObjects')->willReturn([new ObjectEntity(), new ObjectEntity()]);
+		$progress = $this->createMock(ImportProgress::class);
+		$progress->expects($this->once())->method('report')->with('key-2', 2, true);
+		$plain   = $this->request("ref,Plaats,note\nA-1,Utrecht,x\nA-2,Zeist,y\n", 'reference');
+		$request = new RecordImportRequest($plain->path, $plain->format, $plain->register, $plain->schema, $plain->mapping, 'key-2');
+
+		$result = (new RecordImportService($this->objects, new RecordFileReader(), $progress))->dryRun($request);
+
+		$this->assertSame(2, $result['failedCount']);
+	}
+
+	public function testAnImportWithoutAProgressKeyReportsNothing(): void {
+		$this->streamingSave();
+		$progress = $this->createMock(ImportProgress::class);
+		$progress->expects($this->never())->method('report');
+
+		(new RecordImportService($this->objects, new RecordFileReader(), $progress))->import($this->request(self::rowsCsv(60), null));
 	}
 }

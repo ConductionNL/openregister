@@ -29,6 +29,11 @@ namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Service\Rules\ConditionJudgement;
 use OCA\OpenRegister\Service\Rules\ConditionDialect;
+use OCA\OpenRegister\Service\Rules\ConditionEvaluation;
+use OCA\OpenRegister\Service\Rules\ConditionRefusedException;
+use OCA\OpenRegister\Service\Rules\NamedConditionEvaluator;
+use OCA\OpenRegister\Service\Rules\NamedConditionLibrary;
+use OCA\OpenRegister\Service\Rules\NamedConditionScope;
 use OCA\OpenRegister\Service\Rules\ConditionTracer;
 use OCA\OpenRegister\Service\Rules\RuleVocabulary;
 
@@ -74,20 +79,31 @@ class StateConditionEvaluator implements StateConditionEvaluatorInterface {
 	private readonly ConditionTracer $tracer;
 
 	/**
+	 * Resolves `$condition` references in an entry or exit condition.
+	 *
+	 * @var NamedConditionEvaluator
+	 */
+	private readonly NamedConditionEvaluator $named;
+
+	/**
 	 * Constructor.
 	 *
 	 * The tracer only reads the dialect, so it is built over the same one.
 	 *
 	 * @param StateFieldRuleResolver $resolver Reads the annotation and builds the evaluation document.
 	 * @param ConditionDialect       $dialect  Decides whether a condition holds, in either dialect.
+	 * @param NamedConditionEvaluator|null $named The evaluator resolving named conditions; built over the
+	 *                                            same dialect when not given.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly StateFieldRuleResolver $resolver,
 		private readonly ConditionDialect $dialect,
+		?NamedConditionEvaluator $named = null,
 	) {
 		$this->tracer = new ConditionTracer(dialect: $dialect);
+		$this->named  = ($named ?? new NamedConditionEvaluator(dialect: $dialect, library: new NamedConditionLibrary()));
 	}//end __construct()
 
 	/**
@@ -129,12 +145,52 @@ class StateConditionEvaluator implements StateConditionEvaluatorInterface {
 		}
 
 		$failure['document'] = $this->resolver->document(data: $save->newData, state: $failure['state']);
-		if ($this->dialect->holds(node: $failure['condition'], document: $failure['document']) === true) {
-			return null;
+		$evaluation = new ConditionEvaluation(
+			document: $failure['document'],
+			library: NamedConditionScope::libraryOf(annotation: $save->annotation),
+			depth: 0
+		);
+		try {
+			if ($this->named->holds(node: $failure['condition'], evaluation: $evaluation) === true) {
+				return null;
+			}
+		} catch (ConditionRefusedException $refused) {
+			return $this->unresolvedRefusal(failure: $failure, annotation: $save->annotation, refused: $refused);
 		}
 
 		return $this->refusalFor(failure: $failure, annotation: $save->annotation);
 	}//end check()
+
+	/**
+	 * The refusal of a half whose condition names a condition that cannot be resolved.
+	 *
+	 * Never a pass (REQ-RCT-001): the move is refused, and the message names
+	 * the condition and why, which is what the run log records for it.
+	 *
+	 * @param array<string, mixed>       $failure    The declaration that could not be evaluated.
+	 * @param array<string, mixed>       $annotation The lifecycle annotation.
+	 * @param ConditionRefusedException $refused    The reference that could not be resolved.
+	 *
+	 * @return array<string, mixed> The structured refusal.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function unresolvedRefusal(array $failure, array $annotation, ConditionRefusedException $refused): array {
+		return [
+			'code' => self::codeFor(key: (string)$failure['key']),
+			'field' => $this->resolver->fieldOf(annotation: $annotation),
+			'state' => $failure['state'],
+			'message' => sprintf(
+				'The %s condition of state "%s" names condition "%s", which could not be evaluated: %s.',
+				(string)$failure['key'],
+				(string)$failure['state'],
+				$refused->getConditionName(),
+				$refused->getWhy()
+			),
+			'clause' => '$condition:'.$refused->getConditionName(),
+			'unresolved' => ['condition' => $refused->getConditionName(), 'reason' => $refused->getWhy()],
+		];
+	}//end unresolvedRefusal()
 
 	/**
 	 * The condition and message a half declares, or null when its state declares none.

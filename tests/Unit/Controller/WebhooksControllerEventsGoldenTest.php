@@ -26,6 +26,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Controller\Support\WebhooksMappers
  * @uses \OCA\OpenRegister\Controller\Support\TasksPlatform
  * @uses \OCA\OpenRegister\Controller\Support\WebhooksControllerServices
+ * @uses \OCA\OpenRegister\Event\AppWebhookEvents
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class WebhooksControllerEventsGoldenTest extends TestCase {
 	private const FIXTURE = __DIR__ . '/fixtures/webhooks-events-golden.json';

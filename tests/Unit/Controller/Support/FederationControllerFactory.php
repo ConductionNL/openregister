@@ -26,6 +26,7 @@ final class FederationControllerFactory {
 	 * @param IThrottler $throttler Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param \OCA\OpenRegister\Service\Federation\CreatorPropertyFilter|null $creatorProperties Defaults to one that serves every property.
+	 * @param \OCA\OpenRegister\Service\Federation\RemoteRecipientGate|null $remoteRecipients Defaults to one that refuses nothing.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -38,6 +39,7 @@ final class FederationControllerFactory {
 		\OCP\Security\Bruteforce\IThrottler $throttler,
 		\Psr\Log\LoggerInterface $logger,
 		?\OCA\OpenRegister\Service\Federation\CreatorPropertyFilter $creatorProperties = null,
+		?\OCA\OpenRegister\Service\Federation\RemoteRecipientGate $remoteRecipients = null,
 	): array {
 		return [
 			$appName,
@@ -48,6 +50,7 @@ final class FederationControllerFactory {
 				shareService: $shareService,
 				throttler: $throttler,
 				creatorProperties: ($creatorProperties ?? self::servingEveryProperty()),
+				remoteRecipients: ($remoteRecipients ?? self::refusingNoRecipient()),
 			),
 			$logger,
 		];
@@ -65,6 +68,22 @@ final class FederationControllerFactory {
 
 			public function readable(\OCA\OpenRegister\Kernel\Contracts\Core\FederatedShareInterface $share, \OCA\OpenRegister\Db\ObjectEntity $object, array $rendered): array {
 				return $rendered;
+			}
+		};
+	}
+
+	/**
+	 * A recipient gate that refuses nobody, for tests about something else.
+	 *
+	 * @return \OCA\OpenRegister\Service\Federation\RemoteRecipientGate
+	 */
+	private static function refusingNoRecipient(): \OCA\OpenRegister\Service\Federation\RemoteRecipientGate {
+		return new class extends \OCA\OpenRegister\Service\Federation\RemoteRecipientGate {
+			public function __construct() {
+			}
+
+			public function refuses(\OCA\OpenRegister\Db\FederatedShare $share, \OCA\OpenRegister\Db\ObjectEntity $object, string $verb): bool {
+				return false;
 			}
 		};
 	}

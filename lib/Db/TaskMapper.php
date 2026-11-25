@@ -270,6 +270,28 @@ class TaskMapper extends QBMapper {
 	}//end findByKey()
 
 	/**
+	 * Every task on one object, open and finished, oldest first.
+	 *
+	 * Unscoped by caller: the published {@see \OCA\OpenRegister\Contract\ObjectTaskReaderInterface}
+	 * leaves the object's read rights to its caller.
+	 *
+	 * @param string $objectUuid The object's uuid.
+	 *
+	 * @return array<int, Task> The tasks, oldest first.
+	 *
+	 * @spec openspec/changes/object-task-reader/specs/flow-tasks/spec.md#requirement-a-consuming-app-reads-the-tasks-on-its-object
+	 */
+	public function findByObjectUuid(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('id', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByObjectUuid()
+
+	/**
 	 * Update a task ONLY while it is still open: the conditional write every
 	 * state-changing verb goes through.
 	 *
@@ -471,6 +493,33 @@ class TaskMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findOpenByRunUuid()
+
+	/**
+	 * One page of a person's open tasks, in id order after a watermark.
+	 *
+	 * Reads the `(assignee, is_terminal, due_at)` index; the substitution job
+	 * pages through a person's work with it, a bounded number per run.
+	 *
+	 * @param string $uid     The assignee.
+	 * @param int    $afterId Only tasks with a larger id (0 for the first page).
+	 * @param int    $limit   The page size.
+	 *
+	 * @return array<int, Task> The open tasks, ascending by id.
+	 *
+	 * @spec openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks/spec.md#requirement-a-task-goes-to-the-stand-in-of-an-absent-assignee
+	 */
+	public function findOpenAssignedTo(string $uid, int $afterId, int $limit): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('assignee', $qb->createNamedParameter($uid)))
+			->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
+			->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+			->orderBy('id', 'ASC')
+			->setMaxResults($limit);
+
+		return $this->findEntities(query: $qb);
+	}//end findOpenAssignedTo()
 
 	/**
 	 * Open-task counts per assignee, for the `least-loaded` strategy.
@@ -913,6 +962,8 @@ class TaskMapper extends QBMapper {
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	private function applyTerm(IQueryBuilder $qb, ?string $term): void {
 		foreach (self::termWords(term: $term) as $word) {
@@ -934,6 +985,8 @@ class TaskMapper extends QBMapper {
 	 * @return array<int, string>
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public static function termWords(?string $term): array {
 		$words = preg_split('/\s+/u', trim((string) $term), -1, PREG_SPLIT_NO_EMPTY);

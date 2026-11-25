@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -22,6 +23,7 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\TranslationTargetConflictException;
@@ -79,6 +81,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses   \OCA\OpenRegister\Exception\LockedException
  * @uses   \OCA\OpenRegister\Exception\ObjectExistsException
  * @uses   \OCA\OpenRegister\Exception\ObjectStateWriteException
+ * @uses   \OCA\OpenRegister\Exception\PropertyWriteNotAuthorizedException
  * @uses   \OCA\OpenRegister\Exception\RegisterNotFoundException
  * @uses   \OCA\OpenRegister\Exception\SchemaNotFoundException
  * @uses   \OCA\OpenRegister\Exception\TranslationTargetConflictException
@@ -100,6 +103,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses   \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  */
 class ObjectsControllerCreateGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private const FIXTURE = __DIR__ . '/fixtures/objects-create-golden.json';
 
 	/** @var array<string, mixed>|null */
@@ -137,6 +142,7 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 			'validation' => ['validation'],
 			'custom validation' => ['customValidation'],
 			'hook stopped' => ['hook'],
+			'property not authorized' => ['propertyAuth'],
 			'locked' => ['locked'],
 			'folder denied' => ['folder'],
 			'expression default' => ['expression'],
@@ -194,6 +200,7 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 			'validation' => new ValidationException('bad'),
 			'customValidation' => new CustomValidationException('bad', ['a' => 'b']),
 			'hook' => new HookStoppedException('stopped', ['e' => 1]),
+			'propertyAuth' => new PropertyWriteNotAuthorizedException(['salaris', 'besluitdatum']),
 			'locked' => new LockedException('held'),
 			'folder' => new FolderAccessDeniedException('f1'),
 			'expression' => new ExpressionDefaultException('title', 'cannot derive'),
@@ -260,6 +267,7 @@ class ObjectsControllerCreateGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn(($setup['anonymous'] ?? false) ? null : $user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturn((($setup['admin'] ?? false) === true) ? ['admin'] : ['staff']);
 
 		return ObjectsControllerFactory::create(

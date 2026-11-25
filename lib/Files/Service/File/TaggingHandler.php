@@ -73,6 +73,13 @@ class TaggingHandler implements TaggingHandlerInterface {
 	public const OBJECT_TAG_PREFIX = 'object:';
 
 	/**
+	 * Colours a tag that has none.
+	 *
+	 * @var TagColour
+	 */
+	private readonly TagColour $colours;
+
+	/**
 	 * Constructor for TaggingHandler.
 	 *
 	 * @param ISystemTagManager $systemTagManager System tag manager.
@@ -86,6 +93,7 @@ class TaggingHandler implements TaggingHandlerInterface {
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 	) {
+		$this->colours = new TagColour(systemTagManager: $systemTagManager, logger: $logger);
 	}//end __construct()
 
 	/**
@@ -207,19 +215,24 @@ class TaggingHandler implements TaggingHandlerInterface {
 	/**
 	 * Find tag by name or create it if it doesn't exist.
 	 *
-	 * @param string $tagName Tag name.
+	 * @param string      $tagName Tag name.
+	 * @param string|null $color   A colour to give the tag when it has none, as six hex digits; null for none.
 	 *
 	 * @return ISystemTag The tag object.
 	 *
 	 * @throws Exception If tag creation fails.
 	 */
-	private function findOrCreateTag(string $tagName): ISystemTag {
+	private function findOrCreateTag(string $tagName, ?string $color = null): ISystemTag {
 		try {
-			return $this->findTagByName(tagName: $tagName) ?? $this->createNamedTag(tagName: $tagName);
+			$tag = $this->findTagByName(tagName: $tagName) ?? $this->createNamedTag(tagName: $tagName);
 		} catch (TagAlreadyExistsException $e) {
 			// Tag exists, get it by searching again.
-			return $this->findTagByName(tagName: $tagName) ?? throw new Exception('Tag exists but could not be found: ' . $tagName);
+			$tag = $this->findTagByName(tagName: $tagName) ?? throw new Exception('Tag exists but could not be found: ' . $tagName);
 		}
+
+		$this->colours->applyIfUncoloured(tag: $tag, color: $color);
+
+		return $tag;
 	}//end findOrCreateTag()
 
 	/**
@@ -424,16 +437,17 @@ class TaggingHandler implements TaggingHandlerInterface {
 	/**
 	 * Add a tag to an OpenRegister object.
 	 *
-	 * @param string $objectUuid The object UUID.
-	 * @param string $tagName The tag name to add.
+	 * @param string      $objectUuid The object UUID.
+	 * @param string      $tagName    The tag name to add.
+	 * @param string|null $color      A colour for the tag when it has none, as six hex digits.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
-	public function addObjectTag(string $objectUuid, string $tagName): void {
+	public function addObjectTag(string $objectUuid, string $tagName, ?string $color = null): void {
 		try {
-			$tag = $this->findOrCreateTag(tagName: $tagName);
+			$tag = $this->findOrCreateTag(tagName: $tagName, color: $color);
 		} catch (TagCreationForbiddenException $e) {
 			throw new NotAuthorizedException(message: 'You may not create the tag \'' . $tagName . '\'.');
 		}
@@ -474,6 +488,20 @@ class TaggingHandler implements TaggingHandlerInterface {
 
 		throw new Exception('Tag not found: ' . $tagName);
 	}//end removeObjectTag()
+
+	/**
+	 * Whether an object carries a tag of this name.
+	 *
+	 * @param string $objectUuid The object UUID.
+	 * @param string $tagName    The tag name.
+	 *
+	 * @return bool True when the tag is on the object.
+	 *
+	 * @spec openspec/changes/flow-tag-object-step/specs/flow-engine/spec.md
+	 */
+	public function hasObjectTag(string $objectUuid, string $tagName): bool {
+		return in_array($tagName, $this->tagNamesOf(objectId: $objectUuid, objectType: self::OBJECT_TAG_TYPE), true);
+	}//end hasObjectTag()
 
 	/**
 	 * Refuse a tag the signed-in caller may not assign or remove.

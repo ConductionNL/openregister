@@ -181,7 +181,7 @@
         [
             "template.addBodyText",
             [
-                "Your scheduled report \"Weekly cases\" ran and delivered 3 row(s).",
+                "Your scheduled report \"Weekly cases\" ran and delivered 3 rows.",
                 ""
             ]
         ],
@@ -389,7 +389,7 @@
         [
             "template.addBodyText",
             [
-                "Your scheduled report \"Weekly cases\" ran and delivered 2 row(s).",
+                "Your scheduled report \"Weekly cases\" ran and delivered 2 rows.",
                 ""
             ]
         ],
@@ -604,7 +604,7 @@
         [
             "template.addBodyText",
             [
-                "Your scheduled report \"Weekly cases\" ran and delivered 2 row(s).",
+                "Your scheduled report \"Weekly cases\" ran and delivered 2 rows.",
                 ""
             ]
         ],
@@ -902,7 +902,7 @@
         [
             "template.addBodyText",
             [
-                "Your scheduled report \"Weekly cases\" ran and delivered 3 row(s).",
+                "Your scheduled report \"Weekly cases\" ran and delivered 3 rows.",
                 ""
             ]
         ],
@@ -1193,7 +1193,7 @@
         [
             "template.addBodyText",
             [
-                "Your scheduled report \"Weekly cases\" ran and delivered 2 row(s).",
+                "Your scheduled report \"Weekly cases\" ran and delivered 2 rows.",
                 ""
             ]
         ],
@@ -1384,7 +1384,7 @@
         [
             "template.addBodyText",
             [
-                "Your scheduled report \"Weekly cases\" ran and delivered 2 row(s).",
+                "Your scheduled report \"Weekly cases\" ran and delivered 2 rows.",
                 ""
             ]
         ],
@@ -1571,7 +1571,7 @@
         [
             "template.addBodyText",
             [
-                "Your scheduled report \"Weekly cases\" ran and delivered 2 row(s).",
+                "Your scheduled report \"Weekly cases\" ran and delivered 2 rows.",
                 ""
             ]
         ],

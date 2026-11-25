@@ -8,6 +8,8 @@
  * @copyright 2026 Conduction B.V.
  */
 
+import { translate as t } from '@nextcloud/l10n'
+
 const PROPERTY_TYPES = [
 	'string',
 	'number',
@@ -193,6 +195,8 @@ function emptyPropertyDisplay() {
 		visible: true,
 		hideOnCollection: false,
 		facetable: true,
+		indexed: false,
+		searchable: false,
 		order: 0,
 	}
 }
@@ -315,8 +319,37 @@ export const GEO_FORMATS = Object.freeze([
 ])
 
 /**
+ * The label a functional administrator reads for each geometry format, so the
+ * select names a shape instead of its `geo:` id.
+ *
+ * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+ */
+const GEO_FORMAT_LABELS = Object.freeze({
+	'geo:point': () => t('openregister', 'Point'),
+	'geo:linestring': () => t('openregister', 'Line'),
+	'geo:polygon': () => t('openregister', 'Polygon'),
+	'geo:multipolygon': () => t('openregister', 'Multipolygon'),
+	'geo:geometry': () => t('openregister', 'Any geometry'),
+})
+
+/**
+ * The geometry formats as select options: the stored `geo:` id with its
+ * translated label. A format without a label shows under its id.
+ *
+ * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+ * @return {Array<{id: string, label: string}>} One option per geometry format
+ */
+export function geoFormatOptions() {
+	return GEO_FORMATS.map((id) => ({
+		id,
+		label: GEO_FORMAT_LABELS[id] ? GEO_FORMAT_LABELS[id]() : id,
+	}))
+}
+
+/**
  * The select of a property's format: the geometry formats for an object, the
- * string formats otherwise.
+ * string formats otherwise. The geometry options carry a translated label and
+ * reduce to their id, so the property still stores `geo:point` and friends.
  *
  * @spec openspec/specs/entity-management-modals/spec.md
  * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
@@ -324,10 +357,19 @@ export const GEO_FORMATS = Object.freeze([
  * @return {object}
  */
 export function formatSelect(type = 'string') {
+	if (type === 'object') {
+		return {
+			inputLabel: 'Format',
+			multiple: false,
+			options: geoFormatOptions(),
+			reduce: (option) => option.id,
+		}
+	}
+
 	return {
 		inputLabel: 'Format',
 		multiple: false,
-		options: type === 'object' ? [...GEO_FORMATS] : [...STRING_FORMATS],
+		options: [...STRING_FORMATS],
 	}
 }
 

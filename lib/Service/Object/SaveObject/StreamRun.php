@@ -67,4 +67,11 @@ final class StreamRun {
 	 * @var mixed
 	 */
 	public mixed $row = null;
+
+	/**
+	 * Whether the batch is a dry run: each row is prepared and checked, nothing is written.
+	 *
+	 * @var boolean
+	 */
+	public bool $dryRun = false;
 }//end class

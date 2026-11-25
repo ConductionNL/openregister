@@ -1,8 +1,9 @@
 /**
- * Mail Sidebar Styles
+ * Mail panel styles
  *
- * Minimal overrides for NcAppSidebar when used in the Mail app context.
- * Uses Nextcloud CSS variables — dark theme compatible.
+ * The connections panel beside an open mail, drawn as the mail boards
+ * (WpPanel, MlLinkWorkPackage). Uses Nextcloud CSS variables, so it follows
+ * the theme and dark mode.
  */
 
 /* While the panel is open, Mail's content ends where the panel starts.
@@ -11,160 +12,415 @@ body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar
 	width: calc(100% - var(--or-mail-panel-width, 400px)) !important;
 }
 
-@media (min-width: 1024px) {
-	/* The message keeps a readable width next to the panel. */
-	body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-sidebar) #content-vue.app-mail .splitpanes__pane-list {
-		flex-basis: 300px !important;
-		width: 300px !important;
-	}
-}
-
-/* No panel while no email is open. */
-.or-mail-sidebar-root--idle .or-mail-sidebar {
+/* No panel and no reopen tab while no email is open. */
+.or-mail-sidebar-root--idle :is(.or-mail-sidebar, .or-mail-connections-button) {
 	display: none !important;
 }
 
 /* The panel docks at the right edge, under the header, as a column ruled off
  * by its left border. It is mounted on document.body so it survives Mail's
- * Vue re-renders, which is why it is positioned here.
- * Double class + type raises specificity above NcAppSidebar's own .app-sidebar rule. */
-aside.or-mail-sidebar.app-sidebar,
-.or-mail-sidebar.app-sidebar,
+ * Vue re-renders, which is why it is positioned here. */
 .or-mail-sidebar {
 	position: fixed;
 	top: var(--header-height, 50px);
 	inset-inline: auto 0;
 	bottom: 0;
+	z-index: 1500;
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
 	width: var(--or-mail-panel-width, 400px);
 	max-width: 100vw;
-	height: auto;
-	z-index: 1500;
 	background: var(--color-main-background);
-	border: 0;
 	border-inline-start: 1px solid var(--color-border);
-	border-radius: 0;
-	box-shadow: none;
-	overflow: hidden;
+	color: var(--color-main-text);
+	font-size: 14px;
+	line-height: 21px;
 }
 
-/* The head is a small caption with the close button, over a hairline. */
-#openregister-mail-sidebar .app-sidebar-header {
+/* The head: a small caption and the close button, over a hairline. */
+.or-mail-panel__head {
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	height: 48px;
+	padding: 0 8px 0 16px;
 	border-bottom: 1px solid var(--color-border);
 }
 
-#openregister-mail-sidebar .app-sidebar-header__mainname {
-	padding: 0 !important;
+.or-mail-sidebar h2.or-mail-panel__caption {
+	margin: 0 !important;
 	font-size: 12px !important;
 	font-weight: 600 !important;
-	line-height: 48px !important;
+	line-height: 16px !important;
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
 	color: var(--color-text-maxcontrast);
 }
 
-/* Collapsed toggle tab — shown when the sidebar is closed */
-.or-mail-sidebar__collapsed-toggle {
-	position: fixed;
-	top: 50%;
-	right: 0;
-	transform: translateY(-50%);
-	z-index: 1500;
-	width: 28px;
-	padding: 14px 4px;
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-right: none;
-	border-radius: var(--border-radius) 0 0 var(--border-radius);
-	cursor: pointer;
-	color: var(--color-main-text);
+.or-mail-panel__body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
 	display: flex;
 	flex-direction: column;
+	gap: 16px;
+	padding: 16px;
+}
+
+.or-mail-sidebar h3.or-mail-panel__subject {
+	margin: 0 !important;
+	font-size: 16px !important;
+	font-weight: 700 !important;
+	line-height: 22px !important;
+}
+
+/* A caption over a group of rows, as "In <project>" on the board. */
+.or-mail-sidebar h4.or-mail-panel__section-title {
+	margin: 0 0 8px !important;
+	padding: 0;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	line-height: 21px !important;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--color-text-maxcontrast);
+}
+
+/* The pressed Connections button in the mail's subject bar opens and closes
+ * the panel and counts the connections (MlConnections). Mail's subject bar is
+ * its own, so the button sits over its right end. */
+#openregister-mail-sidebar .or-mail-connections-button {
+	position: fixed;
+	top: calc(var(--header-height, 50px) + 14px);
+	inset-inline-end: 16px;
+	z-index: 1400;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	height: 34px;
+	margin: 0;
+	padding: 0 12px;
+	border: 1px solid var(--color-border-dark);
+	border-radius: var(--border-radius-element, 8px);
+	background: var(--color-main-background);
+	color: var(--color-main-text);
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+#openregister-mail-sidebar .or-mail-connections-button--panel-open {
+	inset-inline-end: calc(var(--or-mail-panel-width, 400px) + 16px);
+}
+
+/* Important: the theme's button background outranks this rule otherwise. */
+#openregister-mail-sidebar .or-mail-connections-button[aria-pressed='true'] {
+	border-color: var(--color-primary-element-light-text, var(--color-primary-element));
+	background: var(--color-primary-element-light) !important;
+	color: var(--color-primary-element-light-text, var(--color-primary-element));
+}
+
+.or-mail-connections-button__count {
+	min-width: 20px;
+	height: 20px;
+	padding: 0 6px;
+	box-sizing: border-box;
+	border-radius: 10px;
+	background: var(--color-primary-element-light-text, var(--color-primary-element));
+	color: var(--color-primary-element-text, #fff);
+	font-size: 12px;
+	line-height: 20px;
+	text-align: center;
+}
+
+/* Mail's subject keeps clear of the button. */
+body:has(.or-mail-sidebar-root:not(.or-mail-sidebar-root--idle) .or-mail-connections-button) #mail-thread-header-fields {
+	padding-inline-end: 190px !important;
+}
+
+/* "+ Add to case" beside each attachment in the reading pane, on the same line. */
+#mail-message .attachment:has(> .or-mail-add-to-object:not([hidden])) {
+	flex-wrap: nowrap !important;
+}
+
+#mail-message .attachment > .or-mail-add-to-object {
+	flex: none;
+	display: inline-flex;
 	align-items: center;
 	gap: 4px;
-	box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
-}
-
-.or-mail-sidebar__collapsed-toggle:hover {
-	background: var(--color-background-hover);
-}
-
-.or-mail-sidebar__collapsed-label {
-	writing-mode: vertical-rl;
+	height: 34px;
+	margin: 0 4px;
+	padding: 0 10px;
+	border: 0;
+	border-radius: var(--border-radius-element, 8px);
+	background: transparent;
+	color: var(--color-primary-element);
+	font-size: 13px;
 	font-weight: 600;
-	font-size: 11px;
-	letter-spacing: 1px;
+	cursor: pointer;
 }
 
-/* Object card */
+#mail-message .attachment > .or-mail-add-to-object:hover {
+	background: var(--color-primary-element-light);
+}
+
+#mail-message .attachment > .or-mail-add-to-object[hidden] {
+	display: none;
+}
+
+/* A connected item: its kind over its name, framed; also a drop target. */
+.or-mail-object-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
 .or-mail-object-card {
-	background: var(--color-background-dark);
+	padding: 8px 8px 12px 16px;
 	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius-large, 6px);
-	padding: 10px 12px;
-	margin-bottom: 8px;
+	border-radius: var(--border-radius-element, 8px);
+	background: var(--color-main-background);
 }
 
 .or-mail-object-card__header {
 	display: flex;
+	align-items: center;
 	justify-content: space-between;
-	align-items: flex-start;
 	gap: 8px;
 }
 
-.or-mail-object-card__title {
-	display: flex;
-	align-items: center;
+.or-mail-object-card__kind {
+	display: inline-flex;
+	align-items: baseline;
 	gap: 8px;
-	font-size: 14px;
-	font-weight: 600;
-	margin: 0;
-	line-height: 1.3;
 	min-width: 0;
+}
+
+.or-mail-object-card__id {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--color-primary-element);
+}
+
+.or-mail-object-card__schema {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--color-primary-element-light-text, var(--color-primary-element));
 }
 
 .or-mail-object-card__icon {
 	flex-shrink: 0;
-	color: var(--color-text-maxcontrast);
 }
 
-.or-mail-object-card__title a {
-	color: var(--color-primary-element);
-	text-decoration: none;
+#openregister-mail-sidebar a.or-mail-object-card__title {
+	display: block;
+	padding-inline-end: 8px;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 22px;
+	/* A theme that colours every link through these variables keeps this name in the text colour. */
+	--nldesign-color-on-surface: var(--color-main-text);
+	--nldesign-component-link-color: var(--color-main-text);
+	color: var(--color-main-text) !important;
+	text-decoration: none !important;
 }
 
-.or-mail-object-card__title a:hover {
-	text-decoration: underline;
+#openregister-mail-sidebar a.or-mail-object-card__title:hover {
+	text-decoration: underline !important;
 }
 
-.or-mail-object-card__title a:focus-visible {
+.or-mail-object-card__title:focus-visible {
 	outline: 2px solid var(--color-primary-element);
 	outline-offset: 2px;
 	border-radius: 2px;
 }
 
-.or-mail-object-card__meta {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
+.or-mail-object-card__sub {
+	display: -webkit-box;
+	margin: 4px 0 0;
+	overflow: hidden;
+	font-size: 13px;
+	line-height: 18px;
+	color: var(--color-text-maxcontrast);
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+
+.or-mail-object-card__status {
 	margin-top: 4px;
 }
 
-.or-mail-object-card__schema,
-.or-mail-object-card__register {
+/* While an attachment is dragged over a card, the card tints, its edge turns
+ * dashed and a white line says where to drop (MlConnectionsStates, state 6). */
+.or-mail-object-card--drop-target {
+	border: 1px dashed var(--color-primary-element);
+	background: var(--color-primary-element-light);
+}
+
+.or-mail-object-card__drop {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 10px 0 0;
+	padding: 8px 12px;
+	border-radius: var(--border-radius-element, 8px);
+	background: var(--color-main-background);
+	color: var(--color-primary-element);
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.or-mail-object-empty {
+	margin: 0;
+	font-size: 14px;
+	line-height: 21px;
+	color: var(--color-main-text);
+}
+
+/* An item's status and handler on one muted line, after a ring. */
+.or-object-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	font-size: 12px;
+	line-height: 18px;
+	color: var(--color-text-maxcontrast);
+}
+
+.or-object-status__dot {
+	flex: none;
+	width: 8px;
+	height: 8px;
+	border: 1.5px solid var(--color-primary-element);
+	border-radius: 50%;
+}
+
+/* "Connected to case #2026-4833" with Undo, right after a connection is made. */
+.or-mail-panel__connected {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+	padding: 0 4px 0 8px;
+	font-size: 13px;
+	color: var(--color-main-text);
+}
+
+.or-mail-panel__connected-icon {
+	color: var(--color-success, var(--color-primary-element));
+}
+
+.or-mail-sidebar button.or-mail-panel__undo {
+	margin: 0 0 0 auto;
+	padding: 0 6px;
+	min-height: 0;
+	border: 0;
+	background: transparent;
+	color: var(--color-primary-element);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+/* One object as the picker boards draw it: kind, #number and name on one
+ * line, a muted line under it (WpPickerStates). */
+.or-object-row {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.or-object-row__head {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	min-width: 0;
+}
+
+.or-object-row__kind {
+	flex: none;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--color-primary-element-light-text, var(--color-primary-element));
+}
+
+.or-object-row__id {
+	flex: none;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--color-primary-element);
+}
+
+.or-object-row__name {
+	min-width: 0;
+	overflow: hidden;
+	font-size: 14px;
+	color: var(--color-main-text);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.or-object-row__sub {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.or-object-row__trailing {
+	margin-inline-start: auto;
 	font-size: 12px;
 	color: var(--color-text-maxcontrast);
 }
 
-/* Object list container */
-.or-mail-object-list {
-	display: flex;
-	flex-direction: column;
-	padding: 0 4px;
+.or-object-row__spinner {
+	flex: none;
+	align-self: center;
 }
 
-/* Actions tab */
-.or-action-block {
-	margin-bottom: 16px;
+.or-object-row__mark {
+	padding: 0 1px;
+	border-radius: 2px;
+	background: var(--color-background-dark);
+	color: inherit;
+}
+
+/* The picked row keeps its tint while it is connected (MlConnectionsStates, state 4). */
+.or-action-picked {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.or-action-result--picked {
+	background: var(--color-primary-element-light);
+	cursor: default;
+}
+
+.or-action-nomatch {
+	margin: 8px 0 0;
+	padding: 0 10px;
+	font-size: 14px;
+	line-height: 21px;
+	color: var(--color-main-text);
+}
+
+/* One block per kind of item: a label, a search field and a "+ New" row. */
+.or-tab-actions > div {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
 }
 
 .or-mail-sidebar .or-action-label {
@@ -180,47 +436,53 @@ aside.or-mail-sidebar.app-sidebar,
 	position: relative;
 }
 
-/* Type and class outrank core's input[type="text"] rule. */
-.or-mail-sidebar input.or-action-input {
+.or-action-search__icon {
+	position: absolute;
+	inset-inline-start: 12px;
+	top: 10px;
+	color: var(--color-text-maxcontrast);
+	pointer-events: none;
+}
+
+/* Id, type and class outrank core's input rules; the theme's input height needs important. */
+#openregister-mail-sidebar input.or-action-input {
 	width: 100%;
-	padding: 0 12px;
+	height: 40px !important;
+	min-height: 40px;
+	margin: 0;
+	padding: 0 12px 0 38px;
+	box-sizing: border-box;
 	border: 1px solid var(--color-border-dark);
-	border-radius: var(--border-radius-element, 10px);
+	border-radius: var(--border-radius-large, 10px);
 	background: var(--color-main-background);
 	color: var(--color-main-text);
 	font-size: 15px;
-	box-sizing: border-box;
-	height: 40px;
-	margin: 0;
 }
 
-.or-mail-sidebar input.or-action-input:focus {
+#openregister-mail-sidebar input.or-action-input:focus {
 	border-color: var(--color-primary-element);
-	outline: none;
+	outline: 2px solid var(--color-primary-element-light);
 }
 
+/* Matches list under the field, as rows in the panel, not a floating menu. */
 .or-action-results {
-	position: absolute;
-	top: 100%;
-	left: 0;
-	right: 0;
-	background: var(--color-main-background);
-	border: 1px solid var(--color-border);
-	border-top: none;
-	border-radius: 0 0 var(--border-radius, 3px) var(--border-radius, 3px);
-	max-height: 200px;
+	max-height: 240px;
 	overflow-y: auto;
-	z-index: 10;
 	list-style: none;
-	margin: 0;
+	margin: 8px 0 0;
 	padding: 0;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .or-action-result {
-	padding: 8px 10px;
+	padding: 6px 10px;
+	border-radius: var(--border-radius-element, 8px);
 	cursor: pointer;
-	font-size: 13px;
+	font-size: 14px;
+}
+
+/* The first match leads, tinted as the board tints the best match. */
+.or-action-result:first-child {
+	background: var(--color-primary-element-light);
 }
 
 .or-action-result:hover,
@@ -243,9 +505,11 @@ aside.or-mail-sidebar.app-sidebar,
 	padding: 4px 0;
 }
 
-/* "New ... from this email" is a quiet row under the search, not a filled button. */
-.or-mail-sidebar button.or-action-create {
-	display: block;
+/* "+ New ... from this mail" is a quiet row, not a filled button. */
+#openregister-mail-sidebar button.or-action-create {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 	width: 100%;
 	height: 40px;
 	margin: 8px 0 0;
@@ -253,20 +517,72 @@ aside.or-mail-sidebar.app-sidebar,
 	border: 0;
 	border-radius: var(--border-radius-element, 8px);
 	background-color: transparent;
-	color: var(--color-text-maxcontrast);
+	color: var(--color-primary-element);
 	font-size: 14px;
 	font-weight: 500;
 	text-align: start;
 	cursor: pointer;
 }
 
-.or-mail-sidebar button.or-action-create:hover:not(:disabled) {
+#openregister-mail-sidebar button.or-action-create:hover:not(:disabled) {
 	background-color: var(--color-background-hover);
 }
 
-.or-mail-sidebar button.or-action-create:disabled {
+#openregister-mail-sidebar button.or-action-create:disabled {
 	opacity: 0.6;
 	cursor: default;
+}
+
+/* What was found in the mail folds out from one row, as Options on the board. */
+.or-mail-panel__found {
+	border-top: 1px solid var(--color-border);
+	padding-top: 8px;
+}
+
+#openregister-mail-sidebar button.or-mail-panel__found-toggle {
+	display: flex;
+	box-sizing: border-box;
+	min-width: 0;
+	font-weight: 400;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	height: 40px;
+	margin: 0;
+	padding: 0 4px 0 10px;
+	border: 0;
+	border-radius: var(--border-radius-element, 8px);
+	background: transparent;
+	color: var(--color-main-text);
+	font-size: 14px;
+	text-align: start;
+	cursor: pointer;
+}
+
+#openregister-mail-sidebar button.or-mail-panel__found-toggle:hover {
+	background-color: var(--color-background-hover);
+}
+
+.or-mail-panel__found-toggle > .material-design-icon {
+	flex: none;
+}
+
+.or-mail-panel__found-icon {
+	color: var(--color-text-maxcontrast);
+}
+
+.or-mail-panel__found-label {
+	flex: none;
+	font-weight: 600;
+}
+
+.or-mail-panel__found-hint {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	color: var(--color-text-maxcontrast);
 }
 
 /* Spinner shown while a connection is being made / a record created */
@@ -298,20 +614,7 @@ aside.or-mail-sidebar.app-sidebar,
 	text-align: center;
 }
 
-/* Entities tab */
-.or-entity-group {
-	margin-bottom: 12px;
-}
-
-.or-entity-group-title {
-	font-size: 12px;
-	font-weight: 600;
-	color: var(--color-text-maxcontrast);
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	margin: 0 0 4px;
-}
-
+/* What was found in the mail: one row per value, its kind and a Search action. */
 .or-entity-list {
 	list-style: none;
 	margin: 0;
@@ -320,24 +623,55 @@ aside.or-mail-sidebar.app-sidebar,
 
 .or-entity-item {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
-	padding: 4px 0;
-	font-size: 13px;
+	gap: 10px;
+	min-height: 40px;
+	padding: 0 6px 0 10px;
+	font-size: 14px;
+}
+
+.or-entity-icon {
+	flex: none;
+	color: var(--color-text-maxcontrast);
 }
 
 .or-entity-value {
-	color: var(--color-main-text);
-	flex: 1;
+	flex: 1 1 auto;
 	min-width: 0;
 	overflow: hidden;
+	color: var(--color-main-text);
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
-.or-entity-confidence {
-	font-size: 11px;
+.or-entity-kind {
+	flex: none;
+	font-size: 12px;
 	color: var(--color-text-maxcontrast);
-	flex-shrink: 0;
-	margin-left: 8px;
+}
+
+.or-mail-sidebar button.or-entity-search {
+	flex: none;
+	min-height: 0;
+	margin: 0;
+	padding: 4px 6px;
+	border: 0;
+	border-radius: var(--border-radius-element, 8px);
+	background: transparent;
+	color: var(--color-primary-element);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+/* "1 message · Inbox · connected to case #2026-4833" under Mail's subject (MlConnections). */
+#mail-thread-header-fields > .or-mail-subject-line {
+	margin: 2px 0 0;
+	font-size: 12px;
+	line-height: 18px;
+	color: var(--color-text-maxcontrast);
+}
+
+#mail-thread-header-fields > .or-mail-subject-line[hidden] {
+	display: none;
 }

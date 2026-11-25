@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\MagicMapper\TableFilterRun;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -131,4 +132,141 @@ class MagicSearchHandlerReferenceFilterTest extends TestCase {
 
 		$this->applyTo(query: ['_ref' => ['aanvrager' => ['woonplaats' => 'Z']]], schema: new Schema(), registerId: null);
 	}//end testARefBlockWithoutARegisterIsRefused()
+
+	/**
+	 * The handler with a database whose query builder logs the grouping calls into $log.
+	 *
+	 * @param array<int, string> $log The shared call log.
+	 *
+	 * @return MagicSearchHandler
+	 */
+	private function facetHandler(array &$log): MagicSearchHandler {
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('createFunction')->willReturnCallback(static function (string $sql) use (&$log): \OCP\DB\QueryBuilder\IQueryFunction {
+			$log[] = 'createFunction ' . $sql;
+			return new class($sql) implements \OCP\DB\QueryBuilder\IQueryFunction {
+				/**
+				 * The SQL.
+				 *
+				 * @param string $sql The SQL.
+				 */
+				public function __construct(private readonly string $sql) {
+				}//end __construct()
+
+				/**
+				 * The SQL.
+				 *
+				 * @return string
+				 */
+				public function __toString(): string {
+					return $this->sql;
+				}//end __toString()
+			};
+		});
+		foreach (['selectAlias', 'addSelect', 'groupBy'] as $method) {
+			$qb->method($method)->willReturnCallback(static function (mixed ...$args) use (&$log, $qb, $method): IQueryBuilder {
+				$log[] = $method . ' ' . implode(' ', array_map('strval', $args));
+				return $qb;
+			});
+		}
+
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQL120Platform::class));
+		$logger = $this->createMock(LoggerInterface::class);
+
+		// The filtered query is buildFilteredQuery()'s, covered by its own tests;
+		// here it stands for the list's query the facet groups.
+		$handler = $this->getMockBuilder(MagicSearchHandler::class)
+			->setConstructorArgs(
+				[
+					'db' => $db,
+					'logger' => $logger,
+					'rbacHandler' => $this->createMock(MagicRbacHandler::class),
+					'organizationHandler' => $this->createMock(MagicOrganizationHandler::class),
+					'schemaTypeConverter' => new SchemaTypeConverter(),
+					'dateTimeNormalizer' => new DateTimeNormalizer(logger: $logger),
+					'relatedRows' => $this->related,
+				]
+			)
+			->onlyMethods(['buildFilteredQuery'])
+			->getMock();
+		$handler->method('buildFilteredQuery')->willReturnCallback(static function (array $query, MagicReadTable $table) use (&$log, $qb): IQueryBuilder {
+			$log[] = 'buildFilteredQuery ' . $table->tableName;
+			return $qb;
+		});
+
+		return $handler;
+	}//end facetHandler()
+
+	/**
+	 * A facet through a reference groups the filtered query by the joined referenced field, counting each object once.
+	 *
+	 * @return void
+	 */
+	public function testAReferenceFacetGroupsByTheJoinedField(): void {
+		$schema = new Schema();
+		$schema->setId(7);
+		$log = [];
+		$this->related->expects($this->once())->method('joinReferenceForFacet')
+			->with(
+				$this->callback(static fn (RelatedRowFilterTarget $target): bool => $target->register->getId() === 1),
+				$schema,
+				'aanvrager',
+				'woonplaats'
+			)
+			->willReturn('rf0."woonplaats"');
+
+		$qb = $this->facetHandler(log: $log)->referenceFacetQuery(
+			query: ['titel' => 'x'],
+			table: new MagicReadTable(schema: $schema, registerId: 1, tableName: 'openregister_table_1_7'),
+			property: 'aanvrager',
+			field: 'woonplaats'
+		);
+
+		$this->assertInstanceOf(IQueryBuilder::class, $qb);
+		$grouping = array_values(array_filter($log, static fn (string $line): bool => preg_match('/^(buildFilteredQuery|selectAlias|addSelect|groupBy) /', $line) === 1));
+		$this->assertSame(
+			['buildFilteredQuery openregister_table_1_7', 'selectAlias rf0."woonplaats" facet_value', 'addSelect COUNT(DISTINCT t._uuid) AS doc_count', 'groupBy rf0."woonplaats"'],
+			$grouping
+		);
+	}//end testAReferenceFacetGroupsByTheJoinedField()
+
+	/**
+	 * An omitted facet (the caller may not read the field) groups nothing.
+	 *
+	 * @return void
+	 */
+	public function testAnOmittedReferenceFacetGroupsNothing(): void {
+		$log = [];
+		$this->related->method('joinReferenceForFacet')->willReturn(null);
+
+		$qb = $this->facetHandler(log: $log)->referenceFacetQuery(
+			query: ['titel' => 'x'],
+			table: new MagicReadTable(schema: new Schema(), registerId: 1, tableName: 'openregister_table_1_7'),
+			property: 'aanvrager',
+			field: 'woonplaats'
+		);
+
+		$this->assertNull($qb);
+		$this->assertSame([], array_values(array_filter($log, static fn (string $line): bool => str_starts_with($line, 'groupBy'))));
+	}//end testAnOmittedReferenceFacetGroupsNothing()
+
+	/**
+	 * Without a register a facet through a reference is refused before any query is built.
+	 *
+	 * @return void
+	 */
+	public function testAReferenceFacetWithoutARegisterIsRefused(): void {
+		$log = [];
+		$this->related->expects($this->never())->method('joinReferenceForFacet');
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage('A facet through a reference needs to know which register');
+		$this->facetHandler(log: $log)->referenceFacetQuery(
+			query: [],
+			table: new MagicReadTable(schema: new Schema(), registerId: null, tableName: 'openregister_table_1_7'),
+			property: 'aanvrager',
+			field: 'woonplaats'
+		);
+	}//end testAReferenceFacetWithoutARegisterIsRefused()
 }//end class

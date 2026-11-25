@@ -22,14 +22,17 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Contract\ObjectTaskReaderInterface;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekNumberingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DependentValueCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ContactMatchCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\TransitionInFlightInterface;
+use OCA\OpenRegister\Service\Object\FacetWeekNumbering;
 use OCA\OpenRegister\Service\Calendar\ObjectCalendarFeedService;
 use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
@@ -50,10 +53,12 @@ use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\FlowLinkPlatform;
 use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\Task\ObjectTaskReader;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\RecentLensInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SaveBoundaryInterface;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
@@ -79,8 +84,16 @@ use OCA\OpenRegister\Mcp\BuiltIn\FlowBuiltInToolProviders;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionRunner;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
@@ -155,6 +168,7 @@ final class FlowWiring {
 		TaskGaugeInterface::class => TaskMetricsProvider::class,
 		LifecycleFinalStatesInterface::class => LifecycleFinalStateResolver::class,
 		ReadHistoryInterface::class       => ReadHistoryService::class,
+		RecentLensInterface::class        => ReadHistoryService::class,
 		TransitionInFlightInterface::class => LifecycleActionContext::class,
 		WriteElevationInterface::class    => ObjectActionWriteElevation::class,
 		ObjectDateEventsSourceInterface::class => ObjectCalendarFeedService::class,
@@ -171,8 +185,14 @@ final class FlowWiring {
 		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
 		FlowRunSignalInterface::class => FlowRunSignalService::class,
 		LockObjectNodeInterface::class => LockObjectNode::class,
+		CodeNodeInterface::class => CodeNode::class,
+		CodeRunnerClientInterface::class => CodeRunnerClient::class,
+		TagObjectNodeInterface::class => TagObjectNode::class,
+		AuditTrailNodeInterface::class => AuditTrailNode::class,
+		ExtendInputNodeInterface::class => ExtendInputNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
 		CalendarRecomputeInterface::class => CalendarRecompute::class,
+		FacetWeekNumberingInterface::class => FacetWeekNumbering::class,
 		TermDiagnosticInterface::class => TermDiagnostic::class,
 		WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
 		TaskCalendarDocumentInterface::class => TaskCalendarDocument::class,
@@ -193,6 +213,11 @@ final class FlowWiring {
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
 		SaveBoundaryInterface::class => AutoTransitionPass::class,
 		ElevationAttributionInterface::class => ObjectActionElevationAttribution::class,
+		\OCA\OpenRegister\Kernel\Contracts\BusinessTimeInterface::class => \OCA\OpenRegister\Service\Flow\Timer\BusinessTime::class,
+		\OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface::class => \OCA\OpenRegister\Service\Rules\SaveWarnings::class,
+		\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
+		// The published read of the tasks on an object (lib/Contract), for consuming apps.
+		ObjectTaskReaderInterface::class => ObjectTaskReader::class,
 	];
 
 	/**
@@ -442,7 +467,10 @@ final class FlowWiring {
 				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
 				// The per-row `can` list (record-tasks-tab D-4), asked of the
 				// same authorization service every verb's endpoint asks.
-				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class)
+				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class),
+				// Marks rows whose user assignee is away (assigneeAbsent,
+				// absentUntil), tasks-delegation-and-substitution task 3.4.
+				substitution: $container->get(\OCA\OpenRegister\Service\Task\TaskSubstitution::class)
 			);
 	}//end buildTaskInboxService()
 

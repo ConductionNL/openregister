@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Kernel\Contracts\Configuration;
 
 use OCA\OpenRegister\Controller\OperationsConsistencyController;
 use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\OperationsDependenciesController;
 use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 use OCA\OpenRegister\Kernel\Contracts\Configuration\ExportRightInterface;
 use OCA\OpenRegister\Kernel\Contracts\Configuration\MaintenanceReachableInterface;
@@ -67,7 +68,7 @@ final class PlatformFacingContractsTest extends TestCase {
 	}//end testTheWorkingClassesImplementTheContracts()
 
 	/**
-	 * Exactly the three operations controllers carry the maintenance-reachable marker.
+	 * Exactly the four operations controllers carry the maintenance-reachable marker.
 	 *
 	 * @return void
 	 */
@@ -82,7 +83,12 @@ final class PlatformFacingContractsTest extends TestCase {
 
 		sort($marked);
 		$this->assertSame(
-			expected: [OperationsConsistencyController::class, OperationsConsoleController::class, OperationsMaintenanceController::class],
+			expected: [
+				OperationsConsistencyController::class,
+				OperationsConsoleController::class,
+				OperationsDependenciesController::class,
+				OperationsMaintenanceController::class,
+			],
 			actual: $marked
 		);
 	}//end testExactlyTheOperationsControllersCarryTheMarker()

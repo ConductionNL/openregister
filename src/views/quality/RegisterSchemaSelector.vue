@@ -1,4 +1,18 @@
 <template>
+	<NcNoteCard
+		v-if="unknownRegister"
+		type="warning"
+		data-testid="mdm-unknown-register"
+		:heading="t('openregister', 'Unknown Register')">
+		<code>{{ unknownRegister }}</code> — {{ t('openregister', 'Choose a register') }}
+	</NcNoteCard>
+	<NcNoteCard
+		v-if="unknownSchema"
+		type="warning"
+		data-testid="mdm-unknown-schema"
+		:heading="t('openregister', 'Unknown Schema')">
+		<code>{{ unknownSchema }}</code> — {{ t('openregister', 'Choose a schema') }}
+	</NcNoteCard>
 	<div class="qualitySelector">
 		<NcSelect
 			v-model="registerModel"
@@ -25,8 +39,25 @@
 </template>
 
 <script>
-import { NcSelect } from '@nextcloud/vue'
+import { NcNoteCard, NcSelect } from '@nextcloud/vue'
 import { qualityStore } from '../../store/store.js'
+
+/**
+ * The register or schema a deep-link value names: an id, a uuid or a slug.
+ *
+ * @param {Array<object>|null} items The loaded registers or schemas.
+ * @param {string|number} value The route query value.
+ * @return {object|null} The match, or null when nothing matches.
+ * @spec openspec/changes/mdm-merge-relinks-every-reference/specs/mdm-merge/spec.md#requirement-the-duplicates-page-opens-on-a-register-and-schema-from-a-link
+ */
+function findByIdOrSlug(items, value) {
+	const wanted = String(value)
+	return (
+		(items || []).find((item) => String(item.id) === wanted)
+		|| (items || []).find((item) => item.uuid === wanted || item.slug === wanted)
+		|| null
+	)
+}
 
 /**
  * Shared register-then-schema selector for the four MDM "Data quality"
@@ -37,7 +68,9 @@ import { qualityStore } from '../../store/store.js'
  * The selection is also mirrored into the route query
  * (`?register=&schema=`): a deep-link such as
  * `/quality?register=16&schema=1207` pre-selects and loads with no clicks,
- * and every in-UI selection change reflects back into the URL so the view is
+ * and so does `/duplicates?register=catalogus&schema=module`: each value may
+ * be an id or a slug, and one that matches nothing shows a notice instead of
+ * a guess. Every in-UI selection change reflects back into the URL so the view is
  * bookmarkable and shareable (mdm-views-route-scoping). The store remains the
  * source of truth; the route is a mirror + entry point.
  */
@@ -45,6 +78,7 @@ export default {
 	name: 'RegisterSchemaSelector',
 
 	components: {
+		NcNoteCard,
 		NcSelect,
 	},
 
@@ -52,6 +86,10 @@ export default {
 		return {
 			registerModel: null,
 			schemaModel: null,
+			// The `?register=` / `?schema=` value of a deep link that matched
+			// nothing, shown as a notice above the picker; null otherwise.
+			unknownRegister: null,
+			unknownSchema: null,
 		}
 	},
 
@@ -88,6 +126,7 @@ export default {
 	 * @spec openspec/specs/mdm-views-route-scoping/spec.md#scenario-deep-link-preselects-register-and-schema
 	 * @spec openspec/specs/mdm-views-route-scoping/spec.md#scenario-route-query-takes-precedence-over-stored-selection
 	 * @spec openspec/specs/mdm-frontend/spec.md
+	 * @spec openspec/changes/mdm-merge-relinks-every-reference/specs/mdm-merge/spec.md#scenario-an-app-sends-the-steward-to-the-duplicates-of-one-schema
 	 */
 	async mounted() {
 		await qualityStore.fetchRegisters()
@@ -96,18 +135,7 @@ export default {
 		const routeSchema = this.$route?.query?.schema ?? null
 
 		if (routeRegister) {
-			this.registerModel =
-				this.registerOptions.find(
-					(o) => String(o.id) === String(routeRegister),
-				) || null
-			qualityStore.setSelection(routeRegister, routeSchema || null)
-			await qualityStore.fetchSchemasForRegister(routeRegister)
-			if (routeSchema) {
-				this.schemaModel =
-					this.schemaOptions.find(
-						(o) => String(o.id) === String(routeSchema),
-					) || null
-			}
+			await this.selectFromRoute(routeRegister, routeSchema)
 			return
 		}
 
@@ -132,6 +160,45 @@ export default {
 
 	methods: {
 		/**
+		 * Select the register and schema a deep link names, by id or slug.
+		 *
+		 * Each value is resolved against the loaded registers, then that
+		 * register's schemas, and the selection is committed with their ids.
+		 * A value that matches nothing is never guessed at: an unknown
+		 * register clears the selection, an unknown schema leaves only the
+		 * register selected, and either shows a notice naming the value so
+		 * the steward can choose from the picker.
+		 *
+		 * @param {string} routeRegister The `?register=` value: an id or slug.
+		 * @param {string|null} routeSchema The `?schema=` value: an id or slug.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/mdm-merge-relinks-every-reference/specs/mdm-merge/spec.md#requirement-the-duplicates-page-opens-on-a-register-and-schema-from-a-link
+		 */
+		async selectFromRoute(routeRegister, routeSchema) {
+			const register = findByIdOrSlug(qualityStore.registers, routeRegister)
+			if (!register) {
+				this.unknownRegister = String(routeRegister)
+				qualityStore.setSelection(null, null)
+				return
+			}
+			this.registerModel =
+				this.registerOptions.find((o) => String(o.id) === String(register.id)) || null
+			qualityStore.setSelection(register.id, null)
+			await qualityStore.fetchSchemasForRegister(register.id)
+			if (!routeSchema) {
+				return
+			}
+			const schema = findByIdOrSlug(qualityStore.schemas, routeSchema)
+			if (!schema) {
+				this.unknownSchema = String(routeSchema)
+				return
+			}
+			this.schemaModel =
+				this.schemaOptions.find((o) => String(o.id) === String(schema.id)) || null
+			qualityStore.setSelection(register.id, schema.id)
+		},
+
+		/**
 		 * Handle a register selection change: reset the schema selection
 		 * (no data request is issued until both are chosen again), load that
 		 * register's schemas, and mirror the (register, no-schema) pair into
@@ -142,6 +209,8 @@ export default {
 		 */
 		async handleRegisterChange(option) {
 			this.schemaModel = null
+			this.unknownRegister = null
+			this.unknownSchema = null
 			qualityStore.setSelection(option?.id ?? null, null)
 			this.syncRoute(option?.id ?? null, null)
 			if (option?.id) {
@@ -159,6 +228,7 @@ export default {
 		 * @spec openspec/specs/mdm-views-route-scoping/spec.md#scenario-selecting-a-register-and-schema-updates-the-url
 		 */
 		handleSchemaChange(option) {
+			this.unknownSchema = null
 			qualityStore.setSelection(
 				this.registerModel?.id ?? null,
 				option?.id ?? null,

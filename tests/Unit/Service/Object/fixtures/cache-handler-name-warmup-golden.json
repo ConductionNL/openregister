@@ -86,7 +86,110 @@
                     ],
                     [
                         false,
-                        7
+                        7,
+                        null
+                    ]
+                ]
+            },
+            {
+                "mapper": "findMultiple",
+                "args": [
+                    [
+                        "bbbbbbbb-0000-0000-0000-000000000002"
+                    ]
+                ]
+            }
+        ]
+    },
+    "preload in the target schemas": {
+        "answer": [
+            "object aaaaaaaa-0000-0000-0000-000000000001",
+            "object bbbbbbbb-0000-0000-0000-000000000002"
+        ],
+        "calls": [
+            {
+                "mapper": "acrossMagic",
+                "args": [
+                    [
+                        "aaaaaaaa-0000-0000-0000-000000000001",
+                        "bbbbbbbb-0000-0000-0000-000000000002"
+                    ],
+                    [
+                        false,
+                        null,
+                        [
+                            66
+                        ]
+                    ]
+                ]
+            }
+        ]
+    },
+    "preload in the target schemas, the rest in the register, then everywhere": {
+        "answer": [
+            "object aaaaaaaa-0000-0000-0000-000000000001",
+            "object bbbbbbbb-0000-0000-0000-000000000002"
+        ],
+        "calls": [
+            {
+                "mapper": "acrossMagic",
+                "args": [
+                    [
+                        "aaaaaaaa-0000-0000-0000-000000000001",
+                        "bbbbbbbb-0000-0000-0000-000000000002",
+                        "cccccccc-0000-0000-0000-000000000003"
+                    ],
+                    [
+                        false,
+                        null,
+                        [
+                            66,
+                            67
+                        ]
+                    ]
+                ]
+            },
+            {
+                "mapper": "acrossMagic",
+                "args": [
+                    [
+                        "bbbbbbbb-0000-0000-0000-000000000002",
+                        "cccccccc-0000-0000-0000-000000000003"
+                    ],
+                    [
+                        false,
+                        7,
+                        null
+                    ]
+                ]
+            },
+            {
+                "mapper": "findMultiple",
+                "args": [
+                    [
+                        "cccccccc-0000-0000-0000-000000000003"
+                    ]
+                ]
+            }
+        ]
+    },
+    "preload with no target schemas reads the register": {
+        "answer": [
+            "object aaaaaaaa-0000-0000-0000-000000000001",
+            "object bbbbbbbb-0000-0000-0000-000000000002"
+        ],
+        "calls": [
+            {
+                "mapper": "acrossMagic",
+                "args": [
+                    [
+                        "aaaaaaaa-0000-0000-0000-000000000001",
+                        "bbbbbbbb-0000-0000-0000-000000000002"
+                    ],
+                    [
+                        false,
+                        7,
+                        null
                     ]
                 ]
             },

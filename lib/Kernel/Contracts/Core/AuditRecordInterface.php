@@ -25,14 +25,18 @@ use DateTime;
  * An audit trail row, as Core reads it: who acted, when, and what changed.
  *
  * Implemented by the audit trail entity (Compliance), so Core reads a
- * destruction record, a write's intervening changes, or the writes a refused
+ * destruction record (and its tombstone), a write's intervening changes, or the writes a refused
  * save collided with, without naming the entity. The column accessors are
  * served by Nextcloud's Entity::__call, so they are listed as tags here.
  *
+ * @method string|null getAction()
  * @method string|null getUser()
  * @method string|null getUserName()
  * @method array|null getChanged()
  * @method DateTime|null getCreated()
+ * @method string|null getObjectUuid()
+ * @method int|null getRegister()
+ * @method int|null getSchema()
  *
  * @spec openspec/specs/deletion-audit-trail/spec.md
  */

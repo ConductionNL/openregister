@@ -1,0 +1,303 @@
+{
+	"name": "nl-woo-synthetic",
+	"version": "1",
+	"language": "nl",
+	"types": [
+		"PERSON",
+		"EMAIL",
+		"PHONE",
+		"IBAN",
+		"BSN",
+		"ADDRESS",
+		"ORGANIZATION"
+	],
+	"documents": [
+		{
+			"id": "besluit-001",
+			"text": "Op 3 maart 2026 ontving de gemeente het Woo-verzoek van Femke Jansen-Bakker, wonend aan de Lindelaan 14, 3312 AB Dordrecht. Zij is bereikbaar via f.jansen@example.org of 06-12345678. Haar burgerservicenummer is 999990007.",
+			"gold": [
+				{
+					"type": "PERSON",
+					"value": "Femke Jansen-Bakker",
+					"start": 56,
+					"end": 75
+				},
+				{
+					"type": "ADDRESS",
+					"value": "Lindelaan 14, 3312 AB Dordrecht",
+					"start": 91,
+					"end": 122
+				},
+				{
+					"type": "EMAIL",
+					"value": "f.jansen@example.org",
+					"start": 146,
+					"end": 166
+				},
+				{
+					"type": "PHONE",
+					"value": "06-12345678",
+					"start": 170,
+					"end": 181
+				},
+				{
+					"type": "BSN",
+					"value": "999990007",
+					"start": 211,
+					"end": 220
+				}
+			]
+		},
+		{
+			"id": "besluit-002",
+			"text": "Namens Bouwbedrijf De Vries B.V. diende Pieter de Vries een bezwaar in. De terugbetaling gaat naar rekening NL91ABNA0417164300. Contact: p.devries@example.com, telefoon 010-2345678.",
+			"gold": [
+				{
+					"type": "ORGANIZATION",
+					"value": "Bouwbedrijf De Vries B.V.",
+					"start": 7,
+					"end": 32
+				},
+				{
+					"type": "PERSON",
+					"value": "Pieter de Vries",
+					"start": 40,
+					"end": 55
+				},
+				{
+					"type": "IBAN",
+					"value": "NL91ABNA0417164300",
+					"start": 108,
+					"end": 126
+				},
+				{
+					"type": "EMAIL",
+					"value": "p.devries@example.com",
+					"start": 137,
+					"end": 158
+				},
+				{
+					"type": "PHONE",
+					"value": "010-2345678",
+					"start": 169,
+					"end": 180
+				}
+			]
+		},
+		{
+			"id": "besluit-003",
+			"text": "In de bijlage staat een e-mail van Sanne Oosterhuis aan Mehmet Yilmaz over de vergunning aan de Kerkstraat 2, 1011 AA Amsterdam. BSN aanvrager: 999990019.",
+			"gold": [
+				{
+					"type": "PERSON",
+					"value": "Sanne Oosterhuis",
+					"start": 35,
+					"end": 51
+				},
+				{
+					"type": "PERSON",
+					"value": "Mehmet Yilmaz",
+					"start": 56,
+					"end": 69
+				},
+				{
+					"type": "ADDRESS",
+					"value": "Kerkstraat 2, 1011 AA Amsterdam",
+					"start": 96,
+					"end": 127
+				},
+				{
+					"type": "BSN",
+					"value": "999990019",
+					"start": 144,
+					"end": 153
+				}
+			]
+		},
+		{
+			"id": "besluit-004",
+			"text": "De Stichting Groen Zuiddrecht verzoekt om openbaarmaking. Haar penningmeester, Linda van den Berg, is te bereiken op +31 6 23456789 en penningmeester@example.net. Rekeningnummer NL20INGB0001234567.",
+			"gold": [
+				{
+					"type": "ORGANIZATION",
+					"value": "Stichting Groen Zuiddrecht",
+					"start": 3,
+					"end": 29
+				},
+				{
+					"type": "PERSON",
+					"value": "Linda van den Berg",
+					"start": 79,
+					"end": 97
+				},
+				{
+					"type": "PHONE",
+					"value": "+31 6 23456789",
+					"start": 117,
+					"end": 131
+				},
+				{
+					"type": "EMAIL",
+					"value": "penningmeester@example.net",
+					"start": 135,
+					"end": 161
+				},
+				{
+					"type": "IBAN",
+					"value": "NL20INGB0001234567",
+					"start": 178,
+					"end": 196
+				}
+			]
+		},
+		{
+			"id": "besluit-005",
+			"text": "Het verslag noemt wethouder Johan Smit en de ambtenaar Ayşe Demir. Een burger met BSN 999990020 belde vanaf 0612345679.",
+			"gold": [
+				{
+					"type": "PERSON",
+					"value": "Johan Smit",
+					"start": 28,
+					"end": 38
+				},
+				{
+					"type": "PERSON",
+					"value": "Ayşe Demir",
+					"start": 55,
+					"end": 66
+				},
+				{
+					"type": "BSN",
+					"value": "999990020",
+					"start": 87,
+					"end": 96
+				},
+				{
+					"type": "PHONE",
+					"value": "0612345679",
+					"start": 109,
+					"end": 119
+				}
+			]
+		},
+		{
+			"id": "besluit-006",
+			"text": "Factuur van Adviesbureau Noordkaap aan de gemeente, te betalen op NL44RABO0123456789. Vragen aan info@example.org. Bezoekadres: Stationsweg 101, 2515 BP Den Haag.",
+			"gold": [
+				{
+					"type": "ORGANIZATION",
+					"value": "Adviesbureau Noordkaap",
+					"start": 12,
+					"end": 34
+				},
+				{
+					"type": "IBAN",
+					"value": "NL44RABO0123456789",
+					"start": 66,
+					"end": 84
+				},
+				{
+					"type": "EMAIL",
+					"value": "info@example.org",
+					"start": 97,
+					"end": 113
+				},
+				{
+					"type": "ADDRESS",
+					"value": "Stationsweg 101, 2515 BP Den Haag",
+					"start": 128,
+					"end": 161
+				}
+			]
+		},
+		{
+			"id": "besluit-007",
+			"text": "Klager Ruben Kok (BSN 999990032) woont aan de Molenweg 7, 9401 CZ Assen en noemt zijn buurman Henk Visser.",
+			"gold": [
+				{
+					"type": "PERSON",
+					"value": "Ruben Kok",
+					"start": 7,
+					"end": 16
+				},
+				{
+					"type": "BSN",
+					"value": "999990032",
+					"start": 22,
+					"end": 31
+				},
+				{
+					"type": "ADDRESS",
+					"value": "Molenweg 7, 9401 CZ Assen",
+					"start": 46,
+					"end": 71
+				},
+				{
+					"type": "PERSON",
+					"value": "Henk Visser",
+					"start": 94,
+					"end": 105
+				}
+			]
+		},
+		{
+			"id": "besluit-008",
+			"text": "De aanvraag kwam binnen via aanvraag@example.com van Transportbedrijf Van Leeuwen met rekening NL63TRIO0212345678 en telefoonnummer 020-7654321.",
+			"gold": [
+				{
+					"type": "EMAIL",
+					"value": "aanvraag@example.com",
+					"start": 28,
+					"end": 48
+				},
+				{
+					"type": "ORGANIZATION",
+					"value": "Transportbedrijf Van Leeuwen",
+					"start": 53,
+					"end": 81
+				},
+				{
+					"type": "IBAN",
+					"value": "NL63TRIO0212345678",
+					"start": 95,
+					"end": 113
+				},
+				{
+					"type": "PHONE",
+					"value": "020-7654321",
+					"start": 132,
+					"end": 143
+				}
+			]
+		},
+		{
+			"id": "besluit-009",
+			"text": "Geen persoonsgegevens: de raad besloot op 12 januari 2026 het bestemmingsplan vast te stellen. Zaaknummer 2026-0082 en kenmerk Z/26/123456.",
+			"gold": []
+		},
+		{
+			"id": "besluit-010",
+			"text": "Een tweede BSN in de stukken, 999990044, hoort bij Esther Bos, die schreef vanaf esther.bos@example.net.",
+			"gold": [
+				{
+					"type": "BSN",
+					"value": "999990044",
+					"start": 30,
+					"end": 39
+				},
+				{
+					"type": "PERSON",
+					"value": "Esther Bos",
+					"start": 51,
+					"end": 61
+				},
+				{
+					"type": "EMAIL",
+					"value": "esther.bos@example.net",
+					"start": 81,
+					"end": 103
+				}
+			]
+		}
+	]
+}

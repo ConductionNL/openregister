@@ -7,11 +7,15 @@
  * carrying X-OPENREGISTER-* properties and back-populates the
  * `openregister_calendar_links` Tier-2 link table.
  *
- * Disabled by default — out of scope for the Tier-2 rollout PR. Enable
- * via an app-config flag (`backfill_calendar_links`) once Tier-2 has
- * settled in production. Run manually via:
+ * Registered in appinfo/info.xml, so it is queued on install and on every
+ * upgrade and runs once each time: it catches up the tagged events an
+ * instance accumulated before the inbound calendar listeners existed, and
+ * the listeners keep the table current from then on. Re-runs insert nothing
+ * that is already linked. Setting the app-config flag
+ * `backfill_calendar_links` to `no` is the kill switch: the job then scans
+ * nothing.
  *
- *   occ background-job:execute 'OCA\OpenRegister\BackgroundJob\BackfillCalendarLinksJob'
+ * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-backfill-job-is-registered-and-enabled-by-default-req-cal-inb-004
  *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
@@ -47,9 +51,7 @@ use Throwable;
 /**
  * Backfills the calendar link table from legacy X-OR-* CalDAV properties.
  *
- * TODO: enable via app-config flag after Tier-2 settles.
- *
- * @psalm-suppress UnusedClass
+ * @spec openspec/changes/calendar-leaf-inbound/specs/integration-calendar/spec.md#requirement-backfill-job-is-registered-and-enabled-by-default-req-cal-inb-004
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Backfill job requires CalendarLinkMapper,
  *   CalendarEventService, IUserManager, IUserSession, IAppConfig, and LoggerInterface;
@@ -58,7 +60,7 @@ use Throwable;
 class BackfillCalendarLinksJob extends QueuedJob {
 
 	/**
-	 * App-config flag — set to "yes" to enable this job.
+	 * App-config flag — the kill switch: "no" skips the job, anything else runs it.
 	 *
 	 * @var string
 	 */
@@ -143,9 +145,10 @@ class BackfillCalendarLinksJob extends QueuedJob {
 	 *       `backfill_calendar_links` app-config flag; not a production capability surface.
 	 */
 	protected function run($argument): void {
-		// Guard: skip unless explicitly enabled. TODO: enable after Tier-2 settles.
-		$enabled = $this->appConfig->getValueString('openregister', self::CONFIG_FLAG, 'no');
-		if ($enabled !== 'yes') {
+		// Enabled by default; "no" is the kill switch, honoured before any scan
+		// (REQ-CAL-INB-004).
+		$enabled = $this->appConfig->getValueString('openregister', self::CONFIG_FLAG, 'yes');
+		if ($enabled === 'no') {
 			$this->logger->info('BackfillCalendarLinksJob skipped (flag ' . self::CONFIG_FLAG . ' = ' . $enabled . ')');
 			return;
 		}

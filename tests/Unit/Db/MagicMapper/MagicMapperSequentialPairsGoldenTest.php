@@ -89,6 +89,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\SchemaCatalog
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
  * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal
  */
 class MagicMapperSequentialPairsGoldenTest extends TestCase {
 

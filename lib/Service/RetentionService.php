@@ -86,6 +86,7 @@ class RetentionService implements RetentionServiceInterface {
 	public const REFUSAL_FROZEN = 'record_frozen';
 	public const REFUSAL_LEGAL_HOLD = 'legal_hold';
 	public const REFUSAL_ALREADY_LISTED = 'already_on_a_list';
+	public const REFUSAL_NOT_NOMINATED_FOR_ANONYMISING = 'not_nominated_for_anonymising';
 
 	/**
 	 * Valid archiefnominatie values.
@@ -781,6 +782,56 @@ class RetentionService implements RetentionServiceInterface {
 	}//end findEligibleForDestruction()
 
 	/**
+	 * Find objects a destruction list should carry for anonymising.
+	 *
+	 * The same rules as {@see findEligibleForDestruction()} with the one word
+	 * changed: the appraisal is anonymise (any spelling). The list carries them
+	 * with `action: anonymise`, so the reviewer sees them beside the records to
+	 * destroy and an approval never destroys them (design D-1: anonymising is
+	 * its own action, not a destroy with exceptions).
+	 *
+	 * @param array $excludeUuids UUIDs to exclude (already on pending lists)
+	 *
+	 * @return ObjectEntity[] Array of eligible objects
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-is-an-archival-action-a-result-type-can-choose-req-aao-001
+	 */
+	public function findEligibleForAnonymisation(array $excludeUuids = []): array {
+		$sweep = new DisposalSweep(today: (new DateTime())->format('Y-m-d'), excludeUuids: $excludeUuids);
+
+		$scan = $this->scanObjectsWithRetention(
+			accept: fn (ObjectEntity $object): bool => $this->anonymisationRefusalIn(object: $object, sweep: $sweep) === null
+		);
+
+		return $scan['objects'];
+	}//end findEligibleForAnonymisation()
+
+	/**
+	 * The first rule that keeps one object off a list as an anonymisation, or null when none does.
+	 *
+	 * The destruction rules, in the same order, over an anonymise nomination: a
+	 * record that is not live, not due, frozen, held, already listed or held
+	 * back by a permanently kept ancestor is not anonymised either.
+	 *
+	 * @param ObjectEntity  $object The object to judge.
+	 * @param DisposalSweep $sweep  Today, and the UUIDs already on a pending destruction list.
+	 *
+	 * @return string|null REFUSAL_NOT_NOMINATED_FOR_ANONYMISING, another REFUSAL_* reason, an InheritedAppraisal reason, or null.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-is-an-archival-action-a-result-type-can-choose-req-aao-001
+	 */
+	public function anonymisationRefusalIn(ObjectEntity $object, DisposalSweep $sweep): ?string {
+		$retention = ($object->getRetention() ?? []);
+		if (in_array(($retention['archiefnominatie'] ?? ''), Appraisal::ANONYMISE_ALIASES, true) === false) {
+			return self::REFUSAL_NOT_NOMINATED_FOR_ANONYMISING;
+		}
+
+		return ($this->dueAndLiveRefusal(retention: $retention, today: $sweep->today)
+			?? $this->objectDestructionRefusal(object: $object, excludeUuids: $sweep->excludeUuids)
+			?? $this->heldBackByAncestor(object: $object));
+	}//end anonymisationRefusalIn()
+
+	/**
 	 * Decide whether one object is eligible for destruction today.
 	 *
 	 * @param ObjectEntity  $object The object to judge.
@@ -846,6 +897,18 @@ class RetentionService implements RetentionServiceInterface {
 			return self::REFUSAL_NOT_NOMINATED;
 		}
 
+		return $this->dueAndLiveRefusal(retention: $retention, today: $today);
+	}//end retentionDestructionRefusal()
+
+	/**
+	 * Whether a nominated record is not live or not due yet, whatever it is nominated for.
+	 *
+	 * @param array  $retention The object's retention block.
+	 * @param string $today     Today, as Y-m-d.
+	 *
+	 * @return string|null REFUSAL_NOT_LIVE, REFUSAL_NOT_DUE, or null.
+	 */
+	private function dueAndLiveRefusal(array $retention, string $today): ?string {
 		if ($this->recordStateIsLive(retention: $retention) === false) {
 			return self::REFUSAL_NOT_LIVE;
 		}
@@ -855,7 +918,7 @@ class RetentionService implements RetentionServiceInterface {
 		}
 
 		return null;
-	}//end retentionDestructionRefusal()
+	}//end dueAndLiveRefusal()
 
 	/**
 	 * The first rule on the object's state that refuses destruction.
@@ -1211,6 +1274,10 @@ class RetentionService implements RetentionServiceInterface {
 			'register' => $object->getRegister(),
 			'archiefactiedatum' => $retention['archiefactiedatum'] ?? null,
 			'classification' => $retention['classification'] ?? null,
+			// What approving the list does to this entry. A list carries
+			// records nominated for anonymising beside the ones to destroy,
+			// and an approval never destroys an `anonymise` entry.
+			'action' => self::listActionOf(retention: $retention),
 			'softDeleted' => $object->isSoftDeleted(),
 			'wooGepubliceerd' => self::isWooPublished(object: $object, retention: $retention),
 			// Unassigned, said out loud, so a consumer reading a fresh
@@ -1218,6 +1285,23 @@ class RetentionService implements RetentionServiceInterface {
 			'reviewer' => null,
 		];
 	}//end destructionListEntry()
+
+	/**
+	 * The archival action a list entry carries: anonymise for an anonymise nomination, destroy otherwise.
+	 *
+	 * @param array<string, mixed> $retention The record's retention block.
+	 *
+	 * @return string Appraisal::ANONYMISE or Appraisal::DESTROY.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-is-an-archival-action-a-result-type-can-choose-req-aao-001
+	 */
+	public static function listActionOf(array $retention): string {
+		if (in_array(($retention['archiefnominatie'] ?? ''), Appraisal::ANONYMISE_ALIASES, true) === true) {
+			return Appraisal::ANONYMISE;
+		}
+
+		return Appraisal::DESTROY;
+	}//end listActionOf()
 
 	/**
 	 * Whether a record is published under the WOO, from its data or its retention metadata.

@@ -211,6 +211,10 @@ jobs:
       # so a query that only works on PostgreSQL shows up before a customer
       # on MySQL or SQLite finds it.
       database-test-matrix: '["pgsql", "mysql", "sqlite"]'
+      # MariaDB gets one short leg that installs a real server and enables
+      # the app, without the suite: a migration that only fails there (a
+      # reserved column name, as in #4909) turns it red in about 3 minutes.
+      database-install-matrix: '["mariadb"]'
       enable-newman: true
       # An LLM stub plus integriq and hermiq, which chat-streaming and the flow
       # engine collection need on a fresh instance. A script for the same eval
@@ -484,6 +488,9 @@ jobs:
       # branch and on the release PR into beta. Breadth moves from
       # per-commit to per-merge, it is not dropped.
       reduce-pr-matrix: true
+      # This repository develops on main, so that is the base branch whose
+      # pull requests get the reduced matrix.
+      reduce-pr-base-branches: '["main"]'
 
   # Jest line coverage of src/, enforced against the `vitest` key of
   # tests/.coverage-baseline.json (floor = value - tolerance). The summary goes
@@ -498,10 +505,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
           cache: "npm"
@@ -534,7 +541,7 @@ jobs:
 
       - name: Upload the coverage report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: frontend-coverage
           path: |

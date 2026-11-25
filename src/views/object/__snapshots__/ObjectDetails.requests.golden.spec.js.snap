@@ -63,6 +63,11 @@ exports[`ObjectDetails requests golden starts from the store pages, or the first
   "auditTrails": [],
   "currentActiveObject": undefined,
   "fileLoading": false,
+  "followContext": {
+    "can": null,
+    "id": null,
+    "notifies": null,
+  },
   "liveEpoch": 0,
   "liveHandle": null,
   "liveKey": "",
@@ -85,6 +90,11 @@ exports[`ObjectDetails requests golden starts from the store pages, or the first
   },
   "readMarkedFor": null,
   "relationsLoading": false,
+  "translation": {
+    "key": "",
+    "languages": [],
+    "translatable": [],
+  },
 }
 `;
 

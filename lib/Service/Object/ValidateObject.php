@@ -2082,6 +2082,7 @@ class ValidateObject implements ValidateObjectInterface {
 
 		if ($local === true && str_contains($path, '/api/schemas') === true) {
 			$exploded = explode('/', $path);
+			// Stays global: the JSON-schema loader is handed only the $ref URI, with no register in scope.
 			$schema   = $this->schemas->schemaMapper->find(end($exploded));
 
 			return json_encode($schema->getSchemaObject($this->schemas->urlGenerator));
@@ -2160,7 +2161,7 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	public function generateErrorMessage(ValidationResult $result): string {
-		return (new ValidationErrorMessages())->forResult(result: $result);
+		return (new ValidationErrorMessages(language: $this->lookups->preferredLanguage()))->forResult(result: $result);
 	}//end generateErrorMessage()
 
 	/**
@@ -2171,21 +2172,54 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @return JSONResponse JSON error response with validation errors and 400 status code.
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/modelling-validation-messages/specs/schema-validation-messages/spec.md#requirement-a-failed-rule-returns-the-declared-message-in-the-request-language
 	 */
 	public function handleValidationException(ValidationException|CustomValidationException $exception): JSONResponse {
 		if ($exception instanceof ValidationException === false) {
 			return self::validationFailedResponse(errors: array_values($exception->getErrors()));
 		}
 
+		$identity = self::entryIdentity(exception: $exception);
+
+		return self::validationFailedResponse(
+			errors: [[
+				'property' => $identity['property'],
+				'keyword' => $identity['keyword'],
+				'message' => $exception->getMessage(),
+				'errors' => self::formattedErrors(exception: $exception),
+			]]
+		);
+	}//end handleValidationException()
+
+	/**
+	 * The property and keyword the error entry of an exception names.
+	 *
+	 * The keyword and property come from the error the message was built from,
+	 * so an entry carrying a declared message still says which rule failed.
+	 * An exception thrown with a message alone (readOnly enforcement is one)
+	 * names neither.
+	 *
+	 * @param ValidationException $exception The exception.
+	 *
+	 * @return array{keyword: string|null, property: string|null} The keyword and property.
+	 *
+	 * @spec openspec/changes/modelling-validation-messages/specs/schema-validation-messages/spec.md#requirement-a-failed-rule-returns-the-declared-message-in-the-request-language
+	 */
+	private static function entryIdentity(ValidationException $exception): array {
 		$property = null;
 		if (method_exists($exception, 'getProperty') === true) {
 			$property = $exception->getProperty();
 		}
 
-		return self::validationFailedResponse(
-			errors: [['property' => $property, 'message' => $exception->getMessage(), 'errors' => self::formattedErrors(exception: $exception)]]
-		);
-	}//end handleValidationException()
+		$error = $exception->getErrors();
+		if ($error === null) {
+			return ['keyword' => null, 'property' => $property];
+		}
+
+		$identity = (new ErrorEntryIdentity())->of(error: $error);
+
+		return ['keyword' => $identity['keyword'], 'property' => ($property ?? $identity['property'])];
+	}//end entryIdentity()
 
 	/**
 	 * The formatted Opis errors of an exception.

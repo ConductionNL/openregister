@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Db\TranslationMapperInterface;
 
@@ -35,9 +36,11 @@ final class TranslationMappers {
 	/**
 	 * Bundle the mappers.
 	 *
-	 * @param TranslationMapperInterface $translationMapper The translation mapper.
-	 * @param SchemaMapperInterface      $schemaMapper      The schema mapper.
-	 * @param MagicObjectFinderInterface $objectMapper      The object mapper.
+	 * @param TranslationMapperInterface   $translationMapper The translation mapper.
+	 * @param SchemaMapperInterface        $schemaMapper      The schema mapper.
+	 * @param MagicObjectFinderInterface   $objectMapper      The object mapper.
+	 * @param RegisterMapperInterface|null $registerMapper    Reads an object's register, so a schema slug resolves
+	 *                                                        inside it; nullable and last so no construction shifts.
 	 *
 	 * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
 	 */
@@ -45,6 +48,7 @@ final class TranslationMappers {
 		public readonly TranslationMapperInterface $translationMapper,
 		public readonly SchemaMapperInterface $schemaMapper,
 		public readonly MagicObjectFinderInterface $objectMapper,
+		public readonly ?RegisterMapperInterface $registerMapper = null,
 	) {
 	}//end __construct()
 }//end class

@@ -26,11 +26,13 @@ use OCA\OpenRegister\Kernel\Contracts\AccessLinkReaderInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkActsInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectLinks;
 
 /**
  * The domain services of the access link API.
  *
  * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+ * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
  */
 final class AccessLinkDomain {
 	/**
@@ -40,6 +42,7 @@ final class AccessLinkDomain {
 	 * @param AccessLinkReaderInterface    $reader    Serves what a link opens.
 	 * @param AccessLinkMintGuardInterface $mintGuard Decides whether a caller may publish a subject.
 	 * @param AccessLinkActsInterface      $acts      Performs the comment and the upload, as the link.
+	 * @param AccessLinkSubjectLinks       $subjectLinks Lists and revokes every link on a subject the caller may publish.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
@@ -48,6 +51,7 @@ final class AccessLinkDomain {
 		public readonly AccessLinkReaderInterface $reader,
 		public readonly AccessLinkMintGuardInterface $mintGuard,
 		public readonly AccessLinkActsInterface $acts,
+		public readonly AccessLinkSubjectLinks $subjectLinks,
 	) {
 	}//end __construct()
 }//end class

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use Exception;
 use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -78,12 +79,15 @@ final class MagicTableIndexer {
 	 * @param LoggerInterface  $logger Receives the outcome.
 	 * @param MagicPgTrgmProbe $trgm   Says whether trigram indexes can be made.
 	 * @param MagicUnaccentProbe|null $unaccent Says whether the folded expression exists; asked of the connection when null.
+	 * @param string|null      $textSearchConfig The text search configuration `_search` stems with on
+	 *                                           PostgreSQL, or null for no stemmed-match index.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private readonly MagicPgTrgmProbe $trgm,
 		?MagicUnaccentProbe $unaccent = null,
+		private readonly ?string $textSearchConfig = null,
 	) {
 		$this->unaccent = $unaccent;
 	}//end __construct()
@@ -104,6 +108,7 @@ final class MagicTableIndexer {
 			$this->createPlatformIndexes(run: $run);
 			$this->createSchemaIndexes(run: $run, schema: $schema);
 			$run->identityIndex = (new MagicTableIdentityIndex(db: $this->db, logger: $this->logger))->create(run: $run, schema: $schema);
+			$this->createCompositeIndexes(run: $run, schema: $schema);
 			$this->logCreated(run: $run);
 		} catch (Exception $e) {
 			$this->logger->warning(
@@ -214,6 +219,80 @@ final class MagicTableIndexer {
 	}//end createSchemaIndexes()
 
 	/**
+	 * Create the composite indexes a schema declares in `x-openregister-indexes`.
+	 *
+	 * Each entry is a list of property names, such as `["postcode", "huisnummer"]`,
+	 * indexed together in that order. An entry naming a property the schema
+	 * does not define, or fewer than two, is skipped: it has no columns to
+	 * index together. A failing statement (an index that already exists on
+	 * MySQL, a column type the index does not support) is logged and the next
+	 * entry is still made.
+	 *
+	 * @param MagicTableIndexRun $run    The index-creation pass.
+	 * @param Schema             $schema The schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/bag-address-lookup-by-postcode/specs/bag-address-lookup/spec.md#requirement-an-address-is-found-by-postcode-and-house-number-req-bag-002
+	 */
+	private function createCompositeIndexes(MagicTableIndexRun $run, Schema $schema): void {
+		$sql = new MagicColumnSql(isPostgres: $run->isPostgres);
+		foreach (self::compositeIndexColumns(schema: $schema) as $properties) {
+			$columns = array_map(fn (string $name): string => $this->sanitizeColumnName(name: $name), $properties);
+			$name    = $run->tableName . '_' . substr(md5(implode(',', $columns)), 0, 12) . '_cmp_idx';
+			$quoted  = implode(', ', array_map(static fn (string $column): string => $sql->quote(name: $column), $columns));
+			$exists  = 'IF NOT EXISTS ';
+			if ($run->isPostgres === false) {
+				$exists = '';
+			}
+
+			try {
+				$this->db->executeStatement("CREATE INDEX {$exists}{$name} ON {$run->fullTableName} ({$quoted})");
+				$run->compositeIndexes[] = implode('+', $columns);
+			} catch (Exception $e) {
+				$this->logger->debug(
+					message: '[MagicMapper] Skipped composite index (already present or incompatible column)',
+					context: ['tableName' => $run->tableName, 'columns' => $columns, 'error' => $e->getMessage()]
+				);
+			}
+		}
+	}//end createCompositeIndexes()
+
+	/**
+	 * The property lists of the composite indexes a schema declares, each naming at least two defined properties.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return list<list<string>> The property names of each index, in order.
+	 *
+	 * @spec openspec/changes/bag-address-lookup-by-postcode/specs/bag-address-lookup/spec.md#requirement-an-address-is-found-by-postcode-and-house-number-req-bag-002
+	 */
+	public static function compositeIndexColumns(Schema $schema): array {
+		$declared   = (($schema->getConfiguration() ?? [])[Schema::INDEXES_ANNOTATION] ?? []);
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$indexes = [];
+		foreach ($declared as $entry) {
+			if (is_array($entry) === false) {
+				continue;
+			}
+
+			$defined = static fn (mixed $name): bool => is_string($name) === true && is_array($properties[$name] ?? null) === true;
+			$names   = array_values(array_unique(array_filter($entry, $defined)));
+			if (count($names) < 2 || count($names) !== count($entry)) {
+				continue;
+			}
+
+			$indexes[] = $names;
+		}
+
+		return $indexes;
+	}//end compositeIndexColumns()
+
+	/**
 	 * Create the PostgreSQL-only indexes: the GIN index on `_relations` for
 	 * containment lookups, the partial live-owner index and the `_name` trigram index.
 	 *
@@ -248,7 +327,44 @@ final class MagicTableIndexer {
 				quotedColumn: '_name'
 			);
 		}
+
+		$this->createStemmedMetadataIndex(run: $run);
 	}//end createPostgresIndexes()
+
+	/**
+	 * Create the functional GIN index the stemmed `_search` arm reads on name, description and summary.
+	 *
+	 * Same expression as MagicSearchHandler writes, so the planner can use it.
+	 * A failure (an older table without one of the columns) never fails table creation.
+	 *
+	 * @param MagicTableIndexRun $run The index-creation pass.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) TextSearchConfiguration::metadataIndexSql() is a pure SQL builder.
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+	 */
+	private function createStemmedMetadataIndex(MagicTableIndexRun $run): void {
+		if ($this->textSearchConfig === null) {
+			return;
+		}
+
+		try {
+			$this->db->executeStatement(
+				TextSearchConfiguration::metadataIndexSql(
+					config: $this->textSearchConfig,
+					tableName: $run->tableName,
+					fullTableName: $run->fullTableName
+				)
+			);
+		} catch (Exception $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] Skipped the stemmed metadata index',
+				context: ['tableName' => $run->tableName, 'error' => $e->getMessage()]
+			);
+		}
+	}//end createStemmedMetadataIndex()
 
 	/**
 	 * Whether trigram indexes on folded text can be made: PostgreSQL with

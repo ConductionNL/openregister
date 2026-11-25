@@ -42,7 +42,10 @@ use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
+use OCA\OpenRegister\Listener\CalendarObjectChangedListener;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarLinkListenerRegistrar;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\Calendar\Events\CalendarObjectUpdatedEvent;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -215,7 +218,7 @@ class IntegrationWiringTest extends TestCase {
 		$this->assertSame(FilesProvider::class, array_key_first($built));
 		$this->assertSame(TimeProvider::class, array_key_last($built));
 		$this->assertArrayNotHasKey(NotesProvider::class, $built);
-		$this->assertCount(25, $added);
+		$this->assertCount(26, $added);
 	}//end testBootAddsEveryBuiltinProviderAndDropsOneThatFailsToConstruct()
 
 	public function testAFailingProviderIsDroppedSilentlyWithoutALogger(): void {
@@ -298,4 +301,20 @@ class IntegrationWiringTest extends TestCase {
 
 		IntegrationWiring::bootLeafRegistry($server);
 	}//end testTheLeafLoaderIsSkippedWithoutARegistry()
+	public function testTheInboundCalendarLinkListenersAreRegistered(): void {
+		$listeners = [];
+		$context   = $this->createMock(IRegistrationContext::class);
+		$context->method('registerEventListener')->willReturnCallback(
+			static function (string $event, string $listener, int $priority = 0) use (&$listeners): void {
+				$listeners[] = [$event, $listener, $priority];
+			}
+		);
+
+		IntegrationWiring::register($context);
+
+		$this->assertContains(
+			[CalendarObjectUpdatedEvent::class, CalendarObjectChangedListener::class, CalendarLinkListenerRegistrar::PRIORITY],
+			$listeners
+		);
+	}//end testTheInboundCalendarLinkListenersAreRegistered()
 }//end class

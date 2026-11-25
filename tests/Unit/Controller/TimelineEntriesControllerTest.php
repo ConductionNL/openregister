@@ -238,6 +238,83 @@ class TimelineEntriesControllerTest extends TestCase {
 		$this->assertSame('supervisor', $data['pinnedBy']);
 	}
 
+	public function testOnlyAManagerReadsTheWithdrawnEntries(): void {
+		$this->objectResolves();
+		$this->request->method('getParams')->willReturn(['withdrawn' => 'true']);
+		$this->visibility->method('effectiveFilter')->willReturn('public');
+		$this->visibility->method('mayManage')->willReturnOnConsecutiveCalls(false, false, true, true);
+		$asked = [];
+		$this->entries->method('listForObject')->willReturnCallback(
+			static function (ObjectEntity $object, ListQuery $query) use (&$asked): array {
+				$asked[] = $query->filters['withdrawn'];
+				return [];
+			}
+		);
+
+		$this->controller->index('zaken', 'zaak', 'case-1');
+		$this->controller->index('zaken', 'zaak', 'case-1');
+
+		// A reader asking for the record gets the working timeline; a manager gets the record.
+		$this->assertSame([false, true], $asked);
+	}
+
+	public function testTheWorkingTimelineIsTheDefaultEvenForAManager(): void {
+		$this->objectResolves();
+		$this->request->method('getParams')->willReturn([]);
+		$this->visibility->method('effectiveFilter')->willReturn(null);
+		$this->visibility->method('mayManage')->willReturn(true);
+		$this->entries->expects($this->once())->method('listForObject')
+			->with($this->anything(), $this->callback(static fn (ListQuery $q): bool => ($q->filters['withdrawn'] ?? null) === false))
+			->willReturn([]);
+
+		$this->controller->index('zaken', 'zaak', 'case-1');
+	}
+
+	public function testWithdrawingAnswersTheEntryWithItsWithdrawal(): void {
+		$this->objectResolves();
+		$entry = $this->entry();
+		$this->entries->method('get')->willReturn($entry);
+		$this->request->method('getParams')->willReturn(['withdrawn' => ['reason' => 'wrongly filed']]);
+		$withdrawn = $this->entry();
+		$withdrawn->setWithdrawnBy('archivist');
+		$withdrawn->setWithdrawnAt(new \DateTime('2026-11-13T09:00:00+00:00'));
+		$withdrawn->setWithdrawnReason('wrongly filed');
+		$this->entries->expects($this->once())->method('withdraw')
+			->with($this->anything(), $this->identicalTo($entry), 'wrongly filed')
+			->willReturn($withdrawn);
+
+		$data = $this->controller->update('zaken', 'zaak', 'case-1', 'entry-a')->getData();
+
+		$this->assertSame(['by' => 'archivist', 'at' => '2026-11-13T09:00:00+00:00', 'reason' => 'wrongly filed'], $data['withdrawn']);
+	}
+
+	public function testAWithdrawalWithoutAReasonIsABadRequest(): void {
+		$this->objectResolves();
+		$this->entries->method('get')->willReturn($this->entry());
+		$this->request->method('getParams')->willReturn(['withdrawn' => true]);
+		$this->entries->expects($this->once())->method('assertMayWithdraw')
+			->with($this->anything(), '')
+			->willThrowException(new TimelineValidationException(['withdrawn.reason' => 'A withdrawal needs a reason']));
+		$this->entries->expects($this->never())->method('withdraw');
+
+		$response = $this->controller->update('zaken', 'zaak', 'case-1', 'entry-a');
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['withdrawn.reason' => 'A withdrawal needs a reason'], $response->getData()['errors']);
+	}
+
+	public function testARefusedWithdrawalWritesNoPinAndClosesNoFollowUp(): void {
+		$this->objectResolves();
+		$this->entries->method('get')->willReturn($this->entry());
+		$this->request->method('getParams')->willReturn(['pinned' => true, 'followUp' => 'done', 'withdrawn' => ['reason' => 'x']]);
+		$this->entries->method('assertMayWithdraw')->willThrowException(new TimelinePermissionException('no'));
+		$this->entries->expects($this->never())->method('pin');
+		$this->entries->expects($this->never())->method('closeFollowUp');
+		$this->entries->expects($this->never())->method('withdraw');
+
+		$this->assertSame(403, $this->controller->update('zaken', 'zaak', 'case-1', 'entry-a')->getStatus());
+	}
+
 	public function testARelatedObjectThatCannotBeReachedRefusesBeforeAnythingIsWritten(): void {
 		$this->objects->method('getObject')->willReturnOnConsecutiveCalls($this->object(), null);
 		$this->request->method('getParams')->willReturn(

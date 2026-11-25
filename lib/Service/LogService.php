@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMasker;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -295,7 +296,10 @@ class LogService {
 		$id = $ref->id;
 		try {
 			$registerEntity = $this->registerMapper->find($ref->register, _multitenancy: false, _rbac: false);
-			$schemaEntity = $this->schemaMapper->find($ref->schema, _multitenancy: false, _rbac: false);
+			// Inside the register just read: a slug two apps share names this
+			// register's schema.
+			$schemaEntity = (new SchemaRefInRegister(schemas: $this->schemaMapper))
+				->find(schemaRef: $ref->schema, register: $registerEntity, _rbac: false, _multitenancy: false);
 		} catch (DoesNotExistException $e) {
 			// Register or schema gone (soft-deleted): no scope to search in; the
 			// history of the object itself stays readable, as before. Any other

@@ -67,6 +67,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
@@ -77,7 +79,9 @@ use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
@@ -125,8 +129,8 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 				new ItemLoopFlowNodes($this->node(MergeNodeInterface::class), $this->node(LoopNodeInterface::class)),
 				new HandOffFlowNodes($this->node(SubFlowNodeInterface::class), $this->node(RouterNodeInterface::class)),
 			), new ObjectFlowNodes(
-				new ObjectChangeFlowNodes($this->node(ObjectWriteNodeInterface::class), $this->node(TransitionNodeInterface::class)),
-				new ObjectLookupFlowNodes($this->node(LinkObjectNodeInterface::class), $this->node(ObjectReadNodeInterface::class)),
+				new ObjectChangeFlowNodes($this->node(ObjectWriteNodeInterface::class), $this->node(TransitionNodeInterface::class), $this->node(TagObjectNodeInterface::class)),
+				new ObjectLookupFlowNodes($this->node(LinkObjectNodeInterface::class), $this->node(ObjectReadNodeInterface::class), $this->node(AuditTrailNodeInterface::class), $this->node(ExtendInputNodeInterface::class)),
 			)),
 		);
 		$actions = new ActionFlowNodes(
@@ -155,6 +159,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 				$this->node(TriggerObjectNodeInterface::class),
 				$this->node(TriggerScheduleNodeInterface::class),
 				$this->node(TriggerManualNodeInterface::class),
+				$this->node(TriggerCalendarNodeInterface::class),
 			),
 		);
 
@@ -173,7 +178,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent($registry));
 
-		$this->assertCount(32, $registered);
+		$this->assertCount(36, $registered);
 		$this->assertSame($this->expected, $registered);
 	}
 

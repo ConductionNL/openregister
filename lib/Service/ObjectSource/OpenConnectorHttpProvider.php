@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service\ObjectSource;
 
 use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouterInterface;
 use OCA\OpenRegister\Service\Integration\UpstreamRequest;
 use OCA\OpenRegister\Service\MappingService;
@@ -83,6 +84,8 @@ class OpenConnectorHttpProvider implements ObjectSourceProvider {
 	 * {@inheritDoc}
 	 *
 	 * @return string The provider id.
+	 *
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
 	 */
 	public function getId(): string {
 		return self::ID;
@@ -94,6 +97,8 @@ class OpenConnectorHttpProvider implements ObjectSourceProvider {
 	 * Always available: a schema without a configured source degrades per read.
 	 *
 	 * @return bool Always true.
+	 *
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
 	 */
 	public function isEnabled(): bool {
 		return true;
@@ -128,6 +133,110 @@ class OpenConnectorHttpProvider implements ObjectSourceProvider {
 
 		return $source->binding()->toEntity(uuid: $this->recordId(config: $config, record: $record, fallback: $id), data: $record);
 	}//end find()
+
+	/**
+	 * One read by key, told apart the way the leaf's degrade contract needs it.
+	 *
+	 * {@see find()} folds every failure into "no record", which is right for
+	 * the object read path. A person looking at a case needs to know WHICH:
+	 * a register that answered with nothing is a fact about the world, the
+	 * other failures are about us. This answers the flags
+	 * {@see \OCA\OpenRegister\Service\Integration\ExternalRegisterDegrade::evaluate()}
+	 * reads: `key`, `appInstalled`, `configured`, `answered`, `refused`, `record`.
+	 *
+	 * A declared mapping that cannot run reads as not configured: the source
+	 * answered, but in a shape the schema cannot show, which an administrator
+	 * fixes. The raw record is never handed back in its place.
+	 *
+	 * @param array<string, mixed> $config The sourced schema's object-source `config` block.
+	 * @param string               $key    The key the record is found by.
+	 *
+	 * @return array{key:string,appInstalled:bool,configured:bool,answered:bool,refused:bool,record:array<string,mixed>|null}
+	 *
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+	 */
+	public function lookup(array $config, string $key): array {
+		$key      = trim($key);
+		$sourceId = trim((string)($config['source'] ?? ''));
+		$template = trim((string)($config['find'] ?? ''));
+		if ($key === '' || $sourceId === '' || $template === '') {
+			return self::flags(key: $key, configured: false, answered: false);
+		}
+
+		try {
+			$body = $this->router->call(
+				provider: new ConfiguredSourceUpstream(sourceId: $sourceId),
+				request: new UpstreamRequest(method: 'GET', path: str_replace('{key}', rawurlencode($key), $template), options: ['query' => []])
+			);
+		} catch (ProviderUnavailableException $e) {
+			$this->logger->warning('[ObjectSource:openconnector-http] lookup failed: ' . $e->getMessage(), ['source' => $sourceId]);
+			return self::failed(key: $key, cause: $e->getCause());
+		} catch (Throwable $e) {
+			$this->logger->warning('[ObjectSource:openconnector-http] lookup failed: ' . $e->getMessage(), ['source' => $sourceId]);
+			return self::flags(key: $key, answered: false);
+		}
+
+		if ($body === []) {
+			return self::flags(key: $key);
+		}
+
+		$record = $this->mapped(config: $config, raw: $body);
+		if ($record === null) {
+			return self::flags(key: $key, configured: false);
+		}
+
+		return self::flags(key: $key, record: $record);
+	}//end lookup()
+
+	/**
+	 * The lookup a router failure leaves, by its cause.
+	 *
+	 * @param string $key   The key.
+	 * @param string $cause One of the ProviderUnavailableException causes.
+	 *
+	 * @return array{key:string,appInstalled:bool,configured:bool,answered:bool,refused:bool,record:array<string,mixed>|null}
+	 *
+	 * @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+	 */
+	public static function failed(string $key, string $cause): array {
+		return match ($cause) {
+			ProviderUnavailableException::CAUSE_OPENCONNECTOR_DOWN => self::flags(key: $key, installed: false, answered: false),
+			ProviderUnavailableException::CAUSE_OPENCONNECTOR_SOURCE_MISSING => self::flags(key: $key, configured: false, answered: false),
+			// The register answered and said no to us: not an outage.
+			ProviderUnavailableException::CAUSE_PROVIDER_AUTH => self::flags(key: $key, refused: true),
+			default => self::flags(key: $key, answered: false),
+		};
+	}//end failed()
+
+	/**
+	 * A lookup: by default a configured source that answered without a record.
+	 *
+	 * @param string                    $key        The key.
+	 * @param bool                      $installed  Whether the connector app is there.
+	 * @param bool                      $configured Whether the source and its mapping can be used.
+	 * @param bool                      $answered   Whether the register answered.
+	 * @param bool                      $refused    Whether it answered no.
+	 * @param array<string, mixed>|null $record     The mapped record.
+	 *
+	 * @return array{key:string,appInstalled:bool,configured:bool,answered:bool,refused:bool,record:array<string,mixed>|null}
+	 */
+	private static function flags(
+		string $key,
+		bool $installed=true,
+		bool $configured=true,
+		bool $answered=true,
+		bool $refused=false,
+		?array $record=null,
+	): array {
+		return [
+			'key' => $key,
+			'appInstalled' => $installed,
+			'configured' => $configured,
+			'answered' => $answered,
+			'refused' => $refused,
+			'record' => $record,
+		];
+	}//end flags()
 
 	/**
 	 * {@inheritDoc}

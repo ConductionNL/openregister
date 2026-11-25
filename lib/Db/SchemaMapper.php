@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaLookup;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaMapperServices;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReadTrace;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaReferenceSearch;
+use OCA\OpenRegister\Db\SchemaMapper\SchemaRowCache;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaRegisterReads;
 use OCA\OpenRegister\Db\SchemaMapper\SubjectDeclarationRefusals;
 use OCA\OpenRegister\Db\Tenancy\TenancyServices;
@@ -146,11 +147,36 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 *
 	 * Prevents redundant DB queries when the same schema is looked up
 	 * multiple times within one request (e.g. controller → service → render).
-	 * Keys are composed of identifier + RBAC + multitenancy flags.
+	 * Keyed on identifier and the multi-tenancy flag only; see RequestIdentityMap.
+	 *
+	 * @var RequestIdentityMap
+	 */
+	private RequestIdentityMap $findCache;
+
+	/**
+	 * Raw rows loaded per composition `$ref` in this request, before composition.
+	 *
+	 * The method loadSchema() runs once per `$ref` while composition resolves, and
+	 * the same parent is referenced by every child that extends it. Each hit
+	 * hands out a copy, because composition merges into the schema it is given.
 	 *
 	 * @var array<string, Schema>
 	 */
-	private array $findCache = [];
+	private array $refCache = [];
+
+	/**
+	 * Register-scoped lookups answered in this request, keyed by lookup.
+	 *
+	 * The methods findInIds() and findBySlugInIds() resolve one identifier inside a
+	 * register's schema list, and a save asks the same pair again for every object
+	 * it touches. Only hits are kept, and the whole memo is dropped on every schema
+	 * write and clearFindCache(), because a rename or a new schema changes which
+	 * row a scoped identifier names. It never feeds the identity map: a scoped answer
+	 * is not the unscoped one.
+	 *
+	 * @var array<string, Schema>
+	 */
+	private array $scopedCache = [];
 
 	// Note: $appConfig is provided by MultiTenancyTrait (protected ?IAppConfig $appConfig=null)
 	// We assign it in the constructor to make it available to the trait methods.
@@ -182,6 +208,13 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @var array<int, SchemaDeclarationCheckInterface>|null
 	 */
 	private ?array $declarationChecks = null;
+
+	/**
+	 * Cross-request cache of stored rows, keyed on id and `updated` stamp.
+	 *
+	 * @var SchemaRowCache
+	 */
+	private readonly SchemaRowCache $rowCache;
 
 	/**
 	 * Event dispatcher for schema events.
@@ -253,9 +286,11 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$this->eventDispatcher    = $services->eventDispatcher;
 		$this->validator          = $services->validator;
 		$this->logger             = $services->logger;
+		$this->rowCache           = new SchemaRowCache(cacheFactory: $services->cacheFactory);
 
 		// Assign appConfig to trait's protected property.
 		$this->appConfig = $appConfig;
+		$this->findCache = new RequestIdentityMap();
 	}//end __construct()
 
 	/**
@@ -297,8 +332,10 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		bool $_multitenancy = true,
 	): Schema {
 		$lookup = new SchemaLookup(id: $id, rbac: $_rbac, multitenancy: $_multitenancy);
-		if (isset($this->findCache[$lookup->cacheKey()]) === true) {
-			return $this->findCache[$lookup->cacheKey()];
+		// The RBAC flag is not part of the key: it does not change the row loaded.
+		$cached = $this->findCache->get(identifier: $id, multitenancy: $_multitenancy);
+		if ($cached instanceof Schema) {
+			return $cached;
 		}
 
 		$this->readTrace()->record(method: 'find');
@@ -326,9 +363,20 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		// Resolve schema composition if present (allOf, oneOf, anyOf).
 		$schema = $this->composition()->resolve(schema: Schema::fromRow($rows[0]));
 
-		// BUG-DB-10: cache writes reuse the read-side suffix so they stay consistent.
-		$this->findCache[$lookup->cacheKey()] = $schema;
-		$this->cacheSchemaByIdentifiers(schema: $schema, cacheSuffix: $lookup->cacheSuffix());
+		// BUG-DB-10: guard against a null uuid and slug; the map skips nulls.
+		$this->findCache->remember(
+			entity: $schema,
+			multitenancy: $lookup->multitenancy,
+			identifiers: [$lookup->id, $schema->getId(), $schema->getUuid(), $schema->getSlug()]
+		);
+
+		// A row found by its own primary key under the organisation filter is the
+		// row an unfiltered lookup of that id resolves to too (an exact id always
+		// wins), so that lookup needs no read of its own. Not the other way round:
+		// an unfiltered hit says nothing about the caller's organisation.
+		if ($lookup->multitenancy === true && is_numeric($lookup->id) === true && (int)$lookup->id === $schema->getId()) {
+			$this->findCache->remember(entity: $schema, multitenancy: false, identifiers: [$lookup->id]);
+		}
 
 		return $schema;
 	}//end loadAndCache()
@@ -344,16 +392,76 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return array<int, array<string, mixed>>
 	 */
 	private function identifierRows(SchemaLookup $lookup): array {
-		$qb = $this->buildFindByIdentifierQuery(id: $lookup->id);
-		$this->filterByOrganisation(qb: $qb, multitenancy: $lookup->multitenancy);
-		$qb->setMaxResults(2);
+		// With a row cache the arms read only the columns that pick and name the
+		// row; the stored row itself then comes from the cache or one read by id.
+		$columns = $this->scopedReadColumns();
+
+		// One column per query, so an index can serve each; the next arm is
+		// asked only when this one finds nothing (IdentifierArms).
+		foreach (IdentifierArms::of(id: $lookup->id) as $arm) {
+			$qb = $this->buildFindByIdentifierQuery(id: $lookup->id, arm: $arm, columns: $columns);
+			$this->filterByOrganisation(qb: $qb, multitenancy: $lookup->multitenancy);
+			$qb->setMaxResults(2);
+
+			$result = $qb->executeQuery();
+			$rows = $result->fetchAll();
+			$result->closeCursor();
+
+			if ($rows === []) {
+				continue;
+			}
+
+			if ($columns === ['*']) {
+				return $rows;
+			}
+
+			$stored = $this->storedRowOf(probe: $rows[0]);
+			if ($stored === null) {
+				return [];
+			}
+
+			$rows[0] = $stored;
+			return $rows;
+		}//end foreach
+
+		return [];
+	}//end identifierRows()
+
+	/**
+	 * The full stored row a probe row picked, from the row cache or one read by primary key.
+	 *
+	 * The probe already applied the organisation filter, so the read by its own
+	 * id needs none.
+	 *
+	 * @param array<string, mixed> $probe The probe row.
+	 *
+	 * @return array<string, mixed>|null The stored row, or null when it is gone.
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function storedRowOf(array $probe): ?array {
+		$cached = $this->rowCache->get(probe: $probe);
+		if ($cached !== null) {
+			return $cached;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where($qb->expr()->eq('id', $qb->createNamedParameter(value: (int)$probe['id'], type: IQueryBuilder::PARAM_INT)))
+			->setMaxResults(1);
 
 		$result = $qb->executeQuery();
-		$rows = $result->fetchAll();
+		$row    = $result->fetch();
 		$result->closeCursor();
 
-		return $rows;
-	}//end identifierRows()
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		$this->rowCache->put(row: $row);
+		return $row;
+	}//end storedRowOf()
 
 	/**
 	 * Limit a schema query to the active organisation, schemas without one included.
@@ -373,82 +481,31 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end filterByOrganisation()
 
 	/**
-	 * Cache a found schema under its id, uuid and slug, so a later lookup by
-	 * any of them is answered without a query.
-	 *
-	 * @param Schema $schema      The found schema.
-	 * @param string $cacheSuffix The flag suffix of the lookup.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/register-slug-resolution/spec.md
-	 */
-	private function cacheSchemaByIdentifiers(Schema $schema, string $cacheSuffix): void {
-		$this->findCache[(string)$schema->getId() . $cacheSuffix] = $schema;
-
-		// BUG-DB-10: guard against a null uuid before strtolower().
-		$schemaUuid = $schema->getUuid();
-		if ($schemaUuid !== null) {
-			$this->findCache[strtolower($schemaUuid) . $cacheSuffix] = $schema;
-		}
-
-		if ($schema->getSlug() !== null) {
-			$this->findCache[strtolower($schema->getSlug()) . $cacheSuffix] = $schema;
-		}
-	}//end cacheSchemaByIdentifiers()
-
-	/**
-	 * A query for the schema whose uuid, slug (case-insensitive) or, for a
-	 * numeric identifier, id matches, in tie-break order.
+	 * A query for the schemas one arm of an identifier matches, in tie-break order.
 	 *
 	 * BUG-DB-10: a numeric identifier could be a primary key or a numeric
-	 * uuid/slug, so an exact `id` hit is ordered first; a row whose slug is
-	 * "5" never shadows the row with id 5. The id comparison is left out for
-	 * a non-numeric identifier because PostgreSQL types it strictly.
+	 * uuid/slug. The id arm is asked first (IdentifierArms), so a row whose
+	 * slug is "5" never shadows the row with id 5.
 	 *
-	 * @param int|string $id The identifier.
+	 * @param int|string         $id      The identifier.
+	 * @param string             $arm     The column to match, one of the IdentifierArms constants.
+	 * @param array<int, string> $columns The columns to read, `*` for the whole row.
 	 *
 	 * @return IQueryBuilder The query, without the organisation filter.
 	 *
 	 * @spec openspec/specs/register-slug-resolution/spec.md
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md#requirement-schema-and-register-resolution-is-read-once-per-request
 	 */
-	private function buildFindByIdentifierQuery(string|int $id): IQueryBuilder {
+	private function buildFindByIdentifierQuery(string|int $id, string $arm, array $columns = ['*']): IQueryBuilder {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
-			->from('openregister_schemas');
+		$qb->select(...$columns)
+			->from('openregister_schemas')
+			->where(IdentifierArms::condition(qb: $qb, arm: $arm, id: $id));
 
-		$this->whereIdentifier(qb: $qb, id: $id);
 		$this->orderOwnedRowsFirst(qb: $qb);
 
 		return $qb;
 	}//end buildFindByIdentifierQuery()
-
-	/**
-	 * Match an identifier against uuid, slug and, for a numeric one, id, an exact id first.
-	 *
-	 * @param IQueryBuilder $qb The query.
-	 * @param int|string    $id The identifier.
-	 *
-	 * @return void
-	 */
-	private function whereIdentifier(IQueryBuilder $qb, string|int $id): void {
-		$conditions = $qb->expr()->orX(
-			$qb->expr()->eq('uuid', $qb->createNamedParameter(value: $id, type: IQueryBuilder::PARAM_STR)),
-			$this->slugEquals(qb: $qb, slug: (string)$id)
-		);
-
-		$idParam = null;
-		if (is_numeric($id) === true) {
-			$idParam = $qb->createNamedParameter(value: (int)$id, type: IQueryBuilder::PARAM_INT);
-			$conditions->add($qb->expr()->eq('id', $idParam));
-		}
-
-		$qb->where($conditions);
-
-		if ($idParam !== null) {
-			$qb->addOrderBy($qb->createFunction('CASE WHEN id = ' . $idParam . ' THEN 0 ELSE 1 END'), 'ASC');
-		}
-	}//end whereIdentifier()
 
 	/**
 	 * Order rows an application owns before unattributed ones, then by lowest id.
@@ -700,17 +757,122 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return null;
 		}
 
+		$key = self::scopedKey(kind: 'slug', identifier: $slug, ids: $ids);
+		if (isset($this->scopedCache[$key]) === true) {
+			return $this->scopedCache[$key];
+		}
+
 		$this->readTrace()->record(method: 'findBySlugInIds');
 
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('*')
+		$qb->select(...$this->scopedReadColumns())
 			->from('openregister_schemas')
 			->where($this->slugEquals(qb: $qb, slug: $slug))
 			->andWhere($this->idIn(qb: $qb, ids: $ids))
 			->setMaxResults(1);
 
-		return $this->firstResolved(qb: $qb);
+		$schema = $this->firstStoredResolved(qb: $qb);
+		if ($schema !== null) {
+			$this->scopedCache[$key] = $schema;
+		}
+
+		return $schema;
 	}//end findBySlugInIds()
+
+	/**
+	 * Resolve a schema by a slug it answered to before a rename, scoped to a set of schema ids.
+	 *
+	 * The register-scoped counterpart of the former-slug fallback in
+	 * {@see findBySlug()}. Callers ask it only after {@see findInIds()} or
+	 * {@see findBySlugInIds()} found no schema carrying the slug now, so a
+	 * current slug always wins over a former one. The LIKE narrows the rows;
+	 * the exact match is made on the decoded list.
+	 *
+	 * @param string $slug      The slug the schema used to have.
+	 * @param int[]  $schemaIds The candidate schema ids (a register's schemas list).
+	 *
+	 * @return Schema|null The renamed schema within the id set, or null.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
+	 */
+	public function findByFormerSlugInIds(string $slug, array $schemaIds): ?Schema {
+		$ids = self::positiveIds(candidates: $schemaIds);
+		if ($ids === [] || trim($slug) === '') {
+			return null;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->like(
+					'former_slugs',
+					$qb->createNamedParameter('%' . $this->db->escapeLikeParameter((string)json_encode($slug)) . '%', IQueryBuilder::PARAM_STR)
+				)
+			)
+			->andWhere($this->idIn(qb: $qb, ids: $ids))
+			->orderBy('id', 'ASC');
+
+		foreach ($this->fetchSchemas(qb: $qb) as $schema) {
+			if (in_array($slug, ($schema->getFormerSlugs() ?? []), true) === true) {
+				return $schema;
+			}
+		}
+
+		return null;
+	}//end findByFormerSlugInIds()
+
+	/**
+	 * The columns an identifier lookup selects.
+	 *
+	 * With a row cache only the probe columns; the stored row then comes from
+	 * the cache or one read by primary key. Without one the whole row.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function scopedReadColumns(): array {
+		if ($this->rowCache->isAvailable() === true) {
+			return SchemaRowCache::PROBE_COLUMNS;
+		}
+
+		return ['*'];
+	}//end scopedReadColumns()
+
+	/**
+	 * The first row of a query as a resolved schema, completing a probe row from the row cache.
+	 *
+	 * A query that selected the whole row resolves it directly. A probe row is
+	 * completed by {@see storedRowOf()}; when the row is gone between probe and
+	 * read the lookup matched nothing.
+	 *
+	 * @param IQueryBuilder $qb The query, selecting {@see scopedReadColumns()}.
+	 *
+	 * @return Schema|null The schema, null when the query matched nothing.
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function firstStoredResolved(IQueryBuilder $qb): ?Schema {
+		if ($this->rowCache->isAvailable() === false) {
+			return $this->firstResolved(qb: $qb);
+		}
+
+		$result = $qb->executeQuery();
+		$probe  = $result->fetch();
+		$result->closeCursor();
+
+		if (is_array($probe) === false) {
+			return null;
+		}
+
+		$row = $this->storedRowOf(probe: $probe);
+		if ($row === null) {
+			return null;
+		}
+
+		return $this->composition()->resolve(schema: Schema::fromRow($row));
+	}//end firstStoredResolved()
 
 	/**
 	 * The match of the id column against a list.
@@ -767,14 +929,27 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			return null;
 		}
 
+		$key = self::scopedKey(kind: 'id', identifier: $id, ids: $ids);
+		if (isset($this->scopedCache[$key]) === true) {
+			return $this->scopedCache[$key];
+		}
+
 		$this->readTrace()->record(method: 'findInIds');
 
-		// Same identifier forms and tie-breaks as find(), narrowed to the id set.
-		$qb = $this->buildFindByIdentifierQuery(id: (string)$id);
-		$qb->andWhere($this->idIn(qb: $qb, ids: $ids));
-		$qb->setMaxResults(1);
+		// Same identifier arms and tie-breaks as find(), narrowed to the id set.
+		foreach (IdentifierArms::of(id: $id) as $arm) {
+			$qb = $this->buildFindByIdentifierQuery(id: $id, arm: $arm, columns: $this->scopedReadColumns());
+			$qb->andWhere($this->idIn(qb: $qb, ids: $ids));
+			$qb->setMaxResults(1);
 
-		return $this->firstResolved(qb: $qb);
+			$schema = $this->firstStoredResolved(qb: $qb);
+			if ($schema !== null) {
+				$this->scopedCache[$key] = $schema;
+				return $schema;
+			}
+		}
+
+		return null;
 	}//end findInIds()
 
 	/**
@@ -817,21 +992,54 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * cache entry after a mutation, so the next find() call re-reads
 	 * from the database. Clears every cache key that referenced the
 	 * given schema (by id, uuid, slug) across both RBAC/multi-tenancy
-	 * flag combinations.
+	 * flag combinations, and every cross-request cached row of it.
 	 *
 	 * @param int $schemaId The schema ID to drop from the find cache.
 	 *
 	 * @return void
 	 */
 	public function clearFindCache(int $schemaId): void {
-		// Find every cache key whose value points at this schema ID and unset.
-		foreach (array_keys($this->findCache) as $key) {
-			$cached = $this->findCache[$key];
-			if ($cached instanceof Schema && $cached->getId() === $schemaId) {
-				unset($this->findCache[$key]);
-			}
-		}
+		// Drop every key that points at this schema, and every raw `$ref`
+		// load: a changed parent changes each child composed from it.
+		$this->findCache->forget(entityId: $schemaId);
+		$this->forgetRequestLoads();
+		$this->rowCache->forget(schemaId: $schemaId);
 	}//end clearFindCache()
+
+	/**
+	 * Drop the raw `$ref` loads, the register-scoped lookups and the full list of this request.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
+	 */
+	private function forgetRequestLoads(): void {
+		$this->refCache    = [];
+		$this->scopedCache = [];
+		$this->findCache->forgetAll();
+	}//end forgetRequestLoads()
+
+	/**
+	 * The memo key of a register-scoped lookup.
+	 *
+	 * @param string          $kind       Which lookup: `slug` or `id`.
+	 * @param int|string      $identifier The identifier asked for.
+	 * @param array<int, int> $ids        The candidate schema ids.
+	 *
+	 * @return string The key.
+	 */
+	private static function scopedKey(string $kind, string|int $identifier, array $ids): string {
+		$ids = array_values(array_unique($ids));
+		sort($ids);
+
+		// Slugs match case-insensitively; an id or uuid is kept as asked.
+		$identifier = (string)$identifier;
+		if ($kind === 'slug') {
+			$identifier = strtolower($identifier);
+		}
+
+		return $kind . ':' . $identifier . ':' . implode(',', $ids);
+	}//end scopedKey()
 
 	/**
 	 * Finds multiple schemas by id
@@ -917,6 +1125,10 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @return array<int|string, Schema>
 	 */
 	private function schemasWithIds(array $ids): array {
+		if ($this->rowCache->isAvailable() === true) {
+			return $this->cachedSchemasWithIds(ids: $ids);
+		}
+
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from('openregister_schemas')
@@ -928,10 +1140,92 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end schemasWithIds()
 
 	/**
+	 * The schemas with the given ids, keyed by id, unresolved, completed from the row cache.
+	 *
+	 * One narrow probe of the id set picks the rows and their stamps; the rows
+	 * the cache holds under that id and stamp are taken from it, and only the
+	 * rest are read whole, in one query, and stored for the next request. The
+	 * result keeps the probe's row order; a row gone between probe and read is
+	 * left out, as an id that matched nothing always was.
+	 *
+	 * @param array<int, mixed> $ids The ids, at most MAX_IN_LIST_SIZE.
+	 *
+	 * @return array<int|string, Schema>
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function cachedSchemasWithIds(array $ids): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select(...SchemaRowCache::PROBE_COLUMNS)
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
+			);
+
+		$result = $qb->executeQuery();
+		$rows   = [];
+		$misses = [];
+		while (($probe = $result->fetch()) !== false) {
+			$rows[$probe['id']] = $this->rowCache->get(probe: $probe);
+			if ($rows[$probe['id']] === null) {
+				$misses[] = (int)$probe['id'];
+			}
+		}
+
+		$result->closeCursor();
+
+		foreach ($this->storedRowsWithIds(ids: $misses) as $id => $row) {
+			$rows[$id] = $row;
+		}
+
+		$schemas = [];
+		foreach ($rows as $id => $row) {
+			if ($row !== null) {
+				$schemas[$id] = Schema::fromRow($row);
+			}
+		}
+
+		return $schemas;
+	}//end cachedSchemasWithIds()
+
+	/**
+	 * The whole stored rows with the given ids, keyed by id, each stored in the row cache.
+	 *
+	 * @param array<int, int> $ids The ids; none reads nothing.
+	 *
+	 * @return array<int|string, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/object-write-sub-500ms/tasks.md
+	 */
+	private function storedRowsWithIds(array $ids): array {
+		if ($ids === []) {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where($this->idIn(qb: $qb, ids: $ids));
+
+		$result = $qb->executeQuery();
+		$rows   = [];
+		while (($row = $result->fetch()) !== false) {
+			$this->rowCache->put(row: $row);
+			$rows[$row['id']] = $row;
+		}
+
+		$result->closeCursor();
+
+		return $rows;
+	}//end storedRowsWithIds()
+
+	/**
 	 * Finds schemas by slug
 	 *
 	 * Searches for schemas matching the given slug with optional
-	 * multi-tenancy and RBAC filtering.
+	 * multi-tenancy and RBAC filtering. When no schema carries the slug now,
+	 * the first page falls back to the schemas renamed away from it, so a
+	 * current slug always wins over a former one.
 	 *
 	 * Takes the page as main's ListQuery, or as the limit and offset of the published contract, by
 	 * name or by position (an int in the second slot).
@@ -951,6 +1245,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @psalm-return list<Schema>
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
 	 */
 	public function findBySlug(
 		string $slug,
@@ -980,8 +1276,52 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$qb->setMaxResults($query->limit)
 			->setFirstResult($query->offset ?? 0);
 
-		return array_values($this->fetchSchemas(qb: $qb));
+		$schemas = array_values($this->fetchSchemas(qb: $qb));
+		if ($schemas !== [] || ($query->offset ?? 0) > 0) {
+			return $schemas;
+		}
+
+		return $this->findByFormerSlug(slug: $slug, query: $query, multitenancy: $_multitenancy);
 	}//end findBySlug()
+
+	/**
+	 * The schemas that answered to a slug before they were renamed.
+	 *
+	 * Only asked when no schema carries the slug now, so a current slug always
+	 * wins over a former one. The LIKE narrows the rows; the exact match is made
+	 * on the decoded list.
+	 *
+	 * @param string    $slug         The slug.
+	 * @param ListQuery $query        The limit.
+	 * @param bool      $multitenancy Whether the organisation filter applies.
+	 *
+	 * @return array<int, Schema> The renamed schemas.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
+	 */
+	private function findByFormerSlug(string $slug, ListQuery $query, bool $multitenancy): array {
+		if ($slug === '') {
+			return [];
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->like(
+					'former_slugs',
+					$qb->createNamedParameter('%' . $this->db->escapeLikeParameter((string)json_encode($slug)) . '%', IQueryBuilder::PARAM_STR)
+				)
+			);
+		$this->filterByOrganisation(qb: $qb, multitenancy: $multitenancy);
+
+		$schemas = array_filter(
+			$this->fetchSchemas(qb: $qb),
+			static fn (Schema $schema): bool => in_array($slug, ($schema->getFormerSlugs() ?? []), true)
+		);
+
+		return array_slice(array_values($schemas), 0, $query->limit);
+	}//end findByFormerSlug()
 
 	/**
 	 * The query for the rows with exactly this slug.
@@ -1039,6 +1379,8 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @psalm-return                                  list<\OCA\OpenRegister\Db\Schema>
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
 	 */
 	public function findAll(
 		int|null $limit = null,
@@ -1050,6 +1392,15 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 	): array {
+		// Every row, unfiltered, is read once per request: the save path asks it per object.
+		$everyRow = self::asksEveryRow(limit: $limit, offset: $offset, filters: $filters, searchConditions: $searchConditions);
+		if ($everyRow === true) {
+			$remembered = $this->findCache->all(multitenancy: $_multitenancy);
+			if ($remembered !== null) {
+				return array_values(array_filter($remembered, static fn ($entity): bool => $entity instanceof Schema));
+			}
+		}
+
 		$this->readTrace()->record(method: 'findAll');
 		$qb = $this->listedQuery(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: $offset, filters: ($filters ?? [])));
 		if (empty($searchConditions) === false) {
@@ -1059,8 +1410,29 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		$this->filterByOrganisation(qb: $qb, multitenancy: $_multitenancy);
 
-		return $this->findEntities(query: $qb);
+		$schemas = $this->findEntities(query: $qb);
+		if ($everyRow === true) {
+			$this->findCache->rememberAll(multitenancy: $_multitenancy, entities: $schemas);
+		}
+
+		return $schemas;
 	}//end findAll()
+
+	/**
+	 * Whether a list read asks for every row: no limit, offset, filter or search condition.
+	 *
+	 * @param int|null   $limit            The limit.
+	 * @param int|null   $offset           The offset.
+	 * @param array|null $filters          The column filters.
+	 * @param array|null $searchConditions The search conditions.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
+	 */
+	private static function asksEveryRow(?int $limit, ?int $offset, ?array $filters, ?array $searchConditions): bool {
+		return $limit === null && ($offset ?? 0) === 0 && empty($filters) === true && empty($searchConditions) === true;
+	}//end asksEveryRow()
 
 	/**
 	 * The schema list query for one page of column-filtered rows.
@@ -1108,6 +1480,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @psalm-suppress LessSpecificImplementedReturnType - Schema is more specific than Entity
 	 */
 	public function insert(Entity $entity): Entity {
+		// A write can change what a composition `$ref` or a scoped lookup loads; read those again.
+		$this->forgetRequestLoads();
+
 		// Verify RBAC permission to create.
 		$this->verifyRbacPermission(action: 'create', entityType: 'schema');
 		$this->assertScopedPropertiesAreGoverned(entity: $entity);
@@ -1396,6 +1771,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 			SchemaDeclarationOrder::DEPARTMENT_MATRIX => static fn () => $access->checkDepartmentMatrix(schema: $schema),
 			SchemaDeclarationOrder::REVEAL_AUDIT => static fn () => $access->checkRevealAudit(schema: $schema),
 			SchemaDeclarationOrder::CLASSIFICATION => static fn () => $access->checkClassification(schema: $schema),
+			SchemaDeclarationOrder::BREAK_GLASS => static fn () => $access->checkBreakGlass(schema: $schema),
 			SchemaDeclarationOrder::CONFIDENTIALITY => static fn () => $access->checkConfidentiality(schema: $schema),
 		];
 	}//end accessSteps()
@@ -1500,6 +1876,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
 	 */
 	public function update(Entity $entity): Entity {
+		// A write can change what a composition `$ref` or a scoped lookup loads; read those again.
+		$this->forgetRequestLoads();
+
 		// Verify RBAC permission to update.
 		$this->verifyRbacPermission(action: 'update', entityType: 'schema');
 		// Verify user has access to this organisation.
@@ -1511,6 +1890,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 		$oldSchema = $this->storedRow(entity: $entity);
 
 		$entity = parent::update(entity: $this->preparedOver(old: $oldSchema, schema: $entity));
+		$this->rowCache->forget(schemaId: (int)$entity->getId());
 		$this->announceUpdate(old: $oldSchema, new: $entity);
 
 		return $entity;
@@ -1751,6 +2131,9 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
 	 */
 	public function delete(Entity $entity, bool $force = false): Schema {
+		// A write can change what a composition `$ref` or a scoped lookup loads; read those again.
+		$this->forgetRequestLoads();
+
 		// Verify RBAC permission to delete.
 		$this->verifyRbacPermission(action: 'delete', entityType: 'schema');
 		// Verify user has access to this organisation.
@@ -1762,6 +2145,7 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 
 		// Proceed with deletion.
 		$result = parent::delete(entity: $entity);
+		$this->rowCache->forget(schemaId: (int)$entity->getId());
 
 		// Dispatch deletion event.
 		$this->eventDispatcher->dispatchTyped(
@@ -2014,6 +2398,12 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	 * @spec openspec/specs/mariadb-ci-matrix/spec.md#requirement-a-text-identifier-is-never-bound-as-an-integer
 	 */
 	private function loadSchema(string|int $identifier): Schema {
+		// Exact key, no lower-casing: the slug and uuid comparison below is case-sensitive.
+		$refKey = get_debug_type($identifier) . ':' . (string)$identifier;
+		if (isset($this->refCache[$refKey]) === true) {
+			return clone $this->refCache[$refKey];
+		}
+
 		try {
 			$this->readTrace()->record(method: 'loadSchema');
 
@@ -2022,7 +2412,10 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 				->from('openregister_schemas')
 				->where($qb->expr()->orX(...$this->identifierMatches(qb: $qb, identifier: $identifier)));
 
-			return $this->findEntity(query: $qb);
+			$schema = $this->findEntity(query: $qb);
+			$this->refCache[$refKey] = clone $schema;
+
+			return $schema;
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			throw new Exception("Schema '{$identifier}' not found");
 		}//end try

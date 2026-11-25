@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\ReadRuleResolverInterface;
+use OCA\OpenRegister\Service\Audit\ReadRuleResolver;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -48,7 +50,21 @@ final class RbacWiring {
 		self::registerHierarchyGrantExpander(context: $context);
 		self::registerObjectGrantResolver(context: $context);
 		self::registerReveals(context: $context);
+		self::registerReadRuleResolver(context: $context);
 	}//end register()
+
+	/**
+	 * Bind the read-rule contract the read audit entry asks, to its Core resolver.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	private static function registerReadRuleResolver(IRegistrationContext $context): void {
+		$context->registerServiceAlias(ReadRuleResolverInterface::class, ReadRuleResolver::class);
+	}//end registerReadRuleResolver()
 
 	/**
 	 * Register the shared token-grant source and its narrower.

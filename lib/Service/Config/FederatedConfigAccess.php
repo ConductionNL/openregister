@@ -6,9 +6,7 @@
  * The source allowlist governs WHERE a bundle may come from; this governs WHO on
  * this instance may push configuration out or pull it in. Beyond "any admin", an
  * org can nominate the groups allowed to publish and to install via app config.
- * Following the source-allowlist idiom, an empty group list means "not yet
- * enforced" (any signed-in user may act), so this is safe to ship before an org
- * curates its roles; admins are always allowed.
+ * Admins are always allowed; with an empty group list nobody else is.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -112,8 +110,8 @@ class FederatedConfigAccess implements FederatedConfigAccessInterface {
 
 		$raw = trim($this->appConfig->getValueString(self::APP_ID, $key, ''));
 		if ($raw === '') {
-			// Not yet enforced — any signed-in user may act.
-			return true;
+			// No groups nominated: only admins may act.
+			return false;
 		}
 
 		$allowed = array_filter(array_map('trim', explode(',', $raw)));

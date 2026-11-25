@@ -213,6 +213,7 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 		$manager = $this->createStub(IUserManager::class);
 		$manager->method('get')->willReturnCallback(static fn (string $uid): ?IUser => ($users[$uid] ?? null));
 		$groups = $this->createStub(IGroupManager::class);
+		$groups->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => in_array('admin', (self::GROUPS[$uid] ?? []), true));
 		$groups->method('getUserGroupIds')->willReturnCallback(static fn (IUser $user): array => self::GROUPS[$user->getUID()]);
 		$editors = $this->createStub(IGroup::class);
 		$editors->method('getUsers')->willReturn([$users['alice'], $users['bob']]);
@@ -473,6 +474,24 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 
 		return $cases;
 	}//end recordReaders()
+
+	/**
+	 * A read list of only the owner sentinel targets the owner alone; mixed with a group it adds that group.
+	 *
+	 * @return void
+	 */
+	public function testAnOwnerOnlyReadTargetsTheOwnerAlone(): void {
+		$object = $this->bulkObject('r', ['owner' => 'carol', 'schema' => '5']);
+
+		$ownerOnly = $this->newHandler(['block' => ['read' => ['@creator']]]);
+		$this->assertSame(['carol'], $ownerOnly->getReadableByUsers($object));
+
+		$withGroup = $this->newHandler(['block' => ['read' => ['@creator', 'editors']]]);
+		$this->assertSame(['alice', 'bob', 'carol'], $withGroup->getReadableByUsers($object));
+
+		$open = $this->newHandler(['block' => ['update' => ['editors']]]);
+		$this->assertSame([], $open->getReadableByUsers($object), 'no read rule is still no targeted list');
+	}//end testAnOwnerOnlyReadTargetsTheOwnerAlone()
 
 	/**
 	 * Every case.

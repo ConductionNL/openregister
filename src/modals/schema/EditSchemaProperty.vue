@@ -336,6 +336,26 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				{{ t('openregister', 'Hide in collection view') }}
 			</NcCheckboxRadioSwitch>
 
+			<NcCheckboxRadioSwitch
+				v-model="properties.indexed"
+				:disabled="loading"
+				aria-describedby="indexedHint">
+				{{ t('openregister', 'Index for filtering and sorting') }}
+			</NcCheckboxRadioSwitch>
+			<p id="indexedHint" class="indexSwitchHint">
+				{{ t('openregister', 'Keeps filtering and sorting on this field fast on a large schema, without making it a facet. The index is built when the table is synchronised, which can briefly hold up writes on MariaDB.') }}
+			</p>
+
+			<NcCheckboxRadioSwitch
+				v-model="properties.searchable"
+				:disabled="loading || textSearchIndexAvailable !== true"
+				aria-describedby="searchableHint">
+				{{ t('openregister', 'Index for text search') }}
+			</NcCheckboxRadioSwitch>
+			<p id="searchableHint" class="indexSwitchHint">
+				{{ t('openregister', 'Keeps searching inside this field\'s value fast. Needs PostgreSQL with the pg_trgm extension; the switch is off on an instance without it.') }}
+			</p>
+
 			<NcCheckboxRadioSwitch v-model="facetableEnabled" :disabled="loading">
 				{{ t('openregister', 'Facetable') }}
 			</NcCheckboxRadioSwitch>
@@ -915,6 +935,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import SchemaRelationFields from './SchemaRelationFields.vue'
 import { ensureRegisterAndSchemaLists } from '../../composables/registerSchemaLists.js'
+import { fetchSchemaIndexes } from '../../services/schemaIndexes.js'
 import {
 	codedStoreOptions,
 	emptyCodedConfig,
@@ -955,6 +976,17 @@ function helpAndTreeState() {
 		treeLoading: false,
 		treeLoaded: false,
 		treeError: '',
+	}
+}
+
+/**
+ * Whether this instance can build a text-search index: null until known.
+ *
+ * @return {object} Fresh state
+ */
+function indexState() {
+	return {
+		textSearchIndexAvailable: null,
 	}
 }
 
@@ -1062,6 +1094,7 @@ export default {
 			...codedAndRoleState(),
 			...helpAndTreeState(),
 			...facetState(),
+			...indexState(),
 			...calculationState(),
 			...propertyTypeState(),
 			...requestState(),
@@ -1458,9 +1491,33 @@ export default {
 		this.initializeSchemaItem()
 		this.loadRegistersAndSchemas()
 		this.loadOperatorCatalogue()
+		this.loadTextSearchIndexAvailability()
 	},
 
 	methods: {
+		/**
+		 * Ask the schema's index list whether this instance can build a
+		 * text-search index. A schema that is not saved yet has no list, and a
+		 * failed read leaves the switch off rather than offering an index that
+		 * may never be built.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/modelling-property-index-switch/specs/zoeken-filteren/spec.md#requirement-the-property-editor-offers-both-index-kinds
+		 */
+		async loadTextSearchIndexAvailability() {
+			const schemaId = schemaStore.schemaItem?.id
+			if (!schemaId) {
+				this.textSearchIndexAvailable = null
+				return
+			}
+			try {
+				const { textSearchIndex } = await fetchSchemaIndexes(schemaId)
+				this.textSearchIndexAvailable = textSearchIndex
+			} catch {
+				this.textSearchIndexAvailable = false
+			}
+		},
+
 		/**
 		 * Read the published operator catalogue and build the picker from it.
 		 *
@@ -2322,6 +2379,12 @@ export default {
 }
 
 .objectConfigurationContainer,
+.indexSwitchHint {
+	margin-block: 0 calc(var(--default-grid-baseline) * 2);
+	margin-inline-start: calc(var(--default-grid-baseline) * 9);
+	color: var(--color-text-maxcontrast);
+}
+
 .facetConfigContainer {
 	margin-block-end: 15px;
 }

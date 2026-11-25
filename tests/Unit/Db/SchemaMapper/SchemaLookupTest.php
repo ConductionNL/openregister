@@ -24,24 +24,11 @@ use OCA\OpenRegister\Db\SchemaMapper\SchemaLookup;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The cache key and not-found message of one schema lookup.
+ * The not-found message of one schema lookup.
  *
  * @covers \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
  */
 final class SchemaLookupTest extends TestCase {
-	/**
-	 * The key is the lower-cased id plus the two flags; the suffix alone carries the flags.
-	 *
-	 * @return void
-	 */
-	public function testTheCacheKeyCarriesTheIdAndBothFlags(): void {
-		$lookup = new SchemaLookup(id: 'Publicatie', rbac: true, multitenancy: false);
-
-		self::assertSame(':1:0', $lookup->cacheSuffix());
-		self::assertSame('publicatie:1:0', $lookup->cacheKey());
-		self::assertSame('42:0:1', (new SchemaLookup(id: 42, rbac: false, multitenancy: true))->cacheKey());
-	}//end testTheCacheKeyCarriesTheIdAndBothFlags()
-
 	/**
 	 * The not-found message names the id as given and both flags.
 	 *

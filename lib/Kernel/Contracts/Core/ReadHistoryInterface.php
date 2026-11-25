@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Kernel\Contracts\Core;
 
 use JsonSerializable;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RecentLensInterface;
 
 /**
  * The read history, as the object read path (Core) asks it.
@@ -30,7 +31,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
  *
  * @spec openspec/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
  */
-interface ReadHistoryInterface {
+interface ReadHistoryInterface extends RecentLensInterface {
 
 	/**
 	 * The reason the `_recent` lens gives when the history could not be read.

@@ -33,12 +33,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Service\Audit\AuditResealInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Handles cryptographic hash chaining for audit trail entries.
@@ -67,6 +69,10 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
+ * @SuppressWarnings(PHPMD.TooManyMethods) Same breadth, counted per method: the
+ * class implements three interfaces over one hash chain, and most of its methods
+ * are small private steps of the seal and verify walks. The re-chain split named
+ * above is the refactor that brings this down.
  *
  * @phpstan-type ChainWalk array{
  *     from: int|null,
@@ -77,12 +83,13 @@ use Psr\Log\LoggerInterface;
  *     entriesVerified: int,
  *     skippedNullHashes: int,
  *     purgedTombstones: int,
- *     unkeyedEntries: int
+ *     unkeyedEntries: int,
+ *     unsealedAfterCutover: int
  * }
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
-class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface {
+class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface, AuditResealInterface {
 	/**
 	 * The genesis seed used for the first entry in the hash chain.
 	 *
@@ -198,6 +205,19 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	private const STALE_SEAL_LOCK_SECONDS = 900;
 
 	/**
+	 * App-config key holding the hash-chain cutover marker: the first audit id
+	 * written after the cutover migration ran.
+	 *
+	 * A row below it with no hash predates the cutover and is legacy; a row at or
+	 * past it with no hash should have been sealed by the current code, so it
+	 * fails verification. Absent (0): no cutover recorded, every unsealed row is
+	 * legacy, as before. Written once by Version1Date20261124193002.
+	 *
+	 * @var string
+	 */
+	public const SEAL_CUTOVER_KEY = 'audit_seal_cutover_id';
+
+	/**
 	 * A chain walk before its first window; `from` and `to` go in front.
 	 *
 	 * @var array<string, mixed>
@@ -210,6 +230,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		'skippedNullHashes' => 0,
 		'purgedTombstones' => 0,
 		'unkeyedEntries' => 0,
+		'unsealedAfterCutover' => 0,
 	];
 
 	/**
@@ -227,6 +248,13 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @var boolean
 	 */
 	private bool $holdsSealLock = false;
+
+	/**
+	 * The cutover marker once read: false before the first read, null when none is recorded.
+	 *
+	 * @var int|null|false
+	 */
+	private int|null|false $sealCutover = false;
 
 	/**
 	 * Constructor for AuditHashService.
@@ -327,7 +355,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *
 	 * @return array{started: bool, keyedFrom: int|null, unkeyedChain: array<string, mixed>|null}
 	 *
-	 * @throws \RuntimeException When the seal lock cannot be taken.
+	 * @throws RuntimeException When the seal lock cannot be taken.
 	 *
 	 * @spec openspec/specs/audit-hash-chain/spec.md
 	 */
@@ -337,7 +365,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 		if ($this->acquireSealLock() === false) {
-			throw new \RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
+			throw new RuntimeException('The audit seal lock is unavailable; the keyed chain was not started.');
 		}
 
 		try {
@@ -834,7 +862,10 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}
 
 		try {
-			$totals = $this->rechainEveryWindow(batchSize: $batchSize);
+			$totals = $this->rechainEveryWindow(
+				batchSize: $batchSize,
+				window: ['previousHash' => $this->getGenesisHash(), 'lastId' => 0]
+			);
 			$this->logRechainComplete(totals: $totals);
 
 			return $totals;
@@ -843,6 +874,53 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		}//end try
 	}//end rechainAll()
 
+
+	/**
+	 * Re-seal the chain from one row to its end, after a lawful rewrite of that row.
+	 *
+	 * The narrow form of {@see rechainAll()}: a row whose stored content was
+	 * rewritten on purpose (the anonymisation's redacted diff) no longer hashes
+	 * to its stored link, and every row after it committed to that old link. So
+	 * the rewritten row and everything after it are re-derived, chained onto the
+	 * last sealed row before it; nothing before it is touched. Retention
+	 * tombstones are carried forward exactly as rechainAll() carries them.
+	 *
+	 * Unlike a seal pass this is not fail-soft. A caller that rewrote a row and
+	 * cannot re-seal has to know, because the chain is broken until it does.
+	 *
+	 * @param int $fromId The first row whose content changed.
+	 *
+	 * @return array{rechained: int, tombstonesPreserved: int} Rows rewritten, and tombstones left alone.
+	 *
+	 * @throws \InvalidArgumentException When the id is not a row id.
+	 * @throws \RuntimeException         When the seal lock cannot be taken; nothing is re-sealed then.
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/gdpr-data-subject-rights/spec.md#requirement-the-trail-keeps-the-act-and-loses-the-values-req-aao-006
+	 */
+	public function resealFrom(int $fromId): array {
+		if ($fromId < 1) {
+			throw new \InvalidArgumentException(sprintf('Cannot re-seal the audit chain from row %d: it is not a row id.', $fromId));
+		}
+
+		if ($this->acquireSealLock() === false) {
+			throw new \RuntimeException(sprintf('The audit seal lock is unavailable; the chain was not re-sealed from row %d.', $fromId));
+		}
+
+		try {
+			$totals = $this->rechainEveryWindow(
+				batchSize: self::SWEEP_BATCH_SIZE,
+				window: ['previousHash' => ($this->getHashBefore(id: $fromId) ?? $this->getGenesisHash()), 'lastId' => ($fromId - 1)]
+			);
+			$this->logger->info(
+				message: sprintf('[AuditHashService] Re-sealed %d audit row(s) from row %d after a recorded rewrite.', $totals['rechained'], $fromId),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+			);
+
+			return $totals;
+		} finally {
+			$this->releaseSealLock();
+		}//end try
+	}//end resealFrom()
 
 	/**
 	 * Log, at warning level, that a full re-chain starts.
@@ -880,12 +958,12 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *
 	 * The caller holds the seal lock.
 	 *
-	 * @param int $batchSize Rows re-chained per query window.
+	 * @param int                                         $batchSize Rows re-chained per query window.
+	 * @param array{previousHash: string, lastId: int}     $window    Where the walk starts: the link before it and the id it starts after.
 	 *
 	 * @return array{rechained: int, tombstonesPreserved: int} Rows rewritten, and tombstones left alone.
 	 */
-	private function rechainEveryWindow(int $batchSize): array {
-		$window = ['previousHash' => $this->getGenesisHash(), 'lastId' => 0];
+	private function rechainEveryWindow(int $batchSize, array $window): array {
 		$totals = ['rechained' => 0, 'tombstonesPreserved' => 0];
 
 		while (true) {
@@ -1479,6 +1557,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *     unkeyedEntries: int,
 	 *     keyedFrom: int|null,
 	 *     keyBoundaryIntact: bool,
+	 *     unsealedAfterCutover: int,
+	 *     sealCutoverId: int|null,
 	 *     range?: array{from: int, to: int}
 	 * }
 	 *
@@ -1576,8 +1656,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		$storedHash = ($row['hash'] ?? null);
 
 		if ($storedHash === null || $storedHash === '') {
-			$walk['skippedNullHashes']++;
-			return $walk;
+			return $this->countUnsealedRow(walk: $walk, id: (int)$row['id']);
 		}
 
 		if (($row['purged_at'] ?? null) !== null) {
@@ -1588,6 +1667,53 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 
 		return $this->verifySealedRow(walk: $walk, row: $row);
 	}//end verifyChainRow()
+
+	/**
+	 * Count a row without a hash: legacy before the cutover marker, a failure after it.
+	 *
+	 * Neither kind is a chain link, so the walk's previous hash stays where it is.
+	 * A post-cutover row is not a tamper break (nothing stored disagrees), so the
+	 * walk carries on and the report counts every such row.
+	 *
+	 * @param ChainWalk $walk The walk so far.
+	 * @param int       $id   The unsealed row's id.
+	 *
+	 * @return ChainWalk
+	 *
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md#requirement-verification-shall-distinguish-legacy-unsealed-rows-from-unsealed-rows-written-after-the-cutover
+	 */
+	private function countUnsealedRow(array $walk, int $id): array {
+		$cutover = $this->sealCutoverId();
+		if ($cutover !== null && $id >= $cutover) {
+			$walk['unsealedAfterCutover']++;
+			return $walk;
+		}
+
+		$walk['skippedNullHashes']++;
+
+		return $walk;
+	}//end countUnsealedRow()
+
+	/**
+	 * The first audit id written after the hash-chain cutover, or null when none is recorded.
+	 *
+	 * Read once per service instance: the marker is written by a migration and never moves.
+	 *
+	 * @return int|null
+	 *
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md#requirement-verification-shall-distinguish-legacy-unsealed-rows-from-unsealed-rows-written-after-the-cutover
+	 */
+	private function sealCutoverId(): ?int {
+		if ($this->sealCutover === false) {
+			$marker = $this->appConfig->getValueInt('openregister', self::SEAL_CUTOVER_KEY, 0);
+			$this->sealCutover = null;
+			if ($marker > 0) {
+				$this->sealCutover = $marker;
+			}
+		}
+
+		return $this->sealCutover;
+	}//end sealCutoverId()
 
 	/**
 	 * Re-hash a sealed row over the walk's previous hash and compare.
@@ -1691,6 +1817,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *     unkeyedEntries: int,
 	 *     keyedFrom: int|null,
 	 *     keyBoundaryIntact: bool,
+	 *     unsealedAfterCutover: int,
+	 *     sealCutoverId: int|null,
 	 *     range?: array{from: int|null, to: int|null}
 	 * }
 	 */
@@ -1698,7 +1826,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		$brokenAt = $walk['brokenAt'];
 		$boundaryIntact = ($this->chainKey?->boundaryIntact() ?? true);
 		$response = [
-			'valid' => ($brokenAt === null && $boundaryIntact === true),
+			'valid' => ($brokenAt === null && $boundaryIntact === true && $walk['unsealedAfterCutover'] === 0),
 			'entriesVerified' => $walk['entriesVerified'],
 			'brokenAt' => $brokenAt,
 			'skippedNullHashes' => $walk['skippedNullHashes'],
@@ -1706,6 +1834,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			'unkeyedEntries' => $walk['unkeyedEntries'],
 			'keyedFrom' => $this->chainKey?->keyedFrom(),
 			'keyBoundaryIntact' => $boundaryIntact,
+			'unsealedAfterCutover' => $walk['unsealedAfterCutover'],
+			'sealCutoverId' => $this->sealCutoverId(),
 		];
 
 		return self::withRange(response: $response, walk: $walk);

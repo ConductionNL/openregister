@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\RegisterSchema
  * @uses \OCA\OpenRegister\Db\Register\RegisterLanguages
  * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal
  */
 class MagicSearchHandlerOrderFormsTest extends TestCase {
 	/**
@@ -61,14 +62,17 @@ class MagicSearchHandlerOrderFormsTest extends TestCase {
 	 */
 	public static function forms(): array {
 		return [
-			'a map' => [['title' => 'desc'], ['LOWER(CAST("t"."title" AS TEXT)) DESC', '"t"."title" DESC', 't._id ASC']],
-			'a map as JSON' => ['{"title":"desc"}', ['LOWER(CAST("t"."title" AS TEXT)) DESC', '"t"."title" DESC', 't._id ASC']],
-			'a list of names' => [['title'], ['LOWER(CAST("t"."title" AS TEXT)) ASC', '"t"."title" ASC', 't._id ASC']],
-			'the list GraphQL sends' => ['[{"field":"title","direction":"DESC"}]', ['LOWER(CAST("t"."title" AS TEXT)) DESC', '"t"."title" DESC', 't._id ASC']],
-			'one name' => ['title', ['LOWER(CAST("t"."title" AS TEXT)) ASC', '"t"."title" ASC', 't._id ASC']],
-			'a list for a direction' => [['title' => ['desc']], ['LOWER(CAST("t"."title" AS TEXT)) ASC', '"t"."title" ASC', 't._id ASC']],
-			'a digit-only property' => [[7 => 'desc'], ['LOWER(CAST("t"."7" AS TEXT)) DESC', '"t"."7" DESC', 't._id ASC']],
-			'nothing usable keeps the stable default' => [[5], ['t._id ASC']],
+			'a map' => [['title' => 'desc'], ['LOWER(CAST("t"."title" AS TEXT)) DESC', '"t"."title" DESC', '"t"."_id" ASC']],
+			'a map as JSON' => ['{"title":"desc"}', ['LOWER(CAST("t"."title" AS TEXT)) DESC', '"t"."title" DESC', '"t"."_id" ASC']],
+			'a list of names' => [['title'], ['LOWER(CAST("t"."title" AS TEXT)) ASC', '"t"."title" ASC', '"t"."_id" ASC']],
+			'the list GraphQL sends' => [
+				'[{"field":"title","direction":"DESC"}]',
+				['LOWER(CAST("t"."title" AS TEXT)) DESC', '"t"."title" DESC', '"t"."_id" ASC'],
+			],
+			'one name' => ['title', ['LOWER(CAST("t"."title" AS TEXT)) ASC', '"t"."title" ASC', '"t"."_id" ASC']],
+			'a list for a direction' => [['title' => ['desc']], ['LOWER(CAST("t"."title" AS TEXT)) ASC', '"t"."title" ASC', '"t"."_id" ASC']],
+			'a digit-only property' => [[7 => 'desc'], ['LOWER(CAST("t"."7" AS TEXT)) DESC', '"t"."7" DESC', '"t"."_id" ASC']],
+			'nothing usable keeps the stable default' => [[5], ['"t"."_id" ASC']],
 		];
 	}//end forms()
 
@@ -143,7 +147,7 @@ class MagicSearchHandlerOrderFormsTest extends TestCase {
 		);
 		$qb->method('addOrderBy')->willReturnCallback(
 			function ($sort, $direction = null) use ($qb) {
-				$this->orderBy[] = trim((string) $sort . ' ' . (string) $direction);
+				$this->orderBy[] = trim(self::quoted($sort) . ' ' . (string) $direction);
 				return $qb;
 			}
 		);
@@ -151,4 +155,25 @@ class MagicSearchHandlerOrderFormsTest extends TestCase {
 
 		return $qb;
 	}//end queryBuilder()
+
+	/**
+	 * Quote an order term the way Nextcloud's QueryBuilder::addOrderBy() does on
+	 * PostgreSQL: a function is used as it is, a string is quoted again.
+	 *
+	 * @param mixed $sort The order term.
+	 *
+	 * @return string
+	 */
+	private static function quoted(mixed $sort): string {
+		if ($sort instanceof IQueryFunction) {
+			return (string) $sort;
+		}
+
+		if (str_contains((string) $sort, '.') === true) {
+			[$alias, $column] = explode('.', (string) $sort, 2);
+			return '"' . $alias . '"."' . $column . '"';
+		}
+
+		return '"' . $sort . '"';
+	}//end quoted()
 }//end class

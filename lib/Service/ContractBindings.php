@@ -35,6 +35,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
+use OCA\OpenRegister\Kernel\Contracts\TablePdfRendererInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
@@ -152,6 +153,8 @@ use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\RetentionSettingsReaderInterface;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetService;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineResetServiceInterface;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedConflictService;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedConflictServiceInterface;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineService;
 use OCA\OpenRegister\Service\Sync\HarvestPipelineServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -191,6 +194,7 @@ final class ContractBindings {
 		\OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface::class => ObjectRetentionHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
+		\OCA\OpenRegister\Kernel\Contracts\CapacityPolicyReaderInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
 		TranslationBindingInterface::class => TranslationBindingDescription::class,
 		\OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface::class => \OCA\OpenRegister\Service\AuthenticationService::class,
 		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
@@ -207,6 +211,7 @@ final class ContractBindings {
 		CaseTokenServiceInterface::class => CaseTokenService::class,
 		FederationShareServiceInterface::class => FederationShareService::class,
 		ShippedBaselineResetServiceInterface::class => ShippedBaselineResetService::class,
+		ShippedConflictServiceInterface::class => ShippedConflictService::class,
 		MaintenanceModeServiceInterface::class => MaintenanceModeService::class,
 		\OCA\OpenRegister\Service\Operations\MaintenanceModeHoldInterface::class => MaintenanceModeService::class,
 		\OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilderInterface::class => \OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder::class,
@@ -325,6 +330,7 @@ final class ContractBindings {
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
 		SourceRowReaderInterface::class => SourceRowReader::class,
 		SupportBundleServiceInterface::class => SupportBundleService::class,
+		TablePdfRendererInterface::class => ExportService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,

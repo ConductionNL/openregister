@@ -39,12 +39,14 @@ final class ApiCallKeys {
 	 * @param string $route      The route pattern.
 	 * @param string $method     The HTTP method.
 	 * @param string $apiVersion The contract version that served the call.
+	 * @param string $client     The official client library and its version, or ''.
 	 *
 	 * @return ApiCallKey The key.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md
+	 * @spec openspec/changes/api-client-libraries/specs/api-client-libraries/spec.md#requirement-the-caller-record-names-the-client-library
 	 */
-	public static function of(string $principal, string $route, string $method, string $apiVersion): ApiCallKey {
-		return new ApiCallKey(principal: $principal, route: $route, method: $method, apiVersion: $apiVersion);
+	public static function of(string $principal, string $route, string $method, string $apiVersion, string $client=''): ApiCallKey {
+		return new ApiCallKey(principal: $principal, route: $route, method: $method, apiVersion: $apiVersion, client: $client);
 	}//end of()
 }//end class

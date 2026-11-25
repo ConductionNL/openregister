@@ -39,8 +39,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Survivorship;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -63,7 +66,8 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 
 	/**
 	 * Cross-request cache of source-schema reference (slug/uuid) => numeric
-	 * schema id. Populated only from successful resolutions (a mid-save slug
+	 * schema id. A reference resolved inside a source register is keyed by that
+	 * register too: one slug names a different schema in each register. Populated only from successful resolutions (a mid-save slug
 	 * lookup that throws never poisons it). Lets the reverse-FK query pass a
 	 * numeric schema id — which `ObjectService::setSchema()` resolves via its
 	 * cached numeric path — instead of a slug, whose DB lookup throws when it
@@ -80,6 +84,7 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 	 * @param ObjectOperationsInterface $objectService Object read path (RBAC + tenant scoped).
 	 * @param SchemaMapperInterface $schemaMapper Schema lookup, to resolve the source schema slug to a numeric id.
 	 * @param LoggerInterface $logger PSR logger for non-fatal warnings.
+	 * @param RegisterMapperInterface|null $registerMapper Reads the source register, so a source schema slug resolves inside it.
 	 *
 	 * @return void
 	 *
@@ -89,6 +94,9 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 		private readonly ObjectOperationsInterface $objectService,
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly LoggerInterface $logger,
+		// Nullable and last so no construction shifts. Present, a source schema
+		// slug resolves inside the source register first; absent, globally.
+		private readonly ?RegisterMapperInterface $registerMapper = null,
 	) {
 	}//end __construct()
 
@@ -200,14 +208,16 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 	 * save-transaction-safe path), else the original reference unchanged.
 	 * Used by callers that build the query themselves (e.g. merge relink).
 	 *
-	 * @param string $ref Source-schema reference (slug/uuid/id).
+	 * @param string $ref      Source-schema reference (slug/uuid/id).
+	 * @param string $register The source register ref; a slug resolves among its schemas first. Optional and last.
 	 *
 	 * @return string Numeric id when resolvable, otherwise `$ref`.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	public function schemaQueryFilter(string $ref): string {
-		$id = $this->resolveSchemaId(ref: $ref);
+	public function schemaQueryFilter(string $ref, string $register = ''): string {
+		$id = $this->resolveSchemaId(ref: $ref, register: $register);
 		if ($id !== '') {
 			return $id;
 		}
@@ -221,13 +231,14 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 	 * resolved inside a save transaction) returns '' and is NOT cached, so a
 	 * later clean-context call can still populate it.
 	 *
-	 * @param string $ref Schema reference.
+	 * @param string $ref      Schema reference.
+	 * @param string $register The source register ref, or '' for none.
 	 *
 	 * @return string Numeric schema id, or '' when unresolved.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
-	private function resolveSchemaId(string $ref): string {
+	private function resolveSchemaId(string $ref, string $register = ''): string {
 		if ($ref === '') {
 			return '';
 		}
@@ -236,36 +247,75 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 			return $ref;
 		}
 
-		if (array_key_exists($ref, self::$schemaIdCache) === true) {
-			return self::$schemaIdCache[$ref];
+		$key = self::cacheKey(ref: $ref, register: $register);
+		if (array_key_exists($key, self::$schemaIdCache) === true) {
+			return self::$schemaIdCache[$key];
 		}
 
-		return $this->lookupSchemaId(ref: $ref);
+		return $this->lookupSchemaId(ref: $ref, register: $register);
 	}//end resolveSchemaId()
 
 	/**
 	 * Look a non-numeric schema reference up, caching the id only on success.
 	 *
-	 * @param string $ref Schema reference (slug/uuid).
+	 * @param string $ref      Schema reference (slug/uuid).
+	 * @param string $register The source register ref, or '' for none.
 	 *
 	 * @return string Numeric schema id, or '' when the lookup throws.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
-	private function lookupSchemaId(string $ref): string {
+	private function lookupSchemaId(string $ref, string $register = ''): string {
 		try {
-			$schema = $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
+			$schema = $this->findSchema(ref: $ref, register: $register);
 			$id     = (string)$schema->getId();
 		} catch (Throwable) {
 			return '';
 		}
 
 		if ($id !== '') {
-			self::$schemaIdCache[$ref] = $id;
+			self::$schemaIdCache[self::cacheKey(ref: $ref, register: $register)] = $id;
 		}
 
 		return $id;
 	}//end lookupSchemaId()
+
+	/**
+	 * The schema a reference names, inside the source register first when there is one.
+	 *
+	 * @param string $ref      Schema reference (slug/uuid).
+	 * @param string $register The source register ref, or '' for none.
+	 *
+	 * @return Schema The schema.
+	 *
+	 * @throws Throwable When no schema answers.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function findSchema(string $ref, string $register): Schema {
+		if ($register === '') {
+			return $this->schemaMapper->find($ref, _rbac: false, _multitenancy: false);
+		}
+
+		return (new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper))
+			->find(schemaRef: $ref, register: $register, _rbac: false, _multitenancy: false);
+	}//end findSchema()
+
+	/**
+	 * The memo key: the bare reference without a register, register and reference with one.
+	 *
+	 * @param string $ref      Schema reference.
+	 * @param string $register The source register ref, or ''.
+	 *
+	 * @return string The key.
+	 */
+	private static function cacheKey(string $ref, string $register): string {
+		if ($register === '') {
+			return $ref;
+		}
+
+		return $register."\0".$ref;
+	}//end cacheKey()
 
 	/**
 	 * Parse and validate the reverse-FK `sourceLink` block. A block with mode
@@ -366,7 +416,7 @@ class SourceRecordResolver implements SourceRecordResolverInterface {
 	private function reverseFkFilters(ReverseFkQuery $query): array {
 		// Prefer a numeric schema id (setSchema's cached numeric path works
 		// inside a save transaction; a slug lookup throws there).
-		$schemaFilter = $this->resolveSchemaId(ref: $query->sourceSchema);
+		$schemaFilter = $this->resolveSchemaId(ref: $query->sourceSchema, register: $query->sourceRegister);
 		if ($schemaFilter === '') {
 			$schemaFilter = $query->sourceSchema;
 		}

@@ -36,7 +36,9 @@ use OCA\OpenRegister\BackgroundJob\ComplianceJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
@@ -80,6 +82,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
  *     would force a route-table reshuffle without removing any actual branching.
  */
 class AuditTrailController extends Controller {
+	use HandlesExceptionsTrait;
+
 	/**
 	 * The log service
 	 *
@@ -144,7 +148,7 @@ class AuditTrailController extends Controller {
 	private readonly ?ExplicitRevealTrailMaskerInterface $revealMasker;
 
 	/**
-	 * Logs a failed object history lookup.
+	 * Logs a failed object history lookup; HandlesExceptionsTrait reads it to log a failed request.
 	 *
 	 * @var LoggerInterface
 	 */
@@ -919,6 +923,8 @@ class AuditTrailController extends Controller {
 	 * Whether the session user is in the `admin` group, as the object API decides it.
 	 *
 	 * @return bool False without a session user.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function inAdminGroup(): bool {
 		$user = $this->userSession->getUser();
@@ -926,7 +932,7 @@ class AuditTrailController extends Controller {
 			return false;
 		}
 
-		return in_array('admin', $this->groupManager->getUserGroupIds($user));
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end inAdminGroup()
 
 	/**
@@ -1209,12 +1215,7 @@ class AuditTrailController extends Controller {
 				statusCode: 400
 			);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Export failed: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Export failed');
 		}//end try
 	}//end exportAll()
 
@@ -1362,13 +1363,7 @@ class AuditTrailController extends Controller {
 				statusCode: 200
 			);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'success' => false,
-					'error' => 'Failed to clear audit trails: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Failed to clear audit trails');
 		}//end try
 	}//end clearAll()
 
@@ -1398,10 +1393,7 @@ class AuditTrailController extends Controller {
 		try {
 			return new JSONResponse(data: $this->auditHashService->getIntegrityStatus());
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Integrity status failed: ' . $e->getMessage()],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Integrity status failed');
 		}
 
 	}//end integrity()
@@ -1444,10 +1436,7 @@ class AuditTrailController extends Controller {
 			$result = $this->auditHashService->verifyChain($fromInt, $toInt);
 			return new JSONResponse(data: $result);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Verification failed: ' . $e->getMessage()],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Verification failed');
 		}
 	}//end verify()
 
@@ -1487,10 +1476,7 @@ class AuditTrailController extends Controller {
 			$results = $this->auditTrailMapper->getProcessingActivities($organisationId);
 			return new JSONResponse(data: $results);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to retrieve processing activities: ' . $e->getMessage()],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Failed to retrieve processing activities');
 		}
 	}//end processingActivities()
 
@@ -1534,10 +1520,7 @@ class AuditTrailController extends Controller {
 		try {
 			return new JSONResponse(data: $this->maskedSubjectTrail(identifier: $identifier));
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Subject audit-trail lookup failed: ' . $e->getMessage()],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Subject audit-trail lookup failed');
 		}
 	}//end subjectAuditTrail()
 

@@ -11,7 +11,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekNumberingInterface;
+use OCA\OpenRegister\Service\Object\FacetWeekNumbering;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleFinalStatesInterface;
+use OCA\OpenRegister\Service\Flow\CodeRunnerClient;
+use OCA\OpenRegister\Service\Flow\CodeRunnerClientInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleFinalStateResolver;
 use OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectQuotaInterface;
@@ -44,6 +50,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ProcessingReadsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadHistoryInterface;
+use OCA\OpenRegister\Kernel\Contracts\RecentLensInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\WriteElevationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\PartyRecipientsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
@@ -80,8 +87,14 @@ use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
@@ -116,6 +129,8 @@ use OCA\OpenRegister\Service\Task\TaskCalendarDocumentInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskMetricsProvider;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Contract\ObjectTaskReaderInterface;
+use OCA\OpenRegister\Service\Task\ObjectTaskReader;
 use OCA\OpenRegister\Service\FlowLinkService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use PHPUnit\Framework\TestCase;
@@ -125,6 +140,9 @@ use Psr\Container\ContainerInterface;
 use ReflectionProperty;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\LifecycleTransitionInterface;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
+use OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface;
+use OCA\OpenRegister\Service\Rules\SaveWarnings;
+use OCA\OpenRegister\Service\ContractBindings;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowWiring
@@ -305,6 +323,29 @@ final class FlowWiringTest extends TestCase {
 	}//end testTheReadHistoryPortIsAnsweredByTheReadHistoryService()
 
 	/**
+	 * The request's save warnings are bound inside the Processes area, to the one collector.
+	 *
+	 * @return void
+	 */
+	public function testTheSaveWarningsPortIsAnsweredByTheRequestCollector(): void {
+		self::assertSame(expected: SaveWarnings::class, actual: (FlowWiring::BINDINGS[SaveWarningsInterface::class] ?? null));
+		self::assertTrue(condition: is_a(SaveWarnings::class, SaveWarningsInterface::class, true));
+		self::assertArrayNotHasKey(key: SaveWarningsInterface::class, array: ContractBindings::BINDINGS);
+	}//end testTheSaveWarningsPortIsAnsweredByTheRequestCollector()
+
+	/**
+	 * The code step and its runner client are bound by the flow component itself, not by ContractBindings.
+	 *
+	 * @return void
+	 */
+	public function testTheCodeStepAndItsRunnerAreBoundByTheFlowComponent(): void {
+		self::assertSame(expected: CodeNode::class, actual: (FlowWiring::BINDINGS[CodeNodeInterface::class] ?? null));
+		self::assertSame(expected: CodeRunnerClient::class, actual: (FlowWiring::BINDINGS[CodeRunnerClientInterface::class] ?? null));
+		self::assertTrue(condition: is_a(CodeNode::class, CodeNodeInterface::class, true));
+		self::assertTrue(condition: is_a(CodeRunnerClient::class, CodeRunnerClientInterface::class, true));
+	}//end testTheCodeStepAndItsRunnerAreBoundByTheFlowComponent()
+
+	/**
 	 * The render's expression port is answered by the calculation evaluator, through its own interface.
 	 *
 	 * @return void
@@ -335,6 +376,16 @@ final class FlowWiringTest extends TestCase {
 		self::assertSame(expected: ExpressionDefaults::class, actual: ($this->aliases[ExpressionDefaultsInterface::class] ?? null));
 		self::assertTrue(condition: is_a(ExpressionDefaults::class, ExpressionDefaultsInterface::class, true));
 	}//end testTheExpressionDefaultsPortIsAnsweredByTheRulesEngine()
+
+	/**
+	 * Core's facet week relabelling is answered by the Processes calendar numbering.
+	 *
+	 * @return void
+	 */
+	public function testTheFacetWeekNumberingPortIsAnsweredByTheWorkingCalendars(): void {
+		self::assertSame(expected: FacetWeekNumbering::class, actual: ($this->aliases[FacetWeekNumberingInterface::class] ?? null));
+		self::assertTrue(condition: is_a(FacetWeekNumbering::class, FacetWeekNumberingInterface::class, true));
+	}//end testTheFacetWeekNumberingPortIsAnsweredByTheWorkingCalendars()
 
 	/**
 	 * The three Core render ports are answered by the Processes services that keep the state.
@@ -397,6 +448,7 @@ final class FlowWiringTest extends TestCase {
 				TaskGaugeInterface::class                  => TaskMetricsProvider::class,
 				LifecycleFinalStatesInterface::class       => LifecycleFinalStateResolver::class,
 				ReadHistoryInterface::class                => ReadHistoryService::class,
+				RecentLensInterface::class                 => ReadHistoryService::class,
 				TransitionInFlightInterface::class         => LifecycleActionContext::class,
 				WriteElevationInterface::class             => ObjectActionWriteElevation::class,
 				ObjectDateEventsSourceInterface::class     => ObjectCalendarFeedService::class,
@@ -413,8 +465,14 @@ final class FlowWiringTest extends TestCase {
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
+				CodeNodeInterface::class                   => CodeNode::class,
+				CodeRunnerClientInterface::class           => CodeRunnerClient::class,
+				TagObjectNodeInterface::class              => TagObjectNode::class,
+				AuditTrailNodeInterface::class             => AuditTrailNode::class,
+				ExtendInputNodeInterface::class            => ExtendInputNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
+				FacetWeekNumberingInterface::class         => FacetWeekNumbering::class,
 				TermDiagnosticInterface::class             => TermDiagnostic::class,
 				WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
 				TaskCalendarDocumentInterface::class       => TaskCalendarDocument::class,
@@ -435,6 +493,10 @@ final class FlowWiringTest extends TestCase {
 				UnreadCountsInterface::class               => UnreadCountCalculator::class,
 				SaveBoundaryInterface::class               => AutoTransitionPass::class,
 				ElevationAttributionInterface::class       => ObjectActionElevationAttribution::class,
+				\OCA\OpenRegister\Kernel\Contracts\BusinessTimeInterface::class => \OCA\OpenRegister\Service\Flow\Timer\BusinessTime::class,
+				SaveWarningsInterface::class               => SaveWarnings::class,
+				\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
+				ObjectTaskReaderInterface::class           => ObjectTaskReader::class,
 			],
 			actual: $this->aliases
 		);

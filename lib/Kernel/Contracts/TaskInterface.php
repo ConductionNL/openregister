@@ -155,6 +155,10 @@ use JsonSerializable;
  * @method void setUpdated(?DateTime $updated)
  * @method string|null getCreatedBy()
  * @method void setCreatedBy(?string $createdBy)
+ * @method string|null getRequiredMandate()
+ * @method void setRequiredMandate(?string $requiredMandate)
+ * @method array|null getMandateEvidence()
+ * @method void setMandateEvidence(?array $mandateEvidence)
  */
 interface TaskInterface extends JsonSerializable {
 

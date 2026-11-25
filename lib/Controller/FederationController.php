@@ -32,10 +32,13 @@ use OCA\OpenRegister\Controller\Support\FederationControllerServices;
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\FederatedShareNotDeliveredException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Federation\CreatorPropertyFilter;
+use OCA\OpenRegister\Service\Federation\RemoteRecipientGate;
+use OCA\OpenRegister\Service\Federation\ShareCrosses;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\FederationShareServiceInterface;
 use OCA\OpenRegister\Service\Federation\PlainQueryMatch;
@@ -160,6 +163,13 @@ class FederationController extends Controller {
 	private readonly CreatorPropertyFilter $creatorProperties;
 
 	/**
+	 * Judges the share's recipient by the deny rules, as one more principal (REQ-PCF-001).
+	 *
+	 * @var RemoteRecipientGate
+	 */
+	private readonly RemoteRecipientGate $remoteRecipients;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName App name.
@@ -179,6 +189,7 @@ class FederationController extends Controller {
 		$this->shareService = $services->shareService;
 		$this->throttler = $services->throttler;
 		$this->creatorProperties = $services->creatorProperties;
+		$this->remoteRecipients = $services->remoteRecipients;
 	}//end __construct()
 
 	/**
@@ -229,6 +240,7 @@ class FederationController extends Controller {
 			'permissions' => $this->request->getParam('permissions', 'read'),
 			'sharedWith' => $this->request->getParam('sharedWith'),
 			'remoteInstanceUrl' => $this->request->getParam('remoteInstanceUrl'),
+			'crosses' => $this->request->getParam('crosses'),
 		];
 
 		try {
@@ -237,6 +249,8 @@ class FederationController extends Controller {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+		} catch (FederatedShareNotDeliveredException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_GATEWAY);
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] create share failed: ' . $e->getMessage());
 			return new JSONResponse(data: ['error' => 'Could not create share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
@@ -280,6 +294,68 @@ class FederationController extends Controller {
 
 		return new JSONResponse(data: $share);
 	}//end revokeShare()
+
+	/**
+	 * Accept a share another instance sent here, and tell its sender.
+	 *
+	 * @param int $id The share id.
+	 *
+	 * @return JSONResponse The accepted share, or an error.
+	 *
+	 * @no-admin-idor-exempt The id IS caller-supplied, and it is checked one layer down, as for
+	 *       {@see revokeShare()}: `FederationShareService::answerIncomingShare()` loads the row
+	 *       through `FederatedShareMapper::find()`, which applies the organisation filter, so
+	 *       another organisation's id is a 404, and the change goes through `setStatus()` with
+	 *       the same rights check as a revoke.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	#[NoAdminRequired]
+	public function acceptShare(int $id): JSONResponse {
+		return $this->answerShare(id: $id, accept: true);
+	}//end acceptShare()
+
+	/**
+	 * Decline a share another instance sent here, and tell its sender.
+	 *
+	 * @param int $id The share id.
+	 *
+	 * @return JSONResponse The declined share, or an error.
+	 *
+	 * @no-admin-idor-exempt The id IS caller-supplied, and it is checked one layer down, as for
+	 *       {@see acceptShare()}.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	#[NoAdminRequired]
+	public function declineShare(int $id): JSONResponse {
+		return $this->answerShare(id: $id, accept: false);
+	}//end declineShare()
+
+	/**
+	 * Answer an incoming share and map the outcome to a response.
+	 *
+	 * @param int  $id     The share id.
+	 * @param bool $accept True to accept, false to decline.
+	 *
+	 * @return JSONResponse
+	 */
+	private function answerShare(int $id, bool $accept): JSONResponse {
+		try {
+			$share = $this->shareService->answerIncomingShare(id: $id, accept: $accept);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_CONFLICT);
+		} catch (Throwable $e) {
+			$this->logger->error('[Federation] answering share failed: ' . $e->getMessage());
+			return new JSONResponse(data: ['error' => 'Could not answer share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		return new JSONResponse(data: $share);
+	}//end answerShare()
 
 	/**
 	 * Give one of the caller's shares a new lifetime from now.
@@ -475,7 +551,7 @@ class FederationController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function updateObject(string $shareToken, string $id): JSONResponse {
-		$target = $this->writableTarget(shareToken: $shareToken, id: $id);
+		$target = $this->writableTarget(shareToken: $shareToken, id: $id, verb: 'update');
 		if ($target instanceof JSONResponse) {
 			return $target;
 		}
@@ -522,7 +598,7 @@ class FederationController extends Controller {
 	#[AnonRateLimit(limit: 20, period: 60)]
 	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
 	public function deleteObject(string $shareToken, string $id): JSONResponse {
-		$target = $this->writableTarget(shareToken: $shareToken, id: $id);
+		$target = $this->writableTarget(shareToken: $shareToken, id: $id, verb: 'delete');
 		if ($target instanceof JSONResponse) {
 			return $target;
 		}
@@ -618,11 +694,12 @@ class FederationController extends Controller {
 	 *
 	 * @param string $shareToken The scoped bearer share token.
 	 * @param string $id         The object id/uuid taken from the URL.
+	 * @param string $verb       The write verb, judged against the recipient's deny rules.
 	 *
 	 * @return array{share: FederatedShare, uuid: string}|JSONResponse The share and the uuid of the
 	 *                                                                 object it may write, or a 403, 404 or 500 response.
 	 */
-	private function writableTarget(string $shareToken, string $id): array|JSONResponse {
+	private function writableTarget(string $shareToken, string $id, string $verb): array|JSONResponse {
 		$share = $this->resolveWritableShare(shareToken: $shareToken);
 		if ($share === null) {
 			return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
@@ -639,6 +716,11 @@ class FederationController extends Controller {
 		$uuid = (string) ($target?->getUuid() ?? '');
 		if ($uuid === '') {
 			return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		// The recipient is a principal: a deny on the write verb refuses it, as it would refuse a local caller.
+		if ($target !== null && $this->remoteRecipients->refuses(share: $share, object: $target, verb: $verb) === true) {
+			return new JSONResponse(data: ['error' => 'Not permitted for this recipient'], statusCode: Http::STATUS_FORBIDDEN);
 		}
 
 		return ['share' => $share, 'uuid' => $uuid];
@@ -1014,6 +1096,12 @@ class FederationController extends Controller {
 				continue;
 			}
 
+			// The recipient is a principal: a deny that takes `read` from it
+			// keeps the object at home (REQ-PCF-001, design D-1).
+			if ($this->remoteRecipients->refuses(share: $share, object: $object, verb: 'read') === true) {
+				continue;
+			}
+
 			$rendered = $this->rendered(share: $share, object: $object);
 			if ($share->getScope() === 'object') {
 				$visible[] = $rendered;
@@ -1031,7 +1119,8 @@ class FederationController extends Controller {
 	}//end applyShareVisibility()
 
 	/**
-	 * An object as a share serves it: an object-scope share keeps to the properties its creator may read.
+	 * An object as a share serves it: an object-scope share keeps to the properties its creator may read,
+	 * and every share sends only the parts it declares.
 	 *
 	 * @param FederatedShare $share  The share being served.
 	 * @param ObjectEntity   $object The object.
@@ -1040,11 +1129,12 @@ class FederationController extends Controller {
 	 */
 	private function rendered(FederatedShare $share, ObjectEntity $object): array {
 		$rendered = $object->jsonSerialize();
-		if ($share->getScope() !== 'object') {
-			return $rendered;
+		if ($share->getScope() === 'object') {
+			$rendered = $this->creatorProperties->readable(share: $share, object: $object, rendered: $rendered);
 		}
 
-		return $this->creatorProperties->readable(share: $share, object: $object, rendered: $rendered);
+		// Only what the share declares crosses (REQ-PCF-002).
+		return ShareCrosses::shape(rendered: $rendered, crosses: ShareCrosses::of(share: $share));
 	}//end rendered()
 
 	/**

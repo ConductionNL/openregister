@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.2.0-dev.3</version>
+    <version>2.2.0-dev.17</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -132,6 +132,7 @@ Vrij en open source onder de EUPL-licentie.
 
 	<background-jobs>
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\BackfillCalendarLinksJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\PublishedDigestVerifyJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledMessageSweepJob</job>
@@ -190,6 +191,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\Notifications\BackgroundJob\NotificationQueueFlushJob</job>
 		<job>OCA\OpenRegister\Notifications\BackgroundJob\TaskScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ArchivalRetentionTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\ExpiredObjectSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowScheduleWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowTimerWorker</job>
@@ -209,6 +211,7 @@ Vrij en open source onder de EUPL-licentie.
 		-->
 		<job>OCA\OpenRegister\BackgroundJob\DraftExpiryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SeedDirectoryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\BagRefreshJob</job>
 	</background-jobs>
 
 	<repair-steps>
@@ -258,6 +261,8 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\AdoptOrganisationlessRows</step>
 			<step>OCA\OpenRegister\Repair\GiveFederationSharesALifetime</step>
 			<step>OCA\OpenRegister\Repair\WithholdRevealValuesFromRelations</step>
+			<!-- Reports duplicate uuids per object table; adds the unique uuid index only once a table has none. Deletes nothing. -->
+			<step>OCA\OpenRegister\Repair\AddUniqueUuidIndex</step>
 			<!-- The flows register must EXIST before any step reads flows.
 			     ImportFlowRegister was written, and named here zero times, so
 			     the `flows` register was never created and every flow step
@@ -307,9 +312,15 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<!-- After the register import: a credential written before the derived
+			     share lists existed, or by a path that bypassed the deriver, has
+			     sharedUsers/sharedGroups brought in line with its sharedWith
+			     (shared-credentials-and-flows 3.7). Rewrites only stale rows. -->
+			<step>OCA\OpenRegister\Repair\RepairSharedPrincipalLists</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDestructionListRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportReportTemplatesRegister</step>
 			<!-- `merge-operation` is where MergeService writes the audit row for
 			     every merge, and where reverseMerge reads the preMergeSnapshot
 			     back from. Its descriptor shipped with no Repair step, so the
@@ -317,6 +328,7 @@ Vrij en open source onder de EUPL-licentie.
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportExternalRegisterRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDecisionTableRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportRedactionPolicyRegister</step>
 			<!-- The glossary and style guides AI translation follows (ai-translation-with-a-glossary). -->
@@ -390,6 +402,12 @@ Vrij en open source onder de EUPL-licentie.
 			     reports them rather than cancelling them. Post-migration because
 			     both need the openregister_flow_timers tables. -->
 			<step>OCA\OpenRegister\Repair\SeedFlowTimerRegister</step>
+			<!-- calendar-time-zone 1.3: a working calendar saved before its
+			     zone was asked for gets the instance default_timezone (UTC,
+			     with a warning, when that is not set or not an IANA name).
+			     After the seed, so the register exists; a calendar that names
+			     a zone is never touched. -->
+			<step>OCA\OpenRegister\Repair\FillCalendarTimeZones</step>
 			<step>OCA\OpenRegister\Repair\CheckFlowTimerInvariants</step>
 			<!-- Approval consolidation (flow-approval-consolidation): moves
 			     every approval chain, step set and in-flight decision onto
@@ -520,6 +538,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDestructionListRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportReportTemplatesRegister</step>
 			<!-- `merge-operation` is where MergeService writes the audit row for
 			     every merge, and where reverseMerge reads the preMergeSnapshot
 			     back from. Its descriptor shipped with no Repair step, so the
@@ -527,6 +546,7 @@ Vrij en open source onder de EUPL-licentie.
 			     and a reversal that has nothing to read. -->
 			<step>OCA\OpenRegister\Repair\ImportMergeOperationRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDismissedPairRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportExternalRegisterRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDecisionTableRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportRedactionPolicyRegister</step>
 			<!-- The glossary and style guides AI translation follows (ai-translation-with-a-glossary). -->
@@ -562,9 +582,12 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
+		<command>OCA\OpenRegister\Command\ApiConformanceCommand</command>
 		<command>OCA\OpenRegister\Command\DocumentStoreStatusCommand</command>
+		<command>OCA\OpenRegister\Command\DocumentStoreMoveCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
 		<command>OCA\OpenRegister\Command\AdoptOrganisationlessRowsCommand</command>
+		<command>OCA\OpenRegister\Command\UniqueUuidIndexCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>
 		<command>OCA\OpenRegister\Files\Command\MoveObjectFilesCommand</command>
 		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
@@ -613,7 +636,9 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Read-only: how many drafts the daily draft cleanup would remove per
 		     schema. For a look before the first run after an upgrade (decision 228). -->
 		<command>OCA\OpenRegister\Command\DraftsExpiredCommand</command>
+		<command>OCA\OpenRegister\Command\ExpirySweepCommand</command>
 		<command>OCA\OpenRegister\Command\RetentionDryRunCommand</command>
+		<command>OCA\OpenRegister\Command\EvaluateDetectorCommand</command>
 		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
 		<command>OCA\OpenRegister\Notifications\Command\GenerateVapidKeys</command>
 		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->
@@ -627,6 +652,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\ExampleSetListCommand</command>
 		<command>OCA\OpenRegister\Command\SeedImportCommand</command>
 		<command>OCA\OpenRegister\Command\RotateTenantKeyCommand</command>
+		<command>OCA\OpenRegister\Command\BagLoadCommand</command>
 	</commands>
 
 	<settings>

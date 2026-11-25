@@ -2,23 +2,16 @@
     "'7' rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "7:0:0",
-            "uuid-seven:0:0",
-            "seven-slug:0:0"
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -30,23 +23,16 @@
     "'7' rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "7:1:0",
-            "uuid-seven:1:0",
-            "seven-slug:1:0"
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -58,23 +44,17 @@
     "'7' rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "7:0:1",
-            "uuid-seven:0:1",
-            "seven-slug:0:1"
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1",
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -99,23 +79,17 @@
     "'7' rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "7:1:1",
-            "uuid-seven:1:1",
-            "seven-slug:1:1"
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1",
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -140,23 +114,16 @@
     "7 rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "7:0:0",
-            "uuid-seven:0:0",
-            "seven-slug:0:0"
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -168,23 +135,16 @@
     "7 rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "7:1:0",
-            "uuid-seven:1:0",
-            "seven-slug:1:0"
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -196,23 +156,17 @@
     "7 rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "7:0:1",
-            "uuid-seven:0:1",
-            "seven-slug:0:1"
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1",
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -237,23 +191,17 @@
     "7 rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "7:1:1",
-            "uuid-seven:1:1",
-            "seven-slug:1:1"
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1",
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -278,20 +226,17 @@
     "'Seven-Slug' rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:0:0",
-            "7:0:0",
-            "uuid-seven:0:0"
+            "seven-slug:0",
+            "7:0",
+            "uuid-seven:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = Seven-Slug, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = seven-slug, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -303,20 +248,17 @@
     "'Seven-Slug' rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:1:0",
-            "7:1:0",
-            "uuid-seven:1:0"
+            "seven-slug:0",
+            "7:0",
+            "uuid-seven:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = Seven-Slug, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = seven-slug, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -328,20 +270,17 @@
     "'Seven-Slug' rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:0:1",
-            "7:0:1",
-            "uuid-seven:0:1"
+            "seven-slug:1",
+            "7:1",
+            "uuid-seven:1"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = Seven-Slug, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = seven-slug, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -366,20 +305,17 @@
     "'Seven-Slug' rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:1:1",
-            "7:1:1",
-            "uuid-seven:1:1"
+            "seven-slug:1",
+            "7:1",
+            "uuid-seven:1"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = Seven-Slug, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = seven-slug, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -404,20 +340,17 @@
     "'uuid-seven' rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "uuid-seven:0:0",
-            "7:0:0",
-            "seven-slug:0:0"
+            "uuid-seven:0",
+            "7:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = uuid-seven, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = uuid-seven, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = uuid-seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -429,20 +362,17 @@
     "'uuid-seven' rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "uuid-seven:1:0",
-            "7:1:0",
-            "seven-slug:1:0"
+            "uuid-seven:0",
+            "7:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = uuid-seven, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = uuid-seven, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = uuid-seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -454,20 +384,17 @@
     "'uuid-seven' rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "uuid-seven:0:1",
-            "7:0:1",
-            "seven-slug:0:1"
+            "uuid-seven:1",
+            "7:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = uuid-seven, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = uuid-seven, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = uuid-seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -492,20 +419,17 @@
     "'uuid-seven' rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "uuid-seven:1:1",
-            "7:1:1",
-            "seven-slug:1:1"
+            "uuid-seven:1",
+            "7:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = uuid-seven, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = uuid-seven, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = uuid-seven, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -530,21 +454,18 @@
     "'7abc' rbac false mt false": {
         "found": 7,
         "cacheKeys": [
-            "7abc:0:0",
-            "7:0:0",
-            "uuid-seven:0:0",
-            "seven-slug:0:0"
+            "7abc:0",
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7abc, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = 7abc, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = 7abc, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -556,21 +477,18 @@
     "'7abc' rbac true mt false": {
         "found": 7,
         "cacheKeys": [
-            "7abc:1:0",
-            "7:1:0",
-            "uuid-seven:1:0",
-            "seven-slug:1:0"
+            "7abc:0",
+            "7:0",
+            "uuid-seven:0",
+            "seven-slug:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7abc, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = 7abc, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = 7abc, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -582,21 +500,18 @@
     "'7abc' rbac false mt true": {
         "found": 7,
         "cacheKeys": [
-            "7abc:0:1",
-            "7:0:1",
-            "uuid-seven:0:1",
-            "seven-slug:0:1"
+            "7abc:1",
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7abc, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = 7abc, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = 7abc, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -621,21 +536,18 @@
     "'7abc' rbac true mt true": {
         "found": 7,
         "cacheKeys": [
-            "7abc:1:1",
-            "7:1:1",
-            "uuid-seven:1:1",
-            "seven-slug:1:1"
+            "7abc:1",
+            "7:1",
+            "uuid-seven:1",
+            "seven-slug:1"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7abc, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = 7abc, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = 7abc, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
@@ -663,17 +575,23 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = missing, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = missing, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = missing, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
-            "#1 executeQuery()"
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 param :p2 = missing, 2",
+            "#2 expr.eq(uuid, :p2, NULL)",
+            "#2 where(eq(uuid, :p2, NULL))",
+            "#2 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#2 addOrderBy(id, ASC)",
+            "#2 setMaxResults(2)",
+            "#2 executeQuery()"
         ],
         "logs": [],
         "queriesOnCacheHit": 0
@@ -684,24 +602,60 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 12, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 12, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 12, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 12, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 expr.isNull(organisation)",
             "#1 andWhere(isNull(organisation))",
             "#1 setMaxResults(2)",
-            "#1 executeQuery()"
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 func.lower(slug)",
+            "#2 param :p2 = 12, 2",
+            "#2 expr.eq(lower(slug), :p2, NULL)",
+            "#2 where(eq(lower(slug), :p2, NULL))",
+            "#2 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#2 addOrderBy(id, ASC)",
+            "#2 expr.isNull(organisation)",
+            "#2 andWhere(isNull(organisation))",
+            "#2 setMaxResults(2)",
+            "#2 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 param :p3 = 12, 2",
+            "#3 expr.eq(uuid, :p3, NULL)",
+            "#3 where(eq(uuid, :p3, NULL))",
+            "#3 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#3 addOrderBy(id, ASC)",
+            "#3 expr.isNull(organisation)",
+            "#3 andWhere(isNull(organisation))",
+            "#3 setMaxResults(2)",
+            "#3 executeQuery()"
         ],
         "logs": [
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
+                "context": []
+            },
+            {
+                "log": "debug",
+                "message": "[MultiTenancyTrait] getActiveOrganisationUuid called",
+                "context": []
+            },
             {
                 "log": "debug",
                 "message": "[MultiTenancyTrait] Unauthenticated request, no automatic access",
@@ -721,20 +675,32 @@
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 13, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 13, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 13, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 13, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
-            "#1 executeQuery()"
+            "#1 executeQuery()",
+            "#2 select(*)",
+            "#2 from(openregister_schemas, NULL)",
+            "#2 func.lower(slug)",
+            "#2 param :p2 = 13, 2",
+            "#2 expr.eq(lower(slug), :p2, NULL)",
+            "#2 where(eq(lower(slug), :p2, NULL))",
+            "#2 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#2 addOrderBy(id, ASC)",
+            "#2 setMaxResults(2)",
+            "#2 executeQuery()",
+            "#3 select(*)",
+            "#3 from(openregister_schemas, NULL)",
+            "#3 param :p3 = 13, 2",
+            "#3 expr.eq(uuid, :p3, NULL)",
+            "#3 where(eq(uuid, :p3, NULL))",
+            "#3 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
+            "#3 addOrderBy(id, ASC)",
+            "#3 setMaxResults(2)",
+            "#3 executeQuery()"
         ],
         "logs": [],
         "queriesOnCacheHit": 0
@@ -742,20 +708,17 @@
     "ambiguous slug": {
         "found": 7,
         "cacheKeys": [
-            "seven-slug:0:0",
-            "7:0:0",
-            "uuid-seven:0:0"
+            "seven-slug:0",
+            "7:0",
+            "uuid-seven:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = Seven-Slug, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
             "#1 func.lower(slug)",
-            "#1 param :p2 = seven-slug, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL)))",
+            "#1 param :p1 = seven-slug, 2",
+            "#1 expr.eq(lower(slug), :p1, NULL)",
+            "#1 where(eq(lower(slug), :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",
@@ -789,21 +752,14 @@
     "null slug and uuid": {
         "found": 7,
         "cacheKeys": [
-            "7:0:0"
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",
             "#1 from(openregister_schemas, NULL)",
-            "#1 param :p1 = 7, 2",
-            "#1 expr.eq(uuid, :p1, NULL)",
-            "#1 func.lower(slug)",
-            "#1 param :p2 = 7, 2",
-            "#1 expr.eq(lower(slug), :p2, NULL)",
-            "#1 expr.orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))",
-            "#1 param :p3 = 7, 1",
-            "#1 expr.eq(id, :p3, NULL)",
-            "#1 where(orX(eq(uuid, :p1, NULL), eq(lower(slug), :p2, NULL))+[eq(id, :p3, NULL)])",
-            "#1 addOrderBy(CASE WHEN id = :p3 THEN 0 ELSE 1 END, ASC)",
+            "#1 param :p1 = 7, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
             "#1 addOrderBy(CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END, ASC)",
             "#1 addOrderBy(id, ASC)",
             "#1 setMaxResults(2)",

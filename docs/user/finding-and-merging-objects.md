@@ -36,6 +36,10 @@ Merging allows you to combine two duplicate objects into one. The source object 
 Objects can only be merged if they belong to the **same register and schema**. If you want to merge objects from different schemas or registers, you need to migrate them first.
 :::
 
+:::tip Reversible merges for data stewards
+Data stewards can also merge from **Duplicate Candidates**, under Data Quality. That merge moves every reference to the merged-away record onto the one that stays, and can be reversed afterwards from **Merge Operations**. See [Master Data Management](../Features/master-data-management.md#merging-duplicates).
+:::
+
 ### Step 1: Open the Merge Dialog
 
 1. Find the object you want to merge (the **source** object) in the object list

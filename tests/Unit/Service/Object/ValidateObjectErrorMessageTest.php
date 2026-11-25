@@ -16,7 +16,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Object\ValidationLookups;
+use OCP\IUserManager;
 use Opis\JsonSchema\Errors\ValidationError;
 use Opis\JsonSchema\Info\DataInfo;
 use Opis\JsonSchema\Info\SchemaInfo;
@@ -168,6 +171,18 @@ class ValidateObjectErrorMessageTest extends TestCase {
 	 */
 	public function runCase(string $kind, array $case): string {
 		$validator = (new ReflectionClass(objectOrClass: ValidateObject::class))->newInstanceWithoutConstructor();
+		// The messages read only the preferred language; lookups without a container have none.
+		$lookups = new ValidationLookups(
+			objectMapper: $this->createMock(MagicMapperInterface::class),
+			userManager: $this->createMock(IUserManager::class)
+		);
+		\Closure::bind(
+			static function (ValidateObject $validator) use ($lookups): void {
+				$validator->lookups = $lookups;
+			},
+			null,
+			ValidateObject::class
+		)($validator);
 
 		if ($kind === 'opis') {
 			$result = (new Validator())->validate(json_decode($case[1]), $case[0]);

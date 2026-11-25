@@ -35,9 +35,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekNumberingInterface;
+use OCA\OpenRegister\Kernel\Contracts\FacetWeekRelabelInterface;
 use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -83,6 +87,13 @@ class FacetHandler {
 	private readonly SchemaMapperInterface $schemaMapper;
 
 	/**
+	 * Reads the query's register, so a schema slug resolves inside it; null in a hand-built test.
+	 *
+	 * @var RegisterMapperInterface|null
+	 */
+	private readonly ?RegisterMapperInterface $registerMapper;
+
+	/**
 	 * Constructor for FacetHandler.
 	 *
 	 * @param FacetLookups $lookups The object and schema lookups facets are computed from.
@@ -92,6 +103,7 @@ class FacetHandler {
 	 * @param PropertyRbacHandlerInterface|null $propertyRbac Withholds a facet over a property the caller may not read.
 	 *                                               Nullable and last so no construction site shifts; absent, a
 	 *                                               governed property is withheld, which is the safe direction.
+	 * @param FacetWeekNumberingInterface|null $weekNumbering Which calendar's first week the week buckets follow; null keeps ISO weeks.
 	 *
 	 * @return void
 	 *
@@ -106,9 +118,11 @@ class FacetHandler {
 		// container always supplies it; null happens only in a hand-built test,
 		// and then a GOVERNED property is withheld, which is the safe direction.
 		private readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
+		private readonly ?FacetWeekNumberingInterface $weekNumbering = null,
 	) {
 		$this->unifiedObjectMapper = $lookups->unifiedObjectMapper;
 		$this->schemaMapper        = $lookups->schemaMapper;
+		$this->registerMapper      = $lookups->registerMapper;
 	}//end __construct()
 
 	/**
@@ -169,7 +183,11 @@ class FacetHandler {
 	private function storedFacets(string $cacheKey, FacetRun $run): array {
 		$schemas = $this->getSchemasForQuery(baseQuery: $run->query);
 		$facetableConfig = $this->getFacetableFieldsFromSchemas(schemas: $schemas);
-		$result = $this->calculateFacetsWithFallback(facetQuery: $run->query, facetableConfig: $facetableConfig);
+		$result = $this->calculateFacets(
+			facetQuery: $run->query,
+			facetableConfig: $facetableConfig,
+			weeks: $this->weekNumbering?->labelsFor(schemas: $schemas)
+		);
 		$result['performance_metadata']['total_execution_time_ms'] = $run->elapsedMs();
 		$this->responseCache->put(cacheKey: $cacheKey, result: $result);
 		$this->logCompletion(result: $result);
@@ -273,23 +291,20 @@ class FacetHandler {
 	}//end getFacetableFields()
 
 	/**
-	 * Calculate Facets with Intelligent Fallback Strategy.
+	 * Calculate the facets, with week buckets labelled by a declared first week when one applies.
 	 *
-	 * Implements smart fallback logic that ensures users always see meaningful facet
-	 * options, even when their current search/filters return zero results.
-	 * Also handles non-aggregated facets by making separate schema-scoped queries.
+	 * @param array                $facetQuery      Query for facet calculation (without pagination).
+	 * @param array                $facetableConfig Facetable field configuration from schema discovery.
+	 * @param FacetWeekRelabelInterface|null $weeks Relabels week buckets; null keeps ISO weeks.
 	 *
-	 * @param array $facetQuery      Query for facet calculation (without pagination).
-	 * @param array $facetableConfig Facetable field configuration from schema discovery.
+	 * @return array Facets with performance metadata.
 	 *
-	 * @return array Facets with performance metadata including strategy and fallback status.
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-calendar-declares-blackout-periods-and-its-first-week-of-the-year-req-wca-007
 	 */
-	private function calculateFacetsWithFallback(array $facetQuery, array $facetableConfig = []): array {
-		return (new FacetCalculation(mapper: $this->unifiedObjectMapper, logger: $this->logger))
+	private function calculateFacets(array $facetQuery, array $facetableConfig, ?FacetWeekRelabelInterface $weeks): array {
+		return (new FacetCalculation(mapper: $this->unifiedObjectMapper, logger: $this->logger, weeks: $weeks))
 			->calculate(facetQuery: $facetQuery, facetableConfig: $facetableConfig);
-	}//end calculateFacetsWithFallback()
+	}//end calculateFacets()
 
 	/**
 	 * Get schemas relevant to the current query (cached for performance).
@@ -310,7 +325,7 @@ class FacetHandler {
 
 		$schemaFilter = $baseQuery['@self']['schema'] ?? null;
 		if ($schemaFilter !== null) {
-			return $this->schemasMatching(schemaFilter: $schemaFilter);
+			return $this->schemasMatching(schemaFilter: $schemaFilter, register: ($baseQuery['@self']['register'] ?? null));
 		}
 
 		// Null = no limit: collection-wide discovery reads every schema.
@@ -321,18 +336,30 @@ class FacetHandler {
 	 * The schemas a singular `@self[schema]` filter names, without RBAC: schemas are system-level.
 	 *
 	 * @param mixed $schemaFilter A schema id or a list of them.
+	 * @param mixed $register     The query's `@self.register`; one register scopes a slug to its schemas.
 	 *
 	 * @return array<int, mixed> The schemas; none when a single id cannot be loaded.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
 	 */
-	private function schemasMatching(mixed $schemaFilter): array {
+	private function schemasMatching(mixed $schemaFilter, mixed $register = null): array {
 		if (is_array($schemaFilter) === true) {
 			return $this->schemaMapper->findMultiple(ids: $schemaFilter, _rbac: false, _multitenancy: false);
 		}
 
+		// A slug is unique within a register, not across the instance: the
+		// query's one register answers first. A list of registers names no
+		// single one, so it scopes nothing.
+		$within = $register;
+		if (is_array($register) === true) {
+			$within = null;
+		}
+
 		try {
-			return [$this->schemaMapper->find(id: $schemaFilter, _multitenancy: false, _rbac: false)];
+			return [
+				(new SchemaRefInRegister(schemas: $this->schemaMapper, registers: $this->registerMapper))
+					->find(schemaRef: $schemaFilter, register: $within, _rbac: false, _multitenancy: false),
+			];
 		} catch (\Exception $e) {
 			return [];
 		}

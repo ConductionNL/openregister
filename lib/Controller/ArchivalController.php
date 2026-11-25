@@ -32,6 +32,8 @@
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Controller\Support\ArchivalControllerServices;
 use OCA\OpenRegister\Controller\Support\ArchivalNominationSubject;
 use OCA\OpenRegister\Controller\Support\ArchivalReviewAnswer;
@@ -43,7 +45,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\HoldOrder;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Archival\ApprovalRequest;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationServiceInterface;
 use OCA\OpenRegister\Service\Archival\DestructionListConflictRefresh;
@@ -89,6 +90,8 @@ use DateTimeImmutable;
  *              on its own is well under the threshold.
  */
 class ArchivalController extends Controller {
+	use HandlesExceptionsTrait;
+
 
 	/**
 	 * The archivist group name for authorization.
@@ -599,10 +602,7 @@ class ArchivalController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to release legal hold: ' . $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->failedWrite(action: 'release legal hold', e: $e, context: ['id' => $id]);
 		}
 	}//end releaseLegalHold()
 
@@ -1400,22 +1400,33 @@ class ArchivalController extends Controller {
 	}//end requireArchivistWithReason()
 
 	/**
-	 * Log a failed archival write and answer 500 naming it.
+	 * Log a failed archival write and answer it.
+	 *
+	 * A typed failure (unknown object, refused access, validation) answers
+	 * through handleApiException() with its own status. Anything else is a
+	 * 500 naming the action; the exception message goes to the server log
+	 * only, never into the response body.
 	 *
 	 * @param string               $action  What failed, after "Failed to ".
 	 * @param \Exception           $e       The failure.
 	 * @param array<string, mixed> $context Log context between the line and the exception.
 	 *
-	 * @return JSONResponse The 500 response.
+	 * @return JSONResponse The error response.
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
 	 */
 	private function failedWrite(string $action, \Exception $e, array $context = []): JSONResponse {
+		if ($this->exceptionStatus(e: $e) !== null) {
+			return $this->handleApiException(e: $e, context: 'Failed to ' . $action);
+		}
+
 		$this->logger->error(
 			message: '[ArchivalController] Failed to ' . $action,
 			context: array_merge(['file' => __FILE__, 'line' => __LINE__], $context, ['exception' => $e->getMessage()])
 		);
 
 		return new JSONResponse(
-			data: ['error' => 'Failed to ' . $action . ': ' . $e->getMessage()],
+			data: ['error' => 'Failed to ' . $action],
 			statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
 		);
 	}//end failedWrite()

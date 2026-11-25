@@ -89,8 +89,23 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	}
 
 	/**
+	 * The /api/operations routes that read register data rather than
+	 * administer the instance. The admin query console runs GraphQL over the
+	 * registers, which is what the mode closes, and it is not needed to leave
+	 * the mode; its controller lives in Core, outside the Configuration
+	 * component that owns MaintenanceReachableInterface.
+	 *
+	 * @var list<string>
+	 */
+	private const CLOSED_OPERATIONS_ROUTES = [
+		'operationsQuery#run',
+		'operationsQuery#export',
+	];
+
+	/**
 	 * Every controller that serves a route under /api/operations stays
-	 * reachable while the mode holds, read from appinfo/routes.php.
+	 * reachable while the mode holds, read from appinfo/routes.php, except
+	 * the data-reading routes in CLOSED_OPERATIONS_ROUTES, which stay closed.
 	 *
 	 * The allowance used to name one class. When the maintenance and
 	 * consistency endpoints moved to their own controllers (bd7fe3470d) the
@@ -107,6 +122,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 		$routes = require __DIR__.'/../../../appinfo/routes.php';
 
 		$controllers = [];
+		$closed      = [];
 		foreach ($routes['routes'] as $route) {
 			if (str_starts_with($route['url'], '/api/operations/') === false) {
 				continue;
@@ -114,7 +130,24 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 
 			[$short, $method] = explode('#', $route['name']);
 			$class            = 'OCA\\OpenRegister\\Controller\\'.ucfirst($short).'Controller';
+			if (in_array($route['name'], self::CLOSED_OPERATIONS_ROUTES, true) === true) {
+				$closed[$route['name']] = [$class, $method];
+				continue;
+			}
+
 			$controllers[$class.'::'.$method] = [$class, $method];
+		}
+
+		$this->assertSame(
+			self::CLOSED_OPERATIONS_ROUTES,
+			array_keys($closed),
+			'A closed operations route is no longer routed; drop it from the list.'
+		);
+		foreach ($closed as $name => [$class, $method]) {
+			$this->assertNotNull(
+				$this->refusalOf($this->middleware(true), $class, $method),
+				$name.' reads register data and must stay closed while the mode holds.'
+			);
 		}
 
 		$this->assertArrayHasKey(
@@ -135,8 +168,8 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 
 	/**
 	 * Of every controller in lib/Controller, exactly the console, the
-	 * maintenance verbs and the consistency check stay reachable while the
-	 * mode holds; every other controller is refused.
+	 * maintenance verbs, the consistency check and the dependency breakers
+	 * stay reachable while the mode holds; every other controller is refused.
 	 *
 	 * Pins the reachable set over the whole controller directory, so changing
 	 * how the middleware recognises those three neither opens nor closes
@@ -160,6 +193,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 			[
 				'OCA\\OpenRegister\\Controller\\OperationsConsistencyController',
 				'OCA\\OpenRegister\\Controller\\OperationsConsoleController',
+				'OCA\\OpenRegister\\Controller\\OperationsDependenciesController',
 				'OCA\\OpenRegister\\Controller\\OperationsMaintenanceController',
 			],
 			$reachable

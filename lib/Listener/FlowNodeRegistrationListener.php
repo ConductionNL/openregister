@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\Listener\FlowNodes\ActionFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\BoundaryFlowNodes;
 use OCA\OpenRegister\Listener\FlowNodes\CoreFlowNodes;
+use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -50,12 +51,14 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 *
 	 * @param CoreFlowNodes     $core     Shaping, branching, routing and object steps.
 	 * @param ActionFlowNodes   $actions  Reshaping, messaging, human and lock steps.
-	 * @param BoundaryFlowNodes $boundary The case-layer steps and the entry points.
+	 * @param BoundaryFlowNodes      $boundary The case-layer steps and the entry points.
+	 * @param CodeNodeInterface|null $code     The code step, registered last; it hides itself without its runner.
 	 */
 	public function __construct(
 		private readonly CoreFlowNodes $core,
 		private readonly ActionFlowNodes $actions,
 		private readonly BoundaryFlowNodes $boundary,
+		private readonly ?CodeNodeInterface $code=null,
 	) {
 
 	}//end __construct()
@@ -75,6 +78,9 @@ class FlowNodeRegistrationListener implements IEventListener {
 		}
 
 		$nodes = [...$this->core->nodes(), ...$this->actions->nodes(), ...$this->boundary->nodes()];
+		if ($this->code !== null) {
+			$nodes[] = $this->code;
+		}
 		foreach ($nodes as $node) {
 			$event->registerNode(node: $node);
 		}

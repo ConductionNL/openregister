@@ -23,6 +23,7 @@ final class ActivityLinksControllerFactory {
 	 * @param ActivityFilterServiceInterface $filterService Constructor argument.
 	 * @param ObjectOperationsInterface $objectService Constructor argument.
 	 * @param TimelineVisibilityServiceInterface $visibility Constructor argument.
+	 * @param \Psr\Log\LoggerInterface|null $logger Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -32,6 +33,7 @@ final class ActivityLinksControllerFactory {
 		\OCA\OpenRegister\Service\ActivityFilterServiceInterface $filterService,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService,
 		\OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface $visibility,
+		?\Psr\Log\LoggerInterface $logger = null,
 	): array {
 		return [
 			$request,
@@ -39,6 +41,7 @@ final class ActivityLinksControllerFactory {
 				filterService: $filterService,
 				objectService: $objectService,
 				visibility: $visibility,
+				logger: $logger,
 			),
 		];
 	}//end args()

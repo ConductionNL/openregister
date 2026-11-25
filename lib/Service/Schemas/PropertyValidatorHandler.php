@@ -39,6 +39,9 @@ use OCA\OpenRegister\Service\Object\ReferenceKey;
  *   vocabulary tables (~170 lines of pure data), deliberately co-located so a type is
  *   accepted, published and documented in one edit — see the TYPES docblock: "there is no
  *   second file to forget". Extracting them to satisfy a line count would defeat that intent.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Thirteen: most are the declaration checks
+ *   (generated identifier, coded choice, reference filter, scoped property, property source,
+ *   error messages), each a static assert on one annotation; the vocabulary is their sum.
  */
 class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 
@@ -254,6 +257,8 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'bsn',
 		// Dutch licence plate in one of the fourteen sidecodes. See LicensePlateNlFormat.
 		'license-plate-nl',
+		// IANA time zone name, as DateTimeZone lists it. See TimeZoneFormat.
+		'time-zone',
 		// International Bank Account Number, checked with mod-97. See IbanFormat.
 		'iban',
 		// Nextcloud user id, checked against the user backend. The referenced
@@ -530,6 +535,10 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'indexed' => [
 			'value' => 'boolean',
 			'description' => 'Keep a database index on the field, so filtering and sorting on it stays fast without making it a facet.',
+		],
+		'searchable' => [
+			'value' => 'boolean',
+			'description' => 'Keep a text-search index on the field, so searching inside its value stays fast. PostgreSQL with pg_trgm only.',
 		],
 		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
 		'matchType' => ['value' => 'string', 'description' => 'How search compares a term against this field: exact, prefix, range, fuzzy or fulltext.'],
@@ -948,6 +957,7 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		ReferenceFilterDeclaration::fromProperty(property: $property, path: $path);
 		ScopedPropertyDeclaration::assert(property: $property, path: $path);
 		PropertySourceDeclaration::assert(property: $property, path: $path);
+		ErrorMessagesDeclaration::assert(property: $property, path: $path);
 		RequiredWhenDeclaration::fromProperty(property: $property, path: $path);
 		PropertyTitles::assert(property: $property, path: $path);
 		// Cross-app-semantic-references: a semantic type no resolver can match is refused at save.

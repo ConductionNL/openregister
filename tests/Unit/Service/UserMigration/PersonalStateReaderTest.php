@@ -17,9 +17,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\UserMigration;
 
 use OCA\OpenRegister\Service\UserMigration\PersonalStateReader;
+use OCA\OpenRegister\Kernel\Contracts\RecentLensInterface;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 
@@ -108,6 +110,80 @@ final class PersonalStateReaderTest extends TestCase {
 	}//end testWatchesAreReadByUser()
 
 	/**
+	 * The calendar feed tokens of the user, read by the user column.
+	 */
+	public function testFeedTokensAreReadByUser(): void {
+		$tokens = $this->reader(rows: [['id' => 2, 'user_id' => 'alice', 'label' => 'Agenda', 'scope_type' => 'schema', 'scope_id' => '9', 'token' => 'x']])->feedTokens(userId: 'alice');
+
+		$this->assertSame(['table' => 'openregister_calendar_feeds', 'column' => 'user_id', 'value' => 'alice', 'order' => 'id ASC'], $this->sorted());
+		$this->assertCount(1, $tokens);
+		$this->assertSame('Agenda', $tokens[0]['label']);
+		$this->assertSame('schema', $tokens[0]['scopeType']);
+		$this->assertSame('9', $tokens[0]['scopeId']);
+		$this->assertArrayNotHasKey('token', $tokens[0]);
+		$this->assertNull($tokens[0]['createdAt']);
+	}//end testFeedTokensAreReadByUser()
+
+	/**
+	 * The timeline entries the user wrote, read by the author column.
+	 */
+	public function testTimelineEntriesAreReadByAuthor(): void {
+		$entries = $this->reader(rows: [['id' => 6, 'author' => 'alice', 'object_uuid' => 'obj-1', 'message' => 'Gebeld.']])->timelineEntries(userId: 'alice');
+
+		$this->assertSame(['table' => 'openregister_timeline_entries', 'column' => 'author', 'value' => 'alice', 'order' => 'id ASC'], $this->sorted());
+		$this->assertSame('Gebeld.', $entries[0]['message']);
+		$this->assertSame('obj-1', $entries[0]['objectUuid']);
+		$this->assertSame('internal', $entries[0]['visibility']);
+	}//end testTimelineEntriesAreReadByAuthor()
+
+	/**
+	 * The notes the user wrote: their own comments of the OpenRegister notes type, nobody else's.
+	 */
+	public function testNotesAreTheUsersOwnOpenRegisterComments(): void {
+		$conditions = [];
+		$expr = $this->createMock(IExpressionBuilder::class);
+		$expr->method('eq')->willReturnCallback(static fn (string $column, string $value): string => $column . ' = ' . $value);
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('expr')->willReturn($expr);
+		$qb->method('createNamedParameter')->willReturnCallback(static fn (mixed $value): string => "'" . $value . "'");
+		$qb->expects($this->once())->method('select')->with('object_id', 'message', 'creation_timestamp')->willReturnSelf();
+		$qb->expects($this->once())->method('from')->with('comments')->willReturnSelf();
+		foreach (['where', 'andWhere'] as $method) {
+			$qb->method($method)->willReturnCallback(
+				static function (string $condition) use ($qb, &$conditions): IQueryBuilder {
+					$conditions[] = $condition;
+					return $qb;
+				}
+			);
+		}
+
+		$qb->method('orderBy')->willReturnSelf();
+		$result = $this->createMock(IResult::class);
+		$result->method('fetch')->willReturnOnConsecutiveCalls(
+			['object_id' => 'obj-2', 'message' => 'Termijn verlengd.', 'creation_timestamp' => '2026-10-06 11:00:00'],
+			['object_id' => 'obj-3', 'message' => 'Zie bijlage.', 'creation_timestamp' => null],
+			false
+		);
+		$qb->method('executeQuery')->willReturn($result);
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturn($qb);
+
+		$notes = (new PersonalStateReader(db: $db))->notes(userId: 'alice');
+
+		$this->assertSame(["object_type = 'openregister'", "actor_type = 'users'", "actor_id = 'alice'"], $conditions);
+		$this->assertSame(
+			[
+				['objectUuid' => 'obj-2', 'message' => 'Termijn verlengd.', 'createdAt' => '2026-10-06 11:00:00'],
+				['objectUuid' => 'obj-3', 'message' => 'Zie bijlage.', 'createdAt' => null],
+			],
+			$notes
+		);
+		$db2 = $this->createMock(IDBConnection::class);
+		$db2->expects($this->never())->method('getQueryBuilder');
+		$this->assertSame([], (new PersonalStateReader(db: $db2))->notes(userId: ''));
+	}//end testNotesAreTheUsersOwnOpenRegisterComments()
+
+	/**
 	 * Without a user nothing is read: an empty owner must never match every row.
 	 */
 	public function testNoUserReadsNothing(): void {
@@ -116,6 +192,90 @@ final class PersonalStateReaderTest extends TestCase {
 
 		$this->assertSame([], (new PersonalStateReader(db: $db))->ownedViews(userId: ''));
 	}//end testNoUserReadsNothing()
+
+	/**
+	 * Task 1.2: recently opened is the `_recent` lens's own history, newest first, uuid and moment only.
+	 */
+	public function testRecentsAreTheReadHistoryOfTheUser(): void {
+		$history = $this->createMock(RecentLensInterface::class);
+		$history->expects($this->once())->method('resolveRecentLens')->with('alice')->willReturn(
+			['available' => true, 'reason' => null, 'views' => ['obj-9' => '2026-11-02 09:15:00', 'obj-4' => '2026-11-01 16:40:00']]
+		);
+		$reader = new PersonalStateReader(db: $this->createMock(IDBConnection::class), readHistory: $history);
+
+		$this->assertSame(
+			[['objectUuid' => 'obj-9', 'openedAt' => '2026-11-02 09:15:00'], ['objectUuid' => 'obj-4', 'openedAt' => '2026-11-01 16:40:00']],
+			$reader->recents(userId: 'alice')
+		);
+	}//end testRecentsAreTheReadHistoryOfTheUser()
+
+	/**
+	 * An audit trail that is off or unreadable lists no recents; no user or no history reads nothing.
+	 */
+	public function testRecentsAreEmptyWhenTheHistoryCannotAnswer(): void {
+		$history = $this->createMock(RecentLensInterface::class);
+		$history->expects($this->once())->method('resolveRecentLens')->willReturn(
+			['available' => false, 'reason' => 'audit-trail-disabled', 'views' => ['obj-1' => 'x']]
+		);
+		$db = $this->createMock(IDBConnection::class);
+
+		$this->assertSame([], (new PersonalStateReader(db: $db, readHistory: $history))->recents(userId: 'alice'));
+		$this->assertSame([], (new PersonalStateReader(db: $db, readHistory: $history))->recents(userId: ''));
+		$this->assertSame([], (new PersonalStateReader(db: $db))->recents(userId: 'alice'));
+	}//end testRecentsAreEmptyWhenTheHistoryCannotAnswer()
+
+	/**
+	 * Task 1.2: the user's own notification preferences, global and scoped, by key;
+	 * other user values and values that are no preference stay out.
+	 */
+	public function testNotificationPreferencesAreTheUsersOwnOverrides(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->expects($this->once())->method('getUserKeys')->with('alice', 'openregister')->willReturn(
+			['pref_theme', 'notification_pref/zaak/status-changed', 'notif_pref_s/register:zaken/zaak/assigned', 'notification_pref/zaak/closed', 'notification_pref/']
+		);
+		$config->method('getUserValue')->willReturnCallback(
+			static fn (string $uid, string $app, string $key, string $default): string => match ($key) {
+				'notification_pref/zaak/status-changed' => '{"enabled":false}',
+				'notif_pref_s/register:zaken/zaak/assigned' => '{"enabled":true,"channels":["email"]}',
+				'notification_pref/zaak/closed' => 'not json',
+				default => 'unexpected read of ' . $key,
+			}
+		);
+		$reader = new PersonalStateReader(db: $this->createMock(IDBConnection::class), config: $config);
+
+		$this->assertSame(
+			[
+				['key' => 'notification_pref/zaak/status-changed', 'value' => ['enabled' => false]],
+				['key' => 'notif_pref_s/register:zaken/zaak/assigned', 'value' => ['enabled' => true, 'channels' => ['email']]],
+			],
+			$reader->notificationPreferences(userId: 'alice')
+		);
+	}//end testNotificationPreferencesAreTheUsersOwnOverrides()
+
+	/**
+	 * Without a user or a config nothing is read.
+	 */
+	public function testNoUserReadsNoPreferences(): void {
+		$config = $this->createMock(IConfig::class);
+		$config->expects($this->never())->method('getUserKeys');
+		$db = $this->createMock(IDBConnection::class);
+
+		$this->assertSame([], (new PersonalStateReader(db: $db, config: $config))->notificationPreferences(userId: ''));
+		$this->assertSame([], (new PersonalStateReader(db: $db))->notificationPreferences(userId: 'alice'));
+	}//end testNoUserReadsNoPreferences()
+
+	/**
+	 * Only a user's own preference keys count: no group default, no other value, nothing too long to store.
+	 */
+	public function testWhichKeysArePreferences(): void {
+		$this->assertTrue(PersonalStateReader::isPreferenceKey(key: 'notification_pref/zaak/closed'));
+		$this->assertTrue(PersonalStateReader::isPreferenceKey(key: 'notif_pref_s/register:zaken/zaak/assigned'));
+		$this->assertFalse(PersonalStateReader::isPreferenceKey(key: 'notif_grp_pref/team-a/global/zaak/closed'));
+		$this->assertFalse(PersonalStateReader::isPreferenceKey(key: 'pref_theme'));
+		$this->assertFalse(PersonalStateReader::isPreferenceKey(key: 'notification_pref/'));
+		$this->assertFalse(PersonalStateReader::isPreferenceKey(key: 'notification_pref/' . str_repeat('a', 47)));
+		$this->assertTrue(PersonalStateReader::isPreferenceKey(key: 'notification_pref/' . str_repeat('a', 46)));
+	}//end testWhichKeysArePreferences()
 
 	/**
 	 * What was asked, in a fixed key order.

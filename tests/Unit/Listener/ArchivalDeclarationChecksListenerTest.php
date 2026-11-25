@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationOrder;
 use OCA\OpenRegister\Listener\ArchivalDeclarationChecksListener;
+use OCA\OpenRegister\Service\Retention\ExpiryDeclaration;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -61,6 +62,19 @@ class ArchivalDeclarationChecksListenerTest extends TestCase {
 		$this->expectExceptionMessage('x-openregister-archival: ');
 		$event->checks()[1]->check(schema: $schema, discarded: new DiscardedAnnotations());
 	}//end testTheArchivalSlotRefusesAMalformedBlock()
+
+	public function testTheArchivalSlotRefusesAnUnknownExpiryAction(): void {
+		$event = new SchemaDeclarationChecksEvent();
+		(new ArchivalDeclarationChecksListener(logger: new NullLogger()))->handle(event: $event);
+		$schema = new Schema();
+		$schema->setSlug('dossiers');
+		$schema->setProperties(['reference' => ['type' => 'string']]);
+		$schema->setConfiguration([ExpiryDeclaration::ANNOTATION => [ExpiryDeclaration::KEY => ['action' => 'remove']]]);
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('expiry.action "remove" is not allowed');
+		$event->checks()[1]->check(schema: $schema, discarded: new DiscardedAnnotations());
+	}//end testTheArchivalSlotRefusesAnUnknownExpiryAction()
 
 	public function testAnyOtherEventIsIgnored(): void {
 		(new ArchivalDeclarationChecksListener(logger: new NullLogger()))->handle(event: new Event());

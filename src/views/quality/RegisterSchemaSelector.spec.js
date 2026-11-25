@@ -22,6 +22,13 @@ jest.mock('@nextcloud/vue', () => {
 				return h('div', { class: 'nc-select' })
 			},
 		},
+		NcNoteCard: {
+			name: 'NcNoteCard',
+			props: { type: String, heading: String },
+			render() {
+				return h('div', { class: 'nc-note-card' }, [this.heading, ': ', this.$slots.default?.()])
+			},
+		},
 	}
 })
 jest.mock('../../store/store.js', () => {
@@ -39,8 +46,8 @@ jest.mock('../../store/store.js', () => {
 	}
 })
 
-const REGISTERS = [{ id: 1, title: 'Reg One' }, { id: 2, name: 'Named' }, { id: 3 }]
-const SCHEMAS = [{ id: 10, title: 'Person' }, { id: 11, name: 'Org' }, { id: 12 }]
+const REGISTERS = [{ id: 1, title: 'Reg One', slug: 'catalogus' }, { id: 2, name: 'Named', slug: 'named' }, { id: 3 }]
+const SCHEMAS = [{ id: 10, title: 'Person', slug: 'module' }, { id: 11, name: 'Org', slug: 'org' }, { id: 12 }]
 
 /**
  * Mount with a route query.
@@ -78,20 +85,69 @@ describe('RegisterSchemaSelector', () => {
 		expect(qualityStore.setSelection).not.toHaveBeenCalled()
 	})
 
-	it('restores the selection from the route', async () => {
-		const { registerSelect, schemaSelect } = await mountWith({ register: '2', schema: '11' })
-		expect(qualityStore.setSelection).toHaveBeenCalledWith('2', '11')
-		expect(qualityStore.fetchSchemasForRegister).toHaveBeenCalledWith('2')
+	it('restores the selection from the route by id', async () => {
+		const { wrapper, registerSelect, schemaSelect } = await mountWith({ register: '2', schema: '11' })
+		expect(qualityStore.setSelection).toHaveBeenLastCalledWith(2, 11)
+		expect(qualityStore.fetchSchemasForRegister).toHaveBeenCalledWith(2)
 		expect(registerSelect.props('modelValue')).toEqual({ id: 2, label: 'Named' })
 		expect(schemaSelect.props('modelValue')).toEqual({ id: 11, label: 'Org' })
 		expect(schemaSelect.props('options').map((o) => o.label)).toEqual(['Person', 'Org', '12'])
+		expect(wrapper.findAll('.nc-note-card')).toHaveLength(0)
 	})
 
-	it('restores a route register without a schema and ignores an unknown register', async () => {
-		const { registerSelect, schemaSelect } = await mountWith({ register: '99' })
-		expect(qualityStore.setSelection).toHaveBeenCalledWith('99', null)
+	it('restores the selection from the route by slug and selects their ids', async () => {
+		const { wrapper, registerSelect, schemaSelect, router } = await mountWith({ register: 'catalogus', schema: 'module' })
+		expect(qualityStore.fetchSchemasForRegister).toHaveBeenCalledWith(1)
+		expect(qualityStore.setSelection).toHaveBeenLastCalledWith(1, 10)
+		expect(registerSelect.props('modelValue')).toEqual({ id: 1, label: 'Reg One' })
+		expect(schemaSelect.props('modelValue')).toEqual({ id: 10, label: 'Person' })
+		expect(wrapper.findAll('.nc-note-card')).toHaveLength(0)
+		expect(router.replace).not.toHaveBeenCalled()
+	})
+
+	it('restores a route register without a schema', async () => {
+		const { registerSelect, schemaSelect } = await mountWith({ register: 'named' })
+		expect(qualityStore.setSelection).toHaveBeenLastCalledWith(2, null)
+		expect(registerSelect.props('modelValue')).toEqual({ id: 2, label: 'Named' })
+		expect(schemaSelect.props('modelValue')).toBeNull()
+	})
+
+	it('names an unknown register, selects nothing and does not load its schemas', async () => {
+		qualityStore.selectedRegister = 1
+		qualityStore.selectedSchema = 10
+		const { wrapper, registerSelect, schemaSelect, router } = await mountWith({ register: 'nope', schema: 'module' })
+		expect(qualityStore.setSelection).toHaveBeenCalledTimes(1)
+		expect(qualityStore.setSelection).toHaveBeenCalledWith(null, null)
+		expect(qualityStore.fetchSchemasForRegister).not.toHaveBeenCalled()
 		expect(registerSelect.props('modelValue')).toBeNull()
 		expect(schemaSelect.props('modelValue')).toBeNull()
+		const notes = wrapper.findAll('.nc-note-card')
+		expect(notes).toHaveLength(1)
+		expect(notes[0].text()).toBe('Unknown Register: nope — Choose a register')
+		expect(router.replace).not.toHaveBeenCalled()
+	})
+
+	it('names an unknown schema and keeps only the register selected', async () => {
+		const { wrapper, registerSelect, schemaSelect } = await mountWith({ register: '1', schema: 'nope' })
+		expect(qualityStore.setSelection).toHaveBeenCalledTimes(1)
+		expect(qualityStore.setSelection).toHaveBeenCalledWith(1, null)
+		expect(registerSelect.props('modelValue')).toEqual({ id: 1, label: 'Reg One' })
+		expect(schemaSelect.props('modelValue')).toBeNull()
+		const notes = wrapper.findAll('.nc-note-card')
+		expect(notes).toHaveLength(1)
+		expect(notes[0].text()).toBe('Unknown Schema: nope — Choose a schema')
+	})
+
+	it('drops the notice once the steward chooses', async () => {
+		const { wrapper, schemaSelect } = await mountWith({ register: '1', schema: 'nope' })
+		schemaSelect.vm.$emit('update:modelValue', { id: 10, label: 'Person' })
+		await flushPromises()
+		expect(wrapper.findAll('.nc-note-card')).toHaveLength(0)
+
+		const unknown = await mountWith({ register: 'nope' })
+		unknown.registerSelect.vm.$emit('update:modelValue', { id: 2, label: 'Named' })
+		await flushPromises()
+		expect(unknown.wrapper.findAll('.nc-note-card')).toHaveLength(0)
 	})
 
 	it('restores the store selection and writes it to the route', async () => {

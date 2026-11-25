@@ -68,6 +68,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowBoundCondition
  * @uses   \OCA\OpenRegister\Service\Query\RelatedRowField
  * @uses   \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @uses   \OCA\OpenRegister\Service\Schemas\SchemaRefInRegister
  */
 class ReferenceFilterApplyTest extends TestCase {
 
@@ -105,13 +106,15 @@ class ReferenceFilterApplyTest extends TestCase {
 	/**
 	 * A target on the logging builder, with an organisation scope that logs.
 	 *
-	 * @param array<int, string> $log The shared call log.
+	 * @param array<int, string> $log       The shared call log.
+	 * @param array<int, int>    $schemaIds The register's own schema ids.
 	 *
 	 * @return RelatedRowFilterTarget
 	 */
-	private function target(array &$log): RelatedRowFilterTarget {
+	private function target(array &$log, array $schemaIds=[]): RelatedRowFilterTarget {
 		$register = new Register();
 		$register->setId(1);
+		$register->setSchemas($schemaIds);
 
 		return new RelatedRowFilterTarget(
 			qb: $this->loggingBuilder(log: $log),
@@ -131,11 +134,25 @@ class ReferenceFilterApplyTest extends TestCase {
 	 * @param array<int, bool>             $tables   Whether the table exists, per schema id.
 	 * @param bool                         $readable What the property guard answers.
 	 * @param Schema|null                  $byId     What find(id) returns; null throws.
+	 * @param array<string, Schema>        $inIds    What findBySlugInIds returns per slug.
 	 *
 	 * @return RelatedRowQueryApplier The applier.
 	 */
-	private function loggingApplier(array &$log, array $bySlug, array $tables, bool $readable=true, ?Schema $byId=null): RelatedRowQueryApplier {
+	private function loggingApplier(
+		array &$log,
+		array $bySlug,
+		array $tables,
+		bool $readable=true,
+		?Schema $byId=null,
+		array $inIds=[]
+	): RelatedRowQueryApplier {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('findBySlugInIds')->willReturnCallback(
+			static function (string $slug, array $schemaIds) use (&$log, $inIds): ?Schema {
+				$log[] = 'findBySlugInIds ' . $slug . ' ' . implode(',', $schemaIds);
+				return ($inIds[$slug] ?? null);
+			}
+		);
 		$schemaMapper->method('findBySlug')->willReturnCallback(
 			static function (string $slug) use (&$log, $bySlug): array {
 				$log[] = 'findBySlug ' . $slug;
@@ -263,6 +280,50 @@ class ReferenceFilterApplyTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * A `$ref` slug two registers share resolves to the queried register's own schema.
+	 *
+	 * Globally the slug is ambiguous, which the instance-wide lookup refuses;
+	 * inside the register the query runs in there is exactly one.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	public function testARefSlugResolvesInsideTheQueriedRegisterFirst(): void {
+		$other = new Schema();
+		$other->setId(40);
+		$log     = [];
+		$applier = $this->loggingApplier(log: $log, bySlug: ['person' => [$other, $this->person()], '12' => []], tables: [], byId: $this->person(), inIds: ['person' => $this->person()]);
+
+		$applied = $applier->apply(
+			target: $this->target(log: $log, schemaIds: [7, 12]),
+			query: ['_ref' => ['aanvrager' => ['woonplaats' => 'Zuiddrecht']]],
+			schema: $this->request()
+		);
+
+		$this->assertSame(1, $applied);
+		$this->assertSame(['findBySlugInIds person 7,12', 'findBySlug 12', 'find 12', 'tableName 12'], array_slice($log, 0, 4));
+		$this->assertNotContains('findBySlug person', $log);
+	}//end testARefSlugResolvesInsideTheQueriedRegisterFirst()
+
+	/**
+	 * A slug the queried register does not carry falls through to the instance-wide lookup, unchanged.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	public function testARefSlugTheRegisterLacksFallsBackToTheGlobalLookup(): void {
+		$log     = [];
+		$applier = $this->loggingApplier(log: $log, bySlug: ['person' => [$this->person()]], tables: [], byId: $this->person());
+
+		$applied = $applier->apply(
+			target: $this->target(log: $log, schemaIds: [7]),
+			query: ['_ref' => ['aanvrager' => ['woonplaats' => 'Zuiddrecht']]],
+			schema: $this->request()
+		);
+
+		$this->assertSame(1, $applied);
+		$this->assertSame(['findBySlugInIds person 7', 'findBySlug person', 'findBySlug 12', 'find 12'], array_slice($log, 0, 4));
+	}//end testARefSlugTheRegisterLacksFallsBackToTheGlobalLookup()
+
 	public function testARefBlockAndItsReferencedTwinRenderTheSameClause(): void {
 		$refLog = [];
 		$this->loggingApplier(log: $refLog, bySlug: ['person' => [$this->person()]], tables: [], byId: $this->person())->apply(
@@ -327,31 +388,32 @@ class ReferenceFilterApplyTest extends TestCase {
 	}//end testAnUnreadableRefBlockIsRefusedNotDropped()
 
 	/**
-	 * A property holding a list of references is refused, not answered with an equality join that matches nothing.
+	 * A property holding a list of references joins through the list: the request
+	 * matches when one person in its list satisfies the block, under that person
+	 * schema's own access predicate.
 	 *
 	 * @return void
 	 */
-	public function testAListReferenceIsRefused(): void {
+	public function testAListReferenceJoinsThroughTheList(): void {
 		$request = $this->request();
 		$request->setProperties(['betrokkenen' => ['type' => 'array', 'items' => ['type' => 'string', '$ref' => 'person']]]);
 		$log = [];
 
-		try {
-			$this->loggingApplier(log: $log, bySlug: ['person' => [$this->person()]], tables: [], byId: $this->person())->apply(
-				target: $this->target(log: $log),
-				query: ['_ref' => ['betrokkenen' => ['woonplaats' => 'Z']]],
-				schema: $request
-			);
-			$this->fail('A list reference was applied.');
-		} catch (InvalidArgumentException $e) {
-			$this->assertSame(
-				'_ref[betrokkenen]: filtering through a list of references is not supported yet; only a property holding one reference can be filtered through.',
-				$e->getMessage()
-			);
-		}
+		$applied = $this->loggingApplier(log: $log, bySlug: ['person' => [$this->person()]], tables: [], byId: $this->person())->apply(
+			target: $this->target(log: $log),
+			query: ['_ref' => ['betrokkenen' => ['woonplaats' => 'Zuiddrecht']]],
+			schema: $request
+		);
 
-		$this->assertNotContains('andWhere', $log);
-	}//end testAListReferenceIsRefused()
+		$this->assertSame(1, $applied);
+		$this->assertContains(
+			'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_12 rel0 WHERE JSON_CONTAINS(t."betrokkenen", JSON_QUOTE(rel0._uuid))'
+			. " AND rel0._deleted IS NULL AND ((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.\"woonplaats\" = :rel0_c0)",
+			$log
+		);
+		$this->assertContains('rbac rel0 read openregister_table_1_12', $log);
+		$this->assertSame('andWhere', end($log));
+	}//end testAListReferenceJoinsThroughTheList()
 
 	/**
 	 * A uuid `$ref` is found by uuid when it is neither a slug nor an id.

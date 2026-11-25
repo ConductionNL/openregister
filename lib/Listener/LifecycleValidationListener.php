@@ -37,6 +37,7 @@ use OCA\OpenRegister\Service\Lifecycle\LifecycleWrite;
 use OCA\OpenRegister\Service\Lifecycle\TransitionAttempt;
 use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Rules\ConditionJudgement;
+use OCA\OpenRegister\Service\Rules\NamedConditionScope;
 use OCA\OpenRegister\Service\Rules\RuleDescriptor;
 use OCA\OpenRegister\Service\Rules\RuleRunRecorderInterface;
 use OCA\OpenRegister\Service\Rules\RuleRunSubject;
@@ -431,6 +432,16 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return RuleTrace
 	 */
 	private function conditionTrace(LifecycleAttempt $attempt, ?array $refusal): RuleTrace {
+		if (is_array($refusal['unresolved'] ?? null) === true) {
+			// A named condition that could not be resolved: the run log names
+			// it, rather than tracing an expression that was never evaluated.
+			return new RuleTrace(
+				verdict: RuleVocabulary::VERDICT_REFUSED,
+				operand: '$condition:'.(string)($refusal['unresolved']['condition'] ?? ''),
+				message: (string)($refusal['message'] ?? '')
+			);
+		}
+
 		$verdict = RuleVocabulary::VERDICT_FIRED;
 		$message = null;
 		if ($refusal !== null) {
@@ -467,16 +478,19 @@ class LifecycleValidationListener implements IEventListener {
 	 * @return TransitionAttempt
 	 */
 	private function transitionAttempt(LifecycleAttempt $attempt): TransitionAttempt {
-		$edit = $attempt->edit;
+		$edit   = $attempt->edit;
+		$schema = $edit->declaration->schema;
 
 		return new TransitionAttempt(
 			write: new LifecycleWrite(
 				newData: $edit->getNewData(),
 				oldData: $edit->getOldData(),
-				schemaSlug: (string)$edit->declaration->schema->getSlug(),
+				schemaSlug: (string)$schema->getSlug(),
 				field: $edit->declaration->field()
 			),
-			move: new TransitionMove(action: $attempt->action, from: $edit->getFromState(), to: $edit->getToState())
+			move: new TransitionMove(action: $attempt->action, from: $edit->getFromState(), to: $edit->getToState()),
+			// The schema's own library: the one its save checked every reference against.
+			conditions: NamedConditionScope::libraryFrom(configuration: $schema->getConfiguration())
 		);
 	}//end transitionAttempt()
 }//end class

@@ -256,6 +256,31 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertEquals(50, $data['entriesVerified']);
 	}
 
+	public function testVerifyTypedFailureKeepsItsStatus(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['from', null, null],
+				['to', null, null],
+			]);
+		$this->auditHashService->method('verifyChain')
+			->willThrowException(new \InvalidArgumentException('from must not be after to'));
+
+		$result = $this->controller->verify();
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['message' => 'from must not be after to', 'error' => 'invalid-argument'], $result->getData());
+	}
+
+	public function testIntegrityUntypedFailureIsAGeneric500(): void {
+		$this->auditHashService->method('getIntegrityStatus')
+			->willThrowException(new \RuntimeException('hash table missing'));
+
+		$result = $this->controller->integrity();
+
+		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
+	}
+
 	public function testVerifyWithRange(): void {
 		$this->request->method('getParam')
 			->willReturnMap([
@@ -552,8 +577,7 @@ class AuditTrailControllerTest extends TestCase {
 		$result = $this->controller->clearAll();
 
 		$this->assertEquals(500, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
 	}
 
 	public function testDestroyMultipleWithArrayIds(): void {

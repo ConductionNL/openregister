@@ -55,6 +55,18 @@ interface ChunkMapperInterface {
 	public function findBySource(string $sourceType, int $sourceId): array;
 
 	/**
+	 * Delete every chunk of one source.
+	 *
+	 * @param string $sourceType The source type (e.g. 'object', 'file').
+	 * @param int    $sourceId   The source id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/anonymising-as-an-archival-outcome/specs/retention-management/spec.md#requirement-anonymising-reaches-every-derived-copy-or-does-nothing-req-aao-003
+	 */
+	public function deleteBySource(string $sourceType, int $sourceId): void;
+
+	/**
 	 * Count all chunks in the database.
 	 *
 	 * @return int Total chunk count

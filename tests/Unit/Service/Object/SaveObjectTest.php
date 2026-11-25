@@ -2759,12 +2759,13 @@ class SaveObjectTest extends TestCase {
 		$related->setRelations([]);
 		$this->objectEntityMapper->method('find')->willReturn($related);
 
-		$this->objectEntityMapper->expects($this->once())->method('update')->with($related);
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->objectEntityMapper->expects($this->once())->method('appendRelation')
+			->with($this->callback(static fn (RegisterSchema $table): bool => $table->register === $register && $table->schema === $target), 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4', $entity->getUuid())
+			->willReturn(1);
 		$this->logger->expects($this->never())->method('warning');
 
 		$this->invokePrivateMethod(methodName: 'updateInverseRelations', args: [$entity, $register, $schema]);
-
-		$this->assertSame(expected: ['11111111-1111-4111-8111-111111111111'], actual: $related->getRelations());
 	}
 
 	/**
@@ -2778,14 +2779,12 @@ class SaveObjectTest extends TestCase {
 		$this->schemaMapper->expects($this->once())
 			->method('find')
 			->with('organisation')
-			->willReturn($this->createMockSchema(id: 2, slug: 'organisation'));
+			->willReturn($target = $this->createMockSchema(id: 2, slug: 'organisation'));
 
-		$related = new ObjectEntity();
-		$related->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
-		$related->setRelations([]);
-		$this->objectEntityMapper->method('find')->willReturn($related);
-
-		$this->objectEntityMapper->expects($this->once())->method('update')->with($related);
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->objectEntityMapper->expects($this->once())->method('appendRelation')
+			->with($this->callback(static fn (RegisterSchema $table): bool => $table->register === $register && $table->schema === $target), 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4', $entity->getUuid())
+			->willReturn(1);
 
 		$this->invokePrivateMethod(methodName: 'updateInverseRelations', args: [$entity, $register, $schema]);
 	}
@@ -3544,13 +3543,12 @@ class SaveObjectTest extends TestCase {
 		$relatedEntity->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
 		$relatedEntity->setRelations([]);
 
-		$this->objectEntityMapper->method('find')->willReturn($relatedEntity);
-		$this->objectEntityMapper->expects($this->once())->method('update');
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->objectEntityMapper->expects($this->once())->method('appendRelation')
+			->with($this->callback(static fn (RegisterSchema $table): bool => $table->register === $register && $table->schema === $targetSchema), 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4', 'test-uuid')
+			->willReturn(1);
 
 		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
-
-		$updatedRelations = $relatedEntity->getRelations();
-		$this->assertContains('test-uuid', $updatedRelations);
 	}
 
 	public function testUpdateInverseRelationsSkipsWhenAlreadyRelated(): void {
@@ -3649,8 +3647,10 @@ class SaveObjectTest extends TestCase {
 		$relatedEntity->setUuid('dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4');
 		$relatedEntity->setRelations([]);
 
-		$this->objectEntityMapper->method('find')->willReturn($relatedEntity);
-		$this->objectEntityMapper->expects($this->once())->method('update');
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->objectEntityMapper->expects($this->once())->method('appendRelation')
+			->with($this->callback(static fn (RegisterSchema $table): bool => $table->register === $register && $table->schema === $targetSchema), 'dec9ac6e-a4fd-40fc-be5f-e7ef6e5defb4', 'parent-uuid')
+			->willReturn(1);
 
 		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
 	}
@@ -4605,8 +4605,10 @@ class SaveObjectTest extends TestCase {
 		$relatedObject->setUuid($relatedUuid);
 		$relatedObject->setRelations([]);
 
-		$this->objectEntityMapper->method('find')->willReturn($relatedObject);
-		$this->objectEntityMapper->expects($this->once())->method('update');
+		$this->objectEntityMapper->expects($this->never())->method('update');
+		$this->objectEntityMapper->expects($this->once())->method('appendRelation')
+			->with($this->callback(static fn (RegisterSchema $table): bool => $table->register === $register && $table->schema === $targetSchema), $relatedUuid, $savedUuid)
+			->willReturn(1);
 
 		$this->invokePrivateMethod('updateInverseRelations', [$entity, $register, $schema]);
 	}

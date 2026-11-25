@@ -291,7 +291,53 @@ final class FlowTimerFactory {
 		$timer->setCalendarSlug($this->values->stringOrNull(value: ($config['calendar'] ?? null)));
 		$timer->setLadderSlug($this->values->stringOrNull(value: ($config['ladder'] ?? null)));
 		$timer->setExtensionMax(max(0, (int)($config['extensionMax'] ?? 1)));
+		$this->applyCalendarScope(timer: $timer, config: $config);
 	}//end applyProvenance()
+
+	/**
+	 * Record the record type's calendar and the person the term is computed for.
+	 *
+	 * A timer that names no calendar of its own takes the one its record type
+	 * (`schema`) names, if any; the unit and instance calendars follow as
+	 * before. `person` is the user whose working pattern the engine asks for.
+	 * Both go into the timer's metadata under
+	 * {@see WorkingCalendarScope::METADATA_KEY}, so every later computation
+	 * resolves the same way. A timer configured with neither is built exactly
+	 * as before.
+	 *
+	 * @param FlowTimer            $timer  The timer being built, its calendar slug set.
+	 * @param array<string, mixed> $config The configuration.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-working-calendar-resolves-per-record-type-unit-and-instance-req-wca-005
+	 * @spec openspec/changes/working-calendar-admin/specs/flow-business-timers/spec.md#requirement-a-persons-working-pattern-is-read-from-the-app-that-owns-it-req-wca-006
+	 */
+	private function applyCalendarScope(FlowTimer $timer, array $config): void {
+		$scope  = [];
+		$person = $this->values->stringOrNull(value: ($config['person'] ?? null));
+		if ($person !== null) {
+			$scope['person'] = $person;
+		}
+
+		$schema = $this->values->stringOrNull(value: ($config['schema'] ?? null));
+		if ($timer->getCalendarSlug() === null && $schema !== null) {
+			$slug = $this->calendars->recordTypeCalendar(schema: $schema);
+			if ($slug !== null) {
+				$timer->setCalendarSlug($slug);
+				$scope['scope'] = WorkingCalendarScope::SCOPE_RECORD_TYPE;
+				$scope['recordType'] = $schema;
+			}
+		}
+
+		if ($scope === []) {
+			return;
+		}
+
+		$metadata = ($timer->getMetadata() ?? []);
+		$metadata[WorkingCalendarScope::METADATA_KEY] = $scope;
+		$timer->setMetadata($metadata);
+	}//end applyCalendarScope()
 
 	/**
 	 * Set the state a new timer starts in.
@@ -345,7 +391,7 @@ final class FlowTimerFactory {
 	 * @return void
 	 */
 	private function shiftAnchor(FlowTimer $timer): void {
-		$calendar = $this->calendars->resolve(calendarSlug: $timer->getCalendarSlug(), organisation: $timer->getOrganisation());
+		$calendar = WorkingCalendarScope::ofTimer(timer: $timer)->calendarFrom(calendars: $this->calendars);
 		$anchorAt = $this->calculator->add(
 			addition: new SlaAddition(
 				start: DateTimeImmutable::createFromInterface($timer->getAnchorAt()),

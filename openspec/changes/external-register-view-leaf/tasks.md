@@ -27,17 +27,58 @@
       `id` (the record field that becomes its uuid), `mapping`. Every failure
       reads as no record and is logged; telling the failures apart is the
       leaf endpoint's job (open question 3), with task 2.1.
-- [ ] 1.2 Seeded `bag-adres`, `brk-perceel`, `woz-waarde` schemas with `x-openregister-object-source`, disabled until a source is configured.
+- [x] 1.2 Seeded `bag-adres`, `brk-perceel`, `woz-waarde` schemas with `x-openregister-object-source`, disabled until a source is configured.
+      `lib/Settings/external_register_register.json` (register
+      `external-registers`), imported by the repair step
+      `ImportExternalRegisterRegister` under the configuration id
+      `openregister.external-registers`. Each schema names
+      `openconnector-http`, read-only, with an empty `config.source`, so a
+      read before an administrator names the source is the explained
+      not-configured state and sends no request. The `find` paths follow the
+      BAG, BRK and WOZ bevragingen APIs; no mapping is declared, so the fields
+      are the source's own until one is.
 
 ## 2. Leaf
 
-- [ ] 2.1 `ExternalRegisterProvider` (ADR-019) with `widget` and `tab` surfaces; placement schema for `schema`, `key`, `display`.
-- [ ] 2.2 Widget: fetch by host key, display fields, fetch time and source, refresh, empty states.
+- [x] 2.1 `ExternalRegisterProvider` (ADR-019) with `widget` and `tab` surfaces; placement schema for `schema`, `key`, `display`.
+      `lib/Service/Integration/Providers/ExternalRegisterProvider.php`, id
+      `external-register`, group `data`, no required app, registered as a
+      built-in provider; `PLACEMENT_SCHEMA` declares `schema`, `key`
+      (required), `display` and an optional `register`. The widget and tab
+      surfaces are declared on the JS side (AD-6) with task 2.2. Open
+      question 3 took the proposed answer: `GET
+      /api/external-register/{register}/{schema}/{key}[?refresh=1]`
+      (`ExternalRegisterController` over `ExternalRegisterLookup`) answers
+      `{state, adminActionable, record, fetchedAt, source, cacheSeconds}`
+      from `ExternalRegisterDegrade`, every state a 200, cached for
+      `cacheSecondsFor()`; the caller's read right on the sourced schema is
+      asked first and a refusal is the same 404 as an unknown schema. The
+      degrade flags come from the new `OpenConnectorHttpProvider::lookup()`,
+      which tells an absent connector, a missing source, a refusal and an
+      outage apart; the object read path (`find()`) is unchanged. Known
+      limit: the router reports an upstream 404 as an outage, so "the
+      register has nothing" is only seen when the source answers an empty
+      body.
+- [x] 2.2 Widget: fetch by host key, display fields, fetch time and source, refresh, empty states.
+      Built in this repository until the library ships a
+      `CnExternalRegisterCard` (preferred when present):
+      `src/integrations/builtin/externalRegister.js` registers
+      `external-register` (widget and tab) in the shared registry from
+      `bootstrap.js`, like bookmarks, and
+      `src/integrations/builtin/ExternalRegisterCard.vue` reads
+      `GET /api/external-register/{register}/{schema}/{key}` by the host's key
+      value, shows the `display` fields in order (all scalar fields when
+      none are named), when it was fetched and from which source, and a
+      refresh that passes `?refresh=1`. Each state has its own sentence
+      (`externalRegisterState.js`): only `not-found` says the register holds
+      nothing. The key value reaches the card as `keyValue`, resolved by the
+      host from a token such as `@object.bagId`, because `key` is reserved in
+      Vue. Strings are in all 37 bundles.
 
 ## 3. Tests
 
 - [ ] 3.1 `tests/e2e/ci/external-register-leaf.spec.ts`: a stubbed BAG source, a case with an address, the widget renders.
-- [ ] 3.2 Unit tests for the provider mapping; vitest for the widget states.
+- [x] 3.2 Unit tests for the provider mapping; vitest for the widget states.
       **The degrade half is tested**:
       `tests/Unit/Service/Integration/ExternalRegisterDegradeTest.php` (9),
       including that exactly one state means the register has nothing, that
@@ -45,4 +86,11 @@
       change the moment somebody acts are not cached at all.
       **The provider half is tested**:
       `tests/Unit/Service/ObjectSource/OpenConnectorHttpProviderTest.php` (9).
-      The widget's vitest half waits for task 2.2.
+      **The widget is tested** (jest, the runner this repository uses):
+      `externalRegisterState.spec.js` (7), `externalRegister.spec.js` (3),
+      `ExternalRegisterCard.spec.js` (5), and the bootstrap order in
+      `bootstrap.spec.js`.
+      **The leaf's read is tested**:
+      `OpenConnectorHttpProviderTest` (+10 for `lookup()`),
+      `ExternalRegisterLookupTest` (9), `ExternalRegisterProviderTest` (6),
+      `ExternalRegisterControllerTest` (3), `ImportExternalRegisterRegisterTest` (3).

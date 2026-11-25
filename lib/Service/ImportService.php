@@ -31,6 +31,7 @@ use Closure;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\StoredEntity;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -676,12 +677,7 @@ class ImportService implements ObjectImporterInterface {
 	 */
 	private function registerFromBundle(array $decoded, array $target): array {
 		if ($this->isRegisterBundle(decoded: $decoded) === false) {
-			throw new RegisterNotFoundException(
-				registerSlugOrId: $target['registerSlug'] ?? 'unknown',
-				code: 404,
-				remedies: 'Create the register first, or supply a full register bundle '
-					. '(a register definition together with its schemas) to auto-create it.'
-			);
+			throw RegisterNotFoundException::forImport(registerSlugOrId: $target['registerSlug'] ?? 'unknown');
 		}
 
 		return $this->autoCreateRegisterFromBundle(bundle: $decoded, schemaHint: $target['schema']);
@@ -920,7 +916,7 @@ class ImportService implements ObjectImporterInterface {
 
 		foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
 			$schemaSlug = $worksheet->getTitle();
-			$schema = $this->getSchemaBySlug(slug: $schemaSlug);
+			$schema = $this->getSchemaBySlug(slug: $schemaSlug, register: $register);
 
 			// Initialize sheet summary even if no schema found.
 			$summary[$schemaSlug] = [
@@ -940,7 +936,7 @@ class ImportService implements ObjectImporterInterface {
 			// Skip sheets that don't correspond to a valid schema.
 			// Note: getSchemaBySlug() returns Schema (non-nullable) or throws exception.
 			try {
-				$schema = $this->getSchemaBySlug(slug: $schemaSlug);
+				$schema = $this->getSchemaBySlug(slug: $schemaSlug, register: $register);
 				// Schema is guaranteed to be non-null if we reach here (exception thrown otherwise).
 				// Add schema information to the summary.
 				$summary[$schemaSlug]['schema'] = self::schemaSummary(schema: $schema);
@@ -1876,14 +1872,19 @@ class ImportService implements ObjectImporterInterface {
 	/**
 	 * Get schema by slug
 	 *
-	 * @param string $slug The schema slug
+	 * A sheet names a schema of the register being imported into, so its slug
+	 * is looked up among that register's schemas first.
+	 *
+	 * @param string        $slug     The schema slug
+	 * @param Register|null $register The register imported into
 	 *
 	 * @return Schema The schema or null if not found
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	private function getSchemaBySlug(string $slug): Schema {
+	private function getSchemaBySlug(string $slug, ?Register $register = null): Schema {
 		// NO ERROR SUPPRESSION: Let schema lookup errors bubble up immediately!
-		$schema = $this->stores->schemaMapper->find($slug);
-		return $schema;
+		return (new SchemaRefInRegister(schemas: $this->stores->schemaMapper))->find(schemaRef: $slug, register: $register);
 	}//end getSchemaBySlug()
 
 	/**

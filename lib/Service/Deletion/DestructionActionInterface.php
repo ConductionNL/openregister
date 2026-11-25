@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
+
 /**
  * The audit action that records a destruction.
  *
@@ -42,5 +44,5 @@ interface DestructionActionInterface {
 	 *
 	 * @var string
 	 */
-	public const DESTRUCTION_ACTION = 'object.destroyed';
+	public const DESTRUCTION_ACTION = DestructionQuery::DESTRUCTION_ACTION;
 }//end interface

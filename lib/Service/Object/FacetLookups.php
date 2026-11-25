@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapperInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -37,14 +38,18 @@ final readonly class FacetLookups {
 	/**
 	 * Bundle the lookups.
 	 *
-	 * @param MagicMapperInterface  $unifiedObjectMapper Unified object mapper with storage routing.
-	 * @param SchemaMapperInterface $schemaMapper        Schema database mapper.
+	 * @param MagicMapperInterface         $unifiedObjectMapper Unified object mapper with storage routing.
+	 * @param SchemaMapperInterface        $schemaMapper        Schema database mapper.
+	 * @param RegisterMapperInterface|null $registerMapper      Reads the query's register, so a schema slug
+	 *                                                          resolves inside it; nullable and last so no
+	 *                                                          construction shifts.
 	 *
 	 * @spec openspec/specs/faceting-configuration/spec.md
 	 */
 	public function __construct(
 		public MagicMapperInterface $unifiedObjectMapper,
 		public SchemaMapperInterface $schemaMapper,
+		public ?RegisterMapperInterface $registerMapper = null,
 	) {
 	}//end __construct()
 }//end class

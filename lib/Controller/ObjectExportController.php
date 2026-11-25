@@ -62,6 +62,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Ods;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Resilience\Sheddable;
 
 /**
  * Serves the export of a register and schema's objects.
@@ -122,6 +123,7 @@ class ObjectExportController extends Controller {
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 10, period: 60)]
+	#[Sheddable]
 	public function export(string $register, string $schema, ObjectOperationsInterface $objectService): DataDownloadResponse|JSONResponse {
 		// Set the register and schema context.
 		$objectService->setRegister(register: $register);

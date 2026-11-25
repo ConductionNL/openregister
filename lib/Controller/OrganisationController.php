@@ -38,6 +38,7 @@ use OCA\OpenRegister\Controller\Support\MembershipChangeRun;
 use OCA\OpenRegister\Controller\Support\ParentAssignmentRun;
 use OCA\OpenRegister\Controller\Support\OrganisationControllerServices;
 use OCA\OpenRegister\Controller\Support\OrganisationEdit;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
@@ -80,6 +81,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.LongVariable)
  */
 class OrganisationController extends Controller {
+	use HandlesExceptionsTrait;
 
 	/**
 	 * The refusal of a join or leave for another user, by operation.
@@ -696,7 +698,7 @@ class OrganisationController extends Controller {
 			]
 		);
 
-		return self::errorResponse(error: $error);
+		return self::badRequestResponse(error: $error);
 	}//end membershipFailure()
 
 	/**
@@ -706,14 +708,14 @@ class OrganisationController extends Controller {
 	 *
 	 * @return JSONResponse
 	 */
-	private static function errorResponse(Exception $error): JSONResponse {
+	private static function badRequestResponse(Exception $error): JSONResponse {
 		return new JSONResponse(
 			data: [
 				'error' => $error->getMessage(),
 			],
 			statusCode: Http::STATUS_BAD_REQUEST
 		);
-	}//end errorResponse()
+	}//end badRequestResponse()
 
 	/**
 	 * Get organisation details by UUID
@@ -1319,7 +1321,7 @@ class OrganisationController extends Controller {
 			return null;
 		} catch (Exception $e) {
 			$this->logParentRefusal(run: $run, error: $e);
-			return self::errorResponse(error: $e);
+			return self::badRequestResponse(error: $e);
 		}//end try
 	}//end assignParent()
 
@@ -1559,10 +1561,7 @@ class OrganisationController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Organisation usage report failed');
 		}//end try
 	}//end usage()
 
@@ -1731,10 +1730,7 @@ class OrganisationController extends Controller {
 
 			return new JSONResponse(data: $report, statusCode: Http::STATUS_OK);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Tenant isolation verification failed');
 		}//end try
 	}//end isolationVerify()
 
@@ -1777,10 +1773,7 @@ class OrganisationController extends Controller {
 				statusCode: Http::STATUS_OK
 			);
 		} catch (Exception $e) {
-			return new JSONResponse(
-				data: ['error' => $e->getMessage()],
-				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-			);
+			return $this->handleApiException(e: $e, context: 'Tenant isolation metrics failed');
 		}//end try
 	}//end isolationMetrics()
 }//end class

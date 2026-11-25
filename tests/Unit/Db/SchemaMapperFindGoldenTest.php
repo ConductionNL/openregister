@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Tenancy\TenancyServices;
 /**
  * @covers \OCA\OpenRegister\Db\SchemaMapper
  * @uses   \OCA\OpenRegister\Db\SchemaMapper\SchemaLookup
+ * @uses   \OCA\OpenRegister\Db\RequestIdentityMap
  * @uses   \OCA\OpenRegister\Db\Schema
  * @uses   \OCA\OpenRegister\Service\WritePhaseProbe
  * @uses   \OCA\OpenRegister\Db\MultiTenancyTrait
@@ -104,15 +105,17 @@ class SchemaMapperFindGoldenTest extends TestCase {
 			}
 
 			$cache = (new \ReflectionProperty(SchemaMapper::class, 'findCache'))->getValue($mapper);
-			$outcome['cacheKeys'] = array_keys($cache);
+			$outcome['cacheKeys'] = $cache->keys();
 			$outcome['queries'] = $this->queryLog;
 			$outcome['logs'] = $this->logs;
 
-			// A second lookup by every cached key must be answered without a query.
+			// A second lookup by every cached key, under either RBAC flag, must be answered without a query.
 			$this->queryLog = [];
-			foreach (array_keys($cache) as $key) {
-				[$cachedId, $r, $m] = explode(':', $key);
-				$mapper->find($cachedId, [], $r === '1', $m === '1');
+			foreach ($cache->keys() as $key) {
+				[$cachedId, $m] = explode(':', $key);
+				foreach (['0', '1'] as $r) {
+					$mapper->find($cachedId, [], $r === '1', $m === '1');
+				}
 			}
 
 			$outcome['queriesOnCacheHit'] = count($this->queryLog);

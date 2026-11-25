@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Db\CatalogueScope;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
@@ -684,15 +685,12 @@ class HierarchyDescender {
 	}//end tableHasColumn()
 
 	/**
-	 * Every table on the instance, with its column names, read ONCE.
+	 * Every magic table on the instance, with its column names, read ONCE.
 	 *
-	 * `IDBConnection::createSchema()` introspects the whole database, which on
-	 * an instance carrying a magic table per register-and-schema pair is
-	 * hundreds of tables. Calling it per candidate table, as this class did
-	 * while the register list was pre-filtering the candidates down to one or
-	 * two, is affordable only for as long as that pre-filter holds — and the
-	 * pre-filter was the bug. One call per request is what makes asking the
-	 * database directly cheap enough to be the authority.
+	 * One catalogue query per request: the alternative, `createSchema()`,
+	 * introspects every table of the database one by one (3.9 s on an
+	 * instance with 334 magic tables, on every cold request). Only magic
+	 * tables are ever asked about, so only their columns are read.
 	 *
 	 * @return array<string, string[]> Table name => lower-cased column names.
 	 */
@@ -715,19 +713,24 @@ class HierarchyDescender {
 	}//end everyTable()
 
 	/**
-	 * Every table on the instance with its lower-cased column names, from one schema introspection.
+	 * Every magic table of this database with its lower-cased column names, from information_schema.
 	 *
 	 * @return array<string, string[]> Table name => lower-cased column names.
 	 *
-	 * @throws Throwable When the database cannot be introspected.
+	 * @throws Throwable When the catalogue cannot be read.
 	 */
 	private function readTables(): array {
+		$sql = 'SELECT table_name, column_name FROM information_schema.columns WHERE table_name LIKE ? AND '
+			. (new CatalogueScope(db: $this->db))->condition();
+		$rows = $this->db->prepare($sql)->execute(['%' . MagicMapperInterface::TABLE_PREFIX . '%'])->fetchAll();
+
 		$tables = [];
-		foreach ($this->db->createSchema()->getTables() as $candidate) {
-			$tables[(string)$candidate->getName()] = array_map(
-				static fn (object $c): string => strtolower((string)$c->getName()),
-				$candidate->getColumns()
-			);
+		foreach ($rows as $row) {
+			$table = (string)($row['table_name'] ?? $row['TABLE_NAME'] ?? '');
+			$column = (string)($row['column_name'] ?? $row['COLUMN_NAME'] ?? '');
+			if ($table !== '' && $column !== '') {
+				$tables[$table][] = strtolower($column);
+			}
 		}
 
 		return $tables;

@@ -107,12 +107,12 @@ class MessageDispatchProviderTest extends TestCase {
 		$this->assertSame('whatsapp-cloud-api', MessageDispatchProvider::SOURCE_ID);
 	}//end testMetadataMatchesLeafSpec()
 
-	public function testAllowedSourcesAreTheFiveSeededSlugs(): void {
+	public function testAllowedSourcesAreTheSeededSlugs(): void {
 		$this->assertSame(
-			['cmcom-sms', 'messagebird-sms', 'twilio-sms', 'whatsapp-cloud-api', 'whatsapp-bsp'],
+			['cmcom-sms', 'messagebird-sms', 'twilio-sms', 'whatsapp-cloud-api', 'whatsapp-bsp', 'smtp-mail'],
 			MessageDispatchProvider::ALLOWED_SOURCES
 		);
-	}//end testAllowedSourcesAreTheFiveSeededSlugs()
+	}//end testAllowedSourcesAreTheSeededSlugs()
 
 	public function testAuthRequirementsAreExternalApiKeyViaOpenConnector(): void {
 		$auth = $this->provider->authRequirements();
@@ -260,4 +260,33 @@ class MessageDispatchProviderTest extends TestCase {
 		$this->assertEquals($requests[0], $requests[1]);
 		$this->assertEquals($requests[0], $requests[2]);
 	}//end testTheReleaseFormOfDispatchSendsTheSameRequest()
+
+	public function testASentEmailAnswersWithTheMessageIdItLeftWith(): void {
+		$this->router->expects($this->once())->method('call')->with(
+			$this->provider,
+			$this->callback(static fn (UpstreamRequest $request): bool => ($request->options['headers']['Message-ID'] ?? null) === '<abc@example.org>')
+		)->willReturn(['queued' => true]);
+
+		$result = $this->provider->dispatch(
+			source: 'smtp-mail',
+			message: new OutboundMessage(path: '', body: ['to' => ['a@example.org']], headers: ['Message-ID' => '<abc@example.org>'])
+		);
+
+		$this->assertSame(['status' => 'sent', 'source' => 'smtp-mail', 'response' => ['queued' => true], 'messageId' => '<abc@example.org>'], $result);
+	}//end testASentEmailAnswersWithTheMessageIdItLeftWith()
+
+	public function testAMessageWithoutAMessageIdOrThatDidNotLeaveAnswersAsBefore(): void {
+		$this->router->method('call')->willReturnOnConsecutiveCalls(
+			['sid' => 'SM1'],
+			$this->throwException(new \RuntimeException('down'))
+		);
+
+		$sms = $this->provider->dispatch(source: 'twilio-sms', message: new OutboundMessage(path: 'Messages.json', body: ['x' => 1]));
+		$mail = $this->provider->dispatch(source: 'smtp-mail', message: new OutboundMessage(path: '', body: ['x' => 1], headers: ['Message-ID' => '<abc@example.org>']));
+
+		$this->assertArrayNotHasKey('messageId', $sms);
+		$this->assertSame('sent', $sms['status']);
+		$this->assertArrayNotHasKey('messageId', $mail);
+		$this->assertTrue($mail['unavailable']);
+	}//end testAMessageWithoutAMessageIdOrThatDidNotLeaveAnswersAsBefore()
 }//end class

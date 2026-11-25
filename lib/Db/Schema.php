@@ -99,6 +99,10 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setApplication(?string $application)
  * @method string|null getOrganisation()
  * @method void setOrganisation(?string $organisation)
+ * @method string|null getClassification()
+ * @method void setClassification(?string $classification)
+ * @method array|null getCatalogue()
+ * @method void setCatalogue(?array $catalogue)
  * @method array|null getAuthorization()
  * @method void setAuthorization(?array $authorization)
  * @method array|null getSharedWith()
@@ -125,6 +129,8 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setDeck(?array $deck)
  * @method array|null getDraft()
  * @method void setDraft(?array $draft)
+ * @method array|null getFormerSlugs()
+ * @method void setFormerSlugs(?array $formerSlugs)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -284,6 +290,23 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string|null Organisation UUID this schema belongs to
 	 */
 	protected ?string $organisation = null;
+
+	/**
+	 * The data classification of this record type: open, internal,
+	 * confidential or strictly-confidential. Descriptive only: it never
+	 * changes who may read the schema or its objects.
+	 *
+	 * @var string|null The classification, or null when unset
+	 */
+	protected ?string $classification = null;
+
+	/**
+	 * Data catalogue metadata: maintainer, contact, sourceSystem,
+	 * updateFrequency, documentationUrl and labels.
+	 *
+	 * @var array|null The catalogue block, or null when unset
+	 */
+	protected ?array $catalogue = null;
 
 	/**
 	 * JSON object describing authorizations
@@ -456,6 +479,18 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var array|null The draft body, or null when there is none
 	 */
 	protected ?array $draft = null;
+
+	/**
+	 * The slugs this schema answered to before it was renamed, oldest first.
+	 *
+	 * Only the `renameSchema` migration writes it, never hydrate(): a former slug
+	 * keeps an old API path and an app re-import pointing at this schema.
+	 *
+	 * @var array|null The former slugs, or null when the schema was never renamed
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md
+	 */
+	protected ?array $formerSlugs = null;
 
 	/**
 	 * Constructor for the Schema class
@@ -789,6 +824,16 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public const LIST_ANNOTATION = 'x-openregister-list';
 
 	/**
+	 * The composite-index annotation: lists of properties indexed together.
+	 *
+	 * `[["postcode", "huisnummer"]]` gives the magic table one index over both
+	 * columns, so an exact filter on the pair is one indexed query.
+	 *
+	 * @var string
+	 */
+	public const INDEXES_ANNOTATION = 'x-openregister-indexes';
+
+	/**
 	 * The geographic-inheritance annotation: which references carry map features.
 	 *
 	 * A record may show the point its address holds. Every inherited feature
@@ -819,6 +864,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string
 	 */
 	public const CONFIDENTIALITY_ANNOTATION = 'x-openregister-confidentiality';
+
+	/**
+	 * The break-glass annotation: whether emergency self-granted access is offered, and on what terms.
+	 *
+	 * @var string
+	 */
+	public const BREAK_GLASS_ANNOTATION = 'x-openregister-break-glass';
 
 	/**
 	 * The property keys whose falsy value is a real one.
@@ -1161,7 +1213,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @return array<string, mixed>
 	 */
 	private static function withHydrateDefaults(array $object): array {
-		unset($object['draft']);
+		unset($object['draft'], $object['formerSlugs']);
 
 		$object['metadata'] = ($object['metadata'] ?? []);
 		$object['required'] = ($object['required'] ?? []);
@@ -1311,9 +1363,31 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			$this->serialisedContent(),
 			$this->serialisedOwnership(),
 			$this->serialisedComposition(),
-			$this->serialisedLinks()
+			$this->serialisedLinks(),
+			$this->serialisedCatalogue()
 		);
 	}//end jsonSerialize()
+
+	/**
+	 * The classification and catalogue block, only when set, so a schema
+	 * without them serialises exactly as before.
+	 *
+	 * @return array<string, mixed> The set fields.
+	 *
+	 * @spec openspec/changes/modelling-type-catalogue-metadata/specs/schema-catalogue-metadata/spec.md#requirement-a-schema-carries-catalogue-metadata
+	 */
+	private function serialisedCatalogue(): array {
+		$fields = [];
+		if ($this->classification !== null) {
+			$fields['classification'] = $this->classification;
+		}
+
+		if ($this->catalogue !== null) {
+			$fields['catalogue'] = $this->catalogue;
+		}
+
+		return $fields;
+	}//end serialisedCatalogue()
 
 	/**
 	 * The identity fields of the serialised schema.
@@ -1425,8 +1499,24 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 			'_talk' => $this->talk,
 			'_deck' => $this->deck,
 			'draft' => $this->draft,
-		];
+		] + $this->serialisedFormerSlugs();
 	}//end serialisedLinks()
+
+	/**
+	 * The former slugs, only on a schema that was renamed, so every other
+	 * schema serialises as before.
+	 *
+	 * @return array<string, array<int, string>>
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-record-type-can-be-renamed-without-breaking-its-links
+	 */
+	private function serialisedFormerSlugs(): array {
+		if ($this->formerSlugs === null || $this->formerSlugs === []) {
+			return [];
+		}
+
+		return ['formerSlugs' => $this->formerSlugs];
+	}//end serialisedFormerSlugs()
 
 	/**
 	 * Converts schema to an object representation
@@ -1696,6 +1786,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *   toggle on the attachment upload dialog. true seeds the toggle on; absent
 	 *   or false keeps it off. Users can always override per upload.
 	 *   See: ConductionNL/opencatalogi#577
+	 * - 'mailObjectName': (string) What one item is called in the Mail panel's sentences
 	 * - 'mailObjectTemplate': (array) Field map used by the Mail-sidebar
 	 *   "create from email" action. Keys are schema property names, string
 	 *   values may contain {{subject}}/{{sender}}/{{senderName}}/{{date}}/

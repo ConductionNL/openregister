@@ -92,4 +92,18 @@ class RowsPdfSectionTest extends TestCase {
 
 		$this->assertSame('<tbody><tr><td>'.str_repeat('é', 200).'…</td><td>'.$exact.'</td></tr></tbody></table></div>', $this->body(html: $html));
 	}//end testLongCellsAreTruncated()
+
+	/**
+	 * A table that asks for whole cells prints a long cell whole, still escaped.
+	 *
+	 * @spec openspec/changes/notes-leaf-rich-text-lock-export/specs/object-interactions/spec.md#requirement-an-objects-notes-export-as-a-journal-sheet
+	 *
+	 * @return void
+	 */
+	public function testAWholeCellsTableIsNotTruncated(): void {
+		$long = str_repeat('é', 201).'<i>';
+		$html = (new RowsPdfSection())->build(table: new RowsTable(title: 't', columns: ['x' => 'X'], rows: [['x' => $long]], wholeCells: true));
+
+		$this->assertSame('<tbody><tr><td>'.str_repeat('é', 201).'&lt;i&gt;</td></tr></tbody></table></div>', $this->body(html: $html));
+	}//end testAWholeCellsTableIsNotTruncated()
 }//end class

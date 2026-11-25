@@ -78,6 +78,23 @@ final class FacetResults {
 	}//end putField()
 
 	/**
+	 * Record a facet over a field of a referenced object, under `_ref.<property>.<field>`.
+	 *
+	 * @param string $property The reference property.
+	 * @param string $field    The field of the referenced schema.
+	 * @param array  $facet    The facet.
+	 * @param float  $start    When computing it started, from microtime(true).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public function putReferenceField(string $property, string $field, array $facet, float $start): void {
+		$this->facets['_ref'][$property][$field] = $facet;
+		$this->times['_ref.' . $property . '.' . $field] = self::elapsedMs(since: $start);
+	}//end putReferenceField()
+
+	/**
 	 * Compute and keep the metadata (@self) facets of the configuration, timing each.
 	 *
 	 * Nothing happens when the configuration has no '@self' array; otherwise

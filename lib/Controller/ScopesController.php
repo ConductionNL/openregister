@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
+use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -177,15 +179,16 @@ class ScopesController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function index(?string $register = null, ?string $schema = null): JSONResponse {
 		$user = $this->userSession->getUser();
 		$userId = $user?->getUID();
 		$groups = $this->groupsOf(user: $user);
-		$isAdmin = in_array('admin', $groups, true);
+		$isAdmin = AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 
 		$registers = $this->resolveRegisters(filter: $register);
-		$schemas = $this->resolveSchemas(filter: $schema);
+		$schemas = $this->resolveSchemas(filter: $schema, within: $this->narrowedTo(filter: $register, registers: $registers));
 		$scopes = $this->scopesFor(
 			catalogue: ['registers' => $registers, 'schemas' => $schemas],
 			caller: new ScopeCaller(userId: $userId, isAdmin: $isAdmin)
@@ -231,6 +234,7 @@ class ScopesController extends Controller {
 		}
 
 		try {
+			// Stays global: the matrix preview route names only the schema and the user.
 			$schema = $this->schemaMapper->find($id);
 		} catch (DoesNotExistException | MultipleObjectsReturnedException) {
 			return new JSONResponse(['error' => 'Schema not found'], Http::STATUS_NOT_FOUND);
@@ -337,20 +341,47 @@ class ScopesController extends Controller {
 	 *
 	 * SECURITY: see resolveRegisters() — multitenancy stays on.
 	 *
-	 * @param string|null $filter Optional schema filter (id|uuid|slug).
+	 * @param string|null   $filter Optional schema filter (id|uuid|slug).
+	 * @param Register|null $within The register a register filter narrowed to; a slug is looked up inside it first.
 	 *
 	 * @return Schema[] Schemas that should be reported on.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
 	 */
-	private function resolveSchemas(?string $filter): array {
+	private function resolveSchemas(?string $filter, ?Register $within = null): array {
 		if ($this->isFilter(filter: $filter) === true) {
-			return $this->orNothing(read: fn (): array => [$this->schemaMapper->find($filter, _rbac: false)]);
+			return $this->orNothing(
+				read: fn (): array => [(new SchemaRefInRegister(schemas: $this->schemaMapper))->find(schemaRef: $filter, register: $within, _rbac: false)]
+			);
 		}
 
 		return $this->orNothing(read: fn (): array => $this->schemaMapper->findAll(_rbac: false));
 
 	}//end resolveSchemas()
+
+	/**
+	 * The one register a register filter narrowed the scopes to, or null.
+	 *
+	 * @param string|null $filter    The register filter.
+	 * @param array       $registers What the filter resolved to.
+	 *
+	 * @return Register|null The register, or null without a filter.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function narrowedTo(?string $filter, array $registers): ?Register {
+		if ($this->isFilter(filter: $filter) === false || count($registers) !== 1) {
+			return null;
+		}
+
+		$only = reset($registers);
+		if (($only instanceof Register) === false) {
+			return null;
+		}
+
+		return $only;
+	}//end narrowedTo()
 
 	/**
 	 * Whether a narrowing filter was given.

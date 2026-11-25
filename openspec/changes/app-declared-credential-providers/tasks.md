@@ -15,16 +15,16 @@
 
 ## 3. Approval plane
 
-- [ ] 3.1 Add an approval service writing `credentialProviderApproval` objects through `ObjectService::saveObject()` (entity/array first arg) recording `decidedBy`, `decidedAt`, `declarationDigest`, `baseUrl` and `allowRulesSnapshot`.
-- [ ] 3.2 Add admin-only approve / reject / revoke routes on `CredentialController` (or a dedicated controller) with the correct Nextcloud auth attributes and registered entries in `appinfo/routes.php`.
+- [x] 3.1 Add an approval service writing `credentialProviderApproval` objects through `ObjectService::saveObject()` (entity/array first arg) recording `decidedBy`, `decidedAt`, `declarationDigest`, `baseUrl` and `allowRulesSnapshot`. Built: `DeclaredProviderDecisions` (one new record per decision, pinned to the current digest; refuses unknown, invalid and narrowing declarations and transitions that mean nothing).
+- [x] 3.2 Add admin-only approve / reject / revoke routes on `CredentialController` (or a dedicated controller) with the correct Nextcloud auth attributes and registered entries in `appinfo/routes.php`. Built: `CredentialProviderApprovalController` (`AuthorizedAdminSetting` plus the in-body `AdministratorOnlyGate`), `POST /api/credentials/providers/{identifier}/approve|reject|revoke`.
 - [x] 3.3 Keep approval records on app disable/uninstall and re-apply a kept approval on re-enable only when the digest still matches.
 
 ## 4. Broker and controller wiring
 
 - [x] 4.1 Change `CredentialBrokerService::resolveProvider()` to try `ProviderCatalogue` first and the declared resolver second, denying on anything not admitted — leaving `isInjectOnly()`, `assertRuleAllowed()`, `resolveAndLockUrl()`, `injectAuth()` and the guard order untouched.
 - [x] 4.2 Make `resolveInjectable()` return `null` for every declared provider, so a declared credential is always a `request()` credential.
-- [ ] 4.3 Extend `CredentialController::create()` to accept an admitted namespaced identifier, refuse a non-admitted one, and force `allowedApps` to the declaring app; block widening `allowedApps` for such credentials in the update path.
-- [ ] 4.4 Extend `GET /api/credentials/providers` to return `origin` and `status` alongside `identifier` and `title`, and verify no `allowRules` or `baseUrl` leaks into that response.
+- [x] 4.3 Extend `CredentialController::create()` to accept an admitted namespaced identifier, refuse a non-admitted one, and force `allowedApps` to the declaring app; block widening `allowedApps` for such credentials in the update path. Built: `CredentialController::usableAllowedApps()` / `widensDeclaredProvider()`; `tests/Unit/Controller/CredentialControllerDeclaredProviderTest.php`.
+- [x] 4.4 Extend `GET /api/credentials/providers` to return `origin` and `status` alongside `identifier` and `title`, and verify no `allowRules` or `baseUrl` leaks into that response. Built: `DeclaredProviderResolver::listing()` and `CredentialController::declaredProviderListings()`; reviewed entries carry `origin: catalogue`, `status: admitted`; invalid declarations are not offered.
 
 ## 5. Admin UI
 
@@ -33,7 +33,7 @@
 ## 6. Tests and verification
 
 - [x] 6.1 Unit-test the validator and the narrowing test, including the adversarial cases (`*` at the pattern head, `/repos/*` vs `/repos/*/../../admin`, method mismatch, wider host).
-- [ ] 6.2 Unit-test every deny path on the broker: pending, rejected, revoked, digest drift, disabled declaring app, cross-app borrow, shadowing attempt, `inject_only` declaration, mint against a non-admitted declaration.
+- [x] 6.2 Unit-test every deny path on the broker: pending, rejected, revoked, digest drift, disabled declaring app, cross-app borrow, shadowing attempt, `inject_only` declaration, mint against a non-admitted declaration. Built: `tests/Unit/Service/Credential/CredentialBrokerDeclaredDenyPathsTest.php` (real loader, validator, approvals and resolver).
 - [x] 6.3 Assert no regression for reviewed providers — existing `CredentialBrokerServiceTest`, `ProviderCatalogueTest`, `DoffinProviderTest` and the organisation-scope tests stay green, and `generic-*` inject_only behaviour is unchanged.
 - [ ] 6.4 Live-verify end to end on the dev instance with a real declaration: pending denies, approval admits, an edited declaration re-pends; confirm opencatalogi and softwarecatalog show no regression and run `composer check:strict`. (live pass, decision 139)
 

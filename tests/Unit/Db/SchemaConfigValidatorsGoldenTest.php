@@ -227,6 +227,8 @@ class SchemaConfigValidatorsGoldenTest extends TestCase {
 			'annotation unknown'       => ['x-openregister-nope' => 1, 'x-openregister-lifecycle' => ['states' => []], 'plainUnknown' => 2],
 			'string fields'            => ['objectNameField' => '', 'objectSlugField' => 'slug', 'objectImageField' => null],
 			'string field number'      => ['objectNameField' => 3],
+			'mail object name'         => ['mailObjectName' => 'work queue item'],
+			'mail object name number'  => ['mailObjectName' => 7],
 			'bool field text'          => ['allowFiles' => 'yes', 'autoShare' => true],
 			'pass through'             => ['unique' => ['title'], 'jsonld' => ['@context' => 'x']],
 		];

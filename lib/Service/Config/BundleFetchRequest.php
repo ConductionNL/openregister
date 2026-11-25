@@ -34,6 +34,7 @@ final class BundleFetchRequest {
 	 * @param string      $repo         The `owner/repo`, trimmed.
 	 * @param string      $path         The bundle file path within the repo, trimmed, without a leading slash.
 	 * @param string|null $credentialId Optional broker credential for an authenticated read.
+	 * @param BrokerIdentity|null $brokerIdentity Who a brokered read is made for; OpenRegister when null.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
 	 */
@@ -41,8 +42,20 @@ final class BundleFetchRequest {
 		public readonly string $repo,
 		public readonly string $path,
 		public readonly ?string $credentialId,
+		private readonly ?BrokerIdentity $brokerIdentity = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Who the read is made for when it goes through the broker.
+	 *
+	 * @return BrokerIdentity
+	 *
+	 * @spec openspec/changes/store-through-federated-config
+	 */
+	public function identity(): BrokerIdentity {
+		return ($this->brokerIdentity ?? BrokerIdentity::of());
+	}//end identity()
 
 	/**
 	 * The contents-API path of the file.

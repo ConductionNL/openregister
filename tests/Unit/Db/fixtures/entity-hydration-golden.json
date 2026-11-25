@@ -164,7 +164,10 @@
                 "flowNode": "text-flowNode",
                 "flowStep": 7,
                 "purpose": "text-purpose",
-                "consumer": "text-consumer"
+                "consumer": "text-consumer",
+                "triggerObject": "text-triggerObject",
+                "ruleDigest": "text-ruleDigest",
+                "ruleVersion": "text-ruleVersion"
             },
             "updated": [
                 "id",
@@ -204,7 +207,10 @@
                 "flowNode",
                 "flowStep",
                 "purpose",
-                "consumer"
+                "consumer",
+                "triggerObject",
+                "ruleDigest",
+                "ruleVersion"
             ]
         },
         "filled json": {
@@ -253,7 +259,10 @@
                 "flowNode": "text-flowNode",
                 "flowStep": 7,
                 "purpose": "text-purpose",
-                "consumer": "text-consumer"
+                "consumer": "text-consumer",
+                "triggerObject": "text-triggerObject",
+                "ruleDigest": "text-ruleDigest",
+                "ruleVersion": "text-ruleVersion"
             },
             "updated": [
                 "id",
@@ -295,7 +304,10 @@
                 "flowNode",
                 "flowStep",
                 "purpose",
-                "consumer"
+                "consumer",
+                "triggerObject",
+                "ruleDigest",
+                "ruleVersion"
             ]
         }
     },
@@ -425,7 +437,8 @@
     },
     "FederatedShare": {
         "jsonFields": [
-            "queryFilter"
+            "queryFilter",
+            "crosses"
         ],
         "empty json": {
             "returnsSelf": true,
@@ -448,7 +461,8 @@
                 "owner": "text-owner",
                 "created": "2026-02-03T04:05:06+00:00",
                 "updated": "2026-02-03T04:05:06+00:00",
-                "expiresAt": "2026-02-03T04:05:06+00:00"
+                "expiresAt": "2026-02-03T04:05:06+00:00",
+                "crosses": null
             },
             "updated": [
                 "id",
@@ -494,7 +508,10 @@
                 "owner": "text-owner",
                 "created": "2026-02-03T04:05:06+00:00",
                 "updated": "2026-02-03T04:05:06+00:00",
-                "expiresAt": "2026-02-03T04:05:06+00:00"
+                "expiresAt": "2026-02-03T04:05:06+00:00",
+                "crosses": {
+                    "k": "v"
+                }
             },
             "updated": [
                 "id",
@@ -515,7 +532,8 @@
                 "owner",
                 "created",
                 "updated",
-                "expiresAt"
+                "expiresAt",
+                "crosses"
             ]
         }
     },
@@ -1839,6 +1857,7 @@
             "allOf",
             "oneOf",
             "anyOf",
+            "catalogue",
             "authorization",
             "sharedWith",
             "configuration",
@@ -1851,7 +1870,8 @@
             "calendar",
             "talk",
             "deck",
-            "draft"
+            "draft",
+            "formerSlugs"
         ]
     },
     "Source": {

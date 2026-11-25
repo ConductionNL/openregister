@@ -56,6 +56,31 @@
 					</tbody>
 				</table>
 
+				<template v-if="previewReferences.length">
+					<h3>{{ t('openregister', 'Referenced by') }}</h3>
+					<table class="mergeWizard__table" data-testid="mdm-merge-references">
+						<thead>
+							<tr>
+								<th scope="col">
+									{{ t('openregister', 'Schema') }}
+								</th>
+								<th scope="col">
+									{{ t('openregister', 'Count') }}
+								</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr
+								v-for="reference in previewReferences"
+								:key="reference.schema"
+								data-testid="mdm-merge-reference-row">
+								<td>{{ reference.label }}</td>
+								<td>{{ reference.count }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</template>
+
 				<NcNoteCard v-if="preview.reversalDeadline" type="info">
 					{{
 						t(
@@ -154,6 +179,26 @@ function cleanupReasons() {
 }
 
 /**
+ * A schema's title for the reference list, from the schemas the quality store
+ * holds (the selected register's, and those each loaded register extends
+ * with); the value itself when none matches.
+ *
+ * @param {string|number|null} schema The schema id the preview names
+ * @return {string} The label
+ */
+function schemaLabel(schema) {
+	const wanted = String(schema ?? '')
+	const known = [
+		...(qualityStore.schemas || []),
+		...(qualityStore.registers || []).flatMap((register) => register?.schemas || []),
+	]
+	const match = known.find(
+		(item) => item && typeof item === 'object' && (String(item.id) === wanted || item.uuid === wanted || item.slug === wanted),
+	)
+	return match?.title || match?.name || wanted
+}
+
+/**
  * Why a merge failed: the server's error, else a general message.
  *
  * @param {Error} e What went wrong
@@ -168,7 +213,8 @@ function mergeFailedText(e) {
 
 /**
  * Pair-agnostic merge wizard: preview the projected post-merge golden
- * record + per-attribute provenance + reversal deadline, capture a reason,
+ * record + per-attribute provenance + the references that move onto the
+ * survivor (by schema and count) + reversal deadline, capture a reason,
  * then execute. Launched today from `DuplicatesIndex` with a candidate
  * pair's two object ids; written against `{ from, into }` props only so a
  * later manual-merge launch (e.g. from `MasterEntitiesIndex`) can reuse it
@@ -233,6 +279,26 @@ export default {
 			return (
 				Boolean(this.preview) && Boolean(this.reasonModel) && !this.executing
 			)
+		},
+
+		/**
+		 * The references the merge will move onto the survivor, by schema and
+		 * count, from the preview's `references`. Each schema is shown by its
+		 * title when the quality store has it loaded, else as the server sent it.
+		 *
+		 * @spec openspec/changes/mdm-merge-relinks-every-reference/specs/mdm-merge/spec.md#requirement-a-merge-relinks-every-reference-to-the-losing-record
+		 * @return {Array<{schema: string, label: string, count: number}>}
+		 */
+		previewReferences() {
+			const references = this.preview?.references
+			if (!Array.isArray(references)) return []
+			return references
+				.filter((reference) => reference && Number(reference.count) > 0)
+				.map((reference) => ({
+					schema: String(reference.schema ?? ''),
+					label: schemaLabel(reference.schema),
+					count: Number(reference.count),
+				}))
 		},
 	},
 

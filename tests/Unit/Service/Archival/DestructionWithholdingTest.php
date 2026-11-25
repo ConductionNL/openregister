@@ -191,4 +191,53 @@ class DestructionWithholdingTest extends TestCase {
 		$this->assertSame(['undecided'], $this->uuidsOf($result['objects']));
 		$this->assertSame([], ($result['excludedObjects'] ?? []));
 	}//end testAnEntryWithNoDecisionIsStillDestroyed()
+
+	public function testAnEntryAnsweredWithAnonymiseIsNeverDestroyed(): void {
+		$list = $this->listWithDecisions();
+		$list['objects'] = [
+			['uuid' => 'anonymise-me', 'decision' => DestructionReviewService::ANSWER_ANONYMISE, 'decidedBy' => 'els'],
+			['uuid' => 'destroy-me', 'decision' => 'destroy'],
+		];
+		$list['decisions'] = [
+			['entry' => 'anonymise-me', 'answer' => DestructionReviewService::ANSWER_ANONYMISE, 'reason' => 'Keep the statistics, drop the person.'],
+		];
+
+		$result = $this->service->approveList(destructionList: $list, request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
+
+		$this->assertSame(['destroy-me'], $this->uuidsOf($result['objects']));
+		$this->assertSame(['anonymise-me'], $this->uuidsOf($result['excludedObjects']));
+		$this->assertSame('uitgezonderd', $result['excludedObjects'][0]['status']);
+		$this->assertSame(
+			'Review decision "anonymise" by els: Keep the statistics, drop the person.',
+			$result['excludedObjects'][0]['exclusionReason']
+		);
+	}//end testAnEntryAnsweredWithAnonymiseIsNeverDestroyed()
+
+	public function testAnEntryTheListCarriesForAnonymisingIsNeverDestroyed(): void {
+		$list = $this->listWithDecisions();
+		$list['objects'] = [
+			['uuid' => 'nominated', 'action' => 'anonymise'],
+			['uuid' => 'plain', 'action' => 'destroy'],
+			['uuid' => 'old-entry'],
+		];
+		$list['decisions'] = [];
+
+		$result = $this->service->approveList(destructionList: $list, request: new ApprovalRequest(choice: new ApprovalChoice(action: 'approve_all'), requiresDual: false, listUuid: null));
+
+		$this->assertSame(['plain', 'old-entry'], $this->uuidsOf($result['objects']), 'an entry without an action is a destroy entry, as before');
+		$this->assertSame(['nominated'], $this->uuidsOf($result['excludedObjects']));
+		$this->assertSame('uitgezonderd', $result['excludedObjects'][0]['status']);
+		$this->assertSame(
+			"Nominated for anonymising, not destruction: the record stays and is anonymised under its schema's profile.",
+			$result['excludedObjects'][0]['exclusionReason']
+		);
+	}//end testAnEntryTheListCarriesForAnonymisingIsNeverDestroyed()
+
+	public function testTheReviewersDestroyAnswerOutranksAnAnonymiseNomination(): void {
+		$this->assertFalse(DestructionService::isWithheldFromDestruction(['uuid' => 'x', 'action' => 'anonymise', 'decision' => 'destroy']));
+		$this->assertTrue(DestructionService::isWithheldFromDestruction(['uuid' => 'x', 'action' => 'anonymise', 'decision' => 'retain']));
+		$this->assertTrue(DestructionService::isWithheldFromDestruction(['uuid' => 'x', 'action' => 'destroy', 'decision' => 'anonymise']));
+		$this->assertFalse(DestructionService::isWithheldFromDestruction(['uuid' => 'x', 'action' => 'destroy']));
+		$this->assertFalse(DestructionService::isWithheldFromDestruction('not an entry'), 'an unreadable entry stays where it was');
+	}//end testTheReviewersDestroyAnswerOutranksAnAnonymiseNomination()
 }//end class

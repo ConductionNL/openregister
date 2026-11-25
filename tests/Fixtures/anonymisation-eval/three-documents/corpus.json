@@ -1,0 +1,72 @@
+{
+	"name": "three-documents",
+	"version": "1",
+	"types": [
+		"PERSON",
+		"EMAIL",
+		"IBAN",
+		"BSN"
+	],
+	"documents": [
+		{
+			"id": "een",
+			"text": "Stuur het naar jan.deboer@example.org, schreef Jan de Boer.",
+			"gold": [
+				{
+					"type": "EMAIL",
+					"value": "jan.deboer@example.org",
+					"start": 15,
+					"end": 37
+				},
+				{
+					"type": "PERSON",
+					"value": "Jan de Boer",
+					"start": 47,
+					"end": 58
+				}
+			]
+		},
+		{
+			"id": "twee",
+			"text": "Rekening NL91ABNA0417164300 van Marieke Smit; reserve: info@example.com.",
+			"gold": [
+				{
+					"type": "IBAN",
+					"value": "NL91ABNA0417164300",
+					"start": 9,
+					"end": 27
+				},
+				{
+					"type": "PERSON",
+					"value": "Marieke Smit",
+					"start": 32,
+					"end": 44
+				}
+			]
+		},
+		{
+			"id": "drie",
+			"text": "BSN 999990007 en BSN 999990019 staan in het dossier van Karel Bakker.",
+			"gold": [
+				{
+					"type": "BSN",
+					"value": "999990007",
+					"start": 4,
+					"end": 13
+				},
+				{
+					"type": "BSN",
+					"value": "999990019",
+					"start": 21,
+					"end": 30
+				},
+				{
+					"type": "PERSON",
+					"value": "Karel Bakker",
+					"start": 56,
+					"end": 68
+				}
+			]
+		}
+	]
+}

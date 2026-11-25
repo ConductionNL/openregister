@@ -64,12 +64,14 @@ class GroupReconciler implements GroupReconcilerInterface {
 	 * @param RbacGroupCollector $collector Declared-group extraction.
 	 * @param GroupProvisioner $provisioner Create-only group provisioning.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param GroupRightsReconciler|null $rightsReconciler Restores product-owned groups' rights (REQ-RAH-003); null skips that.
 	 */
 	public function __construct(
 		private readonly GroupDeclarationSources $sources,
 		private readonly RbacGroupCollector $collector,
 		private readonly GroupProvisioner $provisioner,
 		private readonly LoggerInterface $logger,
+		private readonly ?GroupRightsReconciler $rightsReconciler = null,
 	) {
 	}//end __construct()
 
@@ -97,9 +99,12 @@ class GroupReconciler implements GroupReconcilerInterface {
 	}//end reconcile()
 
 	/**
-	 * Provision every group the declarations name.
+	 * Provision every group the declarations name, then restore their declared rights.
 	 *
-	 * @return array{declared: string[], created: string[]} What was declared and what was created.
+	 * @return array{declared: string[], created: string[], rights?: list<array<string, string>>} What was declared,
+	 *     what was created and, when the rights reconciler is wired, which rights were restored or removed.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-a-product-owned-groups-rights-are-restored-to-what-the-product-declares-req-rah-003
 	 */
 	private function sweep(): array {
 		$declared = $this->collectDeclared();
@@ -108,11 +113,15 @@ class GroupReconciler implements GroupReconcilerInterface {
 		}
 
 		$result = $this->provisioner->provision(groups: $declared, declaredBy: 'group-reconciler');
-
-		return [
+		$swept = [
 			'declared' => $declared,
 			'created' => $result['created'],
 		];
+		if ($this->rightsReconciler !== null) {
+			$swept['rights'] = $this->rightsReconciler->reconcile();
+		}
+
+		return $swept;
 	}//end sweep()
 
 	/**

@@ -196,11 +196,18 @@ class TimelineEntriesController extends Controller {
 		}
 
 		$filter = $this->visibility->effectiveFilter(object: $object, requested: $requested);
+		// Withdrawn entries are in the record, read only by whoever may manage the object (D-C29-4).
+		$withdrawn = ((($params['withdrawn'] ?? null) === true || ($params['withdrawn'] ?? null) === 'true')
+			&& $this->visibility->mayManage(object: $object) === true);
 
 		try {
 			$entries = $this->entries->listForObject(
 				object: $object,
-				query: new ListQuery(limit: (int)($params['limit'] ?? 50), offset: (int)($params['offset'] ?? 0), filters: ['visibility' => $filter])
+				query: new ListQuery(
+					limit: (int)($params['limit'] ?? 50),
+					offset: (int)($params['offset'] ?? 0),
+					filters: ['visibility' => $filter, 'withdrawn' => $withdrawn]
+				)
 			);
 		} catch (Throwable $e) {
 			return $this->unexpected(exception: $e, context: 'index');
@@ -433,8 +440,9 @@ class TimelineEntriesController extends Controller {
 	}//end updatedOn()
 
 	/**
-	 * Pin or unpin the entry when the request names `pinned`, then close its
-	 * follow-up when the request says `followUp: done`.
+	 * Pin or unpin the entry when the request names `pinned`, close its
+	 * follow-up when the request says `followUp: done`, and withdraw it when the
+	 * request carries `withdrawn: {reason}` (D-C29-4).
 	 *
 	 * @param ObjectEntity         $object The object.
 	 * @param array<string, mixed> $change The entry (`entry`) and the request data (`data`).
@@ -447,6 +455,17 @@ class TimelineEntriesController extends Controller {
 	private function applyUpdate(ObjectEntity $object, array $change): TimelineEntry {
 		$entry = $change['entry'];
 		$data = $change['data'];
+		$withdrawal = null;
+		if (array_key_exists('withdrawn', $data) === true) {
+			$withdrawal = '';
+			if (is_array($data['withdrawn']) === true && is_string($data['withdrawn']['reason'] ?? null) === true) {
+				$withdrawal = $data['withdrawn']['reason'];
+			}
+
+			// Refuse before the pin or follow-up is written, so a refused withdrawal changes nothing.
+			$this->entries->assertMayWithdraw(object: $object, reason: $withdrawal);
+		}
+
 		if (array_key_exists('pinned', $data) === true) {
 			$entry = $this->entries->pin(
 				object: $object,
@@ -456,6 +475,10 @@ class TimelineEntriesController extends Controller {
 
 		if (($data['followUp'] ?? null) === 'done') {
 			$entry = $this->entries->closeFollowUp(entryObject: $object, entry: $entry);
+		}
+
+		if ($withdrawal !== null) {
+			$entry = $this->entries->withdraw(object: $object, entry: $entry, reason: $withdrawal);
 		}
 
 		return $entry;

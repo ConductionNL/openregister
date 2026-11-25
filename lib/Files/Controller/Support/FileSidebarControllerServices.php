@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Controller\Support;
 
 use OCA\OpenRegister\Files\Service\FileSidebarService;
+use OCA\OpenRegister\Service\Mail\MailThreadService;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -36,12 +37,14 @@ final readonly class FileSidebarControllerServices {
 	 * @param IRootFolder        $rootFolder         Root folder for per-user file access checks.
 	 * @param IUserSession       $userSession        The caller whose file access is checked.
 	 * @param LoggerInterface    $logger             Logger.
+	 * @param MailThreadService|null $mailThreads The thread of a collected mail, when available.
 	 */
 	public function __construct(
 		public FileSidebarService $fileSidebarService,
 		public IRootFolder $rootFolder,
 		public IUserSession $userSession,
 		public LoggerInterface $logger,
+		public ?MailThreadService $mailThreads = null,
 	) {
 	}//end __construct()
 }//end class

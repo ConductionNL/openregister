@@ -8,7 +8,8 @@
 		"OCA\\OpenRegister\\Listener\\HandoffDeclarationChecksListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDeclarationCheckListener",
 		"OCA\\OpenRegister\\Mcp\\Listener\\McpDeclarationChecksListener",
-		"OCA\\OpenRegister\\Search\\Listener\\SearchDeclarationChecksListener"
+		"OCA\\OpenRegister\\Search\\Listener\\SearchDeclarationChecksListener",
+		"OCA\\OpenRegister\\Listener\\TeamResourcesDeclarationCheckListener"
 	],
 	"OCA\\OpenRegister\\Event\\AgentCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"
@@ -135,6 +136,9 @@
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener"
 	],
+	"OCA\\OpenRegister\\Event\\ObjectNoteAddedEvent": [
+		"OCA\\OpenRegister\\Listener\\AnnotationNotificationListener"
+	],
 	"OCA\\OpenRegister\\Event\\ObjectRevertedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener"
@@ -207,6 +211,15 @@
 	],
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"
+	],
+	"OCA\\OpenRegister\\Event\\PersonLinkUpdatedEvent": [
+		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\PersonLinkedEvent": [
+		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\PersonUnlinkedEvent": [
+		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\RegisterCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
@@ -357,6 +370,9 @@
 	"OCP\\OCM\\Events\\ResourceTypeRegisterEvent": [
 		"OCA\\OpenRegister\\Listener\\OcmResourceTypeListener"
 	],
+	"OCP\\Share\\Events\\BeforeShareCreatedEvent": [
+		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener"
+	],
 	"OCP\\Share\\Events\\ShareCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"
 	],
@@ -371,6 +387,15 @@
 	],
 	"OCP\\User\\Events\\BeforeUserDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\SharerViewsEndWithUserListener"
+	],
+	"OCP\\User\\Events\\OutOfOfficeEndedEvent": [
+		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
+	],
+	"OCP\\User\\Events\\OutOfOfficeStartedEvent": [
+		"OCA\\OpenRegister\\Listener\\TaskAbsenceListener"
+	],
+	"OCP\\User\\Events\\PostLoginEvent": [
+		"OCA\\OpenRegister\\Listener\\ServiceAccountLoginListener"
 	],
 	"OCP\\User\\Events\\UserCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"

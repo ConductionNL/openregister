@@ -31,6 +31,13 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexer
+ * @uses   \OCA\OpenRegister\Db\MagicMapper
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicColumnSql
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicPgTrgmProbe
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIdentityIndex
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\MagicTableIndexRun
+ * @uses   \OCA\OpenRegister\Service\Schemas\SchemaDeclarationValidators
+ * @uses   \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
  */
 class MagicMapperLowerIndexTest extends TestCase {
 

@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Files\Controller;
 use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\File\DocumentStoreMoveGuard;
+use OCA\OpenRegister\Service\File\DocumentStoreMoving;
 use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
@@ -35,6 +37,7 @@ use OCA\OpenRegister\Files\Controller\Support\FileObjectRoute;
 use OCA\OpenRegister\Files\Controller\Support\FileTransfer;
 use OCA\OpenRegister\Files\Controller\Support\FilesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\FileAddedEvent;
 use OCA\OpenRegister\Event\FileCopiedEvent;
 use OCA\OpenRegister\Event\FileLockedEvent;
 use OCA\OpenRegister\Event\FileMovedEvent;
@@ -215,6 +218,13 @@ class FilesController extends Controller {
 	private readonly ?FileWriteGuardInterface $fileWriteGuard;
 
 	/**
+	 * Holds uploads off a register whose documents are being moved; null when absent.
+	 *
+	 * @var DocumentStoreMoveGuard|null
+	 */
+	private readonly ?DocumentStoreMoveGuard $moveGuard;
+
+	/**
 	 * The file restrictions.
 	 *
 	 * @var ?FileRestrictionGuard
@@ -258,6 +268,7 @@ class FilesController extends Controller {
 		$this->attachNodeHandler = $services->editing->attachNodeHandler;
 		$this->fileWriteGuard = $services->guards->fileWriteGuard;
 		$this->fileRestrictions = $services->guards->fileRestrictions;
+		$this->moveGuard = $services->guards->moveGuard;
 
 		// Store dependencies for use in controller methods.
 		$this->fileService = $services->store->fileService;
@@ -713,6 +724,11 @@ class FilesController extends Controller {
 	 * @return JSONResponse|null The answer, or null for any other failure.
 	 */
 	private function refusalAnswer(Exception $e): ?JSONResponse {
+		if ($e instanceof DocumentStoreMoving) {
+			// REQ-RDS-004: the register's documents are moving; nothing was written.
+			return new JSONResponse(data: ['error' => DocumentStoreMoving::ERROR], statusCode: DocumentStoreMoving::STATUS);
+		}
+
 		if ($e instanceof FileActionRefusal) {
 			return new JSONResponse(data: ['error' => $this->translate(text: $e->getMessage())], statusCode: $e->getCode());
 		}
@@ -744,6 +760,26 @@ class FilesController extends Controller {
 	private function actionFailed(Exception $e, int $status = 400): JSONResponse {
 		return ($this->refusalAnswer(e: $e) ?? new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status));
 	}//end actionFailed()
+
+	/**
+	 * The routed object, refused while its register's documents are being moved.
+	 *
+	 * Every upload path takes its object here; a read takes routedObject() and
+	 * is never held off.
+	 *
+	 * @param string $id The object id from the route.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws DocumentStoreMoving When the object's register is being moved.
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function writableObject(string $id): ObjectEntity {
+		$object = $this->routedObject(id: $id);
+		$this->moveGuard?->assertNotMoving(registerId: $object->getRegister());
+		return $object;
+	}//end writableObject()
 
 	/**
 	 * Answer a failed action where a missing object answers 404, not its message.
@@ -1232,7 +1268,7 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before adding files.
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
-			return $this->addPostedFile(object: $this->routedObject(id: $id));
+			return $this->addPostedFile(object: $this->writableObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
 		}
@@ -1269,9 +1305,41 @@ class FilesController extends Controller {
 				tags: $tags
 			)
 		);
+		$this->dispatchFileAdded(object: $object, file: $file);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end addPostedFile()
+
+	/**
+	 * Tell listeners a file was added to the object, after it is stored.
+	 *
+	 * A listener that throws does not fail the add: the file is already in the
+	 * object's folder, so a listener handles and logs its own failures.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param File         $file   The added file.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-file-added-event/specs/file-actions/spec.md#requirement-adding-a-file-to-an-object-dispatches-an-event-req-ofae-001
+	 */
+	private function dispatchFileAdded(ObjectEntity $object, File $file): void {
+		$event = new FileAddedEvent(
+			objectUuid: (string)$object->getUuid(),
+			fileId: (int)$file->getId(),
+			data: [
+				'fileName' => $file->getName(),
+				'register' => $object->getRegister(),
+				'schema'   => $object->getSchema(),
+			]
+		);
+
+		try {
+			$this->eventDispatcher->dispatchTyped($event);
+		} catch (\Throwable) {
+			// This controller has no logger; a listener logs its own failure, and the add stands.
+		}
+	}//end dispatchFileAdded()
 
 	/**
 	 * Fetch the bytes at a URL and add them as a file, with where they came from.
@@ -1301,6 +1369,7 @@ class FilesController extends Controller {
 			upload: new FileUpload(fileName: $fileName, content: $fetched->stream(), share: $share, tags: $tags)
 		);
 		$this->urlFileSource->remember(fileId: (int)$file->getId(), fetched: $fetched);
+		$this->dispatchFileAdded(object: $object, file: $file);
 		$this->fileAuditHandler?->logFileAction(object: $object, fileId: (int)$file->getId(), action: 'file.fetched', data: $fetched->metadata());
 
 		return new JSONResponse(data: $this->withProvenance(formatted: $this->fileService->formatFile($file), fetched: $fetched));
@@ -1409,7 +1478,7 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before saving files.
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
-			return $this->savePostedFile(object: $this->routedObject(id: $id));
+			return $this->savePostedFile(object: $this->writableObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
 		}
@@ -1506,7 +1575,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before accepting uploads.
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
 			$this->setObjectContext(register: $register, schema: $schema);
-			return $this->storeUploads(object: $this->routedObject(id: $id));
+			return $this->storeUploads(object: $this->writableObject(id: $id));
 		} catch (Exception $e) {
 			return $this->actionFailed(e: $e);
 		}
@@ -1786,10 +1855,13 @@ class FilesController extends Controller {
 			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
 		}
 
-		return $this->fileService->addFile(
+		$stored = $this->fileService->addFile(
 			target: new FileTarget(object: $object),
 			upload: new FileUpload(fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags'])
 		);
+		$this->dispatchFileAdded(object: $object, file: $stored);
+
+		return $stored;
 	}//end storeUpload()
 
 	/**
@@ -1846,7 +1918,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
+			$this->routedFile(object: $this->writableObject(id: $id), fileId: $fileId);
 			return $this->updateFromRequest(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);

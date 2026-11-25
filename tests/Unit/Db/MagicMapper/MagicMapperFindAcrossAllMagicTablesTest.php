@@ -271,6 +271,13 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 		$identifier = ($bound[2][0] ?? null);
 		$slugParam = ($bound[3][0] ?? null);
 		$uriParam = ($bound[4][0] ?? null);
+		// The uuid-only pass binds one value per branch: the uuid.
+		if (str_contains($sql, '"_id" = ?') === false) {
+			$identifier = $idParam;
+			$idParam = null;
+			$slugParam = null;
+			$uriParam = null;
+		}
 
 		// Only filter deleted rows when the generated SQL says so.
 		$excludeDeleted = str_contains($sql, 'IS NULL');
@@ -450,7 +457,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 	 *
 	 * @return MagicMapper
 	 */
-	private function makeMapper(): MagicMapper {
+	private function makeMapper(?\OCP\ICacheFactory $cacheFactory = null): MagicMapper {
 		$config = $this->createMock(IConfig::class);
 		$config->method('getSystemValue')->willReturnCallback(
 			fn (string $key, $default = null) => ($key === 'dbtableprefix' ? 'oc_' : $default)
@@ -458,7 +465,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
-			function (string $id) {
+			function (string $id) use ($cacheFactory) {
 				return match ($id) {
 					DateTimeNormalizerInterface::class => $this->createMock(DateTimeNormalizer::class),
 					\OCA\OpenRegister\Service\ConditionMatcher::class => $this->createMock(
@@ -467,6 +474,7 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 					\OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface::class => $this->createMock(
 						\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class
 					),
+					\OCP\ICacheFactory::class => $cacheFactory,
 					default => null,
 				};
 			}
@@ -563,6 +571,72 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase {
 	/*
 	 * ------------------------------------------------------------------- tests
 	 */
+
+	/**
+	 * An in-memory distributed cache factory.
+	 *
+	 * @return \OCP\ICacheFactory
+	 */
+	private function memoryCacheFactory(): \OCP\ICacheFactory {
+		$store = [];
+		$cache = $this->createMock(\OCP\ICache::class);
+		$cache->method('get')->willReturnCallback(static function (string $key) use (&$store) {
+			return $store[$key] ?? null;
+		});
+		$cache->method('set')->willReturnCallback(static function (string $key, $value, int $ttl = 0) use (&$store): bool {
+			$store[$key] = $value;
+			return true;
+		});
+		$factory = $this->createMock(\OCP\ICacheFactory::class);
+		$factory->method('isAvailable')->willReturn(true);
+		$factory->method('createDistributed')->willReturn($cache);
+		return $factory;
+	}//end memoryCacheFactory()
+
+	/**
+	 * A uuid found once is looked up again in the table that held it only.
+	 *
+	 * @return void
+	 */
+	public function testASecondLookupOfAUuidReadsOnlyTheTableItWasFoundIn(): void {
+		$uuid = '0b7c5d6e-1f2a-4b3c-8d4e-5f6a7b8c9d01';
+		for ($schemaId = 2; $schemaId <= 6; $schemaId++) {
+			$this->givenLiveTable(registerId: 1, schemaId: $schemaId, rows: []);
+		}
+
+		$this->givenLiveTable(registerId: 3, schemaId: 4, rows: [$this->row(id: 7, uuid: $uuid, slug: 's', uri: 'u')]);
+		$mapper = $this->makeMapper(cacheFactory: $this->memoryCacheFactory());
+
+		$mapper->findAcross(find: new MagicIdentifierFind(identifier: $uuid));
+		$this->preparedSql = [];
+		$second = $mapper->findAcross(find: new MagicIdentifierFind(identifier: $uuid));
+
+		$this->assertSame($uuid, $second['object']->getUuid());
+		$this->assertSame(3, $second['register']->getId());
+		$locates = $this->unionQueries();
+		$this->assertCount(1, $locates);
+		$this->assertStringContainsString('openregister_table_3_4', $locates[0]);
+		$this->assertStringNotContainsString('openregister_table_1_2', $locates[0]);
+	}//end testASecondLookupOfAUuidReadsOnlyTheTableItWasFoundIn()
+
+	/**
+	 * A remembered table that no longer holds the uuid falls back to the full scan.
+	 *
+	 * @return void
+	 */
+	public function testAStaleRememberedTableFallsBackToTheFullScan(): void {
+		$uuid = '0b7c5d6e-1f2a-4b3c-8d4e-5f6a7b8c9d02';
+		$this->givenLiveTable(registerId: 1, schemaId: 2, rows: []);
+		$this->givenLiveTable(registerId: 3, schemaId: 4, rows: [$this->row(id: 7, uuid: $uuid, slug: 's', uri: 'u')]);
+		$factory = $this->memoryCacheFactory();
+		$factory->createDistributed('openregister_magic_location')->set('loc:' . $uuid, 'openregister_table_1_2', 3600);
+
+		$found = $this->makeMapper(cacheFactory: $factory)->findAcross(find: new MagicIdentifierFind(identifier: $uuid));
+
+		$this->assertSame($uuid, $found['object']->getUuid());
+		$this->assertSame(4, $found['schema']->getId());
+		$this->assertSame('openregister_table_3_4', $factory->createDistributed('openregister_magic_location')->get('loc:' . $uuid));
+	}//end testAStaleRememberedTableFallsBackToTheFullScan()
 
 	/**
 	 * An object is found by its UUID, and the context comes back with it.

@@ -58,6 +58,9 @@
 		<!-- Who sees who read a record: read entries on the audit trail -->
 		<ReadEventVisibilityConfiguration />
 
+		<!-- Action rights: who may author flows and put powerful steps in them -->
+		<ActionRights />
+
 		<!-- Audit hash-chain health: seal coverage + on-demand verification -->
 		<LogIntegrity />
 		<RegisterDescriptors />
@@ -71,6 +74,9 @@
 		<!-- AI translation through Nextcloud's Task Processing -->
 		<TranslationConfiguration />
 
+		<!-- Load shedding: dependency breakers and database pressure -->
+		<LoadSheddingConfiguration />
+
 		<!-- File Configuration Section -->
 		<FileConfiguration />
 
@@ -78,6 +84,9 @@
 		<ApiTokenConfiguration />
 
 		<EdepotHostKeyConfiguration />
+
+		<!-- Federated configuration sharing: sources, trusted keys, publish/install groups -->
+		<FederatedTrustConfiguration />
 
 		<!-- Dialogs -->
 		<Dialogs />
@@ -90,12 +99,15 @@ import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
+import ActionRights from './sections/ActionRights.vue'
 import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import CacheManagement from './sections/CacheManagement.vue'
 import EdepotHostKeyConfiguration from './sections/EdepotHostKeyConfiguration.vue'
+import FederatedTrustConfiguration from './sections/FederatedTrustConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
 import FlowConfiguration from './sections/FlowConfiguration.vue'
 import LlmConfiguration from './sections/LlmConfiguration.vue'
+import LoadSheddingConfiguration from './sections/LoadSheddingConfiguration.vue'
 import LogIntegrity from './sections/LogIntegrity.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
@@ -135,13 +147,16 @@ export default {
 		RegisterDescriptors,
 		RetentionConfiguration,
 		ReadEventVisibilityConfiguration,
+		ActionRights,
 		LogIntegrity,
 		PushNotificationsConfiguration,
 		LlmConfiguration,
 		TranslationConfiguration,
+		LoadSheddingConfiguration,
 		FileConfiguration,
 		ApiTokenConfiguration,
 		EdepotHostKeyConfiguration,
+		FederatedTrustConfiguration,
 		Dialogs,
 	},
 

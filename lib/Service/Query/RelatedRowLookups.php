@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandlerInterface;
+use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 
 /**
@@ -36,11 +37,14 @@ final readonly class RelatedRowLookups {
 	 * Bundle the lookups.
 	 *
 	 * @param SchemaMapperInterface      $schemaMapper The schema lookup.
-	 * @param MagicTableHandlerInterface $tableHandler Resolves a register and schema to their table.
+	 * @param MagicTableHandlerInterface   $tableHandler   Resolves a register and schema to their table.
+	 * @param RegisterMapperInterface|null $registerMapper Resolves a register a reference property names
+	 *                                                     by slug (query-filter-through-a-reference D-4).
 	 */
 	public function __construct(
 		public SchemaMapperInterface $schemaMapper,
 		public MagicTableHandlerInterface $tableHandler,
+		public ?RegisterMapperInterface $registerMapper = null,
 	) {
 	}//end __construct()
 }//end class

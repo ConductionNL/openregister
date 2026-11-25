@@ -1,3 +1,4 @@
+import { findRegisterByIdentifier } from '../../services/matchRegister.js'
 import { dashboardStore, registerStore } from '../../store/store.js'
 
 /**
@@ -12,8 +13,7 @@ export function findActiveRegister(route) {
 	if (!registerId) {
 		return undefined
 	}
-	// Route params are strings, the API returns numeric ids — compare as strings.
-	return dashboardStore.registers.find(
-		(r) => String(r.id) === String(registerId),
-	)
+	// By id, uuid or slug, as RegisterMapper::find() resolves it: a link from
+	// another app can only name the slug.
+	return findRegisterByIdentifier(dashboardStore.registers, registerId)
 }

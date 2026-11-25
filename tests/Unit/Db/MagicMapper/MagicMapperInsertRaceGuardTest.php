@@ -105,6 +105,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowLookups
  * @uses \OCA\OpenRegister\Service\Search\SearchGrammar
  * @uses \OCA\OpenRegister\Service\WritePhase
+ * @uses   \OCA\OpenRegister\Db\MagicMapper\ObjectEventDeferral
  *
  * @spec openspec/changes/insert-race-runs-update-guard/specs/object-lifecycle/spec.md
  */

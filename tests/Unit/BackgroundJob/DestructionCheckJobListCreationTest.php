@@ -73,6 +73,13 @@ class DestructionCheckJobListCreationTest extends TestCase {
 	private array $errors = [];
 
 	/**
+	 * The object sets the retention service was asked to build a list over.
+	 *
+	 * @var array<int, array<int, ObjectEntity>>
+	 */
+	private array $listedSets = [];
+
+	/**
 	 * An eligible set is saved as one destruction list and announced to the archivists.
 	 *
 	 * @return void
@@ -92,6 +99,25 @@ class DestructionCheckJobListCreationTest extends TestCase {
 			$this->subjects
 		);
 	}//end testAnEligibleSetIsSavedAsOneListAndAnnounced()
+
+	/**
+	 * Records due for anonymising join the same list, after the ones to destroy.
+	 *
+	 * @return void
+	 */
+	public function testRecordsDueForAnonymisingJoinTheSameList(): void {
+		$destroy   = $this->createMock(ObjectEntity::class);
+		$anonymise = $this->createMock(ObjectEntity::class);
+		$listData  = ['title' => 'Destruction list', 'objects' => ['uuid-1', 'uuid-2']];
+
+		$this->runJob(eligible: [$destroy], listData: $listData, anonymisable: [$anonymise]);
+
+		$this->assertSame([[$destroy, $anonymise]], $this->listedSets, 'one list, built over both sets');
+		$this->assertSame(
+			[['destruction_list_review', ['listUuid' => 'list-uuid-1', 'objectCount' => 2]]],
+			$this->subjects
+		);
+	}//end testRecordsDueForAnonymisingJoinTheSameList()
 
 	/**
 	 * Nothing eligible saves nothing and announces nothing.
@@ -122,16 +148,18 @@ class DestructionCheckJobListCreationTest extends TestCase {
 	 * Run the job's run() over a stubbed container.
 	 *
 	 * @param array<int, ObjectEntity> $eligible The objects the retention service finds eligible.
-	 * @param array|null               $listData The list the retention service builds.
+	 * @param array|null               $listData     The list the retention service builds.
+	 * @param array<int, ObjectEntity> $anonymisable The objects it finds due for anonymising.
 	 *
 	 * @return void
 	 */
-	private function runJob(array $eligible, ?array $listData): void {
+	private function runJob(array $eligible, ?array $listData, array $anonymisable = []): void {
+		$this->listedSets = [];
 		$this->saves    = [];
 		$this->subjects = [];
 		$this->errors   = [];
 
-		$container = $this->container(eligible: $eligible, listData: $listData);
+		$container = $this->container(eligible: $eligible, listData: $listData, anonymisable: $anonymisable);
 		$job       = new DestructionCheckJob($this->createMock(ITimeFactory::class), $container);
 
 		$method = (new ReflectionClass(DestructionCheckJob::class))->getMethod('run');
@@ -143,16 +171,23 @@ class DestructionCheckJobListCreationTest extends TestCase {
 	 * The stubbed app container.
 	 *
 	 * @param array<int, ObjectEntity> $eligible The objects the retention service finds eligible.
-	 * @param array|null               $listData The list the retention service builds.
+	 * @param array|null               $listData     The list the retention service builds.
+	 * @param array<int, ObjectEntity> $anonymisable The objects it finds due for anonymising.
 	 *
 	 * @return ContainerInterface
 	 */
-	private function container(array $eligible, ?array $listData): ContainerInterface {
+	private function container(array $eligible, ?array $listData, array $anonymisable = []): ContainerInterface {
 		$retention = $this->createMock(RetentionServiceInterface::class);
 		$retention->method('scanObjectsWithRetention')->willReturn(['objects' => [], 'scanned' => 0, 'truncated' => false]);
 		$retention->method('getObjectsOnPendingDestructionLists')->willReturn([]);
 		$retention->method('findEligibleForDestruction')->willReturn($eligible);
-		$retention->method('createDestructionList')->willReturn($listData);
+		$retention->method('findEligibleForAnonymisation')->willReturn($anonymisable);
+		$retention->method('createDestructionList')->willReturnCallback(
+			function (array $objects) use ($listData): ?array {
+				$this->listedSets[] = $objects;
+				return $listData;
+			}
+		);
 
 		$settings = $this->createMock(ArchivalSettingsInterface::class);
 		$settings->method('getArchivalSettingsOnly')->willReturn(

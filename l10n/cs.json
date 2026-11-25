@@ -3354,7 +3354,9 @@
         "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" vám byl přiřazen",
         "Audit trail export ready": "Export auditní stopy je připraven",
         "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Váš export auditní stopy s %1$s záznamy byl uložen do %2$s%3$s.",
-        "Open Files": "Otevřít Soubory"
+        "Open Files": "Otevřít Soubory",
+        "Its ancestor %1$s has appraisal %2$s": "Jeho předek %1$s má hodnocení %2$s",
+        "Its ancestor %s could not be read": "Jeho předka %s nelze přečíst"
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;",
     "plurals": {

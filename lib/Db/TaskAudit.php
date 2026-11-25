@@ -53,6 +53,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOnBehalfOf(?string $onBehalfOf)
  * @method string|null getMandate()
  * @method void setMandate(?string $mandate)
+ * @method array|null getMandateEvidence()
+ * @method void setMandateEvidence(?array $mandateEvidence)
  * @method string|null getReason()
  * @method void setReason(?string $reason)
  * @method bool|null getAuthorized()
@@ -116,6 +118,14 @@ class TaskAudit extends Entity implements JsonSerializable {
 	protected ?string $mandate = null;
 
 	/**
+	 * The authority a stand-in or delegate was let through on
+	 * (`{verb, source, rule, until}`); null when the move needed none.
+	 *
+	 * @var array|null
+	 */
+	protected ?array $mandateEvidence = null;
+
+	/**
 	 * The reason or comment supplied with the action, or the denial reason.
 	 *
 	 * @var string|null
@@ -147,6 +157,7 @@ class TaskAudit extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'performerType', type: 'string');
 		$this->addType(fieldName: 'onBehalfOf', type: 'string');
 		$this->addType(fieldName: 'mandate', type: 'string');
+		$this->addType(fieldName: 'mandateEvidence', type: 'json');
 		$this->addType(fieldName: 'reason', type: 'string');
 		$this->addType(fieldName: 'authorized', type: 'boolean');
 		$this->addType(fieldName: 'created', type: 'datetime');
@@ -170,6 +181,7 @@ class TaskAudit extends Entity implements JsonSerializable {
 			'performerType' => $this->performerType,
 			'onBehalfOf' => $this->onBehalfOf,
 			'mandate' => $this->mandate,
+			'mandateEvidence' => $this->mandateEvidence,
 			'reason' => $this->reason,
 			'authorized' => $this->authorized,
 			'created' => $this->created?->format('c'),

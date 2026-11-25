@@ -68,6 +68,24 @@
 							Open Folder
 						</NcActionButton>
 						<NcActionButton
+							v-if="canTranslateObject"
+							closeAfterClick
+							@click="openTranslate">
+							<template #icon>
+								<Translate :size="20" />
+							</template>
+							{{ t('openregister', 'Translate') }}
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							data-testid="object-export-pdf"
+							@click="exportPdf">
+							<template #icon>
+								<FilePdfBox :size="20" />
+							</template>
+							{{ t('openregister', 'Export {name}', { name: 'PDF' }) }}
+						</NcActionButton>
+						<NcActionButton
 							v-if="followToggle"
 							closeAfterClick
 							@click="markUnread">
@@ -247,6 +265,14 @@
 								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab :title="t('openregister', 'Files')">
+							<template #title>
+								{{ t('openregister', 'Files') }}
+								<NcCounterBubble
+									v-if="unreadBadges.files"
+									class="tab-unread">
+									{{ unreadBadges.files }}
+								</NcCounterBubble>
+							</template>
 							<NcButton
 								@click="openFolder(objectStore.objectItem.folder)">
 								<template #icon>
@@ -351,29 +377,69 @@
 							</div>
 						</AppTab>
 						<AppTab :title="t('openregister', 'Syncs')">
+							<template #title>
+								{{ t('openregister', 'Syncs') }}
+								<NcCounterBubble
+									v-if="unreadBadges.syncs"
+									class="tab-unread">
+									{{ unreadBadges.syncs }}
+								</NcCounterBubble>
+							</template>
 							<div class="tabPanel">
 								{{ t('openregister', 'No synchronizations found') }}
 							</div>
 						</AppTab>
 						<AppTab v-if="relationContext" title="Emails">
+							<template #title>
+								Emails
+								<NcCounterBubble
+									v-if="unreadBadges.emails"
+									class="tab-unread">
+									{{ unreadBadges.emails }}
+								</NcCounterBubble>
+							</template>
 							<EmailsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Events">
+							<template #title>
+								Events
+								<NcCounterBubble
+									v-if="unreadBadges.events"
+									class="tab-unread">
+									{{ unreadBadges.events }}
+								</NcCounterBubble>
+							</template>
 							<EventsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Contacts">
+							<template #title>
+								Contacts
+								<NcCounterBubble
+									v-if="unreadBadges.contacts"
+									class="tab-unread">
+									{{ unreadBadges.contacts }}
+								</NcCounterBubble>
+							</template>
 							<ContactsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:objectId="relationContext.id" />
 						</AppTab>
 						<AppTab v-if="relationContext" title="Deck">
+							<template #title>
+								Deck
+								<NcCounterBubble
+									v-if="unreadBadges.deck"
+									class="tab-unread">
+									{{ unreadBadges.deck }}
+								</NcCounterBubble>
+							</template>
 							<DeckTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
@@ -474,6 +540,31 @@
 						<AppTab
 							v-if="objectStore.auditTrails"
 							:title="t('openregister', 'Audit Trails')">
+							<!--
+								The flow runs that changed this object
+								(flow-object-attribution), from its audit rows. A
+								pruned run is still listed by its identifiers.
+							-->
+							<section
+								v-if="flowRuns.length"
+								class="objectFlowRuns"
+								data-testid="object-flow-runs">
+								<h3>{{ t('openregister', 'Runs') }}</h3>
+								<ul>
+									<li v-for="flowRun in flowRuns" :key="flowRun.run">
+										<router-link
+											:to="{ name: 'flow-run-detail', params: { uuid: flowRun.run } }">
+											{{ t('openregister', 'Run {id}', { id: flowRun.run.slice(0, 8) }) }}
+										</router-link>
+										<span
+											v-if="flowRun.nodes.length"
+											class="objectFlowRuns__nodes">{{ flowRun.nodes.join(' › ') }}</span>
+										<span
+											v-if="flowRun.lastAt"
+											class="objectFlowRuns__when">{{ new Date(flowRun.lastAt).toLocaleString() }}</span>
+									</li>
+								</ul>
+							</section>
 							<div v-if="objectStore.auditTrails?.results?.length">
 								<NcListItem
 									v-for="(auditTrail, key) in objectStore
@@ -556,6 +647,7 @@ import {
 	CnTasksTab,
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
@@ -575,12 +667,14 @@ import EmailMarkAsUnread from 'vue-material-design-icons/EmailMarkAsUnread.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
+import Translate from 'vue-material-design-icons/Translate.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import ObjectAccessLinks from '../../components/access-links/ObjectAccessLinks.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
@@ -593,8 +687,19 @@ import AppTab from '../../components/tabs/AppTab.vue'
 import AppTabs from '../../components/tabs/AppTabs.vue'
 import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
-import { navigationStore, objectStore } from '../../store/store.js'
-import { followProps, recordAddress, sendReadState } from './recordFollow.js'
+import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
+import { flowRunsOf } from './objectFlowRuns.js'
+import { canTranslate, registerLanguages, translatableProperties, withTranslations } from './objectTranslation.js'
+import {
+	fetchRecordCan,
+	followProps,
+	recordAddress,
+	schemaMatches,
+	schemaNotifiesWatchers,
+	sendReadState,
+	unreadBadges,
+} from './recordFollow.js'
+import { downloadRecordPdf } from './recordPdf.js'
 
 /**
  * Register the live target's object type with the store, once.
@@ -685,6 +790,7 @@ export default {
 		DotsHorizontal,
 		EmailMarkAsUnread,
 		Pencil,
+		Translate,
 		TrashCanOutline,
 		TimelineQuestionOutline,
 		Eye,
@@ -692,6 +798,7 @@ export default {
 		LockOpenOutline,
 		FolderOutline,
 		FileOutline,
+		FilePdfBox,
 		ExclamationThick,
 		OpenInNew,
 		EmailsTab,
@@ -752,12 +859,55 @@ export default {
 			fileLoading: false,
 			pagination: initialPagination(),
 			readMarkedFor: null,
+			// What the Follow toggle needs beside the record (D-4, D-6), for followContext.id.
+			followContext: { id: null, notifies: null, can: null },
 			// Open flow tasks on this record, for the Tasks tab badge; null until known.
 			openTaskCount: null,
+			// The register's languages and the schema's translatable properties, for the Translate action.
+			translation: { key: '', languages: [], translatable: [] },
 		}
 	},
 
 	computed: {
+		/**
+		 * The register and schema the Translate action is judged on, as one key.
+		 *
+		 * @return {string} `<register>-<schema>`, or '' without a record.
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 */
+		translationKey() {
+			const ctx = this.relationContext
+			return ctx ? `${ctx.register}-${ctx.schema}` : ''
+		},
+
+		/**
+		 * Whether the Translate action is shown: an administrator, on a schema
+		 * with a translatable property in a register with more than one language.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 */
+		canTranslateObject() {
+			return this.translation.key !== ''
+				&& this.translation.key === this.translationKey
+				&& canTranslate({
+					isAdmin: getCurrentUser()?.isAdmin === true,
+					languages: this.translation.languages,
+					translatable: this.translation.translatable,
+				})
+		},
+
+		/**
+		 * The flow runs that changed this object, from its loaded audit rows.
+		 *
+		 * @return {Array<object>} The runs, newest first.
+		 *
+		 * @spec openspec/changes/flow-object-attribution/tasks.md#7-frontend
+		 */
+		flowRuns() {
+			return flowRunsOf(objectStore.auditTrails?.results)
+		},
+
 		/**
 		 * The Follow toggle's props from the record's `@self`, or null when
 		 * the record has no address (design D-1, D-6).
@@ -766,7 +916,20 @@ export default {
 		 * @return {object|null}
 		 */
 		followToggle() {
-			return followProps(objectStore?.objectItem)
+			const item = objectStore?.objectItem
+			const context = this.followContext.id === recordAddress(item)?.id ? this.followContext : {}
+			return followProps(item, context)
+		},
+
+		/**
+		 * The unread count per tab from the record's `@self.unreadCounts`,
+		 * shown as a badge on the tab (task 2.3).
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/specs/object-read-state/spec.md#requirement-opening-a-records-page-marks-it-read-and-badges-its-tabs-req-ors-005
+		 * @return {{[key: string]: number}}
+		 */
+		unreadBadges() {
+			return unreadBadges(objectStore?.objectItem)
 		},
 
 		/**
@@ -842,6 +1005,21 @@ export default {
 	},
 
 	watch: {
+		translationKey: {
+			/**
+			 * Read the register's languages and the schema's properties when the
+			 * record changes register or schema.
+			 *
+			 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+			 * @return {void}
+			 */
+			handler() {
+				this.loadTranslationFacts()
+			},
+
+			immediate: true,
+		},
+
 		'pagination.files.currentPage': {
 			/**
 			 * Reload files when the files page changes.
@@ -892,6 +1070,7 @@ export default {
 			this.getAuditTrails()
 			this.getRelations()
 			this.markReadAfterRender()
+			this.loadFollowContext()
 			this.countOpenTasks()
 		}
 		this.syncLiveSubscription()
@@ -912,6 +1091,7 @@ export default {
 			this.countOpenTasks()
 			this.syncLiveSubscription()
 			this.markReadAfterRender()
+			this.loadFollowContext()
 		}
 	},
 
@@ -926,6 +1106,81 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Read what the Translate action needs, for administrators only: the
+		 * register's languages and the schema's translatable properties. A
+		 * failed read leaves the action hidden.
+		 *
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async loadTranslationFacts() {
+			const key = this.translationKey
+			const ctx = this.relationContext
+			this.translation = { key: '', languages: [], translatable: [] }
+			if (!ctx || getCurrentUser()?.isAdmin !== true) {
+				return
+			}
+			try {
+				const [register, schema] = await Promise.all([
+					axios.get(generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(ctx.register)}`)),
+					axios.get(generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(ctx.schema)}`)),
+				])
+				if (this.translationKey === key) {
+					this.translation = {
+						key,
+						languages: registerLanguages(register.data),
+						translatable: translatableProperties(schema.data),
+					}
+				}
+			} catch {
+				// The action stays hidden; the page works without it.
+				this.translation = { key: '', languages: [], translatable: [] }
+			}
+		},
+
+		/**
+		 * Open the Translate dialog for this record.
+		 *
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 * @return {void}
+		 */
+		openTranslate() {
+			const target = this.liveTarget()
+			if (!target) {
+				return
+			}
+			navigationStore.setTransferData({
+				uuid: target.uuid,
+				languages: this.translation.languages,
+				onTranslated: (result) => this.saveTranslations(result),
+			})
+			navigationStore.setDialog('bulkTranslate')
+		},
+
+		/**
+		 * Save the translated values on the record, as the bulk-translate
+		 * contract asks the caller to, and show the saved record.
+		 *
+		 * @param {object} result The bulk-translate answer.
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async saveTranslations(result) {
+			const target = this.liveTarget()
+			const updated = withTranslations(objectStore.objectItem, result)
+			if (!target || !updated) {
+				return
+			}
+			registerLiveType(target)
+			const saved = await objectStore.saveObject(target.type, updated)
+			if (saved) {
+				objectStore.setObjectItem(saved)
+				return
+			}
+			showError(t('openregister', 'The translations could not be saved on the object.'))
+		},
+
 		/**
 		 * Mark the shown record read once its data has rendered, once per
 		 * record (design D-3). A page without a record (a failed load) sends
@@ -943,6 +1198,74 @@ export default {
 			this.readMarkedFor = address.id
 			await this.$nextTick()
 			await sendReadState(address, 'PUT')
+		},
+
+		/**
+		 * "Export PDF": download the record's readable fields as a PDF in the
+		 * house style; a refusal is shown, not downloaded.
+		 *
+		 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-single-record-exports-as-a-pdf
+		 * @return {Promise<void>}
+		 */
+		async exportPdf() {
+			const address = recordAddress(objectStore?.objectItem)
+			if (address === null) {
+				return
+			}
+
+			const result = await downloadRecordPdf(address)
+			if (result.ok === false) {
+				showError(t('openregister', 'Export failed: {error}', { error: result.message }))
+			}
+		},
+
+		/**
+		 * Learn what the Follow toggle needs that the record may not carry:
+		 * whether its schema notifies followers (the D-4 tooltip), and, for a
+		 * record reached from a list read without it, `@self.can` (D-6). A
+		 * failure keeps the toggle's defaults: notifying, no picker.
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async loadFollowContext() {
+			const item = objectStore?.objectItem
+			const address = recordAddress(item)
+			if (address === null || this.followContext.id === address.id) {
+				return
+			}
+
+			this.followContext = { id: address.id, notifies: null, can: null }
+			const needsCan = item['@self']?.can === undefined
+			const [schema, can] = await Promise.all([
+				this.recordSchema(address.schema),
+				needsCan ? fetchRecordCan(address) : Promise.resolve(null),
+			])
+			if (this.followContext.id !== address.id) {
+				return
+			}
+
+			this.followContext = { id: address.id, notifies: schemaNotifiesWatchers(schema), can }
+		},
+
+		/**
+		 * The record's schema: the one the schema store holds when it is that
+		 * schema, else read from the API; null when it cannot be read.
+		 *
+		 * @spec openspec/changes/record-star-follow-and-unread-on-screen/tasks.md
+		 * @param {string} reference The record's `@self.schema`
+		 * @return {Promise<object|null>}
+		 */
+		async recordSchema(reference) {
+			if (schemaMatches(schemaStore?.schemaItem, reference)) {
+				return schemaStore.schemaItem
+			}
+
+			try {
+				return await schemaStore.getSchema(reference)
+			} catch {
+				return null
+			}
 		},
 
 		/**
@@ -1164,7 +1487,7 @@ export default {
 		 * Reset the live state after a failed subscribe.
 		 *
 		 * @param {string} key The subscription key
-		 * @param {*} e The failure
+		 * @param {Error|object} e The failure
 		 * @spec openspec/specs/realtime-updates/spec.md
 		 */
 		liveFailed(key, e) {
@@ -1479,6 +1802,34 @@ h4 {
 </style>
 
 <style scoped>
+/* The unread badge beside a tab's label (record-star-follow-and-unread-on-screen 2.3). */
+.tab-unread {
+	display: inline-flex;
+	margin-inline-start: 6px;
+	vertical-align: middle;
+}
+
+.objectFlowRuns {
+	margin-bottom: 16px;
+}
+
+.objectFlowRuns ul {
+	list-style: none;
+	padding: 0;
+}
+
+.objectFlowRuns li {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 4px 0;
+}
+
+.objectFlowRuns__nodes,
+.objectFlowRuns__when {
+	color: var(--color-text-maxcontrast);
+}
+
 .fileLabelsContainer {
 	display: inline-flex;
 	gap: 3px;

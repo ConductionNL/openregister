@@ -55,6 +55,9 @@ use OCP\Files\NotFoundException;
 use OCP\IConfig;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCP\IL10N;
+use OCP\IUser;
+use OCP\L10N\IFactory;
 use OCP\Mail\IMailer;
 use OCP\Notification\IManager;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -108,6 +111,14 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * @var string[]
 	 */
 	public const ALLOWED_DELIVERY_MODES = ['files', 'email', 'both'];
+
+	/**
+	 * The body line of an export too large to attach (a backend catalogue key: keep it in l10n/*.json).
+	 *
+	 * @var string
+	 */
+	private const OVERSIZE_NOTICE = 'The export (%1$s) exceeds the %2$sMB email attachment limit and was not attached. '
+		. 'It has been saved to your Nextcloud Files at %3$s%4$s instead.';
 
 	/**
 	 * Maximum number of recipient email addresses a report may configure.
@@ -208,6 +219,13 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	private readonly IMailer $mailer;
 
 	/**
+	 * Renders the delivery mail in the owner's language; null leaves it in English.
+	 *
+	 * @var IFactory|null
+	 */
+	private readonly ?IFactory $l10nFactory;
+
+	/**
 	 * Collaborator, assigned from its bundle in the constructor.
 	 *
 	 * @var IConfig
@@ -266,6 +284,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 		$this->notificationManager = $delivery->owner->notificationManager;
 		$this->logger = $logger;
 		$this->mailer = $delivery->mailer;
+		$this->l10nFactory = $delivery->l10nFactory;
 		$this->config = $delivery->config;
 		$this->profileService = $exporters->profileService;
 		$this->exportRuns = $exporters->exportRuns;
@@ -1571,7 +1590,8 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 */
 	private function composeEmail(ScheduledReportRun $run, array $recipients): \OCP\Mail\IMessage {
 		$report = $run->report;
-		$subject = (string)($run->export['subject'] ?? sprintf('Scheduled report "%s"', $report->getName()));
+		$l10n = $this->mailL10n(owner: $run->owner);
+		$subject = (string)($run->export['subject'] ?? self::rendered(l10n: $l10n, text: 'Scheduled report "%s"', parameters: [$report->getName()]));
 
 		$emailTemplate = $this->mailer->createEMailTemplate('openregister.scheduledReportDelivery', []);
 		$emailTemplate->setSubject($subject);
@@ -1609,19 +1629,22 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 * @return array<int,string>
 	 */
 	private function emailBodyLines(ScheduledReportRun $run): array {
+		$l10n = $this->mailL10n(owner: $run->owner);
 		$bodyLines = ($run->export['lines'] ?? null);
 		if (is_array($bodyLines) === false) {
-			$bodyLines = $this->buildEmailBodyLines(report: $run->report, rowCount: $run->export['rowCount']);
+			$bodyLines = $this->buildEmailBodyLines(report: $run->report, rowCount: $run->export['rowCount'], l10n: $l10n);
 		}
 
 		if ($this->isOversize(run: $run) === true) {
-			$bodyLines[] = sprintf(
-				'The export (%s) exceeds the %dMB email attachment limit and was not attached. '
-				. 'It has been saved to your Nextcloud Files at %s%s instead.',
-				$this->humanFileSize(bytes: strlen($run->bytes())),
-				(int)(self::MAX_EMAIL_ATTACHMENT_BYTES / 1024 / 1024),
-				trim((string)($run->report->getDeliveryFolder() ?? 'Reports/'), '/'),
-				'/' . $run->filename
+			$bodyLines[] = self::rendered(
+				l10n: $l10n,
+				text: self::OVERSIZE_NOTICE,
+				parameters: [
+					$this->humanFileSize(bytes: strlen($run->bytes())),
+					(string)(int)(self::MAX_EMAIL_ATTACHMENT_BYTES / 1024 / 1024),
+					trim((string)($run->report->getDeliveryFolder() ?? 'Reports/'), '/'),
+					'/' . $run->filename,
+				]
 			);
 		}
 
@@ -1689,12 +1712,18 @@ class ScheduledReportService implements ScheduledReportsInterface {
 	 *
 	 * @param ScheduledReport $report The report.
 	 * @param int $rowCount The exported row count.
+	 * @param IL10N|null $l10n The owner's translator; null writes the English source.
 	 *
 	 * @return string[]
 	 */
-	private function buildEmailBodyLines(ScheduledReport $report, int $rowCount): array {
+	private function buildEmailBodyLines(ScheduledReport $report, int $rowCount, ?IL10N $l10n = null): array {
 		$lines = [];
-		$lines[] = sprintf('Your scheduled report "%s" ran and delivered %d row(s).', $report->getName(), $rowCount);
+		$lines[] = self::renderedCount(
+			l10n: $l10n,
+			forms: ['Your scheduled report "%s" ran and delivered %n row.', 'Your scheduled report "%s" ran and delivered %n rows.'],
+			count: $rowCount,
+			parameters: [(string)$report->getName()]
+		);
 
 		try {
 			$register = $this->registerMapper->find($report->getRegisterId(), _rbac: false, _multitenancy: false);
@@ -1703,7 +1732,7 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			$registerName = ('register ' . $report->getRegisterId());
 		}
 
-		$schemaName = 'all schemas';
+		$schemaName = self::rendered(l10n: $l10n, text: 'all schemas', parameters: []);
 		if ($report->getSchemaId() !== null) {
 			try {
 				$schema = $this->schemaMapper->find($report->getSchemaId(), _rbac: false, _multitenancy: false);
@@ -1713,11 +1742,80 @@ class ScheduledReportService implements ScheduledReportsInterface {
 			}
 		}
 
-		$lines[] = sprintf('Source: %s / %s.', $registerName, $schemaName);
-		$lines[] = sprintf('Schedule: %s.', ($report->getScheduleType() ?? 'daily'));
+		$lines[] = self::rendered(l10n: $l10n, text: 'Source: %1$s / %2$s.', parameters: [(string)$registerName, (string)$schemaName]);
+		$lines[] = self::rendered(l10n: $l10n, text: 'Schedule: %s.', parameters: [(string)($report->getScheduleType() ?? 'daily')]);
 
 		return $lines;
 	}//end buildEmailBodyLines()
+
+	/**
+	 * The translator for the delivery mail: the app's strings in the owner's own language.
+	 *
+	 * The mail goes out from a background job, where no request language exists,
+	 * so the language is the owner's setting. Null without a factory, or when it
+	 * fails: the mail then goes out in English rather than not at all.
+	 *
+	 * @param IUser $owner The report owner the mail is written for.
+	 *
+	 * @return IL10N|null
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/tasks.md#2.5
+	 */
+	private function mailL10n(IUser $owner): ?IL10N {
+		if ($this->l10nFactory === null) {
+			return null;
+		}
+
+		try {
+			return $this->l10nFactory->get('openregister', $this->l10nFactory->getUserLanguage($owner));
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end mailL10n()
+
+	/**
+	 * A mail string in the translator's language, or the English source without one.
+	 *
+	 * @param IL10N|null         $l10n       The translator.
+	 * @param string             $text       The English source, with printf placeholders.
+	 * @param array<int, string> $parameters The values.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/tasks.md#2.5
+	 */
+	private static function rendered(?IL10N $l10n, string $text, array $parameters): string {
+		if ($l10n !== null) {
+			return (string)$l10n->t($text, $parameters);
+		}
+
+		return vsprintf($text, $parameters);
+	}//end rendered()
+
+	/**
+	 * A counted mail string in the translator's language, or the English source without one.
+	 *
+	 * @param IL10N|null           $l10n       The translator.
+	 * @param array{0: string, 1: string} $forms The English singular and plural, `%n` for the count.
+	 * @param int                  $count      The count.
+	 * @param array<int, string>   $parameters The other values.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/tasks.md#2.5
+	 */
+	private static function renderedCount(?IL10N $l10n, array $forms, int $count, array $parameters): string {
+		if ($l10n !== null) {
+			return (string)$l10n->n($forms[0], $forms[1], $count, $parameters);
+		}
+
+		$form = $forms[1];
+		if ($count === 1) {
+			$form = $forms[0];
+		}
+
+		return vsprintf(str_replace('%n', (string)$count, $form), $parameters);
+	}//end renderedCount()
 
 	/**
 	 * Resolve the instance's default outgoing mail sender, mirroring

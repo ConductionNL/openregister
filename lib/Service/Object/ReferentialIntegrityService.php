@@ -265,7 +265,9 @@ class ReferentialIntegrityService {
 				changed: $changed + self::triggerOf(origin: $origin),
 				userId: $origin->userId
 			);
-			$this->logIntegrityAction(entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated));
+			$this->logIntegrityAction(
+				entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated)->lastingUntil(until: $origin->evidenceUntil)
+			);
 		}
 	}//end applySetNullTargets()
 
@@ -289,7 +291,9 @@ class ReferentialIntegrityService {
 				changed: $changed + self::triggerOf(origin: $origin),
 				userId: $origin->userId
 			);
-			$this->logIntegrityAction(entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated));
+			$this->logIntegrityAction(
+				entry: $entry->within(schemaId: $target['schema'] ?? null, registerId: null)->about(object: $updated)->lastingUntil(until: $origin->evidenceUntil)
+			);
 		}
 	}//end applySetDefaultTargets()
 

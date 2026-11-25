@@ -78,7 +78,13 @@ class ReviewOutcomeService implements ReviewOutcomeServiceInterface {
 	 * @spec openspec/changes/archiving-as-a-process-with-sign-off/specs/retention-management/spec.md
 	 */
 	public function apply(string $entryUuid, ReviewerAnswer $given): ?string {
-		$keptHere = [DestructionReviewService::ANSWER_DESTROY, DestructionReviewService::ANSWER_RETAIN];
+		// Only a transfer hands the record on; an anonymise, like a destroy, changes
+		// nothing on the record at answer time and is carried out after the list.
+		$keptHere = [
+			DestructionReviewService::ANSWER_DESTROY,
+			DestructionReviewService::ANSWER_RETAIN,
+			DestructionReviewService::ANSWER_ANONYMISE,
+		];
 		if (in_array($given->answer, $keptHere, true) === false) {
 			return $this->transfer(entryUuid: $entryUuid, given: $given);
 		}

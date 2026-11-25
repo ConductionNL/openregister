@@ -65,6 +65,8 @@ final class PlatformServiceBindings {
 		ChatProxyHandlerInterface::class             => ChatProxyHandler::class,
 		LanguageServiceInterface::class              => LanguageService::class,
 		OutboundBreakerInterface::class              => OutboundBreaker::class,
+		\OCA\OpenRegister\Kernel\Contracts\DependencyBreakerInterface::class => \OCA\OpenRegister\Service\Resilience\DependencyBreaker::class,
+		\OCA\OpenRegister\Kernel\Contracts\DependencyConsoleInterface::class => \OCA\OpenRegister\Service\Resilience\DependencyConsole::class,
 		RouteCallersInterface::class                 => RouteCallers::class,
 		TranslationProjectionServiceInterface::class => TranslationProjectionService::class,
 		TranslationStatusServiceInterface::class     => TranslationStatusService::class,
