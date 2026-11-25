@@ -923,3 +923,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: precheck-red 'FAIL src/views/listActions.dom.golden.spec.js', the Received snapshot adds an NcActionButton (e.g. 'Restore with related records' under 'deleted').
 - Cause: main pins every list page's action menu in one golden; a PR adding an action updates only its own view's snapshot.
 - Fix: on the PR merged with main, npx jest src/views/listActions.dom.golden.spec.js -u, check the diff only adds the PR's action, commit with the main merge (see #11055 18c4aaad).
+
+## l10n key silently dropped by a clean merge (or-fix-3, #11023)
+- Symptom: after a main merge, test:l10n:parity shows '<loc>: 1 missing key' plus 'stale cognate record' for a key the PR uses; no conflict in l10n/<loc>.js.
+- Cause: main cleaned the key out of a locale as unused while the PR (re)uses it; the 3-way merge applies main's delete.
+- Fix: diff parity output against a main worktree; for each key the PR's head has but the merge lost, echo '{"<key>":"<pr value>"}' > p.json; node scripts/l10n/apply.js <loc> p.json --apply.
