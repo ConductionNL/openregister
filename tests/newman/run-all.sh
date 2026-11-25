@@ -123,6 +123,7 @@ DOMAIN_ORDER=(
     "draft-activation"
     "object-grants"
     "anonymisation-disclosures"
+    "reviewer-decisions"
     "public-export"
     "nlgov-conformance"
     "reply-threading"
@@ -148,6 +149,10 @@ declare -A DOMAIN_COLLECTIONS=(
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
     [flow-engine]="$REPO_ROOT/tests/integration/openregister-flow-engine.postman_collection.json"
+    # A reviewer owns their decision on a relation on an object's file:
+    # one decides, a second is refused 403 decision-owned, the decision
+    # reads back (reviewer-owns-their-decisions 1.3).
+    [reviewer-decisions]="$REPO_ROOT/tests/integration/openregister-reviewer-decisions.postman_collection.json"
     # A run's DECLARED subject set, and a task attached to one. Registered
     # here rather than left to a Playwright spec in tests/e2e/api-direct/,
     # for the same reason as `delegation` and `register-descriptors` below:
