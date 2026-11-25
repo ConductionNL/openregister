@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Kernel\Contracts\Integrations;
 
 use OCA\OpenRegister\AppHost\Store\DeclaredShareableType;
+use OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp;
 
 /**
  * The shareable configuration behind a store that exchanges configuration rather than rows.
@@ -82,10 +83,12 @@ interface ShareableConfigCatalogueInterface {
 	 * @param string               $typeId The declared type id.
 	 * @param array<string, mixed> $bundle The bundle.
 	 * @param string               $source Where the bundle came from.
+	 * @param BundleObjectStamp|null $stamp The install target's stamp, applied after the signature check.
 	 *
 	 * @return array<string, mixed> The install report.
 	 *
 	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#requirement-a-configuration-install-must-run-through-its-owning-type
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
-	public function install(string $typeId, array $bundle, string $source): array;
+	public function install(string $typeId, array $bundle, string $source, ?BundleObjectStamp $stamp = null): array;
 }//end interface
