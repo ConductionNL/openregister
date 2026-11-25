@@ -24,6 +24,8 @@ final class LinkedEntityControllerFactory {
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param IUserSession $userSession Constructor argument.
 	 * @param IGroupManager $groupManager Constructor argument.
+	 * @param EmailLinkServiceInterface|null $emailLinks Mail account ownership; null owns no account for anybody.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface|null $readAccess Object read check; null reads nothing.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -34,6 +36,8 @@ final class LinkedEntityControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 		\OCP\IUserSession $userSession,
 		\OCP\IGroupManager $groupManager,
+		?\OCA\OpenRegister\Service\EmailLinkServiceInterface $emailLinks = null,
+		?\OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface $readAccess = null,
 	): array {
 		return [
 			$request,
@@ -42,6 +46,12 @@ final class LinkedEntityControllerFactory {
 				session: new \OCA\OpenRegister\Controller\Support\ControllerSession(
 					userSession: $userSession,
 					groupManager: $groupManager,
+					logger: $logger,
+				),
+				ownMail: new \OCA\OpenRegister\Controller\Support\OwnMailReverseLookup(
+					linkedEntityService: $linkedEntityService,
+					emailLinks: $emailLinks ?? new RefusingEmailLinks(),
+					readAccess: $readAccess ?? new UnreadableObjects(),
 					logger: $logger,
 				),
 			),

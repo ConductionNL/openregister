@@ -177,6 +177,16 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	private RequestIdentityMap $findCache;
 
 	/**
+	 * Request-scoped map of schema id to the ids of the registers that list it.
+	 *
+	 * Built on first use from one read of every register; dropped when this
+	 * mapper writes a register.
+	 *
+	 * @var array<string, list<int>>|null
+	 */
+	private ?array $registersBySchema = null;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and required dependencies
@@ -584,6 +594,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 *
 	 * @psalm-return                                list<\OCA\OpenRegister\Db\Register>
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
 	 */
 	public function findAll(
 		int|null $limit = null,
@@ -599,10 +611,24 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 			// $this->verifyRbacPermission('read', 'register');
 		}
 
+		// Every row, unfiltered, is read once per request: the save path asks it per object.
+		$everyRow = $limit === null && ($offset ?? 0) === 0 && empty($filters) === true && empty($searchConditions) === true;
+		if ($everyRow === true) {
+			$remembered = $this->findCache->all(multitenancy: $_multitenancy);
+			if ($remembered !== null) {
+				return array_values(array_filter($remembered, static fn ($entity): bool => $entity instanceof Register));
+			}
+		}
+
 		$qb = $this->listedQuery(query: new ListQuery(limit: ($limit ?? ListQuery::UNBOUNDED), offset: ($offset ?? 0), filters: ($filters ?? [])));
 		$this->applySearchConditions(qb: $qb, searchConditions: $searchConditions, searchParams: $searchParams);
 
-		return $this->findInTenancy(qb: $qb, multitenancy: $_multitenancy);
+		$registers = $this->findInTenancy(qb: $qb, multitenancy: $_multitenancy);
+		if ($everyRow === true) {
+			$this->findCache->rememberAll(multitenancy: $_multitenancy, entities: $registers);
+		}
+
+		return $registers;
 	}//end findAll()
 
 	/**
@@ -691,6 +717,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		$this->setOwnerOnCreate(entity: $entity);
 
 		$entity = parent::insert(entity: $entity);
+		$this->registersBySchema = null;
+		$this->findCache->forgetAll();
 
 		// Dispatch creation event.
 		$this->eventDispatcher->dispatchTyped(new RegisterCreatedEvent(register: $entity));
@@ -896,6 +924,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		$this->cleanObject(register: $entity);
 
 		$entity = parent::update(entity: $entity);
+		$this->registersBySchema = null;
+		$this->findCache->forgetAll();
 
 		// Dispatch the update event only when the register actually changed. An
 		// app re-importing its unchanged register (setup wizard, example data)
@@ -966,6 +996,8 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 
 		// Proceed with deletion if no objects are attached.
 		$result = parent::delete(entity: $entity);
+		$this->registersBySchema = null;
+		$this->findCache->forgetAll();
 
 		// Dispatch deletion event.
 		$this->eventDispatcher->dispatchTyped(
@@ -1059,6 +1091,19 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	 * @return int[] The IDs of all matching registers (empty when none found).
 	 */
 	public function getAllRegisterIdsWithSchema(int $schemaId): array {
+		if ($this->registersBySchema === null) {
+			$this->registersBySchema = $this->readRegistersBySchema();
+		}
+
+		return ($this->registersBySchema[(string)$schemaId] ?? []);
+	}//end getAllRegisterIdsWithSchema()
+
+	/**
+	 * Read every register once and map each schema id it lists to the register ids, ascending.
+	 *
+	 * @return array<string, list<int>>
+	 */
+	private function readRegistersBySchema(): array {
 		// Three platforms in production: SQLite (no REGEXP function),
 		// MariaDB / MySQL (has REGEXP), and Postgres (has SIMILAR TO
 		// but stores the `schemas` column as `json`, which doesn't
@@ -1091,21 +1136,19 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 		}
 
 		$result->closeCursor();
-		$needle = (string)$schemaId;
-		$matches = [];
-
+		$bySchema = [];
 		foreach ($candidates as $row) {
 			$schemas = (new RegisterMapperHelper())->decodeSchemasField(raw: ($row['schemas'] ?? null));
-			foreach ($schemas as $candidate) {
-				if ((string)$candidate === $needle) {
-					$matches[] = (int)$row['id'];
-					break;
-				}
+			foreach (array_unique(array_map('strval', $schemas)) as $candidate) {
+				$bySchema[$candidate][] = (int)$row['id'];
 			}
 		}
 
-		sort($matches);
+		foreach ($bySchema as $schema => $ids) {
+			sort($ids);
+			$bySchema[$schema] = $ids;
+		}
 
-		return $matches;
-	}//end getAllRegisterIdsWithSchema()
+		return $bySchema;
+	}//end readRegistersBySchema()
 }//end class

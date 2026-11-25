@@ -33,12 +33,15 @@ final class WebhooksControllerServices {
 	 *
 	 * @param WebhooksMappers  $mappers  The mappers bundle.
 	 * @param TasksPlatform    $platform The platform bundle.
+	 * @param WebhookOwnership|null $ownership Lets a holder of `webhook.own` manage their own webhooks;
+	 *                                         without it only an administrator manages webhooks.
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
 	public function __construct(
 		public readonly WebhooksMappers $mappers,
 		public readonly TasksPlatform $platform,
+		public readonly ?WebhookOwnership $ownership = null,
 	) {
 	}//end __construct()
 }//end class

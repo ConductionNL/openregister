@@ -35,12 +35,14 @@ final class LinkedEntityControllerServices {
 	 *
 	 * @param LinkedEntityServiceInterface $linkedEntityService The linked entity service
 	 * @param ControllerSession            $session             The caller's session, groups and logger
+	 * @param OwnMailReverseLookup         $ownMail             The reverse lookup of a caller's own mail
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-reverse-lookup-across-tables
 	 */
 	public function __construct(
 		public readonly LinkedEntityServiceInterface $linkedEntityService,
 		public readonly ControllerSession $session,
+		public readonly OwnMailReverseLookup $ownMail,
 	) {
 	}//end __construct()
 }//end class

@@ -133,6 +133,11 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Object\PreservedListLens
  * @uses   \OCA\OpenRegister\Service\Object\PreservedListing
  * @uses   \OCA\OpenRegister\Service\Rbac\UndecidablePosture
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation
+ * @uses \OCA\OpenRegister\Service\Rbac\ClassificationCaller
+ * @uses \OCA\OpenRegister\Service\Rbac\ClassificationListTerm
+ * @uses \OCA\OpenRegister\Service\Rbac\ClearanceResolver
+ * @uses \OCA\OpenRegister\Db\MagicMapper\AccentFoldingSetting
  */
 class MagicMapperUnionBatchGoldenTest extends TestCase {
 

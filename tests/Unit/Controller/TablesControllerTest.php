@@ -194,15 +194,15 @@ class TablesControllerTest extends TestCase {
 		$this->assertSame('Magic table synchronized successfully', $data['message']);
 	}
 
-	public function testSyncReturns500WhenRegisterNotFound(): void {
+	public function testSyncReturns404WhenRegisterNotFound(): void {
 		$this->registerMapper->method('find')
 			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Register not found'));
 
 		$result = $this->controller->sync(999, 1);
 
-		$this->assertSame(500, $result->getStatus());
-		$data = $result->getData();
-		$this->assertSame('Failed to sync magic table', $data['error']);
+		// A typed failure answers through handleApiException() with its own status.
+		$this->assertSame(404, $result->getStatus());
+		$this->assertSame(['message' => 'Register not found', 'error' => 'does-not-exist'], $result->getData());
 	}
 
 	public function testSyncRefusesASlugTheRegisterDoesNotCarry(): void {
@@ -235,9 +235,9 @@ class TablesControllerTest extends TestCase {
 
 		$result = $this->controller->sync(1, 1);
 
+		// An untyped failure is a 500 naming the action; its message stays in the log.
 		$this->assertSame(500, $result->getStatus());
-		$data = $result->getData();
-		$this->assertSame('Failed to sync magic table', $data['error']);
+		$this->assertSame(['error' => 'Failed to sync magic table'], $result->getData());
 	}
 
 	public function testSyncWithStringNumericIds(): void {
@@ -297,6 +297,7 @@ class TablesControllerTest extends TestCase {
 		$result = $this->controller->syncAll();
 
 		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Failed to sync magic tables'], $result->getData());
 	}
 
 	public function testSyncAllSkipsNonArraySchemas(): void {

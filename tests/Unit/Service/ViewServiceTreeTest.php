@@ -47,6 +47,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Search\Service\ViewEdit
  * @uses \OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators
  * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationEntryRules
+ * @uses \OCA\OpenRegister\Db\Schema\ConfigurationValidator
  */
 final class ViewServiceTreeTest extends TestCase {
 

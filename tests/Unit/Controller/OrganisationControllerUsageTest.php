@@ -54,6 +54,13 @@ class OrganisationControllerUsageTest extends TestCase {
 
 	private OrganisationController $controller;
 
+	/**
+	 * The controller's logger.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface&MockObject $logger;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -65,7 +72,7 @@ class OrganisationControllerUsageTest extends TestCase {
 			$this->createMock(IRequest::class),
 			$this->createMock(OrganisationService::class),
 			$this->organisationMapper,
-			$this->createMock(LoggerInterface::class),
+			$this->logger = $this->createMock(LoggerInterface::class),
 			$this->createMock(TenantLifecycleService::class),
 			$this->tenantUsageMapper,
 			$this->createMock(IUserSession::class),
@@ -134,14 +141,28 @@ class OrganisationControllerUsageTest extends TestCase {
 		$this->assertSame(['requests' => null, 'bandwidth' => 0.0], $data['utilization']);
 	}
 
-	public function testAFailureAnswers500WithTheMessage(): void {
+	public function testAnUntypedFailureAnswersAGeneric500AndLogsTheMessage(): void {
 		$this->organisationMapper->method('findByUuid')->willThrowException(new \RuntimeException('no such organisation'));
 		$this->tenantUsageMapper->expects($this->never())->method('findByOrgAndDateRange');
+		$this->logger->expects($this->once())->method('error')->with(
+			'[' . OrganisationController::class . '] Organisation usage report failed: no such organisation',
+			$this->anything()
+		);
 
 		$response = $this->controller->usage('uuid-in');
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'no such organisation'], $response->getData());
+		$this->assertSame(['error' => 'Internal server error'], $response->getData());
+	}
+
+	public function testAnUnknownOrganisationAnswers404(): void {
+		$this->organisationMapper->method('findByUuid')->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Organisation not found'));
+		$this->tenantUsageMapper->expects($this->never())->method('findByOrgAndDateRange');
+
+		$response = $this->controller->usage('uuid-in');
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame(['message' => 'Organisation not found', 'error' => 'does-not-exist'], $response->getData());
 	}
 
 	public function testAHistoryFailureAnswers500(): void {
@@ -151,6 +172,6 @@ class OrganisationControllerUsageTest extends TestCase {
 		$response = $this->controller->usage('uuid-in');
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'db'], $response->getData());
+		$this->assertSame(['error' => 'Internal server error'], $response->getData());
 	}
 }//end class

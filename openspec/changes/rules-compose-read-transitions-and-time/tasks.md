@@ -10,11 +10,21 @@
 - [x] 1.2a `{"$condition": "name"}` resolves anywhere `NamedConditionEvaluator`
       evaluates, including inside `and`, `or` and `not`. A reference inside a
       shape it cannot compose (`if`) REFUSES rather than guessing.
-- [ ] 1.2b The call sites: `LifecycleConditionEvaluator`, `StateConditionEvaluator`
+- [x] 1.2b The call sites: `LifecycleConditionEvaluator`, `StateConditionEvaluator`
       and the field-rule evaluator each pass `ConditionDialect` directly today.
       Routing them through the named evaluator is a one-line change per site
       plus a library lookup, and it is a separate PR because each site also
       has to decide where its library comes from (schema, register, or both).
+      (15 Nov: the library is the schema's own, the one 1.3b checks at save.
+      `LifecycleRuleCheck` (transition `condition` and `autoWhen`),
+      `StateConditionEvaluator` (entry/exit) and `StateFieldRuleResolver`
+      (field-rule `when` and block `condition`) evaluate through
+      `NamedConditionEvaluator`. The lifecycle listener hands the library in on
+      `TransitionAttempt::$conditions`; the state paths carry it beside the
+      annotation through `NamedConditionScope`, so no published signature
+      changed. An unresolvable name refuses the transition or the state move,
+      makes no automatic move, and keeps a field rule's restriction on.
+      `NamedConditionCallSitesTest` (8), `NamedConditionScopeTest` (3).)
 - [x] 1.3a `NamedConditionLibrary::refusalFor()` refuses an unknown name
       (naming both the name and what referenced it), a cycle (naming the path
       that closes it, self-reference included) and a chain deeper than
@@ -40,7 +50,10 @@
       fails OPEN one negation later: `{"not": {"$condition": "x"}}` with `x`
       missing would evaluate to TRUE and the rule would fire on everything.
       Both are tested.
-- [ ] 1.5b `RuleRunRecorder` writing it, which arrives with 1.2b.
+- [x] 1.5b `RuleRunRecorder` writing it, which arrives with 1.2b.
+      (15 Nov: the refusal carries `unresolved: {condition, reason}`; the
+      lifecycle and state listeners record it as `refused` with the operand
+      `$condition:<name>` and a message naming the condition and why.)
 
 ## 2. Before and after
 
@@ -52,11 +65,24 @@
       decoration and the first check reads a field nobody has to fill in
       truthfully. `$before` is ABSENT on a create, never null, because a null
       would make `$before.status == null` match every create.
-- [ ] 2.2b Calling it from the annotation validator, with 1.3b.
+- [x] 2.2b Calling it from the annotation validator, with 1.3b.
+      (15 Nov: the rules that read `$before` are the administered
+      validations, the only rules evaluated against `TransitionDocument`. A
+      validation runs on every save unless it declares `"on": "update"`;
+      `AdministeredValidations::refusalFor()`, which the schema save calls
+      through `AdministeredValidationCheck`, now refuses one that reads the
+      prior value without `requiresPrior`, one that declares it but runs on
+      creates, and an unknown `on`, naming the validation. An update-only
+      validation sits out a create. `AdministeredValidationTriggerTest` (6).
+      Flows keep their conditions on the flow and are not read, as in 1.3b.)
 - [x] 2.3a `decidedBy()` answers `transition`, `after` or `unchanged` — not
       "which operand was read" but which the verdict turned on, so a run log
       cannot send somebody looking for a move that never happened.
-- [ ] 2.3b Writing it to the run log, with 1.5b.
+- [x] 2.3b Writing it to the run log, with 1.5b.
+      (15 Nov: an administered validation's run row carries `decidedBy()` —
+      `transition`, `after` or `unchanged` — as the value of its operand; an
+      unevaluable check records none. The enforcer golden is re-recorded for
+      exactly those run-row values; the save response is unchanged.)
 
 ## 3. Relative time
 
@@ -80,17 +106,48 @@
       counts.
 - [x] 3.2a Business units resolve through `SlaCalculator` and the calendar,
       never through arithmetic of this class's own.
-- [ ] 3.2b Which calendar resolves FOR A SCHEMA is the caller's to decide;
+- [x] 3.2b Which calendar resolves FOR A SCHEMA is the caller's to decide;
       this takes one and refuses without it. The record-type/unit/instance
       resolution order belongs to `working-calendar-admin` and is not
       re-implemented here.
+      (15 Nov, design questions 1 and 2 answered as proposed: a `$age` body
+      may name `calendar`; otherwise the object's organisation calendar;
+      otherwise the default — `WorkingCalendarService::resolve()`, the timers'
+      own order, with no record-type level invented. `RelativeTimeEvaluation`
+      evaluates `$age` inside `NamedConditionEvaluator` with `now` from
+      `ITimeFactory`, so it works in administered validations (which pass the
+      object's organisation) and in named conditions; a calendar that does not
+      resolve refuses, under negation too, and without the time evaluation a
+      `$age` node refuses rather than reaching the dialect.
+      `Db/SchemaMapper/RelativeTimeCalendarCheck` refuses at schema save a
+      `$age` that cannot be evaluated as written, naming the rule or named
+      condition and the calendar. `RelativeTimeEvaluationTest` (8).)
 - [x] 3.3a `compile()` returns `{property, operator, value}` — one instant,
       one comparison. The PHP verdict applies the SAME compiled comparison, and
       a test asserts the two agree across three dates, because a sweep selects
       by query and a save evaluates in PHP.
-- [ ] 3.3b Handing it to `MagicRbacHandler`'s query builder in the sweep
+- [x] 3.3b Handing it to `MagicRbacHandler`'s query builder in the sweep
       itself. The shape the builder needs is what `compile()` returns; joining
       it in is the sweep's change, not this one.
+      (15 Nov, still open: design question 3 proposes a TimedJob per schema
+      firing `$age` rules once per due object. The only `$age` rule with an
+      action is an `autoWhen`, so the sweep would apply lifecycle transitions
+      with no request actor, and objects of different organisations compile
+      to different thresholds; both need building with the transition engine,
+      not beside it.)
+      (16 Nov, design question 3 decided: the selection is built here, the
+      firing is not. `Service/Rules/RelativeTimeSweep` hands the compiled
+      comparison to the object search as one operator filter
+      (`<property> lte|gt <instant in UTC>`), scoped to register, schema and
+      ONE organisation (`IS NULL` for objects without one), because each
+      organisation counts in its own calendar; the access flags are the
+      caller's. `RelativeTimeEvaluation::comparisonFor()` compiles with the
+      same clock and calendar resolution as `holds()`, and
+      `RelativeTimeSweepTest` (7) asserts the query and the PHP verdict agree
+      on both sides of the threshold. Applying an `autoWhen` to the due
+      objects runs through the transition engine with a system actor and a
+      once-per-object record; that belongs to the timed-transition change,
+      not to this one.)
 - [x] 3.4 Refused at save AND at evaluation, by the same check: `compile()`
       runs `refusalFor()` every time, so a condition stored before the
       validator existed meets the refusal at the moment it would otherwise have
@@ -114,6 +171,13 @@
       Refused at save: no condition, an unknown severity, no message, a
       property the schema does not declare. A bare string message is accepted
       as the fallback language, so the simple case is not the awkward one.
+      (14 Nov: the refusal was found unwired. `Db/SchemaMapper/AdministeredValidationCheck`
+      now runs in `SchemaMapper`'s behaviour checks, beside `NamedConditionCheck`,
+      and refuses the save through `AdministeredValidations::refusalFor()` naming
+      the validation. `AdministeredValidations` takes its evaluator as optional
+      for this declaration-only use; evaluating without one refuses every
+      validation, never passes it. `SchemaMapperAdministeredValidationTest` (5,
+      red without the wiring), `AdministeredValidationsWithoutEvaluatorTest` (2).)
 - [x] 4.2 Verbatim, with the properties, and with EVERY refusal beside the
       first — a form that can show three problems at once should not make
       somebody save three times to find them.
@@ -123,10 +187,23 @@
       mandatory control.
 - [x] 4.3a A warning saves, and its message is evaluated and written to the
       rule run log.
-- [ ] 4.3b RETURNING it with the response. The save events carry `setErrors()`
+- [x] 4.3b RETURNING it with the response. The save events carry `setErrors()`
       and nothing else — there is no warnings channel on a save response to put
       it in. Recorded rather than dropped while the channel is missing, and
       named here rather than left to look like a feature.
+      (15 Nov, still open: the channel has to reach every save path — API,
+      import, bulk — through `WriteVetoState`, which is a change to the save
+      response of its own.)
+      (16 Nov: built beside the event rather than on it, so no event or
+      published signature changed. A write that a `warn` validation lets
+      through hands each warning, naming its object, to the request's
+      `SaveWarningsInterface`; `SaveWarningsMiddleware` puts them on every
+      successful response of that request as `OpenRegister-Warnings: <JSON>`
+      and, on a single-object body, as `@self.warnings`, so create, update,
+      patch, import and bulk all carry them. A refused write keeps them in its
+      422 body only; a request with no warnings answers as before. The
+      collector keeps at most 100 between drains, for background saves.
+      `SaveWarningsTest` (6), `SaveWarningsMiddlewareTest` (5).)
 - [x] 4.4 Two new assertions in `RuleEvaluationPointTest`: the listener is
       subscribed to both events, and it records its verdict. The validation is
       also a kind in `RuleVocabulary` (order 4, ahead of flows, which moved to

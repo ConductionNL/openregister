@@ -83,6 +83,7 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskServices
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskStep
  * @uses \OCA\OpenRegister\Service\Task\TaskFormFields
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskItemPerformers
  */
 final class UserTaskAttachToTest extends TestCase {
 

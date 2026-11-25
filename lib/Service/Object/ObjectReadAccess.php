@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
+use OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -49,7 +50,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
-class ObjectReadAccess implements ObjectReadAccessInterface {
+class ObjectReadAccess implements ObjectReadAccessInterface, ObjectReadCheckInterface {
 
 	/**
 	 * Constructor.
@@ -85,6 +86,19 @@ class ObjectReadAccess implements ObjectReadAccessInterface {
 			return null;
 		}
 	}//end readable()
+
+	/**
+	 * Whether the caller may read the object an address names; an ambiguous identifier is not readable.
+	 *
+	 * @param ObjectRef $ref The register and schema (slug or id) and the object's id, uuid or slug.
+	 *
+	 * @return bool True when the object is readable.
+	 *
+	 * @spec openspec/specs/mail-sidebar/spec.md#requirement-reverse-lookup-api-to-find-objects-by-mail-message-id
+	 */
+	public function isReadable(ObjectRef $ref): bool {
+		return $this->readable(register: (string)$ref->register, schema: (string)$ref->schema, id: $ref->id) !== null;
+	}//end isReadable()
 
 	/**
 	 * As readable(), but an identifier two objects of the register and schema hold is

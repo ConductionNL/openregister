@@ -32,7 +32,7 @@
 				</label>
 
 				<select
-					v-if="field.control === 'select'"
+					v-if="field.control === 'select' || field.control === 'group'"
 					:id="`occ-${field.key}`"
 					v-model="form[field.key]"
 					:required="field.required"
@@ -71,7 +71,8 @@
 					v-model="form[field.key]"
 					:type="field.control"
 					:required="field.required"
-					class="or-create-connected-dialog__input" />
+					class="or-create-connected-dialog__input"
+					@focus="showFieldStart" />
 
 			</div>
 		</div>
@@ -108,16 +109,17 @@
  */
 import axios from '@nextcloud/axios'
 import { loadTranslations, translate as t } from '@nextcloud/l10n'
-import { generateUrl } from '@nextcloud/router'
+import { generateOcsUrl, generateUrl } from '@nextcloud/router'
 import { NcButton, NcDateTimePicker, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
-import { sentenceName } from '../../mail-sidebar/sentenceName.js'
+import { itemName, sentenceName } from '../../mail-sidebar/sentenceName.js'
 
 /**
  * The form control for a property, by the first rule that applies to its key
  * and definition; a property no rule claims is plain text.
  */
 const CONTROL_RULES = [
+	{ control: 'group', applies: (key, def) => isGroup(def) },
 	{
 		control: 'select',
 		applies: (key, def) => Array.isArray(def.enum) && def.enum.length > 0,
@@ -135,6 +137,32 @@ const CONTROL_RULES = [
 		applies: (key) => /notes|description|body|message|summary|content/i.test(key),
 	},
 ]
+
+/**
+ * Whether a property holds a Nextcloud group id (the markers nextcloud-vue's
+ * schema forms read as a group picker).
+ *
+ * @param {object} def The property definition.
+ * @return {boolean}
+ */
+export function isGroup(def) {
+	return def.referenceType === 'nextcloud-group' || def.format === 'nc-group' || def.widget === 'group'
+}
+
+/**
+ * The fields in the schema's own order (`order`), those without one after
+ * the others in template order, as the board puts the case type first.
+ *
+ * @param {Array<{key: string}>} fields The fields in template order.
+ * @param {object} props The schema's properties.
+ * @return {Array<{key: string}>}
+ */
+export function inSchemaOrder(fields, props) {
+	const rank = (field) => (Number.isFinite(props[field.key]?.order) ? props[field.key].order : Number.POSITIVE_INFINITY)
+	return fields.map((field, index) => ({ field, index }))
+		.sort((a, b) => (rank(a.field) - rank(b.field)) || (a.index - b.index))
+		.map(({ field }) => field)
+}
 
 /**
  * Whether a property refers to one object of another schema.
@@ -193,6 +221,33 @@ export function isoDateOf(date) {
 	if (!(date instanceof Date) || Number.isNaN(date.getTime())) return ''
 	const pad = (n) => String(n).padStart(2, '0')
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+/**
+ * The one choice a relation or group field shows while its names load: the
+ * current value under "Loading…", never its raw id.
+ *
+ * @param {string} current The current value.
+ * @return {Array<{value: string, label: string}>}
+ */
+export function loadingOptions(current) {
+	return current ? [{ value: current, label: t('openregister', 'Loading…') }] : []
+}
+
+/**
+ * The choices of a group field: each group by its display name, keeping the
+ * current value even when it is not among them.
+ *
+ * @param {Array<{id: string, label: string}>} groups The groups.
+ * @param {string} current The current value.
+ * @return {Array<{value: string, label: string}>}
+ */
+export function groupOptions(groups, current) {
+	const options = (groups || []).map((group) => ({ value: group.id, label: group.label || group.id }))
+	if (current && !options.some((option) => option.value === current)) {
+		options.unshift({ value: current, label: current })
+	}
+	return options
 }
 
 /**
@@ -256,6 +311,12 @@ export default {
 		return {
 			form: {},
 			relations: {},
+			// The Nextcloud groups a group field offers, as {id, label}.
+			groups: [],
+			// Whether the group list has been read for this opening.
+			groupsLoaded: false,
+			// Whether the first focus of this opening has been handled.
+			startShown: false,
 			// Bumped once the schema owner's catalogue has loaded, so labels re-translate.
 			catalogueLoaded: 0,
 		}
@@ -275,7 +336,7 @@ export default {
 		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		schemaName() {
-			return sentenceName(this.schemaTitle)
+			return this.schema ? itemName(this.schema) : sentenceName(this.schemaTitle)
 		},
 
 		/**
@@ -286,7 +347,7 @@ export default {
 		 */
 		fields() {
 			const props = this.schema?.properties || {}
-			return Object.keys(this.initialData).map((key) => {
+			return inSchemaOrder(Object.keys(this.initialData).map((key) => {
 				const def = props[key] || {}
 				const current = String(this.initialData[key] ?? '')
 				let options = (Array.isArray(def.enum) ? def.enum : []).map((value, index) => ({
@@ -294,7 +355,10 @@ export default {
 					label: this.translateLabel(enumLabel(def, value, index)),
 				}))
 				if (options.length === 0 && isRelation(def)) {
-					options = this.relations[key] || relationOptions([], {}, current)
+					options = this.relations[key] || loadingOptions(current)
+				}
+				if (isGroup(def)) {
+					options = this.groupsLoaded ? groupOptions(this.groups, current) : loadingOptions(current)
 				}
 				return {
 					key,
@@ -303,7 +367,7 @@ export default {
 					options,
 					required: (this.schema?.required || []).includes(key),
 				}
-			})
+			}), props)
 		},
 	},
 
@@ -324,8 +388,11 @@ export default {
 			handler(open) {
 				if (open) {
 					this.form = { ...this.initialData }
+					this.startShown = false
 					this.loadRelations()
 					this.loadOwnerCatalogue()
+					this.groupsLoaded = false
+					this.loadGroups()
 				}
 			},
 		},
@@ -354,6 +421,46 @@ export default {
 				if (own !== text) return own
 			}
 			return t('openregister', text)
+		},
+
+		/**
+		 * Read the groups a group field offers, by display name, when the
+		 * template has one. A failed read keeps the current id as the only choice.
+		 *
+		 * @spec openspec/specs/integration-email/spec.md
+		 */
+		async loadGroups() {
+			const props = this.schema?.properties || {}
+			if (!Object.keys(this.initialData).some((key) => isGroup(props[key] || {}))) return
+			try {
+				const response = await axios.get(generateOcsUrl('core/autocomplete/get'), {
+					params: { search: '', itemType: ' ', itemId: ' ', 'shareTypes[]': 1, limit: 200 },
+					headers: { 'OCS-APIRequest': 'true' },
+				})
+				const data = response.data?.ocs?.data
+				this.groups = Array.isArray(data) ? data.filter((entry) => entry.source === 'groups' || entry.source === undefined) : []
+			} catch {
+				// The current id stays the only choice.
+			} finally {
+				this.groupsLoaded = true
+			}
+		},
+
+		/**
+		 * The field the dialog focuses as it opens shows the start of its
+		 * prefilled value, not its end; later focus is left to the user.
+		 *
+		 * @param {FocusEvent} event The focus event.
+		 * @spec openspec/specs/integration-email/spec.md
+		 */
+		showFieldStart(event) {
+			if (this.startShown) return
+			this.startShown = true
+			const input = event.target
+			if (input?.type === 'text' && typeof input.setSelectionRange === 'function') {
+				input.setSelectionRange(0, 0)
+				input.scrollLeft = 0
+			}
 		},
 
 		/**
@@ -424,6 +531,7 @@ export default {
 					this.relations = { ...this.relations, [key]: relationOptions(objects, filter, String(this.initialData[key] ?? '')) }
 				} catch {
 					// The current value stays the only choice.
+					this.relations = { ...this.relations, [key]: relationOptions([], {}, String(this.initialData[key] ?? '')) }
 				}
 			}))
 		},

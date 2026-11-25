@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use Psr\Log\LoggerInterface;
+
 /**
  * The service bundles of the import preview API.
  *
@@ -34,6 +36,7 @@ final class ImportPreviewControllerServices {
 	 * @param ImportPreviewMappers  $mappers  The mappers bundle.
 	 * @param ImportPreviewDomain   $domain   The domain bundle.
 	 * @param ImportPreviewPlatform $platform The platform bundle.
+	 * @param LoggerInterface|null  $logger   Logs the detail of a failed request (optional for older wiring).
 	 *
 	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
 	 */
@@ -41,6 +44,7 @@ final class ImportPreviewControllerServices {
 		public readonly ImportPreviewMappers $mappers,
 		public readonly ImportPreviewDomain $domain,
 		public readonly ImportPreviewPlatform $platform,
+		public readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 }//end class

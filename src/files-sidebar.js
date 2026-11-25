@@ -9,21 +9,47 @@
  */
 
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
-import { createApp, h, reactive } from 'vue'
-import ExtractionTab from './components/files-sidebar/ExtractionTab.vue'
-import MailThreadTab from './components/files-sidebar/MailThreadTab.vue'
-import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
-import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
-import { registerLibraryTranslations } from './services/libraryTranslations.js'
+import { createApp, defineAsyncComponent, h, reactive } from 'vue'
+import { registerAttachAction } from './files/attachAction.js'
 
-// Register nextcloud-vue's own catalogue before anything renders, so the
-// library's labels follow the reader's language on this page too.
-registerLibraryTranslations()
+/**
+ * The integration registry bootstrap and the library translations, loaded once,
+ * the first time a tab renders. This entry runs on every page with a Files
+ * sidebar (Files, and every app page that embeds it), so none of the tabs'
+ * code (several megabytes) is fetched until a tab is opened.
+ *
+ * @type {Promise<void>|null}
+ */
+let prepared = null
 
-// Bootstrap the integration registry on the files-sidebar bundle so any
-// tab component that uses useIntegrationRegistry() sees the same populated
-// singleton main.js produced on a non-Files page. Idempotent. See ADR-019.
-ensureIntegrationRegistry()
+/**
+ * Load and run the shared setup the tabs need, once.
+ *
+ * @return {Promise<void>}
+ */
+function prepare() {
+	if (prepared === null) {
+		prepared = Promise.all([
+			import(/* webpackChunkName: "files-sidebar-app" */ './integrations/bootstrap.js'),
+			import(/* webpackChunkName: "files-sidebar-app" */ './services/libraryTranslations.js'),
+		]).then(([{ ensureIntegrationRegistry }, { registerLibraryTranslations }]) => {
+			registerLibraryTranslations()
+			ensureIntegrationRegistry()
+		})
+	}
+	return prepared
+}
+
+const RegisterObjectsTab = defineAsyncComponent(() => prepare()
+	.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/RegisterObjectsTab.vue')))
+const ExtractionTab = defineAsyncComponent(() => prepare()
+	.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/ExtractionTab.vue')))
+const MailThreadTab = defineAsyncComponent(() => prepare()
+	.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/MailThreadTab.vue')))
+
+// The Files action "Add to object" (files-leaf-save-to-object). Registered at
+// load, before Files renders its file list, as Files expects of an action.
+registerAttachAction()
 
 // MDI icon SVG paths (inline to avoid icon library dependency).
 // database-outline

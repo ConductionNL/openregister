@@ -127,6 +127,8 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface, AppDe
 	 * @param DeepLinkRegistration $registration The registration as the app gave it.
 	 *
 	 * @return DeepLinkRegistration The registration to store.
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-a-flow-task-search-result-names-the-task-and-opens-it
 	 */
 	private function withEffectiveIcon(DeepLinkRegistration $registration): DeepLinkRegistration {
 		if ($registration->icon !== '') {

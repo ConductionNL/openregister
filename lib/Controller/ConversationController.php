@@ -31,6 +31,7 @@ use OCA\OpenRegister\Controller\Support\ChatFamilyControllerInterface;
 use OCA\OpenRegister\Controller\Support\ConversationControllerServices;
 use OCA\OpenRegister\Controller\Support\ConversationChange;
 use OCA\OpenRegister\Controller\Support\ConversationFailure;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\FeedbackMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
@@ -63,6 +64,8 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class ConversationController extends Controller implements ChatFamilyControllerInterface {
+	use HandlesExceptionsTrait;
+
 
 	/**
 	 * Conversation mapper
@@ -797,21 +800,31 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	}//end logged()
 
 	/**
-	 * Log a failed action on a conversation and answer it with a 500.
+	 * Answer a failed action on a conversation.
+	 *
+	 * A typed failure answers through handleApiException() with its own
+	 * status. Anything else is logged and answered 500 naming the action; the
+	 * exception message stays in the server log.
 	 *
 	 * @param ConversationFailure $failure How the failure is logged and answered.
 	 * @param \Exception          $e       The failure.
 	 *
-	 * @return JSONResponse The 500 answer.
+	 * @return JSONResponse The error answer.
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
 	 *
 	 * @spec openspec/specs/chat-ai/spec.md
 	 */
 	private function failed(ConversationFailure $failure, \Exception $e): JSONResponse {
+		if ($this->exceptionStatus(e: $e) !== null) {
+			return $this->handleApiException(e: $e, context: $failure->logMessage());
+		}
+
 		$reason = $e->getMessage();
 		$context = ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $failure->uuid, 'error' => $reason, 'trace' => $e->getTraceAsString()];
 		$this->logger->error(message: '[ConversationController] ' . $failure->logMessage(), context: $context);
 
-		return new JSONResponse(data: ['error' => $failure->error, 'message' => $reason], statusCode: 500);
+		return new JSONResponse(data: ['error' => $failure->error], statusCode: 500);
 	}//end failed()
 
 	/**
@@ -828,14 +841,23 @@ class ConversationController extends Controller implements ChatFamilyControllerI
 	}//end logFailure()
 
 	/**
-	 * The 500 for a failed action that has no conversation; the caller logged it.
+	 * The answer to a failed action that has no conversation; the caller logged it.
+	 *
+	 * A typed failure answers through handleApiException() with its own
+	 * status; anything else is a 500 naming the action, without the message.
 	 *
 	 * @param string     $error The error of the response
 	 * @param \Exception $e     The failure
 	 *
 	 * @return JSONResponse The error response
+	 *
+	 * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md#requirement-exception-to-http-translation-consumable
 	 */
 	private function failure(string $error, \Exception $e): JSONResponse {
-		return new JSONResponse(data: ['error' => $error, 'message' => $e->getMessage()], statusCode: 500);
+		if ($this->exceptionStatus(e: $e) !== null) {
+			return $this->handleApiException(e: $e, context: $error);
+		}
+
+		return new JSONResponse(data: ['error' => $error], statusCode: 500);
 	}//end failure()
 }//end class

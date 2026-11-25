@@ -2969,8 +2969,9 @@ class ImportHandlerTest extends TestCase {
 			version:       '1.0.0'
 		);
 
-		// Seed object ID was added to result['objects'].
-		$this->assertContains(999, $result['objects']);
+		// The created seed entity itself (not its id) was added to result['objects'].
+		$this->assertContains($createdObject, $result['objects']);
+		$this->assertContainsOnlyInstancesOf(ObjectEntity::class, $result['objects']);
 
 	}//end testImportFromJsonCreatesSeedObject()
 
@@ -3034,8 +3035,9 @@ class ImportHandlerTest extends TestCase {
 			version:       '1.0.0'
 		);
 
-		// The existing object's ID (888) should be in result['objects'].
-		$this->assertContains(888, $result['objects']);
+		// The existing entity (id 888) itself should be in result['objects'].
+		$this->assertContains($existingObject, $result['objects']);
+		$this->assertContainsOnlyInstancesOf(ObjectEntity::class, $result['objects']);
 
 	}//end testImportFromJsonSkipsSeedObjectWhenAlreadyExists()
 
@@ -3203,7 +3205,7 @@ class ImportHandlerTest extends TestCase {
 			version:       '1.0.0'
 		);
 
-		$this->assertContains(555, $result['objects']);
+		$this->assertContains($createdObject, $result['objects']);
 
 	}//end testImportFromJsonUseMagicMapperForSeedData()
 
@@ -4451,7 +4453,7 @@ class ImportHandlerTest extends TestCase {
 			version:       '1.0.0'
 		);
 
-		$this->assertContains(777, $result['objects']);
+		$this->assertContains($createdObject, $result['objects']);
 
 	}//end testImportSeedDataPreCreatesMagicMapperTable()
 
@@ -4514,7 +4516,7 @@ class ImportHandlerTest extends TestCase {
 		);
 
 		// Should still create the object despite table creation failure.
-		$this->assertContains(778, $result['objects']);
+		$this->assertContains($createdObject, $result['objects']);
 
 	}//end testImportSeedDataContinuesWhenMagicMapperFails()
 
@@ -4572,7 +4574,7 @@ class ImportHandlerTest extends TestCase {
 			version:       '1.0.0'
 		);
 
-		$this->assertContains(779, $result['objects']);
+		$this->assertContains($createdObject, $result['objects']);
 
 	}//end testImportSeedDataUsesTitleAsSlugFallback()
 

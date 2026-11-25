@@ -866,6 +866,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public const CONFIDENTIALITY_ANNOTATION = 'x-openregister-confidentiality';
 
 	/**
+	 * The break-glass annotation: whether emergency self-granted access is offered, and on what terms.
+	 *
+	 * @var string
+	 */
+	public const BREAK_GLASS_ANNOTATION = 'x-openregister-break-glass';
+
+	/**
 	 * The property keys whose falsy value is a real one.
 	 *
 	 * An empty value is dropped by getSchemaObject(), because an empty `title`
@@ -1779,6 +1786,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *   toggle on the attachment upload dialog. true seeds the toggle on; absent
 	 *   or false keeps it off. Users can always override per upload.
 	 *   See: ConductionNL/opencatalogi#577
+	 * - 'mailObjectName': (string) What one item is called in the Mail panel's sentences
 	 * - 'mailObjectTemplate': (array) Field map used by the Mail-sidebar
 	 *   "create from email" action. Keys are schema property names, string
 	 *   values may contain {{subject}}/{{sender}}/{{senderName}}/{{date}}/

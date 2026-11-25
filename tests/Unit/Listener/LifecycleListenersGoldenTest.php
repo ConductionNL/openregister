@@ -132,6 +132,8 @@ use OCA\OpenRegister\Service\Lifecycle\TransitionPayload;
  * @uses \OCA\OpenRegister\Service\Rules\ConditionJudgement
  * @uses \OCA\OpenRegister\Service\Rules\RuleRunSubject
  * @uses \OCA\OpenRegister\Service\Rules\RuleTraceValue
+ * @uses \OCA\OpenRegister\Service\Task\ApprovalPositionForm
+ * @uses \OCA\OpenRegister\Service\Task\ChangeGateDeclaration
  */
 class LifecycleListenersGoldenTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;

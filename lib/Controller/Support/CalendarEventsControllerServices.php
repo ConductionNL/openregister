@@ -26,6 +26,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\CalendarLinkServiceInterface;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The collaborators of CalendarEventsController, wired by DI autowiring.
@@ -40,6 +41,7 @@ final class CalendarEventsControllerServices {
 	 * @param CalendarLinkServiceInterface $calendarLinkService Calendar link service (Tier-2)
 	 * @param ObjectOperationsInterface $objectService Object service
 	 * @param PermissionHandlerInterface $permissions Answers the object update right
+	 * @param LoggerInterface|null $logger Logs the detail of a failed request (optional for older wiring)
 	 *
 	 * @spec openspec/specs/calendar-integration/spec.md
 	 */
@@ -48,6 +50,7 @@ final class CalendarEventsControllerServices {
 		public readonly CalendarLinkServiceInterface $calendarLinkService,
 		public readonly ObjectOperationsInterface $objectService,
 		public readonly PermissionHandlerInterface $permissions,
+		public readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 }//end class

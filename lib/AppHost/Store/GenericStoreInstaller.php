@@ -82,18 +82,25 @@ class GenericStoreInstaller {
 	 * configuration and half records is the registry's mistake, not a reason to
 	 * deny an administrator the half they may have.
 	 *
-	 * @param StoreManifest        $store The calling app's declared store config.
-	 * @param array<string, mixed> $item  The resolved remote item.
+	 * @param StoreManifest        $store  The calling app's declared store config.
+	 * @param array<string, mixed> $item   The resolved remote item.
+	 * @param string               $target The chosen install target, '' for none.
 	 *
 	 * @return array{success: bool, components: array<int, array<string, string>>}
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-an-install-must-refuse-every-schema-the-manifest-does-not-allow
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
-	public function install(StoreManifest $store, array $item): array {
+	public function install(StoreManifest $store, array $item, string $target=''): array {
 		$report = [];
 		$failed = false;
+		$stamp  = $store->installTarget->stampFor(target: $target);
 
 		foreach ($this->components(item: $item) as $component) {
+			if (is_array($component['object'] ?? null) === true) {
+				$component['object'] = $stamp->applyToObject(schema: (string)($component['schema'] ?? ''), object: $component['object']);
+			}
+
 			$result = $this->installComponent(store: $store, component: $component);
 			if ($result['status'] !== 'installed') {
 				$failed = true;

@@ -121,6 +121,8 @@ use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
  * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallRun
  * @uses \OCA\OpenRegister\Service\ExampleSet\RowInstallStep
  * @uses \OCA\OpenRegister\Service\Flow\FlowPublishOptions
+ * @uses \OCA\OpenRegister\Db\Flow\FlowSelection
+ * @uses \OCA\OpenRegister\Kernel\Contracts\ListQuery
  */
 class ExampleSetFlowsTest extends ExampleSetTestCase {
 	/**
