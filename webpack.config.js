@@ -242,6 +242,14 @@ webpackConfig.resolve.alias = {
 	// integration registry and the l10n module directly, not the barrel) map
 	// onto the same files in the sibling checkout's src/. Listed before the
 	// package alias, which would otherwise turn them into src/dist/esm/....
+	// Two dist files have no same-named source file: the generated stylesheet
+	// module and a compiled SFC (the dashboard tile's widget grid).
+	...(useLocalLib
+		? {
+			'@conduction/nextcloud-vue/dist/esm/library-style.js$': path.join(localLib, 'css/index.css'),
+			'@conduction/nextcloud-vue/dist/esm/components/CnIntegrationWidgetGrid/CnIntegrationWidgetGrid.vue.js$': path.join(localLib, 'components/CnIntegrationWidgetGrid/CnIntegrationWidgetGrid.vue'),
+		}
+		: {}),
 	...(useLocalLib ? { '@conduction/nextcloud-vue/dist/esm': localLib } : {}),
 	...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 	// Deduplicate shared packages so the aliased library source uses
