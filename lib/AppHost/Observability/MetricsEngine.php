@@ -45,12 +45,15 @@ class MetricsEngine {
 	 * @param PrometheusRenderer $renderer Text renderer.
 	 * @param MetricsRuntime     $runtime  App versions, cache and NC version.
 	 * @param LoggerInterface    $logger   PSR logger.
+	 * @param HealthCheckExecutor|null $health Runs the health checks for an app whose
+	 *                                         manifest sets `upFollowsHealth`; null keeps `up` at 1.
 	 */
 	public function __construct(
 		private readonly MetricSources $sources,
 		private readonly PrometheusRenderer $renderer,
 		private readonly MetricsRuntime $runtime,
 		private readonly LoggerInterface $logger,
+		private readonly ?HealthCheckExecutor $health = null,
 	) {
 	}//end __construct()
 
@@ -64,7 +67,7 @@ class MetricsEngine {
 	 * @spec openspec/changes/apphost-observability-engine/tasks.md#task-3.1
 	 */
 	public function render(ObservabilityManifest $manifest): string {
-		$samples = $this->implicitMetrics(appId: $manifest->appId);
+		$samples = $this->implicitMetrics(appId: $manifest->appId, up: $this->upValue(manifest: $manifest));
 
 		foreach ($manifest->metrics as $descriptor) {
 			foreach ($this->collectDescriptor(appId: $manifest->appId, descriptor: $descriptor) as $sample) {
@@ -191,15 +194,46 @@ class MetricsEngine {
 	 * Build the implicit `{app}_info` and `{app}_up` metrics.
 	 *
 	 * @param string $appId Calling app id.
+	 * @param int    $up    The `up` gauge value.
 	 *
 	 * @return MetricSample[]
 	 */
-	private function implicitMetrics(string $appId): array {
+	private function implicitMetrics(string $appId, int $up): array {
 		return [
 			$this->infoMetric(appId: $appId),
-			new MetricSample(name: 'up', type: 'gauge', help: 'Whether the application is up', samples: [['labels' => [], 'value' => 1]]),
+			new MetricSample(name: 'up', type: 'gauge', help: 'Whether the application is up', samples: [['labels' => [], 'value' => $up]]),
 		];
 	}//end implicitMetrics()
+
+	/**
+	 * The `up` gauge: 1, or for an app that opted in, 1 only while health is "ok".
+	 *
+	 * A degraded or failed health status, or health checks that cannot run,
+	 * report 0.
+	 *
+	 * @param ObservabilityManifest $manifest The app's observability config.
+	 *
+	 * @return int 1 or 0.
+	 *
+	 * @spec openspec/changes/production-observability
+	 */
+	private function upValue(ObservabilityManifest $manifest): int {
+		if ($manifest->upFollowsHealth === false || $this->health === null) {
+			return 1;
+		}
+
+		try {
+			$status = $this->health->execute(manifest: $manifest)->status;
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[AppHost\\Metrics] health for the up gauge failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+			return 0;
+		}
+
+		return (int) ($status === 'ok');
+	}//end upValue()
 
 	/**
 	 * Build the implicit `{app}_info` metric: app, PHP and Nextcloud versions.
