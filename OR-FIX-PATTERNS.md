@@ -913,3 +913,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: every tests/Unit/Migration/ReservedColumnNamesTest case throws RuntimeException '...MariaDB/server/10.5/sql/lex.h answered HTTP 404'.
 - Cause: tests/Support/ReservedWordSource sends GITHUB_TOKEN as a Bearer header to raw.githubusercontent.com; the session's placeholder token makes it answer 404. Not a PR defect.
 - Fix: run the suite with `env -u GITHUB_TOKEN -u GH_TOKEN php vendor/bin/phpunit ...`; it then passes.
+
+## New constructor entry on a built-in integration service (or-fix-5)
+- Symptom: BuiltinIntegrationProviderRegistrationTest::testEveryFactoryBuildsItsServiceFromTheExpectedEntries: arrays differ, Actual adds a class under one service (e.g. OCP\ICacheFactory on XwikiLinkService).
+- Cause: the PR added a parameter to the service and its entry in lib/Service/Integration/BuiltinIntegrationServices.php, but the test pins every factory's resolved entries.
+- Fix: add the class to that service's expected list in the test, in the Actual order (see #11005 228baa2c); BuiltinIntegrationServicesTableTest may also need its wiring hash recomputed.

@@ -226,3 +226,4 @@ openregister#11108 3f60e1eba905139460e084c941b67240e3e693e7 precheck-red alone o
 openregister#11076 fbe34f46da797102864a8a9b673e3a9e89e18286 precheck-red alone on main: 
 openregister#11076 c42498d6a42bb586bba0fee8d823c262df59f345 auto-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#11076 85a7ef99258d49d25bd092d46c4fb221714da738 auto-park: sbom: sbom.cdx.json does not match package-lock.json (run hydra scripts/regen-sbom.sh)
+openregister#11005 6ea7c064040043891aa532f65e5301f19fb9cdda precheck-red alone on main: OCA\OpenRegister\Tests\Unit\AppInfo\BuiltinIntegrationProviderRegistrationTest::testEveryFactoryBuildsItsServi
