@@ -9,6 +9,8 @@ A product or access-control question that FINISH-ORDER.md DECISIONS does not ans
 
 ## Done (coordinator sweep 24 Nov 22:40 CET): merged stackiq#2177 #2181, opencatalogi#2969, integriq#3877 #3881, larpinq#1177 (hermiq#1986 already merged); decided portaliq T11b, launchpad task 7, OR#10641, integriq#3834 (see FINISH-ORDER.md DECISIONS); unparked openregister#10634 #10640. Still open for the lanes: opencatalogi twig 3.31.1 bump PR on development (b-opencatalogi), opencatalogi CI env (integriq enable recursion) for the integriq builder.
 
+## Done (coordinator sweep 25 Nov 08:55 CET): docusaurus-plugin-portaliq#4 merged (the other queued merges were already in); st_sync hang in depth-1 clones fixed (bin/state.sh deepens by 400); decided learniq POK (basic, stamped) and pipelinq resolve-price (product readers) in FINISH-ORDER.md; integrator network block and precheck gitleaks/PHP 8.3.16: Ruben fixes the cloud environment (network allow static.developer.overheid.nl, setup script). Still open: security questions on opencatalogi agent approval, keepiq decline-while-suspended, OR #11123 read access, OR #11121 transfer drop, OR #11069 published field, OR psalm 7 platform (#11083), OR babel 8 (#11082), portaliq portal-public-search gating.
+
 ## Queue
 - 2026-11-24T19:00Z b-stackiq stackiq#2177 merge: tasks.md-only tick (shared-organisation 4.1 landed in OpenRegister main), mergeable, merge call refused by the session permission check
 - 19:06Z help-opencatalogi-1 opencatalogi#2969 merge: publication-required-at-publish 1.3/1.4/2.1/2.2; local green (PHPUnit same failing set as development, l10n clean, static analysis clean on touched files), but hydra diff-check.sh was refused by the cloud permission check, so run it and merge

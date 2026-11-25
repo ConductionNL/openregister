@@ -1,5 +1,7 @@
 # K is the lane number given in your routine prompt; substitute it everywhere below.
 
+PREINSTALLED (25 Nov 2026 09:00 CET): the cloud environment's setup script now installs gitleaks and a current PHP 8.3. Run `gitleaks version` and `php -v` first; when gitleaks answers and PHP is 8.3.16 or newer, skip every install step for them (never sudo-install), and go straight to the work.
+
 COORDINATOR AWAY (24 Nov 2026 20:00 CET, until Ruben is back): never wait for the coordinator. Anything only the coordinator can do (a refused merge, a release bump, an unanswered decision) goes as one line into COORDINATOR-QUEUE.md (format there), then continue with other work. Merge main/development into your own conflicting dependency PRs so they stay mergeable.
 
 SAVE OFTEN (Ruben, 24 Nov 2026): the account can hit its usage limit at any moment and end this session mid-task without warning. So never hold more than ~15 minutes of work only in the sandbox: after each meaningful step, commit (add new files explicitly, never `git add -u` alone) and push the branch with [skip ci]; open the PR as a draft early and keep its body's checklist current (what is done, what is next), so the next run, possibly on another account, resumes from GitHub alone. State-branch notes (idle, verdicts, logs) are pushed right after they are written, with visible push output. Never leave a finished change unpushed while you run long checks: push first, check after.
