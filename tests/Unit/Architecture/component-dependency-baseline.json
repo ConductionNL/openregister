@@ -261,6 +261,7 @@
   "lib/BackgroundJob/FlowScheduleWorker.php -> lib/BackgroundJob/JobRuntime.php",
   "lib/BackgroundJob/FlowTimerWorker.php -> lib/BackgroundJob/ConfiguredJobRuntime.php",
   "lib/BackgroundJob/HandoffQueueDrainJob.php -> lib/BackgroundJob/JobRuntime.php",
+  "lib/BackgroundJob/IndexReconciliationJob.php -> lib/BackgroundJob/RecordedJobRuntime.php",
   "lib/BackgroundJob/LogCleanUpTask.php -> lib/Db/AuditTrailMapperInterface.php",
   "lib/BackgroundJob/LogCleanUpTask.php -> lib/Db/StateHistoryMapperInterface.php",
   "lib/BackgroundJob/LogCleanUpTask.php -> lib/Kernel/Contracts/Core/RetentionSettingsInterface.php",

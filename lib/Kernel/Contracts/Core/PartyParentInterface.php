@@ -35,7 +35,7 @@ interface PartyParentInterface {
 	 *
 	 * @param Schema $schema The schema.
 	 *
-	 * @return array{property: string, maxDepth: int}|null The declaration, the depth as the annotation states it.
+	 * @return array{property: string, maxDepth: int, nameProperty: string|null}|null The declaration, the depth as the annotation states it.
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */

@@ -28,6 +28,7 @@ use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Exception\OrganisationSlugConflictException;
+use OCA\OpenRegister\Kernel\Contracts\DefaultOrganisationInterface;
 use OCA\OpenRegister\Service\Organisation\NewOrganisation;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRightsInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -58,7 +59,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/saas-multi-tenant/spec.md
  */
-class OrganisationService implements OrganisationServiceInterface {
+class OrganisationService implements OrganisationServiceInterface, DefaultOrganisationInterface {
 	/**
 	 * App name for user configuration storage
 	 */

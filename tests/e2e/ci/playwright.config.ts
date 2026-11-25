@@ -354,6 +354,18 @@ export default defineConfig({
 		//   3. No conditional asserts: every assertion is unconditional.
 		//   4. No test.skip at all.
 		'spec-coverage/quality-and-operations-pages.spec.ts',
+		// Admitted 2026-11-25 with the task that wrote it (modelling-composite-
+		// identity 4.3), at the path the task names rather than under ci/.
+		//
+		// Checked per criterion:
+		//   1. Hermetic: it creates its own register, schema and case through
+		//      the REST controllers; the reader without access is the seeded
+		//      e2e-other. No occ, no docker, no pre-seeded data.
+		//   2. Self-cleaning: the case, the schemas and the register go in
+		//      afterAll, including a schema a failed refusal let through.
+		//   3. No conditional asserts: every assertion is unconditional.
+		//   4. No test.skip at all.
+		'object-by-key.spec.ts',
 	],
 	globalSetup: path.resolve(__dirname, '../global-setup.ts'),
 	timeout: 45_000,
