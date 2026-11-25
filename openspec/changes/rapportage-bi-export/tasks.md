@@ -64,7 +64,7 @@
       decision for that spec) and caching template report files, which waits on report templates.
 - [ ] Implement: The system MUST support WOO transparency reporting
 - [x] Implement: The system MUST support audit report generation
-      DONE: `GET /api/reports/audit` (`AuditReportController`, administrators only through `AdministratorOnlyGate`:
+      DONE: `GET /api/reports/audit` (`AuditReportController`, administrators only through the in-body administrator check:
       401 without a user, 403 for anyone else, before anything is read) takes `register` (slug or id; unknown is a
       404), `userId`, `from`, `to` (a date-only `to` covers the whole day; a bad date is a 400) and `format` (xlsx by
       default, ods, csv; anything else is a 400). `AuditReport` reads the trail through the audit page query's

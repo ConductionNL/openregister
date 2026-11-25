@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Controller\Support\AdministratorOnlyGate;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\AuditReport;
@@ -95,10 +94,13 @@ class AuditReportController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function audit(): DataDownloadResponse|JSONResponse {
-		$gate = new AdministratorOnlyGate(userSession: $this->userSession, groupManager: $this->groupManager);
-		$refusal = $gate->refusal(forbidden: 'Only administrators may generate audit reports.');
-		if ($refusal !== null) {
-			return $refusal;
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+		}
+
+		if ($this->groupManager->isAdmin($user->getUID()) === false) {
+			return new JSONResponse(data: ['error' => 'Only administrators may generate audit reports.'], statusCode: 403);
 		}
 
 		$format = strtolower(trim((string)$this->request->getParam('format', self::DEFAULT_FORMAT)));
