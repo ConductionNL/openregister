@@ -8,7 +8,8 @@
 - [ ] 2.1 `tests/e2e/ci/platform-share-provider.spec.ts`: share an object, find it in shared with you, fail an update on a read share.
 - [x] 2.2 Unit tests: one share in both lists, the refused bit, the opted-out schema.
       - refused bit and opted-out schema: `PlatformShareRoutingListenerTest`, `PlatformSharePermissions` tests; one share in the object's own list: `ObjectShareReaderTest::testAShareMadeThroughThePlatformSurfaceIsListedOnce` (core's shared-with-you half is core's list, checked live in 2.1)
-- [ ] 2.3 `openspec validate platform-share-provider --strict`.
+- [x] 2.3 `openspec validate platform-share-provider --strict`.
+      - 2026-11-24: `openspec validate platform-share-provider --strict` (OpenSpec 2.2.0) reports the change valid.
 - [ ] 3.1 Hand over to the dossiq lane: declare the shareable schemas, build no sharing surface.
 
 > **Measured 2026-11-13.** 1.3–1.5 are built: `PlatformSharePermissions` (read and
