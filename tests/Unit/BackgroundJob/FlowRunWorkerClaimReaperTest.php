@@ -216,6 +216,57 @@ class FlowRunWorkerClaimReaperTest extends TestCase {
 		$this->assertSame(FlowRun::STATUS_RUNNING, $this->run->getStatus());
 	}//end testALiveLongRunningFiringIsNotReaped()
 
+	/**
+	 * A sibling parked for days on a signal holds no claim, so reaping the
+	 * dead branch next to it never fails it as abandoned.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/tasks.md
+	 *
+	 * @return void
+	 */
+	public function testASiblingWaitingDaysOnASignalIsNeverFailedAsAbandoned(): void {
+		$this->sibling->setResumeAt(null);
+		$this->sibling->setUpdated(new DateTime('-5 days'));
+		$this->claims->method('findOlderThan')->willReturn([$this->staleClaim()]);
+		$this->claims->method('releaseByOwner')->willReturn(1);
+		$this->flows->method('resolveFlow')->willReturn(
+			[
+				'id' => 'flow-1',
+				'nodes' => [['id' => 'review', 'type' => 'x', 'onError' => 'continue']],
+				'edges' => [],
+			]
+		);
+
+		$this->pass($this->worker(['flow_run_retention_days' => '0']));
+
+		$this->assertSame(FlowRun::STATUS_FAILED, $this->branch->getStatus());
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $this->sibling->getStatus());
+		$this->assertNull($this->sibling->getError());
+		$this->assertNull($this->sibling->getResumeAt());
+		// The waiting sibling is live, so the run is re-armed rather than failed.
+		$this->assertSame(FlowRun::STATUS_QUEUED, $this->run->getStatus());
+	}//end testASiblingWaitingDaysOnASignalIsNeverFailedAsAbandoned()
+
+	/**
+	 * Under the default policy the run fails with the dead branch, but the
+	 * signal-waiting sibling's own row is still not rewritten as abandoned.
+	 *
+	 * @spec openspec/changes/flow-parallel-streams/tasks.md
+	 *
+	 * @return void
+	 */
+	public function testTheStopPolicyFailsTheRunButLeavesTheWaitingSiblingsRow(): void {
+		$this->sibling->setUpdated(new DateTime('-5 days'));
+		$this->claims->method('findOlderThan')->willReturn([$this->staleClaim()]);
+		$this->claims->method('releaseByOwner')->willReturn(1);
+
+		$this->pass($this->worker(['flow_run_retention_days' => '0']));
+
+		$this->assertSame(FlowRun::STATUS_FAILED, $this->run->getStatus());
+		$this->assertSame(FlowRun::STATUS_SUSPENDED, $this->sibling->getStatus());
+		$this->assertNull($this->sibling->getError());
+	}//end testTheStopPolicyFailsTheRunButLeavesTheWaitingSiblingsRow()
+
 	public function testTheReaperIsOffWhenTheStaleWindowIsZero(): void {
 		$this->claims->expects($this->never())->method('findOlderThan');
 		$this->pass($this->worker(['flow_run_retention_days' => '0', 'flow_run_stale_minutes' => '0']));

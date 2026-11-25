@@ -4086,7 +4086,7 @@ OC.L10N.register(
     "Connected to {name} #{number}" : "Connected to {name} #{number}",
     "Undo" : "Undo",
     "Add to {name}" : "Add to {name}",
-    "_%n connection_::_%n connections_" : ["%n connection", "%n connections"],
+    "_%n connection_::_%n connections_" : ["%n connection","%n connections"],
     "Search for {value}" : "Search for {value}",
     "sender" : "sender",
     "person" : "person",
@@ -4098,11 +4098,21 @@ OC.L10N.register(
     "connected to {name} #{number}" : "connected to {name} #{number}",
     "connected to {name}" : "connected to {name}",
     "_%n message_::_%n messages_" : ["%n message", "%n messages"],
+    "Action rights" : "Action rights",
+    "Every signed-in user" : "Every signed-in user",
+    "Flow steps" : "Flow steps",
+    "Needed by: {types}" : "Needed by: {types}",
+    "The action rights are saved." : "The action rights are saved.",
+    "The action rights could not be loaded." : "The action rights could not be loaded.",
+    "The action rights could not be saved." : "The action rights could not be saved.",
+    "Who may create, change, run and read flows, and who may put a step that sends e-mail, notifications or Talk messages, or deletes objects, into a flow. Administrators always hold every right; a right with no group chosen is held by administrators alone." : "Who may create, change, run and read flows, and who may put a step that sends e-mail, notifications or Talk messages, or deletes objects, into a flow. Administrators always hold every right; a right with no group chosen is held by administrators alone.",
     "Any geometry" : "Any geometry",
     "Line" : "Line",
     "Multipolygon" : "Multipolygon",
     "Point" : "Point",
-    "Polygon" : "Polygon"
+    "Polygon" : "Polygon",
+    "Could not load the workflow progress." : "Could not load the workflow progress.",
+    "Workflow progress" : "Workflow progress"
 },
 "nplurals=2; plural=(n != 1);"
 );
