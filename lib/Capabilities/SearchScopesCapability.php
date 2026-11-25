@@ -63,6 +63,14 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	public const CONTRACT_VERSION = 1;
 
 	/**
+	 * The files-only scope; the same value as Search\SearchScopes::FILES (restated:
+	 * Capabilities is Platform and may not name the Search component, ADR-013).
+	 *
+	 * @var string
+	 */
+	private const FILES_SCOPE = 'files';
+
+	/**
 	 * The unified search provider the scopes are for.
 	 *
 	 * @var string
@@ -154,11 +162,18 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 			}
 		}//end foreach
 
-		return array_merge(
+		$offered = array_merge(
 			self::sorted(scopes: $found['app']),
 			self::sorted(scopes: $found['register']),
 			self::sorted(scopes: $found['schema'])
 		);
+
+		// `files` keeps only file hits, so it is offered once there is something readable to keep them from.
+		if ($offered !== []) {
+			$offered[] = ['id' => self::FILES_SCOPE, 'type' => self::FILES_SCOPE, 'value' => self::FILES_SCOPE, 'label' => self::FILES_SCOPE];
+		}
+
+		return $offered;
 	}//end availableScopes()
 
 	/**

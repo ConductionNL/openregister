@@ -124,6 +124,7 @@ DOMAIN_ORDER=(
     "anonymisation-disclosures"
     "organisation-audit"
     "public-export"
+    "nlgov-conformance"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -228,6 +229,8 @@ declare -A DOMAIN_COLLECTIONS=(
     [organisation-audit]="$REPO_ROOT/tests/newman/openregister-organisation-audit.postman_collection.json"
     # Anonymous export: 200 with paging headers for a public schema, 401 not-public, 406 for pdf.
     [public-export]="$REPO_ROOT/tests/integration/openregister-public-export.postman_collection.json"
+    # NLGov API design rules: the report is public (200 anonymous), the probe is administrator-only (403).
+    [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
