@@ -109,7 +109,7 @@
     "@vueuse/core": "^14.3.0",
     "apexcharts": "4.7.0",
     "dexie": "^4.4.7",
-    "dompurify": "^3.4.17",
+    "dompurify": "^3.5.0",
     "graphiql": "^6.0.1",
     "graphql": "^16.15.0",
     "gridstack": "^13.2.0",

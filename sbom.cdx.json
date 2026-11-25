@@ -17311,22 +17311,22 @@
     {
       "type": "library",
       "name": "dompurify",
-      "version": "3.4.17",
-      "bom-ref": "openregister@1.0.0|dompurify@3.4.17",
+      "version": "3.5.0",
+      "bom-ref": "openregister@1.0.0|dompurify@3.5.0",
       "licenses": [
         {
           "expression": "(MPL-2.0 OR Apache-2.0)"
         }
       ],
-      "purl": "pkg:npm/dompurify@3.4.17",
+      "purl": "pkg:npm/dompurify@3.5.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/dompurify/-/dompurify-3.4.17.tgz",
+          "url": "https://registry.npmjs.org/dompurify/-/dompurify-3.5.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "07fa52958547439f24a88483ff20e3b89d727f3237e26d60178940a1dd9bc1246188de0ae429771fc01fee1a81d8f9932fdd75b5d12e7679d79f9167851a33d3"
+              "content": "2d80b466413c3f5578d89b11613c0c7667bfd844fc4a939ce4003678e1633ff21a76f45dd9fc224f84d5cf9be47f2d17531d76692d946919139df54f34ebfdbf"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -21618,6 +21618,10 @@
         }
       ],
       "properties": [
+        {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/js-tokens"
