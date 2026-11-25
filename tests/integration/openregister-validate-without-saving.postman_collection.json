@@ -1,0 +1,695 @@
+{
+ "info": {
+  "_postman_id": "or-validate-without-saving-2026-11-25",
+  "name": "OpenRegister Validate Without Saving",
+  "description": "POST /api/objects/{register}/{schema}/validate against the save it predicts (change records-validate-without-saving, task 3.1).\n\nWHAT IT ASSERTS: a sample whose coded value is not a concept of its scheme is answered 200 with valid false and an error on that property by the `coded-value` rule; the validate writes no object; a concept of the scheme is valid (CONTROL); saving the invalid sample answers 422 naming the same property with the same message validate gave.\n\nHermetic: it creates its concept scheme, concept, schema and register, and removes all of them.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{admin_user}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{admin_password}}",
+    "type": "string"
+   }
+  ]
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "http://localhost",
+   "type": "string"
+  },
+  {
+   "key": "admin_user",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "admin_password",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "run",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "schemeUri",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "conceptUri",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "schemeId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "conceptId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "schemaId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "registerId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "validateMessage",
+   "value": "",
+   "type": "string"
+  }
+ ],
+ "item": [
+  {
+   "name": "setUp: a concept scheme",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/vocabulary/conceptScheme",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "vocabulary",
+      "conceptScheme"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"uri\": \"{{schemeUri}}\", \"title\": \"validate newman wijken {{run}}\", \"publisher\": \"newman\", \"version\": \"1.0.0\", \"source\": \"{{schemeUri}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "prerequest",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "const run = Math.random().toString(36).slice(2, 10);",
+       "pm.collectionVariables.set('run', run);",
+       "pm.collectionVariables.set('schemeUri', 'urn:newman:' + run + ':wijken');",
+       "pm.collectionVariables.set('conceptUri', 'urn:newman:' + run + ':centrum');"
+      ]
+     }
+    },
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the scheme is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "const b = pm.response.json(); pm.collectionVariables.set('schemeId', String(b.id || b['@self'].id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a concept in it",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/vocabulary/concept",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "vocabulary",
+      "concept"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"inScheme\": \"{{schemeId}}\", \"uri\": \"{{conceptUri}}\", \"prefLabel\": {\"nl\": \"Centrum\"}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the concept is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "const b = pm.response.json(); pm.collectionVariables.set('conceptId', String(b.id || b['@self'].id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a schema whose wijk takes its values from the scheme",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"validate newman melding {{run}}\", \"slug\": \"validatenewman{{run}}\", \"properties\": {\"wijk\": {\"type\": \"string\", \"conceptScheme\": \"{{schemeUri}}\"}}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a register",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"validate newman register {{run}}\", \"slug\": \"validatenewmanregister{{run}}\", \"schemas\": [{{schemaId}}]}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "validate a sample whose wijk is not a concept of the scheme",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/validate",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "validate"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"wijk\": \"urn:newman:atlantis\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('a verdict, not a refusal', () => pm.response.to.have.status(200));",
+       "const b = pm.response.json();",
+       "const error = (b.errors || []).find(e => e.property === 'wijk');",
+       "pm.test('invalid on wijk, by the coded-value rule', () => {",
+       "  pm.expect(b.valid).to.eql(false);",
+       "  pm.expect(error, JSON.stringify(b)).to.be.an('object');",
+       "  pm.expect(error.rule).to.eql('coded-value');",
+       "});",
+       "pm.collectionVariables.set('validateMessage', error ? error.message : '');"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "validate wrote nothing",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_limit=1",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ],
+     "query": [
+      {
+       "key": "_limit",
+       "value": "1"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema still holds no object', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().total).to.eql(0); });"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "validate a sample whose wijk is a concept (control)",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/validate",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "validate"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"wijk\": \"{{conceptUri}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('a concept of the scheme is valid', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().valid).to.eql(true); pm.expect(pm.response.json().errors).to.eql([]); });"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "save the invalid sample",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"wijk\": \"urn:newman:atlantis\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the save refuses with 422', () => pm.response.to.have.status(422));",
+       "pm.test('the 422 names wijk with the message validate gave', () => {",
+       "  const b = pm.response.json();",
+       "  pm.expect(b.errors, JSON.stringify(b)).to.have.property('wijk');",
+       "  pm.expect(b.errors.wijk).to.eql(pm.collectionVariables.get('validateMessage'));",
+       "});"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the register",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers",
+      "{{registerId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the register is deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the schema",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas",
+      "{{schemaId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema is deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the concept",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/vocabulary/concept/{{conceptId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "vocabulary",
+      "concept",
+      "{{conceptId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the concept is deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the scheme",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/vocabulary/conceptScheme/{{schemeId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "vocabulary",
+      "conceptScheme",
+      "{{schemeId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the scheme is deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

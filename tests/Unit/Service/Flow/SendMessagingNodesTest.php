@@ -215,8 +215,12 @@ class SendMessagingNodesTest extends TestCase {
 		// No send-webhook node exists — not in the built-ins directory, and no
 		// registered constructor parameter carries one.
 		$nodesDir = dirname((new ReflectionClass(SendEmailNode::class))->getFileName());
-		$this->assertSame([], glob($nodesDir . '/*Webhook*'), 'No webhook node may exist in the built-in palette');
-		foreach ($paramTypes as $paramType) {
+		// The incoming-webhook TRIGGER (flow-calendar-and-webhook-triggers) is
+		// inbound — another system calls the flow — so it is no send step.
+		$outbound = static fn (string $name): bool => str_starts_with(basename($name), 'TriggerWebhook') === false
+			&& str_contains($name, 'TriggerWebhookNodeInterface') === false;
+		$this->assertSame([], array_values(array_filter(glob($nodesDir . '/*Webhook*'), $outbound)), 'No webhook node may exist in the built-in palette');
+		foreach (array_filter($paramTypes, $outbound) as $paramType) {
 			$this->assertStringNotContainsString('Webhook', $paramType);
 		}
 

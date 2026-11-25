@@ -11,7 +11,8 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Newman: validate a sample that breaks a coded value, then save it and read the same property in the 422.
+- [x] 3.1 Newman: validate a sample that breaks a coded value, then save it and read the same property in the 422.
+  - 2026-11-25: `tests/integration/openregister-validate-without-saving.postman_collection.json`, run on a sandbox Nextcloud 34 on MariaDB: validate answers 200 `valid: false` on `wijk` by `coded-value` and writes no object, a concept of the scheme is valid, and the save answers 422 naming `wijk` with the same message; 12 requests, 14 assertions, 0 failed.
 - [x] 3.2 Document validate-only in `docs/` and in the contract's docblock. Done: `docs/features/validate-without-saving.md` and `ObjectServiceInterface::validateObject()`.
 
 Note: the coded-value and dependent-value rules run through `ObjectSaveCheck`, as task 1.1 names. Other listeners that refuse a save (administered validation, decision tables, state field rules, working calendars, party trees, quota, lifecycle guards) do not implement it yet, so validate does not report them; each joins by implementing `ObjectSaveCheck` and being added to `ObjectSaveChecks`.

@@ -87,10 +87,11 @@ class ReferenceValidatorTest extends TestCase {
 	 * @param mixed $value    The value.
 	 * @param array $property Extra property definition.
 	 * @param array $data     Other data of the record.
+	 * @param bool  $validateReference Whether the property switches existence validation on.
 	 *
 	 * @return void
 	 */
-	private function validate(mixed $value, array $property = [], array $data = []): void {
+	private function validate(mixed $value, array $property = [], array $data = [], bool $validateReference = true): void {
 		$target = new Schema();
 		$target->setId(2);
 		$target->setSlug('author');
@@ -119,7 +120,7 @@ class ReferenceValidatorTest extends TestCase {
 		);
 
 		$schema = new Schema();
-		$schema->setProperties(['author' => (['type' => 'string', '$ref' => self::REF, 'validateReference' => true] + $property)]);
+		$schema->setProperties(['author' => (['type' => 'string', '$ref' => self::REF, 'validateReference' => $validateReference] + $property)]);
 		$validator->validate(schema: $schema, run: ReferencePropertyRun::forSave(data: (['author' => $value] + $data), register: null));
 	}//end validate()
 
@@ -165,4 +166,64 @@ class ReferenceValidatorTest extends TestCase {
 			['city' => 'Amsterdam']
 		);
 	}//end testAnExistingReferenceOutsideItsFilterIsRefused()
+
+	/**
+	 * A filter is enforced even when the property never switched validation on.
+	 *
+	 * REQ-FUC-003: a write outside the filter is refused whatever client made it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 */
+	public function testAFilterIsEnforcedWithoutValidateReference(): void {
+		$found = new ObjectEntity();
+		$found->setUuid(self::UUID);
+		$found->setObject(['city' => 'Utrecht']);
+		$this->mapper->method('find')->willReturn($found);
+
+		$this->expectException(ReferenceValidationException::class);
+		$this->expectExceptionMessage("'author' only accepts an object whose 'city' matches this record.");
+
+		$this->validate(
+			self::UUID,
+			['x-openregister-reference-filter' => [['field' => 'city', 'op' => 'eq', 'from' => 'city']]],
+			['city' => 'Amsterdam'],
+			false
+		);
+	}//end testAFilterIsEnforcedWithoutValidateReference()
+
+	/**
+	 * The control: a reference inside the filter passes without the switch.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 */
+	public function testInsideTheFilterPasses(): void {
+		$found = new ObjectEntity();
+		$found->setUuid(self::UUID);
+		$found->setObject(['city' => 'Utrecht']);
+		$this->mapper->expects($this->atLeastOnce())->method('find')->willReturn($found);
+
+		$this->validate(
+			self::UUID,
+			['x-openregister-reference-filter' => [['field' => 'city', 'op' => 'eq', 'from' => 'city']]],
+			['city' => 'Utrecht'],
+			false
+		);
+		$this->assertSame([], array_filter($this->events, static fn ($e): bool => $e instanceof ReferenceValidationFailedEvent));
+	}//end testInsideTheFilterPasses()
+
+	/**
+	 * Without a filter and without the switch, nothing is looked up, as before.
+	 *
+	 * @return void
+	 */
+	public function testNoFilterAndNoSwitchLooksNothingUp(): void {
+		$this->mapper->expects($this->never())->method('find');
+
+		$this->validate(self::UUID, [], [], false);
+		$this->assertSame([], $this->events);
+	}//end testNoFilterAndNoSwitchLooksNothingUp()
 }//end class
