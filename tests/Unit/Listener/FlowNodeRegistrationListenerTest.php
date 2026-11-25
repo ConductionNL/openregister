@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNode;
@@ -146,7 +147,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 					handOff: new HandOffFlowNodes(subFlow: $mock(SubFlowNode::class), router: $mock(RouterNode::class)),
 				), objects: new ObjectFlowNodes(
 					objectChange: new ObjectChangeFlowNodes(objectWrite: $mock(ObjectWriteNode::class), transition: $mock(TransitionNode::class), tagObject: $mock(TagObjectNode::class)),
-					objectLookup: new ObjectLookupFlowNodes(linkObject: $mock(LinkObjectNode::class), objectRead: $mock(ObjectReadNode::class), auditTrail: $mock(AuditTrailNode::class)),
+					objectLookup: new ObjectLookupFlowNodes(linkObject: $mock(LinkObjectNode::class), objectRead: $mock(ObjectReadNode::class), auditTrail: $mock(AuditTrailNode::class), extendInput: $mock(ExtendInputNode::class)),
 				)),
 			),
 			actions: new ActionFlowNodes(
@@ -202,7 +203,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
-		$this->assertCount(35, $registered, 'all thirty-five built-ins are registered');
+		$this->assertCount(36, $registered, 'all thirty-six built-ins are registered');
 		$classes = array_map(static fn (IFlowNode $node): string => get_parent_class($node) ?: get_class($node), $registered);
 		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class, CaseOpenNode::class, CaseAdvanceNode::class, ActionInputsNode::class, TransitionNode::class, LinkObjectNode::class] as $waiter) {
 			$this->assertContains($waiter, $classes, "$waiter is registered");
