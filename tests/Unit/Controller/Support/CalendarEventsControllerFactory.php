@@ -24,6 +24,7 @@ final class CalendarEventsControllerFactory {
 	 * @param CalendarLinkServiceInterface $calendarLinkService Constructor argument.
 	 * @param ObjectOperationsInterface $objectService Constructor argument.
 	 * @param PermissionHandlerInterface $permissions Constructor argument.
+	 * @param \Psr\Log\LoggerInterface|null $logger Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -34,6 +35,7 @@ final class CalendarEventsControllerFactory {
 		\OCA\OpenRegister\Service\CalendarLinkServiceInterface $calendarLinkService,
 		\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objectService,
 		\OCA\OpenRegister\Service\Object\PermissionHandlerInterface $permissions,
+		?\Psr\Log\LoggerInterface $logger = null,
 	): array {
 		return [
 			$request,
@@ -42,6 +44,7 @@ final class CalendarEventsControllerFactory {
 				calendarLinkService: $calendarLinkService,
 				objectService: $objectService,
 				permissions: $permissions,
+				logger: $logger,
 			),
 		];
 	}//end args()

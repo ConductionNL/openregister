@@ -78,6 +78,7 @@ use ReflectionMethod;
  * @uses \OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup
  * @uses \OCA\OpenRegister\Service\Configuration\SchemaImportSteps
  * @uses \OCA\OpenRegister\Service\Configuration\SeedImport
+ * @uses \OCA\OpenRegister\Db\HydrationKey
  */
 class ImportHandlerImportFromJsonGoldenTest extends TestCase {
 

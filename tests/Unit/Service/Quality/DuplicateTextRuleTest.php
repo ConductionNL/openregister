@@ -81,6 +81,9 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\OpenRegister\Db\Register
  * @uses   \OCA\OpenRegister\Db\TextSignature
  * @uses   \OCA\OpenRegister\Service\Quality\TextSignature
+ * @uses \OCA\OpenRegister\Db\Register\RegisterSchemaIds
+ * @uses \OCA\OpenRegister\Search\Service\Quality\DedupConfig
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
  */
 final class DuplicateTextRuleTest extends TestCase {
 
