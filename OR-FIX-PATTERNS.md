@@ -899,3 +899,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: CONFLICT in l10n/en.json and l10n/nl.json, both sides appended keys after the same last entry.
 - Cause: the backend catalogues are hand-maintained and appended; main's en.json can hold a duplicate key, so json.load + json.dumps does not round-trip and must not be used.
 - Fix: textual union per conflict hunk: ours lines, then theirs lines minus simple "key": "value" lines already in ours; add the missing comma on ours' last line. Check json.load passes and that neither side's key set lost a key against the merged file.
+## DocumentReferenceMapTest::testEveryFileIdColumnIsMapped after a main merge (or-fix-1)
+- Symptom: 'A column holds a file id the move would not rewrite' listing a table.column the PR's migration adds (file_id, *_file_id, folder, node_id).
+- Cause: main's register-document-store (f1327b39) scans every migration for id-shaped columns; a PR adding such a column must declare it.
+- Fix: a Nextcloud file/folder id: add a row to DocumentReferenceMap::COLUMNS (KIND_FILE/KIND_FOLDER); anything else: add it to NOT_FILE_IDS with the reason. Used on #10451 e27167ee.
