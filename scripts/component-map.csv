@@ -5125,6 +5125,8 @@ Service/RedactionPolicy/DetectionPatternRunner.php,,Service,,,,,Configuration
 Listener/DetectionPatternValidationListener.php,,Listener,,,,,Configuration
 Kernel/Contracts/ObjectWriteValidatorInterface.php,,Kernel,,,,,Kernel
 Service/File/PublishedDigestReader.php,,Service,,,,,Files
+Service/File/PublishedDownloadGuard.php,,Service,,,,,Files
+Service/File/PublishedFileChangedException.php,,Service,,,,,Files
 Listener/TaskDueSoonListener.php,,Listener,,,,,Processes
 Service/Task/TaskDueSoonWarning.php,,Service,,,,,Processes
 Kernel/Contracts/CsvCell.php,,Kernel,,,,,Kernel
