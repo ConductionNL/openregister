@@ -952,3 +952,4 @@
 2026-11-25T13:31:10Z help-launchpad-2 merged launchpad #2028 e2e-red keyboard-widget-repositioning 3/3 live (spec needed an admin-owned switcher row; now seeds its own dashboard + text widget)
 2026-11-25T13:31:29Z live-portaliq-1 merged portaliq #2734 (admin-rights-page T03 live: scenario groups Servicedesk 5/1 right, Communicatie 3/2 rights on /admin-rights, non-admin 403; board's topic-scoped table/editor/2FA/audit belong to operate-roles-for-content-and-actions; archived, REQ-ARP-001 synced)
 2026-11-25T13:32:07Z decidiq built (live, not idle): merged #2471, phone-width e2e run live (now measures #app-content), meeting pages wrap at 360px; MyActions/DecisionsReport/AccessibilityReport wait on nc-vue cn-dashboard-page__header-actions (building that next as dep)
+2026-11-25T13:32:46Z help-dossiq-1 live: merged dossiq #6944 (lists-and-dashboards-as-drawn 5.1: 5 tiles, Verloopt het eerst, complaint cards drawn; archived)
