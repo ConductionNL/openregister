@@ -943,6 +943,8 @@ class MagicSearchHandler {
 	 */
 	public function buildFilteredQuery(array $query, MagicReadTable $table): IQueryBuilder {
 		$schema = $table->schema;
+		// A plain `id`/`uuid` filter the schema does not declare selects by identifier.
+		$query = IdentifierFilterLift::lift(query: $query, properties: $schema->getProperties());
 		// A filter or sort on a value that is only shown masked would read it without the reveal.
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
 		$this->refuseUnreadablePropertyQuery(query: $query, schema: $schema);
@@ -1459,8 +1461,9 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 */
 	public function buildWhereClause(WhereClauseRequest $request): array {
-		$query  = $request->query;
 		$schema = $request->table->schema;
+		// A plain `id`/`uuid` filter the schema does not declare selects by identifier.
+		$query = IdentifierFilterLift::lift(query: $request->query, properties: $schema->getProperties());
 		$this->refuseRelatedRowFilters(query: $query);
 		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
 		$this->refuseUnreadablePropertyQuery(query: $query, schema: $schema);
