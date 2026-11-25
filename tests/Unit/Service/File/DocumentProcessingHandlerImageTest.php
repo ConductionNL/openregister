@@ -56,6 +56,7 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Anonymisation\PipelineSteps
  * @uses   \OCA\OpenRegister\Service\File\ImageRedactionService
  * @uses   \OCA\OpenRegister\Service\File\ImageBurner
+ * @uses   \OCA\OpenRegister\Service\File\TiffCodec
  * @uses   \OCA\OpenRegister\Service\File\ImageRegion
  * @uses   \OCA\OpenRegister\Service\File\ImageRegionDetectorRegistry
  * @uses   \OCA\OpenRegister\Service\File\ImageRegionNotBurnableException
@@ -260,9 +261,9 @@ final class DocumentProcessingHandlerImageTest extends TestCase {
 				node: $this->image('scan.tif', 'image/tiff', 'II*'),
 				entities: []
 			));
-			$this->fail('A TIFF cannot be burned on this instance and must be refused.');
+			$this->fail('A TIFF that does not decode cannot be burned and must be refused.');
 		} catch (ImageRegionNotBurnableException $e) {
-			$this->assertStringContainsString('image/tiff', $e->getMessage());
+			$this->assertStringContainsString('scan.tif could not be redacted', $e->getMessage());
 		}
 
 		$this->assertSame([], $this->written);

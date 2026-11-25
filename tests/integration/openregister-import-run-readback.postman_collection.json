@@ -1,0 +1,983 @@
+{
+	"info": {
+		"_postman_id": "or-import-run-readback-2026-11-25",
+		"name": "OpenRegister Import Run Read-back API",
+		"description": "An import run read back after it finished, with its failing rows and their reasons (change runs-recorded-and-causes-named, task 4.4; REQ-RCN-005 and REQ-RCN-006).\n\nA CSV of three rows is previewed and committed into a schema that requires a name and counts in integers: one row is written, one is refused for the missing name and one for a text count. The run is then read back: its file, fingerprint, policy, actor and counts; its rows with the written row naming the object it created and the refused rows their reasons and submitted values; the failing rows as CSV led by _row and _reason; the created object's audit entry naming the run as its cause; and a retry with the corrected rows as a new run naming the original, which stays unchanged.\n\nThe two CSV files sit next to this collection and are uploaded by relative path, like test-import.csv in the crud collection. Import runs are records and have no delete route, so the two runs stay; the object, register and schema are removed.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "setUp: a schema that requires a name and counts in integers",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"title\": \"Import run {{suffix}}\",\n \"slug\": \"import-run-{{suffix}}\",\n \"required\": [\n  \"name\"\n ],\n \"properties\": {\n  \"name\": {\n   \"type\": \"string\"\n  },\n  \"count\": {\n   \"type\": \"integer\"\n  }\n }\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.collectionVariables.set('suffix', Date.now().toString(36) + Math.random().toString(36).slice(2, 8));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('schemaId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Import run {{suffix}}\", \"slug\": \"import-run-reg-{{suffix}}\", \"schemas\": [{{schemaId}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('registerId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Preview a file with one good row and two failing ones",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"import-previews"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "register",
+							"value": "{{registerId}}",
+							"type": "text"
+						},
+						{
+							"key": "schema",
+							"value": "{{schemaId}}",
+							"type": "text"
+						},
+						{
+							"key": "file",
+							"type": "file",
+							"src": "import-run-failed-row.csv"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the preview is taken', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+							"const o = pm.response.json();",
+							"pm.collectionVariables.set('runId', o.id); pm.collectionVariables.set('runUuid', o.uuid); pm.collectionVariables.set('sourceHash', o.sourceHash);",
+							"pm.test('one row will be created and two are refused', () => pm.expect(o.counts).to.eql({ created: 1, updated: 0, skipped: 0, refused: 2 }));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Commit the run",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{runId}}/commit",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"import-previews",
+						"{{runId}}",
+						"commit"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"sourceHash\": \"{{sourceHash}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the commit is applied', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('the run is committed with one row applied', () => { pm.expect(o.state).to.eql('committed'); pm.expect(o.applied).to.eql(1); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The finished run is read back",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{runId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"import-previews",
+						"{{runId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the run is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('it names the file, its fingerprint, the policy and the actor', () => { pm.expect(o.sourceName).to.eql('import-run-failed-row.csv'); pm.expect(o.sourceHash).to.eql(pm.collectionVariables.get('sourceHash')); pm.expect(o.policy).to.be.a('string').and.not.empty; pm.expect(o.createdBy).to.eql(pm.variables.get('admin_user')); });",
+							"pm.test('it keeps the counts', () => { pm.expect(o.total).to.eql(3); pm.expect(o.counts).to.eql({ created: 1, updated: 0, skipped: 0, refused: 2 }); });",
+							"pm.test('its rows are not pruned', () => pm.expect(o.rowsPruned).to.eql(false));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Its rows carry their outcomes and the failing ones their reasons",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{runId}}/rows",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"import-previews",
+						"{{runId}}",
+						"rows"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the rows are read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const rows = pm.response.json().results; const byRow = Object.fromEntries(rows.map(r => [r.row, r]));",
+							"pm.test('all three rows are there', () => pm.expect(rows.length).to.eql(3));",
+							"pm.test('the good row was written and names the object it created', () => { pm.expect(byRow[2].outcome).to.eql('written'); pm.expect(byRow[2].targetUuid).to.be.a('string').and.not.empty; pm.collectionVariables.set('createdUuid', byRow[2].targetUuid); });",
+							"pm.test('the row without a name is refused, saying the name is missing', () => { pm.expect(byRow[3].decision).to.eql('refuse'); pm.expect(byRow[3].reason).to.include('required property (name)'); pm.expect(byRow[3].outcome).to.eql(null); });",
+							"pm.test('the row with a text count is refused, naming count', () => { pm.expect(byRow[4].decision).to.eql('refuse'); pm.expect(byRow[4].reason).to.include(\"'count'\"); });",
+							"pm.test('a failing row keeps the row as it was submitted', () => pm.expect(byRow[4].source).to.eql({ name: 'gamma', count: 'three' }));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The failing rows export as CSV, led by row and reason",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{runId}}/failed",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"import-previews",
+						"{{runId}}",
+						"failed"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the export answers', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('it is CSV', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'));",
+							"const lines = pm.response.text().trim().split('\\n');",
+							"pm.test('a header and the two failing rows, the written one left out', () => { pm.expect(lines[0]).to.eql('_row,_reason,count,name'); pm.expect(lines.length).to.eql(3); pm.expect(lines[1]).to.match(/^3,/); pm.expect(lines[2]).to.match(/^4,/); });",
+							"pm.test('each line carries its reason', () => { pm.expect(lines[1]).to.include('required property (name)'); pm.expect(lines[2]).to.include(\"'count'\"); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The created object's audit entry names the run",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{createdUuid}}/audit-trails",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{createdUuid}}",
+						"audit-trails"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the trail is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const create = pm.response.json().results.find(r => r.action === 'create');",
+							"pm.test('the creating entry is caused by this import run', () => { pm.expect(create.cause).to.eql('import'); pm.expect(create.causeRun).to.eql(pm.collectionVariables.get('runUuid')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "A retry with the corrected rows is a new run naming the original",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"import-previews"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "register",
+							"value": "{{registerId}}",
+							"type": "text"
+						},
+						{
+							"key": "schema",
+							"value": "{{schemaId}}",
+							"type": "text"
+						},
+						{
+							"key": "retryOf",
+							"value": "{{runId}}",
+							"type": "text"
+						},
+						{
+							"key": "file",
+							"type": "file",
+							"src": "import-run-corrected.csv"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the retry is taken', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+							"const o = pm.response.json();",
+							"pm.test('a new run', () => pm.expect(o.id).to.not.eql(pm.collectionVariables.get('runId')));",
+							"pm.test('it names the original as its cause', () => pm.expect(o.causeRun).to.eql(pm.collectionVariables.get('runUuid')));",
+							"pm.test('both corrected rows would be created', () => pm.expect(o.counts.created).to.eql(2));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The original run is unchanged by the retry",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/import-previews/{{runId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"import-previews",
+						"{{runId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the run is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('still committed, with its own counts', () => { pm.expect(o.state).to.eql('committed'); pm.expect(o.applied).to.eql(1); pm.expect(o.counts).to.eql({ created: 1, updated: 0, skipped: 0, refused: 2 }); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the created object",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{createdUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{createdUuid}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the created object is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the schema",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "suffix",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "schemaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "registerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "runId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "runUuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sourceHash",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "createdUuid",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
