@@ -76,6 +76,17 @@ if (!isDev) {
 		.flatMap((group) => entriesOf(group))
 		.every((entry) => typeof entry.name === 'string' && !selfContainedEntries.includes(entry.name))
 
+	// The global script's own lazy chunks (the integration tabs and cards it
+	// registers, loaded when one first renders) share ONE vendor chunk among
+	// themselves. Without it each lazy chunk carried its own copy of every
+	// dependency (~6 MB each, 200 chunks), because the script's initial chunk
+	// no longer holds them. Only chunks reached from integrationGlobal alone
+	// qualify, so nothing here is shared with another entry's runtime.
+	const onlyGlobalLazy = (chunk) => !chunk.canBeInitial()
+		&& [...chunk.groupsIterable]
+			.flatMap((group) => entriesOf(group))
+			.every((entry) => entry.name === 'integrationGlobal')
+
 	webpackConfig.optimization.splitChunks = {
 		chunks: (chunk) => sharesChunks(chunk),
 		cacheGroups: {
@@ -83,6 +94,12 @@ if (!isDev) {
 				test: /[\\/]node_modules[\\/]/,
 				name: 'openregister-vendor',
 				priority: 10,
+			},
+			globalLazyVendor: {
+				test: /[\\/]node_modules[\\/]/,
+				chunks: onlyGlobalLazy,
+				name: 'openregister-global-lazy-vendor',
+				priority: 20,
 			},
 		},
 	}
