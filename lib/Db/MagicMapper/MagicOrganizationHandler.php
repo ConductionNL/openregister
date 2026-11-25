@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\DeclaredPair;
 use OCA\OpenRegister\Service\SharedMasterDataServiceInterface;
@@ -233,13 +234,15 @@ class MagicOrganizationHandler implements OrganisationScopeResolverInterface {
 	 * @param \OCP\IUser|null $user The session user.
 	 *
 	 * @return bool True for a member of the admin group.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function isAdmin(?\OCP\IUser $user): bool {
 		if ($user === null) {
 			return false;
 		}
 
-		return in_array('admin', $this->identity->groupManager->getUserGroupIds($user), true);
+		return AdministratorCheck::isAdministrator(groupManager: $this->identity->groupManager, user: $user);
 	}//end isAdmin()
 
 	/**

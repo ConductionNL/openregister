@@ -30,7 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
+use OCA\OpenRegister\Service\Rbac\AuthorizationRuleEvaluator;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
@@ -279,27 +281,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public const SCOPE_MCP = McpScope::SCOPE;
 
 	/**
-	 * Write actions that fail closed for anonymous callers.
-	 *
-	 * For an anonymous principal (no resolved Nextcloud user), these actions are
-	 * denied unless the schema's `authorization` explicitly grants the `public`
-	 * group the action. This closes the implicit default-open write hole (#1955)
-	 * while preserving schemas that opt in to public submissions. Object reads are
-	 * intentionally NOT listed here — read default-open is a separate policy
-	 * question and is unchanged by this constant.
-	 *
-	 * @var string[]
-	 */
-	private const ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS = [
-		'create',
-		'update',
-		'delete',
-		'destroy',
-		'addFiles',
-		'deleteFiles',
-	];
-
-	/**
 	 * Write actions affected by the `enforce_default_closed` opt-in flag.
 	 *
 	 * When `IAppConfig::getValueBool('openregister', 'enforce_default_closed')`
@@ -361,6 +342,21 @@ class PermissionHandler implements PermissionHandlerInterface {
 		private readonly PermissionGrantServices $grants,
 	) {
 	}//end __construct()
+
+	/**
+	 * The shared reader of rule lists, the same one the entity plane asks.
+	 *
+	 * Built on demand rather than injected: it has no collaborators, and this
+	 * class is built by hand in many tests, so a new constructor argument
+	 * would be a fatal at each of those sites for no gain.
+	 *
+	 * @return AuthorizationRuleEvaluator The evaluator.
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
+	 */
+	private function ruleEvaluator(): AuthorizationRuleEvaluator {
+		return new AuthorizationRuleEvaluator();
+	}//end ruleEvaluator()
 
 	/**
 	 * The shared deny resolver.
@@ -679,6 +675,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool True when the caller is refused every action on this object.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function draftIsKeptFromCaller(PermissionAsk $ask): bool {
 		if ($ask->object === null || $ask->object->isDraft() === false) {
@@ -691,7 +688,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			subject: new DraftSubject(object: $ask->object, schema: $ask->schema),
 			caller: new DraftCaller(
 				userId: $subject,
-				isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
+				isAdmin: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $subject),
 				commandLine: $this->isCommandLine()
 			)
 		);
@@ -1017,6 +1014,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool True if the user has permission.
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function grantVerdict(PermissionCheck $check): bool {
 		$verdict = ($this->privateScopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
@@ -1025,7 +1023,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		// Admin group always has all permissions.
-		if (in_array('admin', $check->userGroups) === true) {
+		if (AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $check->userId) === true) {
 			return true;
 		}
 
@@ -1218,11 +1216,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @param PermissionCheck $check The check
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
 	 */
 	private function anonymousVerdict(PermissionCheck $check): bool {
-		if (in_array(needle: $check->action, haystack: self::ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS, strict: true) === true
-			&& $this->publicGroupExplicitlyGranted(authorization: $check->authorization, action: $check->action) === false
-		) {
+		if ($this->ruleEvaluator()->refusesAnonymousWrite(authorization: $check->authorization, action: $check->action) === true) {
 			return false;
 		}
 
@@ -1907,6 +1905,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *         The denial that decided it, or null when no deny reaches this caller.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function denialFor(DenialQuestion $question, ?string $userId = null): ?array {
 		$resolver = $this->denyResolver();
@@ -1920,7 +1919,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$userId = $this->callerId(userId: $userId);
 		$userGroups = $this->groupsOf(userId: $userId);
-		if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
+		if (AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $userId) === true) {
 			return null;
 		}
 
@@ -2455,6 +2454,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return BulkCaller The caller.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the caller's posture, passed through.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function bulkCaller(bool $rbac, bool $multitenancy): BulkCaller {
 		$user   = $this->caller->userSession->getUser();
@@ -2462,7 +2463,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$caller->organisation       = $this->getActiveOrganisationForContext();
 		$caller->checksOrganisation = $this->organisationCheckApplies(multitenancy: $multitenancy, activeOrganisation: $caller->organisation);
-		$caller->isAdmin    = ($user !== null && in_array('admin', $this->caller->groupManager->getUserGroupIds($user), true) === true);
+		$caller->isAdmin    = AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $user);
 		$caller->checksRbac = ($rbac === true && $caller->userId !== null);
 
 		return $caller;
@@ -2738,39 +2739,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return false;
 	}//end anyRuleEntryGrants()
-
-	/**
-	 * Determine whether the `public` group is EXPLICITLY granted an action.
-	 *
-	 * Unlike {@see hasGroupPermission()}, this does NOT treat a missing
-	 * `authorization` block or a missing action entry as a grant (the
-	 * default-open behaviour that {@see hasGroupPermission()} relies on for
-	 * authenticated users). It returns true only when the schema's
-	 * `authorization[$action]` list contains a `public` reference — either as a
-	 * bare string entry (`"public"`) or as a complex entry whose `group` is
-	 * `public` (with or without a `match` clause). This is the opt-in signal for
-	 * anonymous-write fail-closed scoping (#1955): the conditional `match`, if
-	 * present, is still evaluated downstream by {@see hasGroupPermission()}.
-	 *
-	 * @param array|null $authorization The schema's authorization array.
-	 * @param string $action The CRUD action being checked.
-	 *
-	 * @return bool True only when `public` is explicitly listed for the action.
-	 */
-	private function publicGroupExplicitlyGranted(?array $authorization, string $action): bool {
-		$rules = ($authorization[$action] ?? null);
-		if (is_array($rules) === false) {
-			return false;
-		}
-
-		foreach ($rules as $entry) {
-			if (self::entryNamesGroup(entry: $entry, group: 'public') === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end publicGroupExplicitlyGranted()
 
 	/**
 	 * Whether the `enforce_default_closed` opt-in flag is active.
@@ -3733,24 +3701,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private static function isMcpScopeEntry(mixed $entry): bool {
 		return McpScope::isScopeEntry(entry: $entry);
 	}//end isMcpScopeEntry()
-
-	/**
-	 * Whether a single authorization entry names the group, as a bare string or as `{"group": ...}`.
-	 *
-	 * @param mixed  $entry One entry from an action's rule list.
-	 * @param string $group The group.
-	 *
-	 * @return bool True when the entry names the group.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private static function entryNamesGroup(mixed $entry, string $group): bool {
-		if (is_array($entry) === true) {
-			return (($entry['group'] ?? null) === $group);
-		}
-
-		return ($entry === $group);
-	}//end entryNamesGroup()
 
 	/**
 	 * Resolve whether authenticated users inherit `public` group rights for a schema.
