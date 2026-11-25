@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext;
 use OCA\OpenRegister\Service\Portal\PortalPartyResolver;
+use OCA\OpenRegister\Db\TaskBlockerMapperInterface;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskSubstitution;
 use OCA\OpenRegister\Service\Task\TaskVtodoWriteBackGate;
@@ -100,6 +101,35 @@ final class FlowWiringTaskServicesTest extends TestCase {
 		$property = new \ReflectionProperty(TaskInboxService::class, 'substitution');
 		$this->assertInstanceOf(expected: TaskSubstitution::class, actual: $property->getValue($inbox));
 	}//end testTheTaskInboxIsBuiltWithTheSubstitutionService()
+
+	/**
+	 * The task inbox is built with the blocker mapper, so a row whose blocker
+	 * is still open reads blocked: true. Without it the flag was always false.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	public function testTheTaskInboxIsBuiltWithTheBlockerMapper(): void {
+		$context = new RecordingRegistrationContext();
+		FlowWiring::register(context: $context);
+
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) {
+				$class = new ReflectionClass(objectOrClass: $id);
+				if ($class->isFinal() === true) {
+					return $class->newInstanceWithoutConstructor();
+				}
+
+				return $this->createMock(originalClassName: $id);
+			}
+		);
+
+		$inbox    = $context->factories[TaskInboxService::class]($container);
+		$property = new \ReflectionProperty(TaskInboxService::class, 'blockers');
+		$this->assertInstanceOf(expected: TaskBlockerMapperInterface::class, actual: $property->getValue($inbox));
+	}//end testTheTaskInboxIsBuiltWithTheBlockerMapper()
 
 	/**
 	 * TaskService is still built when the container cannot build its write-back

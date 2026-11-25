@@ -125,24 +125,6 @@ class Version1Date20261114101600Test extends TestCase {
 		$this->assertSame($schema, $migration->changeSchema($output, fn () => $schema, []));
 	}
 
-	/**
-	 * Nextcloud 34's schema wrapper returns Doctrine's Table, which is not an OCP ITable.
-	 */
-	public function testATableThatIsNotAnOcpITableIsAcceptedOnNextcloud34(): void {
-		$table = new class([$this->index(['object_uuid', 'calendar_uri', 'event_uid'], true)]) {
-			public function __construct(private array $indexes) {
-			}
-
-			public function getIndexes(): array {
-				return $this->indexes;
-			}
-		};
-		// The OCP stubs declare ISchemaWrapper::getTable(): ITable, so the check is reached directly.
-		$check = new \ReflectionMethod(Version1Date20261114101600::class, 'hasUniqueTriple');
-
-		$this->assertTrue($check->invoke(null, $table));
-	}
-
 	public function testAUniqueIndexUnderAnotherNameAndColumnOrderCounts(): void {
 		$table = $this->table([$this->index(['EVENT_UID', 'object_uuid', 'calendar_uri'], true)]);
 		$table->expects($this->never())->method('addUniqueIndex');
@@ -223,5 +205,29 @@ class Version1Date20261114101600Test extends TestCase {
 		$this->assertSame([500, 500, 200], array_map('count', $this->deleted));
 		$this->assertSame(2, $this->deleted[0][0]);
 		$this->assertSame(1201, $this->deleted[2][199]);
+	}
+
+	/**
+	 * Nextcloud 32-34 hand the migration a Doctrine Table, not an OCP ITable.
+	 * A native ITable parameter type made the install of the app fail there.
+	 *
+	 * @return void
+	 */
+	public function testADoctrineTableFromNextcloudBelow35IsRead(): void {
+		$read = new \ReflectionMethod(Version1Date20261114101600::class, 'hasUniqueTriple');
+
+		$withIndex = new \Doctrine\DBAL\Schema\Table(
+			'oc_openregister_calendar_links',
+			[],
+			[new \Doctrine\DBAL\Schema\Index('idx_other', ['event_uid', 'object_uuid', 'calendar_uri'], true)]
+		);
+		$withoutIndex = new \Doctrine\DBAL\Schema\Table(
+			'oc_openregister_calendar_links',
+			[],
+			[new \Doctrine\DBAL\Schema\Index('idx_plain', ['object_uuid', 'calendar_uri', 'event_uid'], false)]
+		);
+
+		$this->assertTrue($read->invoke(null, $withIndex));
+		$this->assertFalse($read->invoke(null, $withoutIndex));
 	}
 }

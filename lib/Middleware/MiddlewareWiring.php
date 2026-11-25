@@ -47,6 +47,12 @@ final class MiddlewareWiring {
 		// sees the final response of every other middleware.
 		$context->registerMiddleware(ProblemDetailsMiddleware::class);
 
+		// Register the AddressAllowlistMiddleware (instance-hardening-controls
+		// REQ-IHC-003): a request to the administration surface or the API from
+		// an address outside that surface's administered allowlist is refused
+		// with a bare 403 before any controller runs. An empty list is unbound.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\AddressAllowlistMiddleware::class);
+
 		// Register the LanguageMiddleware for Accept-Language header parsing.
 		$context->registerMiddleware(LanguageMiddleware::class);
 
@@ -159,6 +165,13 @@ final class MiddlewareWiring {
 		// A save that a `warn` validation let through carries the warning on
 		// its response (rules-compose-read-transitions-and-time, task 4.3b).
 		$context->registerMiddleware(SaveWarningsMiddleware::class);
+
+		// Counts, times and classifies each request for the request metrics
+		// (production-observability). Registered as the last app-scoped
+		// middleware: Nextcloud runs afterException in reverse order, so it
+		// sees an exception before any other middleware turns it into a
+		// response, and its afterController gets the response it became.
+		$context->registerMiddleware(RequestMetricsMiddleware::class);
 
 		// An anonymous caller gets no user ids in a record's `@self`. Global, because
 		// other apps answer public requests with OpenRegister's records too.
