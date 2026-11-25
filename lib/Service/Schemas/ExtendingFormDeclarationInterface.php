@@ -60,10 +60,20 @@ interface ExtendingFormDeclarationInterface {
 	 * counted as forwarded nor written onto a property built from a form.
 	 * Refusing it by name refused dossiq's whole case schema at import.
 	 *
+	 * `sort` is read by the same consumer (`mapped($record, $map, 'sort')`)
+	 * to place a definition's field; `group` and `placeholder` lay the field
+	 * out (a heading, the empty input's example text). None of them is a
+	 * property key, so none is forwarded.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 *
 	 * @var array<string, string>
 	 */
 	public const FORM_ROLES = [
 		'hideOnCreate' => 'The create form leaves the field out, because the app fills it in itself. Edit forms still show it.',
+		'sort'         => 'Where the field sits on the form, lowest first; fields without one follow, as given.',
+		'group'        => 'The heading the field is shown under on the form; fields with the same group sit together.',
+		'placeholder'  => 'Example text in the empty input. It is never stored as an answer.',
 	];	/**
 	 * Every extends-form declaration in a schema, keyed by where it sits.
 	 *
