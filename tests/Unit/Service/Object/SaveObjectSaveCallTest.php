@@ -18,7 +18,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectExistsException;
-use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
+use OCA\OpenRegister\Kernel\Contracts\CreateGuardInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -30,7 +30,6 @@ use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicy;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
@@ -249,14 +248,15 @@ final class SaveObjectSaveCallTest extends TestCase {
 	 * @param array $seen Receives the data and the override flag.
 	 */
 	private function stoppingDedupPolicy(array &$seen): void {
-		$policy = $this->createMock(DedupCreatePolicy::class);
+		// A bare double of the Kernel port: the save path needs nothing of the Search policy beyond it.
+		$policy = $this->createMock(CreateGuardInterface::class);
 		$policy->method('guardCreate')->willReturnCallback(
 			static function (CreateCandidate $candidate) use (&$seen): array {
 				$seen = ['register' => $candidate->register, 'schema' => $candidate->schema, 'data' => $candidate->data, 'override' => $candidate->overrideRequested];
 				throw new RuntimeException('stop');
 			}
 		);
-		$this->services[DedupCreatePolicyInterface::class] = $policy;
+		$this->services[CreateGuardInterface::class] = $policy;
 	}
 
 	public function testAnInsertOnlySaveOfATakenIdentifierIsRefused(): void {
@@ -279,7 +279,7 @@ final class SaveObjectSaveCallTest extends TestCase {
 
 		try {
 			$this->saveObject()->saveObject(
-				data: ['name' => 'New', DedupCreatePolicy::OVERRIDE_KEY => 'true'],
+				data: ['name' => 'New', CreateGuardInterface::OVERRIDE_KEY => 'true'],
 				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema)),
 				_rbac: false
 			);
@@ -300,7 +300,7 @@ final class SaveObjectSaveCallTest extends TestCase {
 
 		try {
 			$this->saveObject()->saveObject(
-				data: ['name' => 'New', DedupCreatePolicy::OVERRIDE_KEY => 'no'],
+				data: ['name' => 'New', CreateGuardInterface::OVERRIDE_KEY => 'no'],
 				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->register, schema: $this->schema)),
 				_rbac: false
 			);

@@ -142,6 +142,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 				$this->node(SendNotificationNodeInterface::class),
 				$this->node(SendEmailNodeInterface::class),
 				$this->node(SendTalkMessageNodeInterface::class),
+				$this->node(\OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface::class),
 			)),
 			new CoordinationFlowNodes(new HumanTaskFlowNodes(
 				$this->node(UserTaskNodeInterface::class),

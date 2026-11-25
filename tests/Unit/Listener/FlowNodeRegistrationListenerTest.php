@@ -159,6 +159,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 					sendNotification: $mock(SendNotificationNode::class),
 					sendEmail: $mock(SendEmailNode::class),
 					sendTalkMessage: $mock(SendTalkMessageNode::class),
+					surveyInvite: $mock(\OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode::class),
 				)),
 				coordination: new CoordinationFlowNodes(humanTasks: new HumanTaskFlowNodes(
 					userTask: $mock(UserTaskNode::class),

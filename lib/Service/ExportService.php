@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Rbac\ProcessRevealAuditInterface;
 use OCA\OpenRegister\Service\Rbac\RevealingProcess;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use Symfony\Component\Uid\Uuid;
+use OCA\OpenRegister\Service\Export\SheetTitle;
 use OCA\OpenRegister\Service\Export\SpreadsheetCell;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -862,8 +863,9 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 	 * office server converts it to PDF.
 	 *
 	 * The requesting user's house style, when thematiq offers one, colours the
-	 * table header, adds the footer lines and puts the logo in the page header;
-	 * without one the layout is the plain one, and a profile that cannot be
+	 * table header, adds the footer lines, puts the logo in the page header and
+	 * embeds its heading and body fonts where they can be embedded (a role whose
+	 * font cannot be keeps the default font); without one the layout is the plain one, and a profile that cannot be
 	 * read never fails the export.
 	 *
 	 * @param string[]    $sections Escaped HTML fragments, one per schema section.
@@ -884,9 +886,12 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 		$odt = (new OdtWriter())->fromHtml(
 			html: implode('', $sections),
 			landscape: true,
-			houseStyle: OdtHouseStyle::withLogo(
-				style: OdtHouseStyle::fromProfile(profile: $profile),
-				logo: $this->documentStyle?->logo(profile: $profile)
+			houseStyle: OdtHouseStyle::withFonts(
+				style: OdtHouseStyle::withLogo(
+					style: OdtHouseStyle::fromProfile(profile: $profile),
+					logo: $this->documentStyle?->logo(profile: $profile)
+				),
+				fonts: ($this->documentStyle?->fonts(profile: $profile) ?? [])
 			)
 		);
 
@@ -932,7 +937,7 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 		$spreadsheet = new Spreadsheet();
 		$spreadsheet->removeSheetByIndex(0);
 		$sheet = $spreadsheet->createSheet();
-		$sheet->setTitle($request->schema?->getSlug() ?? 'data');
+		$sheet->setTitle(SheetTitle::for(spreadsheet: $spreadsheet, slug: $request->schema?->getSlug()));
 
 		foreach ($this->getHeaders(schema: $request->schema, currentUser: $request->currentUser) as $col => $header) {
 			SpreadsheetCell::set(sheet: $sheet, coordinate: $col . '1', value: $header);
@@ -1010,6 +1015,9 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 	 * @param ExportRequest $request     The register, schema, filters and user of this sheet
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-system-must-support-structured-export-to-csv-excel-xlsx-json-xml-and-ods-formats
+	 *       (the sheet title is one the workbook accepts, whatever the slug)
 	 */
 	private function populateSheet(Spreadsheet $spreadsheet, ExportRequest $request): void {
 		// Capture register context so getHeaders / getObjectValue can
@@ -1017,13 +1025,7 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 		// properties (register-i18n Phase 3 wire-in).
 		$this->contextRegister = $request->register;
 		$sheet = $spreadsheet->createSheet();
-
-		$sheetTitle = 'data';
-		if ($request->schema !== null) {
-			$sheetTitle = $request->schema->getSlug();
-		}
-
-		$sheet->setTitle($sheetTitle);
+		$sheet->setTitle(SheetTitle::for(spreadsheet: $spreadsheet, slug: $request->schema?->getSlug()));
 
 		$headers = $this->getHeaders(schema: $request->schema, currentUser: $request->currentUser);
 		foreach ($headers as $col => $header) {

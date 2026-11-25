@@ -13,14 +13,12 @@ schema save an identity on a `report` constraint or a second identity.
 - **GIVEN** a functional administrator editing the schema `zaken`
 - **WHEN** they save the constraint `zaaksleutel` over `gemeentecode` and `zaaknummer` with action `refuse` and `identity: true`
 - **THEN** `GET /api/schemas/{id}` returns the constraint with `identity: true`
-- @e2e exclude {specified only; task 4.3 adds tests/e2e/object-by-key.spec.ts}
 
 #### Scenario: A report constraint cannot be the identity
 
 - **GIVEN** a schema with a constraint whose action is `report`
 - **WHEN** an administrator sets `identity: true` on it and saves
 - **THEN** the response is 400 and names the constraint
-- @e2e exclude {specified only; task 1.1 adds the evaluator unit test}
 
 ### Requirement: An object can be addressed by its key
 
@@ -37,14 +35,12 @@ the matching uuids when more than one does. RBAC and multitenancy MUST apply as 
 - **WHEN** a synchronisation client with read access requests `GET /api/objects/zaken-register/zaken/by-key?gemeentecode=0363&zaaknummer=Z-2026-0042`
 - **THEN** the response is 200 with the same body `objects#show` returns for that case
 - **AND** the body carries `@self.key` `0363:Z-2026-0042`
-- @e2e exclude {specified only; task 4.3 adds tests/e2e/object-by-key.spec.ts}
 
 #### Scenario: A caller who may not read the case gets not found
 
 - **GIVEN** the same case and a user without read access to it
 - **WHEN** the user requests the same by-key URL
 - **THEN** the response is 404
-- @e2e exclude {specified only; task 2.2 adds the API test}
 
 #### Scenario: A key that matches two legacy records is refused
 
@@ -66,4 +62,3 @@ SHALL rewrite identity values.
 - **WHEN** a caseworker sends `PATCH /api/objects/zaken-register/zaken/{id}` with `zaaknummer` Z-2026-0043
 - **THEN** the response is 422 and names `zaaknummer`
 - **AND** the case keeps Z-2026-0042
-- @e2e exclude {specified only; task 3.2 adds the API test}

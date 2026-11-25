@@ -132,6 +132,7 @@ Vrij en open source onder de EUPL-licentie.
 
 	<background-jobs>
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\RequestAlertJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BackfillCalendarLinksJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\PublishedDigestVerifyJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
@@ -213,6 +214,7 @@ Vrij en open source onder de EUPL-licentie.
 		-->
 		<job>OCA\OpenRegister\BackgroundJob\DraftExpiryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SeedDirectoryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\IndexReconciliationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BagRefreshJob</job>
 	</background-jobs>
 

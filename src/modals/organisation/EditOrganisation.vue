@@ -213,6 +213,7 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 										:title="t('openregister', 'Special Rights')">
 										<SpecialRightsTable
 											:selected="selectedSpecialRights"
+											:narrowed="narrowedSpecialRights"
 											:groups="filteredAvailableGroups"
 											@update="updateSpecialRight" />
 									</AppTab>
@@ -296,7 +297,9 @@ import {
 	entityTabs,
 	EVERYONE,
 	everyoneOption,
+	mergeEntries,
 	SPECIAL_RIGHTS,
+	splitEntries,
 } from './organisationRights.js'
 
 /**
@@ -320,7 +323,9 @@ const INITIAL_STATE = {
 	selectedSpecialRights: {
 		agent_use: [],
 		llm_use: [],
+		grant_manage: [],
 	},
+	narrowedSpecialRights: {},
 
 	organisationUsers: [],
 	loadingUsers: false,
@@ -901,10 +906,10 @@ export default {
 		 * Update special right
 		 *
 		 * @param {object} update The change
-		 * @param {string} update.right The special right (agent_use, llm_use)
+		 * @param {string} update.right The special right (agent_use, llm_use, grant_manage)
 		 * @param {Array} update.groups Array of group objects with {id, name}
 		 * @return {void}
-		 * @spec exclude Reactive setter writing a special-right's group IDs to the local authorization model; UI form plumbing.
+		 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 		 */
 		updateSpecialRight({ right, groups }) {
 			// Initialize authorization if it doesn't exist
@@ -915,8 +920,9 @@ export default {
 			// Convert group objects to array of group IDs
 			const groupIds = groups.map((g) => g.id)
 
-			// Update the authorization
-			this.organisationItem.authorization[right] = groupIds
+			// Update the authorization, keeping the entries narrowed to a register
+			// or schemas that the picker does not edit.
+			this.organisationItem.authorization[right] = mergeEntries(this.narrowedSpecialRights[right], groupIds)
 
 			// Update the selected special rights for UI binding
 			this.selectedSpecialRights[right] = groups
@@ -926,15 +932,17 @@ export default {
 		 * Initialize special rights from organization authorization
 		 *
 		 * @return {void}
-		 * @spec exclude Seeds the special-rights UI binding from the authorization model on load; modal init plumbing.
+		 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 		 */
 		initializeSpecialRights() {
 			const auth = this.organisationItem.authorization || {}
+			const narrowedByRight = {}
 			SPECIAL_RIGHTS.forEach(({ right }) => {
-				this.selectedSpecialRights[right] = Array.isArray(auth[right])
-					? auth[right].map(this.specialRightGroup)
-					: []
+				const { plain, narrowed } = splitEntries(auth[right])
+				this.selectedSpecialRights[right] = plain.map(this.specialRightGroup)
+				narrowedByRight[right] = narrowed
 			})
+			this.narrowedSpecialRights = narrowedByRight
 		},
 
 		/**

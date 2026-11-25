@@ -76,6 +76,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode
@@ -154,6 +155,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'SendEmailNode' => ['sendTask', 'messaging'],
 			'SendNotificationNode' => ['sendTask', 'messaging'],
 			'SendTalkMessageNode' => ['sendTask', 'messaging'],
+			'SurveyInviteNode' => ['sendTask', 'messaging'],
 		];
 	}//end expected()
 

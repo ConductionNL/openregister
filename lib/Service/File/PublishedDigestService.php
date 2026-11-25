@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\FileDigest;
 use OCA\OpenRegister\Db\FileDigestMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCP\Files\File;
 use OCP\FilesMetadata\Exceptions\FilesMetadataNotFoundException;
 use OCP\FilesMetadata\IFilesMetadataManager;
@@ -254,6 +255,36 @@ class PublishedDigestService {
 
 		return ['verdict' => $verdict, 'recorded' => $recorded, 'current' => $current];
 	}//end verify()
+
+	/**
+	 * The uuid and the chain hashes of the audit row that sealed a publication.
+	 *
+	 * @param FileDigest $record The record.
+	 *
+	 * @return array{uuid: string|null, hash: string|null, previousHash: string|null} The seal; the hashes null when the row cannot be read.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	public function sealOf(FileDigest $record): array {
+		$uuid = $record->getAuditTrailUuid();
+		$seal = ['uuid' => $uuid, 'hash' => null, 'previousHash' => null];
+		if ($uuid === null || $uuid === '') {
+			return $seal;
+		}
+
+		try {
+			$rows = $this->auditTrails->findTrail(query: new ListQuery(limit: 1, filters: ['uuid' => $uuid]));
+		} catch (Throwable $e) {
+			return $seal;
+		}
+
+		$row = ($rows[0] ?? null);
+		if ($row instanceof AuditTrail === false) {
+			return $seal;
+		}
+
+		return ['uuid' => $uuid, 'hash' => $row->getHash(), 'previousHash' => $row->getPreviousHash()];
+	}//end sealOf()
 
 	/**
 	 * Write the audit row of a published file whose bytes changed.

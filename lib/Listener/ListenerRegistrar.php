@@ -375,6 +375,12 @@ final class ListenerRegistrar {
 		$context->registerEventListener(CaseItemTransitionedEvent::class, CaseItemTimerListener::class);
 		$context->registerEventListener(FlowTimerFiredEvent::class, CaseItemTimerListener::class);
 
+		// The deadline warning (flow-task-inbox-projections, task 7): a fired
+		// preBreach rung of a task's due timer is recorded as the task's
+		// `due-soon` action, once per deadline value, which the `taskDueSoon`
+		// notification rule delivers.
+		$context->registerEventListener(FlowTimerFiredEvent::class, TaskDueSoonListener::class);
+
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): the SAME terminal event, and the run-terminal one, also cancel
 		// the subject's open business timers. TaskTerminalEvent fires right
@@ -789,6 +795,9 @@ final class ListenerRegistrar {
 		// listener never fails the move: the projection is derived and
 		// rebuildable, the transition is not.
 		CoreListenerRegistrar::stateHistory(context: $context);
+
+		// The semantic provider list the integrations capability advertises follows schemas, registers and apps.
+		CoreListenerRegistrar::semanticProviders(context: $context);
 	}//end registerCacheEvictionListeners()
 
 	/**
@@ -826,6 +835,8 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectTransitionedEvent::class, StateEntryFreezeListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
+		// Queue-mode handoff drain on app enable: a provider may have appeared.
+		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
 	}//end registerProjectionAndHandoffListeners()
 
 	/**

@@ -27,6 +27,7 @@ return [
 	'graphQL#execute' => 'cors-api: Nextcloud CORS handling refuses a cookie session without the token',
 	'mcpServer#handle' => 'cors-api: Nextcloud CORS handling refuses a cookie session without the token',
 	'portalTask#complete' => 'public-token: public share-token or anonymous flow, rate limited',
+	'surveyAnswer#submit' => 'public-token: public share-token or anonymous flow, rate limited',
 	'user#login' => 'public-token: public share-token or anonymous flow, rate limited',
 	'user#logout' => 'public-token: public share-token or anonymous flow, rate limited',
 ];

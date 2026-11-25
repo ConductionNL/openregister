@@ -25,7 +25,7 @@ describe('lensSearchParams', () => {
 	})
 
 	it('drops the column sort for Recent, which owns the order', () => {
-		expect(lensSearchParams(2)).toEqual({ ...CLEARED, _recent: true, sortKey: null, sortOrder: null })
+		expect(lensSearchParams(2)).toEqual({ ...CLEARED, _recent: true, _order: null })
 	})
 
 	it('follows the lenses the page passes', () => {

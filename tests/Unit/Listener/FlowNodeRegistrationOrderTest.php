@@ -141,6 +141,7 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'SendNotificationNodeInterface',
 				$ns . 'SendEmailNodeInterface',
 				$ns . 'SendTalkMessageNodeInterface',
+				$ns . 'SurveyInviteNodeInterface',
 				$ns . 'UserTaskNodeInterface',
 				$ns . 'PortalTaskNodeInterface',
 				$ns . 'LockObjectNodeInterface',
