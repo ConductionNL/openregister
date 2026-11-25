@@ -1,5 +1,15 @@
 {
     "translations": {
+        "OpenRegister operations": "OpenRegister-beheer",
+        "Only administrators see the OpenRegister operations figures.": "Alleen beheerders zien de beheercijfers van OpenRegister.",
+        "Server errors in the last %s minutes": "Serverfouten in de afgelopen %s minuten",
+        "no requests": "geen verzoeken",
+        "Average response time in the last %s minutes": "Gemiddelde responstijd in de afgelopen %s minuten",
+        "No OpenRegister figures are available yet.": "Er zijn nog geen cijfers van OpenRegister beschikbaar.",
+        "OpenRegister error rate is over its alert threshold": "Foutpercentage van OpenRegister is boven de alarmdrempel",
+        "%1$s%% of the requests in the last %2$s minutes failed with a server error; the threshold is %3$s%%.": "%1$s%% van de verzoeken in de afgelopen %2$s minuten is mislukt met een serverfout; de drempel is %3$s%%.",
+        "OpenRegister response time is over its alert threshold": "Responstijd van OpenRegister is boven de alarmdrempel",
+        "The 95th percentile response time in the last %1$s minutes was %2$s ms; the threshold is %3$s ms.": "De responstijd op het 95e percentiel was in de afgelopen %1$s minuten %2$s ms; de drempel is %3$s ms.",
         "%1$s %2$s created": "%1$s %2$s aangemaakt",
         "{schema} {title} created": "{schema} {title} aangemaakt",
         "%1$s %2$s updated": "%1$s %2$s bijgewerkt",
