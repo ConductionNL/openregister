@@ -4181,7 +4181,19 @@ OC.L10N.register(
     "Scoped app passwords" : "Scoped app passwords",
     "The row condition is not valid JSON" : "The row condition is not valid JSON",
     "This grant has lapsed, so the token is refused." : "This grant has lapsed, so the token is refused.",
-    "This is not one of your app passwords" : "This is not one of your app passwords"
+    "This is not one of your app passwords" : "This is not one of your app passwords",
+    "Check by hand" : "Check by hand",
+    "Check Dutch API design rules" : "Check Dutch API design rules",
+    "Deviation: {reason}" : "Deviation: {reason}",
+    "Deviations" : "Deviations",
+    "Dutch API design rules for {register}" : "Dutch API design rules for {register}",
+    "Not probed yet" : "Not probed yet",
+    "Passed" : "Passed",
+    "Probe responses" : "Probe responses",
+    "Responses probed {moment}." : "Responses probed {moment}.",
+    "Ruleset {ruleset}, generated {moment}." : "Ruleset {ruleset}, generated {moment}.",
+    "The conformance report could not be read." : "The conformance report could not be read.",
+    "The responses could not be probed." : "The responses could not be probed."
 },
 "nplurals=2; plural=(n != 1);"
 );

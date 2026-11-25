@@ -315,6 +315,21 @@ final class CoreListenerRegistrar {
 	}//end stateHistory()
 
 	/**
+	 * The semantic provider list the integrations capability advertises follows schemas, registers and apps.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function semanticProviders(IRegistrationContext $context): void {
+		foreach (SemanticProviderCacheListener::EVENTS as $semanticProviderEvent) {
+			$context->registerEventListener($semanticProviderEvent, SemanticProviderCacheListener::class);
+		}
+	}//end semanticProviders()
+
+	/**
 	 * The notes and tasks of a deleted object are cleaned up.
 	 *
 	 * @param IRegistrationContext $context The registration context.

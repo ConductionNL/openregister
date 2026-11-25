@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 266;
+	private const LISTENER_COUNT = 274;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -45,10 +45,11 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * (grants-that-follow-a-slot-a-relation-or-a-reason, count 260 -> 263).
 	 * Then the Collaboration team resource provider registration (CoreListenerRegistrar::teamResources)
 	 * (count 263 -> 264). The deadline warning then appended one TaskDueSoonListener
-	 * registration on FlowTimerFiredEvent, after CaseItemTimerListener (264 -> 265). Then one PersonalTokenGrantRevokedListener
-	 * registration on TokenInvalidatedEvent in AccessListenerRegistrar (scoped-api-tokens, 265 -> 266).
+	 * registration on FlowTimerFiredEvent, after CaseItemTimerListener (264 -> 265).
+	 * Then the cross-app semantic reference listeners (8 registrations, count 265 -> 273). Then one PersonalTokenGrantRevokedListener
+	 * registration on TokenInvalidatedEvent in AccessListenerRegistrar (scoped-api-tokens, 273 -> 274).
 	 */
-	private const SEQUENCE_SHA256 = '9e4dacf13524e042989990e1048669b7845ab8d0a5e16edfd548b95226c8d9aa';
+	private const SEQUENCE_SHA256 = '000d62cc10d2027dcd3815687619effed8e6529d32e850bd957169effce2c29d';
 
 	/**
 	 * The registration calls, in call order, with every argument.

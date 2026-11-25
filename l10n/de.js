@@ -3948,7 +3948,19 @@ OC.L10N.register(
     "Scoped app passwords" : "Eingeschränkte App-Passwörter",
     "The row condition is not valid JSON" : "Die Zeilenbedingung ist kein gültiges JSON",
     "This grant has lapsed, so the token is refused." : "Diese Berechtigung ist abgelaufen, daher wird das Token abgewiesen.",
-    "This is not one of your app passwords" : "Dies ist keines Ihrer App-Passwörter"
+    "This is not one of your app passwords" : "Dies ist keines Ihrer App-Passwörter",
+    "Check by hand" : "Von Hand prüfen",
+    "Check Dutch API design rules" : "Niederländische API-Designregeln prüfen",
+    "Deviation: {reason}" : "Abweichung: {reason}",
+    "Deviations" : "Abweichungen",
+    "Dutch API design rules for {register}" : "Niederländische API-Designregeln für {register}",
+    "Not probed yet" : "Noch nicht getestet",
+    "Passed" : "Bestanden",
+    "Probe responses" : "Antworten testen",
+    "Responses probed {moment}." : "Antworten getestet am {moment}.",
+    "Ruleset {ruleset}, generated {moment}." : "Regelsatz {ruleset}, erstellt am {moment}.",
+    "The conformance report could not be read." : "Der Konformitätsbericht konnte nicht gelesen werden.",
+    "The responses could not be probed." : "Die Antworten konnten nicht getestet werden."
 },
 "nplurals=2; plural=(n != 1);"
 );

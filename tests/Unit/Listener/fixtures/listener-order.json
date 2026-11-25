@@ -224,6 +224,7 @@
 	],
 	"OCA\\OpenRegister\\Event\\RegisterCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
 		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
@@ -231,6 +232,7 @@
 	],
 	"OCA\\OpenRegister\\Event\\RegisterDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
 		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
@@ -239,6 +241,7 @@
 	"OCA\\OpenRegister\\Event\\RegisterUpdatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
 		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
@@ -250,6 +253,7 @@
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\NotificationsAnnotationInstallListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
@@ -262,6 +266,7 @@
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
 		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
@@ -275,6 +280,7 @@
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\NotificationsAnnotationInstallListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
@@ -330,7 +336,11 @@
 		"OCA\\OpenRegister\\Listener\\LeafScriptListener",
 		"OCA\\OpenRegister\\Listener\\PushClientScriptListener"
 	],
+	"OCP\\App\\Events\\AppDisableEvent": [
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener"
+	],
 	"OCP\\App\\Events\\AppEnableEvent": [
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener"
 	],
 	"OCP\\Authentication\\Events\\TokenInvalidatedEvent": [

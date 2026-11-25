@@ -2556,7 +2556,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			foreach ($properties as $propertyName => $propertyConfig) {
-				if (in_array($propertyName, MagicSchemaColumns::CONFIGURATION_FIELDS, true) === true) {
+				if (MagicSchemaColumns::isConfigurationEntry(name: $propertyName, config: $propertyConfig) === true) {
 					continue;
 				}
 
@@ -2598,7 +2598,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			foreach ($properties as $propertyName => $propertyConfig) {
-				if (is_array($propertyConfig) === false || in_array($propertyName, MagicSchemaColumns::CONFIGURATION_FIELDS, true) === true) {
+				if (is_array($propertyConfig) === false || MagicSchemaColumns::isConfigurationEntry(name: $propertyName, config: $propertyConfig) === true) {
 					continue;
 				}
 

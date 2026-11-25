@@ -1,0 +1,241 @@
+{
+	"info": {
+		"name": "OpenRegister schema exportable flag",
+		"description": "openspec/changes/modelling-schema-exportable-flag task 2.1: PUT /api/schemas/{id} with configuration.exportable true, then GET shows both places true; a schema saved without the flag reads exportable false. Creates and removes its own schema. Run: newman run tests/newman/openregister-schema-exportable-flag.postman_collection.json --env-var base_url=<instance>",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "schema_id",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "A schema saved without the flag reads exportable false",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Date.now().toString(36)); }"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code).to.equal(201));",
+							"const body = pm.response.json();",
+							"pm.collectionVariables.set('schema_id', body.id);",
+							"pm.test('exportable reads false', () => pm.expect(body.exportable).to.equal(false));",
+							"pm.test('the configuration does not claim it', () => pm.expect((body.configuration || {}).exportable).to.not.equal(true));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Exportable {{run}}\",\"slug\":\"exportable-{{run}}\",\"properties\":{\"title\":{\"type\":\"string\"}}}"
+				}
+			}
+		},
+		{
+			"name": "PUT with configuration.exportable true",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const body = pm.response.json();",
+							"pm.test('the top-level flag is true', () => pm.expect(body.exportable).to.equal(true));",
+							"pm.test('the configuration flag is true', () => pm.expect(body.configuration.exportable).to.equal(true));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Exportable {{run}}\",\"slug\":\"exportable-{{run}}\",\"properties\":{\"title\":{\"type\":\"string\"}},\"configuration\":{\"exportable\":true}}"
+				}
+			}
+		},
+		{
+			"name": "GET shows both places true",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const body = pm.response.json();",
+							"pm.test('the top-level flag is true', () => pm.expect(body.exportable).to.equal(true));",
+							"pm.test('the configuration flag is true', () => pm.expect(body.configuration.exportable).to.equal(true));",
+							"pm.test('the rest of the schema is unchanged', () => pm.expect(Object.keys(body.properties)).to.eql(['title']));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
+			}
+		},
+		{
+			"name": "PUT with top-level exportable false clears it",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const body = pm.response.json();",
+							"pm.test('exportable reads false', () => pm.expect(body.exportable).to.equal(false));",
+							"pm.test('the configuration does not claim it', () => pm.expect((body.configuration || {}).exportable).to.not.equal(true));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Exportable {{run}}\",\"slug\":\"exportable-{{run}}\",\"properties\":{\"title\":{\"type\":\"string\"}},\"exportable\":false,\"configuration\":{}}"
+				}
+			}
+		},
+		{
+			"name": "Cleanup: the schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
+			}
+		}
+	]
+}
