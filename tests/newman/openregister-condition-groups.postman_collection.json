@@ -1,0 +1,458 @@
+{
+	"info": {
+		"name": "OpenRegister list condition groups",
+		"description": "openspec/changes/list-query-condition-groups task 2.1: GET /api/objects/{register}/{schema}?_where=... returns the first scenario's 7 rows, total and industry facet; a leaf on an undeclared property returns 400 with its path; invalid JSON returns 400. Seeds and removes its own schema, register and 18 records. Run: newman run tests/newman/openregister-condition-groups.postman_collection.json --env-var base_url=<instance>",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "schema_id",
+			"value": ""
+		},
+		{
+			"key": "register_id",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Setup: schema client",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Date.now().toString(36)); }"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code).to.equal(201));",
+							"pm.collectionVariables.set('schema_id', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Condition groups {{run}}\",\"slug\":\"condition-groups-{{run}}\",\"properties\":{\"name\":{\"type\":\"string\"},\"place\":{\"type\":\"string\"},\"industry\":{\"type\":\"string\"}}}"
+				}
+			}
+		},
+		{
+			"name": "Setup: a register holding it",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code).to.equal(201));",
+							"pm.collectionVariables.set('register_id', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Condition groups {{run}}\",\"slug\":\"condition-groups-{{run}}\",\"schemas\":[{{schema_id}}]}"
+				}
+			}
+		},
+		{
+			"name": "Seed: 18 clients",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const auth = 'Basic ' + btoa(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password'));",
+							"pm.test('status is 201', () => pm.expect(pm.response.code).to.equal(201));",
+							"// The spec's first scenario: 4 horeca, 3 detailhandel and 5 bouw in Zuiddrecht, and 6 horeca elsewhere. This request made the first Zuiddrecht horeca client.",
+							"const rows = [];",
+							"for (let i = 1; i < 4; i++) rows.push({ place: 'Zuiddrecht', industry: 'horeca' });",
+							"for (let i = 0; i < 3; i++) rows.push({ place: 'Zuiddrecht', industry: 'detailhandel' });",
+							"for (let i = 0; i < 5; i++) rows.push({ place: 'Zuiddrecht', industry: 'bouw' });",
+							"for (let i = 0; i < 6; i++) rows.push({ place: 'Noordwijk', industry: 'horeca' });",
+							"rows.forEach((row, i) => pm.sendRequest({",
+							"  url: pm.variables.replaceIn('{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}'),",
+							"  method: 'POST',",
+							"  header: {'OCS-APIRequest': 'true', Accept: 'application/json', 'Content-Type': 'application/json', Authorization: auth},",
+							"  body: {mode: 'raw', raw: JSON.stringify({ name: 'client ' + (i + 2), ...row })},",
+							"}, (err, res) => pm.test('client ' + (i + 2) + ' is created', () => { pm.expect(err).to.equal(null); pm.expect(res.code).to.equal(201); })));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"client 1\",\"place\":\"Zuiddrecht\",\"industry\":\"horeca\"}"
+				}
+			}
+		},
+		{
+			"name": "Without _where all 18 are listed",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"pm.test('the total is 18', () => pm.expect(pm.response.json().total).to.equal(18));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_limit=50"
+			}
+		},
+		{
+			"name": "AND(place eq Zuiddrecht, OR(industry in horeca, industry in detailhandel)) lists the 7",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const body = pm.response.json();",
+							"pm.test('7 rows are returned', () => pm.expect(body.results).to.have.lengthOf(7));",
+							"pm.test('the total is 7', () => pm.expect(body.total).to.equal(7));",
+							"pm.test('every row is in Zuiddrecht', () => body.results.forEach((r) => pm.expect(r.place).to.equal('Zuiddrecht')));",
+							"pm.test('every row is horeca or detailhandel', () => body.results.forEach((r) => pm.expect(['horeca', 'detailhandel']).to.include(r.industry)));",
+							"const buckets = {}; ((((body.facets || {}).industry || {}).data || {}).buckets || []).forEach((b) => { buckets[b.value] = b.count; });",
+							"pm.test('the industry facet holds horeca 4 and detailhandel 3', () => pm.expect(buckets).to.eql({ horeca: 4, detailhandel: 3 }));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_limit=50&_where=%7B%22type%22%3A%22AND%22%2C%22children%22%3A%5B%7B%22field%22%3A%22place%22%2C%22operator%22%3A%22eq%22%2C%22value%22%3A%22Zuiddrecht%22%7D%2C%7B%22type%22%3A%22OR%22%2C%22children%22%3A%5B%7B%22field%22%3A%22industry%22%2C%22operator%22%3A%22in%22%2C%22value%22%3A%5B%22horeca%22%5D%7D%2C%7B%22field%22%3A%22industry%22%2C%22operator%22%3A%22in%22%2C%22value%22%3A%5B%22detailhandel%22%5D%7D%5D%7D%5D%7D&_facets%5Bindustry%5D%5Btype%5D=terms"
+			}
+		},
+		{
+			"name": "The count agrees with the list",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"pm.test('the total is 7 on a one-row page', () => pm.expect(pm.response.json().total).to.equal(7));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_limit=1&_where=%7B%22type%22%3A%22AND%22%2C%22children%22%3A%5B%7B%22field%22%3A%22place%22%2C%22operator%22%3A%22eq%22%2C%22value%22%3A%22Zuiddrecht%22%7D%2C%7B%22type%22%3A%22OR%22%2C%22children%22%3A%5B%7B%22field%22%3A%22industry%22%2C%22operator%22%3A%22in%22%2C%22value%22%3A%5B%22horeca%22%5D%7D%2C%7B%22field%22%3A%22industry%22%2C%22operator%22%3A%22in%22%2C%22value%22%3A%5B%22detailhandel%22%5D%7D%5D%7D%5D%7D"
+			}
+		},
+		{
+			"name": "A leaf on an undeclared property is refused with its path",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 400', () => pm.expect(pm.response.code).to.equal(400));",
+							"const body = pm.response.json();",
+							"pm.test('the path names the failing leaf', () => pm.expect(body.path).to.equal('$.children[1].children[0]'));",
+							"pm.test('the error names the property', () => pm.expect(body.error).to.include('branche'));",
+							"pm.test('no rows are returned', () => pm.expect(body.results).to.equal(undefined));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_where=%7B%22type%22%3A%22AND%22%2C%22children%22%3A%5B%7B%22field%22%3A%22place%22%2C%22operator%22%3A%22eq%22%2C%22value%22%3A%22Zuiddrecht%22%7D%2C%7B%22type%22%3A%22OR%22%2C%22children%22%3A%5B%7B%22field%22%3A%22branche%22%2C%22operator%22%3A%22eq%22%2C%22value%22%3A%22horeca%22%7D%5D%7D%5D%7D"
+			}
+		},
+		{
+			"name": "Invalid JSON is refused, not answered unfiltered",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 400', () => pm.expect(pm.response.code).to.equal(400));",
+							"pm.test('no rows are returned', () => pm.expect(pm.response.json().results).to.equal(undefined));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_where=%7Bnot-json"
+			}
+		},
+		{
+			"name": "Cleanup: the records",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const auth = 'Basic ' + btoa(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password'));",
+							"const ids = pm.response.json().results.map((o) => o['@self'].id);",
+							"ids.forEach((id) => pm.sendRequest({",
+							"  url: pm.variables.replaceIn('{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/') + id,",
+							"  method: 'DELETE',",
+							"  header: {'OCS-APIRequest': 'true', Accept: 'application/json', Authorization: auth},",
+							"}, (err, res) => pm.test('record ' + id + ' is removed', () => { pm.expect(err).to.equal(null); pm.expect(res.code).to.be.oneOf([200, 204]); })));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_limit=50"
+			}
+		},
+		{
+			"name": "Cleanup: the register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+			}
+		},
+		{
+			"name": "Cleanup: the schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
+			}
+		}
+	]
+}

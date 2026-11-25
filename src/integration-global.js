@@ -20,10 +20,12 @@
  * @see ADR-019 — Pluggable Integration Registry
  */
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
-import { registerLibraryTranslations } from './services/libraryTranslations.js'
+import { loadLibraryTranslations } from './services/libraryTranslations.js'
 
-// Register nextcloud-vue's own catalogue before anything renders, so the
-// library's labels follow the reader's language on this page too.
-registerLibraryTranslations()
+// Register nextcloud-vue's own catalogue so the library's labels follow the
+// reader's language on this page too. Only the reader's language is fetched,
+// as a separate chunk: this script runs on every Nextcloud page, and carrying
+// all 37 catalogues in it cost every page ~360 KB of script.
+loadLibraryTranslations()
 
 ensureIntegrationRegistry()

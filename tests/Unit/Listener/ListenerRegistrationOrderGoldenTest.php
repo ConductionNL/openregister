@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 275;
+	private const LISTENER_COUNT = 278;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -50,8 +50,10 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Then the ChangeGateListener took the decided approval sequences too,
 	 * on TaskSequenceCompletedEvent after the ApprovalChainAdvanceListener and on the new
 	 * TaskSequenceRejectedEvent (273 -> 275).
+	 * Then three FlowCalendarIndexListener registrations after FlowTriggerListener on the object
+	 * created, updated and deleted events (275 -> 278).
 	 */
-	private const SEQUENCE_SHA256 = '28f0c0da210ceb87553b15a9c46726a20a32194304ac283ebbb9eefaee461d50';
+	private const SEQUENCE_SHA256 = 'fc3ff070e5a717b0ec7813a6ea60c09532dce3d85691de07cfad1fd69cd5143c';
 
 	/**
 	 * The registration calls, in call order, with every argument.

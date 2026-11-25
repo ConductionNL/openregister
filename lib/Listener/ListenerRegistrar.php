@@ -244,6 +244,13 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectDeletedEvent::class, FlowTriggerListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, FlowTriggerListener::class);
 
+		// Calendar flow triggers (flow-calendar-and-webhook-triggers): a write
+		// places, moves or removes the record's moment on every calendar trigger
+		// of its schema; FlowCalendarWorker fires the moments that come due.
+		$context->registerEventListener(ObjectCreatedEvent::class, FlowCalendarIndexListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, FlowCalendarIndexListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, FlowCalendarIndexListener::class);
+
 		// Flow preflight — refuse a flow document naming a step type this
 		// instance cannot run. Registered FIRST on both events so an unrunnable
 		// flow is rejected before any other listener does work on the way in.
