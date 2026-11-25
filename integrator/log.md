@@ -178,3 +178,4 @@
 2026-11-25T22:21:09Z RED prs=10514,11249,11257,11258,11259,11267 main=50949d88a4 integrator-cloud (TokenCeilingTest x2; suspect #10514, rebuild without; #11089 #11264 build-conflict)
 2026-11-25T22:34:49Z GREEN prs=11089,11249,11257,11258,11259,11267 main=50949d88a4 integrator-cloud (merged; main now 1fc51bb3c9; #11264 build-conflict, next tree)
 2026-11-25T22:48:37Z GREEN prs=11268,11277,11278,11279,11284 main=1fc51bb3c9 integrator-cloud (merged; main now eeb6c298ca)
+2026-11-25T23:00:41Z GREEN prs=11240,11289 main=eeb6c298ca integrator-cloud (merged; main now 64e00061a6)
