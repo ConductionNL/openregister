@@ -933,3 +933,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ObjectServiceSaveObjectGoldenTest::testSaveObjectMatchesGolden fails with an extra call (e.g. schemaMapper.findByFormerSlugInIds) in the recorded sequence.
 - Cause: main's saveObject golden (tests/Unit/Service/fixtures/object-service-save-object-golden.json) records every mapper call; a PR that adds a lookup on the save path changes the sequence.
 - Fix: when the new call is the PR's intended behaviour and 'after'/result are unchanged, rerun the test with UPDATE_GOLDEN=1, check the fixture diff only adds that call, commit. #11064 cbe33557. #11067 (same change) likely needs the same.
+
+## Main test pins SQL the PR parameterised (or-fix-3)
+- Symptom: precheck red on a main-added query-shape test (e.g. ApiCallRecordMapperPeriodQueriesTest::testCountIncrementsAKnownKey: expected 'call_count + 1', actual 'call_count + :p0'; insert values shifted by one).
+- Cause: main added a golden of the old query after the PR changed it (here #11093 binds the call count).
+- Fix: merge main, update main's test to the PR's query (extra bound value first, array_slice offset +1); keep the asserted columns. (#11093 40a91690)
