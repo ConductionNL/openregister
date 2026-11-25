@@ -3501,10 +3501,10 @@
       ]
     },
     {
-      "bom-ref": "web-token/jwt-library-4.2.7.0",
+      "bom-ref": "web-token/jwt-library-4.2.8.0",
       "type": "library",
       "name": "jwt-library",
-      "version": "4.2.7",
+      "version": "4.2.8",
       "group": "web-token",
       "description": "JWT library",
       "author": "Florent Morselli, All contributors",
@@ -3515,17 +3515,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/web-token/jwt-library@4.2.7",
+      "purl": "pkg:composer/web-token/jwt-library@4.2.8",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/web-token/jwt-library/zipball/62643a2f31274c546a7d158ceab6dd5c052db911",
-          "comment": "dist reference: 62643a2f31274c546a7d158ceab6dd5c052db911"
+          "url": "https://api.github.com/repos/web-token/jwt-library/zipball/a1909b6b7c9171529f65e6bb6ecae615cd8a92ed",
+          "comment": "dist reference: a1909b6b7c9171529f65e6bb6ecae615cd8a92ed"
         },
         {
           "type": "vcs",
           "url": "https://github.com/web-token/jwt-library.git",
-          "comment": "source reference: 62643a2f31274c546a7d158ceab6dd5c052db911"
+          "comment": "source reference: a1909b6b7c9171529f65e6bb6ecae615cd8a92ed"
         },
         {
           "type": "website",
@@ -3534,18 +3534,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/web-token/jwt-library/tree/4.2.7",
+          "url": "https://github.com/web-token/jwt-library/tree/4.2.8",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "62643a2f31274c546a7d158ceab6dd5c052db911"
+          "value": "a1909b6b7c9171529f65e6bb6ecae615cd8a92ed"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "62643a2f31274c546a7d158ceab6dd5c052db911"
+          "value": "a1909b6b7c9171529f65e6bb6ecae615cd8a92ed"
         },
         {
           "name": "cdx:composer:package:type",
@@ -32067,7 +32067,7 @@
         "psr/log-3.0.2.0",
         "spomky-labs/base64url-2.0.4.0",
         "symfony/polyfill-php83-1.43.0.0",
-        "web-token/jwt-library-4.2.7.0"
+        "web-token/jwt-library-4.2.8.0"
       ]
     },
     {
@@ -32301,7 +32301,7 @@
       ]
     },
     {
-      "ref": "web-token/jwt-library-4.2.7.0",
+      "ref": "web-token/jwt-library-4.2.8.0",
       "dependsOn": [
         "brick/math-1.0.0.0",
         "psr/clock-1.0.0.0",
@@ -32365,7 +32365,7 @@
         "symfony/yaml-7.4.23.0",
         "theodo-group/llphant-1.10.12.0",
         "twig/twig-3.30.0.0",
-        "web-token/jwt-library-4.2.7.0",
+        "web-token/jwt-library-4.2.8.0",
         "webonyx/graphql-php-15.39.0.0",
         "zbateson/mail-mime-parser-3.0.9.0"
       ]
