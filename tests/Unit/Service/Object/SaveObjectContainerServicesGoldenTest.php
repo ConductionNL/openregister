@@ -23,7 +23,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
-use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
+use OCA\OpenRegister\Kernel\Contracts\CreateGuardInterface;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
@@ -93,7 +93,7 @@ class SaveObjectContainerServicesGoldenTest extends TestCase {
 			'shared master data' => ['resolveSharedMasterDataService', SharedMasterDataService::class, 'SharedMasterDataService'],
 			'retention' => ['resolveRetentionService', RetentionServiceInterface::class, 'RetentionService'],
 			'unique hints' => ['resolveUniqueHintChecker', UniqueHintChecker::class, 'UniqueHintChecker'],
-			'dedup policy' => ['resolveDedupCreatePolicy', DedupCreatePolicyInterface::class, 'DedupCreatePolicy'],
+			'dedup policy' => ['resolveDedupCreatePolicy', CreateGuardInterface::class, 'DedupCreatePolicy'],
 		];
 	}//end resolvers()
 
