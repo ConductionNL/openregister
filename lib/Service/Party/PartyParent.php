@@ -33,11 +33,11 @@ use OCA\OpenRegister\Kernel\Contracts\Core\PartyParentInterface;
 final class PartyParent implements PartyParentInterface {
 
 	/**
-	 * The parent property and the declared depth bound, or null when the schema declares no party parent.
+	 * The parent property, the declared depth bound and the name property, or null when the schema declares no party parent.
 	 *
 	 * @param Schema $schema The schema.
 	 *
-	 * @return array{property: string, maxDepth: int}|null The declaration.
+	 * @return array{property: string, maxDepth: int, nameProperty: string|null}|null The declaration.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) PartyDefinition::fromSchema() is the party model's one reader of the annotation.
 	 *
@@ -52,6 +52,8 @@ final class PartyParent implements PartyParentInterface {
 		return [
 			'property' => $party->parentProperty(),
 			'maxDepth' => $party->maxDepth(),
+			// What a node of the party's tree is called when the object has no name of its own.
+			'nameProperty' => $party->nameProperty(),
 		];
 	}//end parentOf()
 }//end class
