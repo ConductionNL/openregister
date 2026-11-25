@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Files\Service\TextExtraction;
 
+use OCA\OpenRegister\Files\Db\EntityMention;
 use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use DateTime;
 use Exception;
@@ -577,7 +578,12 @@ class EntityRecognitionHandler implements TextEntityDetectorInterface {
 		$this->setRelationSource(relation: $relation, chunk: $chunk);
 		$relation->setArchiveMember(self::memberOf(chunk: $chunk));
 
-		$this->stores->entityRelationMapper->insert($relation);
+		// A re-extract carries the existing relations onto the new chunks
+		// (ChunkRelationCarryOver): the same finding at the same place is not
+		// stored a second time.
+		if ($this->alreadyStored(relation: $relation) === false) {
+			$this->stores->entityRelationMapper->insert($relation);
+		}
 
 		return [
 			'type' => $detected['type'],
@@ -585,6 +591,32 @@ class EntityRecognitionHandler implements TextEntityDetectorInterface {
 			'confidence' => $detected['confidence'],
 		];
 	}//end storeDetectedEntity()
+
+	/**
+	 * Whether this finding is already stored on the file at this chunk and position.
+	 *
+	 * @param EntityRelation $relation The relation about to be stored.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
+	 */
+	private function alreadyStored(EntityRelation $relation): bool {
+		$fileId = $relation->getFileId();
+		if ($fileId === null) {
+			return false;
+		}
+
+		return $this->stores->entityRelationMapper->existsForFileAtPosition(
+			fileId: (int) $fileId,
+			mention: new EntityMention(
+				entityId: (int) $relation->getEntityId(),
+				chunkId: (int) $relation->getChunkId(),
+				positionStart: (int) $relation->getPositionStart(),
+				positionEnd: (int) $relation->getPositionEnd()
+			)
+		);
+	}//end alreadyStored()
 
 	/**
 	 * The capacity policy and the officials for one batch of detections, read once; null when no person was detected.
