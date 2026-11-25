@@ -65,7 +65,9 @@ use OCA\OpenRegister\Search\Service\Vectorization\VectorEmbeddingsInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategyInterface;
 use OCA\OpenRegister\Service\Vectorization\Strategies\ObjectVectorizationStrategyInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\StoredViewQueriesInterface;
+use OCA\OpenRegister\Kernel\Contracts\ViewNamingDocumentsInterface;
 use OCA\OpenRegister\Search\Service\StoredViewQueries;
+use OCA\OpenRegister\Search\Service\ViewNamingDocuments;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -108,6 +110,7 @@ final class SearchWiring {
 		ViewFinderInterface::class => ViewMapper::class,
 		ChunkVectorFactoryInterface::class => ChunkVectorFactory::class,
 		StoredViewQueriesInterface::class => StoredViewQueries::class,
+		ViewNamingDocumentsInterface::class => ViewNamingDocuments::class,
 		\OCA\OpenRegister\Kernel\Contracts\AdminQueryRunnerInterface::class => \OCA\OpenRegister\Service\GraphQL\AdminQueryRunner::class,
 	];
 

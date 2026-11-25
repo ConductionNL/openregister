@@ -56,6 +56,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiterInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleReachLedger;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
@@ -172,6 +173,9 @@ final class NotificationsWiring {
 	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md#requirement-the-record-reaches-a-person-not-only-a-log-req-rrn-03
 	 */
 	private static function buildRuleReachRecorder(ContainerInterface $container): RuleReachRecorder {
-		return new RuleReachRecorder(logger: $container->get(LoggerInterface::class));
+		return new RuleReachRecorder(
+			logger: $container->get(LoggerInterface::class),
+			ledger: $container->get(RuleReachLedger::class)
+		);
 	}//end buildRuleReachRecorder()
 }//end class

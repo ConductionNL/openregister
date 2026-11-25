@@ -18,6 +18,8 @@ namespace OCA\OpenRegister\Tests\Unit\Search;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ViewFinderInterface;
 use OCA\OpenRegister\Search\Db\ViewMapper;
+use OCA\OpenRegister\Kernel\Contracts\ViewNamingDocumentsInterface;
+use OCA\OpenRegister\Search\Service\ViewNamingDocuments;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Listener\UniqueHintDeclarationCheckListener;
 use OCA\OpenRegister\Search\Listener\AggregationDeclarationCheckListener;
@@ -87,9 +89,10 @@ final class SearchRegistrarTest extends TestCase {
 			$expected[] = ['alias' => $contract, 'target' => $service];
 		}
 
-		$this->assertCount(22, $expected);
+		$this->assertCount(23, $expected);
 		$this->assertSame(\OCA\OpenRegister\Service\GraphQL\AdminQueryRunner::class, SearchRegistrar::BINDINGS[\OCA\OpenRegister\Kernel\Contracts\AdminQueryRunnerInterface::class]);
 		$this->assertSame(ViewMapper::class, SearchRegistrar::BINDINGS[ViewFinderInterface::class]);
+		$this->assertSame(ViewNamingDocuments::class, SearchRegistrar::BINDINGS[ViewNamingDocumentsInterface::class]);
 		$this->assertSame(expected: $expected, actual: $context->aliases);
 	}//end testEveryInterfaceIsBoundToItsImplementation()
 

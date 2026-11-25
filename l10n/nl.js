@@ -4269,7 +4269,24 @@ OC.L10N.register(
     "Manage the grants on records the group does not own" : "Toekenningen beheren op records die niet van de groep zijn",
     "{group}, only for {schemas}" : "{group}, alleen voor {schemas}",
     "{group}, only for {schemas} in register {register}" : "{group}, alleen voor {schemas} in register {register}",
-    "{group}, only in register {register}" : "{group}, alleen in register {register}"
+    "{group}, only in register {register}" : "{group}, alleen in register {register}",
+    "Check by hand" : "Handmatig controleren",
+    "Check Dutch API design rules" : "Nederlandse API-ontwerpregels controleren",
+    "Deviation: {reason}" : "Afwijking: {reason}",
+    "Deviations" : "Afwijkingen",
+    "Dutch API design rules for {register}" : "Nederlandse API-ontwerpregels voor {register}",
+    "Not probed yet" : "Nog niet getest",
+    "Passed" : "Geslaagd",
+    "Probe responses" : "Antwoorden testen",
+    "Responses probed {moment}." : "Antwoorden getest op {moment}.",
+    "Ruleset {ruleset}, generated {moment}." : "Regelset {ruleset}, gegenereerd op {moment}.",
+    "The conformance report could not be read." : "Het conformiteitsrapport kon niet worden gelezen.",
+    "The responses could not be probed." : "De antwoorden konden niet worden getest.",
+    "Could not load which notification rules reached nobody." : "Kon niet laden welke meldingsregels niemand bereikten.",
+    "Every notification rule reached at least one recipient." : "Elke meldingsregel heeft ten minste één ontvanger bereikt.",
+    "Notification rules that reached nobody" : "Meldingsregels die niemand bereikten",
+    "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Regels waarvoor geen enkele ontvanger is gevonden, zodat er niets is verstuurd en niemand op de hoogte is gebracht. Voeg leden toe aan de groepen die ze noemen, of wijzig hun ontvangers.",
+    "Times reached nobody: {count}. Last on {date}." : "Aantal keer zonder ontvanger: {count}. Laatst op {date}."
 },
 "nplurals=2; plural=(n != 1);"
 );

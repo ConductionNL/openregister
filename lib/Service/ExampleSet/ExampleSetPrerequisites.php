@@ -246,19 +246,21 @@ class ExampleSetPrerequisites {
 	 * @param array<string, mixed> $record The record; gains the organisations this set created.
 	 *
 	 * @return array<int, string> Refusals.
+	 *
+	 * @spec openspec/changes/cast-members-keep-the-default-organisation/specs/example-sets/spec.md
 	 */
 	private function ensureOrganisations(array $plan, array &$record): array {
 		$refusals = [];
 		foreach ((array) ($plan['organisations'] ?? []) as $declared) {
 			$made = $this->instance->ensure(declared: $declared, made: (array) ($record['organisations'] ?? []));
-			if ($made['error'] !== '') {
-				$refusals[] = 'OpenRegister organisation "'.$declared['slug'].'" could not be created or completed: '.$made['error'];
-				continue;
-			}
-
+			// One created is recorded even when completing it failed, so remove still deletes it.
 			if ($made['created'] === true) {
 				$record['organisations'][] = $made['uuid'];
 				$this->record->write(set: (string) $plan['set'], record: $record);
+			}
+
+			if ($made['error'] !== '') {
+				$refusals[] = 'OpenRegister organisation "'.$declared['slug'].'" could not be created or completed: '.$made['error'];
 			}
 		}
 

@@ -77,6 +77,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode;
@@ -158,6 +159,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 					sendNotification: $mock(SendNotificationNode::class),
 					sendEmail: $mock(SendEmailNode::class),
 					sendTalkMessage: $mock(SendTalkMessageNode::class),
+					surveyInvite: $mock(\OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode::class),
 				)),
 				coordination: new CoordinationFlowNodes(humanTasks: new HumanTaskFlowNodes(
 					userTask: $mock(UserTaskNode::class),
@@ -177,6 +179,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 					triggerSchedule: $mock(TriggerScheduleNode::class),
 					triggerManual: $mock(TriggerManualNode::class),
 					triggerCalendar: $mock(TriggerCalendarNode::class),
+					triggerWebhook: $mock(TriggerWebhookNode::class),
 				),
 			),
 		);
@@ -203,7 +206,7 @@ class FlowNodeRegistrationListenerTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent(registry: $registry));
 
-		$this->assertCount(36, $registered, 'all thirty-six built-ins are registered');
+		$this->assertCount(38, $registered, 'all thirty-eight built-ins are registered');
 		$classes = array_map(static fn (IFlowNode $node): string => get_parent_class($node) ?: get_class($node), $registered);
 		foreach ([PortalTaskNode::class, UserTaskNode::class, AwaitSignalNode::class, CaseOpenNode::class, CaseAdvanceNode::class, ActionInputsNode::class, TransitionNode::class, LinkObjectNode::class] as $waiter) {
 			$this->assertContains($waiter, $classes, "$waiter is registered");

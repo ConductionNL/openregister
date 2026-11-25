@@ -315,6 +315,16 @@ Read them with `GET /api/automation-records`:
 
 The response is `{ "results": [...], "limit": n, "offset": n }`, newest first. An admin sees every record; anyone else sees only records of objects they may read. An app in the same server reads the same way through `OCA\OpenRegister\Service\AutomationRecordService::find()`, under the current user.
 
+A consuming app that only wants to know what its automations did reads the same records, under the same access rule, through `GET /api/automation-outcomes`. It takes `keyPrefix` (e.g. `aut-7f3c`), `kind` (`notification` or `lifecycle`), `since`, `until`, `limit` and `offset`, and answers each record in one shape for both kinds:
+
+```json
+{ "kind": "notification", "key": "aut-7f3c-reminder", "at": "2026-11-24T09:30:00+00:00",
+  "subject": { "register": "7", "schema": "12", "id": "Z-2026-0042" },
+  "outcome": "sent", "reason": null, "recipients": 2 }
+```
+
+A lifecycle action that succeeded answers `outcome: done`; `failed`, `partial` and `skipped` are answered as stored. `reason` is the skip's gate or the failure's own text, at most 200 characters. `recipients` (notifications only) is the largest number of people any one channel addressed, so a person reached by mail and in-app counts once. No message body, recipient address or per-channel breakdown is returned.
+
 Records are kept 90 days, set by app config `automation_record_retention_days`, and pruned daily. The dedup log keeps its own, shorter window.
 
 ### User Notification Preferences

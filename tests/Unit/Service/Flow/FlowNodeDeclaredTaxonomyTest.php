@@ -76,10 +76,12 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode
@@ -109,6 +111,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'TriggerObjectNode' => ['event', 'triggers'],
 			'TriggerManualNode' => ['event', 'triggers'],
 			'TriggerCalendarNode' => ['event', 'triggers'],
+			'TriggerWebhookNode' => ['event', 'triggers'],
 			'TriggerScheduleNode' => ['event', 'triggers'],
 
 			// People. `await-signal` is a receiveTask by kind and `human` by
@@ -155,6 +158,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'SendEmailNode' => ['sendTask', 'messaging'],
 			'SendNotificationNode' => ['sendTask', 'messaging'],
 			'SendTalkMessageNode' => ['sendTask', 'messaging'],
+			'SurveyInviteNode' => ['sendTask', 'messaging'],
 		];
 	}//end expected()
 
