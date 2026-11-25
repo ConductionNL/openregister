@@ -360,3 +360,4 @@
 2026-11-25T02:50:03Z dev=f7904f9dd7 prs=11064 Tests: 66023, Assertions: 233732, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
 2026-11-25T09:46:19Z dev=51f2f1f526 prs=11064 Tests: 66275, Assertions: 234759, Errors: 9, Failures: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24. front=skip
 2026-11-25T09:48:07Z dev=51f2f1f526 prs=10156,10300,10499 Tests: 66464, Assertions: 235639, Errors: 9, Failures: 1, Deprecations: 23, PHPUnit Deprecations: 1, Skipped: 24. front=red
+2026-11-25T10:06:42Z dev=c6eb5eb60b prs=10156,10523 Tests: 66486, Assertions: 235719, Errors: 9, Failures: 1, Deprecations: 27, PHPUnit Deprecations: 1, Skipped: 24. front=red
