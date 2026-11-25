@@ -10,7 +10,8 @@
 
 - [x] 1.2 `lib/Service/Object/RenderObject.php` `applyUpdateRightMarker`: add `manage` from `ObjectScopeResolver::admitsUnconditionally` with the caller's uid and groups, the object's owner and authorization, the same call `WatcherService::requireManage` makes (design D-6); `false` when the decision throws. Verify: `tests/Unit/Service/Object/RenderObjectCanMarkerTest.php` covers owner (true), admin (true), RBAC editor who is not owner (false, and `WatcherService::addWatcher` refuses the same caller), no extend (no `can`).
   - Built: `RenderObject::mayManage()` beside `update` in `setRightsMarker()`. The cases are in `tests/Unit/Service/Object/RenderObjectUpdateRightTest.php`, which already renders `@self.can` (owner, admin, owning group true; non-owning editor false and refused by `WatcherService::addWatcher`; a decision that cannot be taken reads false; no extend, no `can`).
-- [ ] 1.3 Newman: `GET .../objects/{register}/{schema}/{id}?_extend=@self.can` as owner and as a non-owning editor; assert `manage` true and false, and that `PUT .../watchers/{userId}` agrees for both.
+- [x] 1.3 Newman: `GET .../objects/{register}/{schema}/{id}?_extend=@self.can` as owner and as a non-owning editor; assert `manage` true and false, and that `PUT .../watchers/{userId}` agrees for both.
+  - 2026-11-25: `tests/integration/openregister-object-manage-marker.postman_collection.json`, 21 requests and 26 assertions green on a sandbox Nextcloud 34 on MariaDB: the owner reads `can: {update: true, manage: true}` and sets a watcher (200); an editor in the schema's update group reads `{update: true, manage: false}` and is refused the same PUT (403); without the extend `@self` carries no `can`.
 
 ## 2. Record page (`src/views/object/ObjectDetails.vue`)
 
