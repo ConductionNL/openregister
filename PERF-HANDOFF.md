@@ -36,7 +36,7 @@ Measured in the film take v3j (warm, pieter, :8076). The film cuts each wait to 
 - [ ] The whole ~2 MB stylesheet sits inside every app bundle (dossiq Cases spends ~1.3 s recalculating styles). Ship it once, not per app.
 
 ## openregister (via the OR fix lanes and integrator)
-- [ ] The Mail sidebar app chunk is 7.1 MB and costs ~243 ms on the inbox with the panel idle: lazy-load the panel body.
+- [ ] The Mail sidebar app chunk is 7.1 MB and costs ~243 ms on the inbox with the panel idle: lazy-load the panel body. NOTE 25 Nov 10:35Z (help-portaliq-2, looked, not built): on OR main the mail-sidebar entry already loads MailSidebar.vue + bootstrap + translations as one async chunk after the Mail page renders (loadSidebarApp()), so the 7.1 MB is fetched behind the page, not in front of it. The next lever is mounting the panel body only on expand, inside src/mail-sidebar/, which open PRs #11020 and #11021 rewrite (panel to the MlConnections boards): do it on top of those once they land, with a live inbox timing.
 - [ ] The global script adds 552 KB to every page because it carries all 37 nextcloud-vue locale files.
 
 ## openregister, later (security-sensitive or needs a decision: leave a note in the PR, do not merge without review)
