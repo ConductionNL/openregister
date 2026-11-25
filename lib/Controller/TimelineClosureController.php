@@ -25,7 +25,6 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
-use OCA\OpenRegister\Notifications\Controller\Support\ReadableObject;
 use OCA\OpenRegister\Notifications\Service\Timeline\EntryClosureService;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelinePermissionException;
 use OCA\OpenRegister\Notifications\Service\Timeline\TimelineValidationException;
@@ -168,7 +167,22 @@ class TimelineClosureController extends Controller {
 			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
 		}
 
-		return (new ReadableObject(objects: $this->objects))->resolve(path: $path);
+		try {
+			// Register first, then schema, then the object: setObject() throws for an unknown
+			// object and for one the caller may not read.
+			$this->objects->setRegister($path['register']);
+			$this->objects->setSchema($path['schema']);
+			$this->objects->setObject($path['id']);
+			$object = $this->objects->getObject();
+		} catch (Throwable) {
+			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		if (($object instanceof ObjectEntity) === false) {
+			return new JSONResponse(['message' => 'Object not found'], Http::STATUS_NOT_FOUND);
+		}
+
+		return $object;
 	}//end resolve()
 
 	/**
