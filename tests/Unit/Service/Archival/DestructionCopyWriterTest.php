@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Configuration\CopySealerInterface;
+use OCA\OpenRegister\Kernel\Contracts\CopySealerInterface;
 use OCA\OpenRegister\Service\Archival\DestructionCopyWriter;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

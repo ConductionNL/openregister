@@ -4879,8 +4879,8 @@ Service/Resolver/Exception/ResolverConfigException.php,,Service,,,,,Kernel
 Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
-Kernel/Contracts/Configuration/CopySealerInterface.php,,Kernel,,,,,Kernel
-Kernel/Contracts/Configuration/ExportKeySealersInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/CopySealerInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/ExportKeySealersInterface.php,,Kernel,,,,,Kernel
 Service/Exchange/ExportKeySealer.php,,Service,,,,,Configuration
 Service/Exchange/ExportKeySealers.php,,Service,,,,,Configuration
 Service/Archival/DestructionCopies.php,,Service,,,,,Compliance

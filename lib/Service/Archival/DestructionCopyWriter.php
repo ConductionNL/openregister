@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Configuration\CopySealerInterface;
+use OCA\OpenRegister\Kernel\Contracts\CopySealerInterface;
 use RuntimeException;
 use Throwable;
 

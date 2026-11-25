@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Contract
- * @package  OCA\OpenRegister\Kernel\Contracts\Configuration
+ * @package  OCA\OpenRegister\Kernel\Contracts
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Kernel\Contracts\Configuration;
+namespace OCA\OpenRegister\Kernel\Contracts;
 
 /**
  * Finds the export key an unattended copy is encrypted with.

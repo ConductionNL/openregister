@@ -31,7 +31,7 @@ use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Configuration\ExportKeySealersInterface;
+use OCA\OpenRegister\Kernel\Contracts\ExportKeySealersInterface;
 use OCA\OpenRegister\Service\Archival\DestructionCopies;
 use OCA\OpenRegister\Service\Archival\DestructionCopy;
 use OCA\OpenRegister\Service\Archival\DestructionCopyWriter;

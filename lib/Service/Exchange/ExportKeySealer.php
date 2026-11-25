@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Exchange;
 
-use OCA\OpenRegister\Kernel\Contracts\Configuration\CopySealerInterface;
+use OCA\OpenRegister\Kernel\Contracts\CopySealerInterface;
 use RuntimeException;
 
 /**

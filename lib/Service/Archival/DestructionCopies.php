@@ -24,8 +24,8 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use Closure;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Configuration\CopySealerInterface;
-use OCA\OpenRegister\Kernel\Contracts\Configuration\ExportKeySealersInterface;
+use OCA\OpenRegister\Kernel\Contracts\CopySealerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ExportKeySealersInterface;
 use RuntimeException;
 
 /**
