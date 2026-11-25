@@ -500,6 +500,7 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 	public const CLOSED_MODIFIER_VALUES = [
 		'matchType' => PropertySearchProfileInterface::MATCH_TYPES,
 		'inputControl' => PropertySearchProfileInterface::INPUT_CONTROLS,
+		PortalPropertyPolicy::KEY => PortalPropertyPolicy::LEVELS,
 	];
 
 	/**
@@ -532,6 +533,11 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'groupLabel' => ['value' => 'string', 'description' => 'The member whose value labels a collapsed row. Needs repeatingGroup.'],
 		'deprecated' => ['value' => 'boolean', 'description' => 'Mark the field as on its way out.'],
 		'facetable' => ['value' => 'boolean', 'description' => 'Offer the field as a filter in search.'],
+		PortalPropertyPolicy::KEY => [
+			'value' => 'string',
+			'description' => 'What a portal may do with the field on behalf of a resident: none (the default), read or edit. '
+				. 'Callers without a portal subject are not affected.',
+		],
 		'indexed' => [
 			'value' => 'boolean',
 			'description' => 'Keep a database index on the field, so filtering and sorting on it stays fast without making it a facet.',

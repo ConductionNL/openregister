@@ -109,6 +109,11 @@ final class MiddlewareWiring {
 		// clear HTTP 400 instead of a silent zero-row result or a bare 500.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware::class);
 
+		// A request on behalf of a portal subject (X-Portal-Subject) reads only
+		// the properties marked `portal: read|edit` and changes only `edit` ones
+		// (a-property-says-what-the-portal-may-do-with-it).
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\PortalPropertyMiddleware::class);
+
 		// A refused `_where` condition tree answers 400 with the node path of
 		// the refused node (list-query-condition-groups).
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ConditionGroupMiddleware::class);
