@@ -1682,6 +1682,9 @@ Notifications/Service/Webhook/CloudEventFormatterInterface.php,8,Notifications,N
 Notifications/Service/Webhook/WebhookInterceptionCache.php,31,Notifications,Notifications,Notifications/Service/Webhook/WebhookInterceptionCache.php,0,445,Integrations
 Push/PushEvents.php,7,Push,Platform,Platform/Push/PushEvents.php,0,,Notifications
 Reference/ObjectReferenceProvider.php,62,Reference,Platform,Platform/Reference/ObjectReferenceProvider.php,0,,Platform
+Reference/ObjectTeamResourceProvider.php,,Reference,,,,,Core
+Reference/TeamResourceDeclaration.php,,Reference,,,,,Core
+Reference/TeamResourcePage.php,,Reference,,,,,Core
 Repair/AbstractRegisterImportStep.php,46,Repair,Platform,Platform/Repair/AbstractRegisterImportStep.php,0,,Platform
 Repair/AddObjectStateColumns.php,55,Repair,Platform,Platform/Repair/AddObjectStateColumns.php,0,,Platform
 Repair/AdminUserIds.php,,Repair,,,,,Core
@@ -4847,6 +4850,7 @@ Service/Capability/ToolGrantCoordinates.php,,Service,,,0,,Integrations
 Kernel/Contracts/TaskSequenceInterface.php,,Kernel,,,,,Kernel
 Service/Rbac/AuditEntryRecorder.php,,Service,,,,,Core
 Listener/ReferenceCardDeclarationCheckListener.php,,Listener,,,,,Configuration
+Listener/TeamResourcesDeclarationCheckListener.php,,Listener,,,,,Core
 Listener/UniqueHintDeclarationCheckListener.php,,Listener,,,,,Search
 Service/Consumer/AccountConsumerLookup.php,,Service,,,,,Integrations
 Service/Rbac/AuditRowWriter.php,,Service,,,,,Compliance
