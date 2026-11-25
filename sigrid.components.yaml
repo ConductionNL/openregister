@@ -408,6 +408,7 @@ components:
       - ".*/lib/Service/Deferral/ListenerDeferralService[.]php"
       - ".*/lib/Service/Delegation/[^/]*"
       - ".*/lib/Service/Deletion/[^/]*"
+      - ".*/lib/Service/Export/SheetTitle[.]php"
       - ".*/lib/Service/Export/SpreadsheetCell[.]php"
       - ".*/lib/Service/ExternalLink/[^/]*"
       - ".*/lib/Service/Federation/CreatorPropertyFilter[.]php"
