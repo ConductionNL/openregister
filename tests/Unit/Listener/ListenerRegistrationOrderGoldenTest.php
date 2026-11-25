@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 265;
+	private const LISTENER_COUNT = 266;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -43,10 +43,12 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * one AnnotationNotificationListener registration on ObjectNoteAddedEvent (count 259 -> 260).
 	 * Then SlotOccupantAuditListener took the three person-link events in the Access slot
 	 * (grants-that-follow-a-slot-a-relation-or-a-reason, count 260 -> 263).
+	 * Then the Collaboration team resource provider registration (CoreListenerRegistrar::teamResources)
+	 * (count 263 -> 264).
 	 * Then two JourneyValidationListener registrations (ObjectCreatingEvent, ObjectUpdatingEvent)
-	 * (count 263 -> 265).
+	 * (count 264 -> 266).
 	 */
-	private const SEQUENCE_SHA256 = '985ef7623135903b98ceee831138a9a63d826bd2aaf04334cff661635e75d2d0';
+	private const SEQUENCE_SHA256 = 'cc1df74aab6715907c9e76c3a4dd1e19f1abced61b79db79e0d8b65f20c8ffb6';
 
 	/**
 	 * The registration calls, in call order, with every argument.
