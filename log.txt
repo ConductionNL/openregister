@@ -4998,3 +4998,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T13:11:56Z session-20261125T131156-3f30e20c b-opencatalogi merged #3053 (data-file-import-failure-alert archived) and #3057 (oai-pmh-endpoint 7.3/7.4 closed, archived, OAI-006/007 synced)
 2026-11-25T13:13:01Z precheck-20261125T131112-e54c7179 NORESULT tree eb3a99bc62: deps failed
 2026-11-25T13:13:08Z precheck-20261125T131122-70759a7e CONFLICT-DEV #10533 47070247
+2026-11-25T13:13:25Z precheck-20261125T131122-70759a7e NORESULT tree 9debfafbb9: deps failed
