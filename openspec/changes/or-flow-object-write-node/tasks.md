@@ -23,7 +23,14 @@
 - [x] 3.3 Unit-test templating and `onMissing`: dotted path, whole-value type preservation, literal, unresolved path omitted and never `""`, unresolved match value failing the item (REQ-OWN-006, REQ-OWN-011)
 - [x] 3.4 Unit-test composite matching — two pairs ANDed narrow to one, a single pair still works, ambiguity fails naming the count, zero matches insert for `upsert` / error for `update` / honour `onNoMatch` for `delete` (REQ-OWN-014, REQ-OWN-002)
 - [x] 3.5 Unit-test fail-closed with a null `triggeredBy` and cap-exceeded behaviour, asserting no write in the first case and no truncated success list in the second, under `onError: stop` / `continue` / `dead_letter` (REQ-OWN-004, REQ-OWN-015, REQ-OWN-008)
-- [ ] 3.6 Integration-test attribution and the delete guards live: the audit trail names the run owner for both save and delete, a permission-denied write fails as the API would, a delete is a soft-delete, and an append-only schema refuses one (REQ-OWN-003, REQ-OWN-012)
+- [x] 3.6 Integration-test attribution and the delete guards live: the audit trail names the run owner for both save and delete, a permission-denied write fails as the API would, a delete is a soft-delete, and an append-only schema refuses one (REQ-OWN-003, REQ-OWN-012)
+  - Run 2026-11-25 on main against a sandbox Nextcloud 34.0.6 on MariaDB. Flows run with `POST /api/flows/{id}/run` (`sync: true`): manual trigger, `openregister.set-fields`, `openregister.object-write`. The schema's rules name one group; `fowner` is in it, `fother` is not.
+    - attribution: an `upsert` run by `fowner` creates the record (`_owner` fowner, audit `create` by fowner), a second run updates it (audit `update` by fowner, diff `first` -> `second`), and the run reports `triggeredBy`/`runAs` fowner
+    - permission denied: the same `upsert` run by `fother` fails with `User 'fother' does not have permission to 'create' objects in schema ...`, the message `POST /api/objects` gives `fother` with a 403
+    - delete: a `delete` step with `confirmDelete: true`, authored by the administrator (`flow.node.object-delete` is seeded to `admin`; `fowner` saving it is refused with 403 naming the right) and run by `fowner`, soft-deletes: the row stays with `_deleted.deletedBy` fowner, audit `delete` by fowner, a read answers 404. A second run fails `A delete matched no object` (`onNoMatch` default `error`)
+    - the same delete run by `fother` finds nothing it may read and fails the same way; the record stays
+    - append-only: a `create` into an `appendOnly` schema succeeds, the `delete` fails `SCHEMA_APPEND_ONLY` and leaves the row, the message `DELETE /api/objects` answers with a 405
+    - an unresolved `match` value fails the item (`a match key is never omitted`) and writes nothing
 
 ## 4. Verification
 
