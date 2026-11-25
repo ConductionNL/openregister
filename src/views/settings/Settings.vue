@@ -58,6 +58,9 @@
 		<!-- Who sees who read a record: read entries on the audit trail -->
 		<ReadEventVisibilityConfiguration />
 
+		<!-- Action rights: who may author flows and put powerful steps in them -->
+		<ActionRights />
+
 		<!-- Audit hash-chain health: seal coverage + on-demand verification -->
 		<LogIntegrity />
 		<RegisterDescriptors />
@@ -99,6 +102,7 @@ import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
+import ActionRights from './sections/ActionRights.vue'
 import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import CacheManagement from './sections/CacheManagement.vue'
 import EdepotHostKeyConfiguration from './sections/EdepotHostKeyConfiguration.vue'
@@ -147,6 +151,7 @@ export default {
 		RegisterDescriptors,
 		RetentionConfiguration,
 		ReadEventVisibilityConfiguration,
+		ActionRights,
 		LogIntegrity,
 		PushNotificationsConfiguration,
 		NotificationRuleReach,

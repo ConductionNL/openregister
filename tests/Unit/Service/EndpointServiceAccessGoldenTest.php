@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLogMapper;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
@@ -38,6 +39,8 @@ use Psr\Log\LoggerInterface;
  * Pins the allowed and refused outcomes of EndpointService::testEndpoint.
  */
 final class EndpointServiceAccessGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * Every caller shape and the status code it gets.
@@ -112,6 +115,7 @@ final class EndpointServiceAccessGoldenTest extends TestCase {
 	private function service(?array $userGroups, ?EndpointLogMapper $mapper=null): EndpointService {
 		$session = $this->createMock(IUserSession::class);
 		$groups  = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		if ($userGroups === null) {
 			$session->method('getUser')->willReturn(null);
 		} else {

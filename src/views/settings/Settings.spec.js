@@ -41,6 +41,7 @@ jest.mock('./sections/PushNotificationsConfiguration.vue', () => ({ __esModule: 
 jest.mock('./sections/NotificationRuleReach.vue', () => ({ __esModule: true, default: { name: 'NotificationRuleReach', render: () => null } }))
 jest.mock('./sections/RbacConfiguration.vue', () => ({ __esModule: true, default: { name: 'RbacConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/ReadEventVisibilityConfiguration.vue', () => ({ __esModule: true, default: { name: 'ReadEventVisibilityConfiguration', props: ['pushStatus'], render: () => null } }))
+jest.mock('./sections/ActionRights.vue', () => ({ __esModule: true, default: { name: 'ActionRights', render: () => null } }))
 jest.mock('./sections/RegisterDescriptors.vue', () => ({ __esModule: true, default: { name: 'RegisterDescriptors', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/RetentionConfiguration.vue', () => ({ __esModule: true, default: { name: 'RetentionConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/SearchConfiguration.vue', () => ({ __esModule: true, default: { name: 'SearchConfiguration', props: ['pushStatus'], render: () => null } }))
