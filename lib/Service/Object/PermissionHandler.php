@@ -191,6 +191,25 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private array $finalRefusals = [];
 
 	/**
+	 * Per-request memo of the schema-or-register baseline authorization.
+	 *
+	 * A search resolves the same schema's authorization once per query part
+	 * (the SQL filter, the row predicate, the cross-organisation branch and
+	 * every single-row check), and each time the baseline was rebuilt: the
+	 * role expansion of the schema or register block. The baseline does not
+	 * depend on the caller, so it is read once per schema per request.
+	 *
+	 * Keyed on the schema id AND a hash of the schema's own authorization
+	 * block, so a schema whose block changes mid-request is read afresh.
+	 * Emptied by clearPermissionCache(), which the authorization cache
+	 * invalidation listener calls on every schema and register change.
+	 * A cascade that cannot be resolved throws before anything is stored.
+	 *
+	 * @var array<string, array|null>
+	 */
+	private array $baselineMemo = [];
+
+	/**
 	 * Whether the last evaluatePermission() refused through an explicit deny or an unresolvable block.
 	 *
 	 * @var bool
@@ -2291,6 +2310,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public function clearPermissionCache(): void {
 		$this->permissionCache = [];
 		$this->finalRefusals = [];
+		$this->baselineMemo = [];
 	}//end clearPermissionCache()
 
 	/**
@@ -3628,9 +3648,62 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *
 	 * @return array|null The baseline, or null when neither declares one
 	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
 	 */
 	private function baselineAuthorization(Schema $schema): ?array {
+		$key = $this->baselineCacheKey(schema: $schema);
+		if ($key === null) {
+			return $this->buildBaselineAuthorization(schema: $schema);
+		}
+
+		if (array_key_exists($key, $this->baselineMemo) === true) {
+			return $this->baselineMemo[$key];
+		}
+
+		// Stored only after a successful build: a throw leaves nothing behind.
+		$baseline = $this->buildBaselineAuthorization(schema: $schema);
+		$this->baselineMemo[$key] = $baseline;
+
+		return $baseline;
+	}//end baselineAuthorization()
+
+	/**
+	 * The memo key for a schema's baseline: its id and a hash of its own block.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return string|null The key, or null when the schema has no id or its block cannot be hashed.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
+	 */
+	private function baselineCacheKey(Schema $schema): ?string {
+		$schemaId = $schema->getId();
+		if ($schemaId === null) {
+			return null;
+		}
+
+		$encoded = json_encode($schema->getAuthorization());
+		if ($encoded === false) {
+			return null;
+		}
+
+		return $schemaId . '|' . md5($encoded);
+	}//end baselineCacheKey()
+
+	/**
+	 * Build the schema's expanded authorization, or its first register's when the schema has none.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return array|null The baseline, or null when neither declares one
+	 *
+	 * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function buildBaselineAuthorization(Schema $schema): ?array {
 		// A block holding only `onUndecidable` has no rules of its own: it still
 		// cascades to the register, and the posture answers when that fails.
 		$schemaAuthorization = $schema->getAuthorization();
@@ -3649,7 +3722,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		return $this->expandRoles(authorization: $registerAuth, schema: $schema);
-	}//end baselineAuthorization()
+	}//end buildBaselineAuthorization()
 
 	/**
 	 * Merge an object's expanded authorization over a baseline: replace per action, union deny.
