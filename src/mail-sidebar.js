@@ -12,19 +12,30 @@
 
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp } from 'vue'
-import MailSidebar from './mail-sidebar/MailSidebar.vue'
-import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
-import { registerLibraryTranslations } from './services/libraryTranslations.js'
 
-// Register nextcloud-vue's own catalogue before anything renders, so the
-// library's labels follow the reader's language on this page too.
-registerLibraryTranslations()
-
-// Bootstrap the integration registry on the mail-sidebar bundle so any
-// sub-component that uses useIntegrationRegistry() sees the populated
-// singleton even when the user lands directly on the Mail app.
-// Idempotent. See ADR-019.
-ensureIntegrationRegistry()
+/**
+ * Load the sidebar app: the component, the library translations and the
+ * integration registry bootstrap, as one chunk. This entry runs on every Mail
+ * page, so the app's code (several megabytes) is fetched after the page has
+ * rendered instead of in front of it.
+ *
+ * @return {Promise<object>} The MailSidebar component.
+ *
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-webpack-entry-point-for-mail-sidebar-bundle
+ */
+async function loadSidebarApp() {
+	const [{ default: MailSidebar }, { ensureIntegrationRegistry }, { registerLibraryTranslations }] = await Promise.all([
+		import(/* webpackChunkName: "mail-sidebar-app" */ './mail-sidebar/MailSidebar.vue'),
+		import(/* webpackChunkName: "mail-sidebar-app" */ './integrations/bootstrap.js'),
+		import(/* webpackChunkName: "mail-sidebar-app" */ './services/libraryTranslations.js'),
+	])
+	// The library's labels follow the reader's language, and any sub-component
+	// that uses useIntegrationRegistry() sees the populated singleton even when
+	// the user lands directly on the Mail app. Both are idempotent (ADR-019).
+	registerLibraryTranslations()
+	ensureIntegrationRegistry()
+	return MailSidebar
+}
 
 const MOUNT_RETRY_INTERVAL = 1000
 const MOUNT_MAX_RETRIES = 30
@@ -83,19 +94,20 @@ function mountSidebar() {
  * Create the sidebar's host on document.body and mount the app into it; a
  * failed mount is logged.
  *
- * @return {object|undefined} The app, when it mounted.
+ * @return {Promise<object|undefined>} The app, when it mounted.
  */
-function mountSidebarApp() {
+async function mountSidebarApp() {
+	// Claim the host first, so a second tryMount() during the load sees it.
+	const host = document.createElement('div')
+	host.id = SIDEBAR_ROOT_ID
+	document.body.appendChild(host)
 	try {
+		const MailSidebar = await loadSidebarApp()
 		// Vue 2 allowed `$mount()` with no argument — it rendered off-DOM
 		// and exposed the result as `app.$el`, which the caller then
 		// appended. Vue 3's `mount()` REQUIRES a host element and returns
 		// the root component instance, not the element, so create the host
 		// ourselves, give it the id, attach it, and mount into it.
-		const host = document.createElement('div')
-		host.id = SIDEBAR_ROOT_ID
-		document.body.appendChild(host)
-
 		const app = createApp(MailSidebar)
 		// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
 		// reached every instance on the page. Vue 3's `app.mixin()` is
@@ -104,6 +116,7 @@ function mountSidebarApp() {
 		app.mount(host)
 		return app
 	} catch (err) {
+		host.remove()
 		console.error('[OpenRegister] Mail sidebar mount failed:', err)
 	}
 }
