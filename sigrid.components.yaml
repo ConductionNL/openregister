@@ -2588,6 +2588,7 @@ components:
       - ".*/lib/Service/File/ObjectFilesArchive[.]php"
       - ".*/lib/Service/File/OcrWordLocator[.]php"
       - ".*/lib/Service/File/OfficeMediaBurner[.]php"
+      - ".*/lib/Service/File/PublishedDigestReader[.]php"
       - ".*/lib/Service/File/PublishedDigestService[.]php"
       - ".*/lib/Service/File/ReadFileHandler[.]php"
       - ".*/lib/Service/File/ReadFileSources[.]php"

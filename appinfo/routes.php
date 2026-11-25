@@ -1678,6 +1678,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
+        // Whether a published file still matches its sealed digest (published-file-digest REQ-PFD-002).
+        ['name' => 'files#verifyDigest', 'url' => '/api/files/{fileId}/digest/verify', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 		['name' => 'files#office', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/office', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#officePage', 'url' => '/office/{register}/{schema}/{id}/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		// An object's folder for the files browser, subfolders included, through
