@@ -9,7 +9,7 @@
 
 const mockRegistry = { name: 'shared' }
 const mockCalls = []
-jest.mock('@conduction/nextcloud-vue', () => ({
+jest.mock('./library.js', () => ({
 	getSharedRegistry: (win) => {
 		mockCalls.push(['shared', win === globalThis.window])
 		return mockRegistry

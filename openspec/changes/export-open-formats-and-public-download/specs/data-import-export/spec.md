@@ -12,7 +12,6 @@
 - **WHEN** a signed-in data steward opens the export dialog on the register page, chooses TSV and exports with that filter
 - **THEN** the browser saves `{register}_meldingen_{datetime}.tsv` with a header row and 45 data rows
 - **AND** the record with the tab reads back as one row with the tab inside its quoted value
-- @e2e exclude {specified only; task 4.2 adds tests/e2e/ci/public-export.spec.ts}
 
 ### Requirement: The public downloads what a schema grants it for export
 
@@ -25,14 +24,12 @@ The export route SHALL be reachable without a session. An anonymous caller SHALL
 - **THEN** the response is 200 with `application/xml` holding only the public `milieu` decisions
 - **AND** no property restricted to a group appears as an element
 - **AND** the audit trail holds an export row with actor `anonymous`, format `xml` and the row count
-- @e2e exclude {specified only; task 4.2 adds tests/e2e/ci/public-export.spec.ts}
 
 #### Scenario: a schema that is readable but not exportable stays in place
 
 - **GIVEN** schema `besluit` grants `read` to `public` and declares `export` as `["redactie"]`
 - **WHEN** an anonymous visitor calls `GET /api/objects/publicaties/besluit/export?format=csv`
 - **THEN** the response is 401 with rule `not-public` and no file
-- @e2e exclude {specified only; task 4.2 adds tests/e2e/ci/public-export.spec.ts}
 
 #### Scenario: a rendered document is not an open format
 

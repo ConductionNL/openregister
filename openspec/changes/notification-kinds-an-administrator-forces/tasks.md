@@ -60,5 +60,6 @@
       rather than holding only in the policy's own test. The per-recipient
       read (3.1): `RecipientKindAnswerTest.php` (6) and
       `NotificationRecipientAnswerControllerTest.php` (6).
-- [ ] 4.2 A Newman request for the per-recipient read.
+- [x] 4.2 A Newman request for the per-recipient read.
+      `tests/integration/openregister-notification-recipient-answer.postman_collection.json`, run on a sandbox Nextcloud 34 on MariaDB (2026-11-25): a forced kind answers the channel, `forced`, its reason and the layer `administrator-forced`; an unforced kind answers `forced: false` (control); an undeclared kind and an unknown user 404, a missing kind 422, a non-administrator 403. 10 requests, 12 assertions, 0 failed.
 - [x] 4.3 Deduplication check (ADR-012) recorded in the PR body.
