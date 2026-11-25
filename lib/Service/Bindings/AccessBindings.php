@@ -21,7 +21,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Bindings;
 
 use OCA\OpenRegister\Kernel\Contracts\ConsumerGrantsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectRoleOccupantsInterface;
 use OCA\OpenRegister\Service\Consumer\ConsumerGrantListing;
+use OCA\OpenRegister\Service\ContactLinkRoleOccupants;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHost;
 use OCA\OpenRegister\Service\Credential\OAuth2InstanceHostInterface;
 
@@ -45,5 +47,6 @@ final class AccessBindings {
 	public const BINDINGS = [
 		OAuth2InstanceHostInterface::class => OAuth2InstanceHost::class,
 		ConsumerGrantsInterface::class => ConsumerGrantListing::class,
+		ObjectRoleOccupantsInterface::class => ContactLinkRoleOccupants::class,
 	];
 }//end class

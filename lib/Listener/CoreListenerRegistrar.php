@@ -28,6 +28,9 @@ use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Event\PersonLinkedEvent;
+use OCA\OpenRegister\Event\PersonLinkUpdatedEvent;
+use OCA\OpenRegister\Event\PersonUnlinkedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
@@ -113,6 +116,22 @@ final class CoreListenerRegistrar {
 	public static function platformShareRouting(IRegistrationContext $context): void {
 		$context->registerEventListener(BeforeShareCreatedEvent::class, PlatformShareRoutingListener::class);
 	}//end platformShareRouting()
+
+	/**
+	 * A grant to a slot follows whoever holds the role, so the change of
+	 * occupant, not the grant, is what goes on the trail (REQ-GSR-001).
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function slotOccupants(IRegistrationContext $context): void {
+		foreach ([PersonLinkedEvent::class, PersonLinkUpdatedEvent::class, PersonUnlinkedEvent::class] as $linkEvent) {
+			$context->registerEventListener($linkEvent, SlotOccupantAuditListener::class);
+		}
+	}//end slotOccupants()
 
 	/**
 	 * The generated identifier: issued on create, frozen on update.

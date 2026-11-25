@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 261;
+	private const LISTENER_COUNT = 264;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -40,10 +40,12 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * share provider then appended one PlatformShareRoutingListener registration on
 	 * BeforeShareCreatedEvent in AccessListenerRegistrar. Then the ServiceAccountLoginListener
 	 * (PostLoginEvent) was added (count 258 -> 259). The new-notes notification then added
-	 * one AnnotationNotificationListener registration on ObjectNoteAddedEvent (count 259 -> 260), and one PersonalTokenGrantRevokedListener
-	 * registration on TokenInvalidatedEvent in AccessListenerRegistrar (scoped-api-tokens, 260 -> 261).
+	 * one AnnotationNotificationListener registration on ObjectNoteAddedEvent (count 259 -> 260).
+	 * Then SlotOccupantAuditListener took the three person-link events in the Access slot
+	 * (grants-that-follow-a-slot-a-relation-or-a-reason, count 260 -> 263). Then one PersonalTokenGrantRevokedListener
+	 * registration on TokenInvalidatedEvent in AccessListenerRegistrar (scoped-api-tokens, 263 -> 264).
 	 */
-	private const SEQUENCE_SHA256 = 'caede1d6560a27464a26c6be3adeab3b11d0872267265d14e4ed82afd9df3af8';
+	private const SEQUENCE_SHA256 = 'f6776dc509ef795b183704e0a8a46e6a26efb4b2079d9cca68d3b950fa341701';
 
 	/**
 	 * The registration calls, in call order, with every argument.

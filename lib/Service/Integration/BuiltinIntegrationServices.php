@@ -170,6 +170,7 @@ final class BuiltinIntegrationServices {
 			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapperInterface::class,
 			'container'       => self::CONTAINER,
 			'runtime'         => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+			'cacheFactory'    => \OCP\ICacheFactory::class,
 		],
 		// @spec openspec/specs/integration-registry/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\KvkProvider::class => [

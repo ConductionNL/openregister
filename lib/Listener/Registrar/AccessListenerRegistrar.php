@@ -62,5 +62,9 @@ final class AccessListenerRegistrar {
 		// folder passes the schema's opt-in and the permission mapping: a Core
 		// listener, registered through Core's slot at this position.
 		\OCA\OpenRegister\Listener\CoreListenerRegistrar::platformShareRouting(context: $context);
+
+		// A grant to a slot follows whoever holds the role: a Core listener,
+		// registered through Core's slot at this position.
+		\OCA\OpenRegister\Listener\CoreListenerRegistrar::slotOccupants(context: $context);
 	}//end register()
 }//end class
