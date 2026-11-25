@@ -88,6 +88,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\CodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
@@ -187,6 +189,7 @@ final class FlowWiring {
 		CodeRunnerClientInterface::class => CodeRunnerClient::class,
 		TagObjectNodeInterface::class => TagObjectNode::class,
 		AuditTrailNodeInterface::class => AuditTrailNode::class,
+		ExtendInputNodeInterface::class => ExtendInputNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
 		CalendarRecomputeInterface::class => CalendarRecompute::class,
 		FacetWeekNumberingInterface::class => FacetWeekNumbering::class,
@@ -210,6 +213,7 @@ final class FlowWiring {
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
 		SaveBoundaryInterface::class => AutoTransitionPass::class,
 		ElevationAttributionInterface::class => ObjectActionElevationAttribution::class,
+		\OCA\OpenRegister\Kernel\Contracts\BusinessTimeInterface::class => \OCA\OpenRegister\Service\Flow\Timer\BusinessTime::class,
 		\OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface::class => \OCA\OpenRegister\Service\Rules\SaveWarnings::class,
 		\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
 		// The published read of the tasks on an object (lib/Contract), for consuming apps.

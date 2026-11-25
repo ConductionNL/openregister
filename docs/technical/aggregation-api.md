@@ -33,6 +33,7 @@ GET /api/objects/aggregations/{register}/{schema}/timeseries
 | `interval` | no | One of `MINUTE`, `HOUR`, `DAY`, `WEEK`, `MONTH`, `QUARTER`, `YEAR`. When set, the field is time-bucketed via Postgres `date_trunc()`. When absent, the field is grouped categorically. |
 | `from` | required when `interval` set | ISO-8601 lower bound, inclusive. |
 | `to` | required when `interval` set | ISO-8601 upper bound, exclusive. |
+| `dateField` | no | Without `interval`: a declared `date` or `date-time` property (or `_created`, `_updated`, `_deleted_at`). Only objects whose `dateField` lies in `[from, to)` are counted, and `from`/`to` become required. An object with no value in `dateField` lies in no period. Refused together with `interval` (the period then applies to `field`), and refused when `filter` already matches or bounds the same field. Without `dateField`, `from`/`to` have no effect on a categorical count. |
 | `metric` | no | One of `count`, `sum`, `avg`, `min`, `max`. Default `count`. |
 | `metricField` | required when `metric != count` | Field to aggregate over. MUST be a declared schema property. |
 | `filter[...]` | no | Reuses the existing object-collection filter vocabulary (`filter[status]=active`, `filter[duration][gte]=10`). |
@@ -62,6 +63,23 @@ Bucketing by `MINUTE` or `HOUR` requires the field's JSON-Schema `format` to be 
 ### Empty buckets
 
 Buckets with zero rows are **omitted** from the response — `GROUP BY` does not emit empty groups. The client fills empties at render time. See [issue #1607](https://github.com/ConductionNL/openregister/issues/1607) for cumulative / windowed series.
+
+### The report contract
+
+A report that ships with an app (a versioned report definition, such as launchpad's report library) may rely on this subset of the endpoint, and on nothing else of it:
+
+- `metric=count`, optionally grouped by one `field`, without `interval`.
+- `filter[...]` in the object-collection vocabulary.
+- An optional period: `dateField` with `from` (inclusive) and `to` (exclusive).
+- The objects with no value for the group field are **one group with key `null`**, counted, never dropped. An empty string is a value and stays its own group.
+- The answer is `{ groups: [{ key, value }], backend, cached }`, with `value` an integer.
+- The caller's `list` RBAC verdict and the active organisation's tenancy apply before anything is counted, exactly as for `findAll()`.
+
+The same subset is reachable in-process through `AggregationRunner::runAdhocByRef()` with an `AggregationQuery` built by `TimeseriesRequestValidator::validate()`.
+
+`tests/Unit/Service/Aggregation/AggregationReportContractTest.php` pins it on the native and the PHP path. A change to this request or response shape is a breaking change and follows openregister's deprecation rule: the old spelling keeps working through the deprecation period.
+
+Everything else (`sum`/`avg`/`min`/`max`, multi-field grouping, interval buckets, `cumulative`) stays available, but a shipped report should not build on it. It carries no such promise.
 
 ### Status codes
 

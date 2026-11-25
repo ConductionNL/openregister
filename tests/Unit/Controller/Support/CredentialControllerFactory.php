@@ -30,6 +30,7 @@ final class CredentialControllerFactory {
 	 * @param SharePrincipalDeriver $shareDeriver Constructor argument.
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param ?IL10N $l10n Constructor argument.
+	 * @param ?DeclaredProviderResolver $declared Admission of app-declared providers; null admits none.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -46,6 +47,7 @@ final class CredentialControllerFactory {
 		\OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver $shareDeriver,
 		\Psr\Log\LoggerInterface $logger,
 		?\OCP\IL10N $l10n =null,
+		?\OCA\OpenRegister\Service\Credential\DeclaredProviderResolver $declared = null,
 	): array {
 		return [
 			$request,
@@ -60,6 +62,7 @@ final class CredentialControllerFactory {
 					credentialStore: $credentialStore,
 					catalogue: $catalogue,
 					broker: $broker,
+					declared: $declared,
 				),
 				tokens: new \OCA\OpenRegister\Controller\Support\CredentialTokens(
 					tokenService: $tokenService,
