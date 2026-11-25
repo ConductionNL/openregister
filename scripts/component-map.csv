@@ -4906,6 +4906,11 @@ Notifications/Service/Webhook/WebhookInterceptionCacheInterface.php,,Notificatio
 Service/Interaction/FavouriteServiceInterface.php,,Service,,,,,Notifications
 Notifications/Controller/Support/ReadableObject.php,,Notifications,,,,,Core
 Db/SchemaMapper/SchemaRowCache.php,,Db,,,,,Core
+Capabilities/SearchCapability.php,,Capabilities,,,,,Platform
+Service/Search/TextSearchConfiguration.php,,Service,,,,,Kernel
+Controller/Settings/SearchSettingsController.php,,Controller,,,,,Configuration
+Migration/Version1Date20261121150000.php,,Migration,,,,,Platform
+Service/Search/SearchSnippetAttacher.php,,Service,,,,,Core
 Db/MagicMapper/MagicSharePrincipals.php,,Db,,,,,Core
 Service/Schemas/SchemaRefInRegister.php,133,Service,Service,Service/Schemas/SchemaRefInRegister.php,0,,Kernel
 Service/Schemas/RowSchemaRefsInRegister.php,116,Service,Service,Service/Schemas/RowSchemaRefsInRegister.php,0,,Core
