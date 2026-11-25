@@ -5142,3 +5142,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T19:17:24Z precheck-20261125T191529-85ecfd26 NORESULT tree b92296bd3f: deps failed
 2026-11-25T19:17:40Z precheck-20261125T185844-6c871af6 GREEN tree d623cd94fb on dev 0e1d060912 prs 1 front=skip: Tests: 67224, Assertions: 238818, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
 2026-11-25T19:18:37Z precheck-20261125T183212-36886908 GREEN tree a575584269 on dev 0e1d060912 prs 1 front=skip: Tests: 67221, Assertions: 238812, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
+2026-11-25T19:23:11Z precheck-20261125T185844-6c871af6 AUTOPARK openregister#11252 b5c2cdc2 sbom: package-lock.json changed without sbom.cdx.json (tree f077db0531)
