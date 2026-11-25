@@ -918,6 +918,7 @@ components:
       - ".*/lib/Service/Rbac/AuthorizationDenyValidator[.]php"
       - ".*/lib/Service/Rbac/AuthorizationDenyValidatorInterface[.]php"
       - ".*/lib/Service/Rbac/AuthorizationEdit[.]php"
+      - ".*/lib/Service/Rbac/AuthorizationRuleEvaluator[.]php"
       - ".*/lib/Service/Rbac/BreakGlassDeclaration[.]php"
       - ".*/lib/Service/Rbac/BreakGlassPolicy[.]php"
       - ".*/lib/Service/Rbac/BreakGlassService[.]php"
