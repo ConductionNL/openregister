@@ -71,7 +71,17 @@
       `QualityAuditServiceTest`, `QualityAuditTest`, `QualityAuditControllerTest`.)
 - [x] 4.3 Unit tests for the run record, the retry lineage and the prune that keeps the header.
       `ImportRunRecordTest`, `ImportFailedRowsCsvTest`, `ImportRunRetentionTest`, `ImportRunControllerTest`.
-- [ ] 4.4 An e2e over an import run read back after it finished, with a failed row and its reason.
+- [x] 4.4 An e2e over an import run read back after it finished, with a failed row and its reason.
+      `tests/integration/openregister-import-run-readback.postman_collection.json` (domain
+      `import-run-readback` in `tests/newman/run-all.sh`; the API is the contract, so Newman rather than
+      Playwright, gate-19). A three-row CSV into a schema requiring `name`: one row written, one refused
+      for the missing name, one for a text `count`. Read back after the commit: file, fingerprint, policy,
+      actor and counts; the written row naming its object; the refused rows with their reasons and
+      submitted values; `/failed` as CSV led by `_row,_reason`; the created object's audit entry with
+      `cause: import` and the run's uuid; a retry with the corrected rows as a new run naming the original,
+      which stays unchanged. 2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16: 13 requests, 31 assertions,
+      0 failed. A refused row reads `outcome: null` (outcome is what a commit did to a row it attempted);
+      its `decision: refuse` and `reason` say what happened.
 - [x] 4.5 Deduplication check (ADR-012) recorded in the PR body.
       Section 1 in its PR and below; sections 2 and 3: the scorer and evaluator reused, the import preview
       reused as the run record, the cause frame reused for the run identity, no second store or evaluator.

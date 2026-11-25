@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Service\File;
 
+use OCA\OpenRegister\Files\Service\File\Sanitizer\MetadataMask;
 use OCP\Files\File;
 
 /**
@@ -54,6 +55,13 @@ final class DocumentReplacement {
 	 * @var string|null
 	 */
 	private ?string $sanitizedSourcePath = null;
+
+	/**
+	 * The anonymisation run's metadata mask, or null for a plain replacement.
+	 *
+	 * @var MetadataMask|null
+	 */
+	private ?MetadataMask $metadataMask = null;
 
 	/**
 	 * Constructor.
@@ -105,6 +113,32 @@ final class DocumentReplacement {
 		return $copy;
 
 	}//end withSanitizedSource()
+
+	/**
+	 * A copy that masks the document's descriptive metadata with this mask.
+	 *
+	 * @param MetadataMask $mask The anonymisation run's substitution map.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function withMetadataMask(MetadataMask $mask): self {
+		$copy = clone $this;
+		$copy->metadataMask = $mask;
+		return $copy;
+	}//end withMetadataMask()
+
+	/**
+	 * The metadata mask of an anonymisation run, or null.
+	 *
+	 * @return MetadataMask|null
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function metadataMask(): ?MetadataMask {
+		return $this->metadataMask;
+	}//end metadataMask()
 
 	/**
 	 * Whether residual entity text in PDF output is validated strictly.

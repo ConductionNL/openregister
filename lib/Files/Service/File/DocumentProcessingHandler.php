@@ -29,8 +29,12 @@ use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\Pdf\RedactionPlan;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\MetadataMask;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
+use OCA\OpenRegister\Service\Anonymisation\RedactionIrreversibilityVerifier;
+use OCA\OpenRegister\Service\Anonymisation\RedactionOutputMode;
+use OCA\OpenRegister\Service\Anonymisation\RedactionVerdictStore;
 use OCA\OpenRegister\Service\File\ImageRedactionService;
 use OCA\OpenRegister\Service\File\ImageRegionNotBurnableException;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
@@ -155,6 +159,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	private array $stepsRan = [];
 
 	/**
+	 * The public form of the last written copy's irreversibility verdict.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	private ?array $lastVerification = null;
+
+	/**
 	 * Constructor for DocumentProcessingHandler.
 	 *
 	 * @param DocumentProcessingPlatform $platform  Root folder, user session and the optional acting-user localisation.
@@ -209,6 +220,18 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	public function getLastStructurePreservation(): ?StructurePreservation {
 		return $this->lastStructurePreservation;
 	}//end getLastStructurePreservation()
+
+	/**
+	 * The irreversibility verdict of the copy the last anonymize() call wrote.
+	 *
+	 * @return array<string, mixed>|null The public form, or null when the last run verified no copy
+	 *                                   (a standalone image, or no run yet).
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	public function getLastVerification(): ?array {
+		return $this->lastVerification;
+	}//end getLastVerification()
 
 	/**
 	 * Per-entity placeholder map from the most recent anonymize() call.
@@ -406,21 +429,24 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		// Entity anonymisation runs strict: residual entity text is still
 		// written and reported back, but a PDF output that cannot be re-read
 		// for that check is refused rather than written as '_anonymized'.
-		$anonymizedFile = $this->replaceWords(
-			request: new WordReplacementRequest(
-				node: $node,
+		// Title, subject, keywords, description and text custom properties are
+		// masked with the same map as the body, not blanked (REQ-RRS-004).
+		$metadataMask   = new MetadataMask(substitutions: $replacements);
+		$anonymizedFile = $this->replaceDocument(
+			job: (new DocumentReplacement(
+				node: $this->requireFile(node: $node),
 				replacements: $replacements,
-				outputName: $anonymizedFileName,
-				strict: true,
-				preserveStructure: $request->options->preserveStructure
-			)
+				outputName: $anonymizedFileName
+			))->withPdfOptions(strict: true, preserveStructure: $request->options->preserveStructure)
+				->withMetadataMask(mask: $metadataMask)
 		);
 		$this->markStepRan(step: PipelineSteps::ANONYMISER);
 		if (($node instanceof File) === true
 			&& $this->redaction->sanitizer->isSanitizable($node->getMimeType()) === true
 		) {
 			$anonymizedFile = $this->anonymizeSanitizableDocument(
-				job: new DocumentReplacement(node: $node, replacements: $replacements, outputName: $anonymizedFileName)
+				job: (new DocumentReplacement(node: $node, replacements: $replacements, outputName: $anonymizedFileName))
+					->withMetadataMask(mask: $metadataMask)
 			);
 		}
 
@@ -431,6 +457,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		) {
 			$this->burnEmbeddedImages(source: $node, output: $anonymizedFile);
 		}
+
+		// THE VERDICT IS TAKEN ON THE BYTES ACTUALLY WRITTEN, AFTER EVERY
+		// OTHER STEP, so nothing a later step adds escapes it (REQ-RRS-001).
+		$this->verifyWrittenCopy(output: $anonymizedFile, replacements: $replacements);
 
 		// Flip the source's EntityRelation rows to `anonymized = 1` so the
 		// anonymised state is queryable downstream. Skip-aware (rows where
@@ -458,6 +488,36 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 
 		return $anonymizedFile;
 	}//end anonymize()
+
+	/**
+	 * Verify the written copy against every redacted value and keep the verdict.
+	 *
+	 * The verdict is kept on the copy's metadata, where the publish guard
+	 * reads it, and on this run's log row: the verdict, the routes and
+	 * counts, never a value.
+	 *
+	 * @param File                  $output       The copy as written.
+	 * @param array<string, string> $replacements Needle to placeholder: the values that must not be recoverable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	private function verifyWrittenCopy(File $output, array $replacements): void {
+		try {
+			$bytes = (string)$output->getContent();
+		} catch (Throwable $ignored) {
+			$bytes = '';
+		}
+
+		$result = (new RedactionIrreversibilityVerifier())->verify(
+			bytes: $bytes,
+			redactedValues: array_map('strval', array_keys($replacements)),
+			outputMode: RedactionOutputMode::forFileName(fileName: (string)$output->getName())
+		);
+		$this->lastVerification = RedactionVerdictStore::publicForm(verification: $result);
+		$this->redaction->verdicts?->record(fileId: (int)$output->getId(), verification: $result);
+	}//end verifyWrittenCopy()
 
 	/**
 	 * Anonymise a standalone image: burn its decided regions into the pixels.
@@ -583,6 +643,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		$this->lastPlaceholderMap = [];
 		$this->lastStructurePreservation = null;
 		$this->stepsRan = [];
+		$this->lastVerification = null;
 	}//end resetRunState()
 
 	/**
@@ -980,6 +1041,13 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			}
 		}
 
+		if ($this->lastVerification !== null) {
+			$verification = json_encode($this->lastVerification);
+			if (is_string($verification) === true) {
+				$entity->setVerification($verification);
+			}
+		}
+
 		$entity->setCreated(new DateTime());
 
 		try {
@@ -1101,7 +1169,7 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 */
 	private function anonymizeSanitizableDocument(DocumentReplacement $job): File {
 		try {
-			$result = $this->redaction->sanitizer->sanitize($job->node->getId());
+			$result = $this->redaction->sanitizer->sanitize($job->node->getId(), $job->metadataMask());
 		} catch (SanitizationException $e) {
 			if ($e->getReason() === SanitizationException::REASON_ENCRYPTED) {
 				// Caller-correctable: cannot anonymise an encrypted document.
@@ -1141,12 +1209,36 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	 * @return string The step id.
 	 */
 	private function sanitiserStep(Node $node): string {
-		if ($this->logMimeType(node: $node) === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-			return PipelineSteps::DOCX_SANITISER;
+		return match ($this->logMimeType(node: $node)) {
+			'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => PipelineSteps::DOCX_SANITISER,
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => PipelineSteps::XLSX_SANITISER,
+			'application/vnd.openxmlformats-officedocument.presentationml.presentation' => PipelineSteps::PPTX_SANITISER,
+			default => PipelineSteps::ODT_SANITISER,
+		};
+	}//end sanitiserStep()
+
+	/**
+	 * The text-bearing parts of an Office container, in package order.
+	 *
+	 * @param ZipArchive $zip The open container.
+	 *
+	 * @return list<string> The part names.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-3.2
+	 */
+	private static function containerTextParts(ZipArchive $zip): array {
+		$parts = [];
+		for ($index = 0; $index < $zip->numFiles; $index++) {
+			$name = (string)$zip->getNameIndex($index);
+			if (in_array($name, ['content.xml', 'styles.xml', 'xl/sharedStrings.xml'], true) === true
+				|| preg_match('#^(xl/worksheets/sheet|ppt/slides/slide)[0-9]+\.xml$#', $name) === 1
+			) {
+				$parts[] = $name;
+			}
 		}
 
-		return PipelineSteps::ODT_SANITISER;
-	}//end sanitiserStep()
+		return $parts;
+	}//end containerTextParts()
 
 	/**
 	 * Replace words inside a sanitised Office ZIP container's text parts.
@@ -1172,9 +1264,10 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 		}
 
 		// ODT text content lives in content.xml; styles/headers may also carry
-		// visible text. Apply replacements to the text-bearing parts.
-		$textParts = ['content.xml', 'styles.xml'];
-		foreach ($textParts as $part) {
+		// visible text. A spreadsheet's text is in its shared strings and, as
+		// inline strings, in its sheets; a presentation's is in its slides.
+		// Apply replacements to the text-bearing parts.
+		foreach (self::containerTextParts(zip: $zip) as $part) {
 			$xml = $zip->getFromName($part);
 			if ($xml === false) {
 				continue;
@@ -1424,8 +1517,9 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			);
 		}
 
-		$replacedBytes = $this->sanitizePdfMetadata(replacer: $replacer, pdfBytes: $redaction->bytes);
+		$replacedBytes = $this->sanitizePdfMetadata(replacer: $replacer, pdfBytes: $redaction->bytes, mask: $job->metadataMask());
 		$this->markStepRan(step: PipelineSteps::PDF_METADATA_SANITISER);
+		$this->reportUnmaskablePdfFields(mask: $job->metadataMask());
 
 		$this->removeExistingOutput(job: $job);
 		$newFile = $job->node->getParent()->newFile(path: $job->outputName, content: $replacedBytes);
@@ -1549,18 +1643,20 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 	}//end residualEntityRecords()
 
 	/**
-	 * Strip /Info and XMP metadata from the replaced PDF bytes.
+	 * Strip /Info and XMP metadata from the replaced PDF bytes; an
+	 * anonymisation run masks the descriptive /Info fields instead.
 	 *
-	 * @param PdfTextReplacer $replacer The replacer of this run.
-	 * @param string $pdfBytes The replaced PDF bytes.
+	 * @param PdfTextReplacer   $replacer The replacer of this run.
+	 * @param string            $pdfBytes The replaced PDF bytes.
+	 * @param MetadataMask|null $mask     The anonymisation run's substitution map, or null.
 	 *
 	 * @throws PdfAnonymisationException When sanitisation fails.
 	 *
 	 * @return string The sanitised bytes.
 	 */
-	private function sanitizePdfMetadata(PdfTextReplacer $replacer, string $pdfBytes): string {
+	private function sanitizePdfMetadata(PdfTextReplacer $replacer, string $pdfBytes, ?MetadataMask $mask): string {
 		try {
-			return $replacer->sanitizeMetadata(pdfBytes: $pdfBytes);
+			return $replacer->sanitizeMetadata(pdfBytes: $pdfBytes, mask: $mask);
 		} catch (PdfAnonymisationException $e) {
 			// Sanitiser-raised (or the fail-closed guards above) — surface to the caller.
 			throw $e;
@@ -1573,4 +1669,23 @@ class DocumentProcessingHandler implements DocumentProcessingHandlerInterface {
 			);
 		}//end try
 	}//end sanitizePdfMetadata()
+
+	/**
+	 * Name, in the run's report, the PDF metadata fields the mask could not
+	 * mask and removed. A PDF run has no other sanitisation report, so one
+	 * is kept only when there is something to name (REQ-RRS-004).
+	 *
+	 * @param MetadataMask|null $mask The anonymisation run's substitution map, or null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	private function reportUnmaskablePdfFields(?MetadataMask $mask): void {
+		if ($mask === null || $mask->unmaskable() === []) {
+			return;
+		}
+
+		$this->lastSanitizationReport = new SanitizationReport(unmaskableFields: $mask->unmaskable());
+	}//end reportUnmaskablePdfFields()
 }//end class

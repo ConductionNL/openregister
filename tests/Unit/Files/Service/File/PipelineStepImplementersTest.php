@@ -21,6 +21,8 @@ use OCA\OpenRegister\Files\Service\File\Pdf\PdfTextReplacer;
 use OCA\OpenRegister\Files\Service\File\PipelineStepImplementers;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\DocxSanitizer;
 use OCA\OpenRegister\Files\Service\File\Sanitizer\OdtSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\PptxSanitizer;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\XlsxSanitizer;
 use OCA\OpenRegister\Service\Anonymisation\PipelineSteps;
 use OCA\OpenRegister\Service\File\ImageBurner;
 use PHPUnit\Framework\TestCase;
@@ -44,6 +46,8 @@ final class PipelineStepImplementersTest extends TestCase {
 			PdfMetadataSanitizer::class,
 			DocxSanitizer::class,
 			OdtSanitizer::class,
+			XlsxSanitizer::class,
+			PptxSanitizer::class,
 			ImageBurner::class,
 		];
 

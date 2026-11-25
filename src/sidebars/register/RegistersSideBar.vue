@@ -183,8 +183,9 @@ import SidebarStatsSection from '../SidebarStatsSection.vue'
 import StatisticsScopeFilter from '../StatisticsScopeFilter.vue'
 import formatBytes from '../../services/formatBytes.js'
 import { dashboardScope } from '../dashboardScope.js'
-// Ensure data is loaded
-dashboardStore.preload()
+// The sidebar shows the registers and their totals only: load the register
+// list, not the dashboard charts and statistics preload() would add.
+dashboardStore.preloadRegisters()
 
 const BREAKDOWN_COUNTS = ['invalid', 'deleted', 'locked']
 

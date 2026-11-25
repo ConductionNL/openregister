@@ -4,7 +4,10 @@ import { navigationStore } from '../store/store.js'
 
 <template>
 	<!-- Placeholder Div -->
-	<ImportRegister />
+	<!-- Mounted only while open: on mount it loads the dashboard, register
+		and schema lists (and the object list on object pages), which every page
+		paid for with the dialog closed. -->
+	<ImportRegister v-if="navigationStore.modal === 'importRegister'" />
 	<ExportRegister />
 	<PublishRegister />
 	<DeleteRegister />
@@ -30,7 +33,9 @@ import { navigationStore } from '../store/store.js'
 	<CopyObject v-if="navigationStore.dialog === 'copyObject'" />
 	<SaveRecordTemplate v-if="navigationStore.dialog === 'saveRecordTemplate'" />
 	<LockObject />
-	<ViewObject />
+	<!-- Mounted only while open: it refetches the active schema on mount and
+		deep-watches the object store, re-initialising its form on every change. -->
+	<ViewObject v-if="navigationStore.modal === 'viewObject'" />
 	<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
 	<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
 	<RecordImportDialog v-if="navigationStore.dialog === 'recordImport'" />
@@ -40,7 +45,7 @@ import { navigationStore } from '../store/store.js'
 	<RestoreMultiple v-if="navigationStore.dialog === 'restoreMultiple'" />
 	<PurgeMultiple v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'" />
 	<UploadFiles />
-	<ViewSource />
+	<ViewSource v-if="navigationStore.modal === 'viewSource'" />
 	<ViewConfiguration />
 	<JoinOrganisation v-if="navigationStore.modal === 'joinOrganisation'" />
 	<!-- EditOrganisation: modal={{ navigationStore.modal }} -->
