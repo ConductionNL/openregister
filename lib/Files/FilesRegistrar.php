@@ -84,6 +84,8 @@ use OCA\OpenRegister\Kernel\Contracts\TextExtractionServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\UploadServiceInterface;
 use OCA\OpenRegister\Notifications\Service\TimelineVisibilityServiceInterface;
 use OCA\OpenRegister\Service\FileServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\UrlFileFetchInterface;
+use OCA\OpenRegister\Service\File\UrlFileFetcher;
 use OCA\OpenRegister\Service\Object\CopyFiles;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -135,6 +137,7 @@ final class FilesRegistrar
         TaggingHandlerInterface::class            => TaggingHandler::class,
         TextExtractionServiceInterface::class     => TextExtractionService::class,
         UploadServiceInterface::class             => UploadService::class,
+        UrlFileFetchInterface::class              => UrlFileFetcher::class,
     ];
 
     /**
