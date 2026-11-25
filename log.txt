@@ -4597,3 +4597,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T01:13:57Z integrator-20261124T231146-2f742f98 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-25T01:14:39Z integrator-20261124T231146-2f742f98 MERGED-TREE a0e0f046d2: 3 PRs, main now bebb35ed84 = tested tree
+2026-11-25T01:15:41Z session-20261124T171510-2e6d8349 cloud builder larpinq: openregister#11046 merged (88ecec74); merged larpinq #1186 ticking admin-configuration-store 1.2. ACS 1.3 remainder (Past bij filter, Geinstalleerd in, Playwright install) still needs the engine to report where an item is installed.
