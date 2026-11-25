@@ -109,7 +109,14 @@ class AuditSealBacklogServiceTest extends TestCase {
 		);
 		$cursor->method('countUnsealedBefore')->willReturnCallback(
 			function (int $beforeId): int {
-				return count(array_filter($this->rows, static fn (string $state, int $id): bool => $id < $beforeId && $state === 'unsealed', ARRAY_FILTER_USE_BOTH));
+				$count = 0;
+				foreach ($this->rows as $id => $state) {
+					if ($id < $beforeId && $state === 'unsealed') {
+						$count++;
+					}
+				}
+
+				return $count;
 			}
 		);
 
@@ -220,7 +227,10 @@ class AuditSealBacklogServiceTest extends TestCase {
 
 		$result = $this->driver()->drain(PHP_INT_MAX);
 
-		$this->assertSame(['rowsSealed' => 0, 'windowsProcessed' => 0, 'windowsAbandoned' => 0, 'stoppedBy' => 'drained', 'unsealedBehindChain' => 0], $result);
+		$this->assertSame(
+			['rowsSealed' => 0, 'windowsProcessed' => 0, 'windowsAbandoned' => 0, 'stoppedBy' => 'drained', 'unsealedBehindChain' => 0],
+			$result
+		);
 		$this->assertSame([], $this->windows);
 	}//end testADrainedBacklogRerunsAsANoOp()
 

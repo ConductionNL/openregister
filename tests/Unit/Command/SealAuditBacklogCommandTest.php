@@ -73,10 +73,15 @@ class SealAuditBacklogCommandTest extends TestCase {
 	 * @return array{rowsSealed: int, windowsProcessed: int, windowsAbandoned: int, stoppedBy: string, unsealedBehindChain: int}
 	 */
 	private static function drained(string $stoppedBy, int $behind): array {
+		$abandoned = 0;
+		if ($stoppedBy === 'lock') {
+			$abandoned = 1;
+		}
+
 		return [
 			'rowsSealed' => 2500,
 			'windowsProcessed' => 2,
-			'windowsAbandoned' => ($stoppedBy === 'lock') ? 1 : 0,
+			'windowsAbandoned' => $abandoned,
 			'stoppedBy' => $stoppedBy,
 			'unsealedBehindChain' => $behind,
 		];

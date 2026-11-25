@@ -35,12 +35,15 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Audit\AuditSealBacklogInterface;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Seals up to a capped number of backlog rows per run.
+ *
+ * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md#requirement-the-scheduled-seal-job-shall-be-hard-bounded-per-invocation
  */
 class SealAuditBacklogJob extends TimedJob {
 
@@ -66,24 +69,18 @@ class SealAuditBacklogJob extends TimedJob {
 	public const MAX_SECONDS_PER_RUN = 120;
 
 	/**
-	 * Logger, taken from the JobRuntime.
-	 *
-	 * @var LoggerInterface
-	 */
-	private readonly LoggerInterface $logger;
-
-	/**
 	 * Constructor.
 	 *
-	 * @param JobRuntime                $runtime The job runtime: scheduler clock and run log.
+	 * @param ITimeFactory              $time    The scheduler clock.
 	 * @param AuditSealBacklogInterface $backlog Drains the backlog.
+	 * @param LoggerInterface           $logger  The run log.
 	 */
 	public function __construct(
-		JobRuntime $runtime,
+		ITimeFactory $time,
 		private readonly AuditSealBacklogInterface $backlog,
+		private readonly LoggerInterface $logger,
 	) {
-		$this->logger = $runtime->logger;
-		parent::__construct(time: $runtime->time);
+		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
 
 	}//end __construct()

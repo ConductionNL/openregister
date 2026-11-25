@@ -46,6 +46,8 @@ use OCP\AppFramework\Utility\ITimeFactory;
 
 /**
  * Drains unsealed audit rows window by window, within a row cap and a time cap.
+ *
+ * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md#requirement-a-bounded-resumable-seal-pass-shall-drain-unsealed-audit-rows-in-chain-order
  */
 class AuditSealBacklogService implements AuditSealBacklogInterface {
 

@@ -24,12 +24,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\BackgroundJob;
 
-use OCA\OpenRegister\BackgroundJob\JobRuntime;
 use OCA\OpenRegister\BackgroundJob\SealAuditBacklogJob;
 use OCA\OpenRegister\Service\Audit\AuditSealBacklogInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -39,7 +37,6 @@ use ReflectionMethod;
  * Runs the job against a mocked driver.
  */
 #[CoversClass(SealAuditBacklogJob::class)]
-#[UsesClass(JobRuntime::class)]
 class SealAuditBacklogJobTest extends TestCase {
 
 	/**
@@ -51,7 +48,7 @@ class SealAuditBacklogJobTest extends TestCase {
 	 * @return void
 	 */
 	private function runJob(AuditSealBacklogInterface $backlog, LoggerInterface $logger): void {
-		$job = new SealAuditBacklogJob(new JobRuntime($this->createMock(ITimeFactory::class), $logger), $backlog);
+		$job = new SealAuditBacklogJob($this->createMock(ITimeFactory::class), $backlog, $logger);
 		$run = new ReflectionMethod($job, 'run');
 		$run->setAccessible(true);
 		$run->invoke($job, null);

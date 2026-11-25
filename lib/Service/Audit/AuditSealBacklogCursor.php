@@ -34,6 +34,8 @@ use OCP\IDBConnection;
 
 /**
  * Reads where the unsealed audit rows are, by id.
+ *
+ * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md#requirement-a-bounded-resumable-seal-pass-shall-drain-unsealed-audit-rows-in-chain-order
  */
 class AuditSealBacklogCursor implements AuditSealBacklogCursorInterface {
 

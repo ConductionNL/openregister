@@ -90,7 +90,13 @@ use RuntimeException;
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
-class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface, AuditResealInterface, AuditSealWindowInterface {
+class AuditHashService implements
+	AuditHashServiceInterface,
+	AuditSealInterface,
+	AuditRechainInterface,
+	AuditResealInterface,
+	AuditSealWindowInterface
+{
 	/**
 	 * The genesis seed used for the first entry in the hash chain.
 	 *
