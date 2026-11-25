@@ -903,3 +903,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: 'A column holds a file id the move would not rewrite' listing a table.column the PR's migration adds (file_id, *_file_id, folder, node_id).
 - Cause: main's register-document-store (f1327b39) scans every migration for id-shaped columns; a PR adding such a column must declare it.
 - Fix: a Nextcloud file/folder id: add a row to DocumentReferenceMap::COLUMNS (KIND_FILE/KIND_FOLDER); anything else: add it to NOT_FILE_IDS with the reason. Used on #10451 e27167ee.
+
+## dexie bump fails npm run build at check-single-dexie.js (or-fix-6)
+- Symptom: precheck front=red; front.log ends 'x dexie singleton: js/...dexie_import-wrapper_mjs.js embeds Dexie (sentinel found) but no semVer literal matched'.
+- Cause: dexie >= 4.4.7 keeps its version in a constant, so the minified chunk has semVer:Jt plus Jt="4.4.7" instead of semVer:"x.y.z".
+- Fix: scripts/check-single-dexie.js chunkVersions() follows semVer:<ident> to <ident>="x.y.z" (see #11076 c42498d6); cherry-pick that commit onto any other dexie bump.
