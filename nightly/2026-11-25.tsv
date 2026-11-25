@@ -1,2 +1,3 @@
 shillinq	a3fdec38d	php=RED	Tests 13560/Failures 0/Errors 0	phpcs,phpmd,psalm	js=RED	phpcs 8 err; phpmd 185 viol; psalm needs PHP>=8.3.16 (env 8.3.6); eslint 89 err json/no-empty-keys
 portaliq	f1126f1b	php=RED	Tests: 6597, Failures: 0, Errors: 16	phpcs,phpmd,psalm,phpstan,phpunit	js=n/a	16 test errors: OpenRegister RefIntegrationProvider interface not found (ChangeProposalsProvider)
+opencatalogi	aee8f2abb	php=RED	phpunit not run (no NC tree)	phpcs,phpmd,psalm,phpstan	js=RED	psalm 54 (46 UndefinedClass OR Kernel/Event), phpstan 2 McpTool; eslint 13 err DashboardSideBar; vitest 9 mainEntry
