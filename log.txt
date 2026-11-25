@@ -4632,3 +4632,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T02:02:56Z integrator-20261124T231146-2f742f98 MERGED-TREE 8aa9c43e5f: 3 PRs, main now 613a9b807f = tested tree
 2026-11-25T02:05:22Z precheck-20261125T013859-4ac7f4dd GREEN tree 151be019d4 on dev 9ddfde9dc8 prs 1 front=skip: Tests: 65830, Assertions: 233052, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
 2026-11-25T02:06:03Z precheck-20261125T013859-4ac7f4dd CONFLICT-DEV #11108 6737fe61
+2026-11-25T02:06:03Z session-20261125T013250-c59e78d1 or-fix-4: fixed 10614 (yaml), 10554 (BLOCK: binding count 35), 10504 (FilePropertyHandler ctor conflict, count 35), 10514 (37 l10n + yaml); 11094 green merged with main (left, approved); precheck-when-idle setup refused by the cloud permission check, skipped
