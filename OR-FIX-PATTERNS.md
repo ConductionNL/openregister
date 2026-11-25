@@ -908,3 +908,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: precheck front=red; front.log ends 'x dexie singleton: js/...dexie_import-wrapper_mjs.js embeds Dexie (sentinel found) but no semVer literal matched'.
 - Cause: dexie >= 4.4.7 keeps its version in a constant, so the minified chunk has semVer:Jt plus Jt="4.4.7" instead of semVer:"x.y.z".
 - Fix: scripts/check-single-dexie.js chunkVersions() follows semVer:<ident> to <ident>="x.y.z" (see #11076 c42498d6); cherry-pick that commit onto any other dexie bump.
+
+## ReservedColumnNamesTest errors 'lex.h answered HTTP 404' in a cloud session (or-fix-6)
+- Symptom: every tests/Unit/Migration/ReservedColumnNamesTest case throws RuntimeException '...MariaDB/server/10.5/sql/lex.h answered HTTP 404'.
+- Cause: tests/Support/ReservedWordSource sends GITHUB_TOKEN as a Bearer header to raw.githubusercontent.com; the session's placeholder token makes it answer 404. Not a PR defect.
+- Fix: run the suite with `env -u GITHUB_TOKEN -u GH_TOKEN php vendor/bin/phpunit ...`; it then passes.
