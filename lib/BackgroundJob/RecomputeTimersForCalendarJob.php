@@ -125,7 +125,7 @@ class RecomputeTimersForCalendarJob extends QueuedJob implements CalendarRecompu
 				slug: $slug,
 				version: $version,
 				timers: $this->candidates(slug: $slug),
-				supersede: function (FlowTimer $timer): void {
+				supersede: function (FlowTimer $timer, string $reason): void {
 					// The EXISTING supersession path, reused whole: it writes
 					// the history and re-inherits the rungs that have already
 					// fired, so a calendar change lands in the ledger looking
@@ -134,7 +134,7 @@ class RecomputeTimersForCalendarJob extends QueuedJob implements CalendarRecompu
 					// what moved is the calendar under it.
 					$this->service->supersede(
 						move: new TimerAnchorMove(uuid: (string)$timer->getUuid(), anchorEventAt: ($timer->getAnchorAt() ?? $timer->getRunningSince())),
-						change: new TimerChange(reason: CalendarRecomputeInterface::REASON, actor: CalendarRecomputeInterface::ACTOR)
+						change: new TimerChange(reason: $reason, actor: CalendarRecomputeInterface::ACTOR)
 					);
 				}
 			));
