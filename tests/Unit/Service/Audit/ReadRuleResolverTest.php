@@ -63,6 +63,9 @@ class ReadRuleResolverTest extends TestCase {
 	/** @var array<int, string> */
 	private array $groups = ['behandelaars'];
 
+	/** Nextcloud's administrator verdict; null answers as inside allowed_admin_ranges. */
+	private ?bool $administrator = null;
+
 	private MockObject&SchemaMapperInterface $schemas;
 
 	private MockObject&LoggerInterface $logger;
@@ -85,6 +88,7 @@ class ReadRuleResolverTest extends TestCase {
 		});
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturnCallback(fn (): array => $this->groups);
+		$groupManager->method('isAdmin')->willReturnCallback(fn (): bool => $this->administrator ?? in_array('admin', $this->groups, true));
 
 		$conditions = new ConditionMatcher(
 			new ConditionUserResolvers($session),
@@ -187,6 +191,19 @@ class ReadRuleResolverTest extends TestCase {
 		$this->schemaWith(['read' => [self::HANDLER_RULE]]);
 
 		$this->assertNull($this->resolver()->resolve($this->melding(handler: 'alice')));
+	}
+
+	/**
+	 * An `admin` group member Nextcloud does not count as an administrator reads under the rule, which is named.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
+	 */
+	public function testAnAdminGroupMemberOutsideTheAllowedRangeReadsUnderTheRule(): void {
+		$this->groups = ['admin', 'behandelaars'];
+		$this->administrator = false;
+		$this->schemaWith(['read' => [self::HANDLER_RULE]]);
+
+		$this->assertNotNull($this->resolver()->resolve($this->melding(handler: 'alice')));
 	}
 
 	public function testTheOwnersReadNamesNoRule(): void {

@@ -143,6 +143,7 @@ use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectWriteValidatorInterface;
 use OCA\OpenRegister\Listener\RedactionPolicyCacheListener;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
@@ -185,6 +186,7 @@ final class ContractBindings {
 		OdtWriterInterface::class => OdtWriter::class,
 		HtmlPdfConverterInterface::class => OfficeHtmlPdfConverter::class,
 		ObjectWriteCacheFollowerInterface::class => RedactionPolicyCacheListener::class,
+		ObjectWriteValidatorInterface::class => \OCA\OpenRegister\Listener\DetectionPatternValidationListener::class,
 		DeclaredWebhookInstallerInterface::class => NotificationsAnnotationInstaller::class,
 		TranslationProjectionInterface::class => TranslationProjectionService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface::class => TranslationProjectionService::class,
@@ -192,6 +194,7 @@ final class ContractBindings {
 		AppSettingsInterface::class => SettingsService::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface::class => ObjectRetentionHandler::class,
+		\OCA\OpenRegister\Kernel\Contracts\ExportKeySealersInterface::class => \OCA\OpenRegister\Service\Exchange\ExportKeySealers::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\CapacityPolicyReaderInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
