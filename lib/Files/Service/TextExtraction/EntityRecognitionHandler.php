@@ -72,6 +72,14 @@ use OCA\OpenRegister\Kernel\Contracts\TextEntityDetectorInterface;
  * @spec openspec/specs/text-extraction/spec.md#requirement-file-and-object-chunk-extraction-lifecycle
  */
 class EntityRecognitionHandler implements TextEntityDetectorInterface {
+
+	/**
+	 * The longest archive member path a relation keeps (the `archive_member` column's length).
+	 *
+	 * @var integer
+	 */
+	private const MEMBER_LENGTH = 1024;
+
 	/**
 	 * Entity type constants.
 	 */
@@ -567,6 +575,7 @@ class EntityRecognitionHandler implements TextEntityDetectorInterface {
 		}
 
 		$this->setRelationSource(relation: $relation, chunk: $chunk);
+		$relation->setArchiveMember(self::memberOf(chunk: $chunk));
 
 		$this->stores->entityRelationMapper->insert($relation);
 
@@ -635,6 +644,28 @@ class EntityRecognitionHandler implements TextEntityDetectorInterface {
 		$relation->setCapacity($suggestion['capacity']);
 		$relation->setCapacitySource($suggestion['capacitySource']);
 	}//end suggestCapacity()
+
+	/**
+	 * The archive member path a chunk belongs to, cut to the stored length; null outside an archive.
+	 *
+	 * Archive extraction writes each member's chunks under the archive file with
+	 * `positionReference.member`, so detection over the archive runs member by
+	 * member and each relation names the member its chunk came from.
+	 *
+	 * @param Chunk $chunk The chunk the entity was found in.
+	 *
+	 * @return string|null The member path, or null.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	private static function memberOf(Chunk $chunk): ?string {
+		$member = ($chunk->getPositionReference()['member'] ?? null);
+		if (is_string($member) === false || $member === '') {
+			return null;
+		}
+
+		return mb_substr($member, 0, self::MEMBER_LENGTH);
+	}//end memberOf()
 
 	/**
 	 * Set the source references on a relation from the chunk's source type.

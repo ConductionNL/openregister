@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\RegistryLensException;
 use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Middleware\RelatedRowFilterMiddleware;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
@@ -65,6 +66,24 @@ class RelatedRowFilterMiddlewareTest extends TestCase {
 		$this->assertSame(400, $response->getStatus());
 		$this->assertSame(['error' => '\'_related\' filters are not supported'], $response->getData());
 	}//end testTheRefusalAnswers400WithItsMessage()
+
+	/**
+	 * An unreadable `_registry` lens is an actionable 400, not a 500.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-subscription-state-and-freshness-are-query-lenses
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableRegistryLensAnswers400(): void {
+		$response = (new RelatedRowFilterMiddleware())->afterException(
+			controller: $this->createMock(Controller::class),
+			methodName: 'index',
+			exception: new RegistryLensException("'_registry[state]' takes none, requested, active, ended, failed.")
+		);
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['error' => "'_registry[state]' takes none, requested, active, ended, failed."], $response->getData());
+	}//end testAnUnreadableRegistryLensAnswers400()
 
 	/**
 	 * Every other exception, including a plain InvalidArgumentException, is rethrown.

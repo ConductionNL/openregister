@@ -47,6 +47,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
         // Approval plane of app-declared credential providers (app-declared-credential-providers 3.2):
         // administrators only. The identifier is `<appId>:<localId>`.
+        ['name' => 'declaredCredentialProviders#index', 'url' => '/api/credentials/providers/declared', 'verb' => 'GET'],
         ['name' => 'credentialProviderApproval#approve', 'url' => '/api/credentials/providers/{identifier}/approve', 'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
         ['name' => 'credentialProviderApproval#reject',  'url' => '/api/credentials/providers/{identifier}/reject',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
         ['name' => 'credentialProviderApproval#revoke',  'url' => '/api/credentials/providers/{identifier}/revoke',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
@@ -530,6 +531,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'permissionsAudit#denyPreview', 'url' => '/api/permissions/deny-preview', 'verb' => 'GET'],
         ['name' => 'permissionsAudit#compareRoles', 'url' => '/api/permissions/compare-roles', 'verb' => 'GET'],
         ['name' => 'permissionsAudit#scopeAudit',  'url' => '/api/permissions/scope-audit',   'verb' => 'GET'],
+        // The full authorisation matrix with provenance (REQ-RAH-001). Administrator
+        // only: no NoAdminRequired, so the framework refuses everybody else.
+        ['name' => 'permissionsAudit#matrix',      'url' => '/api/permissions/matrix',        'verb' => 'GET'],
         // Administrator only: the route carries no NoAdminRequired, so the
         // framework refuses everybody else before the method runs.
         ['name' => 'derivedGrants#reapply', 'url' => '/api/permissions/derived-grants/reapply', 'verb' => 'POST'],
@@ -965,6 +969,10 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'flow#versionPreview', 'url' => '/api/flows/{id}/version-preview', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#draft',     'url' => '/api/flows/{id}/draft',               'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#deprecate', 'url' => '/api/flows/{id}/deprecate',           'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        // Workflow progress (tasks-progress-report). Above `/api/flows/{id}`
+        // so `progress` is never read as a flow id.
+        ['name' => 'flowProgress#index', 'url' => '/api/flows/progress',      'verb' => 'GET'],
+        ['name' => 'flowProgress#show',  'url' => '/api/flows/{id}/progress', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
         ['name' => 'flow#create',  'url' => '/api/flows',          'verb' => 'POST'],
         ['name' => 'flow#show',    'url' => '/api/flows/{id}',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -1505,6 +1513,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
         ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
         ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
+        // A whole base export: read it and propose the register it becomes; writes nothing (REQ-IPC-006).
+        ['name' => 'importPreview#proposeBase', 'url' => '/api/import-previews/base', 'verb' => 'POST'],
         ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#failed', 'url' => '/api/import-previews/{id}/failed', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
@@ -1668,6 +1678,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Direct file access by ID (authenticated).
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
+        // Whether a published file still matches its sealed digest (published-file-digest REQ-PFD-002).
+        ['name' => 'files#verifyDigest', 'url' => '/api/files/{fileId}/digest/verify', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 		['name' => 'files#office', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/office', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#officePage', 'url' => '/office/{register}/{schema}/{id}/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		// An object's folder for the files browser, subfolders included, through
@@ -1858,6 +1870,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'schemaMigration#revalidate', 'url' => '/api/schemas/{id}/revalidate', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#runs', 'url' => '/api/schemas/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#run', 'url' => '/api/schemas/{id}/runs/{run}', 'verb' => 'GET', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
+        // generated-identifier C41.5: a scheme change rewrites issued identifiers in a background job.
+        ['name' => 'identifierSchemeMigrations#create', 'url' => '/api/schemas/{id}/identifier-migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'identifierSchemeMigrations#show', 'url' => '/api/identifier-migrations/{run}', 'verb' => 'GET', 'requirements' => ['run' => '\d+']],
         ['name' => 'schemaMigration#previewMigration', 'url' => '/api/schemas/{id}/migrations/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#migrate', 'url' => '/api/schemas/{id}/migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         // One named part of one schema back to what its app shipped (admin; shipped-baseline-reset-is-reachable).
@@ -2133,6 +2148,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		// Rapportage on-demand render endpoints (Phase 2).
 		// rapportage-bi-export: render a report template over a period. Literal, so before reports/{id}/render.
 		['name' => 'reportTemplate#generate', 'url' => '/api/reports/generate', 'verb' => 'POST'],
+		// rapportage-bi-export: the audit report of a register, an actor and a period, administrators only.
+		['name' => 'auditReport#audit', 'url' => '/api/reports/audit', 'verb' => 'GET'],
 		['name' => 'reports#render',  'url' => '/api/reports/{id}/render',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'reports#preview', 'url' => '/api/reports/{id}/preview', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
 		['name' => 'ui#templates', 'url' => '/templates', 'verb' => 'GET'],

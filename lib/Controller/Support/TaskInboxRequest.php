@@ -48,6 +48,7 @@ final class TaskInboxRequest {
 	private const FILTERS = [
 		'state', 'isTerminal', 'priority', 'kind', 'objectUuid', 'runUuid',
 		'overdue', 'dueAfter', 'dueBefore', 'includeBlocked', 'openFirst',
+		'flow', 'node',
 	];
 
 	/**

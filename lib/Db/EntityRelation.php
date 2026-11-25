@@ -85,6 +85,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setPersonMatch(?string $personMatch)
  * @method bool|null getUncertain()
  * @method void setUncertain(?bool $uncertain)
+ * @method string|null getArchiveMember()
+ * @method void setArchiveMember(?string $archiveMember)
  * @method string|null getDecisionUuid()
  * @method void setDecisionUuid(?string $decisionUuid)
  * @method DateTime getCreatedAt()
@@ -316,6 +318,16 @@ class EntityRelation extends Entity implements JsonSerializable, EntityRelationI
 	protected ?bool $uncertain = null;
 
 	/**
+	 * The path of the archive member the entity was found in, null outside an archive.
+	 *
+	 * Copied from the chunk's `positionReference.member` when the relation is stored,
+	 * so a relation names the file inside a zip without a join to its chunk.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $archiveMember = null;
+
+	/**
 	 * Created at timestamp.
 	 *
 	 * @var DateTime|null
@@ -344,7 +356,7 @@ class EntityRelation extends Entity implements JsonSerializable, EntityRelationI
 	 *     context: null|string, anonymized: bool,
 	 *     anonymizedValue: null|string, bases: array|null,
 	 *     skipAnonymization: bool, decision: null|string,
-	 *     page: int|null, box: array|null,
+	 *     page: int|null, box: array|null, archiveMember: null|string,
  *     createdAt: null|string}
 	 */
 	public function jsonSerialize(): array {
