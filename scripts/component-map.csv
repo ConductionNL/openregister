@@ -2639,6 +2639,7 @@ Service/Gdpr/Lifecycle/DenialFinaliseGuard.php,26,Service,Compliance,Compliance/
 Service/Gdpr/Policy/DsarPolicyPackResolver.php,99,Service,Compliance,Compliance/Service/Gdpr/Policy/DsarPolicyPackResolver.php,0,,Compliance
 Service/Gdpr/PrivacyOfficerRecipientResolver.php,49,Service,Compliance,Compliance/Service/Gdpr/PrivacyOfficerRecipientResolver.php,0,,Compliance
 Service/Gdpr/ProcessingAnnotationReader.php,137,Service,Compliance,Compliance/Service/Gdpr/ProcessingAnnotationReader.php,0,,Compliance
+Service/Gdpr/ProcessingCatalogueSeeder.php,295,Service,Compliance,Compliance/Service/Gdpr/ProcessingCatalogueSeeder.php,0,,Compliance
 Service/Gdpr/Redaction/RedactionWriteService.php,48,Service,Compliance,Compliance/Service/Gdpr/Redaction/RedactionWriteService.php,0,,Compliance
 Service/Gdpr/Regulator/NullRegulatorEscalateProvider.php,15,Service,Compliance,Compliance/Service/Gdpr/Regulator/NullRegulatorEscalateProvider.php,0,,Compliance
 Service/Gdpr/Regulator/RegulatorEscalateProvider.php,7,Service,Compliance,Compliance/Service/Gdpr/Regulator/RegulatorEscalateProvider.php,4,,Compliance

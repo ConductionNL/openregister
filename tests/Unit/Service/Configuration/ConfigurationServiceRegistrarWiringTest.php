@@ -164,6 +164,7 @@ class ConfigurationServiceRegistrarWiringTest extends TestCase {
 				'OCA\\OpenRegister\\Kernel\\Contracts\\DeclaredGroupRightsInterface',
 				'OCA\\OpenRegister\\Service\\Schema\\SchemaVersioningService',
 				'OCA\\OpenRegister\\Service\\Archival\\SelectionListSeeder',
+				'OCA\\OpenRegister\\Service\\Gdpr\\ProcessingCatalogueSeeder',
 				'OCA\\OpenRegister\\Service\\Object\\SaveObject\\ObjectSlugHandler',
 			],
 			'OCA\\OpenRegister\\Service\\Configuration\\ExportHandler' => [
