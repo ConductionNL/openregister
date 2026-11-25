@@ -28,6 +28,7 @@ use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use PHPUnit\Framework\TestCase;
@@ -90,6 +91,26 @@ final class RedactionSettingsPortTest extends TestCase {
 
 			public function originalRetention(): string {
 				return RedactionSettingsInterface::ORIGINAL_RETENTION_KEEP;
+			}
+
+			public function capacityPolicy(): CapacityPolicy {
+				return CapacityPolicy::fromStored(stored: null);
+			}
+
+			public function officialsSource(): ?array {
+				return null;
+			}
+
+			public function personRegister(): ?array {
+				return null;
+			}
+
+			public function personRegisterBoost(): float {
+				return 0.0;
+			}
+
+			public function placeRegister(): ?array {
+				return null;
 			}
 		};
 

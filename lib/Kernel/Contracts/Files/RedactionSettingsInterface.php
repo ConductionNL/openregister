@@ -19,8 +19,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts\Files;
 
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
+
 /**
- * Reads the two settings that entity detection and redaction apply per document.
+ * Reads the settings that entity detection and redaction apply per document: the
+ * threshold, the mask forms, and the person-detection sources (capacity policy,
+ * officials, persons and place registers).
  *
  * File handling asks; the file settings handler (Configuration) answers and is
  * bound to this contract in its own registrar. Both are read at request time,
@@ -88,4 +92,49 @@ interface RedactionSettingsInterface {
 	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
 	 */
 	public function originalRetention(): string;
+
+	/**
+	 * The organisation's capacity policy (REQ-DKP-001): the stored one, else the shipped default.
+	 *
+	 * @return CapacityPolicy
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1-1
+	 */
+	public function capacityPolicy(): CapacityPolicy;
+
+	/**
+	 * Where the register of officials is read from, or null when none is configured (REQ-DKP-001).
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-1-1
+	 */
+	public function officialsSource(): ?array;
+
+	/**
+	 * The persons register a person detection is matched against, or null when none is configured (REQ-DKP-003).
+	 *
+	 * @return array<string, string>|null The source and its purpose.
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.1
+	 */
+	public function personRegister(): ?array;
+
+	/**
+	 * The confidence a persons register match adds (REQ-DKP-003).
+	 *
+	 * @return float
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.1
+	 */
+	public function personRegisterBoost(): float;
+
+	/**
+	 * The street or place register a person detection is checked against, or null when none is configured (REQ-DKP-003).
+	 *
+	 * @return array<string, string>|null
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.1
+	 */
+	public function placeRegister(): ?array;
 }//end interface
