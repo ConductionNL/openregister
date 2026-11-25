@@ -296,6 +296,8 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 		$object = new ObjectEntity();
 		$object->setUuid('obj-1');
 		$object->setName('Ticket one');
+		$object->setDescription('Printer on floor two');
+		$object->setObject(['identifier' => '2026-0042', 'number' => 7, 'status' => 'c19074a7-0000-4000-a000-000000000001', 'statusLabel' => 'in progress', 'assignee' => 'pieter']);
 		$object->setRegister('2');
 		$this->magicMapper->expects($this->once())->method('findByLinkedEntity')
 			->with($this->identicalTo($declaring), '_notes', 'n-9')->willReturn([$object]);
@@ -315,7 +317,7 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 
 		$this->assertSame(
 			[
-				['entityType' => 'object', 'uuid' => 'obj-1', 'name' => 'Ticket one', 'schema' => 'Schema 4', 'schemaId' => 4, 'schemaIcon' => 'icon-4', 'register' => 2, 'url' => '/apps/x/obj-1'],
+				['entityType' => 'object', 'uuid' => 'obj-1', 'name' => 'Ticket one', 'identifier' => '2026-0042', 'description' => 'Printer on floor two', 'status' => 'in progress', 'assignee' => 'pieter', 'schema' => 'Schema 4', 'schemaId' => 4, 'schemaIcon' => 'icon-4', 'register' => 2, 'url' => '/apps/x/obj-1'],
 				['entityType' => 'register', 'uuid' => 'reg-1', 'name' => 'Register one'],
 				['entityType' => 'schema', 'uuid' => 'schema-4', 'name' => 'Schema 4'],
 				['entityType' => 'organisation', 'uuid' => 'org-1', 'name' => 'Org one'],
@@ -323,6 +325,49 @@ class LinkedEntityServiceBehaviourTest extends TestCase {
 			$this->service()->reverseLookup('notes', 'n-9')
 		);
 	}//end testTheReverseLookupReportsEveryLinkingEntity()
+
+	/**
+	 * A row's record number is the first of identifier, number and reference that holds a plain value.
+	 *
+	 * @return void
+	 */
+	public function testTheRecordNumberIsTheFirstPlainIdentifyingField(): void {
+		$recordNumber = new \ReflectionMethod(LinkedEntityService::class, 'recordNumber');
+		$service = $this->service();
+		$object = new ObjectEntity();
+
+		$cases = [
+			[['identifier' => '', 'number' => 7], '7'],
+			[['identifier' => ['nested'], 'reference' => 'REF-1'], 'REF-1'],
+			[['title' => 'No number'], null],
+		];
+		foreach ($cases as [$data, $expected]) {
+			$object->setObject($data);
+			$this->assertSame(expected: $expected, actual: $recordNumber->invoke($service, $object));
+		}
+	}//end testTheRecordNumberIsTheFirstPlainIdentifyingField()
+
+	/**
+	 * A row's description is the object's own, else the schema's description field.
+	 *
+	 * @return void
+	 */
+	public function testTheDescriptionFallsBackToTheSchemaDescriptionField(): void {
+		$objectDescription = new \ReflectionMethod(LinkedEntityService::class, 'objectDescription');
+		$service = $this->service();
+		$schema = new Schema();
+		$schema->setConfiguration(['objectDescriptionField' => 'summary']);
+		$object = new ObjectEntity();
+		$object->setObject(['summary' => 'From the data']);
+
+		$this->assertSame(expected: 'From the data', actual: $objectDescription->invoke($service, $schema, $object));
+		$object->setDescription('Its own');
+		$this->assertSame(expected: 'Its own', actual: $objectDescription->invoke($service, $schema, $object));
+		$object->setDescription(null);
+		$object->setObject(['summary' => '']);
+		$this->assertNull(actual: $objectDescription->invoke($service, $schema, $object));
+		$this->assertNull(actual: $objectDescription->invoke($service, new Schema(), $object));
+	}//end testTheDescriptionFallsBackToTheSchemaDescriptionField()
 
 	/**
 	 * A failing magic table or entity table is logged and the lookup returns what the others found.
