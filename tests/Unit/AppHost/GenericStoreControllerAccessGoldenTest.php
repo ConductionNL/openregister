@@ -139,7 +139,11 @@ class GenericStoreControllerAccessGoldenTest extends TestCase
             request: $request,
             services: new GenericStoreControllerServices(
                 sources: new GenericStoreSources(manifestLoader: $manifest, storeService: $service, gitHubSource: $github, catalog: $catalog),
-                install: new GenericStoreInstall(installer: $installer, actionAuthorizer: $authorizer),
+                install: new GenericStoreInstall(
+                    installer: $installer,
+                    actionAuthorizer: $authorizer,
+                    ledger: $this->createMock(originalClassName: \OCA\OpenRegister\AppHost\Store\StoreInstallLedger::class)
+                ),
                 platform: new GenericStorePlatform(userSession: $session, groupManager: $groups, logger: $this->createMock(LoggerInterface::class))
             )
         );
@@ -212,7 +216,15 @@ class GenericStoreControllerAccessGoldenTest extends TestCase
     {
         $response = $this->controller($caller, $store, $options)->search();
         $this->assertSame($status, $response->getStatus());
-        $this->assertSame($body, $response->getData());
+        // Where items are installed rides along with every configured search;
+        // this golden pins the access shape, so it is checked on its own.
+        $data = $response->getData();
+        if (array_key_exists(key: 'installed', array: $data) === true) {
+            $this->assertSame(expected: [], actual: $data['installed']);
+            unset($data['installed']);
+        }
+
+        $this->assertSame($body, $data);
         $this->assertSame($calls, $this->calls);
     }
 }
