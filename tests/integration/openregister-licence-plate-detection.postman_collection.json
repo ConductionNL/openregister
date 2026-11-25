@@ -1,0 +1,1748 @@
+{
+	"info": {
+		"_postman_id": "or-licence-plate-detection-2026-11-25",
+		"name": "OpenRegister Licence Plate Detection API",
+		"description": "Dutch licence plates detected, anonymised and switched off, over HTTP (change detection-dutch-licence-plates, task 4.1; specs/pii-entity-detection/spec.md).\n\nWith entity recognition on, the regex method and the nl pattern set, a privacy officer whose language is Dutch uploads a text file holding a plate, a BSN, a case number and a date shaped like a plate, extracts it and reads GET /api/entities: one LICENSE_PLATE entity for the plate, one SSN entity for the BSN, and no plate entity for the case number or the date. The anonymised copy reads a KENTEKEN placeholder where the plate was and a BSN placeholder where the BSN was, and neither value appears in it. With entityPatternSets [] the same text with other values yields neither entity.\n\nEach run makes its own valid plate (sidecode 7) and BSN (eleven test): extraction is keyed on a file's content and entities are shared by value, so fixed values would read a previous run's entities. A save of the file settings replaces them (a key it does not name returns to its default), so the settings are read first, every save sends the whole set with only its keys changed, and the whole set is restored at the end.\n\nWhy Newman and not tests/e2e/ci/licence-plate-detection.spec.ts, which the task names: every step is an API call, and gate-19 puts API contracts in Newman.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "setUp: a privacy officer who reads Dutch",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{officerId}}\", \"password\": \"{{officerPassword}}\", \"groups\": [\"admin\"], \"language\": \"nl\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Values unique to this run: extraction is keyed on the content, and entities are shared by value.",
+							"const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);",
+							"pm.collectionVariables.set('suffix', suffix);",
+							"pm.collectionVariables.set('officerId', 'or-plates-officer-' + suffix);",
+							"pm.collectionVariables.set('officerPassword', 'Kt!' + suffix + '-' + Math.random().toString(36).slice(2) + 'Zq9');",
+							"const digit = () => String(Math.floor(Math.random() * 10));",
+							"const consonants = 'BDFGHJKLMNPRSTVWXYZ';",
+							"const letter = () => consonants[Math.floor(Math.random() * consonants.length)];",
+							"// Sidecode 7, 99-XXX-9: letters without C, Q and the vowels.",
+							"const plate = () => digit() + digit() + '-' + letter() + letter() + letter() + '-' + digit();",
+							"// A BSN passes the eleven test: 9a + 8b + ... + 2h - i is a multiple of 11.",
+							"const bsn = () => { for (;;) { const d = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)); d[0] = 1 + Math.floor(Math.random() * 9); const sum = d.reduce((s, v, i) => s + v * (9 - i), 0); const last = sum % 11; if (last < 10) { return d.join('') + last; } } };",
+							"pm.collectionVariables.set('plate1', plate()); pm.collectionVariables.set('bsn1', bsn());",
+							"let p2 = plate(); while (p2 === pm.collectionVariables.get('plate1')) { p2 = plate(); }",
+							"pm.collectionVariables.set('plate2', p2); pm.collectionVariables.set('bsn2', bsn());"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the officer is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: remember the file settings",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"settings",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the settings are read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"// A save REPLACES the file settings: a key it does not name goes back to its default. So every save",
+							"// below sends the whole set as read here, with only the keys it is about changed.",
+							"const before = Object.assign({}, o); delete before.documentStore; delete before.openAnonymiserPasswordSet;",
+							"pm.collectionVariables.set('settingsBefore', JSON.stringify(before));",
+							"pm.collectionVariables.set('settingsOn', JSON.stringify(Object.assign({}, before, { entityRecognitionEnabled: true, entityRecognitionMethod: 'regex', entityPatternSets: ['nl'] })));",
+							"pm.collectionVariables.set('settingsWithoutSets', JSON.stringify(Object.assign({}, before, { entityRecognitionEnabled: true, entityRecognitionMethod: 'regex', entityPatternSets: [] })));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: entity recognition on, regex method, the nl pattern set",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"settings",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{settingsOn}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the settings are saved', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const d = pm.response.json().data;",
+							"pm.test('recognition on, regex, nl', () => { pm.expect(d.entityRecognitionEnabled).to.eql(true); pm.expect(d.entityRecognitionMethod).to.eql('regex'); pm.expect(d.entityPatternSets).to.eql(['nl']); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a schema",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"title\": \"Licence plates {{suffix}}\",\n \"slug\": \"licence-plates-{{suffix}}\",\n \"properties\": {\n  \"subject\": {\n   \"type\": \"string\"\n  }\n }\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('schemaId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Licence plates {{suffix}}\", \"slug\": \"licence-plates-reg-{{suffix}}\", \"schemas\": [{{schemaId}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('registerId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: an object",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\": \"Melding foutparkeren\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the object is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"const o = pm.response.json(); pm.collectionVariables.set('objectId', o.id || o['@self'].id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Upload a text file with a plate, a BSN and a case number",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectId}}",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"name\": \"melding-{{suffix}}.txt\",\n \"content\": \"Het voertuig met kenteken {{plate1}} stond geparkeerd. Burgerservicenummer {{bsn1}} van de melder. Zaak ZK-12-AB-34, datum 2024-12-AB.\"\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the file is stored', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('fileId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Extract it",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/files/{{fileId}}/extract",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"files",
+						"{{fileId}}",
+						"extract"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the extraction runs', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('and completes', () => pm.expect(pm.response.json().success).to.eql(true));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The plate is one LICENSE_PLATE entity",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entities?type=LICENSE_PLATE&search={{plate1}}&limit=50",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entities"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "LICENSE_PLATE"
+						},
+						{
+							"key": "search",
+							"value": "{{plate1}}"
+						},
+						{
+							"key": "limit",
+							"value": "50"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the entities are listed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const found = pm.response.json().data.filter(e => e.value === pm.collectionVariables.get('plate1'));",
+							"pm.test('exactly one entity holds the plate', () => pm.expect(found.length).to.eql(1));",
+							"pm.test('as a licence plate, personal data', () => { pm.expect(found[0].type).to.eql('LICENSE_PLATE'); pm.expect(found[0].category).to.eql('personal_data'); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The BSN is one SSN entity",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entities?type=SSN&search={{bsn1}}&limit=50",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entities"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "SSN"
+						},
+						{
+							"key": "search",
+							"value": "{{bsn1}}"
+						},
+						{
+							"key": "limit",
+							"value": "50"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the entities are listed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const found = pm.response.json().data.filter(e => e.value === pm.collectionVariables.get('bsn1'));",
+							"pm.test('exactly one SSN entity holds the BSN', () => pm.expect(found.length).to.eql(1));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "A case number and a date that look like plates are left alone",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entities?type=LICENSE_PLATE&search=12-AB&limit=50",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entities"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "LICENSE_PLATE"
+						},
+						{
+							"key": "search",
+							"value": "12-AB"
+						},
+						{
+							"key": "limit",
+							"value": "50"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the entities are listed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const values = pm.response.json().data.map(e => e.value);",
+							"pm.test('no plate entity reads ZK-12-AB-34 or 2024-12-AB', () => { pm.expect(values).to.not.include('ZK-12-AB-34'); pm.expect(values).to.not.include('12-AB-34'); pm.expect(values).to.not.include('2024-12-AB'); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Anonymise the file",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/files/{{fileId}}/anonymize",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"files",
+						"{{fileId}}",
+						"anonymize"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the copy is made', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('complete, nothing left over', () => { pm.expect(o.complete).to.eql(true); pm.expect(o.residual_count).to.eql(0); });",
+							"pm.collectionVariables.set('anonymisedId', o.anonymized_file_id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The anonymised copy shows Dutch placeholders and neither identifier",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files/{{anonymisedId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectId}}",
+						"files",
+						"{{anonymisedId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the copy is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const body = pm.response.text();",
+							"pm.test('the plate is a KENTEKEN placeholder', () => pm.expect(body).to.match(/met kenteken \\[KENTEKEN[^\\]]*\\] stond/));",
+							"pm.test('the BSN is a BSN placeholder', () => pm.expect(body).to.match(/Burgerservicenummer \\[BSN[^\\]]*\\] van/));",
+							"pm.test('the plate text appears nowhere', () => pm.expect(body).to.not.include(pm.collectionVariables.get('plate1')));",
+							"pm.test('the BSN appears nowhere', () => pm.expect(body).to.not.include(pm.collectionVariables.get('bsn1')));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Control: recognition still on with the regex method, but no pattern set",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"settings",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{settingsWithoutSets}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the settings are saved', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const d = pm.response.json().data;",
+							"pm.test('recognition on, regex, no set', () => { pm.expect(d.entityRecognitionEnabled).to.eql(true); pm.expect(d.entityRecognitionMethod).to.eql('regex'); pm.expect(d.entityPatternSets).to.eql([]); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Control: the same text with other values",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectId}}",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"name\": \"melding-zonder-{{suffix}}.txt\",\n \"content\": \"Het voertuig met kenteken {{plate2}} stond geparkeerd. Burgerservicenummer {{bsn2}} van de melder. Zaak ZK-12-AB-34, datum 2024-12-AB.\"\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the file is stored', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('controlFileId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Control: extract it",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/files/{{controlFileId}}/extract",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"files",
+						"{{controlFileId}}",
+						"extract"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the extraction runs', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Control: without the nl set the plate is no entity",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entities?type=LICENSE_PLATE&search={{plate2}}&limit=50",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entities"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "LICENSE_PLATE"
+						},
+						{
+							"key": "search",
+							"value": "{{plate2}}"
+						},
+						{
+							"key": "limit",
+							"value": "50"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the entities are listed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('no licence plate entity', () => pm.expect(pm.response.json().data.filter(e => e.value === pm.collectionVariables.get('plate2')).length).to.eql(0));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Control: without the nl set the BSN is no SSN entity",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entities?type=SSN&search={{bsn2}}&limit=50",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entities"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "SSN"
+						},
+						{
+							"key": "search",
+							"value": "{{bsn2}}"
+						},
+						{
+							"key": "limit",
+							"value": "50"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{officerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{officerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the entities are listed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('no SSN entity', () => pm.expect(pm.response.json().data.filter(e => e.value === pm.collectionVariables.get('bsn2')).length).to.eql(0));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the file settings as they were",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"settings",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{settingsBefore}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the settings are restored', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the object",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the object is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the schema",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the officer",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{officerId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{officerId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the officer is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "suffix",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "officerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "officerPassword",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "plate1",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bsn1",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "plate2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bsn2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "settingsBefore",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "settingsOn",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "settingsWithoutSets",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "schemaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "registerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "objectId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "fileId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "anonymisedId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "controlFileId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

@@ -15,14 +15,14 @@ translatable, reading `KENTEKEN` on a Dutch instance.
 - **AND** a text file whose content reads "Het voertuig met kenteken 12-GBK-3 stond geparkeerd"
 - **WHEN** the officer calls `POST /api/files/{fileId}/extract` and then `GET /api/entities`
 - **THEN** the response lists one entity with type `LICENSE_PLATE` and value `12-GBK-3`
-- @e2e exclude {specified only; task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e exclude {API-only; covered by tests/integration/openregister-licence-plate-detection.postman_collection.json}
 
 #### Scenario: the anonymised copy shows a Dutch placeholder
 
 - **GIVEN** the same file with its plate detected, on an instance whose language is Dutch
 - **WHEN** the officer calls `POST /api/files/{fileId}/anonymize`
 - **THEN** the anonymised copy reads `[KENTEKEN-1]` where the plate was, and the plate text appears nowhere in it
-- @e2e exclude {specified only; task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e exclude {API-only; covered by tests/integration/openregister-licence-plate-detection.postman_collection.json}
 
 ### Requirement: Jurisdiction identifiers come from a pattern set per country
 
@@ -44,7 +44,7 @@ SHALL call it rather than carry its own copy.
 - **GIVEN** a text holding "BSN 111222333" and "nummer 123456789"
 - **WHEN** the `nl` pattern set runs over it
 - **THEN** one `SSN` entity is returned, for `111222333`, and `123456789` is not flagged
-- @e2e exclude {specified only; task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e exclude {API-only; covered by tests/integration/openregister-licence-plate-detection.postman_collection.json}
 
 ### Requirement: A plate-shaped token is not a plate without proof
 
@@ -59,14 +59,14 @@ span already claimed by a BSN or IBAN SHALL NOT also be a plate.
 - **GIVEN** a text holding "zaak ZK-12-AB-34", "datum 2024-12-AB", "postcode 1234 AB" and "artikel 12GBK3"
 - **WHEN** the `nl` pattern set runs over it
 - **THEN** no `LICENSE_PLATE` entity is returned
-- @e2e exclude {specified only; task 2.2 adds NlPatternSetTest, task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e exclude {covered by NlPatternSetTest and tests/integration/openregister-licence-plate-detection.postman_collection.json}
 
 #### Scenario: an unhyphenated plate counts with a context word
 
 - **GIVEN** a text holding "kenteken 12GBK3"
 - **WHEN** the `nl` pattern set runs over it
 - **THEN** one `LICENSE_PLATE` entity is returned with confidence 0.6
-- @e2e exclude {specified only; task 2.2 adds NlPatternSetTest, task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e exclude {covered by NlPatternSetTest and tests/integration/openregister-licence-plate-detection.postman_collection.json}
 
 ### Requirement: Enabled pattern sets run under every detection method
 
