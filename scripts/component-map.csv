@@ -888,6 +888,8 @@ Db/SchemaRunEntryMapper.php,31,Db,Service,Service/Db/SchemaRunEntryMapper.php,0,
 Db/SchemaRunMapper.php,60,Db,Service,Service/Db/SchemaRunMapper.php,0,349,Core
 Db/SearchTrail.php,149,Db,Compliance,Compliance/Db/SearchTrail.php,0,,Compliance
 Db/SearchTrailMapper.php,570,Db,Compliance,Compliance/Db/SearchTrailMapper.php,0,32,Compliance
+Db/ForeignIdentifier.php,,Db,,,,,Core
+Db/ForeignIdentifierMapper.php,,Db,,,,,Core
 Db/SelectByColumnTrait.php,22,Db,Integrations,Integrations/Db/SelectByColumnTrait.php,0,,Core
 Db/Sequence.php,26,Db,Configuration,Configuration/Db/Sequence.php,0,,Processes
 Db/SequenceMapper.php,44,Db,Configuration,Configuration/Db/SequenceMapper.php,0,,Processes
@@ -3360,6 +3362,8 @@ Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchT
 Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Core
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
 Service/SemanticTypeResolver.php,210,Service,Service,Service/SemanticTypeResolver.php,2,107,Core
+Service/ForeignIdentifierConflictException.php,,Service,,,,,Core
+Service/ForeignIdentifierRegistry.php,,Service,,,,,Core
 Service/SequenceService.php,107,Service,Configuration,Configuration/Service/SequenceService.php,1,259,Processes
 Service/Serializer/RegisterSerializer.php,110,Service,Service,Service/Serializer/RegisterSerializer.php,0,,Core
 Service/ServiceRegistrar.php,209,Service,Access,Access/Service/ServiceRegistrar.php,0,,Core
@@ -4393,6 +4397,7 @@ Service/GraphQL/AdminQueryAudit.php,,Service,,,,,Core
 Service/GraphQL/AdminQueryExport.php,,Service,,,,,Core
 Exception/ReadOnlyQueryException.php,,Exception,,,,,Kernel
 Exception/NoTabularResultException.php,,Exception,,,,,Kernel
+Migration/Version1Date20261114141600.php,,Migration,,,,,Platform
 Migration/Version1Date20261121170011.php,63,Migration,,,,,Platform
 Exception/FederatedShareNotDeliveredException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121180018.php,80,Migration,,,,,Platform
@@ -4611,6 +4616,14 @@ Service/Anonymisation/DetectorEvaluationService.php,92,Service,Compliance,Compli
 Service/Anonymisation/DetectorEvaluationStore.php,87,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationStore.php,0,,Compliance
 Service/Anonymisation/EvaluationCorpus.php,128,Service,Compliance,Compliance/Service/Anonymisation/EvaluationCorpus.php,0,,Compliance
 Command/EvaluateDetectorCommand.php,,Command,,,,,Compliance
+BackgroundJob/IdentifierSchemeMigrationJob.php,,BackgroundJob,,,,,Core
+Controller/IdentifierSchemeMigrationsController.php,,Controller,,,,,Core
+Db/IdentifierSchemeRun.php,,Db,,,,,Core
+Db/IdentifierSchemeRunMapper.php,,Db,,,,,Core
+Migration/Version1Date20261114181600.php,,Migration,,,,,Platform
+Service/IdentifierSchemeMigrationRunningException.php,,Service,,,,,Core
+Service/IdentifierSchemeMigrationService.php,,Service,,,,,Core
+Service/IdentifierSchemePass.php,,Service,,,,,Core
 Search/FileHitSearch.php,,Search,,,,,Search
 Kernel/Contracts/FileOwnerLookupInterface.php,,Kernel,,,,,Kernel
 Service/Import/RecordImport/FailedRowExport.php,,Service,,,,,Core

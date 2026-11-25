@@ -1865,6 +1865,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'schemaMigration#revalidate', 'url' => '/api/schemas/{id}/revalidate', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#runs', 'url' => '/api/schemas/{id}/runs', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#run', 'url' => '/api/schemas/{id}/runs/{run}', 'verb' => 'GET', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
+        // generated-identifier C41.5: a scheme change rewrites issued identifiers in a background job.
+        ['name' => 'identifierSchemeMigrations#create', 'url' => '/api/schemas/{id}/identifier-migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'identifierSchemeMigrations#show', 'url' => '/api/identifier-migrations/{run}', 'verb' => 'GET', 'requirements' => ['run' => '\d+']],
         ['name' => 'schemaMigration#previewMigration', 'url' => '/api/schemas/{id}/migrations/preview', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         ['name' => 'schemaMigration#migrate', 'url' => '/api/schemas/{id}/migrations', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
         // One named part of one schema back to what its app shipped (admin; shipped-baseline-reset-is-reachable).
