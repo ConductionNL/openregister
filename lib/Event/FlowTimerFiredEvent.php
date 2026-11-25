@@ -116,6 +116,18 @@ class FlowTimerFiredEvent extends Event {
 	}//end getRungKey()
 
 	/**
+	 * The rung's trigger, for a rung fire: a rung's key may be author-chosen,
+	 * so the key alone cannot say whether the rung warns before the deadline.
+	 *
+	 * @return string|null `preBreach`, `slaBreached` or `postBreach`; null for an expiry or when unknown.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-task-nearing-its-deadline-warns-its-assignee-once
+	 */
+	public function getRungTrigger(): ?string {
+		return $this->firing->rungTrigger;
+	}//end getRungTrigger()
+
+	/**
 	 * The resolved addressees.
 	 *
 	 * @return array<int, array{type: string, id: string, role: string}> The recipients.

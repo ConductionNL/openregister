@@ -1,0 +1,1469 @@
+{
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
+					"// Each request names its own user. Nextcloud answers a basic-auth request with a session",
+					"// cookie, and a kept cookie would make the next request run as the previous user.",
+					"pm.cookies.jar().clear(pm.collectionVariables.get('base_url') || pm.variables.get('base_url'), function () {});"
+				]
+			}
+		}
+	],
+	"info": {
+		"_postman_id": "openregister-access-links-per-subject-v1",
+		"name": "OpenRegister access links managed per subject",
+		"description": "# Access links managed per subject\n\nopenspec/changes/access-links-managed-per-subject task 3.1 (REQ-ABL-005): a member mints a read link over a shared view; the view's manager lists it (creator, use count, no anchor) and revokes it, after which the link answers 404. A caller who may not publish the subject gets 404 on list and revoke, and a revoke naming another subject is 404 with the link left live.\n\nUses the two non-admin users `tests/e2e/ci/seed.sh` seeds: `e2e-owner` is the manager (owns the views), `e2e-other` the member. The outsider case is the member facing the manager's private view C: listing its links, minting over it and revoking the manager's link on it all answer 404, and that link stays live. Creates its own register, schema and views and removes them.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "manager_user",
+			"value": "e2e-owner"
+		},
+		{
+			"key": "manager_password",
+			"value": "E2e-Share-Pass-123"
+		},
+		{
+			"key": "member_user",
+			"value": "e2e-other"
+		},
+		{
+			"key": "member_password",
+			"value": "E2e-Share-Pass-123"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "expires",
+			"value": ""
+		},
+		{
+			"key": "register_id",
+			"value": ""
+		},
+		{
+			"key": "schema_id",
+			"value": ""
+		},
+		{
+			"key": "view_a",
+			"value": ""
+		},
+		{
+			"key": "view_b",
+			"value": ""
+		},
+		{
+			"key": "view_c",
+			"value": ""
+		},
+		{
+			"key": "link_id",
+			"value": ""
+		},
+		{
+			"key": "anchor",
+			"value": ""
+		},
+		{
+			"key": "link_c",
+			"value": ""
+		},
+		{
+			"key": "anchor_c",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Setup: register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Links {{run}}\",\"slug\":\"links-{{run}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.collectionVariables.set('run', String(Date.now()));",
+							"pm.collectionVariables.set('expires', new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 19) + 'Z');"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('register_id', pm.response.json().id);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: schema every signed-in user may read",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Plan {{run}}\",\"slug\":\"plan-{{run}}\",\"properties\":{\"title\":{\"type\":\"string\"}},\"authorization\":{\"read\":[\"authenticated\"]}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"pm.collectionVariables.set('schema_id', pm.response.json().id);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: attach the schema",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{register_id}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Links {{run}}\",\"slug\":\"links-{{run}}\",\"schemas\":[{{schema_id}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: one object",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{register_id}}",
+						"{{schema_id}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Week 48\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: the manager's view Shared plan A",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/views",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"views"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Shared plan A {{run}}\",\"isPublic\":true,\"query\":{\"registers\":[{{register_id}}],\"schemas\":[{{schema_id}}]}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"var v = pm.response.json(); v = v.view || v;",
+							"pm.collectionVariables.set('view_a', v.uuid);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: the manager's view Shared plan B",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/views",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"views"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Shared plan B {{run}}\",\"isPublic\":true,\"query\":{\"registers\":[{{register_id}}],\"schemas\":[{{schema_id}}]}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"var v = pm.response.json(); v = v.view || v;",
+							"pm.collectionVariables.set('view_b', v.uuid);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Setup: the manager's view Private plan C",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/views",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"views"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"name\":\"Private plan C {{run}}\",\"isPublic\":false,\"query\":{\"registers\":[{{register_id}}],\"schemas\":[{{schema_id}}]}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201 or 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+							"var v = pm.response.json(); v = v.view || v;",
+							"pm.collectionVariables.set('view_c', v.uuid);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "The member mints a read link over shared view A",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/access-links",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"access-links"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{member_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{member_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subjectType\":\"view\",\"subjectId\":\"{{view_a}}\",\"capabilities\":[\"read\"],\"label\":\"contractor\",\"expiresAt\":\"{{expires}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201', function () { pm.response.to.have.status(201); });",
+							"var l = pm.response.json();",
+							"pm.collectionVariables.set('link_id', l.id);",
+							"pm.collectionVariables.set('anchor', l.anchor);",
+							"pm.test('the minter gets the anchor', function () { pm.expect(l.anchor).to.be.a('string').and.not.empty; });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "The link opens",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/public/links/{{anchor}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"public",
+						"links",
+						"{{anchor}}"
+					]
+				},
+				"auth": {
+					"type": "noauth"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "The manager mints a link over private view C",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/access-links",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"access-links"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subjectType\":\"view\",\"subjectId\":\"{{view_c}}\",\"capabilities\":[\"read\"],\"label\":\"private\",\"expiresAt\":\"{{expires}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('201', function () { pm.response.to.have.status(201); });",
+							"var l = pm.response.json();",
+							"pm.collectionVariables.set('link_c', l.id);",
+							"pm.collectionVariables.set('anchor_c', l.anchor);"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "The manager lists the links on view A",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/access-links?subjectType=view&subjectId={{view_a}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"access-links"
+					],
+					"query": [
+						{
+							"key": "subjectType",
+							"value": "view"
+						},
+						{
+							"key": "subjectId",
+							"value": "{{view_a}}"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });",
+							"var rows = pm.response.json().results;",
+							"var row = rows.find(function (r) { return String(r.id) === String(pm.collectionVariables.get('link_id')); });",
+							"pm.test('the member\\'s link is listed', function () { pm.expect(row).to.be.an('object'); });",
+							"pm.test('with its creator', function () { pm.expect(row.createdBy).to.equal(pm.collectionVariables.get('member_user')); });",
+							"pm.test('with its use count', function () { pm.expect(row.useCount).to.equal(1); });",
+							"pm.test('without its anchor', function () { pm.expect(row).to.not.have.property('anchor'); pm.expect(row).to.not.have.property('url'); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Outsider: the member lists the links on private view C",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/access-links?subjectType=view&subjectId={{view_c}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"access-links"
+					],
+					"query": [
+						{
+							"key": "subjectType",
+							"value": "view"
+						},
+						{
+							"key": "subjectId",
+							"value": "{{view_c}}"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{member_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{member_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('404', function () { pm.response.to.have.status(404); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Outsider: the member revokes the manager's link naming private view C",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/access-links/{{link_c}}?subjectType=view&subjectId={{view_c}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"access-links",
+						"{{link_c}}"
+					],
+					"query": [
+						{
+							"key": "subjectType",
+							"value": "view"
+						},
+						{
+							"key": "subjectId",
+							"value": "{{view_c}}"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{member_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{member_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('404', function () { pm.response.to.have.status(404); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Outsider: the member cannot mint over private view C",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/access-links",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"access-links"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{member_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{member_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subjectType\":\"view\",\"subjectId\":\"{{view_c}}\",\"capabilities\":[\"read\"],\"label\":\"private\",\"expiresAt\":\"{{expires}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('404', function () { pm.response.to.have.status(404); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "The manager's link on C is still live",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/public/links/{{anchor_c}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"public",
+						"links",
+						"{{anchor_c}}"
+					]
+				},
+				"auth": {
+					"type": "noauth"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Another subject: the manager revokes naming view B",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/access-links/{{link_id}}?subjectType=view&subjectId={{view_b}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"access-links",
+						"{{link_id}}"
+					],
+					"query": [
+						{
+							"key": "subjectType",
+							"value": "view"
+						},
+						{
+							"key": "subjectId",
+							"value": "{{view_b}}"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('404', function () { pm.response.to.have.status(404); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "The link is still live",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/public/links/{{anchor}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"public",
+						"links",
+						"{{anchor}}"
+					]
+				},
+				"auth": {
+					"type": "noauth"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "The manager revokes the member's link naming view A",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/access-links/{{link_id}}?subjectType=view&subjectId={{view_a}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"access-links",
+						"{{link_id}}"
+					],
+					"query": [
+						{
+							"key": "subjectType",
+							"value": "view"
+						},
+						{
+							"key": "subjectId",
+							"value": "{{view_a}}"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('200', function () { pm.response.to.have.status(200); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "The revoked link answers 404 on its next use",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/public/links/{{anchor}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"public",
+						"links",
+						"{{anchor}}"
+					]
+				},
+				"auth": {
+					"type": "noauth"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('404', function () { pm.response.to.have.status(404); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Teardown: view A",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/views/{{view_a}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"views",
+						"{{view_a}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('answered', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Teardown: view B",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/views/{{view_b}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"views",
+						"{{view_b}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('answered', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Teardown: view C",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/views/{{view_c}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"views",
+						"{{view_c}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{manager_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{manager_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('answered', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204]); });"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Teardown: register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{register_id}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('answered', function () { pm.expect(pm.response.code).to.be.oneOf([200, 204, 409]); });"
+						]
+					}
+				}
+			]
+		}
+	]
+}

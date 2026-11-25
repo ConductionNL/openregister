@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Operations;
 
 use OCA\OpenRegister\Exception\RepairRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\FileExtractionQueueInterface;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
@@ -56,14 +58,18 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection            $db       The connection the repair writes through.
-	 * @param ConsistencyCheckService  $check    The read that says what is wrong.
-	 * @param JobRunRecorder           $recorder Where the act is recorded.
+	 * @param IDBConnection                     $db          The connection the repair writes through.
+	 * @param ConsistencyCheckService           $check       The read that says what is wrong.
+	 * @param JobRunRecorder                    $recorder    Where the act is recorded.
+	 * @param FileExtractionQueueInterface|null $extractions Where an index repair queues its extractions.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly ConsistencyCheckService $check,
 		private readonly JobRunRecorder $recorder,
+		private readonly ?FileExtractionQueueInterface $extractions = null,
 	) {
 	}//end __construct()
 
@@ -77,6 +83,7 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 	 * @throws RepairRefusedException When no such probe exists.
 	 *
 	 * @spec openspec/specs/operations-console/spec.md#requirement-the-instance-checks-its-own-data-and-repairs-it-as-a-separate-act-req-aoc-005
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	public function plan(string $slug): array {
 		$plan = $this->check->repairPlan(slug: $slug);
@@ -94,6 +101,8 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 			'slug' => $slug,
 			'action' => $plan['action'],
 			'table' => $plan['table'],
+			'kind' => ($plan['kind'] ?? IndexReconciliationProbes::REPAIR_DELETE),
+			'column' => ($plan['column'] ?? 'id'),
 			'count' => (int)($finding['count'] ?? 0),
 			'objects' => ($finding['objects'] ?? []),
 		];
@@ -148,15 +157,29 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 	}//end refuseWithoutActor()
 
 	/**
-	 * Delete the planned rows and record the act.
+	 * Repair the planned rows the way the probe names, and record the act.
 	 *
 	 * @param array<string, mixed> $plan  The plan the administrator was shown.
 	 * @param string               $actor The uid performing the repair.
 	 *
-	 * @return int How many rows were deleted.
+	 * @return int How many rows were deleted, marked or queued.
+	 *
+	 * @throws RepairRefusedException When the probe names a repair this service cannot make.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	private function repairRows(array $plan, string $actor): int {
-		$changed = $this->delete(table: (string)$plan['table'], ids: self::rowIds(rows: $plan['objects']));
+		$changed = match ($plan['kind']) {
+			IndexReconciliationProbes::REPAIR_DELETE => $this->delete(table: (string)$plan['table'], ids: self::rowIds(rows: $plan['objects'])),
+			IndexReconciliationProbes::REPAIR_QUEUE_FILE_EXTRACTION => $this->queueFileExtractions(
+				fileIds: self::columnIds(rows: $plan['objects'], column: (string)$plan['column'])
+			),
+			IndexReconciliationProbes::REPAIR_MARK_FOR_VECTORISATION => $this->markForVectorisation(ids: self::rowIds(rows: $plan['objects'])),
+			default => throw new RepairRefusedException(
+				message: 'The "'.$plan['slug'].'" check names a repair this instance cannot make.',
+				reason: 'unknown-repair'
+			),
+		};
 
 		$this->recorder->recordAct(
 			act: new OperatorAct(
@@ -187,6 +210,30 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 		);
 
 	}//end rowIds()
+
+	/**
+	 * The distinct integer values of one column of the offending rows, skipping rows without it.
+	 *
+	 * Stale chunks of one file are many rows naming one file: it is queued once.
+	 *
+	 * @param array<int, array<string, mixed>> $rows   The rows.
+	 * @param string                           $column The column.
+	 *
+	 * @return array<int, int> The values, each once.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	private static function columnIds(array $rows, string $column): array {
+		$ids = [];
+		foreach ($rows as $row) {
+			if (isset($row[$column]) === true) {
+				$ids[(int)$row[$column]] = true;
+			}
+		}
+
+		return array_keys($ids);
+
+	}//end columnIds()
 
 	/**
 	 * The id of one offending row.
@@ -254,6 +301,62 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 		];
 
 	}//end repaired()
+
+	/**
+	 * Queue one text extraction per named file.
+	 *
+	 * The extraction job re-reads a file whose chunks are older than the file
+	 * and reads a file that has none, so queueing is the whole repair; nothing is
+	 * deleted first, and the current chunks answer searches until the new ones land.
+	 *
+	 * @param array<int, int> $fileIds The file ids.
+	 *
+	 * @return int How many extractions were queued.
+	 *
+	 * @throws RepairRefusedException When no extraction queue is wired.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	private function queueFileExtractions(array $fileIds): int {
+		if ($this->extractions === null) {
+			throw new RepairRefusedException(
+				message: 'This repair queues extractions, and no extraction queue is available to queue them on.',
+				reason: 'no-extraction-queue'
+			);
+		}
+
+		foreach ($fileIds as $fileId) {
+			$this->extractions->queueFileExtraction(fileId: $fileId);
+		}
+
+		return count($fileIds);
+
+	}//end queueFileExtractions()
+
+	/**
+	 * Mark the named chunks unvectorised, so the vectorisation job embeds them again.
+	 *
+	 * Keyed on the ids the check returned, like {@see self::delete()}.
+	 *
+	 * @param array<int, int> $ids The chunk ids.
+	 *
+	 * @return int How many chunks were marked.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 */
+	private function markForVectorisation(array $ids): int {
+		if ($ids === []) {
+			return 0;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->update('openregister_chunks')
+			->set('vectorized', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL))
+			->where($qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)));
+
+		return (int)$qb->executeStatement();
+
+	}//end markForVectorisation()
 
 	/**
 	 * Delete the named rows, and only those.

@@ -592,5 +592,6 @@ final class CoreServiceBindings {
 		PlaceholderResolverInterface::class => PlaceholderResolver::class,
 		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
 		PropertySearchProfileInterface::class => PropertySearchProfile::class,
+		\OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface::class => SemanticProviderCatalogue::class,
 	];
 }//end class

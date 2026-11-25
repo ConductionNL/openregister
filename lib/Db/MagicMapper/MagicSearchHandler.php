@@ -164,6 +164,8 @@ class MagicSearchHandler {
 	 * fallback is an empty array (`json`) or null (`json-or-null`).
 	 *
 	 * @var array<string, string>
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
 	private const ROW_METADATA_KINDS = [
 		'uuid'               => 'scalar',
@@ -192,6 +194,9 @@ class MagicSearchHandler {
 		'folder'             => 'scalar',
 		'application'        => 'scalar',
 		'size'               => 'scalar',
+		// The lifecycle status: without it every listed draft reads as an
+		// ordinary object, and the draft sweep can never find one.
+		'status'             => 'scalar',
 	];
 
 	/**
@@ -1209,9 +1214,10 @@ class MagicSearchHandler {
 	 * @throws RelatedRowFilterNotSupportedException When the query carries either key.
 	 *
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-subscription-state-and-freshness-are-query-lenses
 	 */
 	public function refuseRelatedRowFilters(array $query): void {
-		foreach (['_related', '_referenced', ReferenceFilterParser::KEY, ArrayElementFilter::KEY] as $key) {
+		foreach (['_related', '_referenced', ReferenceFilterParser::KEY, ArrayElementFilter::KEY, RegistryLens::KEY] as $key) {
 			if (array_key_exists($key, $query) === true) {
 				throw new RelatedRowFilterNotSupportedException(
 					message: sprintf(
@@ -1342,6 +1348,8 @@ class MagicSearchHandler {
 	 * @param TableFilterRun $run The filter pass: query builder, request query and table.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-subscription-state-and-freshness-are-query-lenses
 	 */
 	private function applyLensAndSearchFilters(TableFilterRun $run): void {
 		$qb     = $run->qb;
@@ -1357,6 +1365,9 @@ class MagicSearchHandler {
 		// trail's read history at the edge (SearchQueryHandler), so every search
 		// path honours it, the cross-table UNION included.
 		$this->applyPersonalLensFilter(qb: $qb, userId: ($query['_watchingFor'] ?? null));
+
+		// The registry subscription lenses, `_registry[state]` / `_registry[updatedBefore]`.
+		$this->applyRegistryLens(qb: $qb, query: $query);
 
 		// Apply full-text search if provided.
 		// Fuzzy matching is only enabled when _fuzzy=true parameter is explicitly set.
@@ -4908,6 +4919,39 @@ class MagicSearchHandler {
 
 		$qb->andWhere($qb->createFunction('NOT EXISTS (' . $sub->getSQL() . ')'));
 	}//end applyUnreadFilter()
+
+	/**
+	 * Narrow a query by the registry subscription lenses, when it carries them.
+	 *
+	 * The values are bound on the OUTER query builder, for the reason
+	 * applyPersonalLensFilter() gives. A lens that cannot be read is refused.
+	 *
+	 * @param IQueryBuilder        $qb    The query builder.
+	 * @param array<string, mixed> $query The request query.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RegistryLensException When the lens names an unknown key, state or an unreadable moment.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-subscription-state-and-freshness-are-query-lenses
+	 */
+	private function applyRegistryLens(IQueryBuilder $qb, array $query): void {
+		$lensFilter = new RegistryLens();
+		$lens       = $lensFilter->parse(query: $query);
+		if ($lens === null) {
+			return;
+		}
+
+		$bind = static function (mixed $value, bool $isList) use ($qb): string {
+			if ($isList === true) {
+				return (string)$qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY);
+			}
+
+			return (string)$qb->createNamedParameter($value);
+		};
+
+		$qb->andWhere($qb->createFunction($lensFilter->condition(lens: $lens, outerUuid: 't._uuid', bind: $bind)));
+	}//end applyRegistryLens()
 
 	/**
 	 * Narrow a query to the objects one user has starred.
