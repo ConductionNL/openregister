@@ -85,6 +85,9 @@
 		<!-- Federated configuration sharing: sources, trusted keys, publish/install groups -->
 		<FederatedTrustConfiguration />
 
+		<!-- Credential providers other apps declare: review, approve, reject, revoke -->
+		<DeclaredCredentialProviders />
+
 		<!-- Dialogs -->
 		<Dialogs />
 	</CnAdminSettingsShell>
@@ -98,6 +101,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
 import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import CacheManagement from './sections/CacheManagement.vue'
+import DeclaredCredentialProviders from './sections/DeclaredCredentialProviders.vue'
 import EdepotHostKeyConfiguration from './sections/EdepotHostKeyConfiguration.vue'
 import FederatedTrustConfiguration from './sections/FederatedTrustConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
@@ -152,6 +156,7 @@ export default {
 		ApiTokenConfiguration,
 		EdepotHostKeyConfiguration,
 		FederatedTrustConfiguration,
+		DeclaredCredentialProviders,
 		Dialogs,
 	},
 
