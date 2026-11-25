@@ -83,7 +83,7 @@ describe('ActionsTab objects requests', () => {
 		await flushPromises()
 
 		expect(objectCalls()).toEqual([
-			[OBJECTS, { params: { _limit: 20 }, timeout: 10000 }],
+			[OBJECTS, { params: { _limit: 20, _extend: 'status' }, timeout: 10000 }],
 		])
 		expect(wrapper.vm.searchResults[5]).toEqual([{ id: 'a' }])
 	})
@@ -98,11 +98,12 @@ describe('ActionsTab objects requests', () => {
 		await wrapper.vm.searchObjects(SCHEMA)
 
 		expect(objectCalls()).toEqual([
-			[OBJECTS, { params: { _search: 'acme', _limit: 20 }, timeout: 10000 }],
+			[OBJECTS, { params: { _search: 'acme', _limit: 20, _extend: 'status' }, timeout: 10000 }],
 		])
 		expect(Object.keys(objectCalls()[0][1].params)).toEqual([
 			'_search',
 			'_limit',
+			'_extend',
 		])
 		expect(wrapper.vm.searchResults[5]).toEqual([{ id: 'b' }])
 		expect(wrapper.vm.searching[5]).toBe(false)
@@ -118,7 +119,7 @@ describe('ActionsTab objects requests', () => {
 		await flushPromises()
 
 		expect(objectCalls()).toEqual([
-			[OBJECTS, { params: { _limit: 20 }, timeout: 10000 }],
+			[OBJECTS, { params: { _limit: 20, _extend: 'status' }, timeout: 10000 }],
 		])
 	})
 
