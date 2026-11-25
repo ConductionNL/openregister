@@ -1,6 +1,7 @@
 # launchpad e2e reds of 2026-11-25, triaged live by live-launchpad-1 (sandbox NC 34 sqlite, php -S + router, launchpad development ~12:00Z, OpenRegister main)
 # 162 listed reds run serially by title (clock/conditional-visibility/cross-widget-filter/dashboard-share-access/manifest-grants/footer/announcement/cli-commands left to their lease holders): ~95 PASS on development now; footer group (27) all green.
 # Tags: FIXED <pr> | SANDBOX <why> | OPEN <first error>. app-chrome reds were missing pretty URLs (green with bin/php-s-router.php).
+# 13:40Z rerun of the OPEN ones on development at #2026 with bin/php-s-router.php: those now green are marked PASS.
 
 tests/e2e/allowed-websites-list.spec.ts:423:5 › the upgrade merges the per-feature lists into the allowed websites with their purpose
     SANDBOX needs occ maintenance:repair; core repair steps fail in the sqlite sandbox
@@ -19,7 +20,7 @@ tests/e2e/dashboard-locking.spec.ts:655:6 › REQ-LOCK-008 a deleted dashboard t
 tests/e2e/dashboard-reactions.spec.ts:640:6 › REQ-RXN-004 reactors by emoji › 150 reactors come back as 100, then 50 after cursor=100
     SANDBOX sqlite "database is locked" creating 150 users
 tests/e2e/dashboard-sharing.spec.ts:274:6 › dashboard-sharing UI (REQ-SHARE-001/002/004) › recipient sees the shared dashboard in their switcher
-    OPEN Error: expect(locator).toBeVisible() failed
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/dashboard-store.spec.ts:409:7 › dashboard store › a non-admin account › is refused the registry config and the install, but may search
     FIXED #1972 (app)
 tests/e2e/dashboard-versioning-notes.spec.ts:131:6 › REQ-VERSUI-004 several changes in one save › Femke adds Inbox, removes Oud nieuws and goes from 8 to 12 columns: the note reads "Widget I
@@ -33,7 +34,7 @@ tests/e2e/dashboard-view-analytics.spec.ts:1368:6 › the frontend view-event (R
 tests/e2e/dashboards-crud.spec.ts:235:6 › REQ-DASH-001 create a personal dashboard › name and description are stored; grid columns stay 12
     FIXED #1978
 tests/e2e/dashboards-personal-layer.spec.ts:247:6 › dashboards — hide widgets for yourself (REQ-PERSUI-001..002) › "Show again" on one of two hidden widgets brings it back and the control re
-    OPEN Error: expect(locator).toHaveText(expected) failed
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/dashboards-publication.spec.ts:547:6 › dashboards — publication state (REQ-DASH-031..037, REQ-SCHEDUI-001..002) › the administrator sees another user's draft
     FIXED #1979
 tests/e2e/discover-server-services.spec.ts:113:5 › Deck is discovered, placed in one click and then marked as on this dashboard
@@ -49,7 +50,7 @@ tests/e2e/iframe-embed-widget.spec.ts:574:5 › a Power BI report renders live i
 tests/e2e/integrations-page.spec.ts:178:6 › Integrations over the connection registry › lists the six declared connections, all of them LaunchPad's
     SANDBOX integriq not installed
 tests/e2e/keyboard-widget-repositioning.spec.ts:98:6 › keyboard-accessible widget repositioning (grid-layout) › SC 2.1.1: keyboard-only move repositions the widget and persists after reload
-    OPEN TimeoutError: locator.click: Timeout 10000ms exceeded.
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/launchpad-adopt-or-abstractions.spec.ts:121:6 › an OR-backed widget › a 503 shows a polite "Temporarily unavailable" state and retries on the next poll
     OPEN Error: expect(locator).toBeVisible() failed
 tests/e2e/link-button-widget-form.spec.ts:275:6 › link button form: list editor (REQ-LBLM-006) › Add link appends an empty entry and opens a form modal for it
@@ -63,13 +64,13 @@ tests/e2e/live-data-tile-widget.spec.ts:446:5 › REQ-LIVETILE-002: an off-list 
 tests/e2e/menu-widget-links.spec.ts:118:6 › menu widget — active item (REQ-MENU-006) › the item whose URL is the current page is highlighted, and so is its ancestor
     OPEN Error: expect(received).not.toBe(expected) // Object.is equality
 tests/e2e/menu-widget-styles.spec.ts:289:6 › menu widget — tree style (REQ-MENU-005) › a parent shows a closed caret and its child is hidden
-    OPEN Error: <!DOCTYPE html>
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/menu-widget-styles.spec.ts:300:6 › menu widget — tree style (REQ-MENU-005) › clicking the caret turns it open and shows the child
-    OPEN TimeoutError: locator.click: Timeout 10000ms exceeded.
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/menu-widget-styles.spec.ts:328:6 › menu widget — tree style (REQ-MENU-005) › caret and label are separate: the caret only toggles, the label navigates
-    OPEN Error: expect(locator).toBeVisible() failed
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/more-menu.spec.ts:253:5 › a dashboard picked under Dashboards opens, and stays open after a reload
-    OPEN Error: expect(locator).toBeVisible() failed
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/navigation-editor-org-active-item.spec.ts:230:5 › the section holding the active child opens by itself
     OPEN Error: expect(locator).toHaveAttribute(expected) failed
 tests/e2e/navigation-editor-org-icon-name.spec.ts:63:5 › a bare icon name appears as inline text left of the label
@@ -79,13 +80,13 @@ tests/e2e/navigation-editor-org-panel.spec.ts:488:6 › navigation-editor-org �
 tests/e2e/or-absent.spec.ts:217:5 › without OpenRegister the app, its dashboards, widgets and admin settings work, and nothing complains in the log
     SANDBOX refuses a shared-looking host by design
 tests/e2e/phone-hidden-widgets-named.spec.ts:77:5 › at 390 px the notice names the widgets that are not phone-ready, with "Which?"
-    OPEN Error: expect(locator).toBeVisible() failed
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/public-start-page-default-app.spec.ts:160:5 › an install or upgrade makes LaunchPad the default app only when none is set
     SANDBOX occ maintenance:repair fails in sandbox
 tests/e2e/quicklinks-widget-interaction.spec.ts:168:6 › quicklinks widget: hover effects (REQ-QLNK-007) › border rings the hovered icon 2-3px in the link colour, else the primary colour
-    OPEN hover colour read mid-transition (238,3,3) | Error: link 1's ring uses the link colour
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/responsive-grid-breakpoints.spec.ts:207:6 › a phone lays the dashboard out in reading order › on a 390 px phone the heading takes a row, its six tiles sit four and two under it, an
-    OPEN Error: expect(received).toEqual(expected) // deep equality
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/role-feature-permissions-fresh-install.spec.ts:94:5 › the default rule a fresh install seeds lets a user in no group add a text widget
     SANDBOX occ maintenance:repair fails in sandbox
 tests/e2e/role-feature-permissions-upgrade.spec.ts:183:5 › an upgrade widens the old shipped default rule to every LaunchPad widget type, and keeps an edited one
@@ -97,11 +98,11 @@ tests/e2e/scheduled-exports-delivery.spec.ts:380:6 › scheduled exports: retent
 tests/e2e/scheduled-exports.spec.ts:224:6 › scheduled exports: full workflow (task 27) › @e2e scheduled-exports::manual-run-with-user-tracking @e2e scheduled-exports::background-job-fires-an
     SANDBOX OR MagicMapper on sqlite: no information_schema.columns
 tests/e2e/setup-wizard.spec.ts:1160:6 › setup-wizard — completed instance and re-runs › a re-run does not re-install an installed demo
-    OPEN re-run installs again (201, alreadyInstalled false) instead of 200 | Error: {"installedDashboardUuid":"4cf6c0dc-665e-4742-89a1-e803a43844db","skippedWidgets":[],"alreadyInstalled":false}
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/sharing-tab-embed-and-conversation.spec.ts:97:6 › Sharing tab: embed tokens and the conversation (REQ-EMB-011, REQ-LEAF-006) › create a token: shown once, listed as Active, with th
     FIXED #2002 (lane 2) / backend as #1982
 tests/e2e/template-hides-missing-register.spec.ts:101:5 › the ticket list is not shown and no error line appears
-    OPEN Error: expect(locator).toBeVisible() failed
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/text-display-widget-markdown.spec.ts:350:6 › text widget — sanitising parsed markdown (REQ-TXMD-003) › a <script> is stripped and the markdown bold after it is parsed
     OPEN Error: expect(locator).toHaveText(expected) failed
 tests/e2e/text-display-widget.spec.ts:350:6 › text widget — cell layout (REQ-TXT-005) › long text scrolls inside the cell and both ends are reachable
@@ -115,19 +116,19 @@ tests/e2e/video-widget-files.spec.ts:260:6 › video widget: file access (REQ-VI
 tests/e2e/video-widget-files.spec.ts:441:6 › video widget: HTML5 playback options (REQ-VID-008, REQ-VID-011) › an autoplaying nc-file video carries autoplay and muted, and starts playing
     OPEN Error: a muted autoplay video must start on its own
 tests/e2e/visibility-dialog.spec.ts:148:5 › View as a person in the group on a Tuesday at 10:00 says they see the widget, and why
-    OPEN TimeoutError: locator.click: Timeout 10000ms exceeded.
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/widget-calculated-fields.spec.ts:226:6 › widget calculated fields (REQ-CALC-003, REQ-CALC-004, REQ-CALC-008) › a widget shows its calculated values, an inline error for a failing f
-    OPEN Error: {"type":"about:blank","title":"Forbidden","status":403,"detail":"There was a problem saving your object. Please check your input and try again.
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/widget-context-menu.spec.ts:172:6 › widget-context-menu (REQ-WDG-015..017) › REQ-WDG-017 bottom edge: popover stays within viewport when right-clicked near bottom edge
     OPEN Error: expect(received).toBeLessThanOrEqual(expected)
 tests/e2e/widgets-canvas-search.spec.ts:218:6 › workspace canvas and the widget picker (REQ-WDG-027, REQ-WDG-028) › "Add widget" lists every available widget and places the chosen one on the
-    OPEN TimeoutError: page.waitForResponse: Timeout 10000ms exceeded while waiting for event "response"
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/widgets-canvas-search.spec.ts:307:6 › workspace canvas and the widget picker (REQ-WDG-027, REQ-WDG-028) › clearing the search box brings every widget and app back
-    OPEN Error: expect(locator).toHaveText(expected) failed
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/widgets-context-menu-contract.spec.ts:354:6 › widget context menu (REQ-WDG-015..017) › near the bottom edge the popover is shifted up to stay on screen
-    OPEN Error: expect(received).toBeLessThanOrEqual(expected)
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/widgets-nc-widget.spec.ts:198:6 › nc-widget placement type (REQ-WDG-018..021) › the nc-widget sub-form lists the discovered widgets and needs one before Add
-    OPEN Error: expect(locator).toHaveCount(expected) failed
+    PASS on development at #2026 (13:40Z rerun, router on)
 tests/e2e/widgets-nc-widget.spec.ts:317:6 › nc-widget placement type (REQ-WDG-018..021) › a callback that registers within the polling window takes over from the API list
     OPEN Error: expect(locator).toBeVisible() failed
 tests/e2e/widgets-nc-widget.spec.ts:455:6 › nc-widget placement type (REQ-WDG-018..021) › horizontal mode renders wrapping ~120px cards with a 44px icon on top
@@ -135,4 +136,4 @@ tests/e2e/widgets-nc-widget.spec.ts:455:6 › nc-widget placement type (REQ-WDG-
 tests/e2e/widgets-style-and-render.spec.ts:117:6 › REQ-WDG-008 the style editor › the style editor offers background, border style/width/colour/radius, padding and header colours
     OPEN Error: expect(locator).toBeVisible() failed
 tests/e2e/work-packages-widget.spec.ts:124:5 › the widget lists the work packages as links with status and due date
-    OPEN Error: expect(locator).toHaveText(expected) failed
+    PASS on development at #2026 (13:40Z rerun, router on)
