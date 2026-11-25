@@ -5207,3 +5207,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T21:02:59Z precheck-20261125T191529-85ecfd26 CONFLICT-DEV #11148 199b32a5
 2026-11-25T21:05:00Z precheck-20261125T181737-613489e9 NORESULT tree 71543fa2e4: checker floor not measured (exit 2)
 2026-11-25T21:10:33Z session-20261125T205345-6045ec77 b-opencatalogi opened #3122 (publication-required-at-publish 1.1+1.2: required-to-publish rule declared again, legacy gaps recorded as @notSupplied by the 4 repair steps, proven against OR's real StateFieldRuleListener); batch #3103-#3118 verified and queued; merges refused by permission check
+2026-11-25T21:11:39Z precheck-20261125T191529-85ecfd26 GREEN tree d3fe31a596 on dev 292aa09ddf prs 1 front=skip: Tests: 67371, Assertions: 239394, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
