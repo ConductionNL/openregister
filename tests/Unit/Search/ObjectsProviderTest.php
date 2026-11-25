@@ -167,13 +167,15 @@ class ObjectsProviderTest extends TestCase {
 		// `scopes` joined `register` and `schema` in content-search-index.
 		// Asserted by NAME rather than by count, because a count tells the
 		// next reader nothing about which filter went missing.
-		$this->assertCount(3, $filters);
+		// `provider` joined them in platform-search-provider.
+		$this->assertCount(4, $filters);
 		foreach ($filters as $filter) {
 			$this->assertInstanceOf(FilterDefinition::class, $filter);
 		}
 
 		$names = array_map(static fn (FilterDefinition $f): string => $f->name(), $filters);
-		$this->assertSame(['register', 'schema', 'scopes'], $names);
+		$this->assertSame(['register', 'schema', 'scopes', 'provider'], $names);
+		$this->assertContains('provider', $this->provider->getSupportedFilters());
 	}
 
 	// --- Empty / short-circuit --------------------------------------------
@@ -1079,5 +1081,143 @@ class ObjectsProviderTest extends TestCase {
 		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'scopes' => 'app:dossiq']));
 
 		$this->assertSame([[1, 3]], $asked, 'one chunk, holding only the schemas dossiq claims');
+	}
+
+	/**
+	 * A provider over three schemas: dossiq claims case and invoice, pipelinq contact, nobody note.
+	 *
+	 * @param array<int, mixed> $asked Collects the schema filter of every pipeline call.
+	 *
+	 * @return ObjectsProvider The provider.
+	 */
+	private function identityProvider(array &$asked): ObjectsProvider {
+		$schema = static function (int $id, string $slug): Schema {
+			$entity = new Schema();
+			$entity->setId($id);
+			$entity->setSlug($slug);
+			return $entity;
+		};
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setSlug('zaken');
+		$register->setSchemas([1, 2, 3, 4]);
+
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('findNonSearchableIds')->willReturn([]);
+		$schemaMapper->method('findSearchableIds')->willReturn([1, 2, 3, 4]);
+		$schemaMapper->method('findAll')->willReturn([$schema(1, 'case'), $schema(2, 'contact'), $schema(3, 'invoice'), $schema(4, 'note')]);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('findAll')->willReturn([$register]);
+
+		$deepLink = $this->createMock(\OCA\OpenRegister\Service\DeepLinkRegistryServiceInterface::class);
+		$deepLink->method('registrations')->willReturn(
+			[
+				new \OCA\OpenRegister\Dto\DeepLinkRegistration(appId: 'dossiq', registerSlug: 'zaken', schemaSlug: 'case', urlTemplate: '/c'),
+				new \OCA\OpenRegister\Dto\DeepLinkRegistration(appId: 'pipelinq', registerSlug: 'zaken', schemaSlug: 'contact', urlTemplate: '/p'),
+				new \OCA\OpenRegister\Dto\DeepLinkRegistration(appId: 'dossiq', registerSlug: 'zaken', schemaSlug: 'invoice', urlTemplate: '/i'),
+			]
+		);
+
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('searchObjectsPaginated')->willReturnCallback(
+			function (array $query) use (&$asked): array {
+				$asked[] = $query['@self']['schema'] ?? null;
+				return ['results' => [], 'total' => 0];
+			}
+		);
+
+		$catalog = new \OCA\OpenRegister\Db\SchemaCatalog($registerMapper, $schemaMapper, $this->createMock(\OCA\OpenRegister\Db\MagicMapperInterface::class));
+		$output = new \OCA\OpenRegister\Search\ObjectsProviderOutput($this->l10n, $this->createMock(\OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface::class), $this->logger);
+
+		return new ObjectsProvider(
+			$objectService,
+			$catalog,
+			$output,
+			new \OCA\OpenRegister\Search\SearchScopeCatalog(catalog: $catalog, logger: $this->logger, deepLink: $deepLink)
+		);
+	}
+
+	/**
+	 * 🔴 Searching within one app's identity searches only the pairs that app claimed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function testSearchingWithinOneIdentityReturnsOnlyThatAppsPairs(): void {
+		$asked = [];
+		$provider = $this->identityProvider($asked);
+
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'provider' => 'dossiq']));
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'provider' => 'PipelinQ']));
+
+		$this->assertSame([[1, 3], [2]], $asked, 'dossiq gets case and invoice, pipelinq (case-insensitively) contact');
+	}
+
+	/**
+	 * 🔴 The unclaimed pair keeps the OpenRegister identity, and a search of everything is unchanged.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function testAnUnclaimedPairKeepsTheOpenRegisterIdentity(): void {
+		$asked = [];
+		$provider = $this->identityProvider($asked);
+
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'provider' => 'openregister']));
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x']));
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'provider' => '']));
+
+		$this->assertSame([[4], [1, 2, 3, 4], [1, 2, 3, 4]], $asked, 'note under OpenRegister; no or an empty filter searches every schema as before');
+	}
+
+	/**
+	 * An identity that names nothing narrows to nothing rather than widening back to everything.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function testAnUnknownIdentitySearchesNothing(): void {
+		$asked = [];
+		$provider = $this->identityProvider($asked);
+
+		$result = $provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'provider' => 'keepiq']));
+
+		$this->assertSame([], $asked, 'the pipeline is not asked at all');
+		$this->assertSame([], $result->jsonSerialize()['entries']);
+	}
+
+	/**
+	 * An explicit schema of another app is not searched within an identity; one of its own is.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function testAnExplicitSchemaMustBelongToTheIdentity(): void {
+		$asked = [];
+		$provider = $this->identityProvider($asked);
+
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'schema' => '2', 'provider' => 'dossiq']));
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'schema' => '3', 'provider' => 'dossiq']));
+
+		$this->assertSame([3], $asked, 'contact belongs to pipelinq, invoice to dossiq');
+	}
+
+	/**
+	 * Scopes and an identity narrow together: the intersection is searched.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	public function testScopesAndAnIdentityNarrowTogether(): void {
+		$asked = [];
+		$provider = $this->identityProvider($asked);
+
+		$provider->search($this->createMock(IUser::class), $this->mockQuery(['term' => 'x', 'scopes' => 'schema:invoice,schema:contact', 'provider' => 'dossiq']));
+
+		$this->assertSame([[3]], $asked);
 	}
 }

@@ -89,6 +89,8 @@ use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
@@ -467,6 +469,7 @@ final class FlowWiringTest extends TestCase {
 				CodeRunnerClientInterface::class           => CodeRunnerClient::class,
 				TagObjectNodeInterface::class              => TagObjectNode::class,
 				AuditTrailNodeInterface::class             => AuditTrailNode::class,
+				ExtendInputNodeInterface::class            => ExtendInputNode::class,
 				PrincipalKindsInterface::class             => PrincipalKinds::class,
 				CalendarRecomputeInterface::class          => CalendarRecompute::class,
 				FacetWeekNumberingInterface::class         => FacetWeekNumbering::class,
