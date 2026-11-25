@@ -4519,6 +4519,7 @@ Service/File/OcrWordLocator.php,,Service,,,,,Files
 Service/File/OcrWords.php,,Service,,,,,Core
 Service/File/OfficeMediaBurner.php,,Service,,,,,Files
 Service/File/PdfImageBurner.php,,Service,,,,,Core
+Service/File/TiffCodec.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Core
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
@@ -5088,6 +5089,10 @@ Service/Authorization/PermissionMatrixSubject.php,,Service,,,,,Core
 Controller/Support/StreamedTextResponse.php,,Controller,,,,,Core
 Controller/Support/PermissionsAuditMatrix.php,,Controller,,,,,Core
 Service/Authorization/PermissionMatrixSubjects.php,,Service,,,,,Core
+Service/RedactionPolicy/DetectionPatternValidator.php,,Service,,,,,Configuration
+Service/RedactionPolicy/DetectionPatternRunner.php,,Service,,,,,Configuration
+Listener/DetectionPatternValidationListener.php,,Listener,,,,,Configuration
+Kernel/Contracts/ObjectWriteValidatorInterface.php,,Kernel,,,,,Kernel
 Service/File/PublishedDigestReader.php,,Service,,,,,Files
 Listener/TaskDueSoonListener.php,,Listener,,,,,Processes
 Service/Task/TaskDueSoonWarning.php,,Service,,,,,Processes
