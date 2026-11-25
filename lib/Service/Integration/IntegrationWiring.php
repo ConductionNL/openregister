@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface;
+use OCA\OpenRegister\Service\Observability\RequestMetricsRecorder;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
 use OCA\OpenRegister\Contract\ReplyThreadResolutionInterface;
 use OCA\OpenRegister\Contract\ToolInvocationRecorderInterface;
@@ -137,6 +139,7 @@ final class IntegrationWiring {
 		ToolInvocationRecorderInterface::class => ToolInvocationRecorder::class,
 		ToolReachLevels::class => ToolReachResolver::class,
 		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
+		RequestMetricsInterface::class => RequestMetricsRecorder::class,
 	];
 
 	/**

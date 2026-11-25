@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "openregister-automation-records",
     "name": "OpenRegister - Automation run records",
-    "description": "@newman exclude not yet passed live; drop this marker after its first green run on a stack (automation-run-records task 3.1).\n\nautomation-run-records task 3.1: `GET /api/automation-records`. Seeds a non-admin user, a register and an admin-only schema whose `submit` transition declares a keyed `set-fields` action and a keyed transition notification. Submitting one item must leave one `succeeded` lifecycle-action record and one `sent` notification record, both found by key prefix; the non-admin user, who may not read the schema, sees none of them; an anonymous caller gets 401.\n\nThe notification record needs the notifications app and a background worker for `AnnotationNotificationDispatchJob`; tests/integration/ci/seed.sh provides both in CI.\n\nEverything it creates is removed in `99 teardown`.",
+    "description": "automation-run-records task 3.1: `GET /api/automation-records`. Seeds a non-admin user, a register and an admin-only schema whose `submit` transition declares a keyed `set-fields` action and a keyed transition notification. Submitting one item must leave one `succeeded` lifecycle-action record and one `sent` notification record, both found by key prefix; the non-admin user, who may not read the schema, sees none of them; an anonymous caller gets 401.\n\nThe notification record needs the notifications app and a background worker for `AnnotationNotificationDispatchJob`; tests/integration/ci/seed.sh provides both in CI.\n\nEverything it creates is removed in `99 teardown`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [

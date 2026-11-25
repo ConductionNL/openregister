@@ -58,7 +58,8 @@
 	],
 	"OCA\\OpenRegister\\Event\\FlowTimerFiredEvent": [
 		"OCA\\OpenRegister\\Listener\\PortalTaskReminderListener",
-		"OCA\\OpenRegister\\Listener\\CaseItemTimerListener"
+		"OCA\\OpenRegister\\Listener\\CaseItemTimerListener",
+		"OCA\\OpenRegister\\Listener\\TaskDueSoonListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\ObjectChangeListener",
