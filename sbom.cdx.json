@@ -17336,8 +17336,8 @@
     {
       "type": "library",
       "name": "dexie",
-      "version": "4.4.6",
-      "bom-ref": "openregister@1.0.0|dexie@4.4.6",
+      "version": "4.4.7",
+      "bom-ref": "openregister@1.0.0|dexie@4.4.7",
       "licenses": [
         {
           "license": {
@@ -17345,15 +17345,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/dexie@4.4.6",
+      "purl": "pkg:npm/dexie@4.4.7",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/dexie/-/dexie-4.4.6.tgz",
+          "url": "https://registry.npmjs.org/dexie/-/dexie-4.4.7.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "8493ff04eea68c1fad5fa853a083b5926c582cd9ae9fdd3061b7dca00a0ba4a1320d86a5fe4df7760d1301fa147b64c3b1b6cba1523396327704dd946d1e443a"
+              "content": "c1e9858829770d30a77f3caa7a95135f5ba06d86e44ebc3768464e1bb62300e5281100798393eb132c0fce4e49a5b5ff4b1a90f48be3529c420c8123a0e5847c"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
