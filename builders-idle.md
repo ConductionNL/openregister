@@ -511,3 +511,4 @@
 00:25Z help-integriq-2 skipped consumer-auth-on-openregister, harden-scim-consumer-authorization, bounded-jsonl-sync, fetch-file-skip-empty-document-id, registry-bindings-speak-the-registry-api, registry-update-maps-source-fields, rule-editor-a11y-i18n-hardening, stuf-provider-writes, opt-outs-in-an-app-table-and-routing-rules-read-as-config: only live-instance passes or post-rollout follow-ups left
 00:25Z help-integriq-2 skipped connectors-inavigator-case-types: no i-Navigator interface to build against (external system)
 00:25Z help-integriq-2 skipped platform-connector-set-sharing and decidesk-ris-import-go-investigation: research-gated (OCM transport for Ruben with credentials-in-transit questions; GO RIS API needs vendor access)
+00:29Z help-integriq-2 helped integriq: connectors-case-system-document-delivery verification #3898 (strict validate + check:strict ticked; tasks 2 and 4 tests owe live Open Zaak/filinq runs, not archived)
