@@ -1215,6 +1215,7 @@ Files/Service/File/Pdf/StructureMeasurement.php,51,Files,Files,Files/Service/Fil
 Files/Service/File/PdfDocumentSanitizer.php,94,Files,Files,Files/Service/File/PdfDocumentSanitizer.php,0,,Files
 Files/Service/File/PdfSanitizationReport.php,29,Files,Files,Files/Service/File/PdfSanitizationReport.php,0,,Files
 Files/Service/File/PdfSanitizationResult.php,10,Files,Files,Files/Service/File/PdfSanitizationResult.php,0,,Files
+Files/Service/FileTextFacade.php,171,Files,Files,Files/Service/FileTextFacade.php,0,,Files
 Files/Service/NoteReplies.php,73,Files,Files,Files/Service/NoteReplies.php,0,,Files
 Kernel/Contracts/StructurePreservation.php,35,Kernel,Kernel,Kernel/Contracts/StructurePreservation.php,0,427,Kernel
 Files/Service/File/PlaceholderIdTranslator.php,47,Files,Files,Files/Service/File/PlaceholderIdTranslator.php,2,,Files

@@ -2489,6 +2489,7 @@ components:
       - ".*/lib/Files/Service/FileSidebarSchemaLookup[.]php"
       - ".*/lib/Files/Service/FileSidebarService[.]php"
       - ".*/lib/Files/Service/FileSidebarTable[.]php"
+      - ".*/lib/Files/Service/FileTextFacade[.]php"
       - ".*/lib/Files/Service/NoteAccounts[.]php"
       - ".*/lib/Files/Service/NoteLockService[.]php"
       - ".*/lib/Files/Service/NoteReplies[.]php"
