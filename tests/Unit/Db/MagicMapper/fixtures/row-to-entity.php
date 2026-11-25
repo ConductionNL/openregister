@@ -1260,6 +1260,118 @@ return array (
     array (
     ),
   ),
+  'status' => 
+  array (
+    'entity' => 
+    array (
+      'fields' => 
+      array (
+        'uuid' => NULL,
+        'slug' => NULL,
+        'uri' => NULL,
+        'version' => NULL,
+        'register' => '3',
+        'schema' => '5',
+        'object' => 
+        array (
+        ),
+        'files' => 
+        array (
+        ),
+        'relations' => 
+        array (
+        ),
+        'locked' => NULL,
+        'owner' => NULL,
+        'authorization' => 
+        array (
+        ),
+        'folder' => NULL,
+        'application' => NULL,
+        'organisation' => NULL,
+        'validation' => 
+        array (
+        ),
+        'quality' => 
+        array (
+        ),
+        'deleted' => 
+        array (
+        ),
+        'archived' => 
+        array (
+        ),
+        'frozen' => 
+        array (
+        ),
+        'status' => 'draft',
+        'geo' => 
+        array (
+        ),
+        'retention' => 
+        array (
+        ),
+        'tmlo' => 
+        array (
+        ),
+        'mail' => NULL,
+        'contacts' => NULL,
+        'notes' => NULL,
+        'todos' => NULL,
+        'calendar' => NULL,
+        'talk' => NULL,
+        'deck' => NULL,
+        'size' => NULL,
+        'schemaVersion' => NULL,
+        'updated' => NULL,
+        'lastUserActivity' => NULL,
+        'created' => NULL,
+        'lastLog' => NULL,
+        'source' => NULL,
+        'name' => NULL,
+        'description' => NULL,
+        'summary' => NULL,
+        'image' => NULL,
+        'groups' => 
+        array (
+        ),
+        'expires' => NULL,
+        'relevance' => NULL,
+        'urn' => NULL,
+        'translationCompleteness' => NULL,
+        'archivalRetention' => NULL,
+        'retentionClocks' => NULL,
+        'registryState' => NULL,
+        'fieldRules' => NULL,
+        'readOnlyProperties' => NULL,
+        'identityKey' => NULL,
+        'confidentiality' => NULL,
+        'watching' => NULL,
+        'watcherCount' => NULL,
+        'unread' => NULL,
+        'unreadCounts' => NULL,
+        'watchNotify' => NULL,
+        'viewedAt' => NULL,
+        'childCount' => NULL,
+        'parentHidden' => NULL,
+        'matchedFile' => NULL,
+        'matchedFileId' => NULL,
+        'matchedMember' => NULL,
+        'can' => NULL,
+        'processingActivityId' => NULL,
+        'importJobId' => NULL,
+      ),
+      'updated' => 
+      array (
+        0 => 'status',
+        1 => 'register',
+        2 => 'schema',
+      ),
+    ),
+    'log' => 
+    array (
+    ),
+  ),
   'properties typed' => 
   array (
     'entity' => 

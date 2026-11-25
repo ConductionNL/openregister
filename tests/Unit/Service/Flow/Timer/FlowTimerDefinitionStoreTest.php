@@ -21,6 +21,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Tests\Unit\Support\OneServiceContainer;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
@@ -47,7 +49,7 @@ class FlowTimerDefinitionStoreTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('getAppPath')->with('openregister')->willReturn(realpath(__DIR__ . '/../../../../..'));
-		$this->store = new FlowTimerDefinitionStore(objects: $this->objects, appManager: $appManager, logger: new NullLogger());
+		$this->store = new FlowTimerDefinitionStore(container: new OneServiceContainer(ObjectOperationsInterface::class, $this->objects), appManager: $appManager, logger: new NullLogger());
 	}//end setUp()
 
 	public function testSeededObjectsAreReadBySlugFromTheRegister(): void {

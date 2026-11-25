@@ -4159,7 +4159,19 @@ OC.L10N.register(
     "Manage the grants on records the group does not own" : "Manage the grants on records the group does not own",
     "{group}, only for {schemas}" : "{group}, only for {schemas}",
     "{group}, only for {schemas} in register {register}" : "{group}, only for {schemas} in register {register}",
-    "{group}, only in register {register}" : "{group}, only in register {register}"
+    "{group}, only in register {register}" : "{group}, only in register {register}",
+    "Check by hand" : "Check by hand",
+    "Check Dutch API design rules" : "Check Dutch API design rules",
+    "Deviation: {reason}" : "Deviation: {reason}",
+    "Deviations" : "Deviations",
+    "Dutch API design rules for {register}" : "Dutch API design rules for {register}",
+    "Not probed yet" : "Not probed yet",
+    "Passed" : "Passed",
+    "Probe responses" : "Probe responses",
+    "Responses probed {moment}." : "Responses probed {moment}.",
+    "Ruleset {ruleset}, generated {moment}." : "Ruleset {ruleset}, generated {moment}.",
+    "The conformance report could not be read." : "The conformance report could not be read.",
+    "The responses could not be probed." : "The responses could not be probed."
 },
 "nplurals=2; plural=(n != 1);"
 );

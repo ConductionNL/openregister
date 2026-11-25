@@ -1284,6 +1284,9 @@ Formats/Iso8601DateTimeFormat.php,18,Formats,Formats,Formats/Iso8601DateTimeForm
 Formats/SemVerFormat.php,18,Formats,Formats,Formats/SemVerFormat.php,0,,Kernel
 Formats/UserFormat.php,25,Formats,Formats,Formats/UserFormat.php,0,,Kernel
 Formats/UuidFormat.php,25,Formats,Formats,Formats/UuidFormat.php,0,,Kernel
+Kernel/Contracts/IntegrationPromotionRowsInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/PromotionLandingInterface.php,,Kernel,,,,,Kernel
+Kernel/Contracts/PromotionRefusedException.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AppContainerFinderInterface.php,7,Kernel,Kernel,Kernel/Contracts/AppContainerFinderInterface.php,0,,Kernel
 Kernel/Contracts/AdministrativeRetentionPeriod.php,,Kernel,,,,,Kernel
 Kernel/Contracts/AppIdentity.php,6,Kernel,Kernel,Kernel/Contracts/AppIdentity.php,0,,Kernel
@@ -2135,6 +2138,7 @@ Service/ConfigurationDeployment/ConfigurationValueStore.php,155,Service,Configur
 Service/ConfigurationDeployment/DeploymentPreviewService.php,138,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentPreviewService.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentRefusedException.php,38,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentRefusedException.php,0,,Configuration
 Service/ConfigurationDeployment/DeploymentService.php,260,Service,Configuration,Configuration/Service/ConfigurationDeployment/DeploymentService.php,0,,Configuration
+Service/ConfigurationDeployment/PromotionLanding.php,,Service,,,,,Configuration
 Service/ConfigurationDeployment/SettingsDomainMap.php,,Service,,,,,Configuration
 Service/ConfigurationDeployment/SettingsDraftGate.php,,Service,,,,,Configuration
 Service/ConfigurationService.php,457,Service,Configuration,Configuration/Service/ConfigurationService.php,200,47,Configuration
@@ -2348,6 +2352,7 @@ Service/Export/ExportValueRenderer.php,78,Service,Configuration,Configuration/Se
 Service/Export/Odt/HtmlToOdt.php,103,Service,Configuration,Configuration/Service/Export/Odt/HtmlToOdt.php,0,,Configuration
 Service/Export/Odt/OdtHouseStyle.php,72,Service,Configuration,Configuration/Service/Export/Odt/OdtHouseStyle.php,0,,Configuration
 Service/Export/Odt/OdtLogo.php,106,Service,Configuration,Configuration/Service/Export/Odt/OdtLogo.php,0,,Configuration
+Service/Export/Odt/OdtFont.php,299,Service,Configuration,Configuration/Service/Export/Odt/OdtFont.php,0,,Configuration
 Service/Export/Odt/OdtTableBuilder.php,93,Service,Configuration,Configuration/Service/Export/Odt/OdtTableBuilder.php,0,,Configuration
 Service/Export/Odt/OdtWriter.php,125,Service,Configuration,Configuration/Service/Export/Odt/OdtWriter.php,0,224,Configuration
 Service/Export/Odt/VisibleText.php,22,Service,Configuration,Configuration/Service/Export/Odt/VisibleText.php,0,,Configuration
@@ -2556,6 +2561,8 @@ Service/Flow/Nodes/SubFlowNode.php,186,Service,Flows,Flows/Service/Flow/Nodes/Su
 Service/Flow/Nodes/SwitchNode.php,46,Service,Flows,Flows/Service/Flow/Nodes/SwitchNode.php,1,,Processes
 Service/Flow/Nodes/TagObjectNode.php,235,Service,Flows,Flows/Service/Flow/Nodes/TagObjectNode.php,0,,Processes
 Service/Flow/Nodes/TagObjectNodeInterface.php,6,Service,Flows,Flows/Service/Flow/Nodes/TagObjectNodeInterface.php,0,,Processes
+Service/Flow/Nodes/SurveyInviteNode.php,,Service,,,,,Processes
+Service/Flow/Nodes/SurveyInviteNodeInterface.php,,Service,,,,,Processes
 Service/Flow/Nodes/TagStepConfig.php,38,Service,Flows,Flows/Service/Flow/Nodes/TagStepConfig.php,0,,Processes
 Service/Flow/Nodes/TransitionNode.php,85,Service,Flows,Flows/Service/Flow/Nodes/TransitionNode.php,0,,Processes
 Service/Flow/Nodes/TriggerManualNode.php,59,Service,Flows,Flows/Service/Flow/Nodes/TriggerManualNode.php,0,,Processes
@@ -2696,6 +2703,7 @@ Service/Import/MatchQuery.php,,Service,,,,,Core
 Service/Import/SchemaMappingCheck.php,49,Service,Configuration,Configuration/Service/Import/SchemaMappingCheck.php,0,,Configuration
 Service/Import/SourceRowReader.php,138,Service,Configuration,Configuration/Service/Import/SourceRowReader.php,0,,Configuration
 Service/ImportService.php,1197,Service,Configuration,Configuration/Service/ImportService.php,0,,Configuration
+Service/Integration/PromotionIntegrationRows.php,,Service,,,,,Integrations
 Service/Integration/AbstractIntegrationProvider.php,51,Service,Integrations,Integrations/Service/Integration/AbstractIntegrationProvider.php,7,418,Integrations
 Service/Integration/ActivityFeedExport.php,54,Service,Integrations,Integrations/Service/Integration/ActivityFeedExport.php,0,,Integrations
 Service/Integration/ActivityFeedMerge.php,112,Service,Integrations,Integrations/Service/Integration/ActivityFeedMerge.php,0,,Integrations
@@ -3094,6 +3102,12 @@ Service/Operations/OperationsJobsService.php,157,Service,Configuration,Configura
 Service/Operations/SupportBundleService.php,117,Service,Configuration,Configuration/Service/Operations/SupportBundleService.php,0,,Configuration
 Service/OperationsConsoleService.php,207,Service,Configuration,Configuration/Service/OperationsConsoleService.php,0,,Configuration
 Service/OperatorEvaluator.php,130,Service,Access,Access/Service/OperatorEvaluator.php,5,,Core
+Service/Organisation/PromotionComponent.php,,Service,,,,,Core
+Service/Organisation/PromotionPackageReader.php,,Service,,,,,Core
+Service/Organisation/PromotionPackageReaderInterface.php,,Service,,,,,Core
+Service/Organisation/PromotionRemap.php,,Service,,,,,Core
+Service/Organisation/PromotionService.php,,Service,,,,,Core
+Service/Organisation/PromotionServiceInterface.php,,Service,,,,,Core
 Service/Organisation/OrganisationLifecycleAuditor.php,76,Service,Access,Access/Service/Organisation/OrganisationLifecycleAuditor.php,0,,Core
 Service/OrganisationContext.php,32,Service,Access,Access/Service/OrganisationContext.php,0,447,Core
 Service/OrganisationService.php,895,Service,Access,Access/Service/OrganisationService.php,181,9,Core
@@ -3398,6 +3412,7 @@ Service/SharedSchemaDedupeService.php,225,Service,Configuration,Configuration/Se
 Service/Sharing/AccessLinkActs.php,36,Service,Access,Access/Service/Sharing/AccessLinkActs.php,1,,Core
 Service/Sharing/AccessLinkMintGuard.php,85,Service,Access,Access/Service/Sharing/AccessLinkMintGuard.php,0,,Core
 Service/Sharing/AccessLinkService.php,266,Service,Access,Access/Service/Sharing/AccessLinkService.php,1,,Core
+Service/Sharing/ObjectAccessLinks.php,,Service,,,,,Core
 Service/Sharing/AccessLinkSubject.php,30,Service,Access,Access/Service/Sharing/AccessLinkSubject.php,0,446,Core
 Service/Sharing/AccessLinkSubjectLinks.php,,Service,,,,,Core
 Service/Sharing/SharePrincipalDeriver.php,70,Service,Integrations,Integrations/Service/Sharing/SharePrincipalDeriver.php,0,,Core
@@ -3421,6 +3436,11 @@ Service/Survey/SurveyAnswerTable.php,45,Service,Work,Work/Service/Survey/SurveyA
 Service/Survey/SurveyResultsWithheldException.php,43,Service,Work,Work/Service/Survey/SurveyResultsWithheldException.php,0,,Processes
 Service/Survey/SurveyResults.php,177,Service,Work,Work/Service/Survey/SurveyResults.php,0,,Processes
 Service/Survey/SurveyRules.php,121,Service,Work,Work/Service/Survey/SurveyRules.php,0,,Processes
+Service/Survey/SurveyAnswerRefusedException.php,,Service,,,,,Processes
+Service/Survey/SurveyAnswerVisit.php,,Service,,,,,Processes
+Service/Survey/SurveyAnswering.php,,Service,,,,,Processes
+Service/Survey/SurveyInvitationRequest.php,,Service,,,,,Processes
+Service/Survey/SurveyInvitations.php,,Service,,,,,Processes
 Service/Survivorship/SourceRecordResolver.php,170,Service,Service,Service/Survivorship/SourceRecordResolver.php,0,,Core
 Service/Survivorship/SurvivorshipAnnotationValidator.php,140,Service,Service,Service/Survivorship/SurvivorshipAnnotationValidator.php,0,,Core
 Service/Survivorship/SurvivorshipResolver.php,271,Service,Service,Service/Survivorship/SurvivorshipResolver.php,0,,Core
@@ -4674,6 +4694,9 @@ Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTra
 Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
 Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
 Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
+Service/SemanticProviderCatalogue.php,,Service,,,,,Core
+Kernel/Contracts/SemanticProvidersInterface.php,,Kernel,,,,,Kernel
+Listener/SemanticProviderCacheListener.php,,Listener,,,,,Core
 Exception/PersonRegisterPurposeMissingException.php,,Exception,,,,,Kernel
 Service/Anonymisation/PersonRegisterSource.php,,Service,,,,,Kernel
 Service/Anonymisation/RegisterNameReader.php,,Service,,,,,Files
@@ -4738,6 +4761,7 @@ Contract/ObjectFileReaderInterface.php,4,Contract,Contract,Contract/ObjectFileRe
 Service/File/ObjectFileReader.php,14,Service,Service,Service/File/ObjectFileReader.php,0,,Core
 Controller/FileEntityRelationsController.php,,Controller,,,,,Processes
 Controller/FlowProgressController.php,,Controller,,,,,Processes
+Event/ObjectReadStatePropertiesEvent.php,,Event,,,,,Kernel
 Db/ProcessesMapperBindings.php,,Db,,,,,Processes
 Db/ProcessesMapperRegistrar.php,,Db,,,,,Processes
 Db/IntegrationsMapperBindings.php,,Db,,,,,Integrations
@@ -4930,6 +4954,7 @@ Service/Lifecycle/LifecycleStatesKeeper.php,,Service,,,,,Processes
 Service/AcceptLanguageHeader.php,,Service,,,,,Core
 Controller/Support/VerwerkingsactiviteitenControllerServices.php,,Controller,,,,,Compliance
 Controller/SurveyResultsController.php,200,Controller,Work,Work/Controller/SurveyResultsController.php,0,,Processes
+Controller/SurveyAnswerController.php,,Controller,,,,,Processes
 Files/Service/File/PipelineStepImplementers.php,,Files,,,,,Files
 Files/Service/TextExtraction/PatternSet/PatternSetVersion.php,,Files,,,,,Files
 Search/Service/StoredViewQueries.php,,Search,,,,,Search
@@ -5050,6 +5075,7 @@ Service/Authorization/PermissionMatrixSubject.php,,Service,,,,,Core
 Controller/Support/StreamedTextResponse.php,,Controller,,,,,Core
 Controller/Support/PermissionsAuditMatrix.php,,Controller,,,,,Core
 Service/Authorization/PermissionMatrixSubjects.php,,Service,,,,,Core
+Service/File/PublishedDigestReader.php,,Service,,,,,Files
 Listener/TaskDueSoonListener.php,,Listener,,,,,Processes
 Service/Task/TaskDueSoonWarning.php,,Service,,,,,Processes
 Kernel/Contracts/CsvCell.php,,Kernel,,,,,Kernel
@@ -5069,6 +5095,11 @@ Controller/ObjectTransferController.php,,Controller,,,,,Core
 Service/Organisation/ObjectGraphTransfer.php,,Service,,,,,Core
 Service/Organisation/ObjectGraphTransferRefusal.php,,Service,,,,,Core
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
+Service/Operations/IndexReconciliationProbes.php,,Service,,,,,Configuration
+Service/Operations/IndexReconciliationReport.php,,Service,,,,,Configuration
+BackgroundJob/IndexReconciliationJob.php,,BackgroundJob,,,,,Configuration
+Kernel/Contracts/FileExtractionQueueInterface.php,,Kernel,,,,,Kernel
+BackgroundJob/FileExtractionQueue.php,,BackgroundJob,,,,,Processes
 BackgroundJob/SealAuditBacklogJob.php,,BackgroundJob,,,,,Compliance
 Command/SealAuditBacklogCommand.php,,Command,,,,,Compliance
 Service/Audit/AuditSealBacklogCursor.php,,Service,,,,,Compliance
@@ -5084,3 +5115,4 @@ Service/Audit/ReadRuleCaller.php,,Service,Core,,0,,Core
 Migration/Version1Date20261124210000.php,,Migration,,,,,Compliance
 Contract/FileTextReaderInterface.php,53,Contract,Contract,Contract/FileTextReaderInterface.php,0,,Kernel
 Files/Service/TextExtraction/FileTextReader.php,119,Files,Files,Files/Service/TextExtraction/FileTextReader.php,0,,Files
+Kernel/Contracts/DefaultOrganisationInterface.php,,Kernel,,,,,Kernel

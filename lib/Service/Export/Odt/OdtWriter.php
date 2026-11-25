@@ -30,8 +30,8 @@ use ZipArchive;
 
 /**
  * Writes an A4 ODT, landscape or portrait, with 1.2 cm margins, a "Page n / N"
- * footer, the house style's logo in the header when there is one, and the
- * first heading as document title. An office server converts
+ * footer, the house style's logo in the header and its fonts embedded when
+ * there are, and the first heading as document title. An office server converts
  * the result to PDF.
  *
  * @spec openspec/specs/export-pdf-format/spec.md
@@ -56,6 +56,26 @@ class OdtWriter implements OdtWriterInterface {
 	 */
 	private const LOGO_NAMESPACES = ' xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"'
 		. ' xmlns:xlink="http://www.w3.org/1999/xlink"';
+
+	/**
+	 * The namespace an embedded font's file reference adds to a part, only when there is one.
+	 */
+	private const FONT_NAMESPACES = ' xmlns:xlink="http://www.w3.org/1999/xlink"';
+
+	/**
+	 * The font every style uses when the house style embeds none for its role.
+	 */
+	private const DEFAULT_FONT = 'Liberation Sans';
+
+	/**
+	 * The font-face names of the embedded fonts, per role.
+	 */
+	private const FONT_FACE_NAMES = [OdtFont::ROLE_HEADING => 'OR_HeadingFont', OdtFont::ROLE_BODY => 'OR_BodyFont'];
+
+	/**
+	 * The paragraph styles set in the heading font; every other style uses the body font.
+	 */
+	private const HEADING_STYLES = ['OR_H1', 'OR_H1_Break', 'OR_H2', 'OR_Headline'];
 
 	/**
 	 * Paragraph styles: name => [paragraph properties, text properties].
@@ -123,8 +143,8 @@ class OdtWriter implements OdtWriterInterface {
 		// declarations; reloading with NSCLEAN keeps only the root's.
 		$content = new DOMDocument();
 		$content->loadXML(
-			'<?xml version="1.0" encoding="UTF-8"?><office:document-content ' . self::NAMESPACES . '>'
-			. self::FONT_FACES . $this->contentStyles(houseStyle: $houseStyle)
+			'<?xml version="1.0" encoding="UTF-8"?><office:document-content ' . $this->namespaces(houseStyle: $houseStyle, logo: false) . '>'
+			. $this->fontFaces(houseStyle: $houseStyle) . $this->contentStyles(houseStyle: $houseStyle)
 			. '<office:body>' . $text->ownerDocument->saveXML($text) . '</office:body></office:document-content>',
 			(LIBXML_NSCLEAN | LIBXML_NONET | LIBXML_PARSEHUGE)
 		);
@@ -143,10 +163,15 @@ class OdtWriter implements OdtWriterInterface {
 				. '<manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>'
 				. '<manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>'
 				. $this->logoManifestEntry(logo: $houseStyle?->logo)
+				. $this->fontManifestEntries(houseStyle: $houseStyle)
 				. '</manifest:manifest>',
 		];
 		if ($houseStyle?->logo !== null) {
 			$parts[$houseStyle->logo->packagePath()] = $houseStyle->logo->bytes;
+		}
+
+		foreach (($houseStyle?->fonts() ?? []) as $font) {
+			$parts[$font->packagePath()] = $font->bytes;
 		}
 
 		return $this->package(parts: $parts);
@@ -175,8 +200,14 @@ class OdtWriter implements OdtWriterInterface {
 
 		$xml = '<office:automatic-styles>' . self::TABLE_STYLE;
 		foreach ($paragraphStyles as $name => [$paragraph, $text]) {
+			$role = OdtFont::ROLE_BODY;
+			if (in_array($name, self::HEADING_STYLES, true) === true) {
+				$role = OdtFont::ROLE_HEADING;
+			}
+
 			$xml .= '<style:style style:name="' . $name . '" style:family="paragraph">'
-				. '<style:paragraph-properties ' . $paragraph . '/><style:text-properties style:font-name="Liberation Sans" ' . $text . '/></style:style>';
+				. '<style:paragraph-properties ' . $paragraph . '/><style:text-properties style:font-name="'
+				. $this->fontName(houseStyle: $houseStyle, role: $role) . '" ' . $text . '/></style:style>';
 		}
 
 		foreach ($cellStyles as $name => $background) {
@@ -221,15 +252,12 @@ class OdtWriter implements OdtWriterInterface {
 		}
 
 		$logo = $houseStyle?->logo;
-		$namespaces = self::NAMESPACES;
-		if ($logo !== null) {
-			$namespaces .= self::LOGO_NAMESPACES;
-		}
 
-		return '<?xml version="1.0" encoding="UTF-8"?><office:document-styles ' . $namespaces . '>'
-			. self::FONT_FACES . '<office:styles>'
+		return '<?xml version="1.0" encoding="UTF-8"?><office:document-styles ' . $this->namespaces(houseStyle: $houseStyle, logo: ($logo !== null)) . '>'
+			. $this->fontFaces(houseStyle: $houseStyle) . '<office:styles>'
 			. '<style:default-style style:family="paragraph">'
-			. '<style:text-properties style:font-name="Liberation Sans" fo:font-size="9pt" fo:color="#1a1a1a"/></style:default-style>'
+			. '<style:text-properties style:font-name="' . $this->fontName(houseStyle: $houseStyle, role: OdtFont::ROLE_BODY)
+			. '" fo:font-size="9pt" fo:color="#1a1a1a"/></style:default-style>'
 			. '<style:style style:name="Standard" style:family="paragraph"/>'
 			. '<style:style style:name="OR_Footer" style:family="paragraph"><style:paragraph-properties fo:text-align="end"/>'
 			. '<style:text-properties fo:font-size="8pt" fo:color="#4d4d4d"/></style:style>'
@@ -246,6 +274,90 @@ class OdtWriter implements OdtWriterInterface {
 			. 'Page <text:page-number text:select-page="current"/> / <text:page-count/></text:p></style:footer>'
 			. '</style:master-page></office:master-styles></office:document-styles>';
 	}//end styles()
+
+	/**
+	 * The namespace declarations of a part: the plain ones, plus the logo's and the fonts' when they are used.
+	 *
+	 * @param OdtHouseStyle|null $houseStyle The house style, or null.
+	 * @param bool               $logo       Whether the part draws the logo.
+	 *
+	 * @return string
+	 */
+	private function namespaces(?OdtHouseStyle $houseStyle, bool $logo): string {
+		$namespaces = self::NAMESPACES;
+		if ($logo === true) {
+			$namespaces .= self::LOGO_NAMESPACES;
+		} else if (($houseStyle?->fonts() ?? []) !== []) {
+			$namespaces .= self::FONT_NAMESPACES;
+		}
+
+		return $namespaces;
+	}//end namespaces()
+
+	/**
+	 * The font-face declarations: the default font, plus one per embedded font with its package file.
+	 *
+	 * @param OdtHouseStyle|null $houseStyle The house style, or null.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
+	 */
+	private function fontFaces(?OdtHouseStyle $houseStyle): string {
+		$fonts = ($houseStyle?->fonts() ?? []);
+		if ($fonts === []) {
+			return self::FONT_FACES;
+		}
+
+		$faces = '';
+		foreach ($fonts as $font) {
+			$family = htmlspecialchars($font->family, (ENT_XML1 | ENT_QUOTES), 'UTF-8');
+			$faces .= '<style:font-face style:name="' . self::FONT_FACE_NAMES[$font->role] . '" svg:font-family="&apos;' . $family . '&apos;">'
+				. '<svg:font-face-src><svg:font-face-uri xlink:href="' . $font->packagePath() . '" xlink:type="simple">'
+				. '<svg:font-face-format svg:string="' . $font->format . '"/></svg:font-face-uri></svg:font-face-src></style:font-face>';
+		}
+
+		return str_replace('</office:font-face-decls>', $faces . '</office:font-face-decls>', self::FONT_FACES);
+	}//end fontFaces()
+
+	/**
+	 * The font-face a role's styles name: the embedded font of that role, or the default font.
+	 *
+	 * @param OdtHouseStyle|null $houseStyle The house style, or null.
+	 * @param string             $role       `heading` or `body`.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
+	 */
+	private function fontName(?OdtHouseStyle $houseStyle, string $role): string {
+		$font = $houseStyle?->bodyFont;
+		if ($role === OdtFont::ROLE_HEADING) {
+			$font = $houseStyle?->headingFont;
+		}
+
+		if ($font === null) {
+			return self::DEFAULT_FONT;
+		}
+
+		return self::FONT_FACE_NAMES[$role];
+	}//end fontName()
+
+	/**
+	 * The manifest entries of the embedded fonts, only when there are any.
+	 *
+	 * @param OdtHouseStyle|null $houseStyle The house style, or null.
+	 *
+	 * @return string
+	 */
+	private function fontManifestEntries(?OdtHouseStyle $houseStyle): string {
+		$entries = '';
+		foreach (($houseStyle?->fonts() ?? []) as $font) {
+			$entries .= '<manifest:file-entry manifest:full-path="' . $font->packagePath() . '" manifest:media-type="' . $font->mediaType() . '"/>';
+		}
+
+		return $entries;
+	}//end fontManifestEntries()
 
 	/**
 	 * The header area of the page layout, only when a logo is printed.
