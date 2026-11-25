@@ -131,7 +131,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 *
 	 * @param Schema $schema The schema.
 	 *
-	 * @return array{property: string, maxDepth: int, source: string}|null The declaration.
+	 * @return array{property: string, maxDepth: int, source: string, nameProperty: string|null}|null The declaration.
 	 */
 	private function partyDeclaration(Schema $schema): array|null {
 		$party = $this->sources->parties->parentOf(schema: $schema);
@@ -143,6 +143,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			'property' => $party['property'],
 			'maxDepth' => min($party['maxDepth'], HierarchyGrantExpander::DEPTH_CEILING),
 			'source' => 'x-openregister-party',
+			'nameProperty' => ($party['nameProperty'] ?? null),
 		];
 	}//end partyDeclaration()
 
@@ -168,10 +169,10 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 */
 	public function tree(ObjectTreeQuery $query, bool $_rbac = true): array {
 		$root    = $query->root;
-		$asked   = ['fields' => $query->fields, 'rbac' => $_rbac];
+		$walk    = $this->treeWalk(root: $root, depth: $query->depth);
+		$asked   = ['fields' => $query->fields, 'rbac' => $_rbac, 'nameProperty' => ($walk['nameProperty'] ?? null)];
 		$answer  = self::rootAnswer(query: $query);
 		$answer['nodes'] = [$this->rootNode(root: $root, walk: $asked)];
-		$walk    = $this->treeWalk(root: $root, depth: $query->depth);
 		if ($walk === null) {
 			return $answer;
 		}
@@ -217,7 +218,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 		$rootUuid = (string)$root->getUuid();
 		$redacted = $this->redacted(objects: [$rootUuid => $root], walk: $walk);
 
-		return self::node(object: ($redacted[$rootUuid] ?? $rootUuid), fields: $walk['fields']);
+		return self::node(object: ($redacted[$rootUuid] ?? $rootUuid), fields: $walk['fields'], nameProperty: ($walk['nameProperty'] ?? null));
 	}//end rootNode()
 
 	/**
@@ -242,7 +243,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @param ObjectEntity $root  The object to walk from.
 	 * @param int|null     $depth The depth asked for; null means the declared bound.
 	 *
-	 * @return array{register: Register, schema: Schema, property: string, depth: int, maxDepth: int}|null The walk.
+	 * @return array{register: Register, schema: Schema, property: string, depth: int, maxDepth: int, nameProperty: string|null}|null The walk.
 	 *
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
@@ -261,6 +262,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 			'property' => $declaration['property'],
 			'depth' => $this->bounds->effectiveDepth(asked: $depth, declared: $declaration['maxDepth']),
 			'maxDepth' => $declaration['maxDepth'],
+			'nameProperty' => ($declaration['nameProperty'] ?? null),
 		];
 	}//end treeWalk()
 
@@ -417,7 +419,11 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 		$objects = $this->redacted(objects: $this->load(walk: $run->walk, uuids: array_keys($children)), walk: $run->walk);
 		$run->frontier = [];
 		foreach ($children as $child => $parent) {
-			$node           = self::node(object: ($objects[$child] ?? $child), fields: $run->walk['fields']);
+			$node           = self::node(
+				object: ($objects[$child] ?? $child),
+				fields: $run->walk['fields'],
+				nameProperty: ($run->walk['nameProperty'] ?? null)
+			);
 			$node['level']  = $run->level;
 			$node['parent'] = $parent;
 			$run->seen[$child] = true;
@@ -536,7 +542,7 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 		$uuids = array_keys($chain['chain']);
 		$nodes = [];
 		foreach ($uuids as $index => $uuid) {
-			$node           = self::node(object: ($shown[$uuid] ?? $uuid), fields: $walk['fields']);
+			$node           = self::node(object: ($shown[$uuid] ?? $uuid), fields: $walk['fields'], nameProperty: ($walk['nameProperty'] ?? null));
 			$node['level']  = -($index + 1);
 			$node['parent'] = ($uuids[($index + 1)] ?? $chain['topParent']);
 			$nodes[]        = $node;
@@ -665,19 +671,28 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * the caller's group may not read and encrypted values handled the way every
 	 * other read of an object does.
 	 *
-	 * Only a request that names `fields` has properties to carry, so only then
-	 * is anything done. The entities are copied first: the originals are what
-	 * the walk reads the parent property from, and are never written back.
+	 * Only a request that names `fields` has properties to carry, and only an
+	 * object without a name of its own is called by the declared party name
+	 * property, so only then is anything done: a node's name never shows a
+	 * property the caller may not read. The entities are copied first: the
+	 * originals are what the walk reads the parent property from, and are
+	 * never written back.
 	 *
 	 * @param array<string, ObjectEntity> $objects Uuid => object, as the mapper loaded them.
-	 * @param array<string, mixed>        $walk    The walk: `fields` (the properties the request names) and
-	 *                                             `rbac` (whether the read is the caller's own, so property
-	 *                                             read access applies).
+	 * @param array<string, mixed>        $walk    The walk: `fields` (the properties the request names),
+	 *                                             `nameProperty` (the declared party name property, if any)
+	 *                                             and `rbac` (whether the read is the caller's own, so
+	 *                                             property read access applies).
 	 *
 	 * @return array<string, ObjectEntity> Uuid => the redacted copy.
 	 */
 	private function redacted(array $objects, array $walk): array {
-		if ($walk['fields'] === [] || $objects === []) {
+		if ($objects === []) {
+			return $objects;
+		}
+
+		$namedByProperty = (($walk['nameProperty'] ?? null) !== null) && self::anyUnnamed(objects: $objects);
+		if ($walk['fields'] === [] && $namedByProperty === false) {
 			return $objects;
 		}
 
@@ -688,17 +703,55 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	}//end redacted()
 
 	/**
+	 * Whether any of the objects has no name of its own, so its node is called by the declared party name property.
+	 *
+	 * @param array<string, ObjectEntity> $objects Uuid => object.
+	 *
+	 * @return bool True when at least one object has no own name.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md#requirement-an-objects-tree-along-its-declared-parent-property-can-be-read-req-otr-001
+	 */
+	private static function anyUnnamed(array $objects): bool {
+		foreach ($objects as $object) {
+			if (self::ownName(object: $object) === null) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyUnnamed()
+
+	/**
+	 * The object's own name, null when it has none (empty, or only its uuid).
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string|null The own name.
+	 */
+	private static function ownName(ObjectEntity $object): ?string {
+		$own = $object->getName();
+		if (is_string($own) === true && $own !== '' && $own !== (string)$object->getUuid()) {
+			return $own;
+		}
+
+		return null;
+	}//end ownName()
+
+	/**
 	 * One node of the answer, placed as the root (level 0, no parent).
 	 *
 	 * A node below or above the root has its `level` (negative above, positive
 	 * below) and `parent` uuid set by the walk that reached it.
 	 *
-	 * @param ObjectEntity|string $object The object as the caller may read it, or only its uuid when it did not load.
-	 * @param string[]            $fields Properties to copy.
+	 * @param ObjectEntity|string $object       The object as the caller may read it, or only its uuid when it did not load.
+	 * @param string[]            $fields       Properties to copy.
+	 * @param string|null         $nameProperty The property the party declaration names its parties by, if any.
 	 *
 	 * @return array<string, mixed> The node.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md#requirement-an-objects-tree-along-its-declared-parent-property-can-be-read-req-otr-001
 	 */
-	private static function node(ObjectEntity|string $object, array $fields): array {
+	private static function node(ObjectEntity|string $object, array $fields, ?string $nameProperty = null): array {
 		$loaded = null;
 		$uuid   = $object;
 		if ($object instanceof ObjectEntity) {
@@ -708,12 +761,50 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 
 		return [
 			'uuid' => $uuid,
-			'name' => ($loaded?->getName() ?? $uuid),
+			'name' => self::nameOf(loaded: $loaded, uuid: $uuid, nameProperty: $nameProperty),
 			'level' => 0,
 			'parent' => null,
 			'properties' => self::propertiesOf(data: ($loaded?->getObject() ?? []), fields: $fields),
 		];
 	}//end node()
+
+	/**
+	 * A node's name: the object's own, else the value of the declared party name property, else its uuid.
+	 *
+	 * An object whose schema names no name field is called by its uuid; for a
+	 * party, the declaration says which property holds its name
+	 * (`x-openregister-party.nameProperty`), so a tree of organisations shows
+	 * their names rather than a column of uuids.
+	 *
+	 * @param ObjectEntity|null $loaded       The object, null when it did not load.
+	 * @param string            $uuid         Its uuid.
+	 * @param string|null       $nameProperty The declared party name property.
+	 *
+	 * @return string The name.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md#requirement-an-objects-tree-along-its-declared-parent-property-can-be-read-req-otr-001
+	 */
+	private static function nameOf(?ObjectEntity $loaded, string $uuid, ?string $nameProperty): string {
+		$own = null;
+		if ($loaded !== null) {
+			$own = self::ownName(object: $loaded);
+		}
+
+		if ($own !== null) {
+			return $own;
+		}
+
+		$declared = null;
+		if ($loaded !== null && $nameProperty !== null) {
+			$declared = ($loaded->getObject()[$nameProperty] ?? null);
+		}
+
+		if (is_string($declared) === true && trim($declared) !== '') {
+			return $declared;
+		}
+
+		return $uuid;
+	}//end nameOf()
 
 	/**
 	 * The properties a node carries: each field asked for, null where the object has none.

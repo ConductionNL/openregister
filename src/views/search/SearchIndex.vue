@@ -40,6 +40,7 @@ import {
 } from '../../store/store.js'
 import { inheritedProperties } from './inheritedProperties.js'
 import { lensSearchParams, TABLE_LENSES } from './personalLensQuery.js'
+import { headerSortOf, orderParams } from './searchSort.js'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
@@ -149,6 +150,16 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The column header state, read back from the search's `_order`.
+		 *
+		 * @return {{sortKey: string|null, sortOrder: string}} The header state.
+		 * @spec openspec/changes/case-insensitive-ordering/specs/case-insensitive-ordering/spec.md
+		 */
+		headerSort() {
+			return headerSortOf(objectStore.searchParams)
+		},
+
 		/**
 		 * The columns a reader with update rights may edit in their cell:
 		 * scalar text, numbers and choice lists of the searched schema.
@@ -628,6 +639,9 @@ export default {
 		/**
 		 * Apply a sort change and re-run the search.
 		 *
+		 * The sort goes out as `_order`, the parameter the object list reads;
+		 * any other name is read as a property filter and empties the list.
+		 *
 		 * @param {object} root0 The sort event payload.
 		 * @param {string} root0.key The sort column key.
 		 * @param {string} root0.order The sort order.
@@ -635,7 +649,7 @@ export default {
 		 * @return {void}
 		 */
 		handleSort({ key, order }) {
-			objectStore.updateSearchParams({ sortKey: key, sortOrder: order })
+			objectStore.updateSearchParams(orderParams(key, order))
 			objectStore.refetchSearchCollection()
 		},
 
@@ -993,8 +1007,8 @@ export default {
 			"
 			:selectable="hasSelectedRegisters && hasSelectedSchemas"
 			:selectedIds="selectedIdsForPage"
-			:sortKey="objectStore.searchParams.sortKey"
-			:sortOrder="objectStore.searchParams.sortOrder"
+			:sortKey="headerSort.sortKey"
+			:sortOrder="headerSort.sortOrder"
 			:showTitle="false"
 			:showMassImport="false"
 			:showMassExport="false"
