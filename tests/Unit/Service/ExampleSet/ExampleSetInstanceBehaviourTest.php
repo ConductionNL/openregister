@@ -26,11 +26,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapperInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
+use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use RuntimeException;
 
 /**
  * Behaviour of the instance-level organisations and values an example set uses.
@@ -43,14 +45,130 @@ class ExampleSetInstanceBehaviourTest extends TestCase {
 	/** @var IConfig&MockObject */
 	private IConfig $config;
 
+	/**
+	 * What the organisation service answers as the default organisation.
+	 *
+	 * @var Organisation|RuntimeException
+	 */
+	private Organisation|RuntimeException $default;
+
 	protected function setUp(): void {
-		$this->mapper = $this->createMock(OrganisationMapperInterface::class);
-		$this->config = $this->createMock(IConfig::class);
+		$this->mapper  = $this->createMock(OrganisationMapperInterface::class);
+		$this->config  = $this->createMock(IConfig::class);
+		$this->default = self::organisation('default-uuid', 'Default Organisation', 'default', ['admin']);
 	}//end setUp()
+
+	private function defaultOrganisation(): Organisation {
+		if ($this->default instanceof RuntimeException) {
+			throw $this->default;
+		}
+
+		return $this->default;
+	}//end defaultOrganisation()
+
+	/**
+	 * The mapper creates a missing organisation as new-uuid.
+	 *
+	 * @return void
+	 */
+	private function insertsAsNew(): void {
+		$this->mapper->method('findBySlug')->willThrowException(new DoesNotExistException('none'));
+		$this->mapper->method('insert')->willReturnCallback(
+			static function (Organisation $organisation): Organisation {
+				$saved = clone $organisation;
+				$saved->setUuid('new-uuid');
+				return $saved;
+			}
+		);
+	}//end insertsAsNew()
+
+	/**
+	 * The members of a new organisation join the default organisation, so it stays their active one.
+	 *
+	 * @spec openspec/changes/cast-members-keep-the-default-organisation/specs/example-sets/spec.md
+	 *
+	 * @return void
+	 */
+	public function testMembersOfANewOrganisationJoinTheDefaultOrganisation(): void {
+		$this->insertsAsNew();
+		$updated = null;
+		$this->mapper->expects($this->once())->method('update')->willReturnCallback(
+			static function (Organisation $organisation) use (&$updated): Organisation {
+				$updated = $organisation;
+				return $organisation;
+			}
+		);
+
+		$result = $this->instance()->ensure(self::declared(['members' => ['marieke', 'pieter']]));
+
+		$this->assertSame(['uuid' => 'new-uuid', 'created' => true, 'error' => ''], $result);
+		$this->assertSame('default-uuid', $updated->getUuid());
+		$this->assertSame(['admin', 'marieke', 'pieter'], array_values($updated->getUsers()));
+	}
+
+	/**
+	 * Members already in the default organisation write nothing more.
+	 *
+	 * @spec openspec/changes/cast-members-keep-the-default-organisation/specs/example-sets/spec.md
+	 *
+	 * @return void
+	 */
+	public function testMembersAlreadyInTheDefaultOrganisationWriteNothing(): void {
+		$this->insertsAsNew();
+		$this->default = self::organisation('default-uuid', 'Default Organisation', 'default', ['pieter']);
+		$this->mapper->expects($this->never())->method('update');
+
+		$result = $this->instance()->ensure(self::declared(['members' => ['pieter']]));
+
+		$this->assertSame(['uuid' => 'new-uuid', 'created' => true, 'error' => ''], $result);
+	}
+
+	/**
+	 * A new organisation without members leaves the default organisation alone.
+	 *
+	 * @spec openspec/changes/cast-members-keep-the-default-organisation/specs/example-sets/spec.md
+	 *
+	 * @return void
+	 */
+	public function testANewOrganisationWithoutMembersLeavesTheDefaultAlone(): void {
+		$this->insertsAsNew();
+		$this->default = new RuntimeException('must not be asked');
+		$this->mapper->expects($this->never())->method('update');
+
+		$result = $this->instance()->ensure(self::declared());
+
+		$this->assertSame(['uuid' => 'new-uuid', 'created' => true, 'error' => ''], $result);
+	}
+
+	/**
+	 * A default organisation that cannot be read is reported, with the uuid of the organisation that was created.
+	 *
+	 * @spec openspec/changes/cast-members-keep-the-default-organisation/specs/example-sets/spec.md
+	 *
+	 * @return void
+	 */
+	public function testAFailedJoinIsReportedWithTheCreatedOrganisation(): void {
+		$this->insertsAsNew();
+		$this->default = new RuntimeException('no default');
+
+		$result = $this->instance()->ensure(self::declared(['members' => ['pieter']]));
+
+		$this->assertSame(
+			['uuid' => 'new-uuid', 'created' => true, 'error' => 'its members could not join the default organisation: no default'],
+			$result
+		);
+	}
 
 	private function instance(): ExampleSetInstance {
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->with(OrganisationMapperInterface::class)->willReturn($this->mapper);
+		$service   = $this->createMock(OrganisationServiceInterface::class);
+		$service->method('ensureDefaultOrganisation')->willReturnCallback(fn (): Organisation => $this->defaultOrganisation());
+		$container->method('get')->willReturnMap(
+			[
+				[OrganisationServiceInterface::class, $service],
+				[OrganisationMapperInterface::class, $this->mapper],
+			]
+		);
 		return new ExampleSetInstance($container, $this->config);
 	}//end instance()
 
