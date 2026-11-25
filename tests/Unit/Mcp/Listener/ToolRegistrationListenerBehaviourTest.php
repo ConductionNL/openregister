@@ -26,6 +26,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Mcp\Listener;
 
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
+use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Listener\BuiltinDataTools;
 use OCA\OpenRegister\Mcp\Listener\BuiltinPlatformTools;
@@ -129,20 +132,35 @@ class ToolRegistrationListenerBehaviourTest extends TestCase {
 	}//end dispatch()
 
 	/**
-	 * OpenRegister's own MCP providers are never re-bridged.
+	 * The providers the hardcoded entries cover (registers, schemas, objects) are never
+	 * re-bridged; OpenRegister's other built-ins (flows, integrations) are, so an agent
+	 * can be granted `openregister.runFlow`.
 	 *
 	 * @return void
 	 */
 	public function testOwnProvidersAreNotBridged(): void {
+		$registers = $this->createMock(RegistersToolProvider::class);
+		$registers->method('getAppId')->willReturn('openregister');
+		$registers->method('getTools')->willReturn([['id' => 'openregister.listRegisters']]);
+		$schemas = $this->createMock(SchemasToolProvider::class);
+		$schemas->method('getAppId')->willReturn('openregister');
+		$schemas->method('getTools')->willReturn([['id' => 'openregister.listSchemas']]);
+		$objects = $this->createMock(ObjectsToolProvider::class);
+		$objects->method('getAppId')->willReturn('openregister');
+		$objects->method('getTools')->willReturn([['id' => 'openregister.listObjects']]);
+
 		$this->mcpToolsService->method('getProviders')->willReturn([
 			$this->provider('registers', [['id' => 'registers.list']]),
 			$this->provider('schemas', [['id' => 'schemas.list']]),
 			$this->provider('objects', [['id' => 'objects.list']]),
-			$this->provider('openregister', [['id' => 'openregister.x']]),
+			$registers,
+			$schemas,
+			$objects,
+			$this->provider('openregister', [['id' => 'openregister.runFlow']]),
 			$this->provider('decidesk', [['id' => 'decidesk.list']]),
 		]);
 
-		$this->assertSame(['decidesk.list'], array_keys($this->dispatch()));
+		$this->assertSame(['openregister.runFlow', 'decidesk.list'], array_keys($this->dispatch()));
 	}//end testOwnProvidersAreNotBridged()
 
 	/**

@@ -23,6 +23,10 @@
 namespace OCA\OpenRegister\Mcp\Listener;
 
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
+use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
+use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Mcp\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Mcp\Tool\McpProviderBridge;
 use OCP\EventDispatcher\Event;
@@ -157,11 +161,15 @@ class ToolRegistrationListener implements IEventListener {
 	private function bridgeMcpProviderTools(ToolRegistrationEvent $event): void {
 		foreach ($this->mcpToolsService->getProviders() as $provider) {
 			$appId = $provider->getAppId();
-			// Skip the built-in MCP providers (registers/schemas/objects);
-			// their functionality is already covered by the 5 hardcoded
-			// ToolRegistry entries. Avoids the LLM seeing two parallel sets
-			// with subtly different shapes.
-			if (in_array($appId, ['registers', 'schemas', 'objects', 'openregister'], true) === true) {
+			// Skip the built-in MCP providers for registers, schemas and objects:
+			// the hardcoded ToolRegistry entries already cover them, and the LLM
+			// must not see two parallel sets with subtly different shapes. The
+			// OTHER built-ins (flows, integrations) have no hardcoded entry, so
+			// they are bridged: skipping every `openregister` provider by app id
+			// left `openregister.runFlow` unreachable through the ToolRegistry
+			// (and the ToolRegistryFacade apps call), so an agent could not run
+			// a flow at all (seen live from hermiq custom tools, 25 Nov 2026).
+			if ($this->coveredByBuiltinEntries(provider: $provider, appId: $appId) === true) {
 				continue;
 			}
 
@@ -175,6 +183,26 @@ class ToolRegistrationListener implements IEventListener {
 			}//end try
 		}//end foreach
 	}//end bridgeMcpProviderTools()
+
+	/**
+	 * Whether a provider's tools are already registered as hardcoded ToolRegistry entries.
+	 *
+	 * @param IMcpToolProvider $provider The provider.
+	 * @param string           $appId    Its app id.
+	 *
+	 * @return bool True for the registers, schemas and objects providers.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 */
+	private function coveredByBuiltinEntries(IMcpToolProvider $provider, string $appId): bool {
+		if (in_array($appId, ['registers', 'schemas', 'objects'], true) === true) {
+			return true;
+		}
+
+		return $provider instanceof RegistersToolProvider
+			|| $provider instanceof SchemasToolProvider
+			|| $provider instanceof ObjectsToolProvider;
+	}//end coveredByBuiltinEntries()
 
 	/**
 	 * Iterate a single provider's tool descriptors and register each as a bridge.
