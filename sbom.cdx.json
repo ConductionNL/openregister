@@ -21619,6 +21619,10 @@
       ],
       "properties": [
         {
+          "name": "cdx:npm:package:development",
+          "value": "true"
+        },
+        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/js-tokens"
         }
@@ -25925,8 +25929,8 @@
     {
       "type": "library",
       "name": "prettier",
-      "version": "3.9.9",
-      "bom-ref": "openregister@1.0.0|prettier@3.9.9",
+      "version": "3.10.1",
+      "bom-ref": "openregister@1.0.0|prettier@3.10.1",
       "licenses": [
         {
           "license": {
@@ -25934,15 +25938,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/prettier@3.9.9",
+      "purl": "pkg:npm/prettier@3.10.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/prettier/-/prettier-3.9.9.tgz",
+          "url": "https://registry.npmjs.org/prettier/-/prettier-3.10.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "67f0891c891dba33bf3ad37b9d75228b445fdd54f9491ba18c103cd97beed978415205f79e13faed3d0b1dc7817502dec7b38e1464e8c7e439620f09936422be"
+              "content": "ef4be9dd9518a0f9456c5f6e8937571d4502184229edde3eea9fbc0d86e49b68cfef1ff78bfa5a5d517a768a52237cddfc2122b6b64dd6b7388bce715a699796"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
