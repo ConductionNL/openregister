@@ -33,6 +33,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'federation#createShare', 'url' => '/api/federation/shares',      'verb' => 'POST'],
         ['name' => 'federation#revokeShare', 'url' => '/api/federation/shares/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
         ['name' => 'federation#renewShare',  'url' => '/api/federation/shares/{id}/renew', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'federation#acceptShare',  'url' => '/api/federation/shares/{id}/accept',  'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+        ['name' => 'federation#declineShare', 'url' => '/api/federation/shares/{id}/decline', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
         // Credential broker (credential-broker-service) — owner-scoped credential
         // metadata CRUD + per-app signing-secret registration + the guarded broker
@@ -1258,6 +1260,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // FileSidebar — list OR objects connected to a Files entry + show extraction state.
         ['name' => 'fileSidebar#getObjectsForFile',    'url' => '/api/files/{fileId}/objects',           'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
         ['name' => 'fileSidebar#getExtractionStatus',  'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
+        ['name' => 'fileSidebar#getThread',            'url' => '/api/files/{fileId}/thread',            'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
 
         // Action registry CRUD + utilities.
 
@@ -1279,6 +1282,17 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // A form open to visitors without an account (`access: anonymous`), on a page that needs no account.
         ['name' => 'publicFormPage#show', 'url' => '/forms/{formId}', 'verb' => 'GET'],
         ['name' => 'objectExport#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // One record as a PDF (export-pdf-house-style task 2.4): its readable fields, the export right checked first.
+        ['name' => 'recordPdf#show', 'url' => '/api/objects/{register}/{schema}/{id}/pdf', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        // The reporting aggregation (rapportage-bi-export): literal, so before objects#show.
+        ['name' => 'aggregation#report', 'url' => '/api/objects/{register}/{schema}/aggregate', 'verb' => 'GET'],
+        // Chart labels and series over the same report (rapportage-bi-export): literal, so before objects#show.
+        ['name' => 'aggregation#chart', 'url' => '/api/objects/{register}/{schema}/chart', 'verb' => 'GET'],
+        // Period-over-period comparison of one metric (rapportage-bi-export).
+        ['name' => 'aggregation#compare', 'url' => '/api/reports/compare', 'verb' => 'GET'],
+        // rapportage-bi-export: one aggregation across registers (total and
+        // per register, or a count series per register); RBAC per pair.
+        ['name' => 'crossRegisterReport#aggregate', 'url' => '/api/reports/aggregate', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
         // Address an object by its schema's declared identity. BEFORE objects#show for the same reason.
@@ -1458,6 +1472,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
         ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
         ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        ['name' => 'operationsQuery#run', 'url' => '/api/operations/query', 'verb' => 'POST'],
+        ['name' => 'operationsQuery#export', 'url' => '/api/operations/query/export', 'verb' => 'POST'],
         // Dependency breakers (operate-load-shedding D-7): administrator-only.
         ['name' => 'operationsDependencies#index', 'url' => '/api/operations/dependencies', 'verb' => 'GET'],
         ['name' => 'operationsDependencies#reset', 'url' => '/api/operations/dependencies/{key}/reset', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
@@ -1834,6 +1850,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // One named part of one schema back to what its app shipped (admin; shipped-baseline-reset-is-reachable).
         ['name' => 'shippedBaseline#preview', 'url' => '/api/schemas/{id}/shipped-baseline/reset', 'verb' => 'GET'],
         ['name' => 'shippedBaseline#reset', 'url' => '/api/schemas/{id}/shipped-baseline/reset', 'verb' => 'POST'],
+        // A part an app upgrade kept local: list them, accept what the app shipped (admin; local-changes-to-app-shipped-configuration 3.3b).
+        ['name' => 'shippedConflict#conflicts', 'url' => '/api/schemas/{id}/shipped-baseline/conflicts', 'verb' => 'GET'],
+        ['name' => 'shippedConflict#accept', 'url' => '/api/schemas/{id}/shipped-baseline/conflicts/accept', 'verb' => 'POST'],
         ['name' => 'schemaMigration#rollback', 'url' => '/api/schemas/{id}/runs/{run}/rollback', 'verb' => 'POST', 'requirements' => ['id' => '\d+', 'run' => '\d+']],
 
         // Property type conversion — the supported conversions are published,

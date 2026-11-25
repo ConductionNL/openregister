@@ -36,6 +36,7 @@ use OCA\OpenRegister\Controller\Support\DeletedControllerServices;
 use OCA\OpenRegister\Controller\Support\DestroyedTombstones;
 use OCA\OpenRegister\Controller\Support\PurgeRequest;
 use OCA\OpenRegister\Controller\Support\SyncWatermark;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
 use OCA\OpenRegister\Db\AuditTrail\NamedActor;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -56,6 +57,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Service\Deletion\RecordDestructionCommand;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowQuery;
 
@@ -74,6 +76,8 @@ use OCA\OpenRegister\Service\Deletion\DeletionWindowQuery;
  */
 
 class DeletedController extends Controller {
+	use HandlesExceptionsTrait;
+
 	/**
 	 * Special parameters and system fields that are never a listing filter.
 	 *
@@ -114,6 +118,13 @@ class DeletedController extends Controller {
 	private readonly DeletedControllerServices $services;
 
 	/**
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	protected readonly ?LoggerInterface $logger;
+
+	/**
 	 * Constructor for the DeletedController
 	 *
 	 * @param IRequest $request The request object
@@ -127,6 +138,7 @@ class DeletedController extends Controller {
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->services = $services;
+		$this->logger   = $services->access->logger;
 	}//end __construct()
 
 	/**
@@ -355,12 +367,7 @@ class DeletedController extends Controller {
 
 			return $watermark->stamp(response: $response);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to retrieve deleted objects: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Failed to retrieve deleted objects');
 		}//end try
 	}//end index()
 
@@ -562,12 +569,7 @@ class DeletedController extends Controller {
 				]
 			);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to get statistics: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Failed to get statistics');
 		}//end try
 	}//end statistics()
 
@@ -600,12 +602,7 @@ class DeletedController extends Controller {
 
 			return new JSONResponse(data: $topDeleters);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to get top deleters: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Failed to get top deleters');
 		}
 	}//end topDeleters()
 
@@ -632,12 +629,7 @@ class DeletedController extends Controller {
 		try {
 			return $this->restoreFound(object: $this->services->store->objectEntityMapper->find($id, null, null, true));
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to restore object: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Failed to restore object');
 		}//end try
 	}//end restore()
 
@@ -884,7 +876,7 @@ class DeletedController extends Controller {
 		try {
 			return $this->restoreFoundBatch(ids: $ids);
 		} catch (\Exception $e) {
-			return $this->batchFailure(message: 'Failed to restore objects: ' . $e->getMessage());
+			return $this->handleApiException(e: $e, context: 'Failed to restore objects');
 		}
 	}//end restoreMultiple()
 
@@ -972,12 +964,7 @@ class DeletedController extends Controller {
 		try {
 			return $this->destroyFound(object: $this->fullDeletedRow(uuid: $id));
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: [
-					'error' => 'Failed to permanently delete object: ' . $e->getMessage(),
-				],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Failed to permanently delete object');
 		}//end try
 	}//end destroy()
 
@@ -1204,10 +1191,7 @@ class DeletedController extends Controller {
 			// The lookup is read-scoped: an unreadable object is absent, not a server error.
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to preview the destruction: ' . $e->getMessage()],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Failed to preview the destruction');
 		}//end try
 	}//end destructionPreview()
 
@@ -1257,10 +1241,7 @@ class DeletedController extends Controller {
 				]
 			);
 		} catch (\Exception $e) {
-			return new JSONResponse(
-				data: ['error' => 'Failed to read the destruction record: ' . $e->getMessage()],
-				statusCode: 500
-			);
+			return $this->handleApiException(e: $e, context: 'Failed to read the destruction record');
 		}//end try
 	}//end destructionRecord()
 
@@ -1293,7 +1274,7 @@ class DeletedController extends Controller {
 		try {
 			return $this->destroyFoundBatch(ids: $ids);
 		} catch (\Exception $e) {
-			return $this->batchFailure(message: 'Failed to permanently delete objects: ' . $e->getMessage());
+			return $this->handleApiException(e: $e, context: 'Failed to permanently delete objects');
 		}
 	}//end destroyMultiple()
 
@@ -1397,22 +1378,6 @@ class DeletedController extends Controller {
 			]
 		);
 	}//end batchResponse()
-
-	/**
-	 * The 500 of a bulk restore or destroy that failed as a whole.
-	 *
-	 * @param string $message The error message.
-	 *
-	 * @return JSONResponse The error response.
-	 */
-	private function batchFailure(string $message): JSONResponse {
-		return new JSONResponse(
-			data: [
-				'error' => $message,
-			],
-			statusCode: 500
-		);
-	}//end batchFailure()
 
 	/**
 	 * The answer to a destruction the rules refuse: the refusal's body under its status.

@@ -84,6 +84,7 @@ use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\ApprovalChainDeclarations;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
+use OCA\OpenRegister\Service\Schemas\IdentityBreachCounter;
 use OCA\OpenRegister\Service\Schemas\PropertyTitles;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\SchemaCatalogue;
@@ -1716,7 +1717,12 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			return $invalid;
 		}
 
-		$update = ['id' => $id, 'data' => $data, 'oldAuthorization' => $existingSchema->getAuthorization()];
+		$update = [
+			'id' => $id,
+			'data' => $data,
+			'oldAuthorization' => $existingSchema->getAuthorization(),
+			'oldConfiguration' => $existingSchema->getConfiguration(),
+		];
 		return $this->classifyAndWriteUpdate(existing: $existingSchema, update: $update);
 	}//end applyUpdate()
 
@@ -2030,6 +2036,13 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			$extra['flowWarnings'] = $flowWarnings;
 		}
 
+		// A newly declared identity that existing objects break is a warning
+		// beside the saved schema, with the count (modelling-composite-identity 1.2).
+		$identityWarning = $this->identityBreachWarning(schema: $updatedSchema, oldConfiguration: ($update['oldConfiguration'] ?? null));
+		if ($identityWarning !== null) {
+			$extra['identityWarnings'] = [$identityWarning];
+		}
+
 		if ($update['forms'] !== null && $update['forms']['affected'] !== []) {
 			return new JSONResponse(
 				data: array_merge(
@@ -2042,6 +2055,34 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 
 		return new JSONResponse(data: array_merge($updatedSchema->jsonSerialize(), $extra));
 	}//end writeSchemaUpdate()
+
+	/**
+	 * How many existing objects break a newly declared identity; a failure never fails the save.
+	 *
+	 * @param Schema     $schema           The updated schema
+	 * @param array|null $oldConfiguration The configuration before the update
+	 *
+	 * @return array{identity: string, breaches: int, capped: bool, message: string}|null The warning, or null
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/tasks.md#task-1.2
+	 */
+	private function identityBreachWarning(Schema $schema, ?array $oldConfiguration): ?array {
+		try {
+			$counter = $this->container->get(IdentityBreachCounter::class);
+			if ($counter instanceof IdentityBreachCounter === false) {
+				return null;
+			}
+
+			return $counter->warningFor(schema: $schema, previousConfiguration: $oldConfiguration);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasController] The new identity could not be checked against the existing objects',
+				context: ['schema_id' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+
+			return null;
+		}
+	}//end identityBreachWarning()
 
 	/**
 	 * The published flow triggers a declared rename leaves watching the old name; a failure never fails the save.
@@ -2344,8 +2385,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			// Return 409 Conflict for cascade protection (objects still attached).
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
 		} catch (\Exception $e) {
-			// Return 500 for other errors.
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Schema deletion failed');
 		}//end try
 	}//end destroy()
 
@@ -2971,8 +3011,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			// Return a 404 error if the target schema doesn't exist.
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			// Return a 500 error for other exceptions.
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Related schemas read failed');
 		}//end try
 	}//end related()
 
@@ -3115,7 +3154,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Schema stats read failed');
 		}//end try
 	}//end stats()
 
@@ -3135,7 +3174,10 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 * @no-admin-idor-exempt Read-only index names of a shared schema *definition*'s storage table,
 	 * the same posture as stats(); exposes no object contents and no per-user data. No IDOR vector.
 	 *
-	 * @return JSONResponse `{results: [{register, indexes: [{name, property, column, kind, flag}]}]}`, 404 for an unknown schema
+	 * `textSearchIndex` says whether this instance can build a text-search index
+	 * at all, so the property editor can explain a disabled switch.
+	 *
+	 * @return JSONResponse `{results: [{register, indexes: [{name, property, column, kind, flag}]}], textSearchIndex: bool}`, 404 for an unknown schema
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
@@ -3156,11 +3198,16 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 				];
 			}
 
-			return new JSONResponse(data: ['results' => $results]);
+			return new JSONResponse(
+				data: [
+					'results' => $results,
+					'textSearchIndex' => $this->objectEntityMapper->canBuildTextSearchIndex(),
+				]
+			);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Schema indexes read failed');
 		}//end try
 	}//end indexes()
 

@@ -31,6 +31,8 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface;
+use OCA\OpenRegister\Kernel\Contracts\RemoteRecipientDenialInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectUpdateRightsInterface;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
@@ -442,6 +444,7 @@ final class CoreServiceBindings {
 		ObjectEventGateInterface::class => ObjectEventGate::class,
 		ObjectNameWriterInterface::class => CacheHandler::class,
 		ObjectReadAccessInterface::class => ObjectReadAccess::class,
+		ObjectReadCheckInterface::class => ObjectReadAccess::class,
 		ObjectUpdateRightsInterface::class => ObjectUpdateRights::class,
 		ObjectReadersInterface::class => PermissionHandler::class,
 		ObjectSlugBackfillServiceInterface::class => ObjectSlugBackfillService::class,
@@ -455,6 +458,7 @@ final class CoreServiceBindings {
 		PermissionScopeInterface::class => PermissionHandler::class,
 		QueryHandlerInterface::class => QueryHandler::class,
 		RelationAddressRewriteInterface::class => RelationAddressRewrite::class,
+		RemoteRecipientDenialInterface::class => PermissionHandler::class,
 		RenderObjectInterface::class => RenderObject::class,
 		RetentionDestructionInterface::class => RetentionDestruction::class,
 		RevertHandlerInterface::class => RevertHandler::class,

@@ -25,7 +25,7 @@ OpenRegister provides a comprehensive import/export pipeline for bulk data opera
 | Excel (XLSX) | `ExportService.exportToExcel()` | Multi-schema export as multiple sheets |
 | JSON | `ExportService.exportToJson()` | JSON array export |
 | XML | `ExportService.exportToXml()` | Root `<objects>`, one `<object id="...">` per record; an invalid element name becomes `<property name="...">`, null is `xsi:nil="true"` |
-| PDF | `ExportService.exportToPdf()` | Rendered table, row-limited |
+| PDF | `ExportService.exportToPdf()` | Rendered table, row-limited; carries the organisation's house style (see below) |
 | JSONL | Planned | Newline-delimited JSON for streaming |
 
 The export dialog on the register page offers Excel, CSV, TSV, JSON and XML.
@@ -104,6 +104,29 @@ GET /api/objects/{register}/{schema}/export?format=xlsx&_search=actief
 ```
 
 Export respects all query parameters (filtering, sorting) — you export exactly what you see in the UI.
+
+### House Style in PDF Exports
+
+A PDF export carries the organisation's house style when the **thematiq** app is
+installed and enabled. Set it once in thematiq's admin settings, in the
+**Documents** block; every PDF the instance generates then uses it:
+
+- **Logo** — the document logo (or, without one, the active token set's logo)
+  is drawn at the left of the header on every page. It is read in-process and
+  embedded in the file: never fetched over the network. Only PNG, JPEG and SVG
+  up to 1 MB are used, and an SVG with scripts, event handlers or references
+  outside itself is left out.
+- **Table header** — coloured with the token set's primary colour and primary
+  text colour.
+- **Footer** — the organisation name, the document footer line and the
+  accessibility and privacy statement links, on every page above the page
+  number.
+
+The house style is read for the requesting user, so a group-mapped token set
+applies; an export without a user uses the instance default. Without thematiq,
+or when the house style cannot be read, the export has the plain layout and
+still succeeds. Custom fonts are not applied yet: the export keeps its default
+font.
 
 ### Public download
 
