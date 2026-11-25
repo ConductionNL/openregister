@@ -21,3 +21,20 @@
 - [x] 5.2 Unit tests: `searchable: true` property creates the expected GIN index at table-creation time; a non-string property marked `searchable` logs a warning and does not abort table creation. — `testSearchableStringPropertyCreatesTrgmIndex`, `testPropertyWithoutSearchableGetsNoTrgmIndex`, `testSearchableNonStringLogsWarningAndDoesNotAbort`, `testSearchableIsNoOpOnMariaDb`.
 - [x] 5.3 Unit tests: retrofit path creates the trgm index on an existing table when a schema is updated to add `searchable: true` to a property (or when `pg_trgm` becomes available after table creation). — `testRetrofitViaUpdateTableIndexesCreatesBothIndexKinds` (drives the public `updateTableIndexes()` retrofit entry point). Migration bootstrap also covered by `Version1Date20260706110000Test` (4 cases).
 - [ ] 5.4 Integration test: measure (or assert query-plan use of the index via `EXPLAIN`) that `_search`/`_fuzzy=true` over `_name` on a magic table uses the new GIN index rather than a sequential scan, on a PostgreSQL test database with `pg_trgm` installed. — DEFERRED: needs a live PostgreSQL instance with a populated magic table (the unit suite mocks the DB). See the live-verification note in the change report; the 2026-07-05 spectr scale spike already measured the underlying 268ms→1.5ms GIN-trgm improvement on an 81,950-row table, which this task would re-assert against the auto-created index.
+  > **MEASURED 2026-11-25, NOT TICKED: the index is not used.** Sandbox Nextcloud 34 on PostgreSQL 16 with `pg_trgm`,
+  > main 55f2aa3e, a magic table of 100,001 rows (schema `publication`: `title` with `searchable: true`, `summary`
+  > plain). Both trigram indexes exist (`_name_trgm_idx`, `title_trgm_idx`). The SQL `_search=zebra` sends (captured
+  > from the server log, `_fuzzy=true` the same) ORs `LOWER(col) LIKE '%zebra%'` over every string property and the
+  > three metadata columns with three `to_tsvector(...) @@ plainto_tsquery(...)` branches. `EXPLAIN ANALYZE`:
+  > - as sent: an index scan on the primary key filtering all 100,000 rows, **873 ms** (the HTTP request ~2.4 s);
+  > - `LOWER(_name) LIKE '%zebra%'` alone: **seq scan**, 99 ms. The index is on `_name`, the query on `LOWER(_name)`,
+  >   so the planner cannot use it; `_name ILIKE '%zebra%'` alone uses `_name_trgm_idx`, 1.8 ms;
+  > - every `LIKE` branch indexed as written (`GIN (lower(col) gin_trgm_ops)`) but the per-property tsvector branches
+  >   not: still a (parallel) seq scan, 464 ms. One unindexed branch of the OR is enough;
+  > - every branch indexed as written (five `lower()` trigram indexes plus a tsvector index per searched property and
+  >   the metadata one): a `BitmapOr` of eight bitmap index scans, **0.16 ms**.
+  > So the index this change creates cannot serve `_search` as it is written; what can is an index per branch, in the
+  > branch's own expression, for every column `_search` reads. Which way to go (index every searched column, or let
+  > `_search` read only the `searchable` ones on PostgreSQL, a change in what a search finds) is a product decision,
+  > queued for the coordinator. Found on the way and fixed separately: a magic table created by its first object had
+  > no `_tsv_idx` at all (#11168).
