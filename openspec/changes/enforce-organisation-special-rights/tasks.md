@@ -37,4 +37,7 @@
 - [x] 8.1 `object_publish`: retired (decision 247)
 - [x] 8.2 `dashboard_view`: retired (decision 248)
 - [x] 8.4 Semantic search does not need `llm_use` (decision 249)
-- [ ] 8.3 Live check on a running instance: a narrowed `llm_use` refuses a chat from the widget
+- [x] 8.3 Live check on a running instance: a narrowed `llm_use` refuses a chat from the widget
+  - Run 2026-11-25 on main against a sandbox Nextcloud 34.0.6 on MariaDB, over the two endpoints the chat posts to (no browser): an organisation whose `llm_use` is narrowed to group `llm-users`, a member who is active in it and owns a conversation there.
+    - not in `llm-users`: `POST /api/chat/send` answers 403 `You do not hold the special right llm_use in this organisation`; `POST /api/chat/stream` answers the event `error` `{code: forbidden, right: llm_use}`; no message is stored
+    - in `llm-users`: both pass the check and fail only at the model call (503 `Chat provider is not configured`, and a stream `stream_failed`), as the sandbox has no model; that is the control that the refusal came from the right and not from the missing provider
