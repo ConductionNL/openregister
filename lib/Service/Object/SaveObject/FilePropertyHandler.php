@@ -19,9 +19,12 @@
 namespace OCA\OpenRegister\Service\Object\SaveObject;
 
 use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Kernel\Contracts\UrlFileFetchInterface;
+use OCA\OpenRegister\Service\File\UrlFetchRefused;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\ObjectFilesInterface;
 use OCA\OpenRegister\Service\SecurityService;
@@ -139,17 +142,22 @@ class FilePropertyHandler {
 	];
 
 	/**
-	 * Stream options for fetching a file from a URL.
+	 * The reader, guard, stored-file operations and configuration resolver delegated to.
+	 *
+	 * @var FilePropertyParts
+	 */
+	private readonly FilePropertyParts $parts;
+
+	/**
+	 * Stream options for the fallback fetch when no shared fetch is injected.
 	 *
 	 * SEC-SVC-2: redirects are DISABLED — follow_location would let a public URL
-	 * 302-redirect to an internal address, defeating the point-in-time guard in
-	 * fetchFileFromUrl().
+	 * 302-redirect to an internal address, defeating the point-in-time guard.
 	 *
 	 * @var array<string, array<string, mixed>>
 	 */
 	private const HTTP_FETCH_OPTIONS = [
 		'http' => [
-			// 30 second timeout.
 			'timeout' => 30,
 			'user_agent' => 'OpenRegister/1.0',
 			'follow_location' => false,
@@ -158,18 +166,19 @@ class FilePropertyHandler {
 	];
 
 	/**
-	 * The reader, guard, stored-file operations and configuration resolver delegated to.
+	 * The fetch a URL file input goes through, shared with creating a file from a URL; null uses the guarded fallback.
 	 *
-	 * @var FilePropertyParts
+	 * @var UrlFileFetchInterface|null
 	 */
-	private readonly FilePropertyParts $parts;
+	private readonly ?UrlFileFetchInterface $urlFetcher;
 
 	/**
 	 * Constructor for FilePropertyHandler.
 	 *
-	 * @param LoggerInterface $logger Logger for logging operations
-	 * @param ObjectFilesInterface $fileService File service for file operations
-	 * @param DocumentStoreMoveGuard|null $moveGuard Holds file writes off a register being moved
+	 * @param LoggerInterface             $logger      Logger for logging operations
+	 * @param ObjectFilesInterface        $fileService File service for file operations
+	 * @param DocumentStoreMoveGuard|null $moveGuard   Holds file writes off a register being moved
+	 * @param UrlFileFetchInterface|null  $urlFetcher  The shared URL fetch (Files' UrlFileFetcher); null uses the guarded fallback.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
@@ -177,8 +186,10 @@ class FilePropertyHandler {
 		LoggerInterface $logger,
 		private readonly ObjectFilesInterface $fileService,
 		private readonly ?DocumentStoreMoveGuard $moveGuard = null,
+		?UrlFileFetchInterface $urlFetcher = null,
 	) {
 		$this->parts = new FilePropertyParts(logger: $logger, fileService: $fileService);
+		$this->urlFetcher = $urlFetcher;
 	}//end __construct()
 
 	/**
@@ -715,31 +726,64 @@ class FilePropertyHandler {
 	}//end processFileObjectInput()
 
 	/**
-	 * Fetches file content from a URL, behind the SEC-SVC-2 anti-SSRF guard and with redirects disabled.
+	 * Fetches file content from a URL through the shared fetch: the SEC-SVC-2 anti-SSRF
+	 * guard first, no redirects, 30 seconds.
+	 *
+	 * The fetch is not strict and has no size ceiling, so this path behaves as it did
+	 * before the fetch was shared: any size is read, an answer of 400 or more fails,
+	 * and an empty body is stored. A refused address keeps its guard message; any other
+	 * failed fetch is reported as before, naming the URL.
 	 *
 	 * @param string $url The URL to fetch from.
 	 *
 	 * @return string The file content.
 	 *
-	 * @throws Exception If the URL cannot be fetched.
+	 * @throws InvalidArgumentException If the guard refuses the address.
+	 * @throws Exception                If the URL cannot be fetched.
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
+	 * @spec openspec/changes/files-create-from-url/specs/file-actions/spec.md
 	 */
 	private function fetchFileFromUrl(string $url): string {
-		// SEC-SVC-2: validate the user-supplied URL against the shared anti-SSRF guard
-		// BEFORE issuing any request. This rejects non-http(s) schemes and any host that
-		// resolves to a loopback / private / reserved address (e.g. cloud metadata,
-		// localhost, RFC-1918), closing the full read-SSRF on this object-write path.
+		if ($this->urlFetcher === null) {
+			return self::fetchWithoutSharedFetcher(url: $url);
+		}
+
+		try {
+			return $this->urlFetcher->fetch(url: $url, maxBytes: PHP_INT_MAX, strict: false);
+		} catch (UrlFetchRefused $refused) {
+			if ($refused->reason === UrlFetchRefused::REFUSED_ADDRESS) {
+				throw new InvalidArgumentException($refused->getMessage());
+			}
+
+			throw new Exception("Unable to fetch file from URL: $url");
+		}
+	}//end fetchFileFromUrl()
+
+	/**
+	 * The fetch used when no shared fetch was injected: the SEC-SVC-2 guard first, no redirects, 30 seconds.
+	 *
+	 * @param string $url The URL to fetch from.
+	 *
+	 * @return string The file content.
+	 *
+	 * @throws InvalidArgumentException If the guard refuses the address.
+	 * @throws Exception                If the URL cannot be fetched.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) The address guard is SecurityService's static check, shared by every fetch.
+	 */
+	private static function fetchWithoutSharedFetcher(string $url): string {
 		SecurityService::assertSafeFetchUrl($url);
 
-		// SEC-SVC-2: redirects are disabled in HTTP_FETCH_OPTIONS.
 		$content = file_get_contents($url, false, stream_context_create(self::HTTP_FETCH_OPTIONS));
 		if ($content === false) {
 			throw new Exception("Unable to fetch file from URL: $url");
 		}
 
 		return $content;
-	}//end fetchFileFromUrl()
+	}//end fetchWithoutSharedFetcher()
 
 	/**
 	 * Parses file data from URL fetch results.

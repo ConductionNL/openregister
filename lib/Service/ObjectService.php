@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
@@ -69,6 +70,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Search\SearchSnippetAttacher;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\DraftCaller;
@@ -3436,6 +3438,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the row is a draft kept from the caller.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
      */
     private function refuseSomebodyElsesDraft(ObjectEntity $stored): void
     {
@@ -3444,7 +3447,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
             caller: new DraftCaller(
                 userId: $user?->getUID(),
-                isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+                isAdmin: AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user)
             )
         );
         if ($kept === true) {
@@ -4905,12 +4908,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @return DraftCaller Their user id, and whether they are an administrator.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
      */
     private function draftCaller(?IUser $user): DraftCaller
     {
         return new DraftCaller(
             userId: $user?->getUID(),
-            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            isAdmin: AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user)
         );
     }//end draftCaller()
 
@@ -5598,6 +5602,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $result['@self']['deleted'] = $options->deleted;
 
         $result = $this->extendSearchResult(result: $result, query: $query);
+        // `_snippet=true` adds `@self.snippet` to each row (search-dutch-language-quality
+        // REQ-SDL-002); without it the result is returned untouched.
+        if (SearchSnippetAttacher::asked(query: $query) === true) {
+            $result = (new SearchSnippetAttacher(schemas: $this->schemaMapper))->attach(result: $result, query: $query);
+        }
 
         (new SearchTrailRecorder(
             searchQueryHandler: $this->searchQueryHandler,
