@@ -153,7 +153,7 @@ class SharerFolderAccessTest extends TestCase {
 	/**
 	 * @dataProvider heldRights
 	 */
-	public function testANewViewCarriesExactlyTheHeldRightsMarkedAndNeverReshare(bool $add, bool $delete, int $expected): void {
+	public function testANewViewCarriesTheHeldRightsPlusShareMarked(bool $add, bool $delete, int $expected): void {
 		$this->holds(read: true, add: $add, delete: $delete);
 
 		$attributes = $this->createMock(IAttributes::class);
@@ -165,7 +165,7 @@ class SharerFolderAccessTest extends TestCase {
 		$view->expects($this->once())->method('setSharedWith')->with('alice');
 		$view->expects($this->once())->method('setShareType')->with(IShare::TYPE_USER);
 		$view->expects($this->once())->method('setPermissions')->with($this->callback(
-			static fn (int $permissions): bool => $permissions === $expected && ($permissions & Constants::PERMISSION_SHARE) === 0
+			static fn (int $permissions): bool => $permissions === ($expected | Constants::PERMISSION_SHARE)
 		));
 		$view->expects($this->once())->method('setAttributes')->with($attributes);
 
@@ -174,7 +174,7 @@ class SharerFolderAccessTest extends TestCase {
 		$this->shareManager->expects($this->once())->method('acceptShare')->with($view, 'alice');
 
 		$this->access()->ensureFor(object: new ObjectEntity(), folder: $this->folder(), uid: 'alice', permissions: Constants::PERMISSION_READ);
-	}//end testANewViewCarriesExactlyTheHeldRightsMarkedAndNeverReshare()
+	}//end testANewViewCarriesTheHeldRightsPlusShareMarked()
 
 	public function testTheFolderOwnerNeedsNoView(): void {
 		$this->fileAccess->expects($this->never())->method('mayRead');
