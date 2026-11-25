@@ -894,3 +894,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after l10n-merge.js, git diff origin/main -- l10n/en.js l10n/nl.js shows "3" and "30" removed near line 20 and re-added at line 4.
 - Cause: the unsorted (main-order) branch builds a JS object; JS iterates integer-like keys first, so main's line order is lost for them. Content is identical, the diff is noise.
 - Fix: after the merge, reorder each key line to git show origin/main:<file>'s line order, new keys after, last line without comma (a 20-line python over the raw lines); expect numstat <PR keys> 1 (the comma). Used on #10533 0ec16721, #11023 83371131.
+
+## l10n/*.json conflicts at the end of the translations block (or-fix-2)
+- Symptom: CONFLICT in l10n/en.json and l10n/nl.json, both sides appended keys after the same last entry.
+- Cause: the backend catalogues are hand-maintained and appended; main's en.json can hold a duplicate key, so json.load + json.dumps does not round-trip and must not be used.
+- Fix: textual union per conflict hunk: ours lines, then theirs lines minus simple "key": "value" lines already in ours; add the missing comma on ours' last line. Check json.load passes and that neither side's key set lost a key against the merged file.
