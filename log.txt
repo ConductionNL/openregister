@@ -4800,3 +4800,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T10:20:10Z precheck-20261125T092731-e310afa6 GREEN tree 365da6bcd8 on dev c6eb5eb60b prs 1 front=ok: Tests: 66330, Assertions: 235053, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 19, PHPUnit Deprecations: 1, Skipped: 24.
 2026-11-25T10:20:36Z precheck-20261125T092731-e310afa6 CONFLICT-DEV #11067 45047d34
 2026-11-25T10:20:36Z precheck-20261125T093654-00b031c3 GREEN tree eebf055639 on dev c6eb5eb60b prs 1 front=skip: Tests: 66330, Assertions: 235053, Errors: 9, Failures: 1, Deprecations: 23, PHPUnit Deprecations: 1, Skipped: 24.
+2026-11-25T10:23:13Z session-20261125T093322-1efbfe24 cloud-or-reviewer-1: APPROVE 11121 11113 (fast path, only main merge 28d6ce8f), 11137 (full); BLOCK 10537 (main merge dropped RequestAlertJob from info.xml); 7721 11081 11089 11097 11129 10513 ledgered at head; 10281 never land; no lane-1 PR conflicts with main 28d6ce8f
