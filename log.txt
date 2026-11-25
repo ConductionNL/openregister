@@ -4833,3 +4833,4 @@ remote: error: GH013: Repository rule violations f; per-PR merges
 2026-11-25T10:50:13Z precheck-20261125T100507-543643c0 NORESULT tree 7dfe3e3396 prs 1: php-1.log: no Tests line
 2026-11-25T10:50:49Z precheck-20261125T100507-543643c0 NORESULT tree 7dfe3e3396 prs 1: php-1.log: no Tests line
 2026-11-25T10:55:48Z session-20261125T103416-5ddd4e60 cloud-or-reviewer-1: APPROVE 10537 (BLOCK fixed, RequestAlertJob restored, fast path) and 10513 (fast path, only main merge c6eb5eb6, tests green on merge with main 1e257c72); 7721 11081 11089 11097 11113 11121 11129 11137 have a verdict at head; 10281 never land
+2026-11-25T10:57:43Z precheck-20261125T095120-9a712c23 GREEN tree 4be1107bcd on dev 1e257c721f prs 1 front=skip: Tests: 66404, Assertions: 235280, Errors: 9, Failures: 2, Deprecations: 25, PHPUnit Deprecations: 1, Skipped: 27.
