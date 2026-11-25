@@ -4968,3 +4968,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T12:39:08Z precheck-20261125T121020-e377130d GREEN tree a4fd61e3ac on dev 7997381d75 prs 1 front=skip: Tests: 66714, Assertions: 236806, Errors: 9, Failures: 2, Deprecations: 27, PHPUnit Deprecations: 1, Skipped: 27.
 2026-11-25T12:39:54Z precheck-20261125T121020-e377130d CONFLICT-DEV #11066 f6e4a367
 2026-11-25T12:40:09Z precheck-20261125T121020-e377130d CONFLICT-DEV #11086 61e64826
+2026-11-25T12:40:42Z session-20261125T112345-de2bd66b or-fix-1 or-fix-6 done: merged main into 10451 10516 10526 11021 11141 (REVERIFY recorded; 11021 obsolete, commented); precheck GREEN 11021 11161; nothing left for lanes 1 and 6. Skipped 7721 (parked superseded), 10631 (BLOCK, product decision open), 10281/10466 (never land)
