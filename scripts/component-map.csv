@@ -1696,6 +1696,7 @@ Repair/CreateMissingRegisterFolders.php,43,Repair,Platform,Platform/Repair/Creat
 Repair/FillCalendarTimeZones.php,111,Repair,Flows,Flows/Repair/FillCalendarTimeZones.php,0,,Processes
 Repair/GrantExportWhereReadIsGranted.php,72,Repair,Platform,Platform/Repair/GrantExportWhereReadIsGranted.php,0,,Platform
 Repair/ImportCredentialBrokerRegister.php,12,Repair,Platform,Platform/Repair/ImportCredentialBrokerRegister.php,0,,Platform
+Repair/ImportReportTemplatesRegister.php,12,Repair,Platform,Platform/Repair/ImportReportTemplatesRegister.php,0,,Platform
 Repair/ImportDecisionTableRegister.php,14,Repair,Platform,Platform/Repair/ImportDecisionTableRegister.php,0,,Platform
 Repair/ImportDestructionListRegister.php,14,Repair,Platform,Platform/Repair/ImportDestructionListRegister.php,0,,Platform
 Repair/ImportDismissedPairRegister.php,14,Repair,Platform,Platform/Repair/ImportDismissedPairRegister.php,0,,Platform
@@ -1747,6 +1748,8 @@ Search/Controller/DuplicateController.php,209,Search,Search,Search/Controller/Du
 Search/Controller/GraphQLController.php,128,Search,Search,Search/Controller/GraphQLController.php,0,,Search
 Search/Controller/MapsOverviewController.php,86,Search,Search,Search/Controller/MapsOverviewController.php,0,,Search
 Search/Controller/ReportsController.php,106,Search,Search,Search/Controller/ReportsController.php,0,,Search
+Search/Controller/ReportTemplateController.php,80,Search,Search,Search/Controller/ReportTemplateController.php,0,,Search
+Search/Controller/Support/ReportGenerationFailures.php,30,Search,Search,Search/Controller/Support/ReportGenerationFailures.php,0,,Search
 Search/Controller/SearchController.php,90,Search,Search,Search/Controller/SearchController.php,0,,Search
 Search/Controller/Support/ViewPatch.php,49,Search,Search,Search/Controller/Support/ViewPatch.php,0,,Search
 Search/Controller/ViewsController.php,472,Search,Search,Search/Controller/ViewsController.php,0,,Search
@@ -1820,6 +1823,11 @@ Search/Service/RegisterSchemaPair.php,12,Search,Search,Search/Service/RegisterSc
 Search/Service/Reporting/HtmlReportWriter.php,154,Search,Search,Search/Service/Reporting/HtmlReportWriter.php,0,,Search
 Search/Service/Reporting/PdfReportWriter.php,21,Search,Search,Search/Service/Reporting/PdfReportWriter.php,0,,Search
 Search/Service/Reporting/ReportRenderService.php,153,Search,Search,Search/Service/Reporting/ReportRenderService.php,0,,Search
+Search/Service/Reporting/ReportPeriod.php,40,Search,Search,Search/Service/Reporting/ReportPeriod.php,0,,Search
+Search/Service/Reporting/ReportSectionRows.php,20,Search,Search,Search/Service/Reporting/ReportSectionRows.php,0,,Search
+Search/Service/Reporting/ReportSectionQuery.php,90,Search,Search,Search/Service/Reporting/ReportSectionQuery.php,0,,Search
+Search/Service/Reporting/ReportSectionSource.php,25,Search,Search,Search/Service/Reporting/ReportSectionSource.php,0,,Search
+Search/Service/Reporting/ReportTemplateGenerator.php,130,Search,Search,Search/Service/Reporting/ReportTemplateGenerator.php,0,,Search
 Search/Service/Reporting/SpreadsheetReportWriter.php,189,Search,Search,Search/Service/Reporting/SpreadsheetReportWriter.php,0,,Search
 Search/Service/Search/PlaceholderResolver.php,84,Search,Search,Search/Service/Search/PlaceholderResolver.php,0,301,Core
 Search/Service/Search/PropertySearchProfile.php,111,Search,Search,Search/Service/Search/PropertySearchProfile.php,1,273,Core
