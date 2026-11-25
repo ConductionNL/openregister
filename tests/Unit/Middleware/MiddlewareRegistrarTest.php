@@ -63,6 +63,7 @@ class MiddlewareRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware',
 				'OCA\OpenRegister\Middleware\PersonalTokenGrantMiddleware',
 				'OCA\OpenRegister\Middleware\SaveWarningsMiddleware',
+				'OCA\OpenRegister\Middleware\RequestMetricsMiddleware',
 				'OCA\OpenRegister\Middleware\AnonymousEnvelopeMiddleware',
 			],
 			actual: $registered

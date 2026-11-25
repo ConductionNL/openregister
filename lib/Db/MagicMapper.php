@@ -3132,15 +3132,26 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Create the indexes of a table created just now; on MariaDB the standard ones go in one statement.
 	 *
+	 * The indexer gets the text search configuration here too, as on a sync: without it a new
+	 * table had no stemmed `_tsv_idx` GIN index until its schema was next synced, and every
+	 * `_search` on it scanned the whole table for the stemmed arm.
+	 *
 	 * @param string $tableName The table name
 	 * @param Schema $schema    The schema for index analysis
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
 	 */
 	private function createNewTableIndexes(string $tableName, Schema $schema): void {
 		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
 		$run->indexesAtOnce = ($this->db->getDatabasePlatform() instanceof MariaDBPlatform);
-		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer = new MagicTableIndexer(
+			db: $this->db,
+			logger: $this->logger,
+			trgm: $this->trgmProbe(),
+			textSearchConfig: $this->textSearch?->active()
+		);
 		$indexer->create(run: $run, schema: $schema);
 	}//end createNewTableIndexes()
 

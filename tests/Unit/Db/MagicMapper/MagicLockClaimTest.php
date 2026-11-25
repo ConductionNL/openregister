@@ -78,7 +78,10 @@ class MagicLockClaimTest extends TestCase {
 		$qb->method('executeQuery')->willReturn($result);
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturn($qb);
-		$db->method('getDatabaseProvider')->willReturn($platform);
+		// As Nextcloud answers: MariaDB is told apart from MySQL only when asked strictly.
+		$db->method('getDatabaseProvider')->willReturnCallback(
+			fn (bool $strict = false): string => ($platform === IDBConnection::PLATFORM_MARIADB && $strict === false) ? IDBConnection::PLATFORM_MYSQL : $platform
+		);
 
 		return new MagicLockClaim(db: $db);
 	}//end claim()
