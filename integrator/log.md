@@ -133,3 +133,4 @@
 2026-11-25T10:01:31Z GREEN prs=10300,10499 main=c6eb5eb60b integrator-cloud (merged; tree a32d701230)
 2026-11-25T10:06:55Z RED prs=10156,10523 main=c6eb5eb60b integrator-cloud (same initial-data.golden EditSource snapshot; #10156 again)
 2026-11-25T10:19:20Z GREEN prs=10523,10504,10540 main=1e257c721f integrator-cloud (merged)
+2026-11-25T10:46:32Z GREEN prs=11023,11071,11081,11112,11122 main=03d2528a7e integrator-cloud (merged)
