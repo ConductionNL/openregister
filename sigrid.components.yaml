@@ -1943,6 +1943,7 @@ components:
       - ".*/lib/Service/Export/RecordPdfRows[.]php"
       - ".*/lib/Service/Export/RowsPdfSection[.]php"
       - ".*/lib/Service/Export/RowsTable[.]php"
+      - ".*/lib/Service/Export/SheetTitle[.]php"
       - ".*/lib/Service/Export/XmlObjectWriter[.]php"
       - ".*/lib/Service/Export/Odt/[^/]*"
       - ".*/lib/Service/Import/BaseColumn[.]php"
