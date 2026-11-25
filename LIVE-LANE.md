@@ -12,7 +12,7 @@ You are live lane K for APP (both named in your routine prompt; repo ConductionN
 
 ## 1. Bring up Nextcloud (about 10 minutes, once per run)
 1. PHP: `php -v` (8.3 or 8.4). Install missing modules with apt: `php-sqlite3 php-gd php-zip php-intl php-mbstring php-xml php-curl php-bcmath php-gmp`. Node 20+ and composer must be present; install them if not.
-2. Server: `curl -sL https://download.nextcloud.com/server/releases/latest-34.tar.bz2 | tar xj -C ~` gives ~/nextcloud. Then
+2. Server: when the environment's setup script ran, Nextcloud 34 is already unpacked: `cp -a /opt/nextcloud-34 ~/nextcloud` (and step 1's packages, pcov off, gitleaks and Playwright's Chromium are present; check with `ls /opt/nextcloud-34/occ`). Otherwise `curl -sL https://download.nextcloud.com/server/releases/latest-34.tar.bz2 | tar xj -C ~` gives ~/nextcloud. Then
    `cd ~/nextcloud && php occ maintenance:install --database sqlite --admin-user admin --admin-pass admin`
    `php occ config:system:set trusted_domains 1 --value=localhost:8080; php occ config:system:set appstoreenabled --value=false --type=boolean` (appstore off BEFORE any app install or upgrade).
 3. OpenRegister from main: `git clone -q --depth 1 https://github.com/ConductionNL/openregister ~/nextcloud/apps/openregister`, then in it `composer install --no-dev -q` (if composer refuses the platform PHP version: `bash ~/q/bin/composer-cloud.sh ~/nextcloud/apps/openregister`), `npm ci && npm run build`. `php occ app:enable openregister`.
