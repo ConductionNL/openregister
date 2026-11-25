@@ -5091,3 +5091,4 @@
 10515 0be35d47185004a2c866be21519a19395e343259 REVERIFY or-fix-5: merged main (component-map union, yaml regenerated); phpstan clean; Architecture, Listener, all 11 PR test files green; review needed
 11070 9fff8e5de16b06bd0d5f7ded102d790036b00263 APPROVE cloud-or-reviewer-6: fast path; since approved bb16a9af only a main merge (0d540fff); PR-side diff identical in all 8 files; merges clean with main 69b48eaf
 11022 31a6d149f903c795f17ab5779bbcf2ad411a3ac4 APPROVE cloud-or-reviewer-6: fast path; since approved ccde715f only a main merge; PR-side lines identical except JSON trailing commas where main appended l10n keys; en/nl json valid; merges clean with main 69b48eaf
+11076 85a7ef99258d49d25bd092d46c4fb221714da738 REVERIFY or-fix-6: on top of c42498d6 (check-single-dexie.js follows the hoisted version, spec added): merged main 06bd9355 (no conflict) and updated sbom.cdx.json for dexie 4.4.7 only (auto-park at c42498d6 was sbom); review needed
