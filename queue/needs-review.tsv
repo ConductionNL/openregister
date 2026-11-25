@@ -5,10 +5,10 @@
 10395	6d72add93bdafaf2f3b864381afbd65c580d97b9	c88dcef291ec2629ddff8d87422cf6426e427995	access title, path or words
 10451	e27167eedbe1c38f0126ea40e9ccf88f0b8b2827	74764a23ef33c1300cf5860b2657570b39586cbb	access title, path or words
 10499	e716f1e8c1ed2e43afdb377e08fba24850cdabbb	9fe2a3492e2bbd0fa3c14e9bd9ff0cf574c4edb7	access title, path or words
-10504	44bb41c51b38b6c1c217a055047264a81daa50c1	3c5e348edd2f96e0f20723642c9bb25f1d49e565	code moved into a strict_types file
+10504	c67801dd57891456bc4479f82095cfa0ef8cf024	3c5e348edd2f96e0f20723642c9bb25f1d49e565	code moved into a strict_types file
 10508	96591e3c9b98a1baee2624de0efee16f1c8d8e2b	3dd05ec5774be2c9c44db6fdddd4c9c0e2dd4d3d	access title, path or words
 10514	1c75213bf3c3953a95c85a9f349e142b4e9d0f81	c0e8b04a068e11a26abcdf6dd969b6acd567d4ee	access title, path or words
-10515	f74be49d0c7afa8a00d9cd917cb224f2e34d2240	71ff056b1a785b9e142be560cbb3c8e4063329ae	access title, path or words
+10515	0be35d47185004a2c866be21519a19395e343259	71ff056b1a785b9e142be560cbb3c8e4063329ae	access title, path or words
 10516	12e5ba2b8bc3183f42a530d7c0d8ef84d3af43fc	c294020c8538869be2f92d56c3731b69c8df22f9	access title, path or words
 10523	88d44723173c5a5ef322c3167224a0809d4f92a3	c068a63646595399235448d37ead90495377247d	access title, path or words
 10535	c48fb3e2fc1685a7339dbc6d30e69a6cf81110c6	1fdbded09f4e3f72206139bb3e219a532ea3b821	access title, path or words
@@ -21,7 +21,6 @@
 11051	3c82db7e2a71cf9a7496744656dd63de876c86da	e140942efee7fce72c5c739840a27c55dbad34e6	access title, path or words
 11059	d466af41ce4e66ee5dc3bed58a669913ceb21009	-	access title, path or words
 11067	0eda371bee63d45c3655f6d938822c657eb1b327	-	access title, path or words
-11068	ef563a92f56cc0872eabc1aa3c0c6a8b5055d5b4	faf2083612a2e6b4c75d8afe0ec01276d1e44b6b	access title, path or words
 11070	9fff8e5de16b06bd0d5f7ded102d790036b00263	bb16a9af4f9f0aa90c8d08106b2fa7630c156589	access title, path or words
 11071	e948f0b882b3496076efb1e97071d3ad5ac8eea0	ae0e21a0d9ba199ee3fc586bf81c3227322e7098	access title, path or words
 11092	8f065ee2a0f2054f94f07e264bc61b76c9137760	-	access title, path or words
