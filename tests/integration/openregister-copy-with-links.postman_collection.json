@@ -1,0 +1,1555 @@
+{
+	"info": {
+		"_postman_id": "or-copy-with-links-2026-11-25",
+		"name": "OpenRegister Copy With Links",
+		"description": "POST /api/objects/{register}/{schema}/{id}/copy, asserted over HTTP (change records-copy-with-links, task 1.3).\n\nWHAT IT ASSERTS: the refusals in the order the controller asks them (401 without a session, 404 for a missing source, 403 without create on the schema, 422 for an unknown link kind and for an upsert key); an override the schema refuses answers as the create path does and writes nothing (CONTROL: one module, the suite unchanged); a copy with relationRows and incoming answers 201 with a new uuid, the override, both rows and the suite reported copied; the copy carries both rows, the suite lists source and copy, and the source keeps its name and its own rows.\n\nWHAT IT DOES NOT ASSERT: files (a file copy needs a folder on disk; CopyFilesTest and ObjectsControllerCopyTest cover it) and a referrer the caller may not update (CopyObjectTest).\n\nHermetic: it creates its register, two schemas, objects and a second account, and removes all of them.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{admin_user}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{admin_password}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "setUp: a register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"copy newman register\", \"description\": \"records-copy-with-links collection fixture\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "setUp: a module schema, create held by the admin group",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"copy newman module\", \"description\": \"fixture\", \"properties\": {\"naam\": {\"type\": \"string\", \"title\": \"Naam\"}}, \"required\": [\"naam\"], \"authorization\": {\"read\": [\"authenticated\"], \"create\": [\"admin\"], \"update\": [\"admin\"], \"delete\": [\"admin\"]}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the module schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('moduleSchemaId', String(pm.response.json().id));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "setUp: a suite schema listing modules in an array reference",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"copy newman suite\", \"description\": \"fixture\", \"properties\": {\"naam\": {\"type\": \"string\"}, \"applications\": {\"type\": \"array\", \"items\": {\"type\": \"string\", \"format\": \"uuid\", \"$ref\": \"#/components/schemas/{{moduleSchemaId}}\"}}}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the suite schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('suiteSchemaId', String(pm.response.json().id));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "setUp: the register carries both schemas",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"copy newman register\", \"schemas\": [{{moduleSchemaId}}, {{suiteSchemaId}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is updated', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "setUp: module Zaaksysteem A",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"naam\": \"Zaaksysteem A\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the source module is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"const b = pm.response.json();",
+							"pm.collectionVariables.set('sourceUuid', String((b['@self'] && b['@self'].id) || b.id));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "setUp: suite Basis lists Zaaksysteem A",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{suiteSchemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{suiteSchemaId}}"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"naam\": \"Basis\", \"applications\": [\"{{sourceUuid}}\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the suite is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"const b = pm.response.json();",
+							"pm.collectionVariables.set('suiteUuid', String((b['@self'] && b['@self'].id) || b.id));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "setUp: a first relation row on the source",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}/relation-rows",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}",
+						"relation-rows"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"url\": \"https://example.org/handleiding\", \"title\": \"Handleiding\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the first relation row is written', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "setUp: a second relation row on the source",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}/relation-rows",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}",
+						"relation-rows"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"url\": \"https://example.org/contract\", \"title\": \"Contract\", \"type\": \"documentation\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the second relation row is written', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "setUp: a second account without create on the module schema",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{other_user}}\", \"password\": \"{{other_password}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Create-if-absent: an account left from an earlier run answers 400 with OCS status 102, which is fine.",
+							"pm.test('the second account exists', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([200, 400]));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "copy without a session -> 401",
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}/copy",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}",
+						"copy"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{}"
+				},
+				"auth": {
+					"type": "noauth"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('an anonymous copy is refused with 401', () => pm.expect(pm.response.code, pm.response.text()).to.eql(401));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "copy of a source that does not exist -> 404",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/00000000-0000-4000-8000-000000000000/copy",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"00000000-0000-4000-8000-000000000000",
+						"copy"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a missing source answers 404', () => pm.expect(pm.response.code, pm.response.text()).to.eql(404));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "copy without create on the schema -> 403",
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}/copy",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}",
+						"copy"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{}"
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{other_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{other_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a reader without create may not copy', () => pm.expect(pm.response.code, pm.response.text()).to.eql(403));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "copy with an unknown link kind -> 422",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}/copy",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}",
+						"copy"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"include\": [\"notes\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('an unknown link kind is refused, not ignored', () => pm.expect(pm.response.code, pm.response.text()).to.eql(422));",
+							"pm.test('the refusal names the kind', () => pm.expect(pm.response.json().error).to.include('notes'));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "copy with an upsert key -> 422",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}/copy?_upsertOn=naam",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}",
+						"copy"
+					],
+					"query": [
+						{
+							"key": "_upsertOn",
+							"value": "naam"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a copy cannot upsert', () => pm.expect(pm.response.code, pm.response.text()).to.eql(422));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "copy with an override the schema refuses -> the create path's validation answer",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}/copy",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}",
+						"copy"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"overrides\": {\"naam\": 5}, \"include\": [\"relationRows\", \"incoming\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a refused create answers as the create path does (400 with the validation errors)', () => pm.expect(pm.response.code, pm.response.text()).to.eql(400));",
+							"pm.test('the errors name the property', () => pm.expect(pm.response.json().errors.map(e => e.property)).to.include('naam'));",
+							"pm.test('a refused create has no copy envelope', () => pm.expect(pm.response.json()).to.not.have.property('links'));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "CONTROL: the refused copy wrote no module",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('only the source module exists', () => pm.expect(pm.response.json().results.map(o => o.naam)).to.eql(['Zaaksysteem A']));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "CONTROL: the refused copy added nothing to the suite",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{suiteSchemaId}}/{{suiteUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{suiteSchemaId}}",
+						"{{suiteUuid}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the suite still lists only the source', () => pm.expect(pm.response.json().applications).to.eql([pm.collectionVariables.get('sourceUuid')]));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "copy with overrides, relation rows and incoming references -> 201",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}/copy",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}",
+						"copy"
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"overrides\": {\"naam\": \"Zaaksysteem B\"}, \"include\": [\"relationRows\", \"incoming\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the copy is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+							"const b = pm.response.json();",
+							"const uuid = String((b.object['@self'] && b.object['@self'].id) || b.object.id);",
+							"pm.collectionVariables.set('copyUuid', uuid);",
+							"pm.test('the copy has its own uuid', () => pm.expect(uuid).to.not.eql(pm.collectionVariables.get('sourceUuid')));",
+							"pm.test('the override is applied', () => pm.expect(b.object.naam).to.eql('Zaaksysteem B'));",
+							"pm.test('both relation rows are reported copied', () => pm.expect(b.links.relationRows.map(l => [l.title, l.outcome]).sort()).to.eql([['Contract', 'copied'], ['Handleiding', 'copied']]));",
+							"pm.test('the suite is reported copied', () => pm.expect(b.links.incoming.map(l => [l.id, l.outcome])).to.eql([[pm.collectionVariables.get('suiteUuid'), 'copied']]));",
+							"pm.test('no file was asked for, so none is reported', () => pm.expect(b.links.files).to.eql([]));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "CONTROL: the copy carries both relation rows",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{copyUuid}}/relation-rows",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{copyUuid}}",
+						"relation-rows"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the copy has both rows', () => pm.expect(pm.response.json().results.map(r => r.targetUrl).sort()).to.eql(['https://example.org/contract', 'https://example.org/handleiding']));",
+							"pm.test('the rows hang off the copy', () => pm.response.json().results.forEach(r => pm.expect(r.sourceUuid).to.eql(pm.collectionVariables.get('copyUuid'))));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "CONTROL: the suite lists the source and the copy",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{suiteSchemaId}}/{{suiteUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{suiteSchemaId}}",
+						"{{suiteUuid}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the copy sits beside the source', () => pm.expect(pm.response.json().applications).to.eql([pm.collectionVariables.get('sourceUuid'), pm.collectionVariables.get('copyUuid')]));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "CONTROL: the source is unchanged",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the source keeps its name', () => pm.expect(pm.response.json().naam).to.eql('Zaaksysteem A'));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "CONTROL: the source keeps its own two relation rows",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}/relation-rows",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}",
+						"relation-rows"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the source rows are untouched', () => pm.expect(pm.response.json().results.map(r => r.sourceUuid)).to.eql([pm.collectionVariables.get('sourceUuid'), pm.collectionVariables.get('sourceUuid')]));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "tearDown: the suite",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{suiteSchemaId}}/{{suiteUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{suiteSchemaId}}",
+						"{{suiteUuid}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the suite is removed', () => pm.expect(pm.response.code).to.be.below(300));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "tearDown: the copy",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{copyUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{copyUuid}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the copy is removed', () => pm.expect(pm.response.code).to.be.below(300));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "tearDown: the source",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{moduleSchemaId}}/{{sourceUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{moduleSchemaId}}",
+						"{{sourceUuid}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the source is removed', () => pm.expect(pm.response.code).to.be.below(300));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "tearDown: the suite schema",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{suiteSchemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{suiteSchemaId}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the suite schema is removed', () => pm.expect(pm.response.code).to.be.below(300));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "tearDown: the module schema",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{moduleSchemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{moduleSchemaId}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the module schema is removed', () => pm.expect(pm.response.code).to.be.below(300));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "tearDown: the register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code).to.be.below(300));"
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "tearDown: the second account",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{other_user}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{other_user}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the second account is removed', () => pm.expect(pm.response.code).to.be.below(300));"
+						]
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "other_user",
+			"value": "copy-newman-reader",
+			"type": "string"
+		},
+		{
+			"key": "other_password",
+			"value": "Copy-Newman-Pass-123",
+			"type": "string"
+		},
+		{
+			"key": "registerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "moduleSchemaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "suiteSchemaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sourceUuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "suiteUuid",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "copyUuid",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

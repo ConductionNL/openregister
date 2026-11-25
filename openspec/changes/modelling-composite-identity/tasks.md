@@ -20,7 +20,8 @@
 
 - [x] 4.1 `OasService` describes the by-key paths and their parameters for a schema with an identity. Verify: `OasServiceTest`.
 - [x] 4.2 `docs/` page on record identity with a municipality code and case number example.
-- [ ] 4.3 `tests/e2e/object-by-key.spec.ts`: declare an identity on a schema, create a record, fetch it by key through the API.
+- [x] 4.3 `tests/e2e/object-by-key.spec.ts`: declare an identity on a schema, create a record, fetch it by key through the API.
+      2026-11-25: five tests, green on a sandbox Nextcloud 34 with MariaDB (5 passed), admitted to the CI floor in `tests/e2e/ci/playwright.config.ts`. A `report` constraint is refused as the identity with 400 naming it; the `refuse` constraint over `gemeentecode` and `zaaknummer` reads back with `identity: true`; the case answers at `by-key?gemeentecode=0363&zaaknummer=Z-2026-0042` with `@self.key` `0363:Z-2026-0042` and otherwise the body `objects#show` returns, and a key nobody holds is 404; the seeded `e2e-other`, without read on the schema, gets the same 404; a PATCH renumbering the case answers 422 naming `zaaknummer` and the case keeps its number.
 
 Acceptance:
 - A schema without an identity constraint behaves exactly as before.
