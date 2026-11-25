@@ -52,6 +52,7 @@ use PHPUnit\Framework\TestCase;
  * @uses   \OCA\OpenRegister\Service\File\FileTarget
  * @uses   \OCA\OpenRegister\Service\File\FileUpload
  * @uses   \OCA\OpenRegister\Db\ObjectEntity
+ * @uses   \OCA\OpenRegister\Service\File\MalwareScanRefusal
  */
 final class ObjectFolderUploadsTest extends TestCase {
 
@@ -231,4 +232,28 @@ final class ObjectFolderUploadsTest extends TestCase {
 
 		$uploads->uploadAll(new ObjectFolderPath(new ObjectEntity(), 'readme.txt'), [$this->upload('a.pdf')]);
 	}//end testAPathThatIsNoFolderOfTheObjectStopsTheWholeBatch()
+
+	/**
+	 * An infected file in a folder upload is rejected by name and never written (REQ-UMS-001).
+	 *
+	 * @return void
+	 */
+	public function testAnInfectedFolderUploadIsRejectedAndNotWritten(): void {
+		$this->fileService->method('addFile')->willReturnCallback(
+			function (FileTarget $target, FileUpload $upload): File {
+				$this->added[] = [$upload->fileName];
+				$file = $this->createMock(File::class);
+				$file->method('getName')->willReturn($upload->fileName);
+				$file->method('getPath')->willReturn(self::ROOT.'/'.$upload->fileName);
+				return $file;
+			}
+		);
+		$uploads = new ObjectFolderUploads(new ObjectFolderBrowser(fileService: $this->fileService, malwareCheck: \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck::refusing('eicar.com')));
+
+		$outcome = $uploads->uploadAll(new ObjectFolderPath(new ObjectEntity(), ''), [$this->upload('eicar.com', 'X5O!P'), $this->upload('a.pdf')]);
+
+		$this->assertSame([['a.pdf']], $this->added);
+		$this->assertSame('eicar.com', $outcome['rejected'][0]['name']);
+		$this->assertStringContainsString('malware found', $outcome['rejected'][0]['error']);
+	}//end testAnInfectedFolderUploadIsRejectedAndNotWritten()
 }//end class

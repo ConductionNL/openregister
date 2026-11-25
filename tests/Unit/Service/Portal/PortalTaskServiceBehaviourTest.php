@@ -356,6 +356,37 @@ class PortalTaskServiceBehaviourTest extends TestCase {
 	}//end testCompleteRefusesAnUploadWithoutContent()
 
 	/**
+	 * Every upload is scanned before any is stored: an infected second file leaves the first unstored too (REQ-UMS-001).
+	 *
+	 * @return void
+	 */
+	public function testAnInfectedUploadStoresNothingAndCompletesNothing(): void {
+		$this->tasks->method('openFor')->willReturn($this->task(metadata: ['upload' => ['maxFiles' => 2]]));
+		$this->files->expects($this->never())->method('addFile');
+		$this->tasks->expects($this->never())->method('completeWithAnswer');
+		$check   = \OCA\OpenRegister\Tests\Unit\Service\File\PassingUploadMalwareCheck::refusing('eicar.com');
+		$service = new PortalTaskService(
+			sources: new PortalTaskSources(tasks: $this->tasks, mapper: $this->mapper, inbox: new TaskInboxService(tasks: $this->mapper, logger: new NullLogger()), temporal: new TaskTemporalProjection()),
+			files: $this->files,
+			logger: new NullLogger(),
+			malwareCheck: $check
+		);
+
+		try {
+			$service->complete(
+				subject: new PortalSubject(subjectRef: 'bsn-1'),
+				uuid: 't-1',
+				completion: new PortalCompletion(files: [['name' => 'a.pdf', 'content' => '%PDF'], ['name' => 'eicar.com', 'content' => 'X5O!P']])
+			);
+			self::fail('the infected upload was accepted');
+		} catch (\OCA\OpenRegister\Service\File\MalwareScanRefusal $refusal) {
+			$this->assertSame(422, $refusal->status);
+		}
+
+		$this->assertSame(['a.pdf', 'eicar.com'], $check->scanned);
+	}//end testAnInfectedUploadStoresNothingAndCompletesNothing()
+
+	/**
 	 * An unreadable temp file is refused by name, and nothing is recorded.
 	 *
 	 * @return void
