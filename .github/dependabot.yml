@@ -15,9 +15,9 @@ updates:
     #                version still peers `typescript: ">=4.8.4 <6.1.0"`.
     # webpack-cli 7: @nextcloud/webpack-vue-config 7.0.4, the latest, peers
     #                `webpack-cli: ^6.0.1`.
-    # @babel/core 8: the same package peers `@babel/core: ^7.22.9`, and
-    #                preset-env 8 requires core 8, so the pair moves together
-    #                or not at all.
+    # @babel/* 8:   the same package peers `@babel/core: ^7.22.9`, and
+    #                preset-env 8 requires core 8, so the babel packages move
+    #                together or not at all.
     #
     # Lift each the moment its blocker ships support. These are compatibility
     # limits, not security ones: `npm audit` reports no advisory against any of
@@ -37,9 +37,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "webpack-cli"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "@babel/core"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@babel/preset-env"
+      # Every @babel/* package, not only core and preset-env: babel 8 moves as
+      # one toolchain, and a lone major of a transitive package such as
+      # @babel/traverse (#11082) cannot be merged before core does.
+      - dependency-name: "@babel/*"
         update-types: ["version-update:semver-major"]
       # apexcharts 5 and later ship under the proprietary "ApexCharts License"
       # (paid above a revenue threshold our users exceed); 4.x is the last MIT
