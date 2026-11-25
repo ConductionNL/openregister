@@ -51,6 +51,7 @@ exports[`initial component data golden EditOrganisation starts from the recorded
   "loading": false,
   "loadingGroups": false,
   "loadingUsers": false,
+  "narrowedSpecialRights": {},
   "organisationItem": {
     "active": true,
     "description": "",
@@ -70,6 +71,7 @@ exports[`initial component data golden EditOrganisation starts from the recorded
   "selectedGroups": [],
   "selectedSpecialRights": {
     "agent_use": [],
+    "grant_manage": [],
     "llm_use": [],
   },
   "showAddUserDialog": false,
