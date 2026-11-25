@@ -5128,3 +5128,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T18:48:52Z precheck-20261125T181737-613489e9 NORESULT tree 08512e4399: checker floor not measured (exit 2)
 2026-11-25T18:49:46Z precheck-20261125T181737-613489e9 CONFLICT-DEV #11145 6447df14
 2026-11-25T18:53:26Z integrator-20261125T164649-6d3dd46c RED tree 68b58279dd prs 4 front=red: Tests: 67355, Assertions: 239398, Errors: 5, Failures: 1, Warnings: 1, Deprecations: 4, PH; first failures: FAIL src/services/initial-data.golden.spec.js
+2026-11-25T18:53:44Z precheck-20261125T183212-36886908 GREEN tree 3d62ec7b49 on dev 7edd219c7c prs 1 front=skip: Tests: 67179, Assertions: 238549, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
