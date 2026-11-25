@@ -367,6 +367,10 @@ final class AuthorizationRulesValidator {
 		$name    = (string)$operator->key;
 		$operand = $operator->value;
 		$this->assertSupportedOperator(operator: $name, where: $operator->context);
+		if ($name === '$memberOf') {
+			$this->validateMemberOfOperand(operand: $operand, where: $operator->context);
+			return;
+		}
 
 		if ($this->needsListOperand(operator: $name, operand: $operand) === false) {
 			return;
@@ -378,6 +382,36 @@ final class AuthorizationRulesValidator {
 			);
 		}
 	}//end validateMatchOperator()
+
+	/**
+	 * Refuse a `$memberOf` operand without the membership schema and the property whose values form the set.
+	 *
+	 * The other keys (`register`, `match`, `where`, `current`) are optional and read by MemberOfResolver,
+	 * which denies on anything malformed at evaluation time.
+	 *
+	 * @param mixed  $operand The operand.
+	 * @param string $where   Where it sits, for the refusal message.
+	 *
+	 * @throws InvalidAuthorizationRuleException If the operand is no object naming a schema and a property
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/access-follows-membership/specs/rbac-scopes/spec.md
+	 */
+	private function validateMemberOfOperand(mixed $operand, string $where): void {
+		$valid = is_array($operand) === true && array_is_list($operand) === false;
+		foreach (['schema', 'property'] as $key) {
+			if ($valid === true && (is_string($operand[$key] ?? null) === false || trim($operand[$key]) === '')) {
+				$valid = false;
+			}
+		}
+
+		if ($valid === false) {
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization match for {$where} needs an object naming 'schema' and 'property' as the '\$memberOf' operand"
+			);
+		}
+	}//end validateMemberOfOperand()
 
 	/**
 	 * Refuse an operator outside Schema::MATCH_OPERATORS.
