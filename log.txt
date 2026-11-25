@@ -4724,3 +4724,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-25T04:32:32Z integrator-20261125T031209-b842bbc3 MERGED-TREE 013af7dd72: 2 PRs, main now 28d6ce8f88 = tested tree
 2026-11-25T04:43:03Z or-fix-2 done: share (base main, N%10==2) = 11032 11082 11092 11112 11122; 11032/11082 BLOCK on open product questions (heads unchanged); 11092/11112 APPROVE at head + merge clean (no churn); 11122 new main-merge head 94472f2b green merged with main ee68d246, NOTE recorded for review; precheck-when-idle refused again by the permission check (gitleaks install), not run
+2026-11-25T04:44:19Z integrator-20261125T031209-b842bbc3 GREEN tree a8761d981a on dev 28d6ce8f88 prs 3 front=ok: Tests: 66266, Assertions: 234711, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
