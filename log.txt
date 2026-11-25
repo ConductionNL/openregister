@@ -4708,3 +4708,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T04:13:01Z session-20261125T013842-40aad8d2 or-fix-5 done: fixed 10395 6d72add9 (files-sidebar conflict), 10515 0be35d47 + 10535 7ff9cee9 (component-map/yaml), 11005 228baa2c (precheck red: registration test lacked ICacheFactory), 11055 18c4aaad (listActions golden), 11075 a8fb9844 (genuinely stale sbom); 10635 false sbom park queued for coordinator; prechecked GREEN 11065 11075 11085 11095 11055 11105 10535 11115 11125; 11035 obsolete (noted earlier); stopped: a newer or-fix-5 session is active
 2026-11-25T04:13:16Z precheck-20261125T032724-4a6e09ce CONFLICT-DEV #11108 b9a215ed
 2026-11-25T04:13:30Z precheck-20261125T032724-4a6e09ce CONFLICT-DEV #11128 49cdd5ae
+2026-11-25T04:13:54Z precheck-20261125T034540-86ed4903 NORESULT tree a2bd2c85da: checker floor not measured (exit 2)
