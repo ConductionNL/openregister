@@ -24,33 +24,27 @@
  * imported only once the tile exists. Nextcloud calls every registered
  * widget's `load()` on every Dashboard render, also when the user's layout
  * does not hold this tile, so this entry stays a few KB and carries no
- * dependencies (webpack.config.js keeps it out of the shared vendor chunk).
+ * dependencies: with no static import it never joins the shared vendor
+ * chunk (user-dashboard.spec.js guards that).
  */
 
-// Nextcloud's dashboard renders each widget into an element with id
-// `<widget-id>` — see apps/dashboard/lib/Controller/DashboardController.
-// Our IntegrationDashboardWidget::getId() returns 'openregister-integrations'.
-const MOUNT_SELECTOR = '#openregister-integrations'
+// The id IntegrationDashboardWidget::getId() returns.
+const WIDGET_ID = 'openregister-integrations'
+// Older dashboards rendered each widget into an element with that id.
+const MOUNT_SELECTOR = '#' + WIDGET_ID
 
 /**
- * Mount the umbrella app into the tile once it exists.
- *
- * Returns true once the tile was found (the app then mounts when its chunk
- * has loaded), false while the tile is not there yet.
+ * Mount the umbrella app into a tile element, once.
  *
  * @spec openspec/changes/archive/2026-07-07-frontend-code-splitting-and-fetch-efficiency/tasks.md
- * @return {boolean} Whether the tile was found
+ * @param {HTMLElement} el The tile element
+ * @return {void}
  */
-function mountUmbrella() {
-	const el = document.querySelector(MOUNT_SELECTOR)
-	if (el === null) {
-		return false
-	}
-
+function mountInto(el) {
 	// Guard against double-mount when NC reloads the widget (e.g. on
 	// dashboard layout change).
 	if (el.dataset.openregisterMounted === '1') {
-		return true
+		return
 	}
 	el.dataset.openregisterMounted = '1'
 
@@ -63,32 +57,68 @@ function mountUmbrella() {
 			// eslint-disable-next-line no-console
 			console.error('OpenRegister: could not load the dashboard integrations', error)
 		})
+}
 
+/**
+ * Hand the dashboard a callback for the tile.
+ *
+ * Nextcloud's dashboard (`OCA.Dashboard.register`) calls it with the panel
+ * element, and only when the user's layout holds the tile; until then the
+ * panel shows a spinner. Without this registration the tile never mounted.
+ *
+ * @spec openspec/changes/archive/2026-07-07-frontend-code-splitting-and-fetch-efficiency/tasks.md
+ * @return {boolean} Whether the dashboard API was there
+ */
+function registerWithDashboard() {
+	const dashboard = window.OCA?.Dashboard
+	if (typeof dashboard?.register !== 'function') {
+		return false
+	}
+	dashboard.register(WIDGET_ID, (el) => mountInto(el))
+	return true
+}
+
+/**
+ * Register with the dashboard, or mount into an element with the widget id.
+ *
+ * @return {boolean} Whether there is nothing left to wait for
+ */
+function mountUmbrella() {
+	if (registerWithDashboard()) {
+		return true
+	}
+	const el = document.querySelector(MOUNT_SELECTOR)
+	if (el === null) {
+		return false
+	}
+	mountInto(el)
 	return true
 }
 
 /**
  * Schedule mount: try immediately, then on DOMContentLoaded, then
- * poll briefly (Dashboard widgets often render after initial load).
+ * poll briefly (the dashboard API or the tile can appear after this
+ * script has run).
  */
 function scheduleMount() {
 	if (mountUmbrella() === true) {
 		return
 	}
 
+	let done = false
 	const tryMount = () => {
-		if (mountUmbrella() === true) {
-			return true
+		if (done === false && mountUmbrella() === true) {
+			done = true
 		}
-		return false
+		return done
 	}
 
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', tryMount, { once: true })
 	}
 
-	// Polling window for late-mounting dashboard tiles. Stops as soon
-	// as the umbrella mounts or after ~3 seconds.
+	// Polling window for a late dashboard. Stops as soon as it is
+	// found or after ~3 seconds.
 	let attempts = 0
 	const interval = window.setInterval(() => {
 		attempts += 1

@@ -58,7 +58,42 @@ describe('user-dashboard entry', () => {
 		document.body.innerHTML = ''
 		jest.useFakeTimers()
 	})
-	afterEach(() => jest.useRealTimers())
+	afterEach(() => {
+		jest.useRealTimers()
+		delete window.OCA
+	})
+
+	it('registers a callback with the Nextcloud dashboard and mounts into the panel it hands over', async () => {
+		const register = jest.fn()
+		window.OCA = { Dashboard: { register } }
+		const { boot, l10n } = load()
+		expect(register).toHaveBeenCalledTimes(1)
+		expect(register.mock.calls[0][0]).toBe('openregister-integrations')
+		jest.advanceTimersByTime(5000)
+		await flush()
+		// Not in the user's layout: the dashboard never calls back, nothing loads.
+		expect(l10n.registerLibraryTranslations).not.toHaveBeenCalled()
+		expect(boot.ensureIntegrationRegistry).not.toHaveBeenCalled()
+
+		const panel = document.createElement('div')
+		document.body.appendChild(panel)
+		register.mock.calls[0][1](panel, { widget: {} })
+		await flush()
+		expect(panel.dataset.openregisterMounted).toBe('1')
+		expect(panel.querySelector('.grid').dataset.surface).toBe('user-dashboard')
+		expect(l10n.registerLibraryTranslations).toHaveBeenCalledTimes(1)
+	})
+
+	it('registers with a dashboard API that appears after the script ran', async () => {
+		const register = jest.fn()
+		load()
+		jest.advanceTimersByTime(200)
+		window.OCA = { Dashboard: { register } }
+		jest.advanceTimersByTime(100)
+		expect(register).toHaveBeenCalledTimes(1)
+		jest.advanceTimersByTime(3000)
+		expect(register).toHaveBeenCalledTimes(1)
+	})
 
 	it('registers translations and integrations and mounts the grid into the tile', async () => {
 		document.body.innerHTML = '<div id="openregister-integrations"></div>'
