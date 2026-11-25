@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
+use OCA\OpenRegister\Db\MagicMapper\RegistryLens;
 use OCA\OpenRegister\Db\MagicMapper\ObjectEventDeferral;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
@@ -1947,6 +1948,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param array $query Search query parameters.
 	 *
 	 * @return bool True if UNION ALL can be used.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-subscription-state-and-freshness-are-query-lenses
 	 */
 	private function shouldUseUnionQuery(array $query): bool {
 		// Don't use UNION for aggregations (not supported). `_facets` does not count:
@@ -1960,9 +1963,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
 		// refuses them, which on this route would end in an uncaught exception
 		// (HTTP 500), so a query carrying either takes the sequential path.
-		// `_relations_contains` has no raw-SQL twin either: a union would answer
-		// without the filter.
-		$builderOnly = ['_related', '_referenced', '_ref', '_element', '_relations_contains'];
+		// `_relations_contains` and the `_registry` lens have no raw-SQL twin
+		// either: a union would answer without the filter.
+		$builderOnly = ['_related', '_referenced', '_ref', '_element', '_relations_contains', RegistryLens::KEY];
 		if (array_intersect($builderOnly, array_keys($query)) !== []) {
 			return false;
 		}
