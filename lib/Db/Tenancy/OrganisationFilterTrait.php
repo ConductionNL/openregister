@@ -20,7 +20,7 @@
 
 namespace OCA\OpenRegister\Db\Tenancy;
 
-use OCA\OpenRegister\Service\Rbac\AdminGate;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IUser;
 
@@ -122,13 +122,15 @@ trait OrganisationFilterTrait {
 	 * @param mixed $user The user object
 	 *
 	 * @return bool True if user is admin
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function isUserAdmin(mixed $user): bool {
 		if ($user === null || isset($this->groupManager) === false) {
 			return false;
 		}
 
-		return ($user instanceof IUser && AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user) === true);
+		return ($user instanceof IUser && AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user) === true);
 	}//end isUserAdmin()
 
 	/**

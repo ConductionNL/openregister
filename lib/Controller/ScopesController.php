@@ -35,7 +35,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
-use OCA\OpenRegister\Service\Rbac\AdminGate;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
@@ -179,12 +179,13 @@ class ScopesController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-5
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function index(?string $register = null, ?string $schema = null): JSONResponse {
 		$user = $this->userSession->getUser();
 		$userId = $user?->getUID();
 		$groups = $this->groupsOf(user: $user);
-		$isAdmin = AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user);
+		$isAdmin = AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 
 		$registers = $this->resolveRegisters(filter: $register);
 		$schemas = $this->resolveSchemas(filter: $schema, within: $this->narrowedTo(filter: $register, registers: $registers));

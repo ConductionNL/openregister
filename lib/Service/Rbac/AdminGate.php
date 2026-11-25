@@ -28,9 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
-use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -61,6 +61,7 @@ class AdminGate implements AdminGateInterface {
 	 * @return bool True when the signed-in caller is an admin.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
 		if ($this->userSession === null || $this->groupManager === null) {
@@ -72,37 +73,8 @@ class AdminGate implements AdminGateInterface {
 			return false;
 		}
 
-		return self::isAdministrator(groupManager: $this->groupManager, user: $user);
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end isAdmin()
-
-	/**
-	 * Whether a given user is an instance administrator, by Nextcloud's own check.
-	 *
-	 * The one place a user is turned into an administrator verdict. It asks
-	 * `IGroupManager::isAdmin()` rather than looking for `admin` in the user's
-	 * group ids, because Nextcloud's check also applies `allowed_admin_ranges`:
-	 * a member of the admin group calling from outside the allowed range is
-	 * answered as a non-administrator. Fails closed on a missing manager or user.
-	 *
-	 * @param IGroupManager|null $groupManager Nextcloud's group manager.
-	 * @param IUser|string|null  $user         The user, or their uid.
-	 *
-	 * @return bool True when Nextcloud counts the user as an administrator here.
-	 *
-	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
-	 */
-	public static function isAdministrator(?IGroupManager $groupManager, IUser|string|null $user): bool {
-		if ($groupManager === null || $user === null) {
-			return false;
-		}
-
-		$uid = $user;
-		if ($user instanceof IUser) {
-			$uid = $user->getUID();
-		}
-
-		return ($groupManager->isAdmin($uid) === true);
-	}//end isAdministrator()
 
 	/**
 	 * The response a refused caller gets.

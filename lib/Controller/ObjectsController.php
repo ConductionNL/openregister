@@ -63,6 +63,7 @@ use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -118,7 +119,6 @@ use OCA\OpenRegister\Kernel\Contracts\Core\SchemaChangeReportingControllerInterf
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Search\HistoryPredicateInterface;
 use OCA\OpenRegister\Service\Search\SearchGrammar;
 use OCA\OpenRegister\Service\WriteCause;
@@ -369,6 +369,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @psalm-return   bool
 	 * @phpstan-return bool
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function isCurrentUserAdmin(): bool {
 		$user = $this->userSession->getUser();
@@ -376,7 +378,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return false;
 		}
 
-		return AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user);
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end isCurrentUserAdmin()
 
 	/**

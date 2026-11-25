@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCA\OpenRegister\Service\Rbac\AdminGate;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCP\IUser;
 
 /**
@@ -76,6 +76,7 @@ final class GdprRegisterAccess {
 	 * @return bool True for a member of the admin group.
 	 *
 	 * @spec openspec/specs/verwerkingsregister-api/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
 		$user = $this->user();
@@ -83,6 +84,6 @@ final class GdprRegisterAccess {
 			return false;
 		}
 
-		return AdminGate::isAdministrator(groupManager: $this->session->groupManager, user: $user);
+		return AdministratorCheck::isAdministrator(groupManager: $this->session->groupManager, user: $user);
 	}//end isAdmin()
 }//end class

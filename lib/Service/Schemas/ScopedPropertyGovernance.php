@@ -24,7 +24,7 @@ namespace OCA\OpenRegister\Service\Schemas;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Service\Rbac\AdminGate;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -106,6 +106,7 @@ class ScopedPropertyGovernance {
 	 * @return bool Whether the caller may add.
 	 *
 	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function mayAddAtScope(string $scope): bool {
 		$user = $this->userSession->getUser();
@@ -113,7 +114,7 @@ class ScopedPropertyGovernance {
 			return false;
 		}
 
-		if (AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user) === true) {
+		if (AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user) === true) {
 			return true;
 		}
 

@@ -32,9 +32,9 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
-use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFolderAccessInterface;
@@ -3437,6 +3437,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the row is a draft kept from the caller.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
      */
     private function refuseSomebodyElsesDraft(ObjectEntity $stored): void
     {
@@ -3445,7 +3446,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
             caller: new DraftCaller(
                 userId: $user?->getUID(),
-                isAdmin: AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user)
+                isAdmin: AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user)
             )
         );
         if ($kept === true) {
@@ -4906,12 +4907,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @return DraftCaller Their user id, and whether they are an administrator.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
      */
     private function draftCaller(?IUser $user): DraftCaller
     {
         return new DraftCaller(
             userId: $user?->getUID(),
-            isAdmin: AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user)
+            isAdmin: AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user)
         );
     }//end draftCaller()
 

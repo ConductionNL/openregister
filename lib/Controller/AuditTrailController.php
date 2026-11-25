@@ -38,6 +38,7 @@ use OCA\OpenRegister\Controller\Support\AuditObjectRef;
 use OCA\OpenRegister\Controller\Support\AuditTrailControllerServices;
 use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageServiceInterface;
 use OCA\OpenRegister\Service\Audit\ObjectHistoryForReadersInterface;
@@ -46,7 +47,6 @@ use OCA\OpenRegister\Service\Audit\ReadableAuditTrailListerInterface;
 use OCA\OpenRegister\Service\Audit\TrailPageOptions;
 use OCA\OpenRegister\Service\AuditHashServiceInterface;
 use OCA\OpenRegister\Service\LogService;
-use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCA\OpenRegister\Service\Rbac\ExplicitRevealTrailMaskerInterface;
 use OCA\OpenRegister\Controller\Support\ResultWindow;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -923,6 +923,8 @@ class AuditTrailController extends Controller {
 	 * Whether the session user is in the `admin` group, as the object API decides it.
 	 *
 	 * @return bool False without a session user.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function inAdminGroup(): bool {
 		$user = $this->userSession->getUser();
@@ -930,7 +932,7 @@ class AuditTrailController extends Controller {
 			return false;
 		}
 
-		return AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user);
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end inAdminGroup()
 
 	/**

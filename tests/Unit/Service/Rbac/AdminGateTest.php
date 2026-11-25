@@ -105,48 +105,4 @@ class AdminGateTest extends TestCase {
 		$this->assertStringContainsString('read the authorization model', $response->getData()['error']);
 	}
 
-	/**
-	 * A member of the admin group outside `allowed_admin_ranges` is no administrator.
-	 *
-	 * Nextcloud answers `isAdmin()` false for an admin-group member whose address
-	 * is outside the range. The helper must take that answer, not the group list.
-	 *
-	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
-	 */
-	public function testAnAdminGroupMemberOutsideTheAllowedRangeIsNotAnAdministrator(): void {
-		$groupManager = $this->createMock(IGroupManager::class);
-		$groupManager->method('getUserGroupIds')->willReturn(['admin', 'staff']);
-		$groupManager->expects($this->once())->method('isAdmin')->with('anna')->willReturn(false);
-
-		$this->assertFalse(AdminGate::isAdministrator(groupManager: $groupManager, user: 'anna'));
-	}
-
-	/**
-	 * Inside the range the same member is an administrator, by uid or by user.
-	 *
-	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
-	 */
-	public function testNextcloudsAnswerDecidesForAUserOrAUid(): void {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn('anna');
-		$groupManager = $this->createMock(IGroupManager::class);
-		$groupManager->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => $uid === 'anna');
-
-		$this->assertTrue(AdminGate::isAdministrator(groupManager: $groupManager, user: $user));
-		$this->assertTrue(AdminGate::isAdministrator(groupManager: $groupManager, user: 'anna'));
-		$this->assertFalse(AdminGate::isAdministrator(groupManager: $groupManager, user: 'bert'));
-	}
-
-	/**
-	 * No manager, no user, or a manager that answers nothing: no administrator.
-	 *
-	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
-	 */
-	public function testTheHelperFailsClosed(): void {
-		$silent = $this->createMock(IGroupManager::class);
-
-		$this->assertFalse(AdminGate::isAdministrator(groupManager: null, user: 'anna'));
-		$this->assertFalse(AdminGate::isAdministrator(groupManager: $this->groupManagerFor(true), user: null));
-		$this->assertFalse(AdminGate::isAdministrator(groupManager: $silent, user: 'anna'));
-	}
 }//end class

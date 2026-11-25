@@ -25,11 +25,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\AgentMapperInterface;
 use OCA\OpenRegister\Db\Endpoint;
 use OCA\OpenRegister\Db\EndpointLog;
 use OCA\OpenRegister\Db\EndpointLogMapperInterface;
-use OCA\OpenRegister\Service\Rbac\AdminGate;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -318,6 +318,8 @@ class EndpointService implements EndpointServiceInterface {
 	 * @spec openspec/specs/object-interactions/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission check has multiple user and group conditions
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function canExecuteEndpoint(Endpoint $endpoint): bool {
 		$user = $this->userSession->getUser();
@@ -326,7 +328,7 @@ class EndpointService implements EndpointServiceInterface {
 			return empty($endpoint->getGroups());
 		}
 
-		if (AdminGate::isAdministrator(groupManager: $this->groupManager, user: $user) === true) {
+		if (AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user) === true) {
 			return true;
 		}
 
