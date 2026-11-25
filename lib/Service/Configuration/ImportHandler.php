@@ -61,7 +61,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
-use OCA\OpenRegister\Service\Gdpr\ProcessingCatalogueSeeder;
+use OCA\OpenRegister\Kernel\Contracts\ProcessingCatalogueSeedInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
@@ -354,9 +354,9 @@ class ImportHandler {
 	/**
 	 * Seeds the processing activities a configuration declares (OR-PA-2). Optional.
 	 *
-	 * @var ProcessingCatalogueSeeder|null
+	 * @var ProcessingCatalogueSeedInterface|null
 	 */
-	private ?ProcessingCatalogueSeeder $processingCatalogueSeeder = null;
+	private ?ProcessingCatalogueSeedInterface $processingCatalogueSeeder = null;
 
 	/**
 	 * The shipped version of each seed object, built on first use from the app config.
@@ -675,13 +675,13 @@ class ImportHandler {
 	 *
 	 * Optional: when null, declared processing activities are not written to the record of processing.
 	 *
-	 * @param ProcessingCatalogueSeeder|null $processingCatalogueSeeder The seeder.
+	 * @param ProcessingCatalogueSeedInterface|null $processingCatalogueSeeder The seeder.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-apps-must-contribute-processing-activities-and-attribution-declaratively-via-x-openregister-processing-or-pa-2
 	 */
-	public function setProcessingCatalogueSeeder(?ProcessingCatalogueSeeder $processingCatalogueSeeder): void {
+	public function setProcessingCatalogueSeeder(?ProcessingCatalogueSeedInterface $processingCatalogueSeeder): void {
 		$this->processingCatalogueSeeder = $processingCatalogueSeeder;
 	}//end setProcessingCatalogueSeeder()
 

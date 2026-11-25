@@ -134,7 +134,7 @@ final class ConfigurationServiceRegistrar {
 		],
 		// Writes the processing activities an app declares to the record of processing (OR-PA-2).
 		'setProcessingCatalogueSeeder' => [
-			\OCA\OpenRegister\Service\Gdpr\ProcessingCatalogueSeeder::class,
+			\OCA\OpenRegister\Kernel\Contracts\ProcessingCatalogueSeedInterface::class,
 			'ProcessingCatalogueSeeder',
 		],
 		// Decides the slug of a seed object, so a seed cannot take a slug another

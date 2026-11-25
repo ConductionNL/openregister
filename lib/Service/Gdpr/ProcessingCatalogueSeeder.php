@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Gdpr;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Verwerkingsactiviteit;
 use OCA\OpenRegister\Db\VerwerkingsactiviteitMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ProcessingCatalogueSeedInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -49,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-apps-must-contribute-processing-activities-and-attribution-declaratively-via-x-openregister-processing-or-pa-2
  */
-class ProcessingCatalogueSeeder {
+class ProcessingCatalogueSeeder implements ProcessingCatalogueSeedInterface {
 
 	/**
 	 * The annotation key.

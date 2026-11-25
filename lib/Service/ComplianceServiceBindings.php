@@ -32,6 +32,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
+use OCA\OpenRegister\Kernel\Contracts\ProcessingCatalogueSeedInterface;
 use OCA\OpenRegister\Kernel\Contracts\SystemAuditLineInterface;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendServiceInterface;
@@ -118,6 +119,7 @@ use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestService;
 use OCA\OpenRegister\Service\Gdpr\DataSubjectRequestServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectorInterface;
+use OCA\OpenRegister\Service\Gdpr\ProcessingCatalogueSeeder;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewService;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewServiceInterface;
 use OCA\OpenRegister\Service\Gdpr\Erasure\ErasurePreviewStore;
@@ -175,6 +177,7 @@ final class ComplianceServiceBindings {
 		AuthRateLimitCeilingInterface::class           => HardeningPolicy::class,
 		CascadeRetentionCheckInterface::class          => ArchivalRetentionGuard::class,
 		DetectorRecordInterface::class                 => DetectorRecord::class,
+		ProcessingCatalogueSeedInterface::class        => ProcessingCatalogueSeeder::class,
 		ObjectArchivalMetadataInterface::class         => TmloService::class,
 		ReadPurposeGuardInterface::class               => PurposeGuard::class,
 		ReadableObjectHistoryInterface::class          => ObjectHistoryForReaders::class,

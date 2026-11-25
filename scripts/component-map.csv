@@ -1218,6 +1218,7 @@ Files/Service/File/PdfSanitizationReport.php,29,Files,Files,Files/Service/File/P
 Files/Service/File/PdfSanitizationResult.php,10,Files,Files,Files/Service/File/PdfSanitizationResult.php,0,,Files
 Files/Service/FileTextFacade.php,171,Files,Files,Files/Service/FileTextFacade.php,0,,Files
 Files/Service/NoteReplies.php,73,Files,Files,Files/Service/NoteReplies.php,0,,Files
+Kernel/Contracts/ProcessingCatalogueSeedInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/StructurePreservation.php,35,Kernel,Kernel,Kernel/Contracts/StructurePreservation.php,0,427,Kernel
 Files/Service/File/PlaceholderIdTranslator.php,47,Files,Files,Files/Service/File/PlaceholderIdTranslator.php,2,,Files
 Files/Service/File/PlaceholderLookup.php,20,Files,Files,Files/Service/File/PlaceholderLookup.php,0,,Files
