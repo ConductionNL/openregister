@@ -31,7 +31,7 @@ jest.mock('vue-material-design-icons/Table.vue', () => ({}))
 jest.mock('vue-material-design-icons/TextBoxOutline.vue', () => ({}))
 jest.mock('./dashboard/StatisticsTotalsTable.vue', () => ({}))
 jest.mock('../store/store.js', () => ({
-	dashboardStore: { registers: [], preload: jest.fn() },
+	dashboardStore: { registers: [], preload: jest.fn(), preloadRegisters: jest.fn() },
 	objectStore: {
 		initializeProperties: jest.fn(),
 		refreshObjectList: jest.fn(),

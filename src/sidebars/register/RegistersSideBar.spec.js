@@ -37,6 +37,7 @@ jest.mock('../../store/store.js', () => ({
 		getSystemTotals: null,
 		getOrphanedItems: null,
 		preload: jest.fn(),
+		preloadRegisters: jest.fn(),
 		setDateRange: jest.fn(),
 	},
 	navigationStore: { sidebarState: { registers: true }, setSidebarState: jest.fn() },
@@ -46,6 +47,11 @@ jest.mock('../../store/store.js', () => ({
 }))
 
 const { dashboardStore, navigationStore } = jest.requireMock('../../store/store.js')
+// What the sidebar module asked for when it was imported (before beforeEach clears the mocks).
+const loadedAtImport = {
+	preloadRegisters: dashboardStore.preloadRegisters.mock.calls.length,
+	preload: dashboardStore.preload.mock.calls.length,
+}
 
 /**
  * Stand-ins for the sidebar, its tab and the stats block.
@@ -177,6 +183,12 @@ describe('RegistersSideBar sections', () => {
 
 		expect(wrapper.findAll('section').map((section) => section.text())).toEqual(['loading', 'loading'])
 		expect(wrapper.findAllComponents({ name: 'CnStatsBlock' })).toHaveLength(0)
+	})
+})
+
+describe('RegistersSideBar loading', () => {
+	it('loads only the register list, not the dashboard charts and statistics', () => {
+		expect(loadedAtImport).toEqual({ preloadRegisters: 1, preload: 0 })
 	})
 })
 
