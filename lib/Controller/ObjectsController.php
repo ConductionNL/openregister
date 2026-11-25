@@ -75,6 +75,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Exception\ActingHumanRefusedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
@@ -3919,6 +3920,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return match (true) {
 			$e instanceof AppendOnlyException => new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED),
+			$e instanceof ActingHumanRefusedException => new JSONResponse(data: $e->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN),
 			$e instanceof TranslationTargetConflictException => new JSONResponse(data: $e->toErrorBody(), statusCode: 400),
 			$e instanceof ValidationException, $e instanceof CustomValidationException => $objectService->handleValidationException(exception: $e),
 			$e instanceof PropertyWriteNotAuthorizedException => new JSONResponse(
@@ -4701,6 +4703,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private function deleteFailureResponse(\Throwable $failure, ObjectDeleteRoute $route): JSONResponse {
 		return match (true) {
 			$failure instanceof ArchivalImmutableException => self::archivalDeleteRefusal(exception: $failure),
+			$failure instanceof ActingHumanRefusedException => new JSONResponse(data: $failure->toResponseBody(), statusCode: Http::STATUS_FORBIDDEN),
 			// Reject delete on append-only schema with HTTP 405.
 			$failure instanceof AppendOnlyException => new JSONResponse(data: $failure->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED),
 			$failure instanceof ReferentialIntegrityException => $this->integrityDeleteRefusal(exception: $failure, objectService: $route->objectService),

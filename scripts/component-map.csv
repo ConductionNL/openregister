@@ -4927,3 +4927,7 @@ Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
+Service/Authorization/ActingHumanGuard.php,,Service,,,,,Core
+Service/Authorization/ActingHumanGuardInterface.php,,Service,,,,,Core
+Service/Authorization/ActingHumanContext.php,,Service,,,,,Core
+Exception/ActingHumanRefusedException.php,,Exception,,,,,Core

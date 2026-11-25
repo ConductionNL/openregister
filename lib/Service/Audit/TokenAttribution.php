@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Audit;
 
 use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Service\Authorization\ActingHumanContext;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -100,6 +101,8 @@ class TokenAttribution implements TokenAttributionInterface {
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	public function apply(AuditTrail $auditTrail): void {
+		$this->applyActingHuman(auditTrail: $auditTrail);
+
 		$identity = $this->attributableIdentity();
 		if ($identity === null) {
 			return;
@@ -111,6 +114,28 @@ class TokenAttribution implements TokenAttributionInterface {
 		// invocation both already write here, and neither may be erased.
 		(new AuditRowAttribution())->mergeIntoSummary(auditTrail: $auditTrail, entries: ['token' => $identity->toArray()]);
 	}//end apply()
+
+	/**
+	 * Stamp the verified acting human of a machine write onto the row, inside the sealed summary.
+	 *
+	 * Only a pair {@see \OCA\OpenRegister\Service\Authorization\ActingHumanGuard} verified against a live delegation is
+	 * ever held, so a row naming an acting user always names one who consented.
+	 *
+	 * @param AuditTrail $auditTrail The row being built.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/scoped-api-tokens-machine-callers/specs/auth-system/spec.md#requirement-a-machine-write-names-its-acting-human-when-the-instance-or-schema-requires-it-req-sat-006
+	 */
+	private function applyActingHuman(AuditTrail $auditTrail): void {
+		$context = (new AuditRowAttribution())->requestContext(container: $this->container, class: ActingHumanContext::class);
+		$pair    = $context?->toArray();
+		if ($pair === null) {
+			return;
+		}
+
+		(new AuditRowAttribution())->mergeIntoSummary(auditTrail: $auditTrail, entries: $pair);
+	}//end applyActingHuman()
 
 	/**
 	 * The calling token, when the request-scoped context resolves it and it can be attributed.

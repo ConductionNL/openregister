@@ -395,6 +395,7 @@ final class CoreServiceBindings {
 		ApiVersionNegotiatorInterface::class => ApiVersionNegotiator::class,
 		DeclaredGroupInventoryInterface::class => DeclaredGroupInventoryService::class,
 		GrantableRightsIndexInterface::class => GrantableRightsIndex::class,
+		\OCA\OpenRegister\Service\Authorization\ActingHumanGuardInterface::class => \OCA\OpenRegister\Service\Authorization\ActingHumanGuard::class,
 		GroupReconcilerInterface::class => GroupReconciler::class,
 		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface::class => GroupReconciler::class,
 		\OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface::class

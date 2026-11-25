@@ -32,6 +32,7 @@
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Service\Authorization\ActingHumanGuardInterface;
 use DateTime;
 
 use OCA\OpenRegister\Db\RegisterSchema;
@@ -140,6 +141,7 @@ class DeleteObject {
 	 * @param \OCA\OpenRegister\Db\RegisterMapperInterface|null $registerMapper Register mapper for register lookups
 	 * @param DeleteRowRules|null $rowRules Checks each `cascade: true` child; without it a root with children is refused
 	 * @param IEventDispatcher|null $eventDispatcher Announces a permanent delete to the object-event listeners
+	 * @param ActingHumanGuardInterface|null $actingHuman Refuses a machine delete that names no human it may act for
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 *
@@ -157,6 +159,7 @@ class DeleteObject {
 		private readonly ?\OCA\OpenRegister\Db\RegisterMapperInterface $registerMapper = null,
 		private readonly ?DeleteRowRules $rowRules = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
+		private readonly ?ActingHumanGuardInterface $actingHuman = null,
 	) {
 		$this->auditTrailMapper = $audit->trail;
 		$this->settingsService = $settingsService;
@@ -560,12 +563,14 @@ class DeleteObject {
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException If `scoped` is set and the UUID is not present
 	 *                                                    in the given (register, schema) magic table.
 	 * @throws HookStoppedException When a delete guard refuses.
+	 * @throws \OCA\OpenRegister\Exception\ActingHumanRefusedException When a machine delete names no human it may act for.
 	 * @throws Exception If there is an error during deletion.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/scoped-api-tokens-machine-callers/specs/auth-system/spec.md#requirement-a-machine-write-names-its-acting-human-when-the-instance-or-schema-requires-it-req-sat-006
 	 */
 	public function deleteObject(DeletionRequest $request, bool $_rbac=true, bool $_multitenancy=true): bool {
 		// Read-only projection guard: a schema served from an external source
@@ -574,6 +579,10 @@ class DeleteObject {
 		// delegateObjectSourceDelete()). Delete RBAC already ran upstream in
 		// ObjectService::delete before this dispatch.
 		$schema = $request->schema;
+
+		// A machine delete names the human it acts for, when the instance or schema requires it (REQ-SAT-006).
+		$this->actingHuman?->assertMayWrite(schema: ($schema instanceof Schema) ? $schema : null);
+
 		if ($schema instanceof Schema && $schema->getObjectSource() !== null) {
 			return $this->delegateObjectSourceDelete(schema: $schema, request: $request);
 		}

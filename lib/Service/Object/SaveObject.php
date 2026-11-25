@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\ObjectSource\SourcedTable;
 use OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedPass;
 use OCA\OpenRegister\Service\RecordUpdate;
+use OCA\OpenRegister\Service\Authorization\ActingHumanGuardInterface;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\Object\SaveObject\SlugRequest;
 use Adbar\Dot;
@@ -2484,6 +2485,7 @@ class SaveObject implements SaveObjectInterface {
 	 */
 	private function saveResolvedObject(ObjectSaveCall $call): ObjectEntity {
 		$this->guardSharedMasterData(call: $call);
+		$this->guardActingHuman(call: $call);
 
 		// Read-only projection guard: a schema served from an external source
 		// (x-openregister-object-source) is read-only unless its provider opts
@@ -2532,6 +2534,30 @@ class SaveObject implements SaveObjectInterface {
 			);
 		}
 	}//end guardSharedMasterData()
+
+	/**
+	 * Refuse a persisting machine write that names no human it may act for.
+	 *
+	 * The guard is resolved lazily from the injected container, like the shared
+	 * master data guard above; without a container (a hand-built handler) there
+	 * is nothing to ask, and the guard is off by default anyway.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\ActingHumanRefusedException When the write must name a human and does not, or may not act for them.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens-machine-callers/specs/auth-system/spec.md#requirement-a-machine-write-names-its-acting-human-when-the-instance-or-schema-requires-it-req-sat-006
+	 */
+	private function guardActingHuman(ObjectSaveCall $call): void {
+		if ($call->flags->persist === false) {
+			return;
+		}
+
+		$guard = $this->containerService(id: ActingHumanGuardInterface::class, label: 'ActingHumanGuard');
+		$guard?->assertMayWrite(schema: $call->schema);
+	}//end guardActingHuman()
 
 	/**
 	 * Normalize translatable properties (wrap simple values under default language).

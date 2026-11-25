@@ -93,6 +93,12 @@ final class AnnotationVocabulary {
 		// close, wearing the appearance of a saved setting. The comments around
 		// this list record that same loss six times over.
 		'x-openregister-purpose-required',
+		// Whether a machine write to this schema must name the human it acts
+		// for (`required`), read by ActingHumanGuard (REQ-SAT-006). Absent from
+		// this list setConfiguration() would drop it, and a schema whose author
+		// had just required an acting human would keep storing anonymous
+		// machine writes behind a saved-looking setting.
+		'x-openregister-acting-human',
 		// Read by ProcessingLogService::ANNOTATION_KEY (the AVG `logReads`
 		// dialect). Was absent from this list, so setConfiguration() silently
 		// DROPPED it and per-schema read-logging could never be enabled —
