@@ -5057,3 +5057,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T14:52:28Z precheck-20261125T125508-29bf8a7a CONFLICT-DEV #11089 4998c2bb
 2026-11-25T14:53:00Z precheck-20261125T125508-29bf8a7a CONFLICT-DEV #11129 18c16000
 2026-11-25T14:54:56Z session-20261125T115527-a1fd9395 or-fix-4/9 done: fixed conflicts (REVERIFY recorded) 10514 234e7a42, 10614 5213a8a8, 11114 fee1a9cc (dev.21), 11124 3cdafb11, 10549 fbc6f4db, 11069 833749e3, 11089 4998c2bb, 11139 6001e1d4, 11129 96a8b4ca; 11119 prechecked GREEN and landed; lane 4 precheck: nothing left; l10n churn + composer_deps platform issue queued for coordinator
+2026-11-25T15:00:55Z integrator-20261125T131257-65b17e3c GREEN tree 69c07382cf on dev 987938d424 prs 3 front=skip: Tests: 67035, Assertions: 237910, Errors: 9, Failures: 1, Warnings: 1, Deprecations: 25, PHPUnit Deprecations: 1, Skipped: 27.
