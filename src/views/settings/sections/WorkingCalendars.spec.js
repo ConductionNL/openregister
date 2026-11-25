@@ -148,3 +148,35 @@ describe('WorkingCalendars', () => {
 		expect(ctx.busy).toBe('')
 	})
 })
+
+describe('WorkingCalendars deep link', () => {
+	it('opens the linked calendar with its term for the "Try a date" panel', () => {
+		const nl = { slug: 'nl-national' }
+		const ctx = section({ calendars: [{ slug: 'be' }, nl] })
+
+		ctx.openDeepLink('?section=calendars&calendar=nl-national&sla=42:calendarDays:next')
+
+		expect(ctx.editing).toBe(true)
+		expect(ctx.selected).toBe(nl)
+		expect(ctx.linkedSla).toEqual({ value: 42, unit: 'calendarDays', rollToWorkingDay: 'next' })
+	})
+
+	it('opens nothing for a calendar the instance does not have, or a link elsewhere', () => {
+		const ctx = section({ calendars: [{ slug: 'be' }] })
+
+		ctx.openDeepLink('?section=calendars&calendar=nl-national&sla=2:businessDays')
+		ctx.openDeepLink('?section=files&calendar=be')
+
+		expect(ctx.editing).toBe(false)
+		expect(ctx.linkedSla).toBeNull()
+	})
+
+	it('drops the linked term once another calendar is opened by hand', () => {
+		const ctx = section({ calendars: [{ slug: 'nl-national' }, { slug: 'be' }] })
+		ctx.openDeepLink('?section=calendars&calendar=nl-national&sla=2:businessDays')
+
+		ctx.edit({ slug: 'be' })
+
+		expect(ctx.linkedSla).toBeNull()
+	})
+})
