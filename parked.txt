@@ -241,3 +241,4 @@ openregister#11210 e02415486690e6359654d11e8e4682efb41f683f precheck-red alone o
 openregister#11171 a83a470deabce4cd349e4407ac429a783e2825b0 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Db\MagicMapper\MagicSearchHandlerRowToEntityTest::testRowHydratesTheRecordedEntity
 openregister#11152 0fb185866980b7c2628bedea676fc44f279d2a1d precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Docs\FlowsDocumentationTest::testEveryRegisteredNodeIsDocumented;OCA\OpenRegister\Tests\Unit\Platform\RoutePostureTest::testEveryPublicMethodNamesWhatGuardsIt;OCA\OpenRegister\Tests\Un
 openregister#11252 b5c2cdc251855ea83df7a31c520bed7be3ce8495 auto-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#11253 9c064e3f8626ab02aa4846c9d7a1b2ef120c42c3 auto-park: sbom: package-lock.json changed without sbom.cdx.json
