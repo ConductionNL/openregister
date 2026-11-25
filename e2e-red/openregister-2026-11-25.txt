@@ -18,12 +18,12 @@ object-watchers.spec.ts:170 watchers:'yes' expected 422, saved 201: same decisio
 party-roles.spec.ts:251 FIXED by #11268 (top-level partyKinds/linkRoles dropped on save); then the next serial test is red: :340 'mail from a second address resolves' -> 404 'No party holds that address' (undiagnosed)
 # specs 38-59 (19:50 UTC):
 permission-provenance-and-deny.spec.ts:236/285/370/502/639 deny/staging rows (5): "the control failed: this row must be refused while enforcing"
-publication-link.spec.ts:232 POST /api/access-links 404 Not Found (route missing?)
+publication-link.spec.ts:232 POST /api/access-links 404: route exists; AccessLinkMintGuard::mayPublishView refuses the admin's view (sandbox admin has no active organisation; may be sandbox-only)
 query-related-schema-rows.spec.ts:162 object create "Validation failed" in setup
 reference-options.spec.ts: FIXED by #11242 + #11243
-repeating-groups.spec.ts:277 required value recorded as not supplied
+repeating-groups.spec.ts:277 @notSupplied accepted on create but not read back (likely not stored by the magic table)
 rules-engine-admin-ui.spec.ts:90 / rules-engine-operability.spec.ts:195 rules list and vocabulary
-search-quality.spec.ts:137 objects with no result type in the facet
+search-quality.spec.ts:137 spec reads facets.<f>.missing and buckets[].key; the list answers facets.<f>.data.buckets[] {value,count} with no missing (MagicFacetHandler computes missing, the response shape drops it). Shape decision needed
 security-setting-announcement.spec.ts:164 changed credential announced
 service-hours-admin.spec.ts:97 / working-calendar-admin.spec.ts:131 admin UI forms (45 s timeouts)
 timeline-entries.spec.ts:267 FIXED by #11271 (fields {} not []), 16/16
