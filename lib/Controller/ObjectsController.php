@@ -3868,13 +3868,17 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		}
 
 		try {
-			/** @psalm-suppress NoInterfaceProperties The concrete request answers post, put and patch with its decoded body. */
+			// The concrete request answers post, put and patch with its decoded body.
 			$body = $this->request->{$method};
 		} catch (\Throwable) {
 			return [];
 		}
 
-		return is_array($body) === true ? $body : [];
+		if (is_array($body) === false) {
+			return [];
+		}
+
+		return $body;
 	}//end rawBody()
 
 	/**
@@ -3892,7 +3896,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @spec openspec/specs/objects-crud/spec.md
 	 */
 	private function routeParameter(string $name, string $given): string {
-		/** @psalm-suppress NoInterfaceProperties The concrete request carries urlParams. */
+		// The concrete request carries the route's parameters in urlParams.
 		$routed = $this->request->urlParams ?? null;
 		if (is_array($routed) === true && is_string($routed[$name] ?? null) === true && $routed[$name] !== '') {
 			return $routed[$name];
@@ -4502,7 +4506,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		}
 
 		$target = new ObjectTarget(id: $id, resolved: $resolved, objectService: $objectService);
-		$patch = new ObjectUpdate(target: $target, object: $this->submittableBody(object: $this->request->getParams(), schema: $resolved['schemaEntity'] ?? null), caller: $this->caller());
+		$body  = $this->submittableBody(object: $this->request->getParams(), schema: $resolved['schemaEntity'] ?? null);
+		$patch = new ObjectUpdate(target: $target, object: $body, caller: $this->caller());
 		$this->logPatchScope(patch: $patch);
 
 		try {
