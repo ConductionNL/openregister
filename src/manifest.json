@@ -68,6 +68,14 @@
       "_note": "Register foundation entity detail; no register+schema slug for the built-in detail renderer."
     },
     {
+      "id": "registerApi",
+      "route": "/registers/:id/api",
+      "type": "custom",
+      "title": "Register API",
+      "component": "RegisterApi",
+      "_note": "REQ-APIX-001 (api-explorer-in-the-app): try each schema operation of a register as the signed-in user, with curl and fetch samples; reads the register's own OpenAPI description, so no built-in renderer applies."
+    },
+    {
       "id": "schemas",
       "route": "/schemas",
       "type": "custom",
