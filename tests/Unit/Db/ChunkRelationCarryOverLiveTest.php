@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * ChunkRelationCarryOver LIVE tests: real IDBConnection, real SQL.
  *
@@ -23,6 +21,8 @@ declare(strict_types=1);
  * @link https://conduction.nl
  * @spec openspec/specs/text-extraction/spec.md
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
@@ -53,24 +53,40 @@ class ChunkRelationCarryOverLiveTest extends TestCase {
 	 */
 	private const FILE = 990000099;
 
+	/**
+	 * The real database connection.
+	 *
+	 * @var IDBConnection
+	 */
 	private IDBConnection $db;
 
+	/**
+	 * Take the real connection, or skip outside a bootstrapped Nextcloud.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		parent::setUp();
 
 		$connection = null;
 		if (class_exists(\OC::class) === true && isset(\OC::$server) === true) {
+			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- a live test reads the connection the app runs on.
 			$connection = \OC::$server->get(IDBConnection::class);
 		}
 
 		if (($connection instanceof IDBConnection) === false) {
-			$this->markTestSkipped('ChunkRelationCarryOverLiveTest needs a bootstrapped Nextcloud (real IDBConnection).');
+			$this->markTestSkipped(message: 'ChunkRelationCarryOverLiveTest needs a bootstrapped Nextcloud (real IDBConnection).');
 		}
 
 		$this->db = $connection;
 		$this->clean();
 	}//end setUp()
 
+	/**
+	 * Remove the probe rows.
+	 *
+	 * @return void
+	 */
 	protected function tearDown(): void {
 		if (isset($this->db) === true) {
 			$this->clean();

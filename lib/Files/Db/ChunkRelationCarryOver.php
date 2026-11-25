@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Chunk Relation Carry-Over: entity relations follow a source's chunks when they are replaced.
  *
@@ -29,6 +27,8 @@ declare(strict_types=1);
  *
  * @spec openspec/specs/text-extraction/spec.md
  */
+
+declare(strict_types=1);
 
 namespace OCA\OpenRegister\Files\Db;
 
