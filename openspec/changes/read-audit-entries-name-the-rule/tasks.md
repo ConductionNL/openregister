@@ -17,5 +17,5 @@
 
 ## 4. Interface and docs
 
-- [ ] 4.1 The audit trail detail shows the rule digest and version on a read entry. Verify: e2e that opens a read entry.
+- [x] 4.1 The audit trail detail shows the rule digest and version on a read entry. Verify: e2e that opens a read entry. (`tests/e2e/ci/read-entry-names-the-rule.spec.ts`, 2 passed on a sandbox Nextcloud 34 on MariaDB, 2026-11-25: `e2e-other` reads an object only `e2e-grantees` may read; its read entry carries `ruleDigest` = SHA-256 of `"e2e-grantees"` and the schema version, and the administrator opens that entry's details on the audit trail page and reads both under Rule Digest and Rule Version. The details dialog lists every field it does not show above, so no UI change was needed.)
 - [x] 4.2 `docs/` section on proving which rule allowed a read. (`docs/features/versioning-and-audit.md`, "Which rule allowed a read".)
