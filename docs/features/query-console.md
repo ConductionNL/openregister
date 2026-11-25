@@ -15,6 +15,24 @@ Every run is bounded and recorded:
   property-level RBAC, organisation scoping and field protection;
 - every run and every download is on the **audit trail**, with who ran what.
 
+## On the operations page
+
+**Operations** in the Open Register menu, section **Query console** below
+Maintenance. Only administrators see it.
+
+| Part | What it does |
+| --- | --- |
+| Query | The GraphQL query. |
+| Variables (JSON) | The query's variables, as one JSON object. Anything else is refused on the page, before a request is sent. |
+| Run | Runs the query and shows the result. |
+| Table | The first list in the result, the same list a download writes: a connection's `edges[].node`, or a plain list. Nested fields become dotted columns (`owner.name`); a list inside a row is one JSON cell. |
+| Summary | The rows returned and how long the run took, and a notice when the result was cut off at 1,000 rows. |
+| Show the raw JSON | The whole answer, including `errors` and `extensions`. |
+| Download CSV / Download JSON | Runs the query again through the export and saves the file. |
+
+A refusal the server names, such as a query that writes or a download of a
+result with no list, is shown on the page as the server words it.
+
 ## Running a query
 
 `POST /api/operations/query` with a JSON body:
