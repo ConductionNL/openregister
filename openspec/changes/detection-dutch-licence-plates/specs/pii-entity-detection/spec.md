@@ -37,7 +37,7 @@ SHALL call it rather than carry its own copy.
 - **GIVEN** a text holding one hyphenated plate for each of the sidecodes 1 to 14
 - **WHEN** the `nl` pattern set runs over it
 - **THEN** fourteen `LICENSE_PLATE` entities are returned, each carrying the sidecode it matched
-- @e2e exclude {specified only; task 2.2 adds NlPatternSetTest, task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts for the end-to-end path}
+- @e2e exclude {covered by NlPatternSetTest and, end to end, tests/integration/openregister-licence-plate-detection.postman_collection.json}
 
 #### Scenario: a BSN is found only when it passes the elfproef
 
@@ -80,7 +80,7 @@ entity for the same span, the backend's entity SHALL be kept.
 - **GIVEN** an instance using Presidio that returns a `PERSON` entity and no plate for a text holding "Jan de Vries, kenteken 12-GBK-3"
 - **WHEN** entities are detected for that text
 - **THEN** the result holds the `PERSON` entity from Presidio and a `LICENSE_PLATE` entity from the `nl` set
-- @e2e exclude {specified only; task 2.3 adds EntityRecognitionHandlerTest cases, task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e exclude {needs a Presidio backend; covered by EntityRecognitionHandlerTest}
 
 ### Requirement: An administrator chooses the enabled pattern sets
 
@@ -94,11 +94,11 @@ unknown code SHALL be refused.
 - **GIVEN** an instance with `default_phone_region` `BE` and no saved `entityPatternSets`
 - **WHEN** a file holding "12-GBK-3" is extracted with the regex method
 - **THEN** no `LICENSE_PLATE` entity is stored
-- @e2e exclude {specified only; task 3.1 adds FileSettingsHandlerTest, task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e exclude {an instance default; covered by FileSettingsHandlerTest, and the empty set end to end by tests/integration/openregister-licence-plate-detection.postman_collection.json}
 
 #### Scenario: an unknown pattern set is refused
 
 - **GIVEN** an administrator on the file configuration settings
 - **WHEN** they call `PATCH /api/settings/files` with `entityPatternSets: ["xx"]`
 - **THEN** the response is 400 and its message names `xx`
-- @e2e exclude {specified only; task 3.1 adds the API check, task 4.1 adds tests/e2e/ci/licence-plate-detection.spec.ts}
+- @e2e exclude {API-only; covered by tests/integration/openregister-licence-plate-detection.postman_collection.json}

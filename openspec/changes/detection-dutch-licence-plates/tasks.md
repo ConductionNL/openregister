@@ -22,7 +22,8 @@
     contracts in Newman. It also asserts the acceptance's control: with recognition on and the regex method but
     `entityPatternSets: []`, the same text yields no `LICENSE_PLATE` and no `SSN`. Each run makes its own valid plate
     and BSN, since extraction is keyed on content and entities are shared by value.
-  - 2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16: 23 requests, 37 assertions, 0 failed, three runs; the file
+  - It also asserts that saving an unknown set (`["xx"]`) is refused with 400 naming it and changes nothing.
+  - 2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16: 25 requests, 41 assertions, 0 failed; the file
     settings read back identical afterwards. The placeholders read `[KENTEKEN: n]` and `[BSN: n]` for a Dutch reader
     (the spec's `[KENTEKEN-1]` writes the label in another form); the collection asserts the label.
   - Seen on the way, not changed here: the generic regex PHONE pattern (`\+?[1-9]\d{1,14}`) takes any number of

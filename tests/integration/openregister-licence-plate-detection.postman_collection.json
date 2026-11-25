@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "or-licence-plate-detection-2026-11-25",
 		"name": "OpenRegister Licence Plate Detection API",
-		"description": "Dutch licence plates detected, anonymised and switched off, over HTTP (change detection-dutch-licence-plates, task 4.1; specs/pii-entity-detection/spec.md).\n\nWith entity recognition on, the regex method and the nl pattern set, a privacy officer whose language is Dutch uploads a text file holding a plate, a BSN, a case number and a date shaped like a plate, extracts it and reads GET /api/entities: one LICENSE_PLATE entity for the plate, one SSN entity for the BSN, and no plate entity for the case number or the date. The anonymised copy reads a KENTEKEN placeholder where the plate was and a BSN placeholder where the BSN was, and neither value appears in it. With entityPatternSets [] the same text with other values yields neither entity.\n\nEach run makes its own valid plate (sidecode 7) and BSN (eleven test): extraction is keyed on a file's content and entities are shared by value, so fixed values would read a previous run's entities. A save of the file settings replaces them (a key it does not name returns to its default), so the settings are read first, every save sends the whole set with only its keys changed, and the whole set is restored at the end.\n\nWhy Newman and not tests/e2e/ci/licence-plate-detection.spec.ts, which the task names: every step is an API call, and gate-19 puts API contracts in Newman.",
+		"description": "Dutch licence plates detected, anonymised and switched off, over HTTP (change detection-dutch-licence-plates, task 4.1; specs/pii-entity-detection/spec.md).\n\nWith entity recognition on, the regex method and the nl pattern set, a privacy officer whose language is Dutch uploads a text file holding a plate, a BSN, a case number and a date shaped like a plate, extracts it and reads GET /api/entities: one LICENSE_PLATE entity for the plate, one SSN entity for the BSN, and no plate entity for the case number or the date. The anonymised copy reads a KENTEKEN placeholder where the plate was and a BSN placeholder where the BSN was, and neither value appears in it. With entityPatternSets [] the same text with other values yields neither entity, and saving an unknown set is refused with 400 naming it and changes nothing.\n\nEach run makes its own valid plate (sidecode 7) and BSN (eleven test): extraction is keyed on a file's content and entities are shared by value, so fixed values would read a previous run's entities. A save of the file settings replaces them (a key it does not name returns to its default), so the settings are read first, every save sends the whole set with only its keys changed, and the whole set is restored at the end.\n\nWhy Newman and not tests/e2e/ci/licence-plate-detection.spec.ts, which the task names: every step is an API call, and gate-19 puts API contracts in Newman.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"event": [
@@ -172,6 +172,7 @@
 							"const before = Object.assign({}, o); delete before.documentStore; delete before.openAnonymiserPasswordSet;",
 							"pm.collectionVariables.set('settingsBefore', JSON.stringify(before));",
 							"pm.collectionVariables.set('settingsOn', JSON.stringify(Object.assign({}, before, { entityRecognitionEnabled: true, entityRecognitionMethod: 'regex', entityPatternSets: ['nl'] })));",
+							"pm.collectionVariables.set('settingsUnknownSet', JSON.stringify(Object.assign({}, before, { entityRecognitionEnabled: true, entityRecognitionMethod: 'regex', entityPatternSets: ['xx'] })));",
 							"pm.collectionVariables.set('settingsWithoutSets', JSON.stringify(Object.assign({}, before, { entityRecognitionEnabled: true, entityRecognitionMethod: 'regex', entityPatternSets: [] })));"
 						]
 					}
@@ -1322,6 +1323,138 @@
 			}
 		},
 		{
+			"name": "An unknown pattern set is refused, naming it",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"settings",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{settingsUnknownSet}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the save is refused with 400', () => pm.expect(pm.response.code, pm.response.text()).to.eql(400));",
+							"pm.test('the message names xx', () => pm.expect(pm.response.text()).to.include('xx'));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The refused save changed nothing",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"settings",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the settings are read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('still recognition on with no pattern set', () => { const o = pm.response.json(); pm.expect(o.entityRecognitionEnabled).to.eql(true); pm.expect(o.entityPatternSets).to.eql([]); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
 			"name": "tearDown: the file settings as they were",
 			"request": {
 				"method": "PATCH",
@@ -1711,6 +1844,11 @@
 		},
 		{
 			"key": "settingsWithoutSets",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "settingsUnknownSet",
 			"value": "",
 			"type": "string"
 		},
