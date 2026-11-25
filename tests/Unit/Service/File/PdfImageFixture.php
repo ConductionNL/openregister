@@ -27,7 +27,7 @@ final class PdfImageFixture {
 	 * A one-page PDF with one image, optionally with a text line drawn in Helvetica.
 	 *
 	 * @param string      $image  The image XObject body, from jpegImage() or rawImage().
-	 * @param string|null $text   The text the page shows, or none.
+	 * @param string|null $text   The text the page shows in Helvetica, or none; the font is the last object.
 	 * @param list<string> $extra Extra objects appended after the image, numbered from 6.
 	 *
 	 * @return string The PDF.
@@ -36,8 +36,9 @@ final class PdfImageFixture {
 		$content = 'q 100 0 0 100 0 0 cm /Im1 Do Q';
 		$font = '';
 		if ($text !== null) {
-			$content .= "\nBT /F1 12 Tf 10 50 Td (" . $text . ') Tj ET';
-			$font = ' /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >> >>';
+			$content .= "\nBT\n/F1 12 Tf\n10 50 Td\n(" . $text . ") Tj\nET\n";
+			$font = ' /Font << /F1 ' . (6 + count($extra)) . ' 0 R >>';
+			$extra[] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
 		}
 
 		return self::pdf(
@@ -46,7 +47,7 @@ final class PdfImageFixture {
 					'<< /Type /Catalog /Pages 2 0 R >>',
 					'<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
 					'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources << /XObject << /Im1 5 0 R >>' . $font . ' >> /Contents 4 0 R >>',
-					self::stream('', $content),
+					self::stream('/Filter /FlateDecode', (string)gzcompress($content)),
 					$image,
 				],
 				$extra

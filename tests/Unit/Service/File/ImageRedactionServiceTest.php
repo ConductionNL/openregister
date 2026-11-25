@@ -683,7 +683,7 @@ final class ImageRedactionServiceTest extends TestCase {
 		$this->assertSame(['image/png', 'image/jpeg', 'image/tiff', 'image/webp'], ImageRedactionService::STANDALONE_TYPES);
 		$this->assertSame(PipelineSteps::IMAGE_TYPES, ImageRedactionService::STANDALONE_TYPES);
 		$this->assertSame(
-			[...PipelineSteps::IMAGE_TYPES, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text'],
+			[...PipelineSteps::IMAGE_TYPES, 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.oasis.opendocument.text'],
 			(new PipelineSteps())->mimeTypes(PipelineSteps::IMAGE_BURNER)
 		);
 	}//end testTheStandaloneTypesAreThePipelineImageTypes()
