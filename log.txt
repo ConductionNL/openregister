@@ -5149,3 +5149,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T19:24:09Z precheck-20261125T191529-85ecfd26 AUTOPARK openregister#11253 9c064e3f sbom: package-lock.json changed without sbom.cdx.json (tree bdbde7ff30)
 2026-11-25T19:24:56Z precheck-20261125T183212-36886908 AUTOPARK openregister#11254 020692f8 sbom: package-lock.json changed without sbom.cdx.json (tree a431a05021)
 2026-11-25T19:25:16Z integrator-20261125T164649-6d3dd46c MERGED-TREE bad34912f7: 4 PRs, main now 119f481037 = tested tree
+2026-11-25T19:31:07Z integrator-20261125T164649-6d3dd46c RED tree 516b02a6e9 prs 4 front=red: Tests: 67255, Assertions: 238929, Errors: 5, Warnings: 1, Deprecations: 4, PHPUnit Depreca; first failures: FAIL src/views/flows/pageShell.components.golden.spec.js
