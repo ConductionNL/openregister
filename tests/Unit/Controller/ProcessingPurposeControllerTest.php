@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
@@ -39,6 +40,8 @@ use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 
 final class ProcessingPurposeControllerTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private function purpose(string $code = 'brp-adresonderzoek'): ProcessingPurpose {
 		$purpose = new ProcessingPurpose();
 		$purpose->setId(1);
@@ -76,6 +79,7 @@ final class ProcessingPurposeControllerTest extends TestCase {
 
 	private function groupManager(bool $admin): IGroupManager {
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$memberships = ['users'];
 		if ($admin === true) {
 			$memberships = ['admin'];
