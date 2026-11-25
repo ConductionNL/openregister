@@ -1,5 +1,7 @@
 # HELPER-LANE.md: the brief for a cloud HELPER routine (coordinator, 24 Nov 2026 19:30 CET; Ruben: speed up to max cloud usage)
 
+LIVE IN THE SANDBOX (Ruben, 25 Nov 2026 12:00 CET): live-only tasks are no longer skipped or parked. When a task needs a running Nextcloud, Playwright, Newman, axe, a browser or a seed check, bring up your own instance per LIVE-LANE.md section 1 (once per run, about 10 minutes) and do the task per its sections 2 and 3. This overrides every line below that says to skip live tasks or mark them 'written, runs in nightly'. Still skipped: product decisions not in FINISH-ORDER.md DECISIONS (decide and log them yourself per the 22 Nov delegation), and external systems the sandbox cannot run.
+
 NEVER IDLE, REPURPOSE (Ruben, 25 Nov 2026 09:20 CET): a run that finds no startable work in its own app does NOT end idle. Go down this list and take the first thing you can do, with the same leases, SAVE OFTEN and verify rules:
 1. Launchpad and thematiq first (today's priority, they must reach DONE): an openspec change of launchpad nobody started (lease help-launchpad-<change>), or a failing live e2e test from e2e-red/launchpad-2026-11-25.txt / e2e-red/thematiq-2026-11-25.txt on this branch whose spec you can correct to the board without a live instance (one PR per spec file, branch cloud/e2e-<app>-<spec>; lease e2e-<app>-<spec>). Skip tests the local lanes are already on (FINISH-ORDER.md LIVE PASS section names them).
 2. Help the next app in FINISH-ORDER.md that has a startable change (SPARE CAPACITY steps).

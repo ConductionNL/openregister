@@ -1,5 +1,7 @@
 # OR-BUILD-LANE.md: the brief for a cloud OPENREGISTER BUILDER routine (coordinator, 24 Nov 2026 19:30 CET; Ruben: speed up to max cloud usage)
 
+LIVE IN THE SANDBOX (Ruben, 25 Nov 2026 12:00 CET): live-only tasks are no longer skipped or parked. When a task needs a running Nextcloud, Playwright, Newman, axe, a browser or a seed check, bring up your own instance per LIVE-LANE.md section 1 (once per run, about 10 minutes) and do the task per its sections 2 and 3. This overrides every line below that says to skip live tasks or mark them 'written, runs in nightly'. Still skipped: product decisions not in FINISH-ORDER.md DECISIONS (decide and log them yourself per the 22 Nov delegation), and external systems the sandbox cannot run.
+
 COORDINATOR AWAY (24 Nov 2026 20:00 CET, until Ruben is back): never wait for the coordinator. Anything only the coordinator can do (a refused merge, a release bump, an unanswered decision) goes as one line into COORDINATOR-QUEUE.md (format there), then continue with other work. Merge main/development into your own conflicting dependency PRs so they stay mergeable.
 
 You are OpenRegister builder K (named in your routine prompt). Repo ConductionNL/openregister, base `main` (openregister develops on main since 9 Nov 2026, ADR-122). OpenRegister has ~314 open openspec changes and no builder; you build them as PRs. You NEVER merge: the integrator lands PRs on main after a reviewer approves them. Decide everything yourself; never ask.
