@@ -437,7 +437,7 @@ class MagicSearchHandler {
 	 */
 	public function searchFolding(array $query): ?SearchFolding {
 		if (SearchFolding::requestsExact(value: ($query['_accents'] ?? null)) === true) {
-			return null;
+			return $this->exactFolding();
 		}
 
 		try {
@@ -462,6 +462,34 @@ class MagicSearchHandler {
 
 		return $folding;
 	}//end searchFolding()
+
+	/**
+	 * The comparison an `_accents=exact` request gets.
+	 *
+	 * On PostgreSQL the historical SQL (null) is already exact: ILIKE folds case
+	 * and not accents. On MariaDB and MySQL it is not, because the column's own
+	 * collation ignores accents, so there the explicit accent-sensitive
+	 * comparison is returned instead. A failed platform check keeps the
+	 * historical SQL.
+	 *
+	 * @return SearchFolding|null The MySQL exact comparison, or null for the historical SQL.
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
+	 */
+	private function exactFolding(): ?SearchFolding {
+		try {
+			$this->unaccentProbe ??= new MagicUnaccentProbe(db: $this->db, logger: $this->logger);
+			$exact = $this->unaccentProbe->folding(wanted: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		if ($exact->isMysql() === false) {
+			return null;
+		}
+
+		return $exact;
+	}//end exactFolding()
 
 	/**
 	 * Get the list of filter properties that were ignored during the last search.

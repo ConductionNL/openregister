@@ -26,9 +26,11 @@ namespace OCA\OpenRegister\Db\MagicMapper;
  * One place that answers how a search compares text: the column expression,
  * the pattern expression and the operator between them.
  *
- * Exact mode is the comparison search has always made: case-insensitive, accent-sensitive
- * (`col::text ILIKE pattern` on PostgreSQL, `LOWER(CAST(col AS CHAR)) LIKE LOWER(pattern)`
- * elsewhere). Folded mode also ignores accents: through the `openregister_fold()` wrapper
+ * Exact mode is case-insensitive and accent-sensitive: `col::text ILIKE pattern` on
+ * PostgreSQL, and on MariaDB and MySQL both sides lowered and compared under the binary
+ * `utf8mb4_bin` collation, because the collation those databases give a column by default
+ * (`utf8mb4_general_ci`, `utf8mb4_unicode_ci`) ignores accents already, so a plain LIKE
+ * there would match `Café` for `cafe` and exact would not be exact. Folded mode also ignores accents: through the `openregister_fold()` wrapper
  * around `unaccent` on PostgreSQL, and through the `utf8mb4_unicode_ci` collation on
  * MariaDB and MySQL. A platform without a folding answer keeps the exact comparison.
  *
@@ -60,6 +62,15 @@ final class SearchFolding {
 	 * The accent- and case-insensitive collation used on MariaDB and MySQL.
 	 */
 	public const MYSQL_COLLATION = 'utf8mb4_unicode_ci';
+
+	/**
+	 * The accent-sensitive collation the exact comparison uses on MariaDB and MySQL.
+	 *
+	 * Binary, so it is accent- and case-sensitive; both sides are lowered first,
+	 * which leaves it accent-sensitive only. It exists on every MariaDB and MySQL
+	 * version, unlike the `_as_ci` collations.
+	 */
+	public const MYSQL_EXACT_COLLATION = 'utf8mb4_bin';
 
 	/**
 	 * The `_accents` request value that asks for the exact comparison.
@@ -97,6 +108,17 @@ final class SearchFolding {
 	public function isFolded(): bool {
 		return $this->folded;
 	}//end isFolded()
+
+	/**
+	 * Whether this comparison is made on MariaDB or MySQL.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
+	 */
+	public function isMysql(): bool {
+		return $this->platform === self::PLATFORM_MYSQL;
+	}//end isMysql()
 
 	/**
 	 * Whether a request's `_accents` value asks for the exact comparison.
@@ -146,6 +168,10 @@ final class SearchFolding {
 			return "CAST({$value} AS CHAR) COLLATE " . self::MYSQL_COLLATION;
 		}
 
+		if ($this->platform === self::PLATFORM_MYSQL) {
+			return "LOWER(CAST({$value} AS CHAR CHARACTER SET utf8mb4)) COLLATE " . self::MYSQL_EXACT_COLLATION;
+		}
+
 		return "LOWER(CAST({$value} AS CHAR))";
 	}//end column()
 
@@ -169,6 +195,10 @@ final class SearchFolding {
 
 		if ($this->folded === true) {
 			return "{$quotedPattern} COLLATE " . self::MYSQL_COLLATION;
+		}
+
+		if ($this->platform === self::PLATFORM_MYSQL) {
+			return "CONVERT(LOWER({$quotedPattern}) USING utf8mb4) COLLATE " . self::MYSQL_EXACT_COLLATION;
 		}
 
 		return "LOWER({$quotedPattern})";

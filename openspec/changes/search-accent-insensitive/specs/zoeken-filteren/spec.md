@@ -16,14 +16,12 @@ count equals the number of results it stands for.
 - **GIVEN** a decision object titled "Reünie oud-raadsleden" and a location object named "Café de Flore"
 - **WHEN** a council clerk calls `GET /api/objects/{register}/{schema}?_search=reunie` and `?_search=cafe`
 - **THEN** the first response contains the decision and the second contains the location
-- @e2e exclude {specified only; task 3.1 adds tests/e2e/ci/search-accents.spec.ts}
 
 #### Scenario: the facet count matches the results
 
 - **GIVEN** three objects with `Café` in their name and a facet on their status
 - **WHEN** the clerk searches `cafe` with that facet
 - **THEN** the facet buckets add up to the three results returned
-- @e2e exclude {specified only; task 1.3 adds the integration test, task 3.1 adds tests/e2e/ci/search-accents.spec.ts}
 
 ### Requirement: Accent folding is visible to administrators and can be bypassed
 
@@ -46,4 +44,3 @@ search with `_accents=exact`.
 - **GIVEN** accent-insensitive search enabled and an object named "Café de Flore"
 - **WHEN** an integration calls `GET /api/objects/{register}/{schema}?_search=cafe&_accents=exact`
 - **THEN** the object is not in the results
-- @e2e exclude {specified only; task 3.1 adds tests/e2e/ci/search-accents.spec.ts}

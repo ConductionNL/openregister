@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -136,25 +138,34 @@ class MagicSearchHandlerAccentFoldingTest extends TestCase {
 	}//end testMysqlUnionPathUsesTheCollation()
 
 	/**
-	 * `_accents=exact` gives exactly the SQL of a search where folding is unavailable.
+	 * `_accents=exact` is accent-sensitive on every platform.
+	 *
+	 * On PostgreSQL that is the SQL of a search where folding is unavailable:
+	 * ILIKE folds case and not accents. On MariaDB and MySQL it is NOT: the
+	 * historical LOWER() LIKE compares under the column's own collation, which
+	 * ignores accents already, so exact there compares under utf8mb4_bin.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/search-accent-insensitive/specs/zoeken-filteren/spec.md#requirement-accent-folding-is-visible-to-administrators-and-can-be-bypassed
 	 */
-	public function testExactAccentsKeepsTheHistoricalSql(): void {
-		foreach ([true, false] as $isPostgres) {
-			$exact = $this->unionSql(isPostgres: $isPostgres, available: true, query: ['_search' => 'cafe', '_accents' => 'exact']);
-			$unavailable = $this->unionSql(isPostgres: $isPostgres, available: false, query: ['_search' => 'cafe']);
+	public function testExactAccentsIsAccentSensitiveOnEveryPlatform(): void {
+		$postgres = $this->unionSql(isPostgres: true, available: true, query: ['_search' => 'cafe', '_accents' => 'exact']);
+		$this->assertSame($this->unionSql(isPostgres: true, available: false, query: ['_search' => 'cafe']), $postgres);
+		$this->assertStringNotContainsString('openregister_fold', implode(' ', $postgres));
 
-			$this->assertSame($unavailable, $exact);
-			$this->assertStringNotContainsString('openregister_fold', implode(' ', $exact));
-			$this->assertStringNotContainsString('COLLATE', implode(' ', $exact));
-		}
+		$mysql = implode(' ', $this->unionSql(isPostgres: false, available: true, query: ['_search' => 'cafe', '_accents' => 'exact']));
+		$this->assertStringContainsString(
+			"LOWER(CAST(_name AS CHAR CHARACTER SET utf8mb4)) COLLATE utf8mb4_bin LIKE CONVERT(LOWER('%cafe%') USING utf8mb4) COLLATE utf8mb4_bin",
+			$mysql
+		);
+		$this->assertStringNotContainsString('utf8mb4_unicode_ci', $mysql);
 
 		$this->assertStringContainsString(
 			'openregister_fold',
 			implode(' ', $this->unionSql(isPostgres: true, available: true, query: ['_search' => 'cafe', '_accents' => 'loose']))
 		);
-	}//end testExactAccentsKeepsTheHistoricalSql()
+	}//end testExactAccentsIsAccentSensitiveOnEveryPlatform()
 
 	/**
 	 * The QueryBuilder substring path and the fuzzy name arm are folded.
@@ -213,6 +224,11 @@ class MagicSearchHandlerAccentFoldingTest extends TestCase {
 		$this->assertTrue($folding->isFolded());
 
 		$this->assertNull($this->handler(isPostgres: true, available: true)->searchFolding(query: ['_accents' => 'exact']));
+
+		$mysqlExact = $this->handler(isPostgres: false, available: true)->searchFolding(query: ['_accents' => 'exact']);
+		$this->assertInstanceOf(SearchFolding::class, $mysqlExact);
+		$this->assertTrue($mysqlExact->isMysql());
+		$this->assertFalse($mysqlExact->isFolded());
 		$this->assertNull($this->handler(isPostgres: true, available: false)->searchFolding(query: []));
 	}//end testSearchFoldingAnswers()
 
