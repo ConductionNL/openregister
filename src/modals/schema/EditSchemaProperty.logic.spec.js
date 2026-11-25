@@ -69,12 +69,14 @@ describe('EditSchemaProperty option lookups', () => {
 	it('offers geometry formats for an object property and disables the format for other non-string types', () => {
 		const vm = form()
 		vm.properties.type = 'object'
-		expect(vm.propertyFormatOptions.options).toContain('geo:multipolygon')
+		expect(vm.propertyFormatOptions.options).toContainEqual({ id: 'geo:multipolygon', label: 'Multipolygon' })
+		expect(vm.propertyFormatOptions.reduce({ id: 'geo:multipolygon', label: 'Multipolygon' })).toBe('geo:multipolygon')
 		expect(vm.formatDisabled).toBe(false)
 
 		vm.properties.type = 'string'
 		expect(vm.propertyFormatOptions.options).toContain('email')
 		expect(vm.propertyFormatOptions.options).not.toContain('geo:point')
+		expect(vm.propertyFormatOptions.reduce).toBeUndefined()
 		expect(vm.formatDisabled).toBe(false)
 
 		vm.properties.type = 'number'
