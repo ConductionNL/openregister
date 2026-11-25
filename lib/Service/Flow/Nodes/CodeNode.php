@@ -30,7 +30,11 @@ use OCA\OpenRegister\Service\Flow\FlowItemOptions;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowNodeCall;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\CodeRunFailedException;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodeRequiresRight;
+use OCA\OpenRegister\Service\Flow\IFlowNodeRuntime;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -48,12 +52,19 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/flow-code-step-in-a-sidecar/specs/flow-engine/spec.md#requirement-a-code-step-runs-authored-javascript-outside-nextcloud
  */
-class CodeNode extends LogicNodeBase implements IFlowNode, CodeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class CodeNode extends LogicNodeBase implements IFlowNode, CodeNodeInterface, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowNodeRequiresRight, IFlowNodeRuntime {
 
 	/**
 	 * The only language so far.
 	 */
 	public const LANGUAGE = 'javascript';
+
+	/**
+	 * The right an author needs to add or change a code step (design D-6).
+	 *
+	 * @var string
+	 */
+	public const RIGHT = 'flow.code';
 
 	/**
 	 * Run the source once per item, or once on all items.
@@ -245,16 +256,34 @@ class CodeNode extends LogicNodeBase implements IFlowNode, CodeNodeInterface, IF
 			$inputs[] = ['json' => (array)($item[FlowItems::JSON] ?? [])];
 		}
 
-		$answer = $this->runner->run(
-			new CodeRun(
-				source: (string)($config['source'] ?? ''),
-				mode: $mode,
-				items: $inputs,
-				timeoutMs: (int)($config['timeoutMs'] ?? self::DEFAULT_TIMEOUT_MS),
-				memoryMb: (int)($config['memoryMb'] ?? self::DEFAULT_MEMORY_MB),
-				egress: $this->hosts(config: $config)
-			)
-		);
+		$source = (string)($config['source'] ?? '');
+		$report = ($call->context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($report instanceof FlowStepReport) === false) {
+			$report = null;
+		}
+
+		$report?->put(key: 'code', value: ['language' => self::LANGUAGE, 'mode' => $mode, 'sourceHash' => hash('sha256', $source), 'source' => $source]);
+
+		try {
+			$answer = $this->runner->run(
+				new CodeRun(
+					source: $source,
+					mode: $mode,
+					items: $inputs,
+					timeoutMs: (int)($config['timeoutMs'] ?? self::DEFAULT_TIMEOUT_MS),
+					memoryMb: (int)($config['memoryMb'] ?? self::DEFAULT_MEMORY_MB),
+					egress: $this->hosts(config: $config)
+				)
+			);
+		} catch (CodeRunFailedException $failed) {
+			// A failed run keeps what the runner logged before it stopped, beside the source that failed.
+			self::reportLogs(report: $report, logs: $failed->getLogs());
+			$report?->line(level: 'error', message: $failed->getMessage());
+			throw $failed;
+		}
+
+		self::reportLogs(report: $report, logs: $answer->logs);
+		$report?->put(key: 'runner', value: ['durationMs' => $answer->durationMs, 'itemsIn' => count($inputs), 'itemsOut' => count($answer->items)]);
 
 		// Per item with one answer per input, each output keeps its input's
 		// index, so provenance survives the step as it does through a filter.
@@ -277,6 +306,63 @@ class CodeNode extends LogicNodeBase implements IFlowNode, CodeNodeInterface, IF
 		return $outputs;
 
 	}//end execute()
+
+	/**
+	 * Copy the runner's log lines into the step report, as info lines.
+	 *
+	 * @param FlowStepReport|null $report The step report, when the engine handed one.
+	 * @param array<int, mixed>   $logs   The runner's log lines.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-code-step-in-a-sidecar/specs/flow-engine/spec.md#requirement-a-code-step-runs-authored-javascript-outside-nextcloud
+	 */
+	private static function reportLogs(?FlowStepReport $report, array $logs): void {
+		foreach ($logs as $line) {
+			$report?->line(level: 'info', message: (string) $line);
+		}
+	}//end reportLogs()
+
+	/**
+	 * Why a code step cannot run here now: the runner does not answer its health check.
+	 *
+	 * @return string|null The reason naming the runner, or null when it answers.
+	 *
+	 * @spec openspec/changes/flow-code-step-in-a-sidecar/specs/flow-engine/spec.md#requirement-without-the-runner-the-code-step-is-hidden-and-refused
+	 */
+	public function unavailableReason(): ?string {
+		if ($this->runner->isAvailable() === true) {
+			return null;
+		}
+
+		return $this->l10n->t('A code step needs the {app} ExApp, which is not installed or not answering.', ['app' => CodeRunnerClientInterface::APP_ID]);
+	}//end unavailableReason()
+
+	/**
+	 * The right an author needs to put a code step in a flow.
+	 *
+	 * @param array<string, mixed> $config The step's configuration.
+	 *
+	 * @return string|null The right.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Every code step needs the right, whatever its config.
+	 *
+	 * @spec openspec/changes/flow-code-step-in-a-sidecar/specs/flow-engine/spec.md#requirement-without-the-runner-the-code-step-is-hidden-and-refused
+	 */
+	public function requiredRight(array $config): ?string {
+		return self::RIGHT;
+	}//end requiredRight()
+
+	/**
+	 * Every right this step can require, with its description.
+	 *
+	 * @return array<string, string>
+	 *
+	 * @spec openspec/changes/flow-code-step-in-a-sidecar/specs/flow-engine/spec.md#requirement-without-the-runner-the-code-step-is-hidden-and-refused
+	 */
+	public function declaredRights(): array {
+		return [self::RIGHT => 'Put a step that runs authored code in a flow.'];
+	}//end declaredRights()
 
 	/**
 	 * What kind of step this is. Runs a script on the items.
