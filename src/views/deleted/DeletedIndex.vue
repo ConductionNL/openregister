@@ -144,6 +144,12 @@ import {
 				@pageChanged="onPageChanged"
 				@pageSizeChanged="onPageSizeChanged" />
 		</div>
+
+		<RestoreWithRelatedDialog
+			:show="restoreWithRelatedId !== null"
+			:objectId="restoreWithRelatedId"
+			@close="restoreWithRelatedId = null"
+			@restored="onRestoredWithRelated" />
 	</NcAppContent>
 </template>
 
@@ -160,9 +166,11 @@ import Delete from 'vue-material-design-icons/Delete.vue'
 import DeleteEmpty from 'vue-material-design-icons/DeleteEmpty.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
+import RestoreAlert from 'vue-material-design-icons/RestoreAlert.vue'
 import PaginationComponent from '../../components/PaginationComponent.vue'
 import ActionMenu from '../../components/shared/ActionMenu.vue'
 import ListActionsBar from '../../components/shared/ListActionsBar.vue'
+import RestoreWithRelatedDialog from '../../dialogs/deleted/RestoreWithRelatedDialog.vue'
 import { ensureRegisterAndSchemaLists } from '../../composables/registerSchemaLists.js'
 import eventBus from '../../eventBus.js'
 import { refreshAction } from '../../services/menuActions.js'
@@ -213,6 +221,7 @@ export default {
 		Delete,
 		FormatListChecks,
 		PaginationComponent,
+		RestoreWithRelatedDialog,
 	},
 
 	mixins: [
@@ -227,6 +236,7 @@ export default {
 	data() {
 		return {
 			selectedItems: [],
+			restoreWithRelatedId: null,
 		}
 	},
 
@@ -388,6 +398,11 @@ export default {
 					label: t('openregister', 'Permanently Delete'),
 					icon: Delete,
 					run: () => this.permanentlyDelete(item),
+				},
+				{
+					label: t('openregister', 'Restore with related records'),
+					icon: RestoreAlert,
+					run: () => this.restoreWithRelated(item),
 				},
 			]
 		},
@@ -643,6 +658,29 @@ export default {
 		 */
 		exportFilteredItems(_options) {
 			// TODO: Implement export functionality for deleted items
+		},
+
+		/**
+		 * Open the preview of restoring an item together with its related records.
+		 *
+		 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+		 * @param {object} item - The deleted item
+		 * @return {void}
+		 */
+		restoreWithRelated(item) {
+			this.restoreWithRelatedId = item.id ?? item['@self']?.id ?? null
+		},
+
+		/**
+		 * Close the related-records restore and reload the list, which the restore shortened by more than one row.
+		 *
+		 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+		 * @return {Promise<void>}
+		 */
+		async onRestoredWithRelated() {
+			this.restoreWithRelatedId = null
+			this.selectedItems = []
+			await this.refreshItems()
 		},
 
 		/**

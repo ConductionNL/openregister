@@ -867,6 +867,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public const CONFIDENTIALITY_ANNOTATION = 'x-openregister-confidentiality';
 
 	/**
+	 * The break-glass annotation: whether emergency self-granted access is offered, and on what terms.
+	 *
+	 * @var string
+	 */
+	public const BREAK_GLASS_ANNOTATION = 'x-openregister-break-glass';
+
+	/**
 	 * The property keys whose falsy value is a real one.
 	 *
 	 * An empty value is dropped by getSchemaObject(), because an empty `title`
