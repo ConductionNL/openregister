@@ -125,3 +125,4 @@
 2026-11-25T04:08:28Z GREEN prs=10535,11055,11105,11120 main=9d807a8d7f integrator-cloud (merge rc=0; main now b48bfec939)
 2026-11-25T04:20:51Z GREEN prs=10568,11115 main=b48bfec939 integrator-cloud (merge rc=0; main now ee68d246f0)
 2026-11-25T04:32:35Z GREEN prs=11088,11125 main=ee68d246f0 integrator-cloud (merge rc=0; main now 28d6ce8f88)
+2026-11-25T07:58:18Z NORESULT prs=11059 main=28d6ce8f88 integrator-cloud (tree 45e26b3ba3 suite green, maintainability floor PASS; checker floor NO RESULT: adrvalidator unmeasured, static.developer.overheid.nl refused by this sandbox network policy (Default env allows only package managers + 3 hosts); not retried, deterministic; #11069 build-conflict with #11059)
