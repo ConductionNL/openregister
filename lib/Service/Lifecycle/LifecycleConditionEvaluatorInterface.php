@@ -62,7 +62,7 @@ interface LifecycleConditionEvaluatorInterface {
 	 * @param array<string, mixed> $spec    The matched transition's spec.
 	 * @param TransitionAttempt    $attempt The write and the transition it attempts.
 	 *
-	 * @return array{code: string, field: string, action: string, message: string}|null
+	 * @return array{code: string, field: string, action: string, message: string, unresolved?: array{condition: string, reason: string}}|null
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */

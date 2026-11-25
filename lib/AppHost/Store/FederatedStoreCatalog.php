@@ -36,6 +36,7 @@ use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreSearch;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ShareableConfigCatalogueInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -298,12 +299,14 @@ class FederatedStoreCatalog {
 	 *
 	 * @param array $ref The resolved bundle from {@see self::resolve()}, shaped
 	 *                   `{typeId: string, repo: string, source: string, bundle: array}`.
+	 * @param BundleObjectStamp|null $stamp The install target's stamp, applied after the signature check.
 	 *
 	 * @return array{success: bool, components: array<int, array<string, string>>} The install report.
 	 *
 	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-an-untrusted-publisher-is-refused
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
-	public function install(array $ref): array {
+	public function install(array $ref, ?BundleObjectStamp $stamp=null): array {
 		$source = (string)($ref['source'] ?? '');
 
 		if ($this->catalogue->isSourceAllowed(source: $source) === false) {
@@ -311,7 +314,7 @@ class FederatedStoreCatalog {
 		}
 
 		try {
-			$result = $this->installThroughType(ref: $ref, source: $source);
+			$result = $this->installThroughType(ref: $ref, source: $source, stamp: $stamp);
 		} catch (Throwable $e) {
 			return $this->failedReport(typeId: (string)$ref['typeId'], error: $e);
 		}
@@ -356,14 +359,16 @@ class FederatedStoreCatalog {
 	 *
 	 * @param array  $ref    The resolved bundle.
 	 * @param string $source The bundle's (trusted) source.
+	 * @param BundleObjectStamp|null $stamp The install target's stamp.
 	 *
 	 * @return array The type's install result.
 	 */
-	private function installThroughType(array $ref, string $source): array {
+	private function installThroughType(array $ref, string $source, ?BundleObjectStamp $stamp): array {
 		return $this->catalogue->install(
 			typeId: (string)$ref['typeId'],
 			bundle: (array)$ref['bundle'],
-			source: $source
+			source: $source,
+			stamp: $stamp
 		);
 	}//end installThroughType()
 
