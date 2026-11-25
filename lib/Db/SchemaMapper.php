@@ -780,6 +780,49 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end findBySlugInIds()
 
 	/**
+	 * Resolve a schema by a slug it answered to before a rename, scoped to a set of schema ids.
+	 *
+	 * The register-scoped counterpart of the former-slug fallback in
+	 * {@see findBySlug()}. Callers ask it only after {@see findInIds()} or
+	 * {@see findBySlugInIds()} found no schema carrying the slug now, so a
+	 * current slug always wins over a former one. The LIKE narrows the rows;
+	 * the exact match is made on the decoded list.
+	 *
+	 * @param string $slug      The slug the schema used to have.
+	 * @param int[]  $schemaIds The candidate schema ids (a register's schemas list).
+	 *
+	 * @return Schema|null The renamed schema within the id set, or null.
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md#requirement-a-former-slug-keeps-answering-and-says-where-to-go
+	 */
+	public function findByFormerSlugInIds(string $slug, array $schemaIds): ?Schema {
+		$ids = self::positiveIds(candidates: $schemaIds);
+		if ($ids === [] || trim($slug) === '') {
+			return null;
+		}
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from('openregister_schemas')
+			->where(
+				$qb->expr()->like(
+					'former_slugs',
+					$qb->createNamedParameter('%' . $this->db->escapeLikeParameter((string)json_encode($slug)) . '%', IQueryBuilder::PARAM_STR)
+				)
+			)
+			->andWhere($this->idIn(qb: $qb, ids: $ids))
+			->orderBy('id', 'ASC');
+
+		foreach ($this->fetchSchemas(qb: $qb) as $schema) {
+			if (in_array($slug, ($schema->getFormerSlugs() ?? []), true) === true) {
+				return $schema;
+			}
+		}
+
+		return null;
+	}//end findByFormerSlugInIds()
+
+	/**
 	 * The columns an identifier lookup selects.
 	 *
 	 * With a row cache only the probe columns; the stored row then comes from

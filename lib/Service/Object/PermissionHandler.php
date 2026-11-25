@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
@@ -679,6 +680,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool True when the caller is refused every action on this object.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function draftIsKeptFromCaller(PermissionAsk $ask): bool {
 		if ($ask->object === null || $ask->object->isDraft() === false) {
@@ -691,7 +693,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			subject: new DraftSubject(object: $ask->object, schema: $ask->schema),
 			caller: new DraftCaller(
 				userId: $subject,
-				isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
+				isAdmin: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $subject),
 				commandLine: $this->isCommandLine()
 			)
 		);
@@ -1017,6 +1019,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool True if the user has permission.
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function grantVerdict(PermissionCheck $check): bool {
 		// The token ceiling first: the private-scope admit, the caller verdict
@@ -1034,7 +1037,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 		}
 
 		// Admin group always has all permissions.
-		if (in_array('admin', $check->userGroups) === true) {
+		if (AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $check->userId) === true) {
 			return true;
 		}
 
@@ -1916,6 +1919,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *         The denial that decided it, or null when no deny reaches this caller.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function denialFor(DenialQuestion $question, ?string $userId = null): ?array {
 		$resolver = $this->denyResolver();
@@ -1929,7 +1933,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$userId = $this->callerId(userId: $userId);
 		$userGroups = $this->groupsOf(userId: $userId);
-		if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
+		if (AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $userId) === true) {
 			return null;
 		}
 
@@ -2464,6 +2468,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return BulkCaller The caller.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the caller's posture, passed through.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function bulkCaller(bool $rbac, bool $multitenancy): BulkCaller {
 		$user   = $this->caller->userSession->getUser();
@@ -2471,7 +2477,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$caller->organisation       = $this->getActiveOrganisationForContext();
 		$caller->checksOrganisation = $this->organisationCheckApplies(multitenancy: $multitenancy, activeOrganisation: $caller->organisation);
-		$caller->isAdmin    = ($user !== null && in_array('admin', $this->caller->groupManager->getUserGroupIds($user), true) === true);
+		$caller->isAdmin    = AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $user);
 		$caller->checksRbac = ($rbac === true && $caller->userId !== null);
 
 		return $caller;

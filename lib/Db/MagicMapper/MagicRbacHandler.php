@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
@@ -2631,9 +2632,11 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * Check if current user is admin
 	 *
 	 * @return bool True if user is in admin group
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
-		return in_array('admin', $this->getCurrentUserGroups(), true);
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $this->userSession->getUser());
 	}//end isAdmin()
 
 	/**

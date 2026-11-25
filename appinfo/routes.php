@@ -1353,6 +1353,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'objectRelations#derive',      'url' => '/api/objects/{register}/{schema}/{id}/derive',                     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#affected',    'url' => '/api/objects/{register}/{schema}/{id}/affected',                   'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        // several-legal-entities-in-one-instance (REQ-SLE-002): move an object graph to another organisation, previewed first.
+        ['name' => 'objectTransfer#preview', 'url' => '/api/objects/{register}/{schema}/{id}/transfer/preview', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectTransfer#run', 'url' => '/api/objects/{register}/{schema}/{id}/transfer', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#tree',        'url' => '/api/objects/{register}/{schema}/{id}/tree',                       'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
@@ -2324,6 +2327,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// e-Depot transfer management.
 		['name' => 'transfer#index', 'url' => '/api/transfers', 'verb' => 'GET'],
+		// Before transfer#show, so `{id}` cannot swallow the literal segment.
+		['name' => 'transfer#eligible', 'url' => '/api/transfers/eligible', 'verb' => 'GET'],
 		['name' => 'transfer#show', 'url' => '/api/transfers/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'transfer#create', 'url' => '/api/transfers', 'verb' => 'POST'],
 		// The archivist's decision. A literal trailing segment, so `{id}` — which
