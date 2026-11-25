@@ -973,3 +973,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## A non-Core file needs the default organisation: Kernel DefaultOrganisationInterface (or-fix-0)
 - Symptom: testNoComponentEdgeBeyondTheBaseline lists '<Configuration/other file> -> lib/Service/OrganisationServiceInterface.php (X -> Core)' for a call to ensureDefaultOrganisation().
 - Fix: #11210 8386d7e7 adds root Kernel\Contracts\DefaultOrganisationInterface (ensureDefaultOrganisation(): Kernel OrganisationInterface), implemented by OrganisationService and bound in CoreServiceBindings; get it from the container and narrow with instanceof Db\Organisation. Until #11210 lands, copy those 4 lines (interface file, csv row 'Kernel/Contracts/DefaultOrganisationInterface.php,,Kernel,,,,,Kernel', implements, binding).
+
+## Clean main merge leaves the components yaml without the PR's new lib file (or-fix-7, #11067)
+- Symptom: after a conflict-free main merge, ComponentDefinitionTest (file matches no component / yaml is not the generator's output) and ComponentDependencyRulesTest (X -> Remainder edges) fail for a file the PR added; its csv row is present.
+- Cause: main regenerated the yaml; the textual merge keeps main's version of the hunk and drops the PR's entry.
+- Fix: run python3 scripts/component-patterns.py on the merged tree and commit the yaml.
