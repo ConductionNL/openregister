@@ -170,7 +170,10 @@ class ObjectCollectionsController extends Controller {
 
 		return match ($outcome) {
 			ObjectMembership::NOT_JOINABLE => new JSONResponse(['message' => 'Objects of this schema do not join collections'], Http::STATUS_BAD_REQUEST),
-			ObjectMembership::FORBIDDEN => new JSONResponse(['message' => 'Changing the collections of this object needs the right to update it'], Http::STATUS_FORBIDDEN),
+			ObjectMembership::FORBIDDEN => new JSONResponse(
+				['message' => 'Changing the collections of this object needs the right to update it'],
+				Http::STATUS_FORBIDDEN
+			),
 			ObjectMembership::NO_COLLECTION => new JSONResponse(['message' => 'Collection not found'], Http::STATUS_NOT_FOUND),
 			default => new JSONResponse(['results' => $this->collections->forObject(object: $object, reader: $actor)]),
 		};

@@ -26,9 +26,7 @@ use OCA\OpenRegister\Collaboration\ObjectCollections;
 use OCA\OpenRegister\Collaboration\ObjectMembership;
 use OCA\OpenRegister\Collaboration\ObjectResourceProvider;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
-use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\PlacedAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectUpdateRightsInterface;
 use OCP\Collaboration\Resources\CollectionException;
 use OCP\Collaboration\Resources\ICollection;
@@ -50,8 +48,6 @@ use RuntimeException;
 #[UsesClass(ObjectCollections::class)]
 #[UsesClass(ObjectResourceProvider::class)]
 #[UsesClass(ObjectEntity::class)]
-#[UsesClass(AuditEntry::class)]
-#[UsesClass(PlacedAuditEntry::class)]
 class ObjectMembershipTest extends TestCase {
 
 	private const UUID = '5f0c2a6e-1b2c-4d3e-8f9a-0b1c2d3e4f5a';
@@ -82,9 +78,9 @@ class ObjectMembershipTest extends TestCase {
 	/**
 	 * The audit trail.
 	 *
-	 * @var AuditEntryWriterInterface&MockObject
+	 * @var ObjectActivityAuditInterface&MockObject
 	 */
-	private AuditEntryWriterInterface $audit;
+	private ObjectActivityAuditInterface $audit;
 
 	/**
 	 * The acting user, `bea`.
@@ -103,10 +99,9 @@ class ObjectMembershipTest extends TestCase {
 		$this->manager  = $this->createMock(IManager::class);
 		$this->provider = $this->createMock(ObjectResourceProvider::class);
 		$this->rights   = $this->createMock(ObjectUpdateRightsInterface::class);
-		$this->audit    = $this->createMock(AuditEntryWriterInterface::class);
+		$this->audit    = $this->createMock(ObjectActivityAuditInterface::class);
 		$this->actor    = $this->createMock(IUser::class);
 		$this->actor->method('getUID')->willReturn('bea');
-		$this->actor->method('getDisplayName')->willReturn('Bea Jansen');
 	}//end setUp()
 
 	/**
@@ -178,7 +173,7 @@ class ObjectMembershipTest extends TestCase {
 	}//end joinableAndRight()
 
 	/**
-	 * An updater adds the object: core adds the resource and one `collection.added` entry names the collection.
+	 * An updater adds the object: core adds the resource and one `collection.added` entry on the object names the collection.
 	 *
 	 * @return void
 	 */
@@ -191,25 +186,13 @@ class ObjectMembershipTest extends TestCase {
 		$collection->expects($this->once())->method('addResource')->with($resource);
 		$collection->expects($this->never())->method('removeResource');
 
-		$written = [];
-		$this->audit->expects($this->once())->method('writeAuditEntries')->willReturnCallback(
-			static function (array $entries) use (&$written): void {
-				$written = $entries;
-			}
+		$this->audit->expects($this->once())->method('record')->with(
+			self::UUID,
+			ObjectMembership::ACTION_ADDED,
+			['collection' => ['id' => 12, 'name' => 'Dossier Kerkstraat']]
 		);
 
 		$this->assertSame(ObjectMembership::CHANGED, $this->membership()->add(object: $this->object(), collectionId: 12, actor: $this->actor));
-
-		$this->assertCount(1, $written);
-		$placed = $written[0];
-		$this->assertInstanceOf(PlacedAuditEntry::class, $placed);
-		$this->assertSame(3, $placed->register);
-		$this->assertSame(7, $placed->schema);
-		$this->assertSame(ObjectMembership::ACTION_ADDED, $placed->entry->action);
-		$this->assertSame('bea', $placed->entry->user);
-		$this->assertSame('Bea Jansen', $placed->entry->userName);
-		$this->assertSame(self::UUID, $placed->entry->objectUuid);
-		$this->assertSame(['collection' => ['id' => 12, 'name' => 'Dossier Kerkstraat']], $placed->entry->changed);
 	}
 
 	/**
@@ -225,8 +208,10 @@ class ObjectMembershipTest extends TestCase {
 		$this->manager->method('createResource')->willReturn($resource);
 		$collection->expects($this->once())->method('removeResource')->with($resource);
 		$collection->expects($this->never())->method('addResource');
-		$this->audit->expects($this->once())->method('writeAuditEntries')->with(
-			$this->callback(static fn (array $entries): bool => count($entries) === 1 && $entries[0]->entry->action === ObjectMembership::ACTION_REMOVED)
+		$this->audit->expects($this->once())->method('record')->with(
+			self::UUID,
+			ObjectMembership::ACTION_REMOVED,
+			['collection' => ['id' => 12, 'name' => 'Dossier Kerkstraat']]
 		);
 
 		$this->assertSame(ObjectMembership::CHANGED, $this->membership()->remove(object: $this->object(), collectionId: 12, actor: $this->actor));
@@ -241,7 +226,7 @@ class ObjectMembershipTest extends TestCase {
 		$this->joinableAndRight(mayUpdate: false);
 		$this->manager->expects($this->never())->method('getCollectionForUser');
 		$this->manager->expects($this->never())->method('createResource');
-		$this->audit->expects($this->never())->method('writeAuditEntries');
+		$this->audit->expects($this->never())->method('record');
 
 		$this->assertSame(ObjectMembership::FORBIDDEN, $this->membership()->remove(object: $this->object(), collectionId: 12, actor: $this->actor));
 		$this->assertSame(ObjectMembership::FORBIDDEN, $this->membership()->add(object: $this->object(), collectionId: 12, actor: $this->actor));
@@ -256,7 +241,7 @@ class ObjectMembershipTest extends TestCase {
 		$this->provider->method('mayJoin')->willReturn(true);
 		$this->rights->method('mayUpdateObject')->willThrowException(new RuntimeException('schema gone'));
 		$this->manager->expects($this->never())->method('getCollectionForUser');
-		$this->audit->expects($this->never())->method('writeAuditEntries');
+		$this->audit->expects($this->never())->method('record');
 
 		$this->assertSame(ObjectMembership::FORBIDDEN, $this->membership()->add(object: $this->object(), collectionId: 12, actor: $this->actor));
 	}
@@ -270,7 +255,7 @@ class ObjectMembershipTest extends TestCase {
 		$this->provider->method('mayJoin')->with(7)->willReturn(false);
 		$this->rights->expects($this->never())->method('mayUpdateObject');
 		$this->manager->expects($this->never())->method('getCollectionForUser');
-		$this->audit->expects($this->never())->method('writeAuditEntries');
+		$this->audit->expects($this->never())->method('record');
 
 		$this->assertSame(ObjectMembership::NOT_JOINABLE, $this->membership()->add(object: $this->object(), collectionId: 12, actor: $this->actor));
 	}
@@ -284,7 +269,7 @@ class ObjectMembershipTest extends TestCase {
 		$this->joinableAndRight(mayUpdate: true);
 		$this->manager->method('getCollectionForUser')->willThrowException(new CollectionException('Collection not found'));
 		$this->manager->expects($this->never())->method('createResource');
-		$this->audit->expects($this->never())->method('writeAuditEntries');
+		$this->audit->expects($this->never())->method('record');
 
 		$this->assertSame(ObjectMembership::NO_COLLECTION, $this->membership()->add(object: $this->object(), collectionId: 99, actor: $this->actor));
 	}
@@ -300,7 +285,7 @@ class ObjectMembershipTest extends TestCase {
 		$nonMember = $this->collection(holdsObject: false);
 		$this->manager->method('getCollectionForUser')->willReturnOnConsecutiveCalls($member, $nonMember);
 		$this->manager->expects($this->never())->method('createResource');
-		$this->audit->expects($this->never())->method('writeAuditEntries');
+		$this->audit->expects($this->never())->method('record');
 
 		$this->assertSame(ObjectMembership::UNCHANGED, $this->membership()->add(object: $this->object(), collectionId: 12, actor: $this->actor));
 		$this->assertSame(ObjectMembership::UNCHANGED, $this->membership()->remove(object: $this->object(), collectionId: 12, actor: $this->actor));
@@ -317,7 +302,7 @@ class ObjectMembershipTest extends TestCase {
 		$collection->method('addResource')->willThrowException(new ResourceException('Already part of the collection'));
 		$this->manager->method('getCollectionForUser')->willReturn($collection);
 		$this->manager->method('createResource')->willReturn($this->createMock(IResource::class));
-		$this->audit->expects($this->never())->method('writeAuditEntries');
+		$this->audit->expects($this->never())->method('record');
 
 		$this->assertSame(ObjectMembership::UNCHANGED, $this->membership()->add(object: $this->object(), collectionId: 12, actor: $this->actor));
 	}

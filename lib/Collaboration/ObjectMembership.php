@@ -28,11 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Collaboration;
 
-use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntry;
-use OCA\OpenRegister\Kernel\Contracts\Core\AuditEntryWriterInterface;
-use OCA\OpenRegister\Kernel\Contracts\Core\PlacedAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectUpdateRightsInterface;
 use OCP\Collaboration\Resources\CollectionException;
 use OCP\Collaboration\Resources\ICollection;
@@ -40,7 +37,6 @@ use OCP\Collaboration\Resources\IManager;
 use OCP\Collaboration\Resources\ResourceException;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Uid\Uuid;
 use Throwable;
 
 /**
@@ -116,7 +112,7 @@ class ObjectMembership {
 	 * @param IManager                    $manager  Nextcloud's collaboration resources.
 	 * @param ObjectResourceProvider      $provider Says whether the object's schema joins collections.
 	 * @param ObjectUpdateRightsInterface $rights   Answers whether the actor may update the object.
-	 * @param AuditEntryWriterInterface   $audit    Writes the entry on the object's audit trail.
+	 * @param ObjectActivityAuditInterface $audit   Writes the entry on the object's audit trail, as the signed-in user.
 	 * @param LoggerInterface             $logger   Logs a check that could not run.
 	 *
 	 * @spec openspec/changes/platform-collaboration-resources/specs/platform-collaboration-resources/spec.md#requirement-membership-is-changed-by-anyone-who-may-update-the-object-and-is-readable-from-it-req-pcr-002
@@ -125,7 +121,7 @@ class ObjectMembership {
 		private readonly IManager $manager,
 		private readonly ObjectResourceProvider $provider,
 		private readonly ObjectUpdateRightsInterface $rights,
-		private readonly AuditEntryWriterInterface $audit,
+		private readonly ObjectActivityAuditInterface $audit,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -202,7 +198,7 @@ class ObjectMembership {
 			return self::UNCHANGED;
 		}
 
-		$this->record(object: $object, collection: $collection, actor: $actor, adding: $adding);
+		$this->record(object: $object, collection: $collection, adding: $adding);
 
 		return self::CHANGED;
 	}//end change()
@@ -250,31 +246,20 @@ class ObjectMembership {
 	 *
 	 * @param ObjectEntity $object     The object.
 	 * @param ICollection  $collection The collection.
-	 * @param IUser        $actor      The actor.
 	 * @param bool         $adding     True when it was added.
 	 *
 	 * @return void
 	 */
-	private function record(ObjectEntity $object, ICollection $collection, IUser $actor, bool $adding): void {
-		$register = $object->getRegister();
-		$schema   = $object->getSchema();
+	private function record(ObjectEntity $object, ICollection $collection, bool $adding): void {
+		$action = self::ACTION_REMOVED;
+		if ($adding === true) {
+			$action = self::ACTION_ADDED;
+		}
 
-		$this->audit->writeAuditEntries(
-			entries: [
-				new PlacedAuditEntry(
-					entry: new AuditEntry(
-						uuid: Uuid::v4()->toRfc4122(),
-						action: $adding === true ? self::ACTION_ADDED : self::ACTION_REMOVED,
-						user: $actor->getUID(),
-						userName: $actor->getDisplayName(),
-						changed: ['collection' => ['id' => $collection->getId(), 'name' => $collection->getName()]],
-						created: new DateTimeImmutable(),
-						objectUuid: $object->getUuid(),
-					),
-					register: is_numeric($register) === true ? (int)$register : null,
-					schema: is_numeric($schema) === true ? (int)$schema : null,
-				),
-			]
+		$this->audit->record(
+			objectUuid: (string)$object->getUuid(),
+			action: $action,
+			context: ['collection' => ['id' => $collection->getId(), 'name' => $collection->getName()]]
 		);
 	}//end record()
 }//end class
