@@ -927,6 +927,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // per-instance, so admin-gating them would make the feature unusable
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
+        // Incoming-webhook flow triggers (flow-calendar-and-webhook-triggers):
+        // public, signed with the trigger's secret; #[PublicPage] in the controller.
+        ['name' => 'flowWebhook#receive', 'url' => '/api/flows/hooks/{token}', 'verb' => 'POST', 'requirements' => ['token' => '[0-9a-f]{32}']],
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         // Try a flow against an object without effect (flow-dry-run): the `flow.update` right.
         ['name' => 'flowDryRun#dryRun', 'url' => '/api/flows/{id}/dry-run', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
@@ -1581,6 +1584,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
         // What one recipient gets for one kind, and which layer decided it: an
         // administrator's read of another person's preferences (REQ-NKF-003).
+        // Which notification rules reached nobody (a-rule-that-reaches-nobody-says-so 3.2); administrators only.
+        ['name' => 'notificationRuleReach#index', 'url' => '/api/notification-rule-reach', 'verb' => 'GET'],
         ['name' => 'notificationRecipientAnswer#show', 'url' => '/api/notification-preferences/recipient-answer', 'verb' => 'GET'],
         // Notification Templates — the shipped text per platform event, the
         // events that have none, and an administrator's edit of either.

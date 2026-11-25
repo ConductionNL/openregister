@@ -18,7 +18,7 @@
 						:menuName="t('openregister', 'Actions')">
 						<template #icon>
 							<LockOutline
-								v-if="objectStore.objectItem.locked"
+								v-if="lockInfo"
 								:size="20" />
 							<DotsHorizontal v-else :size="20" />
 						</template>
@@ -31,7 +31,7 @@
 							Edit
 						</NcActionButton>
 						<NcActionButton
-							v-if="!objectStore.objectItem.locked"
+							v-if="!lockInfo"
 							closeAfterClick
 							@click="navigationStore.setModal('lockObject')">
 							<template #icon>
@@ -40,10 +40,10 @@
 							Lock
 						</NcActionButton>
 						<NcActionButton
-							v-if="objectStore.objectItem.locked"
+							v-if="lockInfo"
 							closeAfterClick
 							@click="
-								objectStore.unlockObject(objectStore.objectItem.id)
+								unlockRecord()
 							">
 							<template #icon>
 								<LockOpenOutline :size="20" />
@@ -98,22 +98,22 @@
 				</div>
 
 				<NcNoteCard
-					v-if="objectStore.objectItem.locked"
+					v-if="lockInfo"
 					type="warning"
 					:showClose="false">
 					<template #icon>
 						<LockOutline :size="20" />
 					</template>
-					This object is locked by {{ objectStore.objectItem.locked.user }}
+					This object is locked by {{ lockInfo.user }}
 					{{
-						objectStore.objectItem.locked.process
-							? `for process "${objectStore.objectItem.locked.process}"`
+						lockInfo.process
+							? `for process "${lockInfo.process}"`
 							: ''
 					}}
 					until
 					{{
 						new Date(
-							objectStore.objectItem.locked.expiration,
+							lockInfo.expiration,
 						).toLocaleString()
 					}}
 				</NcNoteCard>
@@ -933,6 +933,21 @@ export default {
 		},
 
 		/**
+		 * The lock on the open record, or null when it is not locked.
+		 *
+		 * The object API answers the lock in the record's `@self` block; the
+		 * bare `locked` key is read too for an item handed in flattened.
+		 *
+		 * @return {object|null} `{ user, process, expiration, ... }`, or null
+		 * @spec openspec/changes/capability-rows-closing-round/tasks.md
+		 */
+		lockInfo() {
+			const item = objectStore?.objectItem
+			const lock = item?.['@self']?.locked ?? item?.locked ?? null
+			return lock !== null && typeof lock === 'object' && !Array.isArray(lock) ? lock : null
+		},
+
+		/**
 		 * Build the (register, schema, id) triple used by the entity-relations
 		 * tabs (Emails, Events, Contacts, Deck, Relations). Returns null when
 		 * any of the three is missing, so the tabs only render once a saved
@@ -1106,6 +1121,23 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Release the lock on the open record, and show it released.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/capability-rows-closing-round/tasks.md
+		 */
+		async unlockRecord() {
+			const ctx = this.relationContext
+			if (ctx === null) {
+				return
+			}
+
+			await axios.post(generateUrl(`/apps/openregister/api/objects/${encodeURIComponent(ctx.register)}/${encodeURIComponent(ctx.schema)}/${encodeURIComponent(ctx.id)}/unlock`))
+			const item = objectStore.objectItem
+			objectStore.setObjectItem({ ...item, locked: null, '@self': { ...(item['@self'] || {}), locked: null } })
+		},
+
 		/**
 		 * Read what the Translate action needs, for administrators only: the
 		 * register's languages and the schema's translatable properties. A

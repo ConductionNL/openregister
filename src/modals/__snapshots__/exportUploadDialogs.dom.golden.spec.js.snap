@@ -81,7 +81,7 @@ exports[`import, export, upload and download dialogs (DOM golden) exportConfigur
 `;
 
 exports[`import, export, upload and download dialogs (DOM golden) exportRegister renders a reported error 1`] = `
-"<x-ncdialog name="export-register-dialog" title="t:Export Objects" size="small" noclose="">
+"<x-ncdialog name="t:Export Objects" size="small" noclose="">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>
@@ -113,7 +113,7 @@ exports[`import, export, upload and download dialogs (DOM golden) exportRegister
 `;
 
 exports[`import, export, upload and download dialogs (DOM golden) exportRegister renders while open 1`] = `
-"<x-ncdialog name="export-register-dialog" title="t:Export Objects" size="small" noclose="">
+"<x-ncdialog name="t:Export Objects" size="small" noclose="">
   <slot-actions>
     <x-ncbutton>
       <slot-default> t:Cancel</slot-default>

@@ -133,7 +133,9 @@ describe('ExportRegister mounted', () => {
 
 	it('names the schema and register and offers Excel, CSV, TSV, JSON and XML, Excel first', () => {
 		const wrapper = open()
-		expect(wrapper.findComponent({ name: 'NcDialog' }).attributes('title')).toBe('t:Export Objects')
+		// NcDialog's heading is its `name`: a `title` is not shown, and an id
+		// passed as the name is what a user would read as the heading.
+		expect(wrapper.findComponent({ name: 'NcDialog' }).attributes('name')).toBe('t:Export Objects')
 		expect(wrapper.get('.formContainer p').text()).toBe(
 			't:Export "{schema}" objects from "{register}"{"schema":"Person","register":"People"}',
 		)

@@ -63,7 +63,11 @@
 import axios from '@nextcloud/axios'
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
+// One module per component, not the @nextcloud/vue index: this card is part of
+// the script Nextcloud loads on every page, and the index carries the whole
+// library (emoji picker, date picker, dialogs, every @mdi/js icon).
+import NcButton from '@nextcloud/vue/components/NcButton'
+import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import { externalRegisterFields, externalRegisterMessage, externalRegisterUrl } from './externalRegisterState.js'
 
 export default {

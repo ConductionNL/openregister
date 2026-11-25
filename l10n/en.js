@@ -4181,7 +4181,12 @@ OC.L10N.register(
     "The result has no list to show as a table." : "The result has no list to show as a table.",
     "The result was cut off at 1,000 rows." : "The result was cut off at 1,000 rows.",
     "The variables are not valid JSON." : "The variables are not valid JSON.",
-    "Variables (JSON)" : "Variables (JSON)"
+    "Variables (JSON)" : "Variables (JSON)",
+    "Could not load which notification rules reached nobody." : "Could not load which notification rules reached nobody.",
+    "Every notification rule reached at least one recipient." : "Every notification rule reached at least one recipient.",
+    "Notification rules that reached nobody" : "Notification rules that reached nobody",
+    "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients.",
+    "Times reached nobody: {count}. Last on {date}." : "Times reached nobody: {count}. Last on {date}."
 },
 "nplurals=2; plural=(n != 1);"
 );
