@@ -1584,6 +1584,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
         // What one recipient gets for one kind, and which layer decided it: an
         // administrator's read of another person's preferences (REQ-NKF-003).
+        // Which notification rules reached nobody (a-rule-that-reaches-nobody-says-so 3.2); administrators only.
+        ['name' => 'notificationRuleReach#index', 'url' => '/api/notification-rule-reach', 'verb' => 'GET'],
         ['name' => 'notificationRecipientAnswer#show', 'url' => '/api/notification-preferences/recipient-answer', 'verb' => 'GET'],
         // Notification Templates — the shipped text per platform event, the
         // events that have none, and an administrator's edit of either.
