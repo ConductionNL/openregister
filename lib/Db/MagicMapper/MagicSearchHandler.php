@@ -2949,7 +2949,8 @@ class MagicSearchHandler {
 
 		return $this->buildArrayPropertyConditionSql(
 			column: new QuotedSqlColumn(name: $field->quotedCol, connection: $field->connection),
-			value: $value
+			value: $value,
+			isPostgres: $field->isPostgres
 		);
 	}//end rawArrayPropertyConditionSql()
 
@@ -3113,15 +3114,16 @@ class MagicSearchHandler {
 	/**
 	 * Build SQL condition for array-type (JSONB) property filtering
 	 *
-	 * Uses PostgreSQL JSONB containment operator (@>) to check if a JSON array
-	 * column contains the specified value(s).
+	 * Uses PostgreSQL's JSONB containment operator (@>), or JSON_CONTAINS on MySQL
+	 * and MariaDB, to check if a JSON array column contains the specified value(s).
 	 *
 	 * @param QuotedSqlColumn $column The JSONB column and the connection that quotes values.
-	 * @param mixed           $value  The filter value (single value or array of values).
+	 * @param mixed           $value      The filter value (single value or array of values).
+	 * @param bool            $isPostgres Whether the database is PostgreSQL; otherwise MySQL or MariaDB.
 	 *
 	 * @return string SQL condition for the array property filter
 	 */
-	private function buildArrayPropertyConditionSql(QuotedSqlColumn $column, mixed $value): string {
+	private function buildArrayPropertyConditionSql(QuotedSqlColumn $column, mixed $value, bool $isPostgres): string {
 		$columnName = $column->name;
 		$connection = $column->connection;
 		// Normalize value to array.
@@ -3134,14 +3136,14 @@ class MagicSearchHandler {
 			// Single value (or empty): check if JSON array contains this value.
 			$singleValue = $values[0] ?? '';
 			$jsonValue = $connection->quote(json_encode([$singleValue]));
-			return "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
+			return JsonArrayContainment::condition(column: $columnName, json: $jsonValue, isPostgres: $isPostgres);
 		}
 
 		// Multiple values: check if JSON array contains ANY of the values (OR logic).
 		$orParts = [];
 		foreach ($values as $v) {
 			$jsonValue = $connection->quote(json_encode([$v]));
-			$orParts[] = "COALESCE({$columnName}, '[]')::jsonb @> {$jsonValue}::jsonb";
+			$orParts[] = JsonArrayContainment::condition(column: $columnName, json: $jsonValue, isPostgres: $isPostgres);
 		}
 
 		return '(' . implode(' OR ', $orParts) . ')';
@@ -4674,23 +4676,36 @@ class MagicSearchHandler {
 
 		if (count($values) === 1) {
 			// Single value: check if JSON array contains this value.
-			// Use COALESCE to handle NULL values and avoid type cast issues with QueryBuilder.
-			$jsonValue = json_encode([$values[0]]);
-			return "COALESCE(t.{$columnName}, '[]')::jsonb @> " . $qb->createNamedParameter($jsonValue);
+			return $this->jsonArrayContains(field: $field, param: (string) $qb->createNamedParameter(json_encode([$values[0]])));
 		}
 
 		// Multiple values: check if JSON array contains ANY of the values (OR logic).
 		$orConditions = $qb->expr()->orX();
 		foreach ($values as $v) {
-			$jsonValue = json_encode([$v]);
-			// Use raw SQL with COALESCE to handle NULL values properly.
-			$orConditions->add(
-				"COALESCE(t.{$columnName}, '[]')::jsonb @> " . $qb->createNamedParameter($jsonValue)
-			);
+			$orConditions->add($this->jsonArrayContains(field: $field, param: (string) $qb->createNamedParameter(json_encode([$v]))));
 		}
 
 		return $orConditions;
 	}//end jsonArrayCondition()
+
+	/**
+	 * Whether a JSON array column holds the one-element list a parameter carries:
+	 * PostgreSQL's `@>` (COALESCE handles NULL), MySQL and MariaDB's `JSON_CONTAINS`.
+	 *
+	 * @param ObjectFieldFilter $field The field: column and platform.
+	 * @param string            $param The named parameter holding the JSON list.
+	 *
+	 * @return string The condition
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md
+	 */
+	private function jsonArrayContains(ObjectFieldFilter $field, string $param): string {
+		if ($field->isPostgres === true) {
+			return "COALESCE(t.{$field->columnName}, '[]')::jsonb @> " . $param;
+		}
+
+		return JsonArrayContainment::condition(column: "t.{$field->columnName}", json: $param, isPostgres: false);
+	}//end jsonArrayContains()
 
 	/**
 	 * Filter on fields inside object properties (`dunning.currentStage=2`), on the QueryBuilder path.
