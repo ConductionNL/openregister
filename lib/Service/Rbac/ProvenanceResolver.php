@@ -18,6 +18,8 @@
  *   rule     the entry as written, so an administrator can find it
  *   principal which of the caller's principals the entry named
  *   role     the role name, when a role is what carried the grant
+ *   slot     the party role on the record, when a grant to a slot carried it
+ *            (source `slot`, with `declaredAt` naming the level it was written on)
  *   deny     the deny that removed the verb, when one did
  *
  * THE ABSENCES MATTER MOST. A verb a broader rule would have granted and a deny
@@ -93,6 +95,13 @@ class ProvenanceResolver {
 	public const SOURCE_ROLE = 'role';
 
 	/**
+	 * The grant names a party role on the record (a slot) the caller occupies.
+	 *
+	 * @var string
+	 */
+	public const SOURCE_SLOT = 'slot';
+
+	/**
 	 * A deny removed the verb.
 	 *
 	 * @var string
@@ -164,7 +173,7 @@ class ProvenanceResolver {
 	public function forActions(array $actions, ProvenanceOptions $options = new ProvenanceOptions()): array {
 		$provenance = [];
 		foreach ($actions as $action) {
-			$grant = $this->grantFor(action: $action, blocks: $options->blocks);
+			$grant = $this->grantFor(action: $action, blocks: $options->blocks, heldSlots: $options->heldSlots);
 			if ($options->enforced === true) {
 				$provenance[$action] = $this->withDenial(grant: $grant, denial: ($options->denials[$action] ?? null));
 				continue;
@@ -276,12 +285,17 @@ class ProvenanceResolver {
 	/**
 	 * The first level whose rules name this caller for this action.
 	 *
-	 * @param string               $action The verb.
-	 * @param array<string, mixed> $blocks Keys: object, schema, register, roleDefinitions.
+	 * A slot is read on the object's own block only, where a grant to a slot
+	 * is honoured, and after the principals and roles of that level, the same
+	 * order the verdict takes.
+	 *
+	 * @param string               $action    The verb.
+	 * @param array<string, mixed> $blocks    Keys: object, schema, register, roleDefinitions.
+	 * @param array<int, string>   $heldSlots The party roles the caller occupies on the object.
 	 *
 	 * @return array<string, mixed> The grant half of the record.
 	 */
-	private function grantFor(string $action, array $blocks): array {
+	private function grantFor(string $action, array $blocks, array $heldSlots = []): array {
 		$configured = $this->configuredLevels(
 			levels: $this->levelsOf(blocks: $blocks)
 		);
@@ -296,6 +310,11 @@ class ProvenanceResolver {
 			$viaRole = $this->roleGrantIn(block: $block, carrying: $carrying);
 			if ($viaRole !== null) {
 				return ['action' => $action, 'granted' => true, 'source' => self::SOURCE_ROLE] + $viaRole + ['declaredAt' => $source];
+			}
+
+			$viaSlot = $this->slotGrantIn(level: $source, entries: ($block[$action] ?? null), heldSlots: $heldSlots);
+			if ($viaSlot !== null) {
+				return ['action' => $action, 'granted' => true, 'source' => self::SOURCE_SLOT] + $viaSlot + ['role' => null, 'declaredAt' => $source];
 			}
 		}
 
@@ -421,6 +440,36 @@ class ProvenanceResolver {
 
 		return null;
 	}//end roleGrantIn()
+
+	/**
+	 * A grant to a slot on the object that the caller occupies.
+	 *
+	 * The slot is what an administrator edits, so the slot is what the answer
+	 * names: reporting the person would be true and useless, because nobody
+	 * granted that person the verb, the role on the record did.
+	 *
+	 * @param string             $level     The cascade level the entries were read at.
+	 * @param mixed              $entries   That level's rule list for the action.
+	 * @param array<int, string> $heldSlots The party roles the caller occupies on the object.
+	 *
+	 * @return array{rule: array, principal: string, slot: string}|null The grant, or null.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md#requirement-a-grant-may-name-a-role-slot-on-the-record-rather-than-a-principal-req-gsr-001
+	 */
+	private function slotGrantIn(string $level, mixed $entries, array $heldSlots): ?array {
+		if ($level !== self::SOURCE_OBJECT || $heldSlots === []) {
+			return null;
+		}
+
+		foreach (PartyRoleSlotResolver::slotEntriesOf(entries: $entries) as $entry) {
+			$slot = (string)PartyRoleSlotResolver::slotOf(entry: $entry);
+			if (in_array(needle: $slot, haystack: $heldSlots, strict: true) === true) {
+				return ['rule' => $entry, 'principal' => PartyRoleSlotResolver::ENTRY_KEY . ':' . $slot, 'slot' => $slot];
+			}
+		}
+
+		return null;
+	}//end slotGrantIn()
 
 	/**
 	 * Whether a role assignment's key names a role that carries the action.

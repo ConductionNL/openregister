@@ -126,7 +126,10 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 	}//end testAnIncompleteArgumentDoesNothing()
 
 	/**
-	 * Every open timer is offered, superseded with the calendar reason, and the version is marked.
+	 * Every open timer is offered, superseded with the calendar reason naming
+	 * the version, and the version is marked.
+	 *
+	 * @spec openspec/changes/calendar-change-recomputes-timers/specs/flow-business-timers/spec.md#requirement-a-calendar-change-re-projects-the-timers-that-depend-on-it
 	 *
 	 * @return void
 	 */
@@ -140,14 +143,14 @@ final class RecomputeTimersForCalendarJobTest extends TestCase {
 		);
 		$this->service->expects($this->once())->method('supersede')->with(
 			new TimerAnchorMove(uuid: 't-armed', anchorEventAt: $armed->getAnchorAt()),
-			new TimerChange(reason: 'calendar-changed', actor: 'calendar-recompute')
+			new TimerChange(reason: 'calendar-changed: nl version 2.0.0', actor: 'calendar-recompute')
 		);
 		$this->recompute->expects($this->once())->method('recompute')->willReturnCallback(
 			function (CalendarBatch $batch): array {
 				$this->assertSame('nl', $batch->slug);
 				$this->assertSame('2.0.0', $batch->version);
 				foreach ($batch->timers as $timer) {
-					($batch->supersede)($timer);
+					($batch->supersede)($timer, $batch->reason());
 				}
 
 				return ['examined' => 1, 'moved' => 1, 'unchanged' => 0, 'unresolvable' => 0, 'deferred' => 0, 'skipped' => false];

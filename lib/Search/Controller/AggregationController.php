@@ -582,6 +582,8 @@ class AggregationController extends Controller {
 	 *  - field        (required)
 	 *  - interval     (optional — MINUTE|HOUR|DAY|WEEK|MONTH|QUARTER|YEAR)
 	 *  - from, to     (required when interval set; ISO-8601)
+	 *  - dateField    (optional, without interval: a date property; counts
+	 *                  only objects whose dateField lies in [from, to))
 	 *  - metric       (optional, default `count`)
 	 *  - metricField  (required when metric != count)
 	 *  - filter[...]  (optional, reuses the existing filter vocabulary)
@@ -642,9 +644,11 @@ class AggregationController extends Controller {
 	 *
 	 * @param AggregationRun $run The register and schema references, with the resolved schema.
 	 *
-	 * @return array<string, mixed> field, interval, from, to, metric, metricField, filter and cumulative.
+	 * @return array<string, mixed> field, interval, from, to, dateField, metric, metricField, filter and cumulative.
 	 *
 	 * @throws RuntimeException When the schema cannot be resolved for the filter.
+	 *
+	 * @spec openspec/changes/aggregations-a-shipped-report-may-rely-on/specs/aggregation-api/spec.md#requirement-a-shipped-report-shall-be-able-to-rely-on-a-stable-count-by-aggregation
 	 */
 	private function timeseriesInput(AggregationRun $run): array {
 		// Pull the request shape from the active IRequest. The filter
@@ -655,6 +659,7 @@ class AggregationController extends Controller {
 			'interval' => $this->request->getParam('interval'),
 			'from' => $this->request->getParam('from'),
 			'to' => $this->request->getParam('to'),
+			'dateField' => $this->request->getParam('dateField'),
 			'metric' => $this->request->getParam('metric', 'count'),
 			'metricField' => $this->request->getParam('metricField'),
 			'filter' => $this->resolveFilter(run: $run, action: 'timeseries'),
