@@ -173,6 +173,13 @@ class StoreManifest {
 	public readonly string $localRegister;
 
 	/**
+	 * Where inside the local register an install can go (`installTarget`).
+	 *
+	 * @var StoreInstallTarget
+	 */
+	public readonly StoreInstallTarget $installTarget;
+
+	/**
 	 * Schema slugs an install may write.
 	 *
 	 * @var array<int, string>
@@ -272,6 +279,7 @@ class StoreManifest {
 		$this->schema        = $content->target->schema;
 		$this->register      = $content->target->register;
 		$this->localRegister = $content->target->localRegister;
+		$this->installTarget = $content->target->installTarget;
 		$this->installable   = $content->catalogue->installable;
 		$this->kinds         = $content->catalogue->kinds;
 		$this->cardFields    = $content->catalogue->cardFields;
@@ -380,9 +388,30 @@ class StoreManifest {
 			// land in another app's register. Defaults to the app id, which is
 			// the fleet's register-slug convention, and an app whose register
 			// slug differs from its app id says so here.
-			localRegister: (string)($block['localRegister'] ?? $appId)
+			localRegister: (string)($block['localRegister'] ?? $appId),
+			installTarget: self::installTargetOf(block: ($block['installTarget'] ?? null))
 		);
 	}//end targetOf()
+
+	/**
+	 * Where inside the local register an install can go; anything malformed declares none.
+	 *
+	 * @param mixed $block The manifest's `store.installTarget` value.
+	 *
+	 * @return StoreInstallTarget
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	private static function installTargetOf(mixed $block): StoreInstallTarget {
+		$property = '';
+		$schemas  = [];
+		if (is_array($block) === true && is_string($block['property'] ?? null) === true && is_array($block['schemas'] ?? null) === true) {
+			$property = $block['property'];
+			$schemas  = self::stringList(value: $block['schemas']);
+		}
+
+		return new StoreInstallTarget(property: $property, schemas: $schemas);
+	}//end installTargetOf()
 
 	/**
 	 * What the store offers and how its cards read.

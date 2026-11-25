@@ -113,6 +113,12 @@ class ReferencedCalculationRefresherTest extends TestCase {
 				return self::caseTypeSchema();
 			}
 		);
+		$schemas->method('findMultipleOptimized')->willReturnCallback(
+			callback: static fn (array $ids): array => array_map(
+				static fn (int $id): Schema => ($id === 2 ? self::caseSchema() : self::caseTypeSchema()),
+				array_combine($ids, $ids)
+			)
+		);
 
 		$case = new ObjectEntity();
 		$case->setUuid('case-1');

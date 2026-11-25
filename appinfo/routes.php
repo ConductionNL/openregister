@@ -142,10 +142,14 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // two-segment `/api/objects/{register}/{schema}` create route first.
         // platform-collaboration-resources: the Nextcloud collections an object belongs to.
         ['name' => 'objectCollections#index', 'url' => '/api/objects/{register}/{schema}/{id}/collections', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectCollections#create', 'url' => '/api/objects/{register}/{schema}/{id}/collections', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectCollections#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/collections/{collectionId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'collectionId' => '\\d+']],
         ['name' => 'objectOwnership#show',          'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'GET',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#claim',         'url' => '/api/objects/{register}/{schema}/{id}/ownership/claim', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#assign',        'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#setOwnerGroup', 'url' => '/api/objects/{register}/{schema}/{id}/ownership/group', 'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // grants-that-follow-a-slot-a-relation-or-a-reason REQ-GSR-004: emergency access, taken with a reason.
+        ['name' => 'breakGlass#take',               'url' => '/api/objects/{register}/{schema}/{id}/break-glass',     'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#reassign',      'url' => '/api/ownership/reassign',                               'verb' => 'POST'],
 
         // A draft's owner makes it definitive (decision 216). An explicit action:
@@ -410,6 +414,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'fileExtraction#cleanup', 'url' => '/api/files/cleanup', 'verb' => 'POST'],
         // near-duplicate-documents-by-text (REQ-NDT-002): before /api/files/{id}, which would take the literal.
         ['name' => 'duplicate#nearDuplicates', 'url' => '/api/files/near-duplicates', 'verb' => 'GET'],
+        // The attach picker: where the caller may save a file or a chat, and which objects match.
+        // Before /api/files/{id}, which would take the literal.
+        ['name' => 'attachTargets#index', 'url' => '/api/files/attach-targets', 'verb' => 'GET'],
         ['name' => 'fileExtraction#show', 'url' => '/api/files/{id}', 'verb' => 'GET'],
         ['name' => 'fileExtraction#extract', 'url' => '/api/files/{id}/extract', 'verb' => 'POST'],
 
@@ -1260,6 +1267,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // FileSidebar — list OR objects connected to a Files entry + show extraction state.
         ['name' => 'fileSidebar#getObjectsForFile',    'url' => '/api/files/{fileId}/objects',           'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
         ['name' => 'fileSidebar#getExtractionStatus',  'url' => '/api/files/{fileId}/extraction-status', 'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
+        ['name' => 'fileSidebar#getThread',            'url' => '/api/files/{fileId}/thread',            'verb' => 'GET',  'requirements' => ['fileId' => '[0-9]+']],
 
         // Action registry CRUD + utilities.
 
@@ -1281,6 +1289,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // A form open to visitors without an account (`access: anonymous`), on a page that needs no account.
         ['name' => 'publicFormPage#show', 'url' => '/forms/{formId}', 'verb' => 'GET'],
         ['name' => 'objectExport#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // One record as a PDF (export-pdf-house-style task 2.4): its readable fields, the export right checked first.
+        ['name' => 'recordPdf#show', 'url' => '/api/objects/{register}/{schema}/{id}/pdf', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // The reporting aggregation (rapportage-bi-export): literal, so before objects#show.
         ['name' => 'aggregation#report', 'url' => '/api/objects/{register}/{schema}/aggregate', 'verb' => 'GET'],
         // Chart labels and series over the same report (rapportage-bi-export): literal, so before objects#show.
@@ -1469,6 +1479,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
         ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
         ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        ['name' => 'operationsQuery#run', 'url' => '/api/operations/query', 'verb' => 'POST'],
+        ['name' => 'operationsQuery#export', 'url' => '/api/operations/query/export', 'verb' => 'POST'],
         // Dependency breakers (operate-load-shedding D-7): administrator-only.
         ['name' => 'operationsDependencies#index', 'url' => '/api/operations/dependencies', 'verb' => 'GET'],
         ['name' => 'operationsDependencies#reset', 'url' => '/api/operations/dependencies/{key}/reset', 'verb' => 'POST', 'requirements' => ['key' => '[^/]+']],
@@ -1596,6 +1608,12 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'deleted#topDeleters', 'url' => '/api/deleted/top-deleters', 'verb' => 'GET'],
         ['name' => 'deleted#restore', 'url' => '/api/deleted/{id}/restore', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'deleted#restoreMultiple', 'url' => '/api/deleted/restore', 'verb' => 'POST'],
+        [
+            'name' => 'deleted#restorePreview',
+            'url' => '/api/deleted/{id}/restore-preview',
+            'verb' => 'GET',
+            'requirements' => ['id' => '[^/]+'],
+        ],
         [
             'name' => 'deleted#destructionPreview',
             'url' => '/api/deleted/{id}/destruction-preview',
@@ -1870,6 +1888,9 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'registers#schemas', 'url' => '/api/registers/{id}/schemas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#model', 'url' => '/api/registers/{id}/model', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'registers#stats', 'url' => '/api/registers/{id}/stats', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'oas#conformanceAll', 'url' => '/api/registers/oas/conformance', 'verb' => 'GET'],
+        ['name' => 'oas#conformance', 'url' => '/api/registers/{id}/oas/conformance', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'oas#probe', 'url' => '/api/registers/{id}/oas/conformance/probe', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generate', 'url' => '/api/registers/{id}/oas', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'oas#generateAll', 'url' => '/api/registers/oas', 'verb' => 'GET'],
 
@@ -2104,6 +2125,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'ui#reports', 'url' => '/reports', 'verb' => 'GET'],
 		['name' => 'ui#reportView', 'url' => '/reports/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		// Rapportage on-demand render endpoints (Phase 2).
+		// rapportage-bi-export: render a report template over a period. Literal, so before reports/{id}/render.
+		['name' => 'reportTemplate#generate', 'url' => '/api/reports/generate', 'verb' => 'POST'],
 		['name' => 'reports#render',  'url' => '/api/reports/{id}/render',  'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'reports#preview', 'url' => '/api/reports/{id}/preview', 'verb' => 'GET',  'requirements' => ['id' => '[^/]+']],
 		['name' => 'ui#templates', 'url' => '/templates', 'verb' => 'GET'],

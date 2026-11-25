@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\McpCatalogueInterface;
 use OCA\OpenRegister\Service\Authorization\GrantableRightsIndexInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * The collaborators of McpController, wired by DI autowiring.
@@ -36,10 +37,12 @@ final class McpControllerServices {
 	 *
 	 * @param McpCatalogueInterface         $mcpDiscoveryService  MCP discovery service
 	 * @param GrantableRightsIndexInterface $grantableRightsIndex The cached menu of rights that may be offered
+	 * @param LoggerInterface|null          $logger               Logs the detail of a failed request (optional for older wiring)
 	 */
 	public function __construct(
 		public readonly McpCatalogueInterface $mcpDiscoveryService,
 		public readonly GrantableRightsIndexInterface $grantableRightsIndex,
+		public readonly ?LoggerInterface $logger = null,
 	) {
 	}//end __construct()
 }//end class

@@ -1,0 +1,280 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`buildMarkers golden auto-detect 1`] = `
+[
+  {
+    "id": 1,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "T",
+  },
+  {
+    "id": 0,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": "self-1",
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "only name",
+  },
+  {
+    "id": "self-2",
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": null,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": null,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": 7,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": 9,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "12",
+  },
+  {
+    "id": false,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "false",
+  },
+  {
+    "id": null,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": 4,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "4",
+  },
+]
+`;
+
+exports[`buildMarkers golden empty 1`] = `[]`;
+
+exports[`buildMarkers golden explicit missing property 1`] = `[]`;
+
+exports[`buildMarkers golden explicit property 1`] = `
+[
+  {
+    "id": 1,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "T",
+  },
+  {
+    "id": 0,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": "self-1",
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "only name",
+  },
+  {
+    "id": "self-2",
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": null,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": null,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": 7,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": 9,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "12",
+  },
+  {
+    "id": false,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "false",
+  },
+  {
+    "id": null,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+]
+`;
+
+exports[`buildMarkers golden not a list 1`] = `[]`;
+
+exports[`buildMarkers golden null 1`] = `[]`;
+
+exports[`buildMarkers golden undefined property 1`] = `
+[
+  {
+    "id": 1,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "T",
+  },
+  {
+    "id": 0,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": "self-1",
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "only name",
+  },
+  {
+    "id": "self-2",
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": null,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": null,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": 7,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": 9,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "12",
+  },
+  {
+    "id": false,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "false",
+  },
+  {
+    "id": null,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "",
+  },
+  {
+    "id": 4,
+    "lat": 52,
+    "lon": 5,
+    "properties": undefined,
+    "propertiesIsRow": true,
+    "title": "4",
+  },
+]
+`;

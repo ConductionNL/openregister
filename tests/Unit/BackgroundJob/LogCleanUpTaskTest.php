@@ -121,7 +121,7 @@ class LogCleanUpTaskTest extends TestCase {
 	}
 
 	public function testRunSweepsBothTrailsAndLogsEachOutcome(): void {
-		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(true);
+		$this->auditTrailMapper->expects($this->once())->method('purgeExpiredLogs')->willReturn(3);
 
 		// Search trail rows are inserted without an expiry: stamp first, sweep second.
 		$this->searchTrailMapper->expects($this->once())
@@ -136,7 +136,7 @@ class LogCleanUpTaskTest extends TestCase {
 		$this->assertCount(2, $info, 'Each sweep logs its own outcome.');
 		// Since or#2265 the audit sweep TOMBSTONES rather than deletes: the
 		// payload is destroyed but the row and its hash links survive.
-		$this->assertStringContainsString('Tombstoned expired audit trail rows', $info[0]);
+		$this->assertStringContainsString('Tombstoned 3 expired audit trail rows', $info[0]);
 		$this->assertStringContainsString('Deleted search trail rows past the configured retention', $info[1]);
 		$this->assertSame([], $this->messagesAt('error'));
 		$this->assertSame([], $this->messagesAt('debug'));
@@ -147,7 +147,7 @@ class LogCleanUpTaskTest extends TestCase {
 	}
 
 	public function testRunNoExpiredLogs(): void {
-		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(false);
+		$this->auditTrailMapper->expects($this->once())->method('purgeExpiredLogs')->willReturn(0);
 		$this->searchTrailMapper->method('setExpiryDate')->willReturn(0);
 		$this->searchTrailMapper->expects($this->once())->method('clearLogs')->willReturn(false);
 
@@ -163,7 +163,7 @@ class LogCleanUpTaskTest extends TestCase {
 	public function testAFailingAuditSweepDoesNotSkipTheSearchTrailSweep(): void {
 		$exception = new \Exception('Database connection failed');
 		$this->auditTrailMapper->expects($this->once())
-			->method('clearLogs')
+			->method('purgeExpiredLogs')
 			->willThrowException($exception);
 
 		$this->searchTrailMapper->expects($this->once())->method('setExpiryDate')->willReturn(0);
@@ -183,7 +183,7 @@ class LogCleanUpTaskTest extends TestCase {
 	}
 
 	public function testAFailingSearchTrailSweepLeavesTheAuditOutcomeIntact(): void {
-		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(true);
+		$this->auditTrailMapper->expects($this->once())->method('purgeExpiredLogs')->willReturn(3);
 		$this->searchTrailMapper->expects($this->once())
 			->method('setExpiryDate')
 			->willThrowException(new \RuntimeException('Timeout'));
@@ -191,7 +191,7 @@ class LogCleanUpTaskTest extends TestCase {
 
 		$this->runTask(null);
 
-		$this->assertStringContainsString('Tombstoned expired audit trail rows', $this->messagesAt('info')[0]);
+		$this->assertStringContainsString('Tombstoned 3 expired audit trail rows', $this->messagesAt('info')[0]);
 		$errors = $this->messagesAt('error');
 		$this->assertCount(1, $errors);
 		$this->assertStringContainsString('Failed to clear expired search trail logs: Timeout', $errors[0]);
@@ -228,7 +228,7 @@ class LogCleanUpTaskTest extends TestCase {
 
 		$this->searchTrailMapper->expects($this->never())->method('setExpiryDate');
 		$this->searchTrailMapper->expects($this->never())->method('clearLogs');
-		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(false);
+		$this->auditTrailMapper->expects($this->once())->method('purgeExpiredLogs')->willReturn(0);
 
 		$method = (new \ReflectionClass($task))->getMethod('run');
 		$method->setAccessible(true);
@@ -247,7 +247,7 @@ class LogCleanUpTaskTest extends TestCase {
 			$this->logger
 		);
 
-		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(true);
+		$this->auditTrailMapper->expects($this->once())->method('purgeExpiredLogs')->willReturn(3);
 		$this->searchTrailMapper->expects($this->never())->method('setExpiryDate');
 
 		$method = (new \ReflectionClass($task))->getMethod('run');
@@ -300,7 +300,7 @@ class LogCleanUpTaskTest extends TestCase {
 		$metrics = $this->createMock(MetricsService::class);
 		$metrics->method('cleanOldMetrics')->willThrowException(new \RuntimeException('table gone'));
 		$this->withMetrics($metrics);
-		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(false);
+		$this->auditTrailMapper->expects($this->once())->method('purgeExpiredLogs')->willReturn(0);
 		$this->searchTrailMapper->expects($this->once())->method('setExpiryDate')->willReturn(0);
 
 		$this->runTask();
@@ -313,7 +313,7 @@ class LogCleanUpTaskTest extends TestCase {
 	}
 
 	public function testRunWithArrayArgument(): void {
-		$this->auditTrailMapper->expects($this->once())->method('clearLogs')->willReturn(false);
+		$this->auditTrailMapper->expects($this->once())->method('purgeExpiredLogs')->willReturn(0);
 		$this->searchTrailMapper->method('clearLogs')->willReturn(false);
 
 		// Should not throw regardless of argument value

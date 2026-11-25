@@ -128,7 +128,7 @@ describe('EntitiesTab golden', () => {
 		expect(wrapper.html()).toMatchSnapshot()
 	})
 
-	it('renders grouped entities and reloads when the message changes', async () => {
+	it('renders the found values and reloads when the message changes', async () => {
 		axios.get.mockResolvedValue({
 			data: {
 				data: {
@@ -154,7 +154,7 @@ describe('EntitiesTab golden', () => {
 })
 
 describe('ObjectsTab golden', () => {
-	it('renders nothing and counts zero without an account', async () => {
+	it('says it is not connected yet and counts zero without an account', async () => {
 		const wrapper = mount(ObjectsTab, { props: { messageId: 7 } })
 		await flushPromises()
 		expect(axios.get).not.toHaveBeenCalled()
@@ -189,6 +189,8 @@ describe('ObjectsTab golden', () => {
 					{
 						uuid: 'u-2',
 						name: 'Lead 2',
+						identifier: 'L-2',
+						description: 'Met at the trade fair',
 						schema: 'Leads',
 						url: '/apps/pipelinq/leads/u-2',
 					},
@@ -204,11 +206,17 @@ describe('ObjectsTab golden', () => {
 
 		await wrapper.setProps({ messageId: 8 })
 		await flushPromises()
-		expect(axios.get).toHaveBeenCalledTimes(2)
-		expect(axios.get).toHaveBeenLastCalledWith(
+		const lookups = axios.get.mock.calls.filter(([url]) => url.includes('/api/linked/mail/'))
+		expect(lookups.map(([url]) => url)).toEqual([
+			'/index.php/apps/openregister/api/linked/mail/1/7',
 			'/index.php/apps/openregister/api/linked/mail/1/8',
-			{ timeout: 10000 },
-		)
+		])
+		// Each item with a register and schema is also read as an object, once per load.
+		const reads = axios.get.mock.calls.filter(([url]) => url.includes('/api/objects/'))
+		expect(reads.map(([url]) => url)).toEqual([
+			'/index.php/apps/openregister/api/objects/2/5/u-1',
+			'/index.php/apps/openregister/api/objects/2/5/u-1',
+		])
 		expect(wrapper.emitted('count')).toEqual([[2], [2]])
 	})
 })

@@ -48,6 +48,10 @@ class RecordingSymfonyMessage extends RecordingMessage {
 			public function addTextHeader(string $name, string $value): void {
 				$this->message->headers[$name] = $value;
 			}
+
+			public function addIdHeader(string $name, string $id): void {
+				$this->message->headers[$name] = '<' . $id . '>';
+			}
 		};
 
 		return new class($bag) {

@@ -53,6 +53,8 @@ class DeepLinkRegistration {
 	 *
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-2.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-a-flow-task-search-result-names-the-task-and-opens-it
 	 */
 	public function __construct(
 		public readonly string $appId,

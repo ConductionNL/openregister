@@ -204,6 +204,21 @@ use OCA\OpenRegister\Tests\Unit\Support\ProcessDeclarationChecksDispatcher;
  * @uses \OCA\OpenRegister\Service\Rules\DependentValueDeclaration
  * @uses \OCA\OpenRegister\Service\Schemas\SchemaAnnotationValidators
  * @uses \OCA\OpenRegister\Service\Survivorship\MdmAnnotationChecks
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\DiscardedAnnotations
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\IdentityDeclarationCheck
+ * @uses \OCA\OpenRegister\Db\SchemaMapper\NamedConditionCheck
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationReminderValidator
+ * @uses \OCA\OpenRegister\Search\Service\Aggregation\CrossSchemaTarget
+ * @uses \OCA\OpenRegister\Service\Reference\ReferenceCardDeclaration
+ * @uses \OCA\OpenRegister\Service\Rules\DeclaredRuleDescriptors
+ * @uses \OCA\OpenRegister\Service\Rules\NamedConditionGraph
+ * @uses \OCA\OpenRegister\Service\Rules\NamedConditionLibrary
+ * @uses \OCA\OpenRegister\Service\Rules\RuleDescriptor
+ * @uses \OCA\OpenRegister\Service\Rules\RuleEffect
+ * @uses \OCA\OpenRegister\Service\Rules\RuleOrigin
+ * @uses \OCA\OpenRegister\Service\Rules\RuleScope
+ * @uses \OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator
+ * @uses \OCA\OpenRegister\Service\Search\SearchResultDeclaration
  */
 class SchemaMapperSaveGoldenTest extends TestCase {
 	use RecordingQueryBuilderTrait;

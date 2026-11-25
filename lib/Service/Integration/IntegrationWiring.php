@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Integration;
 
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
+use OCA\OpenRegister\Contract\ReplyThreadResolutionInterface;
 use OCA\OpenRegister\Contract\ToolInvocationRecorderInterface;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
@@ -31,7 +32,9 @@ use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInte
 use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\OutboundMailLinkRecorderInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarLinkListenerRegistrar;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationRecorder;
 use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -41,6 +44,8 @@ use OCA\OpenRegister\Service\Credential\CredentialStoreResolver;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
+use OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter;
+use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
@@ -117,6 +122,7 @@ final class IntegrationWiring {
 		\OCA\OpenRegister\Kernel\Contracts\ConnectionStatusReportInterface::class => ConnectionReporter::class,
 		CredentialSecretReaderInterface::class => CredentialStore::class,
 		EmailServiceInterface::class => EmailService::class,
+		OutboundMailLinkRecorderInterface::class => OutboundMailLinkWriter::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
 		ExternalRegisterLookupInterface::class => ExternalRegisterLookup::class,
@@ -228,6 +234,11 @@ final class IntegrationWiring {
 		self::registerSeams(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
 		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
+		// A removed or disabled person's owned webhooks are disabled, kept for review.
+		$context->registerEventListener(\OCP\User\Events\BeforeUserDeletedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
+		$context->registerEventListener(\OCP\User\Events\UserChangedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
+		// Inbound calendar changes refresh the link rows (calendar-leaf-inbound, REQ-CAL-INB-001).
+		CalendarLinkListenerRegistrar::register(context: $context);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
@@ -333,7 +344,7 @@ final class IntegrationWiring {
 	}//end registerBuiltinIntegrationProviders()
 
 	/**
-	 * Register the integration seams that need a factory: the published email-link read, the credential store and the source-fetcher registry.
+	 * Register the integration seams that need a factory: the published email-link read, the reply-thread resolve, the credential store and the source-fetcher registry.
 	 *
 	 * Each is integration work, so this area binds it rather than Core's
 	 * ServiceRegistrar, which only names Core classes.
@@ -350,6 +361,14 @@ final class IntegrationWiring {
 			EmailLinkReaderInterface::class,
 			static function (ContainerInterface $c) {
 				return $c->get(EmailLinkService::class);
+			}
+		);
+
+		// The granted resolve of a reply's headers (ADR-099), for a mail intake.
+		$context->registerService(
+			ReplyThreadResolutionInterface::class,
+			static function (ContainerInterface $c) {
+				return $c->get(ReplyThreadService::class);
 			}
 		);
 

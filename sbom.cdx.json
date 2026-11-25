@@ -1250,10 +1250,10 @@
       ]
     },
     {
-      "bom-ref": "opis/json-schema-2.6.1.0",
+      "bom-ref": "opis/json-schema-2.6.2.0",
       "type": "library",
       "name": "json-schema",
-      "version": "2.6.1",
+      "version": "2.6.2",
       "group": "opis",
       "description": "Json Schema Validator for PHP",
       "author": "Sorin Sarca, Marius Sarca",
@@ -1264,17 +1264,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/opis/json-schema@2.6.1",
+      "purl": "pkg:composer/opis/json-schema@2.6.2",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/opis/json-schema/zipball/7d8685a78db131eb6a1571cc7b4db8f4b59e8628",
-          "comment": "dist reference: 7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "url": "https://api.github.com/repos/opis/json-schema/zipball/b87b424da3fbeaab09567910fda48dc88d9dcbd8",
+          "comment": "dist reference: b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "type": "vcs",
           "url": "https://github.com/opis/json-schema.git",
-          "comment": "source reference: 7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "comment": "source reference: b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "type": "website",
@@ -1288,18 +1288,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/opis/json-schema/tree/2.6.1",
+          "url": "https://github.com/opis/json-schema/tree/2.6.2",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "value": "b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "7d8685a78db131eb6a1571cc7b4db8f4b59e8628"
+          "value": "b87b424da3fbeaab09567910fda48dc88d9dcbd8"
         },
         {
           "name": "cdx:composer:package:type",
@@ -1770,10 +1770,10 @@
       ]
     },
     {
-      "bom-ref": "phpoffice/phpspreadsheet-5.11.0.0",
+      "bom-ref": "phpoffice/phpspreadsheet-5.12.0.0",
       "type": "library",
       "name": "phpspreadsheet",
-      "version": "5.11.0",
+      "version": "5.12.0",
       "group": "phpoffice",
       "description": "PHPSpreadsheet - Read, Create and Write Spreadsheet documents in PHP - Spreadsheet engine",
       "author": "Maarten Balliauw, Mark Baker, Franck Lefevre, Erik Tilt, Adrien Crivelli, Owen Leibman",
@@ -1784,17 +1784,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/phpoffice/phpspreadsheet@5.11.0",
+      "purl": "pkg:composer/phpoffice/phpspreadsheet@5.12.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/PHPOffice/PhpSpreadsheet/zipball/3aa1f0d0f3c658b803c18050ac49244d07d96907",
-          "comment": "dist reference: 3aa1f0d0f3c658b803c18050ac49244d07d96907"
+          "url": "https://api.github.com/repos/PHPOffice/PhpSpreadsheet/zipball/f03bcf6cbcae3a719b9b56c32077379b5cde2190",
+          "comment": "dist reference: f03bcf6cbcae3a719b9b56c32077379b5cde2190"
         },
         {
           "type": "vcs",
           "url": "https://github.com/PHPOffice/PhpSpreadsheet.git",
-          "comment": "source reference: 3aa1f0d0f3c658b803c18050ac49244d07d96907"
+          "comment": "source reference: f03bcf6cbcae3a719b9b56c32077379b5cde2190"
         },
         {
           "type": "website",
@@ -1808,18 +1808,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/PHPOffice/PhpSpreadsheet/tree/5.11.0",
+          "url": "https://github.com/PHPOffice/PhpSpreadsheet/tree/5.12.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "3aa1f0d0f3c658b803c18050ac49244d07d96907"
+          "value": "f03bcf6cbcae3a719b9b56c32077379b5cde2190"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "3aa1f0d0f3c658b803c18050ac49244d07d96907"
+          "value": "f03bcf6cbcae3a719b9b56c32077379b5cde2190"
         },
         {
           "name": "cdx:composer:package:type",
@@ -4700,7 +4700,7 @@
           "name": "dialogs",
           "group": "@nextcloud",
           "version": "7.6.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@nextcloud/dialogs@7.6.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@nextcloud/dialogs@7.6.0",
           "licenses": [
             {
               "license": {
@@ -4734,7 +4734,7 @@
               "name": "core",
               "group": "@vueuse",
               "version": "15.0.0",
-              "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@nextcloud/dialogs@7.6.0|@vueuse/core@15.0.0",
+              "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@nextcloud/dialogs@7.6.0|@vueuse/core@15.0.0",
               "licenses": [
                 {
                   "license": {
@@ -4770,7 +4770,7 @@
           "name": "metadata",
           "group": "@vueuse",
           "version": "15.0.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@vueuse/metadata@15.0.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@vueuse/metadata@15.0.0",
           "licenses": [
             {
               "license": {
@@ -4804,7 +4804,7 @@
           "name": "shared",
           "group": "@vueuse",
           "version": "15.0.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@vueuse/shared@15.0.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@vueuse/shared@15.0.0",
           "licenses": [
             {
               "license": {
@@ -5127,10 +5127,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/aix-ppc64"
         }
@@ -5165,10 +5161,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-arm64"
@@ -5205,10 +5197,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-arm"
         }
@@ -5243,10 +5231,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/android-x64"
@@ -5283,10 +5267,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/darwin-arm64"
         }
@@ -5321,10 +5301,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/darwin-x64"
@@ -5361,10 +5337,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/freebsd-arm64"
         }
@@ -5399,10 +5371,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/freebsd-x64"
@@ -5439,10 +5407,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-arm64"
         }
@@ -5477,10 +5441,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-arm"
@@ -5517,10 +5477,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-ia32"
         }
@@ -5555,10 +5511,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-loong64"
@@ -5595,10 +5547,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-mips64el"
         }
@@ -5633,10 +5581,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-ppc64"
@@ -5673,10 +5617,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-riscv64"
         }
@@ -5711,10 +5651,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-s390x"
@@ -5751,10 +5687,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/linux-x64"
         }
@@ -5789,10 +5721,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/netbsd-arm64"
@@ -5829,10 +5757,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/netbsd-x64"
         }
@@ -5867,10 +5791,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openbsd-arm64"
@@ -5907,10 +5827,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openbsd-x64"
         }
@@ -5945,10 +5861,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/openharmony-arm64"
@@ -5985,10 +5897,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/sunos-x64"
         }
@@ -6023,10 +5931,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-arm64"
@@ -6063,10 +5967,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-ia32"
         }
@@ -6101,10 +6001,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@esbuild/win32-x64"
@@ -7940,10 +7836,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@napi-rs/lzma-linux-x64-gnu"
@@ -10209,10 +10101,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-android-arm-eabi"
         }
@@ -10247,10 +10135,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-android-arm64"
@@ -10287,10 +10171,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-darwin-arm64"
         }
@@ -10325,10 +10205,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-darwin-x64"
@@ -10365,10 +10241,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-freebsd-arm64"
         }
@@ -10403,10 +10275,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-freebsd-x64"
@@ -10443,10 +10311,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm-gnueabihf"
         }
@@ -10481,10 +10345,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm-musleabihf"
@@ -10521,10 +10381,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm64-gnu"
         }
@@ -10559,10 +10415,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-arm64-musl"
@@ -10599,10 +10451,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-loong64-gnu"
         }
@@ -10637,10 +10485,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-loong64-musl"
@@ -10677,10 +10521,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-ppc64-gnu"
         }
@@ -10715,10 +10555,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-ppc64-musl"
@@ -10755,10 +10591,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-riscv64-gnu"
         }
@@ -10793,10 +10625,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-riscv64-musl"
@@ -10833,10 +10661,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-s390x-gnu"
         }
@@ -10871,10 +10695,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-x64-gnu"
@@ -10911,10 +10731,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-linux-x64-musl"
         }
@@ -10949,10 +10765,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-openbsd-x64"
@@ -10989,10 +10801,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-openharmony-arm64"
         }
@@ -11027,10 +10835,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-arm64-msvc"
@@ -11067,10 +10871,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-ia32-msvc"
         }
@@ -11106,10 +10906,6 @@
       ],
       "properties": [
         {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
-        {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-x64-gnu"
         }
@@ -11144,10 +10940,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@rollup/rollup-win32-x64-msvc"
@@ -17336,8 +17128,8 @@
     {
       "type": "library",
       "name": "dexie",
-      "version": "4.4.6",
-      "bom-ref": "openregister@1.0.0|dexie@4.4.6",
+      "version": "4.4.7",
+      "bom-ref": "openregister@1.0.0|dexie@4.4.7",
       "licenses": [
         {
           "license": {
@@ -17345,15 +17137,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/dexie@4.4.6",
+      "purl": "pkg:npm/dexie@4.4.7",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/dexie/-/dexie-4.4.6.tgz",
+          "url": "https://registry.npmjs.org/dexie/-/dexie-4.4.7.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "8493ff04eea68c1fad5fa853a083b5926c582cd9ae9fdd3061b7dca00a0ba4a1320d86a5fe4df7760d1301fa147b64c3b1b6cba1523396327704dd946d1e443a"
+              "content": "c1e9858829770d30a77f3caa7a95135f5ba06d86e44ebc3768464e1bb62300e5281100798393eb132c0fce4e49a5b5ff4b1a90f48be3529c420c8123a0e5847c"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -19629,10 +19421,6 @@
         }
       ],
       "properties": [
-        {
-          "name": "cdx:npm:package:development",
-          "value": "true"
-        },
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/fsevents"
@@ -22089,6 +21877,39 @@
     },
     {
       "type": "library",
+      "name": "leaflet-draw",
+      "version": "1.0.4",
+      "bom-ref": "openregister@1.0.0|leaflet-draw@1.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/leaflet-draw@1.0.4",
+      "externalReferences": [
+        {
+          "url": "https://registry.npmjs.org/leaflet-draw/-/leaflet-draw-1.0.4.tgz",
+          "type": "distribution",
+          "hashes": [
+            {
+              "alg": "SHA-512",
+              "content": "aec43ab1a40ee524f9023e97445ca5af9cef6ab5a0cd69eb838eb3435304384207b29a5d0bff219cdf2a32816f002b0fbd38a802ecacc9afd356da20d79b7201"
+            }
+          ],
+          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+        }
+      ],
+      "properties": [
+        {
+          "name": "cdx:npm:package:path",
+          "value": "node_modules/leaflet-draw"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "leaflet.markercluster",
       "version": "1.5.3",
       "bom-ref": "openregister@1.0.0|leaflet.markercluster@1.5.3",
@@ -22463,39 +22284,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/longest-streak"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "loose-envify",
-      "version": "1.4.0",
-      "bom-ref": "openregister@1.0.0|loose-envify@1.4.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/loose-envify@1.4.0",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "972bb13c6aff59f86b95e9b608bfd472751cd7372a280226043cee918ed8e45ff242235d928ebe7d12debe5c351e03324b0edfeb5d54218e34f04b71452a0add"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/loose-envify"
         }
       ]
     },
@@ -26815,8 +26603,8 @@
     {
       "type": "library",
       "name": "react-dom",
-      "version": "18.3.1",
-      "bom-ref": "openregister@1.0.0|react-dom@18.3.1",
+      "version": "19.3.1",
+      "bom-ref": "openregister@1.0.0|react-dom@19.3.1",
       "licenses": [
         {
           "license": {
@@ -26824,15 +26612,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/react-dom@18.3.1",
+      "purl": "pkg:npm/react-dom@19.3.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
+          "url": "https://registry.npmjs.org/react-dom/-/react-dom-19.3.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "e66e2740aa7ead945bd3d2cd1f9f463380714e1f76e75ff295b2886e97bb4e91b17c9fbd92fe812e42c15c88e3b296e06e720136a948db7b519d3593d2c9d423"
+              "content": "6346c0473e77961102d4d302012b34fe3f9f681ff3aaddd1f21a6f8357bcfbad59549e142f451d0b87016d77d931c22e86b7e07882d32def9978109abd03ed29"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -26980,8 +26768,8 @@
     {
       "type": "library",
       "name": "react",
-      "version": "18.3.1",
-      "bom-ref": "openregister@1.0.0|react@18.3.1",
+      "version": "19.3.1",
+      "bom-ref": "openregister@1.0.0|react@19.3.1",
       "licenses": [
         {
           "license": {
@@ -26989,15 +26777,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/react@18.3.1",
+      "purl": "pkg:npm/react@19.3.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+          "url": "https://registry.npmjs.org/react/-/react-19.3.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "c12fa1020252851d0a844bcf240adfb8f54dd7e1f3d6dd18ea7e632eb1906e46f8bab80f13fd11bdefb590c075bffa16807826e1621c57e8bb176a53563fb689"
+              "content": "40d85676dee7ae05565901b9f10b86b004778efdc76dee266f8bf3ef0d9cb271dabdc89926075ad423cd6a5745e9e571bfdd2e7778d45e92a51cbebd80edfccb"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27520,8 +27308,8 @@
     {
       "type": "library",
       "name": "scheduler",
-      "version": "0.23.2",
-      "bom-ref": "openregister@1.0.0|scheduler@0.23.2",
+      "version": "0.28.0",
+      "bom-ref": "openregister@1.0.0|scheduler@0.28.0",
       "licenses": [
         {
           "license": {
@@ -27529,15 +27317,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/scheduler@0.23.2",
+      "purl": "pkg:npm/scheduler@0.28.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/scheduler/-/scheduler-0.23.2.tgz",
+          "url": "https://registry.npmjs.org/scheduler/-/scheduler-0.28.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "50e4a1b0fc33ecdacc52a851eadd215a315dbaf3b36edbfbb680c7d7f848adf44d2030679c159dd02c094c6bd3a67815966c0609d3fdfd997fb55ac3a9cb98cd"
+              "content": "8eea2b7c2988908c3cb53fa9e415d29ba3c98d017fc9c11898acb3511088b7f45a64884bf8fba56d0f58bb6cf51dd3890dda834e5c40d7ec4a0661d726c73303"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -32306,7 +32094,7 @@
       ]
     },
     {
-      "ref": "opis/json-schema-2.6.1.0",
+      "ref": "opis/json-schema-2.6.2.0",
       "dependsOn": [
         "opis/string-2.1.0.0",
         "opis/uri-1.1.0.0"
@@ -32353,7 +32141,7 @@
       "ref": "php-http/promise-1.3.1.0"
     },
     {
-      "ref": "phpoffice/phpspreadsheet-5.11.0.0",
+      "ref": "phpoffice/phpspreadsheet-5.12.0.0",
       "dependsOn": [
         "composer/pcre-3.4.0.0",
         "maennchen/zipstream-php-3.2.2.0",
@@ -32558,8 +32346,8 @@
         "guzzlehttp/guzzle-7.16.5.0",
         "jwadhams/json-logic-php-1.5.1.0",
         "minishlink/web-push-11.0.0.0",
-        "opis/json-schema-2.6.1.0",
-        "phpoffice/phpspreadsheet-5.11.0.0",
+        "opis/json-schema-2.6.2.0",
+        "phpoffice/phpspreadsheet-5.12.0.0",
         "phpseclib/phpseclib-4.0.3.0",
         "react/async-4.3.0.0",
         "react/event-loop-1.6.0.0",

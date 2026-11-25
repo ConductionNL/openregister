@@ -35,6 +35,7 @@ use Exception;
 use OCA\OpenRegister\Controller\Support\OasControllerServices;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Service\Oas\NlGovConformanceService;
 use OCA\OpenRegister\Service\Oas\OasETagComputerInterface;
 use OCA\OpenRegister\Service\OasServiceInterface;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -67,6 +68,13 @@ class OasController extends Controller {
 	private readonly ?OasETagComputerInterface $etagComputer;
 
 	/**
+	 * The NLGov conformance report and response probe, when wired
+	 *
+	 * @var ?NlGovConformanceService
+	 */
+	private readonly ?NlGovConformanceService $conformance;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest              $request  Request object
@@ -79,6 +87,7 @@ class OasController extends Controller {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 		$this->oasService = $services->oasService;
 		$this->etagComputer = $services->etagComputer;
+		$this->conformance = $services->conformance;
 	}//end __construct()
 
 	/**
@@ -100,6 +109,92 @@ class OasController extends Controller {
 	public function generateAll(): JSONResponse {
 		return $this->generateInternal(registerId: null);
 	}//end generateAll()
+
+	/**
+	 * The Dutch API design rules conformance of every register's combined document
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The report.
+	 *
+	 * @psalm-return JSONResponse<200|404|500|503, array<string, mixed>, array<never, never>>
+	 *
+	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
+	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function conformanceAll(): JSONResponse {
+		return $this->conformanceResponse(registerId: null, probe: false);
+	}//end conformanceAll()
+
+	/**
+	 * The Dutch API design rules conformance of one register's document
+	 *
+	 * @param string $id The register slug or identifier.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @PublicPage
+	 *
+	 * @return JSONResponse The report.
+	 *
+	 * @psalm-return JSONResponse<200|404|500|503, array<string, mixed>, array<never, never>>
+	 *
+	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
+	 */
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function conformance(string $id): JSONResponse {
+		return $this->conformanceResponse(registerId: $id, probe: false);
+	}//end conformance()
+
+	/**
+	 * Probe one register's responses and return the report that includes them.
+	 *
+	 * Administrators only: the method carries no NoAdminRequired, so the
+	 * security middleware refuses anyone else before it runs.
+	 *
+	 * @param string $id The register slug or identifier.
+	 *
+	 * @return JSONResponse The report.
+	 *
+	 * @psalm-return JSONResponse<200|404|500|503, array<string, mixed>, array<never, never>>
+	 *
+	 * @spec openspec/changes/api-nl-design-rules-conformance/specs/oas-validation/spec.md
+	 */
+	public function probe(string $id): JSONResponse {
+		return $this->conformanceResponse(registerId: $id, probe: true);
+	}//end probe()
+
+	/**
+	 * The conformance report as a response.
+	 *
+	 * @param string|null $registerId The register, or null for all.
+	 * @param bool        $probe      Whether to probe the responses first.
+	 *
+	 * @return JSONResponse
+	 */
+	private function conformanceResponse(?string $registerId, bool $probe): JSONResponse {
+		if ($this->conformance === null) {
+			return new JSONResponse(data: ['error' => 'The conformance report is not available'], statusCode: 503);
+		}
+
+		try {
+			if ($probe === true && $registerId !== null) {
+				return new JSONResponse(data: $this->conformance->probe(registerId: $registerId));
+			}
+
+			return new JSONResponse(data: $this->conformance->report(registerId: $registerId));
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+		}
+	}//end conformanceResponse()
 
 	/**
 	 * Generate OAS for a specific register

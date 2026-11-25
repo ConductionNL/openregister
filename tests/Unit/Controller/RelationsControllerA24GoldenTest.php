@@ -319,6 +319,11 @@ class RelationsControllerA24GoldenTest extends TestCase {
 			$this->throwException(new RuntimeException('db down'))
 		);
 		$this->notes->expects($this->never())->method('getNotesForObject');
+		// The failing read's message reaches the server log, not the response.
+		$this->logger->expects($this->once())->method('error')->with(
+			$this->stringContains('Failed to list the relations of an object: db down'),
+			$this->arrayHasKey('exception')
+		);
 
 		$outcomes = [];
 		foreach (range(1, 4) as $call) {
@@ -331,7 +336,7 @@ class RelationsControllerA24GoldenTest extends TestCase {
 				[404, ['error' => 'Object not found']],
 				[404, ['error' => 'Object not found']],
 				[409, ['message' => 'Identifier "slug-3" matches more than one object in this register and schema', 'error' => 'ambiguous-identifier']],
-				[500, ['error' => 'db down']],
+				[500, ['error' => 'Internal server error']],
 			],
 			$outcomes
 		);

@@ -94,6 +94,30 @@ interface EmailLinkMapperInterface {
 	public function objectUuidsByRfcMessageId(string $rfcMessageId): array;
 
 	/**
+	 * Links from a Mail message that carry no RFC `Message-ID` yet, by id ascending after a cursor.
+	 *
+	 * @param int $afterId The last id of the previous page; 0 for the first.
+	 * @param int $limit   The page size.
+	 *
+	 * @return EmailLink[] The links.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public function findWithoutRfcMessageId(int $afterId, int $limit): array;
+
+	/**
+	 * Record the RFC `Message-ID` of one link that has none yet.
+	 *
+	 * @param int    $linkId       The link id.
+	 * @param string $rfcMessageId The `Message-ID`, with its angle brackets.
+	 *
+	 * @return int The rows changed, 0 or 1.
+	 *
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
+	 */
+	public function recordRfcMessageId(int $linkId, string $rfcMessageId): int;
+
+	/**
 	 * Find a specific email link by object UUID and mail message ID.
 	 *
 	 * @param string $objectUuid The object UUID.

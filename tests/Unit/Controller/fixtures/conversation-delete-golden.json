@@ -20,8 +20,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to delete conversation",
-            "message": "access failed"
+            "error": "Failed to delete conversation"
         }
     },
     "destroy by another user": {
@@ -126,8 +125,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to delete conversation",
-            "message": "delete failed"
+            "error": "Failed to delete conversation"
         }
     },
     "destroy feedback delete failure": {
@@ -161,8 +159,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to delete conversation",
-            "message": "feedback failed"
+            "error": "Failed to delete conversation"
         }
     },
     "destroy message delete failure": {
@@ -199,8 +196,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to delete conversation",
-            "message": "messages failed"
+            "error": "Failed to delete conversation"
         }
     },
     "destroy not found": {
@@ -298,8 +294,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to delete conversation",
-            "message": "softDelete failed"
+            "error": "Failed to delete conversation"
         }
     },
     "destroyPermanent access check failure": {
@@ -323,8 +318,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to permanently delete conversation",
-            "message": "access failed"
+            "error": "Failed to permanently delete conversation"
         }
     },
     "destroyPermanent by another user": {
@@ -427,8 +421,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to permanently delete conversation",
-            "message": "delete failed"
+            "error": "Failed to permanently delete conversation"
         }
     },
     "destroyPermanent feedback delete failure": {
@@ -455,8 +448,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to permanently delete conversation",
-            "message": "feedback failed"
+            "error": "Failed to permanently delete conversation"
         }
     },
     "destroyPermanent message delete failure": {
@@ -486,8 +478,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to permanently delete conversation",
-            "message": "messages failed"
+            "error": "Failed to permanently delete conversation"
         }
     },
     "destroyPermanent not found": {
@@ -575,8 +566,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to restore conversation",
-            "message": "access failed"
+            "error": "Failed to restore conversation"
         }
     },
     "restore by another user": {
@@ -711,8 +701,7 @@
         ],
         "status": 500,
         "data": {
-            "error": "Failed to restore conversation",
-            "message": "restore failed"
+            "error": "Failed to restore conversation"
         }
     },
     "restore message delete failure": {

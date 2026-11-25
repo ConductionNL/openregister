@@ -36,6 +36,7 @@ use OCP\Search\FilterDefinition;
 use OCP\Search\IFilteringProvider;
 use OCP\Search\ISearchQuery;
 use OCP\Search\SearchResult;
+use OCP\Search\SearchResultEntry;
 
 /**
  * ObjectsProvider class for the objects search.
@@ -121,6 +122,13 @@ class ObjectsProvider implements IFilteringProvider {
 	private readonly SearchScopeCatalog $scopeCatalog;
 
 	/**
+	 * The identities the provider presents itself under, one per claiming app.
+	 *
+	 * @var SearchProviderIdentities
+	 */
+	private readonly SearchProviderIdentities $identities;
+
+	/**
 	 * Constructor for the ObjectsProvider class
 	 *
 	 * @param ObjectOperationsInterface $objectService The object service for search operations
@@ -128,6 +136,10 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @param ObjectsProviderOutput     $output        The localization service, shared result formatter and logger
 	 * @param SearchScopeCatalog|null   $scopeCatalog  The searchable schemas described the way a scope names them;
 	 *                                                 null describes them without the apps that claim them
+	 * @param FileHitSearch|null        $fileHits      The file arm; null keeps the older widening, where a
+	 *                                                 file match answers its owning object as an object hit
+	 * @param SearchProviderIdentities|null $identities The provider identity per claiming app;
+	 *                                                 null reads them from the scope catalog's claims
 	 *
 	 * @return void
 	 *
@@ -138,8 +150,11 @@ class ObjectsProvider implements IFilteringProvider {
 		private readonly SchemaCatalogInterface $catalog,
 		private readonly ObjectsProviderOutput $output,
 		?SearchScopeCatalog $scopeCatalog = null,
+		private readonly ?FileHitSearch $fileHits = null,
+		?SearchProviderIdentities $identities = null,
 	) {
 		$this->scopeCatalog = ($scopeCatalog ?? new SearchScopeCatalog(catalog: $catalog, logger: $output->logger));
+		$this->identities   = ($identities ?? new SearchProviderIdentities(l10n: $output->l10n, logger: $output->logger, claims: $this->scopeCatalog));
 	}//end __construct()
 
 	/**
@@ -193,7 +208,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 *
 	 * @return string[]
 	 *
-	 * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema'}
+	 * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema', 'scopes', 'provider'}
 	 * @phpstan-return array<string>
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
@@ -211,6 +226,9 @@ class ObjectsProvider implements IFilteringProvider {
 			// What to look in (content-search-index). `app:<id>`,
 			// `register:<slug>`, `schema:<slug>` or `files`, comma separated.
 			'scopes',
+			// One provider identity (platform-search-provider): a claiming
+			// app's id, or `openregister` for the pairs no app claimed.
+			'provider',
 		];
 	}//end getSupportedFilters()
 
@@ -233,7 +251,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 *
 	 * @return FilterDefinition[]
 	 *
-	 * @psalm-return   list{FilterDefinition, FilterDefinition}
+	 * @psalm-return   list{FilterDefinition, FilterDefinition, FilterDefinition, FilterDefinition}
 	 * @phpstan-return list<\OCP\Search\FilterDefinition>
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
@@ -243,6 +261,7 @@ class ObjectsProvider implements IFilteringProvider {
 			new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
 			new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
 			new FilterDefinition(name: 'scopes', type: FilterDefinition::TYPE_STRING),
+			new FilterDefinition(name: 'provider', type: FilterDefinition::TYPE_STRING),
 		];
 	}//end getCustomFilters()
 
@@ -277,17 +296,31 @@ class ObjectsProvider implements IFilteringProvider {
 		$page = $this->requestedPage(query: $query, schema: $target['schema']);
 		$this->logSearchRequested(page: $page, schemaChunks: $target['chunks']);
 
+		if ($this->fileHits === null) {
+			// Without the file arm, a file match widens the object search instead.
+			$searchResults = $this->searchChunks(query: $this->withContentSearch(page: $page), schemaChunks: $target['chunks']);
+			$entries = $this->formatEntries(results: $searchResults['results'], term: $page->search);
+			$this->logSearchCompleted(entries: $entries, total: $searchResults['total']);
+
+			return $this->resultPage(entries: $entries, page: $page);
+		}
+
 		// Delegate to the OR search pipeline, one call per schema chunk.
 		// RBAC, tenant isolation, the published predicate, and soft-delete
 		// exclusion are ALL enforced there — the provider applies no second
 		// access filter. A chunk that fails is logged as an error and
 		// skipped, so the top-bar search never errors out and never blanks
-		// the section for one broken table.
-		$searchResults = $this->searchChunks(query: $this->withContentSearch(page: $page), schemaChunks: $target['chunks']);
-		$entries = $this->formatEntries(results: $searchResults['results'], term: $page->search);
-		$this->logSearchCompleted(entries: $entries, total: $searchResults['total']);
+		// the section for one broken table. A `files` scope keeps only file hits.
+		$searchResults = ['results' => [], 'total' => 0];
+		if ($target['filesOnly'] === false) {
+			$searchResults = $this->searchChunks(query: $page, schemaChunks: $target['chunks']);
+		}
 
-		return $this->resultPage(entries: $entries, page: $page);
+		$entries = $this->kinded(entries: $this->formatEntries(results: $searchResults['results'], term: $page->search), kind: FileHitSearch::KIND_OBJECT);
+		$files   = $this->fileEntries(page: $page, target: $target);
+		$this->logSearchCompleted(entries: array_merge($entries, $files), total: ($searchResults['total'] + count($files)));
+
+		return $this->resultPage(entries: $entries, page: $page, fileEntries: $files);
 	}//end search()
 
 	/**
@@ -407,25 +440,121 @@ class ObjectsProvider implements IFilteringProvider {
 	 *
 	 * @param array<int, mixed> $entries The search entries
 	 * @param ListQuery         $page    The requested page
+	 * @param array<int, SearchResultEntry> $fileEntries The file hits, after the object hits; they do not count toward a full page.
 	 *
 	 * @return SearchResult
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) SearchResult::paginated/complete is standard Nextcloud search pattern
 	 */
-	private function resultPage(array $entries, ListQuery $page): SearchResult {
+	private function resultPage(array $entries, ListQuery $page, array $fileEntries=[]): SearchResult {
 		if (count($entries) >= $page->limit) {
 			return SearchResult::paginated(
 				$this->getSectionName(),
-				$entries,
+				array_merge($entries, $fileEntries),
 				(($page->offset ?? 0) + $page->limit)
 			);
 		}
 
 		return SearchResult::complete(
 			name: $this->getSectionName(),
-			entries: $entries
+			entries: array_merge($entries, $fileEntries)
 		);
 	}//end resultPage()
+
+	/**
+	 * Mark each entry with its kind and the backend that answered it.
+	 *
+	 * @param array<int, SearchResultEntry> $entries The entries.
+	 * @param string                        $kind    `object` or `file`.
+	 *
+	 * @return array<int, SearchResultEntry> The same entries.
+	 *
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-searches-file-content-beside-object-data
+	 */
+	private function kinded(array $entries, string $kind): array {
+		foreach ($entries as $entry) {
+			$entry->addAttribute('kind', $kind);
+			$entry->addAttribute('backend', FileHitSearch::BACKEND);
+		}
+
+		return $entries;
+	}//end kinded()
+
+	/**
+	 * The file hits of the first page: the file name as title, the excerpt and the owning object's link.
+	 *
+	 * File hits ride on the first page only, after the object hits and bounded
+	 * by the page size, so paging through the object hits never repeats them.
+	 *
+	 * @param ListQuery                                                                                      $page   The requested page.
+	 * @param array{chunks: array<int, int[]|null>, schema: mixed, schemaIds: list<int>, register: mixed, filesOnly: bool} $target The schemas searched.
+	 *
+	 * @return array<int, SearchResultEntry> The file entries.
+	 *
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-searches-file-content-beside-object-data
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-same-contract-holds-with-and-without-a-search-backend
+	 */
+	private function fileEntries(ListQuery $page, array $target): array {
+		$term = trim((string)($page->search ?? ''));
+		if ($this->fileHits === null || $term === '' || ($page->offset ?? 0) > 0) {
+			return [];
+		}
+
+		try {
+			$hits = $this->fileHits->search(term: $term, schemaIds: $target['schemaIds'], limit: $page->limit);
+		} catch (\Throwable $e) {
+			$this->output->logger->error(
+				'[ObjectsProvider] The file arm of the search failed; the object hits still answer: {error}',
+				['error' => $e->getMessage(), 'exception' => $e]
+			);
+			return [];
+		}
+
+		$entries = [];
+		foreach ($hits as $hit) {
+			if ($this->inRegister(object: $hit['object'], register: $target['register']) === false) {
+				continue;
+			}
+
+			$owner = $this->output->resultFormatter->format(result: $hit['object'], term: $term)->jsonSerialize();
+			$title = $hit['fileName'];
+			if ($title === '') {
+				$title = (string)($owner['title'] ?? '');
+			}
+
+			$entry = new SearchResultEntry(
+				(string)($owner['thumbnailUrl'] ?? ''),
+				$title,
+				trim($hit['excerpt'].' · '.(string)($owner['title'] ?? ''), ' ·'),
+				(string)($owner['resourceUrl'] ?? ''),
+				(string)($owner['icon'] ?? ''),
+				(bool)($owner['rounded'] ?? false)
+			);
+			$entry->addAttribute('fileId', (string)$hit['fileId']);
+			$entry->addAttribute('fileName', $hit['fileName']);
+			$entries[] = $entry;
+		}//end foreach
+
+		return $this->kinded(entries: $entries, kind: FileHitSearch::KIND_FILE);
+	}//end fileEntries()
+
+	/**
+	 * Whether an object lies in the register the request names by id; any register when none or a slug is named.
+	 *
+	 * A register named by slug has already narrowed the schema ids the file arm searched.
+	 *
+	 * @param ObjectEntity $object   The object.
+	 * @param mixed        $register The `register` filter.
+	 *
+	 * @return bool
+	 */
+	private function inRegister(ObjectEntity $object, mixed $register): bool {
+		if (is_int($register) === false) {
+			return true;
+		}
+
+		return (string)$object->getRegister() === (string)$register;
+	}//end inRegister()
 
 	/**
 	 * The pipeline query for the search term and the register filter.
@@ -472,7 +601,9 @@ class ObjectsProvider implements IFilteringProvider {
 	 *
 	 * @param ISearchQuery $query The search query from Nextcloud
 	 *
-	 * @return array{chunks: array<int, int[]|null>, schema: mixed}|null The chunks and schema filter, or null.
+	 * @return array{chunks: array<int, int[]|null>, schema: mixed, schemaIds: list<int>, register: mixed, filesOnly: bool}|null
+	 *         The chunks and schema filter, the schema ids the file arm searches, the register filter (an id as int),
+	 *         and whether only file hits were asked for; null when nothing is searchable.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) SearchScopes::parse is the named constructor of a value object
 	 */
@@ -487,6 +618,7 @@ class ObjectsProvider implements IFilteringProvider {
 		$scopes = SearchScopes::parse(raw: $query->getFilter('scopes')?->get());
 
 		$nonSearchableIds = $this->getNonSearchableIds();
+		$identity = $query->getFilter('provider')?->get();
 
 		if (empty($schema) === false) {
 			// The opt-out list is numeric, so a slug is resolved before the comparison.
@@ -495,16 +627,68 @@ class ObjectsProvider implements IFilteringProvider {
 				return null;
 			}
 
-			return ['chunks' => [null], 'schema' => ($schemaId ?? $schema)];
+			if ($this->identityKeepsSchema(identity: $identity, schemaId: $schemaId) === false) {
+				return null;
+			}
+
+			$schemaIds = [];
+			if ($schemaId !== null) {
+				$schemaIds = [$schemaId];
+			}
+
+			return $this->target(chunks: [null], schema: ($schemaId ?? $schema), schemaIds: $schemaIds, query: $query, scopes: $scopes);
 		}
 
-		$searchableIds = $this->narrowedSearchableIds(scopes: $scopes);
+		$searchableIds = $this->narrowedToIdentity(
+			schemaIds: $this->narrowedSearchableIds(scopes: $scopes),
+			identity: $identity
+		);
 		if (empty($searchableIds) === true) {
 			return null;
 		}
 
-		return ['chunks' => array_chunk($searchableIds, self::SCHEMA_CHUNK_SIZE), 'schema' => null];
+		return $this->target(
+			chunks: array_chunk($searchableIds, self::SCHEMA_CHUNK_SIZE),
+			schema: null,
+			schemaIds: array_values(array_map('intval', $searchableIds)),
+			query: $query,
+			scopes: $scopes
+		);
 	}//end resolveSchemaTarget()
+
+	/**
+	 * The search target, with the schema ids the file arm searches narrowed by a register named by slug.
+	 *
+	 * @param array<int, int[]|null> $chunks    The schema chunks of the object arm.
+	 * @param mixed                  $schema    The schema filter.
+	 * @param list<int>              $schemaIds The schemas searched.
+	 * @param ISearchQuery           $query     The query, for its register filter.
+	 * @param SearchScopes           $scopes    The parsed scopes.
+	 *
+	 * @return array{chunks: array<int, int[]|null>, schema: mixed, schemaIds: list<int>, register: mixed, filesOnly: bool}
+	 *
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-searches-file-content-beside-object-data
+	 */
+	private function target(array $chunks, mixed $schema, array $schemaIds, ISearchQuery $query, SearchScopes $scopes): array {
+		$register = trim((string)($query->getFilter('register')?->get() ?? ''));
+		$registerFilter = null;
+		if ($register !== '' && ctype_digit($register) === true) {
+			$registerFilter = (int)$register;
+		}
+
+		if ($register !== '' && $registerFilter === null && $this->fileHits !== null) {
+			$inRegister = [];
+			foreach ($this->describeSearchableSchemas() as $row) {
+				if (strtolower((string)$row['register']) === strtolower($register)) {
+					$inRegister[] = (int)$row['id'];
+				}
+			}
+
+			$schemaIds = array_values(array_intersect($schemaIds, $inRegister));
+		}
+
+		return ['chunks' => $chunks, 'schema' => $schema, 'schemaIds' => $schemaIds, 'register' => $registerFilter, 'filesOnly' => $scopes->filesOnly];
+	}//end target()
 
 	/**
 	 * The searchable schema ids, narrowed by the declared scopes.
@@ -524,9 +708,101 @@ class ObjectsProvider implements IFilteringProvider {
 			return $searchableIds;
 		}
 
+		// `files` alone says which hits to keep, not where to look.
+		if ($scopes->apps === [] && $scopes->registers === [] && $scopes->schemas === []) {
+			return $searchableIds;
+		}
+
 		$scoped = $scopes->narrowSchemas(schemas: $this->describeSearchableSchemas());
 		return array_values(array_intersect($searchableIds, $scoped));
 	}//end narrowedSearchableIds()
+
+	/**
+	 * The schema ids narrowed to the pairs of one provider identity.
+	 *
+	 * No `provider` filter keeps the ids as they are, so a search of
+	 * everything is unchanged. An identity id that names no identity narrows
+	 * to nothing: searching an app that claimed nothing is an empty answer,
+	 * never a widening back to everything. Narrowed before the chunk loop,
+	 * like the scopes (D-4 of content-search-index).
+	 *
+	 * @param array<int, int> $schemaIds The searchable schema ids, already narrowed by the scopes.
+	 * @param mixed           $identity  The `provider` filter value, or null for none.
+	 *
+	 * @return array<int, int> The schema ids of the identity's pairs.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	private function narrowedToIdentity(array $schemaIds, mixed $identity): array {
+		if ($this->namesIdentity(identity: $identity) === false || empty($schemaIds) === true) {
+			return $schemaIds;
+		}
+
+		$owned = $this->identitySchemaIds(identity: (string)$identity);
+		return array_values(array_intersect($schemaIds, $owned));
+	}//end narrowedToIdentity()
+
+	/**
+	 * Whether an explicitly filtered schema belongs to the requested identity.
+	 *
+	 * No `provider` filter keeps the schema. A schema reference this provider
+	 * cannot resolve is kept too, so the search path refuses it by name.
+	 *
+	 * @param mixed    $identity The `provider` filter value, or null for none.
+	 * @param int|null $schemaId The resolved schema id, or null when it did not resolve.
+	 *
+	 * @return bool True when the schema is searched.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	private function identityKeepsSchema(mixed $identity, ?int $schemaId): bool {
+		if ($this->namesIdentity(identity: $identity) === false || $schemaId === null) {
+			return true;
+		}
+
+		return in_array($schemaId, $this->identitySchemaIds(identity: (string)$identity), true);
+	}//end identityKeepsSchema()
+
+	/**
+	 * Whether a `provider` filter value asks for one identity.
+	 *
+	 * @param mixed $identity The filter value.
+	 *
+	 * @return bool True when it is a non-empty string.
+	 */
+	private function namesIdentity(mixed $identity): bool {
+		return is_string($identity) === true && trim($identity) !== '';
+	}//end namesIdentity()
+
+	/**
+	 * The searchable schema ids whose pair belongs to an identity.
+	 *
+	 * A pair belongs to the app that claimed it, and an unclaimed pair to the
+	 * OpenRegister identity, so the identities split the searchable schemas
+	 * without overlap.
+	 *
+	 * @param string $identity The identity id.
+	 *
+	 * @return array<int, int> The schema ids; empty when the id names no identity.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	private function identitySchemaIds(string $identity): array {
+		$wanted = $this->identities->byId(id: $identity);
+		if ($wanted === null) {
+			return [];
+		}
+
+		$ids = [];
+		foreach ($this->describeSearchableSchemas() as $row) {
+			$owner = $this->identities->forPair(registerSlug: $row['register'], schemaSlug: $row['slug']);
+			if ($owner->id === $wanted->id) {
+				$ids[] = $row['id'];
+			}
+		}
+
+		return $ids;
+	}//end identitySchemaIds()
 
 	/**
 	 * Add the `since` / `until` filters as a created-date range.

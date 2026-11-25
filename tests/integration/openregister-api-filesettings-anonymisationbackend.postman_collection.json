@@ -418,6 +418,46 @@
 					}
 				},
 				{
+					"name": "GET file settings as admin: the document store",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+									"const store = pm.response.json().documentStore;",
+									"pm.test('documentStore is reported', () => pm.expect(store).to.be.an('object'));",
+									"pm.test('root is a non-empty string', () => pm.expect(store.root).to.be.a('string').and.not.empty);",
+									"pm.test('storageId is a string', () => pm.expect(store.storageId).to.be.a('string'));",
+									"pm.test('backend is local, object-storage or external', () => pm.expect(store.backend).to.be.oneOf(['local', 'object-storage', 'external']));",
+									"pm.test('mountPoint is a string', () => pm.expect(store.mountPoint).to.be.a('string'));",
+									"pm.test('separate is a boolean', () => pm.expect(store.separate).to.be.a('boolean'));",
+									"pm.test('freeBytes is a whole number or null', () => pm.expect(store.freeBytes === null || Number.isInteger(store.freeBytes)).to.equal(true));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							}
+						],
+						"url": "{{base_url}}/index.php/apps/openregister/api/settings/files"
+					}
+				},
+				{
 					"name": "GET file settings as non-admin",
 					"event": [
 						{

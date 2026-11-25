@@ -61,6 +61,7 @@ use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
 use OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption;
+use OCA\OpenRegister\Db\MagicMapper\MagicSharePrincipals;
 use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
 use OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
@@ -3328,6 +3329,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// An encrypted property is written only as an envelope, whichever path
 		// got here (see MagicFlaggedEncryption).
+		// A share list's derived principal lists are recomputed, whichever path
+		// got here (see MagicSharePrincipals); before encryption, on plaintext.
+		$data = (new MagicSharePrincipals(container: $this->container))->forObject(data: $data, schema: $schema);
 		$data = (new MagicFlaggedEncryption(container: $this->container))->forObject(data: $data, schema: $schema);
 
 		$rowMetadata = new MagicRowMetadata(container: $this->container);
@@ -5850,9 +5854,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * This method efficiently searches all magic tables for multiple UUIDs in batch.
 	 * It's optimized for performance by searching all UUIDs in each table with a single query.
 	 *
-	 * @param array    $uuids           Array of UUIDs to search for.
-	 * @param bool     $includeDeleted  Whether to include soft-deleted objects.
-	 * @param int|null $registerIdScope Only look in this register's tables (null: every table).
+	 * @param array          $uuids           Array of UUIDs to search for.
+	 * @param bool           $includeDeleted  Whether to include soft-deleted objects.
+	 * @param int|null       $registerIdScope Only look in this register's tables (null: every table).
+	 * @param list<int>|null $schemaIdScope   Only look in these schemas' tables, in any register (null: every schema).
 	 *
 	 * @return ObjectEntity[] Array of found objects (may be fewer than requested if some not found).
 	 */
@@ -5860,8 +5865,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		array $uuids,
 		bool $includeDeleted = false,
 		?int $registerIdScope = null,
+		?array $schemaIdScope = null,
 	): array {
-		return $this->findMultipleAcross(lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted), registerIdScope: $registerIdScope);
+		return $this->findMultipleAcross(
+			lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted),
+			registerIdScope: $registerIdScope,
+			schemaIdScope: $schemaIdScope
+		);
 	}//end findMultipleAcrossAllMagicTables()
 
 	/**
@@ -5869,11 +5879,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param UuidBatchLookup $lookup          The uuids and whether soft-deleted rows count.
 	 * @param int|null        $registerIdScope Restrict the scan to one register's tables.
+	 * @param list<int>|null  $schemaIdScope   Restrict the scan to these schemas' tables.
 	 *
 	 * @return array The found objects.
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function findMultipleAcross(UuidBatchLookup $lookup, ?int $registerIdScope=null): array {
+	public function findMultipleAcross(UuidBatchLookup $lookup, ?int $registerIdScope=null, ?array $schemaIdScope=null): array {
 		$uuids          = $lookup->uuids;
 		$includeDeleted = $lookup->includeDeleted;
 
@@ -5885,6 +5896,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$scan = new MagicCrossTableScan(label: 'findMultipleAcrossAllMagicTables');
 		$scan->includeDeleted = $includeDeleted;
 		$scan->registerIdScope = $registerIdScope;
+		$scan->schemaIdScope = $schemaIdScope;
 		$scan->predicate = '_uuid IN (' . implode(',', array_fill(0, count($uuids), '?')) . ')';
 		$scan->parameters = $uuids;
 
@@ -6515,11 +6527,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			$registerId = (int)$matches[1];
-			if ($scan->registerIdScope !== null && $registerId !== $scan->registerIdScope) {
+			$schemaId = (int)$matches[2];
+			if (($scan->registerIdScope !== null && $registerId !== $scan->registerIdScope)
+				|| ($scan->schemaIdScope !== null && in_array($schemaId, $scan->schemaIdScope, true) === false)
+			) {
 				continue;
 			}
 
-			$scan->tables[$fullTableName] = ['registerId' => $registerId, 'schemaId' => (int)$matches[2]];
+			$scan->tables[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
 		}
 	}//end listCrossTableScanTables()
 
@@ -8264,7 +8279,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// The bulk path never went through SaveObject's encryption step. An
 		// encrypted property used to have no column, so bulk dropped its value;
 		// now that it has one, encrypt here so it can only ever hold an envelope.
-		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
+		// Nor through the share endpoints: recompute the derived principal lists here too.
+		$objects = (new MagicSharePrincipals(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
+		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $objects, schema: $schema);
 
 		try {
 			return $this->bulkHandler->upsert(

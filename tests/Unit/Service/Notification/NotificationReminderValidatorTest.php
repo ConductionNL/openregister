@@ -36,6 +36,13 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationRuleContext
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationSchemaFacts
  * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterParser
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\DeclaredTrigger
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ForcedChannelPolicy
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationRecipientValidator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\NotificationTriggerValidator
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\RecipientEntry
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterGrammar
+ * @uses \OCA\OpenRegister\Notifications\Service\Notification\ScheduledFilterPosition
  */
 final class NotificationReminderValidatorTest extends TestCase {
 

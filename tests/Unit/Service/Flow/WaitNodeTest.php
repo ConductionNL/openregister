@@ -46,6 +46,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
  * @uses \OCA\OpenRegister\Service\Flow\FlowNodeCall
  * @uses \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  */
 final class WaitNodeTest extends TestCase {
 
@@ -199,4 +201,52 @@ final class WaitNodeTest extends TestCase {
 		);
 
 	}//end testAWaitWhoseOwnSlotIsHeldPassesThrough()
+
+	/**
+	 * `until` may name a field of the item: the run waits until the moment the
+	 * first item states (an approved payroll run waiting for its pay date).
+	 *
+	 * @return void
+	 */
+	public function testATemplatedUntilWaitsForTheItemsMoment(): void {
+		$items = [['json' => ['payroll' => ['payDate' => '2099-11-25']]]];
+
+		try {
+			$this->node->execute(new FlowNodeCall(items: $items, config: ['until' => '{{ payroll.payDate }}'], context: []));
+			$this->fail(message: 'a wait for a future moment must suspend');
+		} catch (FlowSuspension $suspension) {
+			$this->assertSame(expected: '2099-11-25', actual: $suspension->getResumeAt()?->format('Y-m-d'));
+		}
+
+	}//end testATemplatedUntilWaitsForTheItemsMoment()
+
+	/**
+	 * A placeholder the item leaves empty is no moment: the items pass through
+	 * rather than suspending forever on a time that will never arrive.
+	 *
+	 * @return void
+	 */
+	public function testATemplatedUntilTheItemLeavesEmptyPassesThrough(): void {
+		$items = [['json' => ['payroll' => ['period' => '2026-11']]]];
+
+		$this->assertSame(
+			expected: $items,
+			actual: $this->node->execute(new FlowNodeCall(items: $items, config: ['until' => '{{ payroll.payDate }}'], context: []))
+		);
+
+	}//end testATemplatedUntilTheItemLeavesEmptyPassesThrough()
+
+	/**
+	 * Saving a flow accepts a placeholder, which is only a time once an item
+	 * fills it in; a literal that is no time is still refused.
+	 *
+	 * @return void
+	 */
+	public function testSavingAcceptsATemplatedUntilAndRefusesNonsense(): void {
+		$this->node->validateConfig(config: ['until' => '{{ payroll.payDate }}']);
+
+		$this->expectException(exception: \UnexpectedValueException::class);
+		$this->node->validateConfig(config: ['until' => 'not a time at all']);
+
+	}//end testSavingAcceptsATemplatedUntilAndRefusesNonsense()
 }//end class

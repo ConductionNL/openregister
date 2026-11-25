@@ -52,6 +52,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 		'lib/Controller/ObjectsController.php' => ['foundForShow'],
 		'lib/Controller/TmloController.php' => ['exportSingle'],
 		'lib/Controller/ObjectShareLinkController.php' => ['show'],
+		'lib/Controller/RecordPdfController.php' => ['show'],
 		'lib/Service/CaseTokenService.php' => ['resolve'],
 		'lib/Service/ObjectServiceMapperAdapter.php' => ['find'],
 	];
@@ -63,6 +64,7 @@ class RecentLensLookupCallSitesTest extends TestCase {
 	 */
 	private const NOT_OBJECT_SERVICE = [
 		'lib/BackgroundJob/SharerAccessSweepJob.php' => ['objectOf'],
+		'lib/Controller/BreakGlassController.php' => ['take'],
 		'lib/Controller/ContentReportController.php' => ['create'],
 		'lib/Service/Portal/PortalPartyResolver.php' => ['resolveFromObject'],
 		'lib/Service/Object/SaveObject/InverseRelations.php' => ['relatedObject'],

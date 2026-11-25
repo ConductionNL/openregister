@@ -284,6 +284,55 @@ class FederatedConfigServiceTest extends TestCase {
 		$this->assertSame(['x'], $result['installed']);
 	}
 
+	/**
+	 * The signer sees the bundle as published; the type gets it with the install target stamped.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	public function testAStampIsAppliedAfterTheSignatureCheck(): void {
+		$this->allowlist = ['ConductionNL'];
+		$verified = [];
+		$received = [];
+		$signer   = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Config\BundleSigner::class);
+		$signer->method('verify')->willReturnCallback(
+			callback: static function (array $bundle) use (&$verified): array {
+				$verified = $bundle;
+				return ['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k'];
+			}
+		);
+		$type = $this->createMock(originalClassName: IShareableConfigType::class);
+		$type->method('deserialise')->willReturnCallback(
+			callback: static function (array $bundle) use (&$received): array {
+				$received = $bundle;
+				return ['installed' => ['x']];
+			}
+		);
+		$this->registry->method('get')->willReturn(value: $type);
+		$service = new FederatedConfigService(
+			new FederatedConfigTransport(
+				$this->createMock(originalClassName: CredentialBrokerService::class),
+				$signer,
+				$this->createMock(originalClassName: \OCP\Http\Client\IClientService::class)
+			),
+			$this->registry,
+			$this->config,
+			$this->createMock(originalClassName: \Psr\Log\LoggerInterface::class)
+		);
+		$bundle = ['components' => ['objects' => [['@self' => ['schema' => 'larping_skill'], 'name' => 'Herbalism']]]];
+
+		$service->install(
+			'demo.type',
+			$bundle,
+			'ConductionNL/pack',
+			(new \OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp(property: 'setting', schemas: ['larping_skill'], value: 'world-1'))->applyTo(...)
+		);
+
+		$this->assertSame(expected: $bundle, actual: $verified, message: 'the signature is checked on the bundle as published');
+		$this->assertSame(expected: 'world-1', actual: $received['components']['objects'][0]['setting']);
+	}
+
 	public function testFetchBundleDecodesTheRepoContentsFile(): void {
 		$bundle = ['type' => 'demo.type', 'objects' => [['a' => 1]]];
 		$content = base64_encode((string)json_encode($bundle));

@@ -86,6 +86,17 @@ final class TokenResolverTest extends TestCase {
 		return $consumer;
 	}//end consumer()
 
+	public function testTheOwnerIsNotNamedFromAnotherSessionUser(): void {
+		$provider = $this->createMock(ITokenProvider::class);
+		$provider->method('getToken')->willReturn($this->token(14, 'Sync', 'svc-sync'));
+
+		$identity = (new TokenResolver($this->session('pw'), $provider, $this->userSession('alice', 'Alice'), $this->consumers([])))->resolve();
+
+		self::assertNotNull($identity);
+		self::assertSame('svc-sync', $identity->ownerUid());
+		self::assertNull($identity->ownerName(), 'The display name of a different session user must not be attributed to the token owner.');
+	}//end testTheOwnerIsNotNamedFromAnotherSessionUser()
+
 	public function testAnInteractiveSessionResolvesToNoToken(): void {
 		// No app password means a person is clicking, and a row naming a token
 		// would be a false claim about who wrote it.

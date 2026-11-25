@@ -62,6 +62,7 @@ interface FederatedConfigServiceInterface {
 	 * @param string $typeId The shareable type id.
 	 * @param array $bundle A bundle produced by a type of this id.
 	 * @param string $source Where the bundle came from (a repo/source id), for the allowlist.
+	 * @param (callable(array): array)|null $prepare Runs on the verified bundle before it is imported, such as stamping an install target.
 	 *
 	 * @return array The install result.
 	 *
@@ -69,8 +70,9 @@ interface FederatedConfigServiceInterface {
 	 * @throws RuntimeException When the source is not allowlisted.
 	 *
 	 * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
 	 */
-	public function install(string $typeId, array $bundle, string $source = ''): array;
+	public function install(string $typeId, array $bundle, string $source = '', ?callable $prepare = null): array;
 
 	/**
 	 * Publish a bundle to a GitHub repository, with the token supplied by the
