@@ -265,6 +265,7 @@ Controller/CredentialController.php,506,Controller,Integrations,Integrations/Con
 Controller/CredentialOauth2Controller.php,300,Controller,Integrations,Integrations/Controller/CredentialOauth2Controller.php,0,,Integrations
 Controller/CredentialOrganisationController.php,,Controller,,,,,Integrations
 Controller/CredentialProviderApprovalController.php,63,Controller,Integrations,Integrations/Controller/CredentialProviderApprovalController.php,0,,Integrations
+Controller/DeclaredCredentialProvidersController.php,,Controller,,,,,Integrations
 Controller/DataSubjectRequestController.php,117,Controller,Compliance,Compliance/Controller/DataSubjectRequestController.php,0,,Compliance
 Controller/DeckController.php,100,Controller,Integrations,Integrations/Controller/DeckController.php,0,,Integrations
 Controller/DeckLinksController.php,154,Controller,Integrations,Integrations/Controller/DeckLinksController.php,0,,Integrations

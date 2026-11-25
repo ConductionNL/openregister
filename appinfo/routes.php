@@ -47,6 +47,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
         // Approval plane of app-declared credential providers (app-declared-credential-providers 3.2):
         // administrators only. The identifier is `<appId>:<localId>`.
+        ['name' => 'declaredCredentialProviders#index', 'url' => '/api/credentials/providers/declared', 'verb' => 'GET'],
         ['name' => 'credentialProviderApproval#approve', 'url' => '/api/credentials/providers/{identifier}/approve', 'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
         ['name' => 'credentialProviderApproval#reject',  'url' => '/api/credentials/providers/{identifier}/reject',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
         ['name' => 'credentialProviderApproval#revoke',  'url' => '/api/credentials/providers/{identifier}/revoke',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
