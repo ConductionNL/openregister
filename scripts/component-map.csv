@@ -5068,6 +5068,11 @@ Controller/ObjectTransferController.php,,Controller,,,,,Core
 Service/Organisation/ObjectGraphTransfer.php,,Service,,,,,Core
 Service/Organisation/ObjectGraphTransferRefusal.php,,Service,,,,,Core
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
+Service/Operations/IndexReconciliationProbes.php,,Service,,,,,Configuration
+Service/Operations/IndexReconciliationReport.php,,Service,,,,,Configuration
+BackgroundJob/IndexReconciliationJob.php,,BackgroundJob,,,,,Configuration
+Kernel/Contracts/FileExtractionQueueInterface.php,,Kernel,,,,,Kernel
+BackgroundJob/FileExtractionQueue.php,,BackgroundJob,,,,,Processes
 BackgroundJob/SealAuditBacklogJob.php,,BackgroundJob,,,,,Compliance
 Command/SealAuditBacklogCommand.php,,Command,,,,,Compliance
 Service/Audit/AuditSealBacklogCursor.php,,Service,,,,,Compliance
