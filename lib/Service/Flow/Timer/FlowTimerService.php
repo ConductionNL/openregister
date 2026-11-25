@@ -399,15 +399,17 @@ class FlowTimerService implements FlowTimerControlInterface {
 	 * Supersede a timer whose anchoring event moved, as {@see supersede()} documents.
 	 *
 	 * @param TimerDecision $decision The timer to supersede and why the anchor moved.
-	 * @param FlowTimerAct  $act      The acting identity, the clock, and as `when` the new instant of the anchoring event.
+	 * @param FlowTimerAct             $act      The acting identity, the clock, and as `when` the new instant of the anchoring event.
+	 * @param TimerCalendarSwitch|null $switch   The calendar the successor moves to, keeping the anchor; null to keep the calendar.
 	 *
 	 * @return FlowTimer The successor.
 	 *
 	 * @throws FlowTimerStateException When the timer is not open.
 	 *
 	 * @spec openspec/specs/flow-business-timers/spec.md
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
 	 */
-	private function reanchor(TimerDecision $decision, FlowTimerAct $act): FlowTimer {
+	private function reanchor(TimerDecision $decision, FlowTimerAct $act, ?TimerCalendarSwitch $switch=null): FlowTimer {
 		$prior = $this->storage->timers->findByUuid(uuid: $decision->uuid);
 		if ($prior->isOpen() === false) {
 			throw new FlowTimerStateException(
@@ -420,10 +422,21 @@ class FlowTimerService implements FlowTimerControlInterface {
 			scope: new FlowTimerScope(timer: $prior, calendar: $calendar),
 			act: $act
 		);
+		$successorCalendar = $calendar;
+		if ($switch !== null) {
+			// The anchor did NOT move, the calendar under it did: the successor
+			// keeps the anchor and the running segment, and is measured on the
+			// calendar its new record type names (identity-survives-a-move 1.2).
+			$switch->applyTo(timer: $successor);
+			$successor->setAnchorAt($prior->getAnchorAt());
+			$successor->setRunningSince($prior->getRunningSince());
+			$successorCalendar = WorkingCalendarScope::ofTimer(timer: $successor)->calendarFrom(calendars: $this->arithmetic->calendars);
+		}
+
 		$priorFired = $this->storage->fires->findByTimer(timerUuid: $decision->uuid);
 
 		return $this->transactional(
-			mutation: function () use ($prior, $successor, $priorFired, $calendar, $decision, $act): FlowTimer {
+			mutation: function () use ($prior, $successor, $priorFired, $calendar, $successorCalendar, $decision, $act): FlowTimer {
 				$priorFireAt = $prior->getFireAt();
 				$prior->setState(FlowTimer::STATE_SUPERSEDED);
 				$this->deadlines()->recompute(scope: new FlowTimerScope(timer: $prior, calendar: $calendar), firedKeys: []);
@@ -434,7 +447,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 
 				// The successor must exist before its inherited fire rows.
 				$persisted = $this->storage->timers->insert($successor);
-				$scope = new FlowTimerScope(timer: $persisted, calendar: $calendar);
+				$scope = new FlowTimerScope(timer: $persisted, calendar: $successorCalendar);
 				$inherited = [];
 				if ($priorFired !== []) {
 					$passed = $this->passedRungKeys(scope: $scope, now: $act->now);
@@ -474,6 +487,55 @@ class FlowTimerService implements FlowTimerControlInterface {
 		$cancellation = $this->cancellation(change: $change);
 		return $this->cancelAll(timers: $open, cancellation: $cancellation);
 	}//end cancelForSubject()
+
+	/**
+	 * The subject moved to another record type: move every OPEN timer whose
+	 * calendar its record type named onto the calendar the new one names.
+	 *
+	 * An armed timer is superseded with the change's reason (`moved`) and a
+	 * successor keeps its anchor, running segment and consumed time, measured
+	 * on the new calendar, so its deadline is re-projected and the ledger
+	 * shows why. A suspended timer has no fire moment until it resumes, and
+	 * resume measures the remainder against the timer's own calendar, so it
+	 * is pointed at the new calendar in place. A timer whose calendar came
+	 * from its own configuration, its unit or the instance is not touched,
+	 * and neither is one whose calendar does not change.
+	 *
+	 * @param TimerSubjectRef $subject    The subject type and uuid.
+	 * @param string          $recordType The schema the subject now has.
+	 * @param TimerChange     $change     Why (`moved`), the acting identity, and the clock.
+	 *
+	 * @return int How many timers changed calendar.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function recalendarForSubject(TimerSubjectRef $subject, string $recordType, TimerChange $change): int {
+		$slug  = $this->arithmetic->calendars->recordTypeCalendar(schema: $recordType);
+		$open  = $this->storage->timers->findBySubject(subject: new TimerSubject(type: $subject->type, uuid: $subject->uuid), states: self::OPEN_STATES);
+		$count = 0;
+		foreach ($open as $timer) {
+			$switch = TimerCalendarSwitch::forTimer(timer: $timer, calendarSlug: $slug, recordType: $recordType);
+			if ($switch === null) {
+				continue;
+			}
+
+			if ($timer->getState() === FlowTimer::STATE_SUSPENDED) {
+				$switch->applyTo(timer: $timer);
+				$this->storage->timers->update($timer);
+				$count++;
+				continue;
+			}
+
+			$this->reanchor(
+				decision: new TimerDecision(uuid: (string)$timer->getUuid(), reason: $change->reason),
+				act: new FlowTimerAct(actor: $change->actor, now: $this->instant(now: $change->now), when: ($timer->getAnchorAt() ?? $timer->getRunningSince())),
+				switch: $switch
+			);
+			$count++;
+		}
+
+		return $count;
+	}//end recalendarForSubject()
 
 	/**
 	 * Cancel every OPEN timer a run terminality reaches: the run as subject,

@@ -149,6 +149,7 @@ use RuntimeException;
 use Throwable;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordRetentionStampsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
@@ -812,13 +813,17 @@ class SaveObject implements SaveObjectInterface {
 	 * MagicMapper -> SettingsService -> ValidationOperationsHandler -> ValidateObject
 	 * cycle. That cycle ate 19 GB in a unit-test run on 2026-09-08.
 	 *
-	 * @return \OCA\OpenRegister\Service\RetentionServiceInterface|null The service, or null when unavailable
+	 * It is asked as the Core port RecordRetentionStampsInterface, which carries the
+	 * four calls a save makes; the retention service (Compliance) answers it.
+	 *
+	 * @return RecordRetentionStampsInterface|null The service, or null when unavailable
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-objects-must-carry-mdto-compliant-archival-metadata-in-the-retention-field
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
+	 * @spec openspec/changes/functional-areas-depend-in-one-direction/specs/backend-modularity/spec.md#requirement-areas-reference-only-lower-areas
 	 */
-	private function resolveRetentionService(): ?\OCA\OpenRegister\Service\RetentionServiceInterface {
-		return $this->containerService(id: \OCA\OpenRegister\Service\RetentionServiceInterface::class, label: 'RetentionService');
+	private function resolveRetentionService(): ?RecordRetentionStampsInterface {
+		return $this->containerService(id: RecordRetentionStampsInterface::class, label: 'RetentionService');
 	}//end resolveRetentionService()
 
 	/**
