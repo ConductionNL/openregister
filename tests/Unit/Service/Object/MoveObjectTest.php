@@ -33,6 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
 use OCA\OpenRegister\Service\Object\ObjectMove;
 use OCA\OpenRegister\Service\Object\MoveAddress;
 use OCA\OpenRegister\Db\AuditTrail;
@@ -559,6 +562,92 @@ final class MoveObjectTest extends TestCase {
 				actor: 'anna'
 			)
 		);
+
+		self::assertTrue($outcome['moved']);
+		self::assertSame([], $outcome['errors']);
+		self::assertSame(['write', 'remove'], $this->calls);
+	}
+
+	/**
+	 * A move with this timer control.
+	 *
+	 * @param FlowTimerControlInterface $timers The timers.
+	 * @param int                       $to     The target schema id; the source's (10) makes it a move to where it already is.
+	 *
+	 * @return array The answer.
+	 */
+	private function moveWithTimers(FlowTimerControlInterface $timers, int $to=20): array {
+		$toRegister = 2;
+		if ($to === 10) {
+			$toRegister = 1;
+		}
+
+		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations, $timers);
+
+		return $service->perform(
+			move: new ObjectMove(
+				object: $this->object(),
+				source: new MoveAddress(register: $this->register(1), schema: $this->schema(10)),
+				target: new MoveAddress(register: $this->register($toRegister), schema: $this->schema($to)),
+				actor: 'anna'
+			)
+		);
+	}
+
+	/**
+	 * After the move the object's timers are asked to follow the target schema's calendar, with reason `moved`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function testTheTimersFollowTheTargetSchemasCalendarAfterTheMove(): void {
+		$timers = $this->createMock(FlowTimerControlInterface::class);
+		$timers->expects(self::once())->method('recalendarForSubject')->willReturnCallback(
+			function (TimerSubjectRef $subject, string $recordType, TimerChange $change): int {
+				$this->calls[] = 'timers';
+				self::assertSame(['object', self::UUID], [$subject->type, $subject->uuid]);
+				self::assertSame('20', $recordType);
+				self::assertSame([MoveObject::TIMER_REASON, 'anna'], [$change->reason, $change->actor]);
+				return 1;
+			}
+		);
+
+		$outcome = $this->moveWithTimers(timers: $timers);
+
+		self::assertTrue($outcome['moved']);
+		self::assertSame(['write', 'remove', 'timers'], $this->calls);
+	}
+
+	/**
+	 * A refused move leaves the timers on the calendar the object still has.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function testARefusedMoveLeavesTheTimersAlone(): void {
+		$timers = $this->createMock(FlowTimerControlInterface::class);
+		$timers->expects(self::never())->method('recalendarForSubject');
+
+		$outcome = $this->moveWithTimers(timers: $timers, to: 10);
+
+		self::assertFalse($outcome['moved']);
+	}
+
+	/**
+	 * Timers that cannot follow do not undo or fail a completed move.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	public function testAFailedTimerRecalendarStillReportsTheMove(): void {
+		$timers = $this->createMock(FlowTimerControlInterface::class);
+		$timers->method('recalendarForSubject')->willThrowException(new RuntimeException('timer table locked'));
+		$this->audit->expects(self::once())->method('writeObjectEvent');
+
+		$outcome = $this->moveWithTimers(timers: $timers);
 
 		self::assertTrue($outcome['moved']);
 		self::assertSame([], $outcome['errors']);

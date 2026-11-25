@@ -121,6 +121,86 @@ class HardeningSettingsService implements HardeningSettingsServiceInterface {
 	}//end setAllowedOrigins()
 
 	/**
+	 * Replace the address allowlist of one surface.
+	 *
+	 * Every entry must be one address or one CIDR range; a list holding
+	 * anything else is refused whole rather than stored with the bad entry
+	 * dropped, because a dropped entry is somebody locked out without being
+	 * told. A list that would refuse the address the change itself comes from
+	 * is refused as well: the change arrives through the administration API,
+	 * which sits on both surfaces, so such a list would lock its own author
+	 * out. Both the change and a refusal are recorded in the audit trail.
+	 *
+	 * @param string            $surface          `admin` or `api`.
+	 * @param array<int, mixed> $entries          Addresses and CIDR ranges; an empty list unbinds the surface.
+	 * @param string            $requesterAddress The address the change comes from.
+	 *
+	 * @return array<int, string> The allowlist now in force.
+	 *
+	 * @throws InvalidArgumentException When the surface is unknown, an entry is not an address or range,
+	 *                                  or the list would refuse the address the change comes from.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function setAddressAllowlist(string $surface, array $entries, string $requesterAddress): array {
+		$key = (HardeningPolicy::ADDRESS_KEYS[$surface] ?? null);
+		if ($key === null) {
+			throw new InvalidArgumentException('An address allowlist is kept for the admin and the api surface only.');
+		}
+
+		$cleaned = self::cleanedAddresses(entries: $entries);
+		$change  = new HardeningChange(
+			control: ('addresses.'.$surface),
+			before: $this->posture->policy->addressAllowlist(surface: $surface),
+			after: $cleaned
+		);
+
+		if ($cleaned !== [] && AddressAllowlist::contains(entries: $cleaned, address: $requesterAddress) === false) {
+			$refusal = 'This allowlist would refuse the address this change comes from; add it, or a range holding it, first.';
+			$this->record(change: $change, refusal: $refusal);
+			throw new InvalidArgumentException($refusal);
+		}
+
+		$this->posture->store->appConfig->setValueString(HardeningPolicy::APP_ID, $key, implode(',', $cleaned));
+		$this->record(change: $change);
+
+		return $cleaned;
+	}//end setAddressAllowlist()
+
+	/**
+	 * The submitted addresses trimmed and lowercased, blanks dropped, each once in order.
+	 *
+	 * @param array<int, mixed> $entries The submitted entries.
+	 *
+	 * @return array<int, string> The cleaned entries.
+	 *
+	 * @throws InvalidArgumentException When an entry is not text or not an address or range.
+	 */
+	private static function cleanedAddresses(array $entries): array {
+		$cleaned = [];
+		foreach ($entries as $candidate) {
+			if (is_string($candidate) === false) {
+				throw new InvalidArgumentException('An address must be written out as text.');
+			}
+
+			$entry = strtolower(trim($candidate));
+			if ($entry === '') {
+				continue;
+			}
+
+			if (AddressAllowlist::isValidEntry(entry: $entry) === false) {
+				throw new InvalidArgumentException('Each entry must be an address or a range in CIDR notation, such as 192.0.2.0/24.');
+			}
+
+			if (in_array($entry, $cleaned, true) === false) {
+				$cleaned[] = $entry;
+			}
+		}
+
+		return $cleaned;
+	}//end cleanedAddresses()
+
+	/**
 	 * The submitted origins normalised, blanks dropped, each once in order.
 	 *
 	 * @param array<int, mixed> $origins The submitted origins.
