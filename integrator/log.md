@@ -161,3 +161,4 @@
 2026-11-25T17:49:55Z GREEN prs=10549,11069,11127 main=e2903df63b integrator-cloud (merged; #11089 conflicted in tree, retried next)
 2026-11-25T17:55:03Z RED prs=11152,11199,11201,11208 main=bec7e11e2a integrator-cloud (FlowsDocumentationTest + RoutePostureTest; suspect #11152 new flow node/controller, rebuild without)
 2026-11-25T18:07:09Z GREEN prs=11199,11201,11208 main=bec7e11e2a integrator-cloud (merged; #11152 back as single later)
+2026-11-25T18:20:16Z GREEN prs=11194,11204,11205,11207 main=cf744dffce integrator-cloud (merged)
