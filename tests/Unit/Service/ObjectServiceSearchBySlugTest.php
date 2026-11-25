@@ -211,6 +211,8 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 	 * imported (the Default Organisation on a fresh install). Filtering the
 	 * register lookup by the caller's organisation refused every slug search by
 	 * a user of another organisation, while the numeric-ID search went through.
+	 *
+	 * @return void
 	 */
 	public function testTheRegisterIsFoundAcrossOrganisationsAndTheObjectsStayScoped(): void {
 		$register = new Register();
