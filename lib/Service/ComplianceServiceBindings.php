@@ -30,6 +30,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectArchivalMetadataInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadPurposeGuardInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadableObjectHistoryInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RecordArchivalReadingInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordRetentionStampsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RegisterAccessChangeLogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SearchTrailRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\SystemAuditLineInterface;
@@ -249,6 +250,7 @@ final class ComplianceServiceBindings {
 		AuditRetentionResolverInterface::class         => AuditRetentionResolver::class,
 		SearchTrailServiceInterface::class             => SearchTrailService::class,
 		RetentionServiceInterface::class               => RetentionService::class,
+		RecordRetentionStampsInterface::class          => RetentionService::class,
 		ArchiveReferenceReaderInterface::class         => ArchiveActionDateCalculator::class,
 		AuditSealInterface::class                      => AuditHashService::class,
 		AuditRechainInterface::class                   => AuditHashService::class,
