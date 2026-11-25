@@ -1,5 +1,7 @@
 # INTEGRATOR-LANE.md: the brief for the cloud OPENREGISTER INTEGRATOR routine
 
+FIRST STEP, BEFORE ANY LEASE (coordinator, 25 Nov 2026 12:15 CET): your session can only push to the repo it was started for. The state branch lives in ConductionNL/openregister, so attach it first: call the tool mcp__Claude_Code_Remote__add_repo with owner ConductionNL, repo openregister, access push (load it with ToolSearch if needed). Without it every lease and state write is refused, and lease_acquire used to retry that silently for ~10 minutes; it now returns 4 and prints 'STATE PUSH REFUSED'.
+
 PREINSTALLED (25 Nov 2026 09:00 CET): the cloud environment's setup script now installs gitleaks and a current PHP 8.3. Run `gitleaks version` and `php -v` first; when gitleaks answers and PHP is 8.3.16 or newer, skip every install step for them (never sudo-install), and go straight to the work.
 
 COORDINATOR AWAY (24 Nov 2026 20:00 CET, until Ruben is back): never wait for the coordinator. Anything only the coordinator can do (a refused merge, a release bump, an unanswered decision) goes as one line into COORDINATOR-QUEUE.md (format there), then continue with other work. Merge main/development into your own conflicting dependency PRs so they stay mergeable.

@@ -1,5 +1,7 @@
 # LIVE-LANE.md: the brief for a cloud LIVE routine (coordinator, 25 Nov 2026 12:00 CET; Ruben: lanes start their own Nextcloud)
 
+FIRST STEP, BEFORE ANY LEASE (coordinator, 25 Nov 2026 12:15 CET): your session can only push to the repo it was started for. The state branch lives in ConductionNL/openregister, so attach it first: call the tool mcp__Claude_Code_Remote__add_repo with owner ConductionNL, repo openregister, access push (load it with ToolSearch if needed). Without it every lease and state write is refused, and lease_acquire used to retry that silently for ~10 minutes; it now returns 4 and prints 'STATE PUSH REFUSED'.
+
 Why this lane exists: builders and helpers end idle because the open tasks left need a running Nextcloud (live checks, Newman, Playwright, screenshots, speed measurements). You bring one up inside your own sandbox and do exactly those tasks. Decide everything yourself; never ask.
 
 You are live lane K for APP (both named in your routine prompt; repo ConductionNL/APP, base development). Read ~/q/BUILDER-LANE.md first: SAVE OFTEN, CI, Verify before merging and Standing rules apply to you. Skip MERGE FIRST; only process your own PRs. COORDINATOR AWAY and NEVER IDLE (HELPER-LANE.md) apply too.

@@ -40,11 +40,16 @@ st_sync() {
 # fetch and push: the time from fetch to push is the window in which another writer can win the race.
 _st_jitter() { python3 -c "import random,sys,time;time.sleep(random.uniform(0,float(sys.argv[1])))" "$1"; }
 _st_push() {
-	local msg=$1 i
+	local msg=$1 i err
 	_g diff --cached --quiet && return 1
 	_g commit -q -m "$msg" -m "$TRAILER" || return 2
 	for i in $(seq 1 "${ST_PUSH_TRIES:-150}"); do
-		_g push -q origin "HEAD:refs/heads/$ST_BRANCH" 2>/dev/null && return 0
+		err=$(_g push -q origin "HEAD:refs/heads/$ST_BRANCH" 2>&1) && return 0
+		# A refused push (no write access to openregister) never succeeds on retry.
+		if grep -qiE '403|permission|denied|not allowed|authenticat|could not read Username|repository not found' <<<"$err"; then
+			echo "STATE PUSH REFUSED: attach ConductionNL/openregister with push access (add_repo) first: ${err:0:200}" >&2
+			return 4
+		fi
 		[ "$i" -gt 2 ] && _st_jitter "$(awk -v i="$i" 'BEGIN {v = 0.05 * i; print (v > 0.8) ? 0.8 : v}')"
 		st_sync || return 3
 	done
@@ -121,8 +126,11 @@ lease_acquire() {
 	_lease_free "$name" || return 1
 	pre=$(_g rev-parse HEAD)
 	_lease_stage "$name" "$ttl"
-	if ! _st_push "lease: $name taken by $ST_ME"; then
+	local rc=0
+	_st_push "lease: $name taken by $ST_ME" || rc=$?
+	if [ "$rc" -ne 0 ]; then
 		_st_undo_to "$pre"
+		[ "$rc" -eq 4 ] && return 4
 		return 1
 	fi
 	[ "$(_lease_field "$name" holder)" = "$ST_ME" ]

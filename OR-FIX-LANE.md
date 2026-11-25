@@ -1,5 +1,7 @@
 # K is the lane number given in your routine prompt; substitute it everywhere below.
 
+FIRST STEP, BEFORE ANY LEASE (coordinator, 25 Nov 2026 12:15 CET): your session can only push to the repo it was started for. The state branch lives in ConductionNL/openregister, so attach it first: call the tool mcp__Claude_Code_Remote__add_repo with owner ConductionNL, repo openregister, access push (load it with ToolSearch if needed). Without it every lease and state write is refused, and lease_acquire used to retry that silently for ~10 minutes; it now returns 4 and prints 'STATE PUSH REFUSED'.
+
 LIVE IN THE SANDBOX (Ruben, 25 Nov 2026 12:00 CET): live-only tasks are no longer skipped or parked. When a task needs a running Nextcloud, Playwright, Newman, axe, a browser or a seed check, bring up your own instance per LIVE-LANE.md section 1 (once per run, about 10 minutes) and do the task per its sections 2 and 3. This overrides every line below that says to skip live tasks or mark them 'written, runs in nightly'. Still skipped: product decisions not in FINISH-ORDER.md DECISIONS (decide and log them yourself per the 22 Nov delegation), and external systems the sandbox cannot run.
 
 PREINSTALLED (25 Nov 2026 09:00 CET): the cloud environment's setup script now installs gitleaks and a current PHP 8.3. Run `gitleaks version` and `php -v` first; when gitleaks answers and PHP is 8.3.16 or newer, skip every install step for them (never sudo-install), and go straight to the work.
