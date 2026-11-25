@@ -155,8 +155,11 @@ test.describe('upsert-on-key', () => {
 			extraHTTPHeaders: {},
 			storageState: { cookies: [], origins: [] },
 		})
+		// `OCS-APIRequest` as every API client sends it: without it Nextcloud's
+		// CSRF check answers 412 before the app's authentication decision, and
+		// the test would pass or fail on the wrong refusal.
 		const resp = await anonymous.post(`${objects()}?_upsertOn=zaaksleutel`, {
-			headers: JSON_HEADERS,
+			headers: { ...JSON_HEADERS, 'OCS-APIRequest': 'true' },
 			data: {
 				gemeentecode: '0363',
 				zaaknummer: 'Z-2026-0042',
