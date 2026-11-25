@@ -2309,6 +2309,12 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PUT'],
 		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PATCH', 'postfix' => 'patch'],
 
+		// Export keys of the encrypted instance set (exchange-encrypted-instance-export 4.1), admin only.
+		['name' => 'exportKeys#index', 'url' => '/api/export-keys', 'verb' => 'GET'],
+		['name' => 'exportKeys#create', 'url' => '/api/export-keys', 'verb' => 'POST'],
+		['name' => 'exportKeys#rotate', 'url' => '/api/export-keys/{id}/rotate', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'exportKeys#destroy', 'url' => '/api/export-keys/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+
 		// Retention management: destruction list approval workflow.
 		['name' => 'retention#approveDestructionList', 'url' => '/api/retention/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'retention#rejectDestructionList', 'url' => '/api/retention/destruction-lists/{id}/reject', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],

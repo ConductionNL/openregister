@@ -381,6 +381,7 @@ final class CoreServiceBindings {
 		\OCA\OpenRegister\Service\Organisation\PromotionServiceInterface::class => \OCA\OpenRegister\Service\Organisation\PromotionService::class,
 		\OCA\OpenRegister\Service\Organisation\PromotionPackageReaderInterface::class => \OCA\OpenRegister\Service\Organisation\PromotionPackageReader::class,
 		\OCA\OpenRegister\Kernel\Contracts\SchemaReadRightInterface::class => \OCA\OpenRegister\Service\Object\SchemaReadRight::class,
+		\OCA\OpenRegister\Kernel\Contracts\ActiveOrganisationReaderInterface::class => ActiveOrganisationReader::class,
 		ExpiredObjectStoreInterface::class => ExpiredObjectStore::class,
 		DerivedTranslationsInterface::class => TranslationStatusService::class,
 		RequestLanguagesInterface::class => LanguageService::class,
