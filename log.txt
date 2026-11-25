@@ -4621,3 +4621,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T01:49:59Z integrator-20261124T231146-2f742f98 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-25T01:50:31Z integrator-20261124T231146-2f742f98 MERGED-TREE 64ee6c7f9f: 2 PRs, main now 9ddfde9dc8 = tested tree
+2026-11-25T01:52:20Z precheck-20261124T234023-5e48f803 AUTOPARK openregister#11076 c42498d6 sbom: package-lock.json changed without sbom.cdx.json (tree e15fcc38ec)
