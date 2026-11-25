@@ -1739,6 +1739,7 @@ Search/Controller/GraphQLController.php,128,Search,Search,Search/Controller/Grap
 Search/Controller/MapsOverviewController.php,86,Search,Search,Search/Controller/MapsOverviewController.php,0,,Search
 Search/Controller/ReportsController.php,106,Search,Search,Search/Controller/ReportsController.php,0,,Search
 Search/Controller/ReportTemplateController.php,80,Search,Search,Search/Controller/ReportTemplateController.php,0,,Search
+Search/Controller/Support/ReportGenerationFailures.php,30,Search,Search,Search/Controller/Support/ReportGenerationFailures.php,0,,Search
 Search/Controller/SearchController.php,90,Search,Search,Search/Controller/SearchController.php,0,,Search
 Search/Controller/Support/ViewPatch.php,49,Search,Search,Search/Controller/Support/ViewPatch.php,0,,Search
 Search/Controller/ViewsController.php,472,Search,Search,Search/Controller/ViewsController.php,0,,Search
@@ -1814,6 +1815,7 @@ Search/Service/Reporting/PdfReportWriter.php,21,Search,Search,Search/Service/Rep
 Search/Service/Reporting/ReportRenderService.php,153,Search,Search,Search/Service/Reporting/ReportRenderService.php,0,,Search
 Search/Service/Reporting/ReportPeriod.php,40,Search,Search,Search/Service/Reporting/ReportPeriod.php,0,,Search
 Search/Service/Reporting/ReportSectionRows.php,20,Search,Search,Search/Service/Reporting/ReportSectionRows.php,0,,Search
+Search/Service/Reporting/ReportSectionQuery.php,90,Search,Search,Search/Service/Reporting/ReportSectionQuery.php,0,,Search
 Search/Service/Reporting/ReportSectionSource.php,25,Search,Search,Search/Service/Reporting/ReportSectionSource.php,0,,Search
 Search/Service/Reporting/ReportTemplateGenerator.php,130,Search,Search,Search/Service/Reporting/ReportTemplateGenerator.php,0,,Search
 Search/Service/Reporting/SpreadsheetReportWriter.php,189,Search,Search,Search/Service/Reporting/SpreadsheetReportWriter.php,0,,Search

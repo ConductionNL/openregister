@@ -38,7 +38,7 @@ final class ReportSectionRows {
 	 *
 	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-configurable-report-templates
 	 */
-	public static function withListedRows(array $groups, mixed $rows): array {
+	public function withListedRows(array $groups, mixed $rows): array {
 		$byKey = [];
 		foreach ($groups as $group) {
 			if (is_array($group) === true) {

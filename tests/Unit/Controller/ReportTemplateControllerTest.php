@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Controller\ReportTemplateController;
+use OCA\OpenRegister\Search\Controller\Support\ReportGenerationFailures;
 use OCA\OpenRegister\Search\Service\Reporting\ReportPeriod;
 use OCA\OpenRegister\Search\Service\Reporting\ReportTemplateGenerator;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -42,9 +43,15 @@ use Psr\Log\LoggerInterface;
 
 #[CoversClass(ReportTemplateController::class)]
 #[CoversClass(ReportPeriod::class)]
+#[CoversClass(ReportGenerationFailures::class)]
 class ReportTemplateControllerTest extends TestCase {
 
-	private function controller(array $params, ?\Throwable $generatorError = null, ?\Throwable $findError = null, ?array &$seen = null): ReportTemplateController {
+	private function controller(
+		array $params,
+		?\Throwable $generatorError = null,
+		?\Throwable $findError = null,
+		?array &$seen = null,
+	): ReportTemplateController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
 			static fn (string $key, mixed $default = null): mixed => ($params[$key] ?? $default)
@@ -70,7 +77,7 @@ class ReportTemplateControllerTest extends TestCase {
 			);
 		}
 
-		return new ReportTemplateController($request, $generator, $finder, $this->createMock(LoggerInterface::class));
+		return new ReportTemplateController($request, $generator, $finder, new ReportGenerationFailures($this->createMock(LoggerInterface::class)));
 	}//end controller()
 
 	public function testAYearRendersTheTemplateOverThatCalendarYear(): void {

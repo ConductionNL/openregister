@@ -36,6 +36,7 @@ use OCA\OpenRegister\Search\Service\Reporting\HtmlReportWriter;
 use OCA\OpenRegister\Search\Service\Reporting\PdfReportWriter;
 use OCA\OpenRegister\Search\Service\Reporting\ReportPeriod;
 use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
+use OCA\OpenRegister\Search\Service\Reporting\ReportSectionQuery;
 use OCA\OpenRegister\Search\Service\Reporting\ReportSectionRows;
 use OCA\OpenRegister\Search\Service\Reporting\ReportSectionSource;
 use OCA\OpenRegister\Search\Service\Reporting\ReportTemplateGenerator;
@@ -49,6 +50,7 @@ use Psr\Log\LoggerInterface;
 #[CoversClass(ReportTemplateGenerator::class)]
 #[CoversClass(ReportPeriod::class)]
 #[CoversClass(ReportSectionRows::class)]
+#[CoversClass(ReportSectionQuery::class)]
 #[CoversClass(ReportSectionSource::class)]
 #[CoversClass(ReportRenderService::class)]
 class ReportTemplateGeneratorTest extends TestCase {
@@ -69,7 +71,10 @@ class ReportTemplateGeneratorTest extends TestCase {
 			'branding' => ['organisation' => 'Gemeente Voorbeeld'],
 			'sections' => [
 				['key' => 'total', 'title' => 'Totaal', 'type' => 'total'],
-				['key' => 'per-category', 'title' => 'Per categorie', 'type' => 'grouped', 'groupBy' => 'category', 'rows' => ['a', 'b', 'c'], 'compareWithPreviousYear' => true],
+				[
+					'key' => 'per-category', 'title' => 'Per categorie', 'type' => 'grouped', 'groupBy' => 'category',
+					'rows' => ['a', 'b', 'c'], 'compareWithPreviousYear' => true,
+				],
 			],
 		];
 	}//end template()
@@ -96,13 +101,17 @@ class ReportTemplateGeneratorTest extends TestCase {
 				return AggregationQuery::create(
 					metric: 'count',
 					filter: $input['filter'],
-					layout: new AggregationLayout(dateBucket: ['field' => $input['field'], 'start' => $input['from'], 'end' => $input['to'], 'gap' => $input['interval']])
+					layout: new AggregationLayout(
+						dateBucket: ['field' => $input['field'], 'start' => $input['from'], 'end' => $input['to'], 'gap' => $input['interval']]
+					)
 				);
 			}
 		);
 		$pdf = $this->createMock(PdfReportWriter::class);
 		$pdf->method('write')->willReturnCallback(
-			static fn (array $dashboard, array $resolvedWidgets): string => json_encode(['title' => $dashboard['titel'], 'organisation' => $dashboard['category'], 'widgets' => $resolvedWidgets])
+			static fn (array $dashboard, array $resolvedWidgets): string => json_encode(
+				['title' => $dashboard['titel'], 'organisation' => $dashboard['category'], 'widgets' => $resolvedWidgets]
+			)
 		);
 		$render = new ReportRenderService(
 			$runner,
@@ -111,11 +120,11 @@ class ReportTemplateGeneratorTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		return new ReportTemplateGenerator($runner, $validator, $render);
+		return new ReportTemplateGenerator(new ReportSectionQuery($runner, $validator), $render);
 	}//end generator()
 
 	private function generatedWidgets(array $template, string $from = '2026-01-01', string $to = '2026-12-31'): array {
-		$rendered = $this->generator()->generate($template, ReportPeriod::fromDates($from, $to), 'pdf');
+		$rendered = $this->generator()->generate($template, new ReportPeriod($from, $to), 'pdf');
 		$this->assertSame('application/pdf', $rendered['mime']);
 
 		return json_decode($rendered['bytes'], true);
@@ -164,7 +173,10 @@ class ReportTemplateGeneratorTest extends TestCase {
 	public function testASectionNamesItsOwnSourceAndFilters(): void {
 		$template = $this->template();
 		$template['sections'] = [
-			['key' => 'withdrawn', 'type' => 'grouped', 'register' => 'archief', 'schema' => 'intrekking', 'filters' => ['status' => 'withdrawn'], 'dateField' => 'withdrawnAt', 'groupBy' => 'reason'],
+			[
+				'key' => 'withdrawn', 'type' => 'grouped', 'register' => 'archief', 'schema' => 'intrekking',
+				'filters' => ['status' => 'withdrawn'], 'dateField' => 'withdrawnAt', 'groupBy' => 'reason',
+			],
 		];
 		$this->generatedWidgets($template);
 
@@ -178,7 +190,7 @@ class ReportTemplateGeneratorTest extends TestCase {
 		$template = $this->template();
 		$template['sections'] = [['key' => 'per-month', 'type' => 'series', 'interval' => 'month']];
 		$generator = $this->generator(static fn (AggregationQuery $query): array => [['key' => '2026-03-01T00:00:00Z', 'value' => 2]]);
-		$report = json_decode($generator->generate($template, ReportPeriod::year(2026), 'pdf')['bytes'], true);
+		$report = json_decode($generator->generate($template, new ReportPeriod('2026-01-01', '2026-12-31'), 'pdf')['bytes'], true);
 
 		$groups = $report['widgets'][0]['data']['groups'];
 		$this->assertCount(12, $groups);
@@ -192,41 +204,40 @@ class ReportTemplateGeneratorTest extends TestCase {
 		$runner = $this->createMock(AggregationRunnerInterface::class);
 		$runner->method('runAdhocByRef')->willThrowException(new NotAuthorizedException('no read'));
 		$generator = new ReportTemplateGenerator(
-			$runner,
-			$this->createMock(TimeseriesRequestValidatorInterface::class),
+			new ReportSectionQuery($runner, $this->createMock(TimeseriesRequestValidatorInterface::class)),
 			$this->createMock(ReportRenderService::class)
 		);
 
 		$this->expectException(NotAuthorizedException::class);
-		$generator->generate($this->template(), ReportPeriod::year(2026), 'csv');
+		$generator->generate($this->template(), new ReportPeriod('2026-01-01', '2026-12-31'), 'csv');
 	}//end testASectionTheCallerMayNotReadRefusesTheWholeReport()
 
 	public function testATemplateWithoutSectionsIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
-		$this->generator()->generate(['name' => 'x', 'sections' => []], ReportPeriod::year(2026), 'csv');
+		$this->generator()->generate(['name' => 'x', 'sections' => []], new ReportPeriod('2026-01-01', '2026-12-31'), 'csv');
 	}//end testATemplateWithoutSectionsIsRefused()
 
 	public function testAnUnknownSectionTypeIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$template = $this->template();
 		$template['sections'] = [['key' => 'x', 'type' => 'pie']];
-		$this->generator()->generate($template, ReportPeriod::year(2026), 'csv');
+		$this->generator()->generate($template, new ReportPeriod('2026-01-01', '2026-12-31'), 'csv');
 	}//end testAnUnknownSectionTypeIsRefused()
 
 	public function testAGroupedSectionWithoutGroupByIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 		$template = $this->template();
 		$template['sections'] = [['key' => 'x', 'type' => 'grouped']];
-		$this->generator()->generate($template, ReportPeriod::year(2026), 'csv');
+		$this->generator()->generate($template, new ReportPeriod('2026-01-01', '2026-12-31'), 'csv');
 	}//end testAGroupedSectionWithoutGroupByIsRefused()
 
 	public function testASectionWithoutRegisterOrSchemaIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
-		$this->generator()->generate(['name' => 'x', 'sections' => [['key' => 't', 'type' => 'total']]], ReportPeriod::year(2026), 'csv');
+		$this->generator()->generate(['name' => 'x', 'sections' => [['key' => 't', 'type' => 'total']]], new ReportPeriod('2026-01-01', '2026-12-31'), 'csv');
 	}//end testASectionWithoutRegisterOrSchemaIsRefused()
 
 	public function testCsvCarriesTheZeroRows(): void {
-		$rendered = $this->generator()->generate($this->template(), ReportPeriod::year(2026), 'csv');
+		$rendered = $this->generator()->generate($this->template(), new ReportPeriod('2026-01-01', '2026-12-31'), 'csv');
 
 		$this->assertStringContainsString('text/csv', $rendered['mime']);
 		$this->assertStringStartsWith('jaarcijfers-2026_', $rendered['filename']);
@@ -234,16 +245,22 @@ class ReportTemplateGeneratorTest extends TestCase {
 
 	public function testAReversedOrMalformedPeriodIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
-		ReportPeriod::fromDates('2026-12-31', '2026-01-01');
+		new ReportPeriod('2026-12-31', '2026-01-01');
 	}//end testAReversedOrMalformedPeriodIsRefused()
 
 	public function testAMalformedDateIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
-		ReportPeriod::fromDates('2026-13-01', '2026-12-31');
+		new ReportPeriod('2026-02-30', '2026-12-31');
 	}//end testAMalformedDateIsRefused()
 
+	public function testAPeriodIsLabelledByYearMonthOrRange(): void {
+		$this->assertSame('2026', (new ReportPeriod('2026-01-01', '2026-12-31'))->label());
+		$this->assertSame('2026-02', (new ReportPeriod('2026-02-01', '2026-02-28'))->label());
+		$this->assertSame('2026-03-01/2026-03-07', (new ReportPeriod('2026-03-01', '2026-03-07'))->label());
+	}//end testAPeriodIsLabelledByYearMonthOrRange()
+
 	public function testAnExistingConditionOnTheDatePropertyIsKept(): void {
-		$filter = ReportPeriod::year(2026)->narrow(['publicationDate' => 'x', 'other' => 1], 'publicationDate');
+		$filter = (new ReportPeriod('2026-01-01', '2026-12-31'))->narrow(['publicationDate' => 'x', 'other' => 1], 'publicationDate');
 
 		$this->assertSame(['eq' => 'x', 'gte' => '2026-01-01', 'lt' => '2027-01-01'], $filter['publicationDate']);
 		$this->assertSame(1, $filter['other']);

@@ -40,11 +40,6 @@ namespace OCA\OpenRegister\Search\Service\Reporting;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportPeriods;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 
 /**
  * Turns a report template and a period into a rendered report.
@@ -67,13 +62,11 @@ class ReportTemplateGenerator {
 	/**
 	 * Constructor.
 	 *
-	 * @param AggregationRunnerInterface          $runner        Runs each section with the caller's rights.
-	 * @param TimeseriesRequestValidatorInterface $validator     Builds a series section's query.
-	 * @param ReportRenderService                 $renderService Writes the report in the chosen format.
+	 * @param ReportSectionQuery  $sectionQuery  Counts each section with the caller's rights.
+	 * @param ReportRenderService $renderService Writes the report in the chosen format.
 	 */
 	public function __construct(
-		private readonly AggregationRunnerInterface $runner,
-		private readonly TimeseriesRequestValidatorInterface $validator,
+		private readonly ReportSectionQuery $sectionQuery,
 		private readonly ReportRenderService $renderService,
 	) {
 	}//end __construct()
@@ -171,135 +164,23 @@ class ReportTemplateGenerator {
 	 */
 	private function resolvedSection(array $template, array $section, ReportPeriod $period): array {
 		$source = new ReportSectionSource(template: $template, section: $section);
-		$type = (string)($section['type'] ?? 'grouped');
-		$data = $this->sectionData(source: $source, section: $section, period: $period, type: $type);
+		$data = $this->sectionQuery->data(source: $source, section: $section, period: $period);
 
 		return [
 			'widget' => [
 				'title' => (string)($section['title'] ?? $section['key'] ?? ''),
 				'subtitle' => $period->label(),
-				'type' => $type,
+				'type' => (string)($section['type'] ?? 'grouped'),
 				'dataSource' => ['mode' => 'aggregation', 'register' => $source->register, 'schema' => $source->schema],
 			],
 			'data' => $data,
 		];
 	}//end resolvedSection()
 
-	/**
-	 * A section's data by its type.
-	 *
-	 * @param ReportSectionSource  $source  Where the section counts.
-	 * @param array<string, mixed> $section The section.
-	 * @param ReportPeriod         $period  The period.
-	 * @param string               $type    The section type.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function sectionData(ReportSectionSource $source, array $section, ReportPeriod $period, string $type): array {
-		if ($type === 'series') {
-			return $this->seriesData(source: $source, section: $section, period: $period);
-		}
 
-		$filter = $period->narrow(filter: $source->filter, field: $source->dateField);
-		$metric = (string)($section['metric'] ?? AggregationQuery::METRIC_COUNT);
-		$field = $this->metricField(section: $section, metric: $metric);
-		if ($type === 'total') {
-			$result = $this->run(source: $source, query: AggregationQuery::create(metric: $metric, field: $field, filter: $filter));
-			return ['groups' => [['key' => (string)($section['title'] ?? 'Total'), 'value' => $this->scalar(result: $result)]]];
-		}
 
-		$query = AggregationQuery::create(
-			metric: $metric,
-			field: $field,
-			filter: $filter,
-			layout: new AggregationLayout(groupBy: ['field' => (string)$section['groupBy']])
-		);
-		$groups = ($this->run(source: $source, query: $query)['groups'] ?? []);
 
-		return ['groups' => ReportSectionRows::withListedRows(groups: $groups, rows: ($section['rows'] ?? []))];
-	}//end sectionData()
 
-	/**
-	 * A series section: one bucket per interval of the period, none missing.
-	 *
-	 * @param ReportSectionSource  $source  Where the section counts.
-	 * @param array<string, mixed> $section The section.
-	 * @param ReportPeriod         $period  The period.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function seriesData(ReportSectionSource $source, array $section, ReportPeriod $period): array {
-		$gap = strtolower((string)($section['interval'] ?? 'month'));
-		$range = ['from' => $period->from, 'to' => $period->exclusiveEnd()];
-		$query = $this->validator->validate(
-			input: [
-				'field' => $source->dateField,
-				'interval' => $gap,
-				'from' => $range['from'],
-				'to' => $range['to'],
-				'metric' => AggregationQuery::METRIC_COUNT,
-				'metricField' => null,
-				'filter' => $source->filter,
-				'cumulative' => false,
-			],
-			schema: $this->runner->findSchema(schemaRef: $source->schema, registerRef: $source->register)
-		);
-		$groups = AggregateReportPeriods::fillGaps(
-			groups: ($this->run(source: $source, query: $query)['groups'] ?? []),
-			gap: $gap,
-			range: $range,
-			metric: AggregationQuery::METRIC_COUNT
-		);
-		foreach ($groups as $index => $group) {
-			$groups[$index]['key'] = AggregateReportPeriods::label(key: (string)($group['key'] ?? ''), gap: $gap);
-		}
-
-		return ['groups' => $groups];
-	}//end seriesData()
-
-	/**
-	 * The field a metric reads; count reads none.
-	 *
-	 * @param array<string, mixed> $section The section.
-	 * @param string               $metric  The metric.
-	 *
-	 * @return string|null
-	 */
-	private function metricField(array $section, string $metric): ?string {
-		if ($metric === AggregationQuery::METRIC_COUNT || is_string($section['field'] ?? null) === false) {
-			return null;
-		}
-
-		return $section['field'];
-	}//end metricField()
-
-	/**
-	 * Run a section's query with the caller's rights.
-	 *
-	 * @param ReportSectionSource $source Where the section counts.
-	 * @param AggregationQuery    $query  The query.
-	 *
-	 * @return array<string, mixed> The runner's envelope.
-	 */
-	private function run(ReportSectionSource $source, AggregationQuery $query): array {
-		return $this->runner->runAdhocByRef(registerRef: $source->register, schemaRef: $source->schema, query: $query);
-	}//end run()
-
-	/**
-	 * The single value of an ungrouped run.
-	 *
-	 * @param array<string, mixed> $result The runner's envelope.
-	 *
-	 * @return int|float
-	 */
-	private function scalar(array $result): int|float {
-		$value = ($result['value'] ?? $result['count'] ?? 0);
-		if (is_int($value) === true || is_float($value) === true) {
-			return $value;
-		}
-
-		return (float)$value;
-	}//end scalar()
 
 	/**
 	 * The report's own payload as the writers read it.

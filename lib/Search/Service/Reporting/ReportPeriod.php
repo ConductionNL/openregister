@@ -24,23 +24,24 @@ namespace OCA\OpenRegister\Search\Service\Reporting;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportPeriods;
 
 /**
  * A period of whole days, both bounds inclusive.
  */
 final class ReportPeriod {
 	/**
-	 * Constructor; use `fromDates()`.
+	 * First day, `Y-m-d`.
 	 *
-	 * @param string $from First day, `Y-m-d`.
-	 * @param string $to   Last day, `Y-m-d`.
+	 * @var string
 	 */
-	private function __construct(
-		public readonly string $from,
-		public readonly string $to,
-	) {
-	}//end __construct()
+	public readonly string $from;
+
+	/**
+	 * Last day, `Y-m-d`.
+	 *
+	 * @var string
+	 */
+	public readonly string $to;
 
 	/**
 	 * A period from two dates, refused when one does not parse or the end precedes the start.
@@ -48,34 +49,20 @@ final class ReportPeriod {
 	 * @param string $from First day, `Y-m-d`.
 	 * @param string $to   Last day, `Y-m-d`.
 	 *
-	 * @return self
-	 *
 	 * @throws InvalidArgumentException When a bound is not a date or the range is reversed.
 	 *
 	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-configurable-report-templates
 	 */
-	public static function fromDates(string $from, string $to): self {
-		$start = self::date(value: $from, name: 'from');
-		$end = self::date(value: $to, name: 'to');
+	public function __construct(string $from, string $to) {
+		$start = $this->date(value: $from, name: 'from');
+		$end = $this->date(value: $to, name: 'to');
 		if ($end < $start) {
 			throw new InvalidArgumentException('`dateRange.to` MUST NOT precede `dateRange.from`');
 		}
 
-		return new self(from: $start->format('Y-m-d'), to: $end->format('Y-m-d'));
-	}//end fromDates()
-
-	/**
-	 * The calendar year as a period.
-	 *
-	 * @param int $year The year.
-	 *
-	 * @return self
-	 *
-	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-configurable-report-templates
-	 */
-	public static function year(int $year): self {
-		return self::fromDates(from: sprintf('%04d-01-01', $year), to: sprintf('%04d-12-31', $year));
-	}//end year()
+		$this->from = $start->format('Y-m-d');
+		$this->to = $end->format('Y-m-d');
+	}//end __construct()
 
 	/**
 	 * The same days one year earlier.
@@ -103,14 +90,23 @@ final class ReportPeriod {
 	}//end exclusiveEnd()
 
 	/**
-	 * The period's label: `2026` for a whole year, `Q1 2026`, `2026-01`, else `from/to`.
+	 * The period's label: `2026` for a whole year, `2026-01` for a whole month, else `from/to`.
 	 *
 	 * @return string
 	 *
 	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-configurable-report-templates
 	 */
 	public function label(): string {
-		return AggregateReportPeriods::periodLabel(from: $this->from, to: $this->to);
+		$start = new DateTimeImmutable($this->from);
+		if ($start->format('m-d') === '01-01' && $this->to === $start->format('Y') . '-12-31') {
+			return $start->format('Y');
+		}
+
+		if ($start->format('d') === '01' && $this->to === $start->format('Y-m-t')) {
+			return $start->format('Y-m');
+		}
+
+		return $this->from . '/' . $this->to;
 	}//end label()
 
 	/**
@@ -125,13 +121,12 @@ final class ReportPeriod {
 	 * @spec openspec/changes/rapportage-bi-export/specs/rapportage-bi-export/spec.md#requirement-the-system-must-support-configurable-report-templates
 	 */
 	public function narrow(array $filter, string $field): array {
-		$range = AggregateReportPeriods::createdRange(from: $this->from, to: $this->to);
 		$existing = ($filter[$field] ?? []);
 		if (is_array($existing) === false) {
 			$existing = ['eq' => $existing];
 		}
 
-		$filter[$field] = array_merge($existing, $range);
+		$filter[$field] = array_merge($existing, ['gte' => $this->from, 'lt' => $this->exclusiveEnd()]);
 
 		return $filter;
 	}//end narrow()
@@ -146,12 +141,14 @@ final class ReportPeriod {
 	 *
 	 * @throws InvalidArgumentException When it is not a `Y-m-d` date.
 	 */
-	private static function date(string $value, string $name): DateTimeImmutable {
-		$date = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
-		if ($date === false || $date->format('Y-m-d') !== $value) {
+	private function date(string $value, string $name): DateTimeImmutable {
+		$parts = [];
+		if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $parts) !== 1
+			|| checkdate((int)$parts[2], (int)$parts[3], (int)$parts[1]) === false
+		) {
 			throw new InvalidArgumentException(sprintf('`dateRange.%s` MUST be a date (Y-m-d)', $name));
 		}
 
-		return $date;
+		return new DateTimeImmutable($value);
 	}//end date()
 }//end class

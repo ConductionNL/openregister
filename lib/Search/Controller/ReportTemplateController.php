@@ -32,9 +32,8 @@ namespace OCA\OpenRegister\Search\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Exception\OfficeServerRequiredException;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Search\Controller\Support\ReportGenerationFailures;
 use OCA\OpenRegister\Search\Service\Reporting\ReportPeriod;
 use OCA\OpenRegister\Search\Service\Reporting\ReportTemplateGenerator;
 use OCA\OpenRegister\Service\Resilience\Sheddable;
@@ -44,8 +43,6 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use Psr\Log\LoggerInterface;
-use RuntimeException;
 
 /**
  * REST endpoint that renders a report template over a period.
@@ -57,13 +54,13 @@ class ReportTemplateController extends Controller {
 	 * @param IRequest                   $request      The current request.
 	 * @param ReportTemplateGenerator    $generator    Generates the report.
 	 * @param MagicObjectFinderInterface $objectMapper Loads the template with the caller's rights.
-	 * @param LoggerInterface            $logger       Logger.
+	 * @param ReportGenerationFailures   $failures     Answers a generation that failed.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly ReportTemplateGenerator $generator,
 		private readonly MagicObjectFinderInterface $objectMapper,
-		private readonly LoggerInterface $logger,
+		private readonly ReportGenerationFailures $failures,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -93,7 +90,7 @@ class ReportTemplateController extends Controller {
 				format: strtolower((string)$this->request->getParam(key: 'format', default: 'pdf'))
 			);
 		} catch (\Throwable $e) {
-			return $this->failureResponse(templateId: $templateId, error: $e);
+			return $this->failures->response(templateId: $templateId, error: $e);
 		}
 
 		return new DataDownloadResponse(data: $rendered['bytes'], filename: $rendered['filename'], contentType: $rendered['mime']);
@@ -109,12 +106,12 @@ class ReportTemplateController extends Controller {
 	private function period(): ReportPeriod {
 		$range = $this->request->getParam(key: 'dateRange');
 		if (is_array($range) === true) {
-			return ReportPeriod::fromDates(from: (string)($range['from'] ?? ''), to: (string)($range['to'] ?? ''));
+			return new ReportPeriod(from: (string)($range['from'] ?? ''), to: (string)($range['to'] ?? ''));
 		}
 
 		$year = (string)$this->request->getParam(key: 'year', default: '');
 		if (preg_match('/^\d{4}$/', $year) === 1) {
-			return ReportPeriod::year(year: (int)$year);
+			return new ReportPeriod(from: $year . '-01-01', to: $year . '-12-31');
 		}
 
 		throw new InvalidArgumentException('`dateRange` ({from, to}) or `year` is required');
@@ -143,36 +140,4 @@ class ReportTemplateController extends Controller {
 		return $data;
 	}//end templateData()
 
-	/**
-	 * The response to a generation that failed.
-	 *
-	 * @param string     $templateId The template identifier.
-	 * @param \Throwable $error      Why it failed.
-	 *
-	 * @return JSONResponse
-	 */
-	private function failureResponse(string $templateId, \Throwable $error): JSONResponse {
-		$known = [
-			InvalidArgumentException::class => Http::STATUS_BAD_REQUEST,
-			NotAuthorizedException::class => Http::STATUS_FORBIDDEN,
-			DoesNotExistException::class => Http::STATUS_NOT_FOUND,
-			RuntimeException::class => Http::STATUS_NOT_FOUND,
-		];
-		if ($error instanceof OfficeServerRequiredException) {
-			return new JSONResponse(data: $error->toResponseData(), statusCode: OfficeServerRequiredException::HTTP_STATUS);
-		}
-
-		foreach ($known as $class => $status) {
-			if ($error instanceof $class) {
-				return new JSONResponse(data: ['error' => $error->getMessage()], statusCode: $status);
-			}
-		}
-
-		$this->logger->error(
-			message: '[ReportTemplateController] Generation failed',
-			context: ['templateId' => $templateId, 'error' => $error->getMessage()]
-		);
-
-		return new JSONResponse(data: ['error' => 'Generation failed; see server logs for details'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
-	}//end failureResponse()
 }//end class
