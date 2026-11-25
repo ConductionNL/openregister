@@ -1512,6 +1512,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
         ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
         ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
+        // A whole base export: read it and propose the register it becomes; writes nothing (REQ-IPC-006).
+        ['name' => 'importPreview#proposeBase', 'url' => '/api/import-previews/base', 'verb' => 'POST'],
         ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#failed', 'url' => '/api/import-previews/{id}/failed', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
