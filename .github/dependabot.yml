@@ -72,6 +72,12 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    # doctrine/dbal 4: the app runs on the dbal Nextcloud server loads (3.x),
+    # so a dev-only major tests an API production never uses (#10631). Lift
+    # when Nextcloud ships dbal 4.
+    ignore:
+      - dependency-name: "doctrine/dbal"
+        update-types: ["version-update:semver-major"]
     cooldown:
       default-days: 2
       include:
