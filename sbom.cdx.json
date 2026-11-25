@@ -3873,8 +3873,8 @@
       "type": "library",
       "name": "helper-string-parser",
       "group": "@babel",
-      "version": "7.29.14",
-      "bom-ref": "openregister@1.0.0|@babel/helper-string-parser@7.29.14",
+      "version": "7.29.15",
+      "bom-ref": "openregister@1.0.0|@babel/helper-string-parser@7.29.15",
       "licenses": [
         {
           "license": {
@@ -3882,15 +3882,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.14",
+      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.15",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.14.tgz",
+          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.15.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "097bca305bccf348a123b568c7d8dbfa44239f28c449034f33ebc1ed4d19cfa4d6b9903e67f14bd103cc1f7d34877dea26d231f9111e0615ea58e3d6e3c4dc01"
+              "content": "0b616e6a94362a1d4e9d51c0a0b8b9ac3dc6049f0239bf50eb4f53e871292ea681028e7ad0f0cfe4ec4113974223f87de753013bff9b094614e5267ef19955fb"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -3941,8 +3941,8 @@
       "type": "library",
       "name": "parser",
       "group": "@babel",
-      "version": "7.29.14",
-      "bom-ref": "openregister@1.0.0|@babel/parser@7.29.14",
+      "version": "7.29.15",
+      "bom-ref": "openregister@1.0.0|@babel/parser@7.29.15",
       "licenses": [
         {
           "license": {
@@ -3950,15 +3950,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/parser@7.29.14",
+      "purl": "pkg:npm/%40babel/parser@7.29.15",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.14.tgz",
+          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.15.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "54bdb6d2f5eec8edb3deb34843063b7ed8fd530a6a3adfb7dec1feb015a439e91bb1247683b1043273b1db8665087d31380dc333fdf74a27d51466e7243f2bff"
+              "content": "469296ca2b07a0ff35b70b520a0984d36894d119cf72ad433796c111ba5478fae303d437c1786e7e7089aeb6b23e9a1989ea85877cf2650ab0b522b480671c44"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -3968,6 +3968,42 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@babel/parser"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "types",
+          "group": "@babel",
+          "version": "7.29.15",
+          "bom-ref": "openregister@1.0.0|@babel/parser@7.29.15|@babel/types@7.29.15",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40babel/types@7.29.15",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.15.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "fd72a92836a42fffcb67ae9bab55ec64eb30baa788e4c66a3cb0eed7ca375dd914d5f349edb74fb7382773864d4be6c11875741491bc8e36fc4b0702de735541"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@babel/parser/node_modules/@babel/types"
+            }
+          ]
         }
       ]
     },
@@ -4002,40 +4038,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@babel/runtime"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "types",
-      "group": "@babel",
-      "version": "7.29.14",
-      "bom-ref": "openregister@1.0.0|@babel/types@7.29.14",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/%40babel/types@7.29.14",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.14.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "52323f74a9b02704fda4eb33262b6ad86e8439b64f9ec6547dd0abf76cf64e51771192bd27711d7ce294ac2cc797ac05b616f3c21ce5d52a1cfd4230c518aaeb"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/@babel/types"
         }
       ]
     },
