@@ -4720,3 +4720,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T04:25:25Z session-20261125T042525-4e214e2e or-fix-5 start (cloud run)
 2026-11-25T04:26:45Z or-fix-3: main f7904f9d; fixed #10513 (BLOCK: built-in count 37 after main's ExtendInputNode, merged main) -> ac941699 REVERIFY; #10523 #10533 #11113 green merged with main (Architecture + touched tests), #11023 #11123 no PHP, #11093 #11103 approved clean; all share PRs merge clean; precheck not run: gitleaks install refused by the permission check
 2026-11-25T04:31:40Z integrator-20261125T031209-b842bbc3 GREEN tree 013af7dd72 on dev ee68d246f0 prs 2 front=skip: Tests: 66247, Assertions: 234645, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-25T04:32:02Z integrator-20261125T031209-b842bbc3 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
