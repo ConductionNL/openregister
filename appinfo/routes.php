@@ -142,6 +142,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // two-segment `/api/objects/{register}/{schema}` create route first.
         // platform-collaboration-resources: the Nextcloud collections an object belongs to.
         ['name' => 'objectCollections#index', 'url' => '/api/objects/{register}/{schema}/{id}/collections', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectCollections#create', 'url' => '/api/objects/{register}/{schema}/{id}/collections', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectCollections#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/collections/{collectionId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'collectionId' => '\\d+']],
         ['name' => 'objectOwnership#show',          'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'GET',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#claim',         'url' => '/api/objects/{register}/{schema}/{id}/ownership/claim', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#assign',        'url' => '/api/objects/{register}/{schema}/{id}/ownership',       'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
