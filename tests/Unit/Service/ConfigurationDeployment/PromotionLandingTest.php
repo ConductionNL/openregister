@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\ConfigurationDraft;
 use OCA\OpenRegister\Db\ConfigurationDraftSet;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Kernel\Contracts\PromotionRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationAddress;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftsInterface;
 use OCA\OpenRegister\Service\ConfigurationDeployment\ConfigurationDraftTarget;
@@ -71,6 +72,13 @@ final class PromotionLandingTest extends TestCase {
 		$this->export->expects($this->once())->method('exportConfig')->with($register)->willReturn(['openapi' => '3.0.0']);
 
 		$this->assertSame(['openapi' => '3.0.0'], $this->landing()->exportRegister($register));
+	}
+
+	public function testARegisterThatIsNotAStoredEntityIsRefusedBeforeTheExport(): void {
+		$this->export->expects($this->never())->method('exportConfig');
+
+		$this->expectException(PromotionRefusedException::class);
+		$this->landing()->exportRegister($this->createMock(RegisterInterface::class));
 	}
 
 	public function testEveryDraftLandsInTheOpenedSetAtItsAddress(): void {

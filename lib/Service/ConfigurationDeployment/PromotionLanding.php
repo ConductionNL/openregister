@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\ConfigurationDeployment;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Kernel\Contracts\PromotionLandingInterface;
 use OCA\OpenRegister\Kernel\Contracts\PromotionRefusedException;
+use OCA\OpenRegister\Kernel\Contracts\RegisterInterface;
 use OCA\OpenRegister\Service\ConfigurationTransferInterface;
 
 /**
@@ -58,13 +59,24 @@ class PromotionLanding implements PromotionLandingInterface {
 	/**
 	 * One register's package, as the configuration export writes it.
 	 *
-	 * @param Register $register The register.
+	 * @param RegisterInterface $register The register.
 	 *
 	 * @return array<string, mixed> The export document.
 	 *
+	 * @throws PromotionRefusedException When the register is not a stored register entity.
+	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md#8-promotion-between-environments-row-op-otap
 	 */
-	public function exportRegister(Register $register): array {
+	public function exportRegister(RegisterInterface $register): array {
+		if ($register instanceof Register === false) {
+			throw new PromotionRefusedException(
+				reason: 'invalid',
+				message: sprintf('the configuration export reads stored registers, not %s', get_debug_type($register)),
+				refusals: [],
+				statusCode: 500
+			);
+		}
+
 		return $this->export->exportConfig(input: $register);
 
 	}//end exportRegister()

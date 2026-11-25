@@ -26,8 +26,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Kernel\Contracts;
 
-use OCA\OpenRegister\Db\Register;
-
 /**
  * Export a register as a package, and land promoted values as drafts.
  *
@@ -52,13 +50,15 @@ interface PromotionLandingInterface {
 	/**
 	 * One register's package, as the configuration export writes it (OpenAPI, references by slug, no ids).
 	 *
-	 * @param Register $register The register.
+	 * @param RegisterInterface $register The register.
 	 *
 	 * @return array<string, mixed> The export document.
 	 *
+	 * @throws PromotionRefusedException When the register is not one the export can read.
+	 *
 	 * @spec openspec/changes/configuration-as-a-deployment/tasks.md#8-promotion-between-environments-row-op-otap
 	 */
-	public function exportRegister(Register $register): array;
+	public function exportRegister(RegisterInterface $register): array;
 
 	/**
 	 * Open a draft set and draft every value into it; nothing goes live.
