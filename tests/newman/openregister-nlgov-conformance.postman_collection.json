@@ -1,0 +1,219 @@
+{
+  "info": {
+    "name": "OpenRegister: NLGov API design rules conformance",
+    "description": "openspec/changes/api-nl-design-rules-conformance task 4.1. The conformance report is public (200 without a session), the response probe is administrator-only (403 for a signed-in non-administrator).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "admin"
+    },
+    {
+      "key": "run",
+      "value": ""
+    },
+    {
+      "key": "readerId",
+      "value": ""
+    },
+    {
+      "key": "readerPassword",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 setup",
+      "item": [
+        {
+          "name": "Create non-admin user",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }",
+                  "pm.collectionVariables.set('readerId', 'nlg' + pm.collectionVariables.get('run'));",
+                  "pm.collectionVariables.set('readerPassword', 'Nlg-pw-' + pm.collectionVariables.get('run') + '-Xq9!vL');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n \"userid\": \"{{readerId}}\",\n \"password\": \"{{readerPassword}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 report",
+      "item": [
+        {
+          "name": "Anonymous read of the combined report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('names ruleset 2.2.1', () => pm.expect(body.ruleset).to.equal('2.2.1'));",
+                  "pm.test('one result per rule', () => pm.expect(body.rules.length).to.equal(Object.values(body.counts).reduce((a, b) => a + b, 0)));",
+                  "pm.test('response rules are not probed', () => pm.expect(body.counts['not-probed']).to.equal(3));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers/oas/conformance"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 probe",
+      "item": [
+        {
+          "name": "A non-administrator is refused the probe",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 403', () => pm.expect(pm.response.code).to.equal(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{readerId}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{readerPassword}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers/1/oas/conformance/probe"
+          }
+        }
+      ]
+    },
+    {
+      "name": "99 cleanup",
+      "item": [
+        {
+          "name": "Delete non-admin user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": "{{base_url}}/ocs/v2.php/cloud/users/{{readerId}}?format=json"
+          }
+        }
+      ]
+    }
+  ]
+}
