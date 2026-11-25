@@ -1770,10 +1770,10 @@
       ]
     },
     {
-      "bom-ref": "phpoffice/phpspreadsheet-5.11.0.0",
+      "bom-ref": "phpoffice/phpspreadsheet-5.12.0.0",
       "type": "library",
       "name": "phpspreadsheet",
-      "version": "5.11.0",
+      "version": "5.12.0",
       "group": "phpoffice",
       "description": "PHPSpreadsheet - Read, Create and Write Spreadsheet documents in PHP - Spreadsheet engine",
       "author": "Maarten Balliauw, Mark Baker, Franck Lefevre, Erik Tilt, Adrien Crivelli, Owen Leibman",
@@ -1784,17 +1784,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/phpoffice/phpspreadsheet@5.11.0",
+      "purl": "pkg:composer/phpoffice/phpspreadsheet@5.12.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/PHPOffice/PhpSpreadsheet/zipball/3aa1f0d0f3c658b803c18050ac49244d07d96907",
-          "comment": "dist reference: 3aa1f0d0f3c658b803c18050ac49244d07d96907"
+          "url": "https://api.github.com/repos/PHPOffice/PhpSpreadsheet/zipball/f03bcf6cbcae3a719b9b56c32077379b5cde2190",
+          "comment": "dist reference: f03bcf6cbcae3a719b9b56c32077379b5cde2190"
         },
         {
           "type": "vcs",
           "url": "https://github.com/PHPOffice/PhpSpreadsheet.git",
-          "comment": "source reference: 3aa1f0d0f3c658b803c18050ac49244d07d96907"
+          "comment": "source reference: f03bcf6cbcae3a719b9b56c32077379b5cde2190"
         },
         {
           "type": "website",
@@ -1808,18 +1808,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/PHPOffice/PhpSpreadsheet/tree/5.11.0",
+          "url": "https://github.com/PHPOffice/PhpSpreadsheet/tree/5.12.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "3aa1f0d0f3c658b803c18050ac49244d07d96907"
+          "value": "f03bcf6cbcae3a719b9b56c32077379b5cde2190"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "3aa1f0d0f3c658b803c18050ac49244d07d96907"
+          "value": "f03bcf6cbcae3a719b9b56c32077379b5cde2190"
         },
         {
           "name": "cdx:composer:package:type",
@@ -4700,7 +4700,7 @@
           "name": "dialogs",
           "group": "@nextcloud",
           "version": "7.6.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@nextcloud/dialogs@7.6.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@nextcloud/dialogs@7.6.0",
           "licenses": [
             {
               "license": {
@@ -4734,7 +4734,7 @@
               "name": "core",
               "group": "@vueuse",
               "version": "15.0.0",
-              "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@nextcloud/dialogs@7.6.0|@vueuse/core@15.0.0",
+              "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@nextcloud/dialogs@7.6.0|@vueuse/core@15.0.0",
               "licenses": [
                 {
                   "license": {
@@ -4770,7 +4770,7 @@
           "name": "metadata",
           "group": "@vueuse",
           "version": "15.0.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@vueuse/metadata@15.0.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@vueuse/metadata@15.0.0",
           "licenses": [
             {
               "license": {
@@ -4804,7 +4804,7 @@
           "name": "shared",
           "group": "@vueuse",
           "version": "15.0.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.180.0|@vueuse/shared@15.0.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.203.0|@vueuse/shared@15.0.0",
           "licenses": [
             {
               "license": {
@@ -32353,7 +32353,7 @@
       "ref": "php-http/promise-1.3.1.0"
     },
     {
-      "ref": "phpoffice/phpspreadsheet-5.11.0.0",
+      "ref": "phpoffice/phpspreadsheet-5.12.0.0",
       "dependsOn": [
         "composer/pcre-3.4.0.0",
         "maennchen/zipstream-php-3.2.2.0",
@@ -32559,7 +32559,7 @@
         "jwadhams/json-logic-php-1.5.1.0",
         "minishlink/web-push-11.0.0.0",
         "opis/json-schema-2.6.2.0",
-        "phpoffice/phpspreadsheet-5.11.0.0",
+        "phpoffice/phpspreadsheet-5.12.0.0",
         "phpseclib/phpseclib-4.0.3.0",
         "react/async-4.3.0.0",
         "react/event-loop-1.6.0.0",
