@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Files\Db;
 use OCP\AppFramework\Db\Entity;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSizeTotalsInterface;
+use OCA\OpenRegister\Kernel\Contracts\FileOwnerLookupInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
 
 /**
@@ -32,7 +33,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectFileRecordsInterface;
  *
  * @phpstan-import-type FilecacheRow from FileMapper
  */
-interface FileMapperInterface extends FileSizeTotalsInterface, ObjectFileRecordsInterface {
+interface FileMapperInterface extends FileSizeTotalsInterface, ObjectFileRecordsInterface, FileOwnerLookupInterface {
 
 	/**
 	 * Find an OR-side `File` row by its Nextcloud `filecache.fileid`.

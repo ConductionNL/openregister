@@ -162,6 +162,11 @@ final class MiddlewareWiring {
 		// other apps' controllers too, and the ceiling must hold there as well.
 		$context->registerMiddleware(PersonalTokenGrantMiddleware::class, global: true);
 
+
+		// A save that a `warn` validation let through carries the warning on
+		// its response (rules-compose-read-transitions-and-time, task 4.3b).
+		$context->registerMiddleware(SaveWarningsMiddleware::class);
+
 		// An anonymous caller gets no user ids in a record's `@self`. Global, because
 		// other apps answer public requests with OpenRegister's records too.
 		$context->registerMiddleware(AnonymousEnvelopeMiddleware::class, global: true);

@@ -25,6 +25,7 @@ final class WebhooksControllerFactory {
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param ?IUserSession $userSession Constructor argument.
 	 * @param ?IGroupManager $groupManager Constructor argument.
+	 * @param ?WebhookOwnership $ownership Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -37,6 +38,7 @@ final class WebhooksControllerFactory {
 		?\OCP\IUserSession $userSession = null,
 		?\OCP\IGroupManager $groupManager = null,
 		?\OCA\OpenRegister\Service\Outbound\OutboundAllowlist $allowlist = null,
+		?\OCA\OpenRegister\Controller\Support\WebhookOwnership $ownership = null,
 	): array {
 		return [
 			$request,
@@ -52,6 +54,7 @@ final class WebhooksControllerFactory {
 					groupManager: $groupManager,
 				),
 				allowlist: $allowlist,
+				ownership: $ownership,
 			),
 		];
 	}
