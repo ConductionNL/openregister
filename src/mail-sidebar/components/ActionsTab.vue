@@ -25,19 +25,32 @@
 					class="or-action-picked"
 					role="status"
 					:aria-label="t('openregister', 'Connecting…')">
-					<ObjectRow
-						:kind="schema.title"
-						:identifier="objectIdentifier(pickedObject(schema))"
-						:name="String(objectName(pickedObject(schema)))"
-						:subline="objectSubline(pickedObject(schema))"
-						wrap />
-					<NcLoadingIcon :size="20" class="or-action-picked__spinner" />
+					<div class="or-action-search">
+						<Magnify :size="20" class="or-action-search__icon" />
+						<input
+							type="search"
+							class="or-action-input"
+							:value="searchTerms[schema.id]"
+							:aria-label="schema.title"
+							disabled>
+					</div>
+					<div class="or-action-result or-action-result--picked">
+						<ObjectRow
+							:kind="schema.title"
+							:identifier="objectIdentifier(pickedObject(schema))"
+							:name="String(objectName(pickedObject(schema)))"
+							:status="objectStatus(pickedObject(schema))"
+							:handler="nameOf(objectHandler(pickedObject(schema)))"
+							:term="searchTerms[schema.id]"
+							busy
+							:trailing="t('openregister', 'Connecting')" />
+					</div>
 				</div>
 				<div v-else-if="isBusy(schema)" class="or-action-connecting">
 					<NcLoadingIcon :size="20" />
 					<span>{{
 						t('openregister', 'Creating {name}…', {
-							name: sentenceName(schema.title),
+							name: itemName(schema),
 						})
 					}}</span>
 				</div>
@@ -74,7 +87,9 @@
 									:kind="schema.title"
 									:identifier="objectIdentifier(obj)"
 									:name="String(objectName(obj))"
-									:subline="objectSubline(obj)" />
+									:status="objectStatus(obj)"
+									:handler="nameOf(objectHandler(obj))"
+									:term="searchTerms[schema.id]" />
 							</li>
 						</ul>
 						<p
@@ -82,7 +97,7 @@
 							class="or-action-nomatch">
 							{{
 								t('openregister', 'No {name} matches “{term}”.', {
-									name: sentenceName(schema.title),
+									name: itemName(schema),
 									term: searchTerms[schema.id],
 								})
 							}}
@@ -99,7 +114,7 @@
 						<Plus :size="20" />
 						{{
 							t('openregister', 'New {name} from this mail', {
-								name: sentenceName(schema.title),
+								name: itemName(schema),
 							})
 						}}
 					</button>
@@ -131,8 +146,9 @@ import Magnify from 'vue-material-design-icons/Magnify.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import CreateConnectedObjectDialog from '../../dialogs/mail/CreateConnectedObjectDialog.vue'
 import ObjectRow from './ObjectRow.vue'
-import { objectIdentifier, objectSubline } from '../objectRow.js'
-import { sentenceName } from '../sentenceName.js'
+import { displayNameOf } from '../displayNames.js'
+import { objectHandler, objectIdentifier, objectStatus } from '../objectRow.js'
+import { itemName } from '../sentenceName.js'
 
 /**
  * Fetch the registers, to find the register of each schema.
@@ -186,6 +202,8 @@ export default {
 			linking: {},
 			// The words of the last finished search per schema, for "no match".
 			searchedTerms: {},
+			// Display names of handlers by user id, '' while being read.
+			names: {},
 			envelopeCache: {},
 			// Create-object dialog state.
 			createDialog: { show: false, schema: null, data: {} },
@@ -199,9 +217,52 @@ export default {
 
 	methods: {
 		t,
-		sentenceName,
+		itemName,
 		objectIdentifier,
-		objectSubline,
+		objectStatus,
+		objectHandler,
+
+		/**
+		 * A handler's display name once read, else nothing yet.
+		 *
+		 * @param {string} uid The handler's user id.
+		 * @return {string}
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		nameOf(uid) {
+			return uid ? (this.names[uid] || '') : ''
+		},
+
+		/**
+		 * Read the display names of the handlers of these objects.
+		 *
+		 * @param {Array<object>} objects The objects shown.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		resolveNames(objects) {
+			for (const uid of new Set((objects || []).map(objectHandler).filter(Boolean))) {
+				if (this.names[uid] !== undefined) continue
+				this.names[uid] = ''
+				displayNameOf(uid).then((name) => {
+					this.names[uid] = name
+				})
+			}
+		},
+
+		/**
+		 * Search the first kind of item for a value found in the mail.
+		 *
+		 * @param {string} term The value to search for.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		searchFor(term) {
+			const schema = this.schemas[0]
+			if (!schema) return
+			this.searchTerms[schema.id] = term
+			this.visibleResults[schema.id] = true
+			this.searchObjects(schema)
+			this.$nextTick(() => document.getElementById('or-action-search-' + schema.id)?.focus())
+		},
 
 		/**
 		 * The object being connected in this block, shown as the picked row
@@ -340,11 +401,12 @@ export default {
 		 */
 		async fetchResults(register, schema, params) {
 			const response = await axios.get(this.objectsUrl(register, schema), {
-				params: { ...params, _limit: 20 },
+				params: { ...params, _limit: 20, _extend: 'status' },
 				timeout: 10000,
 			})
 			const results = response.data?.results || response.data || []
 			this.searchResults[schema.id] = results
+			this.resolveNames(results)
 		},
 
 		/**
@@ -584,7 +646,7 @@ export default {
 				const detail = err.response?.data?.error || err.response?.data || ''
 				showError(
 					t('openregister', 'Failed to create {name} from email', {
-						name: sentenceName(schema.title),
+						name: itemName(schema),
 					}),
 				)
 				console.error('[ActionsTab] Create from email failed:', detail, err)
@@ -647,7 +709,7 @@ export default {
 				this.visibleResults[schema.id] = false
 				this.loadInitialResults(schema)
 
-				this.$emit('linked')
+				this.$emit('linked', { schema, object: obj })
 			} catch (err) {
 				showError(t('openregister', 'Failed to connect'))
 				console.error('[ActionsTab] Link failed:', err)

@@ -65,19 +65,19 @@
     "bad-trigger-type": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "no-trigger": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "trigger-int": [
         {
             "code": "notification-bad-trigger",
-            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
+            "message": "Notification \"r\" trigger.type must be one of [created, updated, transition, scheduled, threshold, calculatedChange, noteAdded], or the trigger must name an app-defined event as a namespaced string (e.g. \"booking.confirmed\")."
         }
     ],
     "scheduled-no-interval": [
@@ -598,11 +598,11 @@
     "recipient-bad-kind": [
         {
             "code": "notification-bad-recipient-kind",
-            "message": "Notification \"r\" recipient[0] kind \"robots\" not in [users, field, groups, role, relation, object-acl, expression, watchers, parties, email]."
+            "message": "Notification \"r\" recipient[0] kind \"robots\" not in [users, field, groups, role, relation, object-acl, expression, watchers, parties, email, referrers]."
         },
         {
             "code": "notification-bad-recipient-kind",
-            "message": "Notification \"r\" recipient[1] kind \"\" not in [users, field, groups, role, relation, object-acl, expression, watchers, parties, email]."
+            "message": "Notification \"r\" recipient[1] kind \"\" not in [users, field, groups, role, relation, object-acl, expression, watchers, parties, email, referrers]."
         }
     ],
     "recipient-names-nobody": [
@@ -754,7 +754,7 @@
         },
         {
             "code": "notification-bad-recipient-kind",
-            "message": "Notification \"r\" recipient[0] kind \"robots\" not in [users, field, groups, role, relation, object-acl, expression, watchers, parties, email]."
+            "message": "Notification \"r\" recipient[0] kind \"robots\" not in [users, field, groups, role, relation, object-acl, expression, watchers, parties, email, referrers]."
         },
         {
             "code": "notification-recipient-role-missing",
