@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -36,6 +37,7 @@ use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Reference\ObjectTeamResourceProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Share\Events\BeforeShareCreatedEvent;
 use OCP\User\Events\PostLoginEvent;
@@ -216,6 +218,21 @@ final class CoreListenerRegistrar {
 		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
 	}//end uniqueConstraints()
+
+	/**
+	 * Objects of schemas declaring x-openregister-team-resources appear on their owning team's page;
+	 * the declaration's check runs inside the schema save, in its slot of SchemaDeclarationOrder.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the provider and the listener carry their own spec.
+	 */
+	public static function teamResources(IRegistrationContext $context): void {
+		$context->registerTeamResourceProvider(ObjectTeamResourceProvider::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, TeamResourcesDeclarationCheckListener::class);
+	}//end teamResources()
 
 	/**
 	 * A schema's identity values do not change once an object exists.
