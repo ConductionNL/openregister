@@ -212,3 +212,4 @@ A product or access-control question that FINISH-ORDER.md DECISIONS does not ans
 - 2026-11-25T17:10:49Z b-thematiq openregister#11082 close (decision 25 Nov 13:50) + land #11224 (dependabot ignores every @babel/* major; config only)
 - 2026-11-25T17:11:17Z b-thematiq openregister#11077 close (stylelint 18; same as the #10641 decision of 24 Nov 22:40, blocker unchanged)
 - 2026-11-25T17:11:17Z b-thematiq openregister#10631 close (doctrine/dbal 4 dev bump; decided by analogy with integriq guzzle 8: hold until Nextcloud ships dbal 4; bootstrap fatal on Exception interface)
+- 2026-11-25T17:23:54Z b-launchpad launchpad#2073 merge (squash): tile-form-board-sync group link children -> tile nodes (repair step + version move, gate-110), helper draft finished; development merged in at 481e3aa7, head 88159b71; diff-check GREEN, check:strict same failing set as development, npm lint green. Merge refused by this session's permission check.
