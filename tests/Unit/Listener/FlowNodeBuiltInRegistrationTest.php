@@ -68,6 +68,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
@@ -129,7 +130,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 				new HandOffFlowNodes($this->node(SubFlowNodeInterface::class), $this->node(RouterNodeInterface::class)),
 			), new ObjectFlowNodes(
 				new ObjectChangeFlowNodes($this->node(ObjectWriteNodeInterface::class), $this->node(TransitionNodeInterface::class), $this->node(TagObjectNodeInterface::class)),
-				new ObjectLookupFlowNodes($this->node(LinkObjectNodeInterface::class), $this->node(ObjectReadNodeInterface::class), $this->node(AuditTrailNodeInterface::class)),
+				new ObjectLookupFlowNodes($this->node(LinkObjectNodeInterface::class), $this->node(ObjectReadNodeInterface::class), $this->node(AuditTrailNodeInterface::class), $this->node(ExtendInputNodeInterface::class)),
 			)),
 		);
 		$actions = new ActionFlowNodes(
@@ -177,7 +178,7 @@ class FlowNodeBuiltInRegistrationTest extends TestCase {
 
 		$listener->handle(new RegisterFlowNodesEvent($registry));
 
-		$this->assertCount(35, $registered);
+		$this->assertCount(36, $registered);
 		$this->assertSame($this->expected, $registered);
 	}
 
