@@ -825,6 +825,11 @@
 							"default": "adr006",
 							"description": "HTTP status-code policy. 'adr006' returns 503 on a failed critical check; 'always200' always returns 200."
 						},
+						"upFollowsHealth": {
+							"type": "boolean",
+							"default": false,
+							"description": "When true, the implicit {app}_up gauge is 0 whenever the health status is not 'ok'; otherwise it is a constant 1."
+						},
 						"checks": {
 							"type": "array",
 							"description": "Health check descriptors.",

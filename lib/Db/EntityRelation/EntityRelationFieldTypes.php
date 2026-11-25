@@ -63,6 +63,7 @@ final class EntityRelationFieldTypes {
 		'capacityConfirmedAt' => 'datetime',
 		'personMatch' => 'string',
 		'uncertain' => 'boolean',
+		'archiveMember' => 'string',
 		'createdAt' => 'datetime',
 	];
 }//end class
