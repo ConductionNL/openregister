@@ -1,0 +1,73 @@
+[chromium] › tests/e2e/spec-coverage/app-theming.spec.ts:122:2 › per-app-theming › Excluding an app via the panel strips nldesign CSS from its pages only 
+[chromium] › tests/e2e/spec-coverage/app-theming.spec.ts:139:2 › per-app-theming › Re-enabling an app restores theming on its pages 
+[chromium] › tests/e2e/spec-coverage/app-theming.spec.ts:149:2 › per-app-theming › Settings pages stay themed even with an active exclusion list 
+[chromium] › tests/e2e/spec-coverage/app-theming.spec.ts:159:2 › per-app-theming › Every app row exposes a checkbox associated with a visible label 
+[chromium] › tests/e2e/spec-coverage/apps-menu-ordered-list.spec.ts:88:2 › the apps menu as one ordered list › shows nine apps, the group apps first, and unfolds the rest 
+[chromium] › tests/e2e/spec-coverage/component-tokens.spec.ts:129:3 › component-tokens › isolated cascade of the served files › the primary-action background defaults to var(--nldesign-color-primary) 
+[chromium] › tests/e2e/spec-coverage/component-tokens.spec.ts:90:3 › component-tokens › isolated cascade of the served files › without --utrecht-button-border-radius the component token falls back to the defaults.css value 
+[chromium] › tests/e2e/spec-coverage/css-architecture.spec.ts:340:2 › css-architecture: the nldesign cascade on an nldesign set › each @font-face lists local() first, then woff2, then woff, all served from systems/nldesign/fonts/ 
+[chromium] › tests/e2e/spec-coverage/custom-fonts-panel.spec.ts:123:2 › custom fonts on the Theming page › Barlow is listed with its licence and, assigned to headings, becomes the heading font 
+[chromium] › tests/e2e/spec-coverage/custom-fonts-panel.spec.ts:68:2 › custom fonts on the Theming page › stored fonts are listed with name, role, size and a delete action; none says so 
+[chromium] › tests/e2e/spec-coverage/custom-token-set-upload.spec.ts:126:2 › custom-token-set-upload › Low-contrast upload succeeds and surfaces a WCAG AA warning 
+[chromium] › tests/e2e/spec-coverage/custom-token-set-upload.spec.ts:199:2 › custom-token-set-upload › Uploaded set exposes Download and Delete actions; delete removes the row 
+[chromium] › tests/e2e/spec-coverage/custom-token-set-upload.spec.ts:36:2 › custom-token-set-upload › Custom token set upload form is present with name field and upload button 
+[chromium] › tests/e2e/spec-coverage/custom-token-set-upload.spec.ts:49:2 › custom-token-set-upload › Uploading a valid CSS set adds it to the custom-set list and the dropdown 
+[chromium] › tests/e2e/spec-coverage/dark-mode-overrides.spec.ts:146:2 › dark overrides for every dark user › a user who chose light keeps the light value on a dark OS 
+[chromium] › tests/e2e/spec-coverage/dark-mode-overrides.spec.ts:159:2 › the dark variants toggle › off, no page links a dark stylesheet, and the files stay served 
+[chromium] › tests/e2e/spec-coverage/dark-mode-scope.spec.ts:209:2 › dark-mode scope selectors — light OS › an explicit dark choice on a LIGHT OS renders the dark palette 
+[chromium] › tests/e2e/spec-coverage/dark-mode-scope.spec.ts:241:2 › dark-mode scope selectors — dark OS › the auto theme follows a dark OS, via the media query alone 
+[chromium] › tests/e2e/spec-coverage/dark-mode-scope.spec.ts:297:2 › dark-mode scope selectors — dark OS › an explicit light choice on a DARK OS stays light 
+[chromium] › tests/e2e/spec-coverage/dark-mode-scope.spec.ts:348:2 › dark-mode scope selectors — dark OS › the dark variant loads after its light layer and before custom overrides 
+[chromium] › tests/e2e/spec-coverage/dark-mode-scope.spec.ts:389:2 › dark-mode scope selectors — anonymous › the anonymous login page follows a dark OS 
+[chromium] › tests/e2e/spec-coverage/dark-mode.spec.ts:42:2 › dark-mode token variants › the dark stylesheet is injected directly after the light token layer 
+[chromium] › tests/e2e/spec-coverage/dark-mode.spec.ts:65:2 › dark-mode token variants › the dark stylesheet is dual-scoped and never darkens an explicit light choice 
+[chromium] › tests/e2e/spec-coverage/evidence-download-and-dark-logo.spec.ts:15:2 › contrast evidence report and dark logo › an administrator downloads the contrast evidence report from the settings page 
+[chromium] › tests/e2e/spec-coverage/example-gemeente-set.spec.ts:104:3 › the example municipality set › with the set active › body text renders in Source Sans 3 from the app, and no font comes from elsewhere 
+[chromium] › tests/e2e/spec-coverage/example-gemeente-set.spec.ts:35:2 › the example municipality set › it is offered in the dropdown, and applying it paints its primary and serves its logo 
+[chromium] › tests/e2e/spec-coverage/extended-token-sets.spec.ts:174:2 › extended-token-sets › the catalogue lists every token file on disk, and the admin listing adds descriptions 
+[chromium] › tests/e2e/spec-coverage/extended-token-sets.spec.ts:267:3 › extended-token-sets › with Gemeente Utrecht active › the instance renders with Utrecht brand colour, typography and border radius 
+[chromium] › tests/e2e/spec-coverage/frankendesk-token-set.spec.ts:264:2 › La Frankendesk token set › the header shows the La Frankendesk mark unmasked 
+[chromium] › tests/e2e/spec-coverage/lasuite-parity.spec.ts:514:4 › lasuite-parity › cunningham: audit-log table matches the Cunningham reference 
+[chromium] › tests/e2e/spec-coverage/lasuite-parity.spec.ts:514:4 › lasuite-parity › cunningham: header app name matches the Cunningham reference 
+[chromium] › tests/e2e/spec-coverage/lasuite-parity.spec.ts:514:4 › lasuite-parity › cunningham: primary button matches the Cunningham reference 
+[chromium] › tests/e2e/spec-coverage/lasuite-parity.spec.ts:514:4 › lasuite-parity › cunningham: text input matches the Cunningham reference 
+[chromium] › tests/e2e/spec-coverage/lasuite-parity.spec.ts:514:4 › lasuite-parity › lasuite: audit-log table matches the Cunningham reference 
+[chromium] › tests/e2e/spec-coverage/lasuite-parity.spec.ts:514:4 › lasuite-parity › lasuite: header app name matches the Cunningham reference 
+[chromium] › tests/e2e/spec-coverage/lasuite-parity.spec.ts:514:4 › lasuite-parity › lasuite: primary button matches the Cunningham reference 
+[chromium] › tests/e2e/spec-coverage/lasuite-parity.spec.ts:514:4 › lasuite-parity › lasuite: text input matches the Cunningham reference 
+[chromium] › tests/e2e/spec-coverage/links-drawn-as-buttons.spec.ts:91:2 › links drawn as buttons under Zuiddrecht › the card's link actions read like its button, none underlined, the primary white on its fill 
+[chromium] › tests/e2e/spec-coverage/menu-labels.spec.ts:470:2 › menu-labels › on an nldesign set the labels render in the nldesign font family 
+[chromium] › tests/e2e/spec-coverage/menu-labels.spec.ts:911:2 › menu-labels › on a narrow screen the current app name stays next to the waffle, which core hides without labels 
+[chromium] › tests/e2e/spec-coverage/nextcloud-stock-set.spec.ts:105:2 › the stock nextcloud set › a primary colour set in core theming is the primary the set carries 
+[chromium] › tests/e2e/spec-coverage/nextcloud-variable-mapping.spec.ts:210:2 › nextcloud-variable-mapping › every variable the running Nextcloud defines has an entry in overrides.css 
+[chromium] › tests/e2e/spec-coverage/nextcloud-variable-mapping.spec.ts:240:2 › nextcloud-variable-mapping › mappings.md and overrides.css both list every variable of the Nextcloud under test 
+[chromium] › tests/e2e/spec-coverage/nextcloud-variable-mapping.spec.ts:280:2 › nextcloud-variable-mapping › a mapped variable is var(--nldesign-*) !important and beats a later Nextcloud value 
+[chromium] › tests/e2e/spec-coverage/nextcloud-variable-mapping.spec.ts:376:2 › nextcloud-variable-mapping › mappings.md has a full row for --color-primary-element that matches overrides.css 
+[chromium] › tests/e2e/spec-coverage/nextcloud-variable-mapping.spec.ts:449:3 › nextcloud-variable-mapping › on a live page with Amsterdam active › a token Amsterdam does not define keeps the defaults.css value 
+[chromium] › tests/e2e/spec-coverage/nl-design.spec.ts:91:2 › nl-design › defined tokens take Amsterdam values and undefined ones fall back to defaults.css 
+[chromium] › tests/e2e/spec-coverage/prometheus-metrics.spec.ts:397:2 › prometheus-metrics › health answers an anonymous caller with the manifest-declared checks 
+[chromium] › tests/e2e/spec-coverage/render-context-injection.spec.ts:23:2 › render-context CSS injection › a logged-in page receives the themed cascade 
+[chromium] › tests/e2e/spec-coverage/rendered-surface-contrast.spec.ts:350:2 › rendered-surface contrast › the on-surface opt-out does not repaint links in body text 
+[chromium] › tests/e2e/spec-coverage/selector-liveness.spec.ts:696:2 › lasuite selector liveness › every element-overrides selector matches something on at least one surface 
+[chromium] › tests/e2e/spec-coverage/shell-canon.spec.ts:16:1 › the shell matches the canon ──
+[chromium] › tests/e2e/spec-coverage/theme-converter-paste.spec.ts:102:2 › theme-converter-paste › The new set is in the dropdown without a reload 
+[chromium] › tests/e2e/spec-coverage/theme-converter-paste.spec.ts:125:2 › theme-converter-paste › An empty paste sends nothing and says what is missing 
+[chromium] › tests/e2e/spec-coverage/theme-converter-paste.spec.ts:37:2 › theme-converter-paste › A pasted theme becomes a custom set 
+[chromium] › tests/e2e/spec-coverage/theme-converter-paste.spec.ts:56:2 › theme-converter-paste › A built theme stylesheet uploaded as a file becomes a selectable set 
+[chromium] › tests/e2e/spec-coverage/theme-converter-paste.spec.ts:77:2 › theme-converter-paste › The result names what was left out, grouped by reason, with the counts 
+[chromium] › tests/e2e/spec-coverage/theming-sync.spec.ts:1161:2 › theming-sync › saving a set with theming metadata opens the sync dialog 
+[chromium] › tests/e2e/spec-coverage/theming-sync.spec.ts:1178:2 › theming-sync › the dialog shows current and proposed colours with swatches 
+[chromium] › tests/e2e/spec-coverage/theming-sync.spec.ts:1201:2 › theming-sync › a set with a dark logo shows it in a dark row, and never sends it 
+[chromium] › tests/e2e/spec-coverage/theming-sync.spec.ts:470:2 › theming-sync › a set with only a primary colour offers only that colour, without errors 
+[chromium] › tests/e2e/spec-coverage/theming-sync.spec.ts:864:2 › theming-sync › a primary colour is written to core theming and listed as updated 
+[chromium] › tests/e2e/spec-coverage/token-editor-search-and-groups.spec.ts:156:2 › token editor search and groups › a row shows its inventory note 
+[chromium] › tests/e2e/spec-coverage/token-import-export.spec.ts:67:2 › token-import-export › Upload explains the replace before the file picker, and Cancel opens none 
+[chromium] › tests/e2e/spec-coverage/token-set-apply-toggle-behavior.spec.ts:146:2 › token-set-apply-toggle-behavior › Clicking the overlay backdrop cancels the dialog (reverts the dropdown) 
+[chromium] › tests/e2e/spec-coverage/token-set-dropdown.spec.ts:143:2 › token-set-dropdown › typing on the focused dropdown jumps to the matching set, with no search widget of our own 
+[chromium] › tests/e2e/spec-coverage/token-sets.spec.ts:1698:2 › token-sets › the custom-set list badge ranks incomplete over contrast over OK 
+[chromium] › tests/e2e/spec-coverage/token-sets.spec.ts:510:2 › token-sets › every manifest entry has the required fields, and the served entry is complete 
+[chromium] › tests/e2e/spec-coverage/token-sets.spec.ts:827:2 › token-sets › a set with a logo shows it in the header and on the login page 
+[chromium] › tests/e2e/spec-coverage/token-sets.spec.ts:881:2 › token-sets › a set with lint tokens paints a ribbon of those dimensions behind the logo 
+[chromium] › tests/e2e/spec-coverage/vng-token-set.spec.ts:135:3 › vng-token-set › with VNG active › the page loads css/tokens/vng.css and every --nldesign-* token resolves to its VNG value 
+[chromium] › tests/e2e/spec-coverage/workplace-live-look.spec.ts:118:3 › the workplace, looked at live under the Zuiddrecht set › Tab draws the 2px action-blue ring on the dashboard 
+[chromium] › tests/e2e/workflows/token-apply-persistence.workflow.spec.ts:112:2 › workflow: token-apply persistence › editing a token + Save overrides PERSISTS to the backend (file + GET) 
