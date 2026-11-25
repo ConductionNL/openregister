@@ -1,0 +1,1229 @@
+{
+	"info": {
+		"_postman_id": "or-portal-property-2026-11-25",
+		"name": "OpenRegister Portal Property API",
+		"description": "The `portal` property key over HTTP (change a-property-says-what-the-portal-may-do-with-it, task 2.1): one case per scenario of the spec.\n\nA request with an X-Portal-Subject header is made on behalf of a resident. For it, the objects API leaves out every property whose portal is none or absent, on reads and on the object a write answers with, and refuses with 403, naming the properties, a write that would change a property that is not edit. The same calls without the header are unchanged, and that is asserted too.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "portalSubject",
+			"value": ""
+		},
+		{
+			"key": "registerId",
+			"value": ""
+		},
+		{
+			"key": "schemaId",
+			"value": ""
+		},
+		{
+			"key": "caseId",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "setUp: a register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"portal property newman register\", \"description\": \"portal property collection fixture\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.collectionVariables.set('portalSubject', 'newman-resident-' + Date.now().toString(36));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "scenario 'a wrong value is refused at save': portal write",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"portal property newman refused\", \"properties\": {\"subject\": {\"type\": \"string\", \"portal\": \"write\"}}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a schema with portal: write is refused', () => pm.expect(pm.response.code, pm.response.text()).to.eql(400));",
+							"pm.test('the refusal names the property and the accepted values', () => { const t = pm.response.text(); pm.expect(t).to.include('subject'); pm.expect(t).to.include('none, read, edit'); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the case schema",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"portal property newman case\", \"description\": \"portal property collection fixture\", \"properties\": {\"subject\": {\"type\": \"string\", \"portal\": \"read\"}, \"phone\": {\"type\": \"string\", \"portal\": \"edit\"}, \"internalNote\": {\"type\": \"string\"}}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the case schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('schemaId', String(pm.response.json().id));",
+							"pm.test('the declared levels survive the save', () => { const p = pm.response.json().properties; pm.expect(p.subject.portal).to.eql('read'); pm.expect(p.phone.portal).to.eql('edit'); pm.expect(p.internalNote.portal).to.be.undefined; });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the register carries the schema",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"schemas\": [\"{{schemaId}}\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register carries the schema', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the case",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\": \"Bin not collected\", \"phone\": \"0612345678\", \"internalNote\": \"caller was rude\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the case is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('caseId', pm.response.json()['@self'].id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET the case without a portal subject -> every property",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{caseId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{caseId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('staff read the case', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const keys = Object.keys(pm.response.json()).filter(k => k !== '@self' && k !== 'id').sort();",
+							"pm.test('staff see the note', () => pm.expect(keys).to.eql(['internalNote', 'phone', 'subject']));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "scenario 'an internal note stays off the portal': GET on behalf of the resident",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Portal-Subject",
+						"value": "{{portalSubject}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{caseId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{caseId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the portal reads the case', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const keys = Object.keys(pm.response.json()).filter(k => k !== '@self' && k !== 'id').sort();",
+							"pm.test('subject and phone, no internalNote', () => pm.expect(keys).to.eql(['phone', 'subject']));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET the list on behalf of the resident -> no internalNote in any row",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Portal-Subject",
+						"value": "{{portalSubject}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the portal lists', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('no row carries internalNote', () => { const rows = pm.response.json().results; pm.expect(rows.length).to.be.above(0); rows.forEach(r => pm.expect(r).to.not.have.property('internalNote')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "scenario 'the resident changes only what they may change': PATCH subject on behalf of the resident",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Portal-Subject",
+						"value": "{{portalSubject}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{caseId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{caseId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\": \"changed by the resident\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a change to subject is refused', () => pm.expect(pm.response.code, pm.response.text()).to.eql(403));",
+							"pm.test('the refusal names subject', () => pm.expect(pm.response.json().properties).to.eql(['subject']));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET the case -> unchanged after the refusal",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{caseId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{caseId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('staff read the case', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('subject is unchanged', () => pm.expect(pm.response.json().subject).to.eql('Bin not collected'));",
+							"pm.test('phone is unchanged', () => pm.expect(pm.response.json().phone).to.eql('0612345678'));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "PATCH phone on behalf of the resident -> written, answered without internalNote",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Portal-Subject",
+						"value": "{{portalSubject}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{caseId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{caseId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"phone\": \"0699999999\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a change to phone is written', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('the answer leaves internalNote out', () => pm.expect(pm.response.json()).to.not.have.property('internalNote'));",
+							"pm.test('the answer carries the new phone', () => pm.expect(pm.response.json().phone).to.eql('0699999999'));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "PUT phone only on behalf of the resident -> refused, it would empty subject and internalNote",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Portal-Subject",
+						"value": "{{portalSubject}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{caseId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{caseId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"phone\": \"0611111111\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a replace that drops read properties is refused', () => pm.expect(pm.response.code, pm.response.text()).to.eql(403));",
+							"pm.test('the refusal names both', () => pm.expect(pm.response.json().properties).to.eql(['subject', 'internalNote']));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "POST a case with subject on behalf of the resident -> refused",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Portal-Subject",
+						"value": "{{portalSubject}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\": \"new\", \"phone\": \"1\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a create may set only edit properties', () => pm.expect(pm.response.code, pm.response.text()).to.eql(403));",
+							"pm.test('the refusal names subject', () => pm.expect(pm.response.json().properties).to.eql(['subject']));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "PATCH subject without a portal subject -> written as before",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{caseId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{caseId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"subject\": \"changed by staff\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('staff may change subject', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('subject changed', () => pm.expect(pm.response.json().subject).to.eql('changed by staff'));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the case",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{caseId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{caseId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the case is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the schema",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		}
+	]
+}

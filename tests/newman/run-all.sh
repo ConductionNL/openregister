@@ -121,6 +121,7 @@ DOMAIN_ORDER=(
     "duplicate-merge"
     "upsert-on-key"
     "draft-activation"
+    "portal-property"
     "anonymisation-disclosures"
     "public-export"
     "nlgov-conformance"
@@ -224,6 +225,9 @@ declare -A DOMAIN_COLLECTIONS=(
     # 422 with findings, 409, 404), and OCSMiddleware turns a 403 from an
     # OCSController into a 200 that no unit test of the controller can see.
     [draft-activation]="$REPO_ROOT/tests/integration/openregister-draft-activation.postman_collection.json"
+    # a-property-says-what-the-portal-may-do-with-it 2.1: X-Portal-Subject reads leave out portal none/absent
+    # properties, writes to a property that is not edit answer 403 naming it; without the header nothing changes.
+    [portal-property]="$REPO_ROOT/tests/integration/openregister-portal-property.postman_collection.json"
     # REQ-ADI-005/006: file disclosures (reader 200, non-reader 403) and the admin pipeline report.
     [anonymisation-disclosures]="$REPO_ROOT/tests/newman/openregister-anonymisation-disclosures.postman_collection.json"
     # Anonymous export: 200 with paging headers for a public schema, 401 not-public, 406 for pdf.
