@@ -2448,7 +2448,7 @@ components:
       - ".*/lib/BackgroundJob/(PublishedDigestVerifyJob)[.]php"
       - ".*/lib/Controller/(FileDisclosuresController)[.]php"
       - ".*/lib/Db/(DecisionMetadataChange|EntityRelationMapper|FileDigest|FileDigestMapper|FilesMapperBindings|FilesMapperRegistrar)[.]php"
-      - ".*/lib/Event/(AbstractObjectFileEvent|FileCopiedEvent|FileLockedEvent|FileMovedEvent|FileRenamedEvent|FileRestrictionAdmitEvent|FileUnlockedEvent|FileVersionRestoredEvent)[.]php"
+      - ".*/lib/Event/(AbstractObjectFileEvent|FileAddedEvent|FileCopiedEvent|FileLockedEvent|FileMovedEvent|FileRenamedEvent|FileRestrictionAdmitEvent|FileUnlockedEvent|FileVersionRestoredEvent)[.]php"
       - ".*/lib/Exception/(ChunkMatcherException|EmlParseException|ManualEntityException|ObjectFileAccessDeniedException|ObjectFolderConflictException|OfficeOpenRefusedException|PdfAnonymisationException|SanitizationException)[.]php"
       - ".*/lib/Files/[^/]*"
       - ".*/lib/Files/BackgroundJob/[^/]*"

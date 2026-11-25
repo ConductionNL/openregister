@@ -971,6 +971,7 @@ Event/DraftCreatedEvent.php,5,Event,Event,Event/DraftCreatedEvent.php,12,,Kernel
 Event/DraftDeletedEvent.php,5,Event,Event,Event/DraftDeletedEvent.php,0,,Kernel
 Event/DraftUpdatedEvent.php,5,Event,Event,Event/DraftUpdatedEvent.php,15,,Kernel
 Event/EntityRelationDecisionUpdatedEvent.php,30,Event,Event,Event/EntityRelationDecisionUpdatedEvent.php,4,,Core
+Event/FileAddedEvent.php,4,Event,Event,Event/FileAddedEvent.php,0,,Files
 Event/FileCopiedEvent.php,4,Event,Event,Event/FileCopiedEvent.php,0,,Files
 Event/FileLockedEvent.php,4,Event,Event,Event/FileLockedEvent.php,0,,Files
 Event/FileMovedEvent.php,4,Event,Event,Event/FileMovedEvent.php,0,,Files
