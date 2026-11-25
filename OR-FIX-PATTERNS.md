@@ -942,3 +942,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 ## Two PRs add AuditTrail columns: conflicts in the entity, field types and both goldens (or-fix-5)
 - Symptom: after main #11071 (ruleDigest/ruleVersion) a PR adding its own AuditTrail column conflicts in lib/Db/AuditTrail.php (@method list and property), AuditTrailFieldTypes::TYPES, AuditTrailSealedFormGoldenTest::testFieldTypesInOrder and fixtures/entity-hydration-golden.json.
 - Fix: keep both, main's columns first then the PR's, in the same order in all four files (fix trailing commas in the json); EntityHydrationGoldenTest, AuditTrailSealedFormGoldenTest and tests/Unit/Db --filter AuditTrail green after. Then rerun check-migration-version-bump: main reached dev.17, so a PR at dev.17 needs a free number (dev.18/19 taken by open PRs on 25 Nov; #10515 went to dev.20).
+## A new Core ServiceRegistrar binding to an area class (or-fix-9, #11139)
+- Symptom: on the merge with main, ServiceRegistrarTest::testRegistersTheServicesInOrder gains an entry and ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline lists 'lib/Service/ServiceRegistrar.php -> lib/<Area>/... (Core -> <Area>)'.
+- Cause: Core may not reference an area's class; the binding belongs to the owning area's registrar.
+- Fix: keep main's ServiceRegistrar and its test; add Contract => Class to the area's registrar BINDINGS (e.g. FilesRegistrar), bump its test's assertCount and assert the pair; add component-map rows for new lib files; never extend the dependency baseline.
