@@ -2385,8 +2385,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			// Return 409 Conflict for cascade protection (objects still attached).
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
 		} catch (\Exception $e) {
-			// Return 500 for other errors.
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Schema deletion failed');
 		}//end try
 	}//end destroy()
 
@@ -3012,8 +3011,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			// Return a 404 error if the target schema doesn't exist.
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			// Return a 500 error for other exceptions.
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Related schemas read failed');
 		}//end try
 	}//end related()
 
@@ -3156,7 +3154,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Schema stats read failed');
 		}//end try
 	}//end stats()
 
@@ -3209,7 +3207,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Schema indexes read failed');
 		}//end try
 	}//end indexes()
 
