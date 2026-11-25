@@ -101,3 +101,4 @@
 2026-11-24T23:35:28Z GREEN prs=10553,10983,11003,11013,11033,11058,11043 main=037f95a841 integrator-cloud (merged; main now 7bf08ec0b9)
 2026-11-24T23:46:42Z GREEN prs=11063,11073,11078,11098 main=7bf08ec0b9 integrator-cloud (merged; main now 06bd93550e)
 2026-11-24T23:56:52Z GREEN prs=10518,10496,10498 main=06bd93550e integrator-cloud (merged; main now b9f7ab7b8b; 10526 tree-conflict)
+2026-11-25T00:08:47Z AUTOPARK prs=10525,10529,10550,10965 main=b9f7ab7b8b integrator-cloud (parked 10550: floor module_coupling)
