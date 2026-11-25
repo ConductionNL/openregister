@@ -4825,3 +4825,4 @@ remote: error: GH013: Repository rule violations f; per-PR merges
 2026-11-25T10:47:03Z precheck-20261125T100507-543643c0 NORESULT tree 9eafde1f97 prs 1: php-1.log: no Tests line
 2026-11-25T10:47:32Z precheck-20261125T100507-543643c0 NORESULT tree a680d428b9 prs 1: php-1.log: no Tests line
 2026-11-25T10:48:00Z precheck-20261125T100507-543643c0 NORESULT tree 4d0e794e72 prs 1: php-1.log: no Tests line
+2026-11-25T10:48:08Z precheck-20261125T085905-5d01d28f CONFLICT-DEV #10549 25faed41
