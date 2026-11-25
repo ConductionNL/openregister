@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Import\BaseImportPlanner;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Import\ImportCommit;
 use OCA\OpenRegister\BackgroundJob\ConfigurationJobHandlesInterface;
@@ -151,6 +152,13 @@ class ImportPreviewController extends Controller {
 	private readonly IGroupManager $groupManager;
 
 	/**
+	 * Plans the import of a whole base export, or null where a test built the controller without it.
+	 *
+	 * @var BaseImportPlanner|null
+	 */
+	private readonly ?BaseImportPlanner $basePlanner;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request HTTP request.
@@ -169,6 +177,7 @@ class ImportPreviewController extends Controller {
 		$this->jobList = $services->platform->jobList;
 		$this->userSession = $services->platform->userSession;
 		$this->groupManager = $services->platform->groupManager;
+		$this->basePlanner = $services->domain->basePlanner;
 		$this->logger = $services->logger;
 	}//end __construct()
 
@@ -303,6 +312,50 @@ class ImportPreviewController extends Controller {
 
 		return $this->runPreview(params: $params);
 	}//end create()
+
+	/**
+	 * Read a whole base export and propose the register it becomes. Writes nothing (REQ-IPC-006).
+	 *
+	 * The answer is the plan a person confirms: the proposed register,
+	 * schemas and relations, the per-row outcomes of links to rows outside the
+	 * export, each table's row count and the order the tables load in.
+	 * Confirming it creates a register, which only an administrator may do, so
+	 * only an administrator may ask for the proposal.
+	 *
+	 * @return JSONResponse 200 with the plan, or 400 / 401 / 403 / 500.
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md#REQ-IPC-006
+	 */
+	#[NoAdminRequired]
+	public function proposeBase(): JSONResponse {
+		$uid = $this->currentUid();
+		if ($uid === null) {
+			return $this->authRequired();
+		}
+
+		if ($this->groupManager->isAdmin($uid) === false) {
+			return new JSONResponse(data: ['error' => 'Only administrators may create registers, so only they may import a whole base'], statusCode: 403);
+		}
+
+		$uploadedFile = $this->request->getUploadedFile('file');
+		if ($uploadedFile === null || ($uploadedFile['tmp_name'] ?? '') === '') {
+			return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
+		}
+
+		if ($this->basePlanner === null) {
+			return new JSONResponse(data: ['error' => 'Importing a whole base is not available'], statusCode: 503);
+		}
+
+		try {
+			return new JSONResponse(
+				data: $this->basePlanner->plan(format: (string)$this->request->getParam('format', 'baserow'), filePath: (string)$uploadedFile['tmp_name'])
+			);
+		} catch (InvalidArgumentException $exception) {
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
+		} catch (Throwable $exception) {
+			return new JSONResponse(data: ['error' => 'The base could not be read'], statusCode: 500);
+		}
+	}//end proposeBase()
 
 	/**
 	 * The uuid of the run a retry names through `retryOf`, which the caller must be able to read.

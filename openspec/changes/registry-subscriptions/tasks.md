@@ -44,8 +44,17 @@
 
 ## 3. Query
 
-- [ ] 3.1 `_registry[state]` and `_registry[updatedBefore]` lenses.
-      DEFERRED, deliberately, not silently dropped. The injection point
+- [x] 3.1 `_registry[state]` and `_registry[updatedBefore]` lenses.
+      Built: `lib/Db/MagicMapper/RegistryLens.php` parses the lens and writes
+      one EXISTS over `openregister_registry_subs` (plus a NOT EXISTS for
+      `none` / a moment alone: an object without a row is `none` and never
+      updated), bound on the outer query; `MagicSearchHandler::applyLensAndSearchFilters()`
+      applies it, the UNION route is skipped and the raw-SQL builders refuse
+      it, an unreadable lens is a 400 (`RegistryLensException`). Unit tests:
+      `tests/Unit/Db/MagicMapper/RegistryLensTest.php` (parser, SQL, handler,
+      union refusal). The generated SQL is still unverified against a live
+      database; the earlier note on that stands:
+      ORIGINALLY DEFERRED, deliberately, not silently dropped. The injection point
       exists (`MagicSearchHandler::applyAccessControlFilters()`, beside
       `MagicRbacHandler::applyRbacFilters()` — both build `WHERE`/`EXISTS`
       SQL against the schema's magic table), but wiring a new EXISTS join

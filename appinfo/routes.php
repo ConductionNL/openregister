@@ -47,6 +47,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
         // Approval plane of app-declared credential providers (app-declared-credential-providers 3.2):
         // administrators only. The identifier is `<appId>:<localId>`.
+        ['name' => 'declaredCredentialProviders#index', 'url' => '/api/credentials/providers/declared', 'verb' => 'GET'],
         ['name' => 'credentialProviderApproval#approve', 'url' => '/api/credentials/providers/{identifier}/approve', 'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
         ['name' => 'credentialProviderApproval#reject',  'url' => '/api/credentials/providers/{identifier}/reject',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
         ['name' => 'credentialProviderApproval#revoke',  'url' => '/api/credentials/providers/{identifier}/revoke',  'verb' => 'POST', 'requirements' => ['identifier' => '[a-z0-9_-]+:[^/]+']],
@@ -1512,6 +1513,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'importPreview#policies', 'url' => '/api/import-previews/policies', 'verb' => 'GET'],
         ['name' => 'importPreview#index', 'url' => '/api/import-previews', 'verb' => 'GET'],
         ['name' => 'importPreview#create', 'url' => '/api/import-previews', 'verb' => 'POST'],
+        // A whole base export: read it and propose the register it becomes; writes nothing (REQ-IPC-006).
+        ['name' => 'importPreview#proposeBase', 'url' => '/api/import-previews/base', 'verb' => 'POST'],
         ['name' => 'importPreview#show', 'url' => '/api/import-previews/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#rows', 'url' => '/api/import-previews/{id}/rows', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],
         ['name' => 'importPreview#failed', 'url' => '/api/import-previews/{id}/failed', 'verb' => 'GET', 'requirements' => ['id' => '\\d+']],

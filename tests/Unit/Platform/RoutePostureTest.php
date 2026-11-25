@@ -102,12 +102,20 @@ final class RoutePostureTest extends TestCase {
 	private const OAUTH_STATE = 'the OAuth state issued when the connection was started';
 
 	/**
+	 * The metrics access guard: an administrator session, the scraper token or an allowed address.
+	 *
+	 * @var string
+	 */
+	private const METRICS_ACCESS = 'the metrics access guard: an administrator, the scraper bearer token or an allowed address, nobody without a guard';
+
+	/**
 	 * Every public routed method, relative to `OCA\OpenRegister\`, with what it relies on instead of a session.
 	 *
 	 * @var array<string, string>
 	 */
 	private const PUBLIC_METHODS = [
 		'AppHost\\Controller\\GenericHealthController::index' => self::PUBLIC_DOCUMENT,
+		'AppHost\\Controller\\GenericMetricsController::index' => self::METRICS_ACCESS,
 		'AppHost\\Controller\\GenericReadinessController::index' => self::PUBLIC_DOCUMENT,
 		'Controller\\AccessLinkController::comment' => self::TOKEN,
 		'Controller\\AccessLinkController::open' => self::TOKEN,
