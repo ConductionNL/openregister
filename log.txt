@@ -4796,3 +4796,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-25T10:19:16Z integrator-20261125T091917-ff3156fa MERGED-TREE 79a211d209: 3 PRs, main now 1e257c721f = tested tree
 2026-11-25T10:19:35Z integrator-20261125T091917-ff3156fa CONFLICT-DEV #10156 46fbaef7
+2026-11-25T10:19:43Z integrator-20261125T091917-ff3156fa NORESULT tree : floor not measured (exit 9)
