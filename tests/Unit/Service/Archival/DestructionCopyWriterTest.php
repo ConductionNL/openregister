@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Archival;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\CopySealerInterface;
 use OCA\OpenRegister\Service\Archival\DestructionCopyWriter;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -134,4 +135,44 @@ class DestructionCopyWriterTest extends TestCase {
 			}
 		}
 	}//end testALocationThatCannotTakeTheCopyIsRefusedByName()
+	/**
+	 * A sealed copy holds only what the sealer returned, under the sealed suffix.
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
+	 */
+	public function testASealedCopyHoldsOnlyTheSealedBytes(): void {
+		$sealer = $this->createMock(CopySealerInterface::class);
+		$sealer->expects($this->once())->method('seal')->willReturnCallback(
+			function (string $plain): string {
+				$this->assertSame('uuid-1', json_decode($plain, true)['uuid']);
+				return 'ciphertext';
+			}
+		);
+
+		$path = (new DestructionCopyWriter())->writeSealed(location: $this->location, listUuid: 'list-1', object: self::object('uuid-1'), sealer: $sealer);
+
+		$this->assertSame($this->location . '/list-1/uuid-1' . DestructionCopyWriter::SEALED_SUFFIX, $path);
+		$this->assertSame('ciphertext', file_get_contents($path));
+		$this->assertFileDoesNotExist($this->location . '/list-1/uuid-1.json');
+	}
+
+	/**
+	 * A sealer that fails leaves no file, and the failure names the location.
+	 *
+	 * @spec openspec/changes/exchange-encrypted-instance-export/specs/data-import-export/spec.md#requirement-the-copy-before-a-destruction-can-be-required-to-be-encrypted
+	 */
+	public function testAFailedSealWritesNothingAndNamesTheLocation(): void {
+		$sealer = $this->createMock(CopySealerInterface::class);
+		$sealer->method('seal')->willThrowException(new RuntimeException('no stream'));
+
+		try {
+			(new DestructionCopyWriter())->writeSealed(location: $this->location, listUuid: 'list-1', object: self::object('uuid-1'), sealer: $sealer);
+			$this->fail('A failed seal must refuse the copy.');
+		} catch (RuntimeException $e) {
+			$this->assertStringContainsString('"' . $this->location . '"', $e->getMessage());
+			$this->assertStringNotContainsString('no stream', $e->getMessage());
+		}
+
+		$this->assertSame([], (array) glob($this->location . '/list-1/*'));
+	}
 }//end class

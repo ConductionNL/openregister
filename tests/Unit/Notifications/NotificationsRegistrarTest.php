@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Notifications;
 
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleReachLedger;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Kernel\Contracts\Core\ReadNoticeClearingInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\NotificationClearingService;
@@ -127,13 +128,25 @@ final class NotificationsRegistrarTest extends TestCase {
 
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('warning')->with(RuleReachRecorder::MARKER);
+		$written = [];
+		$ledger = $this->createMock(RuleReachLedger::class);
+		$ledger->method('record')->willReturnCallback(
+			static function (array $counts) use (&$written): void {
+				$written[] = $counts;
+			}
+		);
 		$container = $this->createMock(IAppContainer::class);
-		$container->method('get')->with(LoggerInterface::class)->willReturn($logger);
+		$container->method('get')->willReturnMap([
+			[LoggerInterface::class, $logger],
+			[RuleReachLedger::class, $ledger],
+		]);
 
 		$recorder = $registered[RuleReachRecorder::class]['factory']($container);
 		$recorder->reachedNobody('rule-1', 'obj-1');
 		$recorder->reachedNobody('rule-1', 'obj-2');
 
 		$this->assertSame(2, $recorder->report()['occurrences']);
+		// The shared recorder writes to the persisted ledger, so another request can read it.
+		$this->assertSame([['rule-1' => 1], ['rule-1' => 2]], $written);
 	}//end testTheRuleReachRecorderIsOneSharedService()
 }//end class

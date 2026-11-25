@@ -321,6 +321,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			$call->userGroups = $this->groupManager->getUserGroupIds($user);
 		}
 
+		$call->administrator = AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
+
 		return $user;
 	}//end identifyCaller()
 
@@ -1053,7 +1055,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private function classificationTermSql(RbacAccessCall $call): string|false|null {
 		$block = (new ClassificationListTerm(clearances: new ClearanceResolver(logger: $this->logger)))->matchBlock(
 			schema: $call->schema,
-			caller: new ClassificationCaller(userId: $call->userId, groups: $call->userGroups, action: $call->action)
+			caller: new ClassificationCaller(userId: $call->userId, groups: $call->userGroups, action: $call->action, administrator: $call->administrator)
 		);
 		if ($block === null) {
 			return null;
@@ -1740,7 +1742,11 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			$userGroups = $this->groupManager->getUserGroupIds($user);
 		}
 
-		return (new RbacPermissionCheck(schema: $schema, action: $action))->forCaller(userId: $userId, userGroups: $userGroups);
+		return (new RbacPermissionCheck(schema: $schema, action: $action))->forCaller(
+			userId: $userId,
+			userGroups: $userGroups,
+			administrator: AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user)
+		);
 	}//end permissionCheckFor()
 
 	/**

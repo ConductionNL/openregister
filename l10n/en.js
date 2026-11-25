@@ -2749,6 +2749,7 @@ OC.L10N.register(
     "Requested at" : "Requested at",
     "Requested by" : "Requested by",
     "Requests needed before pressure is judged" : "Requests needed before pressure is judged",
+    "Require a review before anonymised output is written" : "Require a review before anonymised output is written",
     "Required" : "Required",
     "required" : "required",
     "Required Concept Fields" : "Required Concept Fields",
@@ -3903,6 +3904,7 @@ OC.L10N.register(
     "When it came back." : "When it came back.",
     "When it was answered." : "When it was answered.",
     "when its condition holds" : "when its condition holds",
+    "When on, an anonymised copy is only made once every detection is decided and the document is marked as checked. Unattended pipelines, such as the Woo pipeline of OpenCatalogi, then wait for officers to decide." : "When on, an anonymised copy is only made once every detection is decided and the document is marked as checked. Unattended pipelines, such as the Woo pipeline of OpenCatalogi, then wait for officers to decide.",
     "When the answer was recorded (ISO 8601)." : "When the answer was recorded (ISO 8601).",
     "When the dismissal was undone, when it has been." : "When the dismissal was undone, when it has been.",
     "When the judgement was made." : "When the judgement was made.",
@@ -4168,7 +4170,12 @@ OC.L10N.register(
     "Responses probed {moment}." : "Responses probed {moment}.",
     "Ruleset {ruleset}, generated {moment}." : "Ruleset {ruleset}, generated {moment}.",
     "The conformance report could not be read." : "The conformance report could not be read.",
-    "The responses could not be probed." : "The responses could not be probed."
+    "The responses could not be probed." : "The responses could not be probed.",
+    "Could not load which notification rules reached nobody." : "Could not load which notification rules reached nobody.",
+    "Every notification rule reached at least one recipient." : "Every notification rule reached at least one recipient.",
+    "Notification rules that reached nobody" : "Notification rules that reached nobody",
+    "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients.",
+    "Times reached nobody: {count}. Last on {date}." : "Times reached nobody: {count}. Last on {date}."
 },
 "nplurals=2; plural=(n != 1);"
 );

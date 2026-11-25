@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
 use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
@@ -582,7 +583,7 @@ final class MoveObjectTest extends TestCase {
 			$toRegister = 1;
 		}
 
-		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations, $timers);
+		$service = new MoveObject(new \OCA\OpenRegister\Service\Object\ObjectChangeRecording($this->objects, $this->audit, new NullLogger(), $this->createStub(IEventDispatcher::class)), $this->validator, $this->relations, $this->timerContainer($timers));
 
 		return $service->perform(
 			move: new ObjectMove(
@@ -881,5 +882,19 @@ final class MoveObjectTest extends TestCase {
 
 		self::assertFalse($verdict['fits']);
 		self::assertStringContainsString('could not be checked', $verdict['errors'][0]);
+	}
+
+	/**
+	 * A container that offers the given timer control, or none.
+	 *
+	 * @param mixed $timers The timer control, or null.
+	 *
+	 * @return ContainerInterface The container.
+	 */
+	private function timerContainer(mixed $timers): ContainerInterface {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('has')->willReturn($timers !== null);
+		$container->method('get')->willReturn($timers);
+		return $container;
 	}
 }//end class

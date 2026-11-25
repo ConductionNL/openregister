@@ -3,7 +3,8 @@
 ## 1. Schema rename operation
 
 - [x] 1.1 `formerSlugs` on `Schema` with a migration; `renameSchema` operation in `SchemaMigrationPlanner` rewriting `$ref` and `items.$ref` in other schemas, with preview output. Verify: `SchemaMigrationPlannerRenameSchemaTest` covers plan, run and rollback.
-- [ ] 1.2 Preview warnings for flows, notification rules and saved views that name the old property or slug. Verify: unit test with one saved view naming the property.
+- [x] 1.2 Preview warnings for flows, notification rules and saved views that name the old property or slug. Verify: unit test with one saved view naming the property.
+  Built: `POST /api/schemas/{id}/migrations/preview` answers `warnings` beside `results`: every flow (trigger schema, nodes, edges, annotations), schema `x-openregister-notifications` block and saved view (query, presentation) that names the `from` of a `rename` or `renameSchema` step, as a whole token or a key, with the paths where. Nothing is rewritten (D-5). `RenameReferenceWarnings` (Core) reads the flows and views through two Kernel contracts, `FlowNamingDocumentsInterface` and `ViewNamingDocumentsInterface`, answered by `FlowNamingDocuments` (Processes) and `ViewNamingDocuments` (Search) and bound in their own wiring, so no area edge is added. Tests: `RenameReferenceWarningsTest` (6), `FlowNamingDocumentsTest` (3), `ViewNamingDocumentsTest` (2), `SchemaMigrationControllerRenameWarningsTest` (1, one saved view naming the property).
 
 ## 2. Resolution
 

@@ -93,6 +93,8 @@ class MagicRbacClassificationTest extends TestCase {
 			$user->method('getUID')->willReturn($userId);
 			$userSession->method('getUser')->willReturn($user);
 			$groupManager->method('getUserGroupIds')->willReturn($groups);
+			// Nextcloud's own administrator check, as it answers inside allowed_admin_ranges.
+			$groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 		}
 
 		$conditionMatcher = $this->createMock(ConditionMatcher::class);

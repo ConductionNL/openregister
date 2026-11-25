@@ -45,6 +45,7 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectWriteValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
 use OCA\OpenRegister\Listener\Registrar\ComplianceListenerRegistrar;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
@@ -243,6 +244,13 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectUpdatedEvent::class, FlowTriggerListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, FlowTriggerListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, FlowTriggerListener::class);
+
+		// Calendar flow triggers (flow-calendar-and-webhook-triggers): a write
+		// places, moves or removes the record's moment on every calendar trigger
+		// of its schema; FlowCalendarWorker fires the moments that come due.
+		$context->registerEventListener(ObjectCreatedEvent::class, FlowCalendarIndexListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, FlowCalendarIndexListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, FlowCalendarIndexListener::class);
 
 		// Flow preflight — refuse a flow document naming a step type this
 		// instance cannot run. Registered FIRST on both events so an unrunnable
@@ -559,6 +567,10 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectUpdatingEvent::class, WorkingCalendarValidationListener::class);
 		$context->registerEventListener(ObjectCreatingEvent::class, DecisionTableValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, DecisionTableValidationListener::class);
+		// A write-time check another area owns the rules of; today the redaction policy's
+		// detection patterns (Configuration binds the contract to DetectionPatternValidationListener).
+		$context->registerEventListener(ObjectCreatingEvent::class, ObjectWriteValidatorInterface::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, ObjectWriteValidatorInterface::class);
 
 		// ... and the other half: a calendar an armed or suspended timer names
 		// cannot be deleted, because the resolver refuses an unknown name
