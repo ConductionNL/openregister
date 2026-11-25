@@ -35,11 +35,12 @@
 
 ## 3. Tests
 
-- [ ] 3.1 Unit tests for the scopes, the backfill and the outbound link;
+- [x] 3.1 Unit tests for the scopes, the backfill and the outbound link;
       Newman for resolve. **The order and the refusals are tested**:
       `tests/Unit/Service/Notification/ReplyThreadResolverTest.php` (13),
       including two objects belonging to different people resolving neither,
       a partial id never matching, and case-insensitive header names.
+      > 2026-11-25: the scopes are in `ReplyThreadServiceTest` (user scope reads under RBAC, system scope says so), the backfill in `EmailLinkMessageIdBackfillTest` and `BackfillEmailLinkMessageIdJobTest`, the outbound link in `EmailSenderOutboundLinkTest` and now `tests/Unit/Notifications/Service/OutboundMailLinkWriterTest.php` (every column a reply threads on, no schema, a long subject, a Message-ID the column cannot hold). Newman: `tests/newman/openregister-reply-threading.postman_collection.json` (no match is 200 `unthreaded` with `scope: user`, a References chain alone, anonymous 401), registered in `run-all.sh`; not run here, it needs a live instance.
 
 ## 4. Woo programme amendment: collected mail as threads (REQ-RTH-010, REQ-RTH-011, row 19.6)
 
