@@ -50,7 +50,7 @@ final class EntityRelationsControllerFactory {
 		\OCA\OpenRegister\Service\Decision\RelationDecisionService $relationDecisions,
 		\OCA\OpenRegister\Service\Decision\DecisionVisibility $decisionVisibility,
 		\OCP\IGroupManager $groupManager,
-		?\OCA\OpenRegister\Service\File\ManagedFileOwnerLookup $fileOwners = null,
+		?\OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners $fileOwners = null,
 	): array {
 		return [
 			$request,

@@ -250,7 +250,7 @@ class EntityRelationsControllerTest extends TestCase {
 		$relation->setFileId(7);
 		$this->userSession->method('getUser')->willReturn($this->user);
 		$this->mapper->method('find')->willReturn($relation);
-		$this->mapper->method('updateDecisionMetadata')->willReturnArgument(0);
+		$this->mapper->method('updateDecisionMetadata')->willReturn($relation);
 		$this->request->method('getParams')->willReturn(['bases' => ['5.1.2e']]);
 
 		$object = new \OCA\OpenRegister\Db\ObjectEntity();
@@ -301,8 +301,9 @@ class EntityRelationsControllerTest extends TestCase {
 		$this->rootFolder->method('getUserFolder')->willReturnCallback(
 			static fn (string $uid): Folder => ($uid === 'openregister' ? $openRegisterHome : $own)
 		);
-		$owners = $this->createMock(ManagedFileOwnerLookup::class);
-		$owners->method('find')->with($managedFile)->willReturn($object);
+		$lookup = $this->createMock(ManagedFileOwnerLookup::class);
+		$lookup->method('find')->with($managedFile)->willReturn($object);
+		$owners = new \OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners(rootFolder: $this->rootFolder, owners: $lookup);
 
 		return EntityRelationsControllerFactory::create(
 			'openregister',

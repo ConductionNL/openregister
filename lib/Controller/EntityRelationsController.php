@@ -58,8 +58,7 @@ use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionVisibilityInterface;
 use OCA\OpenRegister\Service\Decision\RelationDecisionServiceInterface;
-use OCA\OpenRegister\Service\File\DocumentStore;
-use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
+use OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners;
 use OCA\OpenRegister\Service\Object\PermissionAsk;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCP\AppFramework\Controller;
@@ -150,9 +149,9 @@ class EntityRelationsController extends Controller {
 	/**
 	 * The object that owns a file in OpenRegister's own tree.
 	 *
-	 * @var ManagedFileOwnerLookup|null
+	 * @var ReviewPolicyFileOwners|null
 	 */
-	private readonly ?ManagedFileOwnerLookup $fileOwners;
+	private readonly ?ReviewPolicyFileOwners $fileOwners;
 
 	/**
 	 * Constructor.
@@ -442,7 +441,7 @@ class EntityRelationsController extends Controller {
 			return false;
 		}
 
-		return $this->mayUpdate(object: $object, schemaId: $relation->getSchemaId(), userId: $userId);
+		return $this->mayUpdate(object: $object, schemaId: $relation->getSchemaId(), userId: $userId, subjectId: $relation->getObjectId());
 	}//end canUpdateObject()
 
 	/**
@@ -460,19 +459,21 @@ class EntityRelationsController extends Controller {
 			return false;
 		}
 
-		// An object's files live in the openregister account's home; read from
-		// the root, the lookup sees only the acting user's own mounts.
-		$node = $this->rootFolder->getUserFolder(DocumentStore::ACCOUNT)->getFirstNodeById($fileId);
-		if ($node instanceof File === false) {
+		try {
+			$object = $this->fileOwners->objectOwningFile(fileId: $fileId);
+		} catch (\Throwable $error) {
+			$this->logger->warning(
+				message: '[EntityRelationsController] The file\'s object could not be found, denying',
+				context: ['file_id' => $fileId, 'error' => $error->getMessage()]
+			);
 			return false;
 		}
 
-		$object = $this->fileOwners->find(file: $node);
 		if ($object === null) {
 			return false;
 		}
 
-		return $this->mayUpdate(object: $object, schemaId: null, userId: $userId);
+		return $this->mayUpdate(object: $object, schemaId: null, userId: $userId, subjectId: $fileId);
 	}//end canUpdateFileObject()
 
 	/**
@@ -480,11 +481,12 @@ class EntityRelationsController extends Controller {
 	 *
 	 * @param ObjectEntity $object   The object.
 	 * @param string|null  $schemaId The schema the relation names, or null for the object's own.
-	 * @param string       $userId   Acting user UID.
+	 * @param string       $userId    Acting user UID.
+	 * @param int|null     $subjectId The relation's object or file id, for the denial log.
 	 *
 	 * @return bool
 	 */
-	private function mayUpdate(ObjectEntity $object, ?string $schemaId, string $userId): bool {
+	private function mayUpdate(ObjectEntity $object, ?string $schemaId, string $userId, ?int $subjectId): bool {
 		$resolvedSchemaId = (string)$object->getSchema();
 		if ($schemaId !== null) {
 			$resolvedSchemaId = $schemaId;
@@ -494,7 +496,7 @@ class EntityRelationsController extends Controller {
 			schemaId: $resolvedSchemaId,
 			warning: new AuthDenialWarning(
 				message: '[EntityRelationsController] Object-bound auth check could not load schema, denying',
-				context: ['object_id' => $object->getId(), 'schema_id' => $resolvedSchemaId]
+				context: ['object_id' => $subjectId, 'schema_id' => $resolvedSchemaId]
 			)
 		);
 		if ($resolvedSchema === null) {
