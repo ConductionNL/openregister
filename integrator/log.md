@@ -173,3 +173,4 @@
 2026-11-25T20:00:08Z GREEN prs=11252,11253,11254,10513 main=458b22618e integrator-cloud (merged)
 2026-11-25T20:15:51Z GREEN prs=11262,11113,11145,11213 main=43ba16d948 integrator-cloud (merged)
 2026-11-25T20:30:24Z GREEN prs=11237,11239,11214,11223 main=27335744ae integrator-cloud (merged)
+2026-11-25T21:48:20Z NORESULT prs=11228,11232,11233,11238,11243,11244,11247,11248 main=292aa09ddf integrator-cloud (deps: php 8.3.6 < psalm 8.3.16; retry with COMPOSER_IGNORE_PLATFORM_REQ=php-64bit)

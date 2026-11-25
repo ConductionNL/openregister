@@ -5217,3 +5217,6 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T21:46:40Z precheck-20261125T213314-9ae1db7c GREEN tree 3c66bc6e8a on dev 292aa09ddf prs 1 front=skip: Tests: 67365, Assertions: 239380, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
 2026-11-25T21:47:48Z integrator-20261125T214524-15eb134c NORESULT tree e958310d0a: deps failed
 2026-11-25T21:48:02Z precheck-20261125T191529-85ecfd26 GREEN tree 93cba29834 on dev 292aa09ddf prs 1 front=skip: Tests: 67365, Assertions: 239377, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
+2026-11-25T21:55:26Z precheck-20261125T213314-9ae1db7c GREEN tree 82e4a25aff on dev 292aa09ddf prs 1 front=skip: Tests: 67367, Assertions: 239377, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
+2026-11-25T21:56:17Z session-20261125T213447-7fbd8e85 or-fix-2+7: lane 2 nothing red (11032 obsolete per decision, 11232 green, 11272 green on main merge); lane 7 fixed 11227 -> 823b14ec (l10n conflict), 11077 still upstream-blocked; precheck setup refused by a permission check, stopped
+2026-11-25T21:57:28Z precheck-20261125T191529-85ecfd26 GREEN tree b8549cc7ff on dev 292aa09ddf prs 1 front=ok: Tests: 67363, Assertions: 239373, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
