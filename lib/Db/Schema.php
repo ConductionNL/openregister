@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration;
 use OCA\OpenRegister\Db\Schema\PresentationAnnotations;
 use OCA\OpenRegister\Db\Schema\FacetBlockStamp;
 use OCA\OpenRegister\Db\Schema\PropertyFacetBlock;
+use OCA\OpenRegister\Exception\ObjectSourceQueryRefusedException;
 use OCP\IURLGenerator;
 use stdClass;
 use OCA\OpenRegister\Db\Schema\SchemaFieldTypes;
@@ -1264,13 +1265,21 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	/**
 	 * Set the configuration through its validation; invalid input becomes null.
 	 *
+	 * A refused object-source query is re-thrown instead: the whole save fails
+	 * and the stored configuration stays, rather than the schema silently
+	 * losing its object source.
+	 *
 	 * @param mixed $value The configuration, or its JSON text.
+	 *
+	 * @throws ObjectSourceQueryRefusedException When the object source's query is not a single read.
 	 *
 	 * @return void
 	 */
 	private function hydrateConfiguration(mixed $value): void {
 		try {
 			$this->setConfiguration(configuration: self::decodedConfiguration(value: $value));
+		} catch (ObjectSourceQueryRefusedException $refusal) {
+			throw $refusal;
 		} catch (\Exception $exception) {
 			$this->configuration = null;
 			$this->markFieldUpdated(attribute: 'configuration');

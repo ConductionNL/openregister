@@ -4554,6 +4554,7 @@ Service/CalendarEvent/CalendarLinkListenerRegistrar.php,,Service,,,,,Integration
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Exception/ObjectSourceQueryRefusedException.php,40,Exception,Exception,Exception/ObjectSourceQueryRefusedException.php,0,,Kernel
 Migration/Version1Date20261114100009.php,,Migration,,,,,Platform
 Db/SchemaMapper/AdministeredValidationCheck.php,,Db,,,,,Processes
 Controller/Support/CopyRun.php,,Controller,,,,,Core
