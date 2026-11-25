@@ -122,6 +122,13 @@ class ObjectsProvider implements IFilteringProvider {
 	private readonly SearchScopeCatalog $scopeCatalog;
 
 	/**
+	 * The identities the provider presents itself under, one per claiming app.
+	 *
+	 * @var SearchProviderIdentities
+	 */
+	private readonly SearchProviderIdentities $identities;
+
+	/**
 	 * Constructor for the ObjectsProvider class
 	 *
 	 * @param ObjectOperationsInterface $objectService The object service for search operations
@@ -131,6 +138,8 @@ class ObjectsProvider implements IFilteringProvider {
 	 *                                                 null describes them without the apps that claim them
 	 * @param FileHitSearch|null        $fileHits      The file arm; null keeps the older widening, where a
 	 *                                                 file match answers its owning object as an object hit
+	 * @param SearchProviderIdentities|null $identities The provider identity per claiming app;
+	 *                                                 null reads them from the scope catalog's claims
 	 *
 	 * @return void
 	 *
@@ -142,8 +151,10 @@ class ObjectsProvider implements IFilteringProvider {
 		private readonly ObjectsProviderOutput $output,
 		?SearchScopeCatalog $scopeCatalog = null,
 		private readonly ?FileHitSearch $fileHits = null,
+		?SearchProviderIdentities $identities = null,
 	) {
 		$this->scopeCatalog = ($scopeCatalog ?? new SearchScopeCatalog(catalog: $catalog, logger: $output->logger));
+		$this->identities   = ($identities ?? new SearchProviderIdentities(l10n: $output->l10n, logger: $output->logger, claims: $this->scopeCatalog));
 	}//end __construct()
 
 	/**
@@ -197,7 +208,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 *
 	 * @return string[]
 	 *
-	 * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema'}
+	 * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema', 'scopes', 'provider'}
 	 * @phpstan-return array<string>
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
@@ -215,6 +226,9 @@ class ObjectsProvider implements IFilteringProvider {
 			// What to look in (content-search-index). `app:<id>`,
 			// `register:<slug>`, `schema:<slug>` or `files`, comma separated.
 			'scopes',
+			// One provider identity (platform-search-provider): a claiming
+			// app's id, or `openregister` for the pairs no app claimed.
+			'provider',
 		];
 	}//end getSupportedFilters()
 
@@ -237,7 +251,7 @@ class ObjectsProvider implements IFilteringProvider {
 	 *
 	 * @return FilterDefinition[]
 	 *
-	 * @psalm-return   list{FilterDefinition, FilterDefinition}
+	 * @psalm-return   list{FilterDefinition, FilterDefinition, FilterDefinition, FilterDefinition}
 	 * @phpstan-return list<\OCP\Search\FilterDefinition>
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
@@ -247,6 +261,7 @@ class ObjectsProvider implements IFilteringProvider {
 			new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
 			new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
 			new FilterDefinition(name: 'scopes', type: FilterDefinition::TYPE_STRING),
+			new FilterDefinition(name: 'provider', type: FilterDefinition::TYPE_STRING),
 		];
 	}//end getCustomFilters()
 
@@ -558,6 +573,9 @@ class ObjectsProvider implements IFilteringProvider {
 		$searchQuery = [];
 		if (empty($search) === false) {
 			$searchQuery['_search'] = $search;
+			// The matched passage for the subline, under REQ-SDL-002's safety
+			// rules (search-dutch-language-quality).
+			$searchQuery['_snippet'] = true;
 		}
 
 		$register = $query->getFilter('register')?->get();
@@ -603,11 +621,16 @@ class ObjectsProvider implements IFilteringProvider {
 		$scopes = SearchScopes::parse(raw: $query->getFilter('scopes')?->get());
 
 		$nonSearchableIds = $this->getNonSearchableIds();
+		$identity = $query->getFilter('provider')?->get();
 
 		if (empty($schema) === false) {
 			// The opt-out list is numeric, so a slug is resolved before the comparison.
 			$schemaId = $this->schemaIdOf(reference: $schema);
 			if ($schemaId !== null && in_array($schemaId, $nonSearchableIds, true) === true) {
+				return null;
+			}
+
+			if ($this->identityKeepsSchema(identity: $identity, schemaId: $schemaId) === false) {
 				return null;
 			}
 
@@ -619,7 +642,10 @@ class ObjectsProvider implements IFilteringProvider {
 			return $this->target(chunks: [null], schema: ($schemaId ?? $schema), schemaIds: $schemaIds, query: $query, scopes: $scopes);
 		}
 
-		$searchableIds = $this->narrowedSearchableIds(scopes: $scopes);
+		$searchableIds = $this->narrowedToIdentity(
+			schemaIds: $this->narrowedSearchableIds(scopes: $scopes),
+			identity: $identity
+		);
 		if (empty($searchableIds) === true) {
 			return null;
 		}
@@ -693,6 +719,93 @@ class ObjectsProvider implements IFilteringProvider {
 		$scoped = $scopes->narrowSchemas(schemas: $this->describeSearchableSchemas());
 		return array_values(array_intersect($searchableIds, $scoped));
 	}//end narrowedSearchableIds()
+
+	/**
+	 * The schema ids narrowed to the pairs of one provider identity.
+	 *
+	 * No `provider` filter keeps the ids as they are, so a search of
+	 * everything is unchanged. An identity id that names no identity narrows
+	 * to nothing: searching an app that claimed nothing is an empty answer,
+	 * never a widening back to everything. Narrowed before the chunk loop,
+	 * like the scopes (D-4 of content-search-index).
+	 *
+	 * @param array<int, int> $schemaIds The searchable schema ids, already narrowed by the scopes.
+	 * @param mixed           $identity  The `provider` filter value, or null for none.
+	 *
+	 * @return array<int, int> The schema ids of the identity's pairs.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	private function narrowedToIdentity(array $schemaIds, mixed $identity): array {
+		if ($this->namesIdentity(identity: $identity) === false || empty($schemaIds) === true) {
+			return $schemaIds;
+		}
+
+		$owned = $this->identitySchemaIds(identity: (string)$identity);
+		return array_values(array_intersect($schemaIds, $owned));
+	}//end narrowedToIdentity()
+
+	/**
+	 * Whether an explicitly filtered schema belongs to the requested identity.
+	 *
+	 * No `provider` filter keeps the schema. A schema reference this provider
+	 * cannot resolve is kept too, so the search path refuses it by name.
+	 *
+	 * @param mixed    $identity The `provider` filter value, or null for none.
+	 * @param int|null $schemaId The resolved schema id, or null when it did not resolve.
+	 *
+	 * @return bool True when the schema is searched.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	private function identityKeepsSchema(mixed $identity, ?int $schemaId): bool {
+		if ($this->namesIdentity(identity: $identity) === false || $schemaId === null) {
+			return true;
+		}
+
+		return in_array($schemaId, $this->identitySchemaIds(identity: (string)$identity), true);
+	}//end identityKeepsSchema()
+
+	/**
+	 * Whether a `provider` filter value asks for one identity.
+	 *
+	 * @param mixed $identity The filter value.
+	 *
+	 * @return bool True when it is a non-empty string.
+	 */
+	private function namesIdentity(mixed $identity): bool {
+		return is_string($identity) === true && trim($identity) !== '';
+	}//end namesIdentity()
+
+	/**
+	 * The searchable schema ids whose pair belongs to an identity.
+	 *
+	 * A pair belongs to the app that claimed it, and an unclaimed pair to the
+	 * OpenRegister identity, so the identities split the searchable schemas
+	 * without overlap.
+	 *
+	 * @param string $identity The identity id.
+	 *
+	 * @return array<int, int> The schema ids; empty when the id names no identity.
+	 *
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
+	 */
+	private function identitySchemaIds(string $identity): array {
+		$wanted = $this->identities->byId(id: $identity);
+		if ($wanted === null) {
+			return [];
+		}
+
+		$ids = [];
+		foreach ($this->describeSearchableSchemas() as $row) {
+			$owner = $this->identities->forPair(registerSlug: $row['register'], schemaSlug: $row['slug']);
+			if ($owner->id === $wanted->id) {
+				$ids[] = $row['id'];
+			}
+		}
+
+		return $ids;
+	}//end identitySchemaIds()
 
 	/**
 	 * Add the `since` / `until` filters as a created-date range.
