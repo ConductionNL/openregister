@@ -62,7 +62,7 @@ final class AutomationOutcome {
 	 *
 	 * @param AutomationRecord $record The stored record.
 	 *
-	 * @return array{kind: string, key: string, at: ?string, subject: array{register: ?string, schema: ?string, id: ?string}, outcome: string, reason: ?string, recipients?: int}
+	 * @return array<string, mixed> kind, key, at, subject (register, schema, id), outcome, reason; recipients for a notification.
 	 *
 	 * @spec openspec/changes/a-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did/specs/notificatie-engine/spec.md#requirement-a-consuming-app-reads-what-a-notification-and-a-lifecycle-action-did
 	 */

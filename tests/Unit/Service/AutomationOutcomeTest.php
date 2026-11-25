@@ -140,7 +140,16 @@ final class AutomationOutcomeTest extends TestCase {
 	}
 
 	public function testKeyPrefixAndTheOutcomeKindsBecomeTheFilter(): void {
-		$filter = AutomationRecordFilter::fromOutcomeParams(params: ['keyPrefix' => ' aut-7f3c ', 'key' => 'ignored', 'kind' => ' lifecycle ', 'since' => '2026-11-24T00:00:00Z', 'limit' => '10', 'offset' => '20']);
+		$filter = AutomationRecordFilter::fromOutcomeParams(
+			params: [
+				'keyPrefix' => ' aut-7f3c ',
+				'key'       => 'ignored',
+				'kind'      => ' lifecycle ',
+				'since'     => '2026-11-24T00:00:00Z',
+				'limit'     => '10',
+				'offset'    => '20',
+			]
+		);
 
 		$this->assertSame('aut-7f3c', $filter->keyPrefix);
 		$this->assertSame(AutomationRecord::KIND_LIFECYCLE_ACTION, $filter->kind);
