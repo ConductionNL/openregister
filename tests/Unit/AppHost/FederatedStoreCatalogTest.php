@@ -164,13 +164,13 @@ class FederatedStoreCatalogTest extends TestCase {
 		$this->registry->method('get')->willReturn(
 			$this->type(id: 'openregister.configset', topic: 'openregister-configset', name: 'Configuration set')
 		);
-		$this->federated->expects($this->exactly(2))->method('discover')->willReturn([
+		$this->federated->expects($this->exactly(count: 2))->method('discover')->willReturn([
 			['repo' => 'ConductionNL/default-gemeente', 'name' => 'default-gemeente', 'description' => '', 'url' => ''],
 		]);
 
 		$kept    = [];
 		$ttls    = [];
-		$cache   = $this->createMock(ICache::class);
+		$cache   = $this->createMock(originalClassName: ICache::class);
 		$cache->method('get')->willReturnCallback(static function (string $key) use (&$kept) {
 			return $kept[$key] ?? null;
 		});
@@ -179,13 +179,13 @@ class FederatedStoreCatalogTest extends TestCase {
 			$ttls[]     = $ttl;
 			return true;
 		});
-		$factory = $this->createMock(ICacheFactory::class);
+		$factory = $this->createMock(originalClassName: ICacheFactory::class);
 		$factory->method('isAvailable')->willReturn(true);
 		$factory->method('createDistributed')->willReturn($cache);
 
 		$catalog = new FederatedStoreCatalog(
 			catalogue: new ShareableConfigCatalogue(registry: $this->registry, federated: $this->federated),
-			logger: $this->createMock(LoggerInterface::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			searchCache: new StoreSearchCache(cacheFactory: $factory)
 		);
 
@@ -193,10 +193,10 @@ class FederatedStoreCatalogTest extends TestCase {
 		$second = $catalog->search(descriptor: $this->descriptor());
 		$other  = $catalog->search(descriptor: $this->descriptor(), search: new StoreSearch(query: 'gemeente'));
 
-		$this->assertSame($first, $second);
-		$this->assertCount(1, $first['cards']);
-		$this->assertCount(1, $other['cards']);
-		$this->assertSame([StoreSearchCache::TTL, StoreSearchCache::TTL], $ttls);
+		$this->assertSame(expected: $first, actual: $second);
+		$this->assertCount(expectedCount: 1, haystack: $first['cards']);
+		$this->assertCount(expectedCount: 1, haystack: $other['cards']);
+		$this->assertSame(expected: [StoreSearchCache::TTL, StoreSearchCache::TTL], actual: $ttls);
 	}//end testASecondSearchComesFromTheCache()
 
 	/**
