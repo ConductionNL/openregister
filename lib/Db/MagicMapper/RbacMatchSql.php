@@ -114,15 +114,21 @@ final class RbacMatchSql {
 	 *
 	 * @param array<string, mixed> $block        The match conditions.
 	 * @param string               $columnPrefix A table alias with its dot, or ''.
+	 * @param string|null          $tableName    The bare magic table; a property it lacks is
+	 *                                           excluded from this match instead of failing
+	 *                                           the whole query.
 	 *
 	 * @return string|null The predicate, or null when no condition could be built.
 	 */
-	public function matchConditions(array $block, string $columnPrefix = ''): ?string {
+	public function matchConditions(array $block, string $columnPrefix = '', ?string $tableName = null): ?string {
 		if ($this->matcher->namesUnknownMetadata(match: $block) === true) {
 			return self::IMPOSSIBLE;
 		}
 
-		return self::joined(terms: $this->propertyConditions(block: $block, columnPrefix: $columnPrefix), glue: ' AND ');
+		return self::joined(
+			terms: $this->propertyConditions(block: $block, columnPrefix: $columnPrefix, tableName: $tableName),
+			glue: ' AND '
+		);
 	}//end matchConditions()
 
 	/**
@@ -193,13 +199,30 @@ final class RbacMatchSql {
 	 *
 	 * @param array<string, mixed> $block        The match conditions.
 	 * @param string               $columnPrefix A table alias with its dot, or ''.
+	 * @param string|null          $tableName    The bare magic table; a property it lacks is
+	 *                                           excluded from this match instead of failing
+	 *                                           the whole query.
 	 *
 	 * @return array<int, string> The conditions that could be built.
 	 */
-	private function propertyConditions(array $block, string $columnPrefix): array {
+	private function propertyConditions(array $block, string $columnPrefix, ?string $tableName = null): array {
 		$conditions = [];
 		foreach ($block as $property => $value) {
-			$column = $columnPrefix . $this->dialect->quotedColumn(columnName: (new RuleColumns())->columnOf(key: $property));
+			$bareColumn = (new RuleColumns())->columnOf(key: $property);
+
+			// A schema's authorization can name any property it ever declared,
+			// but a schema shared across more than one register can be backed
+			// by tables that drifted apart. Referencing a column this specific
+			// table does not have fails the whole query with a database error
+			// instead of excluding this one condition; fail it closed instead.
+			if ($tableName !== null && $tableName !== ''
+				&& $this->dialect->columnExists(tableName: $tableName, columnName: $bareColumn) === false
+			) {
+				$conditions[] = self::IMPOSSIBLE;
+				continue;
+			}
+
+			$column = $columnPrefix . $this->dialect->quotedColumn(columnName: $bareColumn);
 			$conditions[] = $this->valueCondition(column: $column, value: $value);
 		}
 
