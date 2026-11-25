@@ -103,6 +103,16 @@ final class RelatedRowExistsClause {
 	private const NUMERIC_PATTERN = '^-?[0-9]+(\\.[0-9]+)?$';
 
 	/**
+	 * The identifier quote per engine: MariaDB reads a double-quoted name as a string literal.
+	 *
+	 * @var array<string, string>
+	 */
+	private const IDENTIFIER_QUOTES = [
+		self::ENGINE_POSTGRES => '"',
+		self::ENGINE_MARIADB  => '`',
+	];
+
+	/**
 	 * The guarded numeric comparison per engine: field expression (1), placeholder (2), number pattern (3), operator (4).
 	 *
 	 * @var array<string, string>
@@ -689,17 +699,14 @@ final class RelatedRowExistsClause {
 			);
 		}
 
-		if ($engine === self::ENGINE_POSTGRES) {
-			return '"' . $name . '"';
+		$quote = (self::IDENTIFIER_QUOTES[$engine] ?? null);
+		if ($quote === null) {
+			throw new InvalidArgumentException(
+				sprintf('No related-row SQL for engine \'%s\'.', $engine)
+			);
 		}
 
-		if ($engine === self::ENGINE_MARIADB) {
-			return '`' . $name . '`';
-		}
-
-		throw new InvalidArgumentException(
-			sprintf('No related-row SQL for engine \'%s\'.', $engine)
-		);
+		return $quote . $name . $quote;
 	}//end quoteIdentifier()
 
 	/**
