@@ -3,3 +3,4 @@ portaliq	f1126f1b	php=RED	Tests: 6597, Failures: 0, Errors: 16	phpcs,phpmd,psalm
 opencatalogi	aee8f2abb	php=RED	phpunit not run (no NC tree)	phpcs,phpmd,psalm,phpstan	js=RED	psalm 54 (46 UndefinedClass OR Kernel/Event), phpstan 2 McpTool; eslint 13 err DashboardSideBar; vitest 9 mainEntry
 openregister	894bdac71c5	php=RED	not run	composer-install	js=RED	vendor incomplete: GitHub zipballs 403 (phpstan,psalm-plugin-api,roave); eslint 10 errors; jest 9143 pass
 decidiq	d3a093ad	php=RED	Tests: 5763, Failures: 0, Errors: 0	phpcs,phpmd,psalm	js=RED	psalm 52 (18 RedundantCast,14 PossiblyUnusedReturnValue); phpcs 3 err; eslint exit 2: unpruned suppressions; vitest green
+pipelinq	411da2b53	php=RED	Tests 9617/Failures 0/Errors 0	phpmd,psalm	js=GREEN	phpmd 68 viol; psalm 5 err; phpunit 2 warnings; eslint 0 err/5 warn; vitest 5522 passed
