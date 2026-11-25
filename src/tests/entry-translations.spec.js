@@ -39,8 +39,8 @@ const IMPORT_SPECIFIER =
 /** The library itself or one of its JS subpaths. A stylesheet renders no label. */
 const LIBRARY = /^@conduction\/nextcloud-vue(\/|$)/
 
-/** The call an entry must make. */
-const REGISTERS = /\bregister(?:Library)?Translations\s*\(\s*\)/
+/** The call an entry must make (the lazy loader counts: it registers the same catalogue). */
+const REGISTERS = /\b(?:register(?:Library)?Translations|loadLibraryTranslations)\s*\(\s*\)/
 
 /**
  * Remove comments, so a commented-out call cannot satisfy the guard.
