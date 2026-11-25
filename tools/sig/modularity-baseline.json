@@ -31,8 +31,7 @@
   "lib/Service/Object/RenderObject.php -> lib/Service/Calculation/CalculationPayload.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail.php",
   "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusal.php",
-  "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php",
-  "lib/Service/Object/SaveObject.php -> lib/Search/Service/Quality/DedupCreatePolicyInterface.php"
+  "lib/Service/Object/SaveObject.php -> lib/Db/AuditTrail/SharedMasterDataRefusalOptions.php"
  ],
  "exposed_files": [
   "lib/AppHost/AppHostRegistrar.php",
@@ -865,7 +864,6 @@
   "lib/Search/Service/Geo/GeoResponseCrsFactory.php",
   "lib/Search/Service/Geo/GeoResponseCrsInterface.php",
   "lib/Search/Service/Geo/GetFeatureRequest.php",
-  "lib/Search/Service/Quality/DedupCreatePolicyInterface.php",
   "lib/Search/Service/Search/PlaceholderResolverInterface.php",
   "lib/Search/Service/Search/PlaceholderResolvers.php",
   "lib/Search/Service/Vectorization/EmbeddingProbe.php",
