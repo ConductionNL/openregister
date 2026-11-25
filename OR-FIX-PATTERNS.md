@@ -978,3 +978,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: after a conflict-free main merge, ComponentDefinitionTest (file matches no component / yaml is not the generator's output) and ComponentDependencyRulesTest (X -> Remainder edges) fail for a file the PR added; its csv row is present.
 - Cause: main regenerated the yaml; the textual merge keeps main's version of the hunk and drops the PR's entry.
 - Fix: run python3 scripts/component-patterns.py on the merged tree and commit the yaml.
+## Jest 'Cannot use import statement outside a module' from vue-codemirror6 (or-fix-7)
+- Symptom: a spec that imports a view (often a golden that imports many views, e.g. src/views/flows/pageShell.components.golden.spec.js) fails to run: node_modules/vue-codemirror6/dist/index.es.js 'Cannot use import statement'.
+- Cause: the PR made the view (or a child) import vue-codemirror6, which is ESM-only and not in jest transformIgnorePatterns; specs elsewhere mock it.
+- Fix: in the failing spec add jest.mock('vue-codemirror6', () => ({ __esModule: true, default: { name: 'CodeMirror', render: () => null } })) and jest.mock('@codemirror/lang-json', () => ({ json: () => ({}) })); update a component-list snapshot only for the component the PR adds (#11227 d4a72793).
