@@ -2311,6 +2311,7 @@ components:
       - ".*/lib/Controller/Support/HandoffControllerServices[.]php"
       - ".*/lib/Controller/Support/IntegrationsControllerServices[.]php"
       - ".*/lib/Controller/Support/LinkedEntityControllerServices[.]php"
+      - ".*/lib/Controller/Support/MailMessageIdReverseLookup[.]php"
       - ".*/lib/Controller/Support/MapLinksControllerServices[.]php"
       - ".*/lib/Controller/Support/MappingsControllerServices[.]php"
       - ".*/lib/Controller/Support/ObjectIntegrationsAccess[.]php"
