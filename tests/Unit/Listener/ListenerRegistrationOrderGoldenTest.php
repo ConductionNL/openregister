@@ -50,7 +50,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Then two JourneyValidationListener registrations (ObjectCreatingEvent, ObjectUpdatingEvent)
 	 * (count 273 -> 275).
 	 */
-	private const SEQUENCE_SHA256 = '';
+	private const SEQUENCE_SHA256 = '146aa1aa07bcb6377c3d4e1426bf571df851a6498bd19ebe6ee709d81562ef03';
 
 	/**
 	 * The registration calls, in call order, with every argument.
