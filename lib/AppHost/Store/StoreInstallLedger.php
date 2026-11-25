@@ -136,12 +136,8 @@ class StoreInstallLedger {
 		}
 
 		$decoded = json_decode($raw, true);
-		if (is_array($decoded) === false) {
-			return [];
-		}
-
-		$ledger = [];
-		foreach ($decoded as $slug => $targets) {
+		$ledger  = [];
+		foreach ((is_array($decoded) === true ? $decoded : []) as $slug => $targets) {
 			if (is_string($slug) === false || self::isId(value: $slug) === false || is_array($targets) === false) {
 				continue;
 			}

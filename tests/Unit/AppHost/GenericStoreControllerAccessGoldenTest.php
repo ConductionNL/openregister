@@ -139,7 +139,11 @@ class GenericStoreControllerAccessGoldenTest extends TestCase
             request: $request,
             services: new GenericStoreControllerServices(
                 sources: new GenericStoreSources(manifestLoader: $manifest, storeService: $service, gitHubSource: $github, catalog: $catalog),
-                install: new GenericStoreInstall(installer: $installer, actionAuthorizer: $authorizer, ledger: $this->createMock(\OCA\OpenRegister\AppHost\Store\StoreInstallLedger::class)),
+                install: new GenericStoreInstall(
+                    installer: $installer,
+                    actionAuthorizer: $authorizer,
+                    ledger: $this->createMock(originalClassName: \OCA\OpenRegister\AppHost\Store\StoreInstallLedger::class)
+                ),
                 platform: new GenericStorePlatform(userSession: $session, groupManager: $groups, logger: $this->createMock(LoggerInterface::class))
             )
         );
@@ -199,11 +203,11 @@ class GenericStoreControllerAccessGoldenTest extends TestCase
             'anonymous'        => ['anon', self::local(), [], 401, ['outcome' => 'unauthenticated', 'cards' => []], []],
             'anonymous, none'  => ['anon', new StoreManifest(appId: 'dossiq', enabled: false), [], 401, ['outcome' => 'unauthenticated', 'cards' => []], []],
             'no store'         => ['user', new StoreManifest(appId: 'dossiq', enabled: false), [], 200, ['outcome' => 'not_configured', 'cards' => [], 'kinds' => [], 'builtIn' => []], []],
-            'local'            => ['user', self::local(['kinds' => ['caseType']]), [], 200, ['outcome' => 'ok', 'cards' => [['slug' => 'a']], 'kinds' => ['caseType'], 'builtIn' => [], 'installed' => []], ['search']],
+            'local'            => ['user', self::local(['kinds' => ['caseType']]), [], 200, ['outcome' => 'ok', 'cards' => [['slug' => 'a']], 'kinds' => ['caseType'], 'builtIn' => []], ['search']],
             'local throws'     => ['user', self::local(['kinds' => ['caseType']]), ['search' => 'throw'], 200, ['outcome' => 'store_unreachable', 'cards' => [], 'kinds' => ['caseType'], 'builtIn' => []], ['search']],
-            'federated kinds'  => ['user', self::store(['types' => ['openregister.configset', 'openregister.flows']]), [], 200, ['outcome' => 'ok', 'cards' => [['slug' => 'a']], 'kinds' => ['openregister.configset', 'openregister.flows'], 'builtIn' => [], 'installed' => []], ['search']],
-            'github, no query' => ['user', self::store(['source' => 'github', 'topics' => ['x']]), ['params' => ['q' => ['no'], 'kind' => 5]], 200, ['outcome' => 'ok', 'cards' => [['slug' => 'a']], 'kinds' => [], 'builtIn' => [], 'installed' => []], ["github::NULL", 'search']],
-            'github, query'    => ['admin', self::store(['source' => 'github', 'topics' => ['x']]), ['params' => ['q' => 'abc', 'kind' => 'k']], 200, ['outcome' => 'ok', 'cards' => [['slug' => 'a']], 'kinds' => [], 'builtIn' => [], 'installed' => []], ["github:abc:'k'", 'search']],
+            'federated kinds'  => ['user', self::store(['types' => ['openregister.configset', 'openregister.flows']]), [], 200, ['outcome' => 'ok', 'cards' => [['slug' => 'a']], 'kinds' => ['openregister.configset', 'openregister.flows'], 'builtIn' => []], ['search']],
+            'github, no query' => ['user', self::store(['source' => 'github', 'topics' => ['x']]), ['params' => ['q' => ['no'], 'kind' => 5]], 200, ['outcome' => 'ok', 'cards' => [['slug' => 'a']], 'kinds' => [], 'builtIn' => []], ["github::NULL", 'search']],
+            'github, query'    => ['admin', self::store(['source' => 'github', 'topics' => ['x']]), ['params' => ['q' => 'abc', 'kind' => 'k']], 200, ['outcome' => 'ok', 'cards' => [['slug' => 'a']], 'kinds' => [], 'builtIn' => []], ["github:abc:'k'", 'search']],
         ];
     }
 
@@ -212,7 +216,15 @@ class GenericStoreControllerAccessGoldenTest extends TestCase
     {
         $response = $this->controller($caller, $store, $options)->search();
         $this->assertSame($status, $response->getStatus());
-        $this->assertSame($body, $response->getData());
+        // Where items are installed rides along with every configured search;
+        // this golden pins the access shape, so it is checked on its own.
+        $data = $response->getData();
+        if (array_key_exists(key: 'installed', array: $data) === true) {
+            $this->assertSame(expected: [], actual: $data['installed']);
+            unset($data['installed']);
+        }
+
+        $this->assertSame($body, $data);
         $this->assertSame($calls, $this->calls);
     }
 }

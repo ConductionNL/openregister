@@ -138,7 +138,7 @@ class GenericStoreControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->request = $this->createMock(IRequest::class);
-		$this->ledger = $this->getMockBuilder(StoreInstallLedger::class)
+		$this->ledger = $this->getMockBuilder(className: StoreInstallLedger::class)
 			->disableOriginalConstructor()->onlyMethods(['record', 'installedIn'])->getMock();
 	}//end setUp()
 
@@ -1121,7 +1121,7 @@ class GenericStoreControllerTest extends TestCase {
 		$this->catalog->method('install')->willReturn(value: ['success' => true, 'components' => []]);
 		$this->ledger->expects($this->once())->method(constraint: 'record')->with('larpinq', 'a-set', 'world-1');
 
-		$this->assertTrue($this->controller(appId: 'larpinq')->install(slug: 'a-set')->getData()['success']);
+		$this->assertTrue(condition: $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getData()['success']);
 	}//end testAWholeInstallIsRecordedWithItsTarget()
 
 	/**
@@ -1140,6 +1140,6 @@ class GenericStoreControllerTest extends TestCase {
 		);
 		$this->ledger->expects($this->never())->method(constraint: 'record');
 
-		$this->assertFalse($this->controller()->install(slug: 'vth')->getData()['success']);
+		$this->assertFalse(condition: $this->controller()->install(slug: 'vth')->getData()['success']);
 	}//end testAPartialInstallIsNotRecorded()
 }//end class
