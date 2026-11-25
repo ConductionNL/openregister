@@ -938,3 +938,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: precheck red on a main-added query-shape test (e.g. ApiCallRecordMapperPeriodQueriesTest::testCountIncrementsAKnownKey: expected 'call_count + 1', actual 'call_count + :p0'; insert values shifted by one).
 - Cause: main added a golden of the old query after the PR changed it (here #11093 binds the call count).
 - Fix: merge main, update main's test to the PR's query (extra bound value first, array_slice offset +1); keep the asserted columns. (#11093 40a91690)
+
+## Two PRs add AuditTrail columns: conflicts in the entity, field types and both goldens (or-fix-5)
+- Symptom: after main #11071 (ruleDigest/ruleVersion) a PR adding its own AuditTrail column conflicts in lib/Db/AuditTrail.php (@method list and property), AuditTrailFieldTypes::TYPES, AuditTrailSealedFormGoldenTest::testFieldTypesInOrder and fixtures/entity-hydration-golden.json.
+- Fix: keep both, main's columns first then the PR's, in the same order in all four files (fix trailing commas in the json); EntityHydrationGoldenTest, AuditTrailSealedFormGoldenTest and tests/Unit/Db --filter AuditTrail green after. Then rerun check-migration-version-bump: main reached dev.17, so a PR at dev.17 needs a free number (dev.18/19 taken by open PRs on 25 Nov; #10515 went to dev.20).
