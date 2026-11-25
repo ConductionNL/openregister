@@ -31,6 +31,7 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordRetentionStampsInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
@@ -451,7 +452,7 @@ final class SaveObjectUpdatePathTest extends TestCase {
 		$hints->method('check')->willReturnCallback(function (array $configuration, \OCA\OpenRegister\Service\Quality\UniqueHintCandidate $candidate): void {
 			$this->trace[] = ['hints', $candidate->scope->register, $candidate->scope->schema, $candidate->selfUuid];
 		});
-		$services = [RetentionServiceInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
+		$services = [RecordRetentionStampsInterface::class => $retention, \OCA\OpenRegister\Service\Quality\UniqueHintChecker::class => $hints];
 		$container->method('get')->willReturnCallback(static fn (string $id): object => $services[$id] ?? throw new \RuntimeException('no ' . $id));
 		$folders = $this->createMock(FolderManagementHandler::class);
 		$translations = $this->createMock(TranslationHandler::class);

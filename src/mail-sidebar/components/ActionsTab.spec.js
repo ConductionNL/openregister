@@ -501,3 +501,40 @@ describe('ActionsTab found values and names', () => {
 		expect(mark.text().toLowerCase()).toBe('acm')
 	})
 })
+
+describe('ActionsTab create through an app\'s own dialog', () => {
+	afterEach(() => {
+		delete window.OCA
+	})
+
+	it('opens the dialog the schema\'s app offers with the filled template, and connects what it created', async () => {
+		const open = jest.fn(() => Promise.resolve({ id: 'new-1', title: 'From the app' }))
+		window.OCA = { OpenRegister: { mailCreateDialogs: [{ register: REGISTER.id, schema: LEADS.id, open }] } }
+		const wrapper = await mountTab()
+		const link = jest.spyOn(wrapper.vm, 'linkObject').mockResolvedValue()
+		await wrapper.find('.or-action-create').trigger('click')
+		await flushPromises()
+		expect(open).toHaveBeenCalledTimes(1)
+		const context = open.mock.calls[0][0]
+		expect(context.initialData.title).toBe('Re: Offer')
+		expect(context.schema).toEqual(LEADS)
+		expect(context.mail).toEqual({ accountId: 1, messageId: 42 })
+		expect(wrapper.findComponent({ name: 'CreateConnectedObjectDialog' }).props('show')).toBe(false)
+		expect(link).toHaveBeenCalledWith(LEADS, { id: 'new-1', title: 'From the app' })
+		expect(wrapper.vm.creating[LEADS.id]).toBe(false)
+	})
+
+	it('connects nothing when the app\'s dialog is cancelled, and reports one that fails', async () => {
+		const open = jest.fn().mockResolvedValueOnce(null).mockRejectedValueOnce(new Error('broken'))
+		window.OCA = { OpenRegister: { mailCreateDialogs: [{ register: REGISTER.id, schema: LEADS.id, open }] } }
+		const wrapper = await mountTab()
+		const link = jest.spyOn(wrapper.vm, 'linkObject').mockResolvedValue()
+		await wrapper.find('.or-action-create').trigger('click')
+		await flushPromises()
+		expect(link).not.toHaveBeenCalled()
+		await wrapper.find('.or-action-create').trigger('click')
+		await flushPromises()
+		expect(showError).toHaveBeenCalledWith('Failed to create leads from email')
+		expect(link).not.toHaveBeenCalled()
+	})
+})
