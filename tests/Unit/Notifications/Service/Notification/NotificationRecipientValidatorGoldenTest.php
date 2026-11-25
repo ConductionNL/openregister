@@ -177,7 +177,7 @@ final class NotificationRecipientValidatorGoldenTest extends TestCase {
 					[
 						'code' => 'notification-bad-recipient-kind',
 						'message' => 'Notification "termijn" recipient[3] kind "nobody" not in [users, field, groups, role, rela'
-							.'tion, object-acl, expression, watchers, parties, email].',
+							.'tion, object-acl, expression, watchers, parties, email, referrers].',
 					],
 					[
 						'code' => 'notification-recipient-names-nobody',
