@@ -71,7 +71,7 @@ Each node: contributed via `RegisterFlowNodesEvent` by its owning app, added to
 the catalogue, unit-tested including the failure path, and failing (never
 silently completing) when it cannot do its work.
 
-- [ ] 6.1 `openregister.extend-input`
+- [x] 6.1 `openregister.extend-input` (lib/Service/Flow/Nodes/ExtendInputNode.php, tests/Unit/Service/Flow/Nodes/ExtendInputNodeTest.php)
 - [ ] 6.2 `openregister.locking`
 - [x] 6.3 `openregister.audit-trail` (lib/Service/Flow/Nodes/AuditTrailNode.php, tests/Unit/Service/Flow/Nodes/AuditTrailNodeTest.php)
 - [ ] 6.4 `openregister.write-file`
