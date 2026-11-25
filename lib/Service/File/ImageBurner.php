@@ -149,9 +149,9 @@ class ImageBurner {
 			$page = $pages[$index];
 			$rect = $this->pixels(box: $region->box, width: $page['width'], height: $page['height'], format: 'tiff');
 			$channels = $page['channels'];
-			$fill = str_repeat("\x00", (($channels % 2) === 0) ? ($channels - 1) : $channels);
+			$fill = str_repeat("\x00", $channels);
 			if (($channels % 2) === 0) {
-				$fill .= "\xFF";
+				$fill = str_repeat("\x00", ($channels - 1)) . "\xFF";
 			}
 
 			$run = str_repeat($fill, ($rect[2] - $rect[0] + 1));

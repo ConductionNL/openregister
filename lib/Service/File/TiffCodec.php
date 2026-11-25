@@ -89,6 +89,22 @@ class TiffCodec {
 	private const COMPRESSION_DEFLATE_OLD = 32946;
 
 	/**
+	 * The photometric interpretation written for each channel count (grey or RGB).
+	 */
+	private const PHOTOMETRIC_BY_CHANNELS = [1 => 1, 2 => 1, 3 => 2, 4 => 2];
+
+	/**
+	 * The compression schemes this codec decodes.
+	 */
+	private const DECODABLE = [
+		self::COMPRESSION_NONE,
+		self::COMPRESSION_LZW,
+		self::COMPRESSION_DEFLATE,
+		self::COMPRESSION_DEFLATE_OLD,
+		self::COMPRESSION_PACKBITS,
+	];
+
+	/**
 	 * Byte sizes of the field types (BYTE, ASCII, SHORT, LONG, RATIONAL, ...).
 	 */
 	private const TYPE_SIZES = [1 => 1, 2 => 1, 3 => 2, 4 => 4, 5 => 8, 6 => 1, 7 => 1, 8 => 2, 9 => 4, 10 => 8, 11 => 4, 12 => 8];
@@ -121,7 +137,10 @@ class TiffCodec {
 	 */
 	public function decode(string $bytes, string $fileName): array {
 		if (self::looksLikeTiff(bytes: $bytes) === false) {
-			throw new ImageRegionNotBurnableException(fileName: $fileName, reason: 'the image is not a TIFF this instance can read (BigTIFF and corrupt headers are refused).');
+			throw new ImageRegionNotBurnableException(
+				fileName: $fileName,
+				reason: 'the image is not a TIFF this instance can read (BigTIFF and corrupt headers are refused).'
+			);
 		}
 
 		$little = ($bytes[0] === 'I');
@@ -177,7 +196,7 @@ class TiffCodec {
 				self::TAG_HEIGHT => [4, [$page['height']]],
 				self::TAG_BITS => [3, array_fill(0, $channels, 8)],
 				self::TAG_COMPRESSION => [3, [self::COMPRESSION_DEFLATE]],
-				self::TAG_PHOTOMETRIC => [3, [($channels >= 3) ? 2 : 1]],
+				self::TAG_PHOTOMETRIC => [3, [self::PHOTOMETRIC_BY_CHANNELS[$channels]]],
 				self::TAG_STRIP_OFFSETS => [4, [$stripOffset]],
 				self::TAG_SAMPLES => [3, [$channels]],
 				self::TAG_ROWS_PER_STRIP => [4, [$page['height']]],
@@ -200,7 +219,7 @@ class TiffCodec {
 			$directoryOffset = strlen($out);
 			$out = substr_replace($out, pack('V', $directoryOffset), $pointer, 4);
 			$out .= $this->directory(entries: $entries, at: $directoryOffset);
-			$pointer = (strlen($out) - 4);
+			$pointer = ($directoryOffset + 2 + (12 * count($entries)));
 		}//end foreach
 
 		return $out;
@@ -337,7 +356,7 @@ class TiffCodec {
 			throw $refuse(sprintf('TIFF photometric %d with %d samples of %d bits cannot be burned on this instance.', $photometric, $samples, $bits));
 		}
 
-		if (in_array($compression, [self::COMPRESSION_NONE, self::COMPRESSION_LZW, self::COMPRESSION_DEFLATE, self::COMPRESSION_DEFLATE_OLD, self::COMPRESSION_PACKBITS], true) === false) {
+		if (in_array($compression, self::DECODABLE, true) === false) {
 			throw $refuse(sprintf('TIFF compression %d cannot be burned on this instance.', $compression));
 		}
 
@@ -415,7 +434,12 @@ class TiffCodec {
 		if (($photometric === 0 || $photometric === 1) && ($bits === 1 || $bits === 8)
 			&& ($samples === 1 || ($samples === 2 && $bits === 8 && $alpha === true))
 		) {
-			return ['kind' => ($photometric === 0) ? 'white-is-zero' : 'grey', 'samples' => $samples, 'bits' => $bits, 'channels' => $samples];
+			$kind = 'grey';
+			if ($photometric === 0) {
+				$kind = 'white-is-zero';
+			}
+
+			return ['kind' => $kind, 'samples' => $samples, 'bits' => $bits, 'channels' => $samples];
 		}
 
 		if ($photometric === 2 && $bits === 8 && ($samples === 3 || ($samples === 4 && $alpha === true))) {
@@ -444,11 +468,17 @@ class TiffCodec {
 	private function normalise(string $raw, int $width, int $height, int $rowBytes, array $colour): string {
 		if ($colour['bits'] === 1) {
 			$out = '';
-			$white = ($colour['kind'] === 'white-is-zero') ? 0 : 1;
+			$white = 1;
+			if ($colour['kind'] === 'white-is-zero') {
+				$white = 0;
+			}
+
+			$shades = [0 => "\x00", 1 => "\x00"];
+			$shades[$white] = "\xFF";
 			for ($y = 0; $y < $height; $y++) {
 				for ($x = 0; $x < $width; $x++) {
 					$bit = ((ord($raw[($y * $rowBytes) + intdiv($x, 8)]) >> (7 - ($x % 8))) & 1);
-					$out .= ($bit === $white) ? "\xFF" : "\x00";
+					$out .= $shades[$bit];
 				}
 			}
 
@@ -459,8 +489,12 @@ class TiffCodec {
 			$out = '';
 			$length = strlen($raw);
 			for ($i = 0; $i < $length; $i++) {
-				$alphaSample = ($colour['samples'] === 2 && ($i % 2) === 1);
-				$out .= ($alphaSample === true) ? $raw[$i] : chr(255 - ord($raw[$i]));
+				if ($colour['samples'] === 2 && ($i % 2) === 1) {
+					$out .= $raw[$i];
+					continue;
+				}
+
+				$out .= chr(255 - ord($raw[$i]));
 			}
 
 			return $out;
@@ -526,7 +560,11 @@ class TiffCodec {
 			$out = @gzinflate($data);
 		}
 
-		return ($out === false) ? null : $out;
+		if ($out === false) {
+			return null;
+		}
+
+		return $out;
 	}//end decompress()
 
 	/**
@@ -654,7 +692,8 @@ class TiffCodec {
 			return ord($chunk);
 		}
 
-		$format = ($size === 2) ? ($little === true ? 'v' : 'n') : ($little === true ? 'V' : 'N');
+		$formats = ['2' => ['v', 'n'], '4' => ['V', 'N']];
+		$format = $formats[(string)$size][(int)($little === false)];
 		return (int)unpack($format, $chunk)[1];
 	}//end unsigned()
 }//end class
