@@ -589,22 +589,19 @@ class TransitionEngineInputsTest extends TestCase {
 	 */
 	public function testDottedInputAcceptsTheNestedPayload(): void {
 		$sheet = $this->timesheet();
+		// phpcs:ignore CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- magic Entity setter takes no named argument.
 		$sheet->setObject(['status' => 'draft', 'feedback' => ['receivedOn' => '2026-11-01']]);
-		$this->wire(
-			$sheet,
-			$this->annotation(
-				[
-					['field' => 'feedback.route', 'required' => true],
-					['field' => 'feedback.note'],
-				]
-			)
-		);
+		$inputs = [
+			['field' => 'feedback.route', 'required' => true],
+			['field' => 'feedback.note'],
+		];
+		$this->wire(object: $sheet, annotation: $this->annotation(inputs: $inputs));
 
 		$captured = null;
 		$this->objectService->expects($this->once())
-			->method('saveObject')
+			->method(constraint: 'saveObject')
 			->willReturnCallback(
-				function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true) use (&$captured): ObjectEntity {
+				callback: function (array|ObjectEntity $object) use (&$captured): ObjectEntity {
 					$captured = $object;
 					return $this->timesheet();
 				}
@@ -612,9 +609,12 @@ class TransitionEngineInputsTest extends TestCase {
 
 		$this->engine->transition(self::OBJ, 'submit', ['feedback' => ['route' => 'mas', 'note' => 'n']]);
 
-		$this->assertIsArray($captured);
-		$this->assertSame('submitted', $captured['status']);
-		$this->assertSame(['receivedOn' => '2026-11-01', 'route' => 'mas', 'note' => 'n'], $captured['feedback']);
+		$this->assertIsArray(actual: $captured);
+		$this->assertSame(expected: 'submitted', actual: $captured['status']);
+		$this->assertSame(
+			expected: ['receivedOn' => '2026-11-01', 'route' => 'mas', 'note' => 'n'],
+			actual: $captured['feedback']
+		);
 	}//end testDottedInputAcceptsTheNestedPayload()
 
 	/**
@@ -626,24 +626,21 @@ class TransitionEngineInputsTest extends TestCase {
 	 * @return void
 	 */
 	public function testDottedInputRefusesAMissingOrUndeclaredChild(): void {
-		$this->wire(
-			$this->timesheet(),
-			$this->annotation([['field' => 'feedback.route', 'required' => true]])
-		);
-		$this->objectService->expects($this->never())->method('saveObject');
+		$inputs = [['field' => 'feedback.route', 'required' => true]];
+		$this->wire(object: $this->timesheet(), annotation: $this->annotation(inputs: $inputs));
+		$this->objectService->expects($this->never())->method(constraint: 'saveObject');
 
-		try {
-			$this->engine->transition(self::OBJ, 'submit', ['feedback' => ['other' => 'x']]);
-			$this->fail('Expected InvalidTransitionInputException was not thrown.');
-		} catch (InvalidTransitionInputException $e) {
-			$this->assertSame(['feedback.other'], $e->getFields());
-		}
-
-		try {
-			$this->engine->transition(self::OBJ, 'submit', ['feedback' => []]);
-			$this->fail('Expected InvalidTransitionInputException was not thrown.');
-		} catch (InvalidTransitionInputException $e) {
-			$this->assertSame(['feedback.route'], $e->getFields());
+		$cases = [
+			[['feedback' => ['other' => 'x']], ['feedback.other']],
+			[['feedback' => []], ['feedback.route']],
+		];
+		foreach ($cases as [$payload, $fields]) {
+			try {
+				$this->engine->transition(self::OBJ, 'submit', $payload);
+				$this->fail(message: 'Expected InvalidTransitionInputException was not thrown.');
+			} catch (InvalidTransitionInputException $e) {
+				$this->assertSame(expected: $fields, actual: $e->getFields());
+			}
 		}
 	}//end testDottedInputRefusesAMissingOrUndeclaredChild()
 }//end class

@@ -41,14 +41,31 @@ class TransitionInputPathsTest extends TestCase {
 	];
 
 	/**
+	 * The class under test.
+	 *
+	 * @var TransitionInputPaths
+	 */
+	private TransitionInputPaths $paths;
+
+	/**
+	 * A fresh, stateless instance per test.
+	 *
+	 * @return void
+	 */
+	protected function setUp(): void {
+		$this->paths = new TransitionInputPaths();
+	}//end setUp()
+
+	/**
 	 * A literal dotted key unfolds into the nested shape; plain keys stay.
 	 *
 	 * @return void
 	 */
 	public function testUnfoldTurnsDottedKeysIntoNestedValues(): void {
+		$payload = ['feedback.route' => 'mas', 'feedback' => ['note' => 'x'], 'reason' => 'r'];
 		$this->assertSame(
-			['feedback' => ['note' => 'x', 'route' => 'mas'], 'reason' => 'r'],
-			TransitionInputPaths::unfold(['feedback.route' => 'mas', 'feedback' => ['note' => 'x'], 'reason' => 'r'])
+			expected: ['feedback' => ['note' => 'x', 'route' => 'mas'], 'reason' => 'r'],
+			actual: $this->paths->unfold(data: $payload)
 		);
 	}//end testUnfoldTurnsDottedKeysIntoNestedValues()
 
@@ -58,10 +75,8 @@ class TransitionInputPathsTest extends TestCase {
 	 * @return void
 	 */
 	public function testDeclaredChildrenAreAccepted(): void {
-		$this->assertSame(
-			[],
-			TransitionInputPaths::undeclared(self::DECLARED, ['feedback' => ['route' => 'mas', 'note' => 'n'], 'reason' => 'r'])
-		);
+		$payload = ['feedback' => ['route' => 'mas', 'note' => 'n'], 'reason' => 'r'];
+		$this->assertSame(expected: [], actual: $this->paths->undeclared(declared: self::DECLARED, data: $payload));
 	}//end testDeclaredChildrenAreAccepted()
 
 	/**
@@ -70,9 +85,10 @@ class TransitionInputPathsTest extends TestCase {
 	 * @return void
 	 */
 	public function testUndeclaredChildAndKeyAreNamed(): void {
+		$payload = ['feedback' => ['route' => 'mas', 'secret' => 1], 'salary' => 9];
 		$this->assertSame(
-			['feedback.secret', 'salary'],
-			TransitionInputPaths::undeclared(self::DECLARED, ['feedback' => ['route' => 'mas', 'secret' => 1], 'salary' => 9])
+			expected: ['feedback.secret', 'salary'],
+			actual: $this->paths->undeclared(declared: self::DECLARED, data: $payload)
 		);
 	}//end testUndeclaredChildAndKeyAreNamed()
 
@@ -82,8 +98,10 @@ class TransitionInputPathsTest extends TestCase {
 	 * @return void
 	 */
 	public function testParentMustHoldAnObject(): void {
-		$this->assertSame(['feedback'], TransitionInputPaths::undeclared(self::DECLARED, ['feedback' => 'all of it']));
-		$this->assertSame(['feedback'], TransitionInputPaths::undeclared(self::DECLARED, ['feedback' => ['a', 'b']]));
+		$scalar = $this->paths->undeclared(declared: self::DECLARED, data: ['feedback' => 'all of it']);
+		$list = $this->paths->undeclared(declared: self::DECLARED, data: ['feedback' => ['a', 'b']]);
+		$this->assertSame(expected: ['feedback'], actual: $scalar);
+		$this->assertSame(expected: ['feedback'], actual: $list);
 	}//end testParentMustHoldAnObject()
 
 	/**
@@ -93,7 +111,8 @@ class TransitionInputPathsTest extends TestCase {
 	 */
 	public function testDeclaredParentAcceptsAnything(): void {
 		$declared = ['feedback' => false, 'feedback.route' => true];
-		$this->assertSame([], TransitionInputPaths::undeclared($declared, ['feedback' => ['route' => 'mas', 'other' => 1]]));
+		$payload = ['feedback' => ['route' => 'mas', 'other' => 1]];
+		$this->assertSame(expected: [], actual: $this->paths->undeclared(declared: $declared, data: $payload));
 	}//end testDeclaredParentAcceptsAnything()
 
 	/**
@@ -102,10 +121,15 @@ class TransitionInputPathsTest extends TestCase {
 	 * @return void
 	 */
 	public function testRequiredChildIsCheckedInsideItsParent(): void {
-		$this->assertSame(['feedback.route'], TransitionInputPaths::missing(self::DECLARED, []));
-		$this->assertSame(['feedback.route'], TransitionInputPaths::missing(self::DECLARED, ['feedback' => ['note' => 'n']]));
-		$this->assertSame(['feedback.route'], TransitionInputPaths::missing(self::DECLARED, ['feedback' => ['route' => '']]));
-		$this->assertSame([], TransitionInputPaths::missing(self::DECLARED, ['feedback' => ['route' => 'mas']]));
+		$cases = [
+			[[], ['feedback.route']],
+			[['feedback' => ['note' => 'n']], ['feedback.route']],
+			[['feedback' => ['route' => '']], ['feedback.route']],
+			[['feedback' => ['route' => 'mas']], []],
+		];
+		foreach ($cases as [$payload, $missing]) {
+			$this->assertSame(expected: $missing, actual: $this->paths->missing(declared: self::DECLARED, data: $payload));
+		}
 	}//end testRequiredChildIsCheckedInsideItsParent()
 
 	/**
@@ -115,9 +139,14 @@ class TransitionInputPathsTest extends TestCase {
 	 */
 	public function testMergeKeepsTheParentsOtherFields(): void {
 		$stored = ['status' => 'open', 'feedback' => ['receivedOn' => '2026-11-01', 'note' => 'old']];
+		$accepted = ['feedback' => ['route' => 'mas', 'note' => 'new'], 'reason' => 'r'];
 		$this->assertSame(
-			['status' => 'open', 'feedback' => ['receivedOn' => '2026-11-01', 'note' => 'new', 'route' => 'mas'], 'reason' => 'r'],
-			TransitionInputPaths::merge($stored, ['feedback' => ['route' => 'mas', 'note' => 'new'], 'reason' => 'r'], self::DECLARED)
+			expected: [
+				'status' => 'open',
+				'feedback' => ['receivedOn' => '2026-11-01', 'note' => 'new', 'route' => 'mas'],
+				'reason' => 'r',
+			],
+			actual: $this->paths->merge(objectData: $stored, accepted: $accepted, declared: self::DECLARED)
 		);
 	}//end testMergeKeepsTheParentsOtherFields()
 
@@ -127,10 +156,12 @@ class TransitionInputPathsTest extends TestCase {
 	 * @return void
 	 */
 	public function testMergeCreatesAMissingParent(): void {
-		$this->assertSame(
-			['feedback' => ['route' => 'mas']],
-			TransitionInputPaths::merge(['feedback' => null], ['feedback' => ['route' => 'mas']], self::DECLARED)
+		$merged = $this->paths->merge(
+			objectData: ['feedback' => null],
+			accepted: ['feedback' => ['route' => 'mas']],
+			declared: self::DECLARED
 		);
+		$this->assertSame(expected: ['feedback' => ['route' => 'mas']], actual: $merged);
 	}//end testMergeCreatesAMissingParent()
 
 	/**
@@ -140,8 +171,9 @@ class TransitionInputPathsTest extends TestCase {
 	 */
 	public function testPlainDeclarationsReplaceTopLevel(): void {
 		$declared = ['hours' => true];
-		$this->assertSame([], TransitionInputPaths::undeclared($declared, ['hours' => 8]));
-		$this->assertSame(['hours'], TransitionInputPaths::missing($declared, ['hours' => '']));
-		$this->assertSame(['hours' => 8, 'e' => 1], TransitionInputPaths::merge(['hours' => 2, 'e' => 1], ['hours' => 8], $declared));
+		$merged = $this->paths->merge(objectData: ['hours' => 2, 'e' => 1], accepted: ['hours' => 8], declared: $declared);
+		$this->assertSame(expected: [], actual: $this->paths->undeclared(declared: $declared, data: ['hours' => 8]));
+		$this->assertSame(expected: ['hours'], actual: $this->paths->missing(declared: $declared, data: ['hours' => '']));
+		$this->assertSame(expected: ['hours' => 8, 'e' => 1], actual: $merged);
 	}//end testPlainDeclarationsReplaceTopLevel()
 }//end class

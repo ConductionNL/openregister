@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * through dotted declarations accepts exactly its declared children; a parent
  * that is itself declared accepts its whole value, as before.
  *
- * Pure functions over arrays, no state.
+ * Stateless: every method is a pure function over arrays.
  *
  * @spec openspec/changes/transition-inputs-name-a-nested-field/specs/object-lifecycle/spec.md
  */
@@ -56,16 +56,16 @@ final class TransitionInputPaths {
 	 *
 	 * @spec openspec/changes/transition-inputs-name-a-nested-field/specs/object-lifecycle/spec.md
 	 */
-	public static function unfold(array $data): array {
+	public function unfold(array $data): array {
 		$unfolded = [];
 		foreach ($data as $key => $value) {
 			$key = (string)$key;
 			if (str_contains($key, '.') === false) {
-				$unfolded[$key] = self::mergeValue(existing: ($unfolded[$key] ?? null), value: $value);
+				$unfolded[$key] = $this->mergeValue(existing: ($unfolded[$key] ?? null), value: $value);
 				continue;
 			}
 
-			$unfolded = self::setPath(data: $unfolded, path: explode('.', $key), value: $value);
+			$unfolded = $this->setPath(data: $unfolded, path: explode('.', $key), value: $value);
 		}
 
 		return $unfolded;
@@ -81,8 +81,8 @@ final class TransitionInputPaths {
 	 *
 	 * @spec openspec/changes/transition-inputs-name-a-nested-field/specs/object-lifecycle/spec.md
 	 */
-	public static function undeclared(array $declared, array $data): array {
-		return self::undeclaredUnder(paths: array_keys($declared), data: $data, prefix: '');
+	public function undeclared(array $declared, array $data): array {
+		return $this->undeclaredUnder(paths: array_keys($declared), data: $data, prefix: '');
 	}//end undeclared()
 
 	/**
@@ -95,14 +95,14 @@ final class TransitionInputPaths {
 	 *
 	 * @spec openspec/changes/transition-inputs-name-a-nested-field/specs/object-lifecycle/spec.md
 	 */
-	public static function missing(array $declared, array $data): array {
+	public function missing(array $declared, array $data): array {
 		$missing = [];
 		foreach ($declared as $path => $required) {
 			if ($required === false) {
 				continue;
 			}
 
-			$found = self::readPath(data: $data, path: explode('.', (string)$path));
+			$found = $this->readPath(data: $data, path: explode('.', (string)$path));
 			if ($found['present'] === false || $found['value'] === '') {
 				$missing[] = (string)$path;
 			}
@@ -126,7 +126,7 @@ final class TransitionInputPaths {
 	 *
 	 * @spec openspec/changes/transition-inputs-name-a-nested-field/specs/object-lifecycle/spec.md
 	 */
-	public static function merge(array $objectData, array $accepted, array $declared): array {
+	public function merge(array $objectData, array $accepted, array $declared): array {
 		foreach ($accepted as $key => $value) {
 			$key = (string)$key;
 			if (array_key_exists($key, $declared) === true || is_array($value) === false) {
@@ -139,8 +139,8 @@ final class TransitionInputPaths {
 				$stored = [];
 			}
 
-			$children = self::childPaths(paths: array_keys($declared), parent: $key);
-			$objectData[$key] = self::merge(objectData: $stored, accepted: $value, declared: $children);
+			$children = $this->childPaths(paths: array_keys($declared), parent: $key);
+			$objectData[$key] = $this->merge(objectData: $stored, accepted: $value, declared: $children);
 		}
 
 		return $objectData;
@@ -155,7 +155,7 @@ final class TransitionInputPaths {
 	 *
 	 * @return array<int, string> The undeclared paths, dotted from the top.
 	 */
-	private static function undeclaredUnder(array $paths, array $data, string $prefix): array {
+	private function undeclaredUnder(array $paths, array $data, string $prefix): array {
 		$paths = array_map('strval', $paths);
 		$unknown = [];
 		foreach ($data as $key => $value) {
@@ -164,7 +164,7 @@ final class TransitionInputPaths {
 				continue;
 			}
 
-			$children = self::childPaths(paths: $paths, parent: $key);
+			$children = $this->childPaths(paths: $paths, parent: $key);
 			if ($children === [] || is_array($value) === false || ($value !== [] && array_is_list($value) === true)) {
 				$unknown[] = $prefix.$key;
 				continue;
@@ -172,7 +172,7 @@ final class TransitionInputPaths {
 
 			$unknown = array_merge(
 				$unknown,
-				self::undeclaredUnder(paths: array_keys($children), data: $value, prefix: $prefix.$key.'.')
+				$this->undeclaredUnder(paths: array_keys($children), data: $value, prefix: $prefix.$key.'.')
 			);
 		}
 
@@ -187,7 +187,7 @@ final class TransitionInputPaths {
 	 *
 	 * @return array<string, bool> The child paths (values unused, kept as a map for merge()).
 	 */
-	private static function childPaths(array $paths, string $parent): array {
+	private function childPaths(array $paths, string $parent): array {
 		$children = [];
 		$prefix = $parent.'.';
 		foreach ($paths as $path) {
@@ -208,7 +208,7 @@ final class TransitionInputPaths {
 	 *
 	 * @return array{present: bool, value: mixed} Whether the path is present, and its value.
 	 */
-	private static function readPath(array $data, array $path): array {
+	private function readPath(array $data, array $path): array {
 		$current = $data;
 		foreach ($path as $segment) {
 			if (is_array($current) === false || array_key_exists($segment, $current) === false) {
@@ -230,7 +230,7 @@ final class TransitionInputPaths {
 	 *
 	 * @return array<string, mixed> The payload with the leaf set.
 	 */
-	private static function setPath(array $data, array $path, mixed $value): array {
+	private function setPath(array $data, array $path, mixed $value): array {
 		$head = array_shift($path);
 		if ($path === []) {
 			$data[$head] = $value;
@@ -242,7 +242,7 @@ final class TransitionInputPaths {
 			$child = [];
 		}
 
-		$data[$head] = self::setPath(data: $child, path: $path, value: $value);
+		$data[$head] = $this->setPath(data: $child, path: $path, value: $value);
 		return $data;
 	}//end setPath()
 
@@ -254,7 +254,7 @@ final class TransitionInputPaths {
 	 *
 	 * @return mixed The combined value: arrays merge (unfolded leaves win), anything else replaces.
 	 */
-	private static function mergeValue(mixed $existing, mixed $value): mixed {
+	private function mergeValue(mixed $existing, mixed $value): mixed {
 		if (is_array($existing) === true && is_array($value) === true) {
 			return array_replace_recursive($value, $existing);
 		}
