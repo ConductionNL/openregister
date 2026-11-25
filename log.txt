@@ -4618,3 +4618,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T01:44:20Z or-fix-0 or-fix-0 run 2: main 0d540fff; fixed 11020 -> 2eb39891 (l10n en/nl json + mailTabs golden snapshot conflict) and 11070 -> 9fff8e5d (component-map csv), both REVERIFY; 10260 10300 10530 10540 10550 5968 merged with 0d540fff: Architecture + main's new tests + own tests green; precheck GREEN 11090 (since merged) and 11100
 2026-11-25T01:48:17Z precheck-20261125T013859-4ac7f4dd NORESULT tree 826fbdd2a0: deps failed
 2026-11-25T01:49:49Z integrator-20261124T231146-2f742f98 GREEN tree 64ee6c7f9f on dev 69b48eaf5e prs 2 front=ok: Tests: 65814, Assertions: 233005, Errors: 9, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 24.
+2026-11-25T01:49:59Z integrator-20261124T231146-2f742f98 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
