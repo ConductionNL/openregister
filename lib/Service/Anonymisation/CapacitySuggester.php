@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Anonymisation;
 
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
+
 /**
  * The officials list first, then role words in the person's own sentence.
  *
