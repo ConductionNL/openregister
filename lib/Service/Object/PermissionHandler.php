@@ -1220,12 +1220,65 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
 	 */
 	private function anonymousVerdict(PermissionCheck $check): bool {
-		if ($this->ruleEvaluator()->refusesAnonymousWrite(authorization: $check->authorization, action: $check->action) === true) {
+		$evaluator = $this->ruleEvaluator();
+		if ($evaluator->refusesAnonymousWrite(authorization: $check->authorization, action: $check->action) === true) {
+			$this->recordAnonymousRefusal(evaluator: $evaluator, check: $check, failClosedWrite: true);
 			return false;
 		}
 
-		return $this->publicGrantForStranger(check: $check);
+		if ($this->publicGrantForStranger(check: $check) === true) {
+			return true;
+		}
+
+		$this->recordAnonymousRefusal(evaluator: $evaluator, check: $check, failClosedWrite: false);
+		return false;
 	}//end anonymousVerdict()
+
+	/**
+	 * Record an anonymous refusal on the object plane, once per schema and verb per request.
+	 *
+	 * Names the plane, the schema, the verb and the cause, so an operator reading a 403
+	 * can tell "no authorization block names this verb" (`no-rule`) from "a rule names
+	 * the verb and does not admit `public`" (`rule-refused`). `failClosedWrite` says the
+	 * anonymous write default (#1955) decided it rather than the read rules. A list that
+	 * refuses many rows records one line, keyed through the shared evaluator.
+	 *
+	 * @param AuthorizationRuleEvaluator $evaluator       The evaluator holding the per-request memory.
+	 * @param PermissionCheck            $check           The refused check.
+	 * @param bool                       $failClosedWrite Whether the anonymous write default refused it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-a-refusal-and-a-grant-must-both-be-observable
+	 */
+	private function recordAnonymousRefusal(AuthorizationRuleEvaluator $evaluator, PermissionCheck $check, bool $failClosedWrite): void {
+		$authorization = $check->authorization;
+		$declared = is_array($authorization) === true && $authorization !== [];
+		$cause = 'no-rule';
+		if (is_array($authorization) === true && empty($authorization[$check->action]) === false) {
+			$cause = 'rule-refused';
+		}
+
+		$schemaId = (string) $check->schema->getId();
+		if ($evaluator->firstRefusal(plane: 'object', entityType: 'schema:' . $schemaId, action: $check->action, cause: $cause) === false) {
+			return;
+		}
+
+		$this->data->logger->info(
+			message: '[PermissionHandler] Anonymous caller refused: to admit it, add the `public` group to the'
+				. ' schema\'s authorization for this verb',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'plane' => 'object',
+				'schemaId' => $schemaId,
+				'action' => $check->action,
+				'cause' => $cause,
+				'authorizationDeclared' => $declared,
+				'failClosedWrite' => $failClosedWrite,
+			]
+		);
+	}//end recordAnonymousRefusal()
 
 	/**
 	 * Whether the `public` group grants the action to a caller who is not a known user.
