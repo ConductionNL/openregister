@@ -47,7 +47,7 @@ class NotificationRuleReachControllerTest extends TestCase {
 	public function testTheReportComesFromTheLedger(): void {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueArray')->willReturn(
-			['case-assigned' => ['occurrences' => 12, 'lastSeen' => 1795600000]]
+			['case-assigned' => ['occurrences' => 12, 'lastSeen' => 1700000000]]
 		);
 		$controller = new NotificationRuleReachController(
 			request: $this->createMock(IRequest::class),
@@ -59,7 +59,7 @@ class NotificationRuleReachControllerTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame(
 			[
-				'rulesReachingNobody' => [['rule' => 'case-assigned', 'occurrences' => 12, 'lastSeen' => '2026-11-25T08:26:40Z']],
+				'rulesReachingNobody' => [['rule' => 'case-assigned', 'occurrences' => 12, 'lastSeen' => '2023-11-14T22:13:20Z']],
 				'ruleCount' => 1,
 				'occurrences' => 12,
 				'needsAPerson' => true,

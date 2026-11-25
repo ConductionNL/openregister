@@ -62,12 +62,12 @@ class RuleReachLedgerTest extends TestCase {
 
 	public function testARecordedRuleIsReportedWithItsCountAndTime(): void {
 		$ledger = $this->ledger();
-		$ledger->record(counts: ['case-assigned' => 3], now: 1795600000);
+		$ledger->record(counts: ['case-assigned' => 3], now: 1700000000);
 
 		$report = $ledger->report();
 
 		$this->assertSame(
-			[['rule' => 'case-assigned', 'occurrences' => 3, 'lastSeen' => '2026-11-25T08:26:40Z']],
+			[['rule' => 'case-assigned', 'occurrences' => 3, 'lastSeen' => '2023-11-14T22:13:20Z']],
 			$report['rulesReachingNobody']
 		);
 		$this->assertSame(1, $report['ruleCount']);
