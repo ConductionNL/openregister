@@ -97,3 +97,7 @@
 2026-11-24T22:28:38Z AUTOPARK prs=10587,10635,10640,10643 main=b8bc4718b4 integrator-cloud (parked 10635: sbom)
 2026-11-24T22:33:45Z AUTOPARK prs=10587,10640,10643 main=b8bc4718b4 integrator-cloud (parked 10640: sbom)
 2026-11-24T22:45:36Z GREEN prs=10587,10643 main=037f95a841 integrator-cloud
+2026-11-24T23:35:28Z NORESULT prs=10553,10983,11003,11013,11033,11058,11043 main=037f95a841 integrator-cloud (deps race; retried)
+2026-11-24T23:35:28Z GREEN prs=10553,10983,11003,11013,11033,11058,11043 main=037f95a841 integrator-cloud (merged; main now 7bf08ec0b9)
+2026-11-24T23:46:42Z GREEN prs=11063,11073,11078,11098 main=7bf08ec0b9 integrator-cloud (merged; main now 06bd93550e)
+2026-11-24T23:56:52Z GREEN prs=10518,10496,10498 main=06bd93550e integrator-cloud (merged; main now b9f7ab7b8b; 10526 tree-conflict)
