@@ -38,6 +38,8 @@ final class LinkedEntityControllerFactory {
 		\OCP\IGroupManager $groupManager,
 		?\OCA\OpenRegister\Service\EmailLinkServiceInterface $emailLinks = null,
 		?\OCA\OpenRegister\Kernel\Contracts\ObjectReadCheckInterface $readAccess = null,
+		?\OCA\OpenRegister\Db\EmailLinkMapperInterface $messageIdLinks = null,
+		?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objects = null,
 	): array {
 		return [
 			$request,
@@ -54,9 +56,32 @@ final class LinkedEntityControllerFactory {
 					readAccess: $readAccess ?? new UnreadableObjects(),
 					logger: $logger,
 				),
+				byMessageId: self::byMessageId(links: $messageIdLinks, objects: $objects, logger: $logger),
 			),
 		];
 	}//end args()
+
+	/**
+	 * The Message-ID lookup; without its collaborators, one whose collaborators are never
+	 * reached: it only answers for an id carrying an `@`, which those tests do not send.
+	 *
+	 * @param \OCA\OpenRegister\Db\EmailLinkMapperInterface|null           $links   The email links.
+	 * @param \OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface|null $objects The object reads.
+	 * @param \Psr\Log\LoggerInterface                                       $logger  Logger.
+	 *
+	 * @return \OCA\OpenRegister\Controller\Support\MailMessageIdReverseLookup
+	 */
+	private static function byMessageId(
+		?\OCA\OpenRegister\Db\EmailLinkMapperInterface $links,
+		?\OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface $objects,
+		\Psr\Log\LoggerInterface $logger,
+	): \OCA\OpenRegister\Controller\Support\MailMessageIdReverseLookup {
+		if ($links === null || $objects === null) {
+			return (new \ReflectionClass(\OCA\OpenRegister\Controller\Support\MailMessageIdReverseLookup::class))->newInstanceWithoutConstructor();
+		}
+
+		return new \OCA\OpenRegister\Controller\Support\MailMessageIdReverseLookup(links: $links, objects: $objects, logger: $logger);
+	}//end byMessageId()
 
 	/**
 	 * Build LinkedEntityController; takes the same arguments as args().
