@@ -12,13 +12,13 @@ internal TextExtractionService, which stores chunks as a side effect.
 - New published contract `OCA\OpenRegister\Contract\FileTextReaderInterface::readFileText(File $file): ?string`.
 - `FileTextReader` implements it over the existing `PdfExtractor` and
   `WordExtractor`, plus plain text, and stores nothing.
-- `ServiceRegistrar` binds the interface for consuming apps.
+- `FilesRegistrar` binds the interface for consuming apps (the Files area owns the reader; Core may not reference it).
 
 ## Impact
 
 - Affected specs: `text-extraction` (one added requirement).
 - Affected code: `lib/Contract/FileTextReaderInterface.php`,
   `lib/Files/Service/TextExtraction/FileTextReader.php`,
-  `lib/Service/ServiceRegistrar.php`.
+  `lib/Files/FilesRegistrar.php`.
 - The hydra-gates package's copy of the contracts does not carry this
   interface yet; consumers guard on `interface_exists()` until it does.

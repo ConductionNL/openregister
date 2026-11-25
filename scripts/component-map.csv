@@ -4988,3 +4988,5 @@ Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
 Collaboration/ObjectMembership.php,,Collaboration,,,,,Platform
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
 Service/Flow/IFlowNodeRuntime.php,,Service,Flows,Flows/Service/Flow/IFlowNodeRuntime.php,0,,Processes
+Contract/FileTextReaderInterface.php,53,Contract,Contract,Contract/FileTextReaderInterface.php,0,,Kernel
+Files/Service/TextExtraction/FileTextReader.php,119,Files,Files,Files/Service/TextExtraction/FileTextReader.php,0,,Files
