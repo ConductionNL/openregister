@@ -247,3 +247,4 @@ openregister#11227 57f2092405daea29396de49fc1dd7c1467518f56 precheck-red alone o
 openregister#11250 b4aed8d79bc1b90bbc6ccf70e39ba5cb54d0c8d3 auto-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#11255 cd0d4ae1607e2eef2e3899a4509e5f620809b015 auto-park: sbom: composer.lock changed without sbom.cdx.json
 openregister#11077 275f33b0bbbdb346c04eb6c712c37b8caaecb3b1 auto-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#11077 275f33b0bbbdb346c04eb6c712c37b8caaecb3b1 auto-park: sbom: package-lock.json changed without sbom.cdx.json
