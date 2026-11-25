@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Object\RetentionDestruction;
 use Exception;
@@ -118,6 +119,8 @@ use OCA\OpenRegister\Tests\Unit\Service\Object\Support\ObjectServiceFactory;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class ObjectServiceDeleteObjectGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * Whether the running scenario is a retention sweep.
@@ -406,6 +409,7 @@ class ObjectServiceDeleteObjectGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($this->user(uid: 'alice'));
 		$groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		$groupManager->method('getUserGroupIds')->willReturnCallback(
 			fn (IUser $user): array => $user->getUID() === 'admin' ? ['admin'] : ['users']
 		);

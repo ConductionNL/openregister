@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\UrlFileFetchInterface;
 use OCA\OpenRegister\Service\SecurityService;
 
 /**
@@ -32,7 +33,7 @@ use OCA\OpenRegister\Service\SecurityService;
  *
  * @spec openspec/changes/files-create-from-url/specs
  */
-class UrlFileFetcher {
+class UrlFileFetcher implements UrlFileFetchInterface {
 
 	/**
 	 * The bytes read per chunk.
@@ -54,8 +55,14 @@ class UrlFileFetcher {
 	/**
 	 * Fetch the bytes at a URL.
 	 *
+	 * Strict (the default, creating a file from a URL) refuses any answer outside
+	 * 2xx and an empty body. Not strict keeps the object-save file property's
+	 * long-standing contract: an answer below 400, or one without a status line,
+	 * is read, and an empty body is returned as it is.
+	 *
 	 * @param string $url      The URL.
 	 * @param int    $maxBytes The size ceiling; reading stops past it.
+	 * @param bool   $strict   Whether a non-2xx answer and an empty body are refused.
 	 *
 	 * @return string The body.
 	 *
@@ -65,7 +72,7 @@ class UrlFileFetcher {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) The address guard is SecurityService's static check, shared by every fetch.
 	 */
-	public function fetch(string $url, int $maxBytes): string {
+	public function fetch(string $url, int $maxBytes, bool $strict = true): string {
 		try {
 			SecurityService::assertSafeFetchUrl($url);
 		} catch (InvalidArgumentException $refusal) {
@@ -79,7 +86,7 @@ class UrlFileFetcher {
 
 		try {
 			$status = $opened['status'];
-			if ($status === null || $status < 200 || $status > 299) {
+			if (self::isRefusedStatus(status: $status, strict: $strict) === true) {
 				throw new UrlFetchRefused(reason: UrlFetchRefused::STATUS, message: sprintf('The URL answered with status %s.', ($status ?? 'unknown')));
 			}
 
@@ -88,12 +95,28 @@ class UrlFileFetcher {
 			fclose($opened['stream']);
 		}
 
-		if ($body === '') {
+		if ($body === '' && $strict === true) {
 			throw new UrlFetchRefused(reason: UrlFetchRefused::EMPTY, message: 'The URL answered with an empty body.');
 		}
 
 		return $body;
 	}//end fetch()
+
+	/**
+	 * Whether an answer's status refuses the fetch.
+	 *
+	 * @param int|null $status The HTTP status, null without a status line.
+	 * @param bool     $strict Whether only 2xx is accepted.
+	 *
+	 * @return bool
+	 */
+	private static function isRefusedStatus(?int $status, bool $strict): bool {
+		if ($strict === false) {
+			return $status !== null && $status >= 400;
+		}
+
+		return $status === null || $status < 200 || $status > 299;
+	}//end isRefusedStatus()
 
 	/**
 	 * Read a stream, stopping as soon as it passes the ceiling.

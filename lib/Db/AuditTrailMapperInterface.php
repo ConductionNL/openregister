@@ -228,6 +228,19 @@ interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
 	public function recordChange(AuditedChange $change): AuditTrail;
 
 	/**
+	 * Record a read of one object, naming the read rule that granted it when one did.
+	 *
+	 * @param ObjectEntity $object      The object read.
+	 * @param string|null  $ruleDigest  The SHA-256 of the granting rule's canonical JSON, or null.
+	 * @param string|null  $ruleVersion The schema version that rule belonged to, or null.
+	 *
+	 * @return AuditTrail The `read` entry.
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	public function recordRead(ObjectEntity $object, ?string $ruleDigest = null, ?string $ruleVersion = null): AuditTrail;
+
+	/**
 	 * Build (but do not persist) an audit trail entity for object changes.
 	 *
 	 * Contains the complete row-building logic shared by {@see createAuditTrail()}
@@ -524,6 +537,22 @@ interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
 	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
 	public function findObjectActions(string $objectUuid, AuditTrail\ActionLookupOptions $options): array;
+
+	/**
+	 * The entries a delete wrote for the objects it acted on, by the uuid of the object that triggered it.
+	 *
+	 * Reads the indexed `trigger_object` column, so the dependants of one
+	 * delete are one indexed lookup rather than a scan of the `changed` JSON.
+	 * Purged rows are left out: their evidence is gone.
+	 *
+	 * @param string                         $triggerObject The uuid of the object whose delete cascaded.
+	 * @param AuditTrail\ActionLookupOptions $options       The actions to return (every action when empty) and the row cap.
+	 *
+	 * @return array<int, AuditTrail> The matching rows, oldest first.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+	 */
+	public function findTriggeredActions(string $triggerObject, AuditTrail\ActionLookupOptions $options): array;
 
 	/**
 	 * Destruction entries created since a moment, oldest first, one page.
