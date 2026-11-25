@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * The Files sidebar entry: the two tabs it registers and their lifecycle.
+ * The Files sidebar entry: the three tabs it registers and their lifecycle.
  *
  * @spec exclude Unit test of the client-side Files sidebar entry point.
  */
@@ -22,6 +22,10 @@ jest.mock('./components/files-sidebar/ExtractionTab.vue', () => ({
 	props: ['fileId'],
 	template: '<p class="extraction">{{ fileId }}</p>',
 }))
+const mockRegisterAttach = jest.fn()
+jest.mock('./files/attachAction.js', () => ({
+	registerAttachAction: () => mockRegisterAttach(),
+}))
 jest.mock('./components/files-sidebar/MailThreadTab.vue', () => ({
 	name: 'MailThreadTab',
 	props: ['fileId'],
@@ -35,6 +39,18 @@ const mockRegister = jest.fn()
 jest.mock('./services/libraryTranslations.js', () => ({
 	registerLibraryTranslations: () => mockRegister(),
 }))
+
+/**
+ * Let the lazily loaded tab components resolve and render.
+ *
+ * @return {Promise<void>}
+ */
+async function settle() {
+	for (let i = 0; i < 10; i++) {
+		await Promise.resolve()
+	}
+	await new Promise((resolve) => setTimeout(resolve, 0))
+}
 
 let tabs
 
@@ -69,10 +85,12 @@ afterEach(() => {
 })
 
 describe('files-sidebar entry', () => {
-	it('registers translations, the integration registry and the three tabs', () => {
+	it('registers the three tabs and loads none of their code until one renders', async () => {
 		load()
-		expect(mockRegister).toHaveBeenCalledTimes(1)
-		expect(mockEnsure).toHaveBeenCalledTimes(1)
+		await settle()
+		expect(mockRegister).not.toHaveBeenCalled()
+		expect(mockEnsure).not.toHaveBeenCalled()
+		expect(mockRegisterAttach).toHaveBeenCalledTimes(1)
 		expect(tabs.map((t) => [t.id, t.name])).toEqual([
 			['openregister-objects', 'Register objects'],
 			['openregister-extraction', 'Extraction'],
@@ -83,6 +101,15 @@ describe('files-sidebar entry', () => {
 			expect(tab.enabled({ id: 1, name: 'reply.eml' })).toBe(true)
 			expect(tab.enabled(null)).toBe(false)
 		}
+	})
+
+	it('registers translations and the integration registry once, when the first tab renders', async () => {
+		load()
+		tabs[0].mount(document.createElement('div'), { id: 1 })
+		tabs[1].mount(document.createElement('div'), { id: 1 })
+		await settle()
+		expect(mockRegister).toHaveBeenCalledTimes(1)
+		expect(mockEnsure).toHaveBeenCalledTimes(1)
 	})
 
 	it('offers the conversation tab for mail files only', () => {
@@ -111,6 +138,7 @@ describe('files-sidebar entry', () => {
 		const el = document.createElement('div')
 
 		tab.mount(el, { id: 5 })
+		await settle()
 		expect(el.querySelector(`.${cls}`).textContent).toBe('5')
 		expect(isReactive(el[propsKey])).toBe(true)
 		const first = el[appKey]
@@ -122,6 +150,7 @@ describe('files-sidebar entry', () => {
 
 		const unmount = jest.spyOn(first, 'unmount')
 		tab.mount(el, { id: 7 })
+		await settle()
 		expect(unmount).toHaveBeenCalledTimes(1)
 		expect(el.querySelectorAll(`.${cls}`)).toHaveLength(1)
 
