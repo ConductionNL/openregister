@@ -2184,6 +2184,21 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		// building, who made them, when their file stops existing and how
 		// often the register served it. No catch-all sibling sits on
 		// /api/exports, so nothing here can be swallowed by a {id} route.
+		// A survey's results and its export (survey-object): the response count
+		// always, the answers only for the survey's reader roles and, on an
+		// anonymous survey, only once its minimum is reached.
+		[
+			'name' => 'surveyResults#results',
+			'url' => '/api/surveys/{register}/{survey}/results',
+			'verb' => 'GET',
+			'requirements' => ['register' => '[^/]+', 'survey' => '[^/]+'],
+		],
+		[
+			'name' => 'surveyResults#export',
+			'url' => '/api/surveys/{register}/{survey}/export',
+			'verb' => 'GET',
+			'requirements' => ['register' => '[^/]+', 'survey' => '[^/]+'],
+		],
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
 		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
