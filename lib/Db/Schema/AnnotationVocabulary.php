@@ -316,6 +316,13 @@ final class AnnotationVocabulary {
 		// fails closed. Absent from this list setConfiguration() would drop it
 		// and every confidential object would read as unclassified.
 		Schema::CONFIDENTIALITY_ANNOTATION,
+		// Whether emergency self-granted access is offered, which verbs it
+		// grants, for how long and who is told (REQ-GSR-004). Read by
+		// BreakGlassDeclaration, refused at save by
+		// AccessDeclarationChecks::checkBreakGlass(). Absent from this list
+		// setConfiguration() would drop it and every take would be refused as
+		// undeclared while its author read a 200.
+		Schema::BREAK_GLASS_ANNOTATION,
 	];
 
 
