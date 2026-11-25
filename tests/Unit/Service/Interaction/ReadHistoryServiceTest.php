@@ -23,6 +23,9 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Interaction;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ReadRuleMatch;
+use OCA\OpenRegister\Kernel\Contracts\ReadRuleResolverInterface;
+use OCA\OpenRegister\Service\Audit\RuleDigest;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ProcessingLogService;
 use OCA\OpenRegister\Service\ProcessingRead;
@@ -71,7 +74,7 @@ class ReadHistoryServiceTest extends TestCase {
 	 *
 	 * @return ReadHistoryService
 	 */
-	private function service(?bool $auditOn = true): ReadHistoryService {
+	private function service(?bool $auditOn = true, ?ReadRuleResolverInterface $readRules = null): ReadHistoryService {
 		if ($auditOn === null) {
 			$this->settings->method('getRetentionSettingsOnly')->willThrowException(new \Exception('no settings'));
 		} else {
@@ -87,9 +90,60 @@ class ReadHistoryServiceTest extends TestCase {
 			auditTrails: $this->auditTrails,
 			settings: $this->settings,
 			container: $container,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			readRules: $readRules
 		);
 	}//end service()
+
+	/**
+	 * A read a rule mediated writes that rule's digest and schema version on the `read` row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	public function testAMediatedReadWritesTheRuleDigestAndVersion(): void {
+		$object = new ObjectEntity();
+		$rule = ['group' => 'behandelaars', 'match' => ['afdeling' => '$activeDepartment']];
+		$readRules = $this->createMock(ReadRuleResolverInterface::class);
+		$readRules->expects($this->once())->method('resolve')->with($object)
+			->willReturn(new ReadRuleMatch(rule: $rule, digest: RuleDigest::ofEntry(entry: $rule), version: '1.4.0'));
+		$row = new AuditTrail();
+		$this->auditTrails->expects($this->once())->method('recordRead')
+			->with($object, RuleDigest::ofEntry(entry: $rule), '1.4.0')
+			->willReturn($row);
+
+		$this->assertSame($row, $this->service(readRules: $readRules)->registerAuditRead(object: $object));
+	}//end testAMediatedReadWritesTheRuleDigestAndVersion()
+
+	/**
+	 * A read no rule mediated writes a `read` row without a digest.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	public function testAnUnmediatedReadWritesNoDigest(): void {
+		$object = new ObjectEntity();
+		$readRules = $this->createMock(ReadRuleResolverInterface::class);
+		$readRules->method('resolve')->willReturn(null);
+		$this->auditTrails->expects($this->once())->method('recordRead')->with($object, null, null)->willReturn(new AuditTrail());
+
+		$this->service(readRules: $readRules)->registerAuditRead(object: $object);
+	}//end testAnUnmediatedReadWritesNoDigest()
+
+	/**
+	 * An unaudited load does not even ask which rule applied.
+	 *
+	 * @return void
+	 */
+	public function testAnUnauditedLoadDoesNotResolveARule(): void {
+		$readRules = $this->createMock(ReadRuleResolverInterface::class);
+		$readRules->expects($this->never())->method('resolve');
+		$this->auditTrails->expects($this->never())->method('recordRead');
+
+		$this->assertNull($this->service(readRules: $readRules)->registerAuditRead(object: new ObjectEntity(), audit: false));
+	}//end testAnUnauditedLoadDoesNotResolveARule()
 
 	/**
 	 * An audited read writes exactly one `read` row.
@@ -100,8 +154,8 @@ class ReadHistoryServiceTest extends TestCase {
 		$object = new ObjectEntity();
 		$row = new AuditTrail();
 		$this->auditTrails->expects($this->once())
-			->method('createAuditTrail')
-			->with(null, $object, 'read')
+			->method('recordRead')
+			->with($object, null, null)
 			->willReturn($row);
 
 		$this->assertSame($row, $this->service()->registerAuditRead(object: $object));
@@ -113,7 +167,7 @@ class ReadHistoryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnauditedLoadWritesNothing(): void {
-		$this->auditTrails->expects($this->never())->method('createAuditTrail');
+		$this->auditTrails->expects($this->never())->method('recordRead');
 
 		$this->assertNull($this->service()->registerAuditRead(object: new ObjectEntity(), audit: false));
 	}//end testAnUnauditedLoadWritesNothing()
@@ -124,7 +178,7 @@ class ReadHistoryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAuditOffWritesNothing(): void {
-		$this->auditTrails->expects($this->never())->method('createAuditTrail');
+		$this->auditTrails->expects($this->never())->method('recordRead');
 
 		$this->assertNull($this->service(auditOn: false)->registerAuditRead(object: new ObjectEntity()));
 	}//end testAuditOffWritesNothing()
@@ -135,7 +189,7 @@ class ReadHistoryServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnUnreadableSettingKeepsAuditOn(): void {
-		$this->auditTrails->expects($this->once())->method('createAuditTrail')->willReturn(new AuditTrail());
+		$this->auditTrails->expects($this->once())->method('recordRead')->willReturn(new AuditTrail());
 
 		$this->service(auditOn: null)->registerAuditRead(object: new ObjectEntity());
 	}//end testAnUnreadableSettingKeepsAuditOn()
@@ -153,7 +207,7 @@ class ReadHistoryServiceTest extends TestCase {
 		$object = new ObjectEntity();
 		$this->processingLog->expects($this->once())->method('recordRead')->with($object, new ProcessingRead(action: 'read'));
 		$this->processingLog->expects($this->once())->method('flush');
-		$this->auditTrails->expects($this->never())->method('createAuditTrail');
+		$this->auditTrails->expects($this->never())->method('recordRead');
 
 		$this->service(auditOn: false)->registerProcessingRead(object: $object);
 	}//end testAProcessingReadIsLoggedEvenWithAuditOff()
