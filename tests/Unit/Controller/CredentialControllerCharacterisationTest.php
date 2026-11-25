@@ -282,9 +282,9 @@ class CredentialControllerCharacterisationTest extends TestCase {
 		$this->assertSame(
 			[
 				'results' => [
-					['identifier' => 'gh', 'title' => 'GitHub', 'kind' => 'secret', 'requiresInstanceBaseUrl' => false, 'preview' => false],
-					['identifier' => 'nc', 'title' => 'nc', 'kind' => 'oauth2-token-set', 'requiresInstanceBaseUrl' => true, 'preview' => true],
-					['identifier' => 'x', 'title' => 'x', 'kind' => 'secret', 'requiresInstanceBaseUrl' => false, 'preview' => false],
+					['identifier' => 'gh', 'title' => 'GitHub', 'kind' => 'secret', 'requiresInstanceBaseUrl' => false, 'preview' => false, 'origin' => 'catalogue', 'status' => 'admitted'],
+					['identifier' => 'nc', 'title' => 'nc', 'kind' => 'oauth2-token-set', 'requiresInstanceBaseUrl' => true, 'preview' => true, 'origin' => 'catalogue', 'status' => 'admitted'],
+					['identifier' => 'x', 'title' => 'x', 'kind' => 'secret', 'requiresInstanceBaseUrl' => false, 'preview' => false, 'origin' => 'catalogue', 'status' => 'admitted'],
 				],
 			],
 			$this->controller()->providers()->getData()
