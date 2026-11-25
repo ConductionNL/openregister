@@ -6,3 +6,4 @@ decidiq	d3a093ad	php=RED	Tests: 5763, Failures: 0, Errors: 0	phpcs,phpmd,psalm	j
 pipelinq	411da2b53	php=RED	Tests 9617/Failures 0/Errors 0	phpmd,psalm	js=GREEN	phpmd 68 viol; psalm 5 err; phpunit 2 warnings; eslint 0 err/5 warn; vitest 5522 passed
 integriq	8b395a17	php=RED	Tests: 11030, Failures: 3, Errors: 2	phpcs,phpmd,psalm,phpunit	js=RED	PHPUnit JobsControllerTest,CallServiceTest,SyncEntryGoldenTest; psalm needs PHP>=8.3.16; vitest jobDraft,editorModalsGolden
 buildiq	01d41a3c	php=RED	Tests: 4265, Failures: 0, Errors: 0	phpmd,psalm,gates	js=RED	npm ci ERESOLVE (stylelint-config-recommended-scss 18 vs ^17); 11 hydra gates; psalm needs PHP>=8.3.16
+dossiq	0830cd672	php=RED	not run	composer-install	js=RED	vendor incomplete (same 3 GitHub zipballs 403); eslint 2 err; vitest 13/7409 fail in 12 files e.g. capabilityComparison
