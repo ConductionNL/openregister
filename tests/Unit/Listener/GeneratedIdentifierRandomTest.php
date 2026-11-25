@@ -138,6 +138,40 @@ final class GeneratedIdentifierRandomTest extends TestCase {
 	}//end testEachCreateGetsTheCodeOfTheNextNumber()
 
 	/**
+	 * Two workers creating at once, interleaved on one counter, never share a code.
+	 *
+	 * The counter hands each reservation out once under its lock; the code is
+	 * a permutation of that number, so interleaving the workers cannot repeat
+	 * one. The workers here take turns out of order on a shared counter.
+	 *
+	 * @return void
+	 */
+	public function testInterleavedWorkersOnOneCounterNeverShareACode(): void {
+		$first  = $this->listener(secret: 'instance-secret');
+		$firstCounter = $this->sequences;
+		$second = $this->listener(secret: 'instance-secret');
+		$counter = 0;
+		$reserve = static function () use (&$counter): int {
+			return ++$counter;
+		};
+		$firstCounter->method('reserveNext')->willReturnCallback($reserve);
+		$this->sequences->method('reserveNext')->willReturnCallback($reserve);
+
+		$issued = [];
+		for ($i = 0; $i < 300; $i++) {
+			$worker = (($i * 7) % 3 === 0) ? $second : $first;
+			[$data] = $this->create(listener: $worker);
+			$issued[] = $data['identifier'];
+		}
+
+		$this->assertSame(expected: 300, actual: $counter);
+		$this->assertCount(expectedCount: 300, haystack: array_unique($issued));
+		foreach ($issued as $value) {
+			$this->assertMatchesRegularExpression(pattern: '/^Z-[0-9]{8}$/', string: $value);
+		}
+	}//end testInterleavedWorkersOnOneCounterNeverShareACode()
+
+	/**
 	 * Without an instance secret no random code is issued and the create is refused.
 	 *
 	 * @return void
