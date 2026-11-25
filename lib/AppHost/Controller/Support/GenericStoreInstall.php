@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\AppHost\Controller\Support;
 
 use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
+use OCA\OpenRegister\AppHost\Store\StoreInstallLedger;
 
 /**
  * What installs a store item, and the action resolver that gates install and publish.
@@ -36,12 +37,15 @@ final class GenericStoreInstall {
 	 *
 	 * @param GenericStoreInstaller $installer        Declarative component install.
 	 * @param StoreActionAuthorizer $actionAuthorizer ADR-023 action resolver.
+	 * @param StoreInstallLedger    $ledger           Where each item is installed.
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
+	 * @spec openspec/changes/store-installed-in/specs/apphost-store-plane/spec.md#requirement-the-store-reports-where-each-item-is-installed
 	 */
 	public function __construct(
 		public readonly GenericStoreInstaller $installer,
 		public readonly StoreActionAuthorizer $actionAuthorizer,
+		public readonly StoreInstallLedger $ledger,
 	) {
 	}//end __construct()
 }//end class
