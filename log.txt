@@ -4700,3 +4700,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T04:07:32Z integrator-20261125T031209-b842bbc3 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 - 04:08Z or-fix-7 cloud lane 7: fixed #10547 (l10n en/nl conflict with main, new head 7e722da8, REVERIFY); #10537 #11067 #11117 merged with main: Architecture + touched unit dirs green bar inherited reds (AreaMapperRegistrarsTest, AnonymousEnvelopeReadPathsTest, ReservedColumnNamesTest, SftpTransportGoldenTest, FlowNodeRegistryTest clock test: same on main); #10627 #11087 #11097 #11107 clean; #11077 BLOCK stands (stylelint 18 peer); precheck-when-idle blocked again: gitleaks install refused by the permission check
+2026-11-25T04:08:24Z integrator-20261125T031209-b842bbc3 MERGED-TREE dfde78bf13: 4 PRs, main now b48bfec939 = tested tree
