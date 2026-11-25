@@ -194,6 +194,21 @@ class MagicSearchHandler {
 	];
 
 	/**
+	 * The metadata blocks a `@self` filter may read inside, as NestedPathFilter reads a property.
+	 *
+	 * Only the archival blocks: `retention` and `tmlo` hold plain values (dates,
+	 * nominations, categories) a list asks about. A path into the access columns
+	 * (authorization, groups) would be an oracle on who may read what, so those
+	 * stay addressable as a whole only.
+	 *
+	 * @spec openspec/changes/self-filter-inside-retention/specs/zoeken-filteren/spec.md#requirement-a-self-filter-can-name-a-field-inside-the-archival-metadata
+	 */
+	private const METADATA_PATH_ROOTS = [
+		'retention' => ['type' => 'object'],
+		'tmlo'      => ['type' => 'object'],
+	];
+
+	/**
 	 * The working set: archived rows are left out. The default.
 	 *
 	 * @var string
@@ -3089,6 +3104,7 @@ class MagicSearchHandler {
 	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 * @spec openspec/changes/self-filter-inside-retention/specs/zoeken-filteren/spec.md#requirement-a-self-filter-can-name-a-field-inside-the-archival-metadata
 	 */
 	private function buildMetadataFilterConditionsSql(ConditionSqlRun $run): array {
 		$metadataFilters = ($run->query['@self'] ?? []);
@@ -3096,7 +3112,15 @@ class MagicSearchHandler {
 			return [];
 		}
 
+		[$metadataFilters, $paths] = $this->nestedPaths->split(filters: $metadataFilters, properties: self::METADATA_PATH_ROOTS);
+		$connection = $run->connection;
+		$quote      = static fn (string $text): string => (string)$connection->quote($text);
 		$conditions = [];
+		foreach ($paths as $path) {
+			$column     = $this->quoteIdentifier(name: '_' . $path['root'], isPostgres: $run->isPostgres);
+			$conditions = array_merge($conditions, $this->metadataPathConditions(path: $path, column: $column, bind: $quote, isPostgres: $run->isPostgres));
+		}
+
 		foreach ($metadataFilters as $field => $value) {
 			$column     = $this->quotedMetadataColumn(run: $run, field: $field);
 			$conditions = array_merge($conditions, $this->metadataValueConditionsSql(column: $column, value: $value));
@@ -3887,8 +3911,18 @@ class MagicSearchHandler {
 	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 * @spec openspec/changes/self-filter-inside-retention/specs/zoeken-filteren/spec.md#requirement-a-self-filter-can-name-a-field-inside-the-archival-metadata
 	 */
 	private function applyMetadataFilters(IQueryBuilder $qb, array $filters): void {
+		[$filters, $paths] = $this->nestedPaths->split(filters: $filters, properties: self::METADATA_PATH_ROOTS);
+		$bind = static fn (string $text): string => (string)$qb->createNamedParameter($text);
+		// The platform is read only when a path filter needs it: a plain `@self` filter never asks.
+		$isPostgres = $paths !== [] && $this->isPostgresPlatform();
+		foreach ($paths as $path) {
+			$column = "t._{$path['root']}";
+			$this->andWhereEach(qb: $qb, conditions: $this->metadataPathConditions(path: $path, column: $column, bind: $bind, isPostgres: $isPostgres));
+		}
+
 		foreach ($filters as $field => $value) {
 			$columnName = $this->resolveMetadataColumn(field: (string)$field);
 			$columnRef = "t.{$columnName}";
@@ -4114,6 +4148,36 @@ class MagicSearchHandler {
 
 		return [$value];
 	}//end operandList()
+
+	/**
+	 * The conditions of a `@self` filter on a field inside an archival metadata column
+	 *
+	 * The same operator vocabulary as a filter inside an object property
+	 * (NestedPathFilter), on either query path: the binder decides whether a
+	 * value becomes a named parameter or a quoted literal. A path that is not a
+	 * plain name matches nothing.
+	 *
+	 * @param array<string, mixed> $path       The path filter: `root`, `path` and `value`.
+	 * @param string               $column     The column as the query writes it (qualified or quoted).
+	 * @param callable             $bind       Value to SQL: fn(string $value): string.
+	 * @param bool                 $isPostgres Whether the platform is PostgreSQL.
+	 *
+	 * @return list<string|\Stringable> The conditions
+	 *
+	 * @spec openspec/changes/self-filter-inside-retention/specs/zoeken-filteren/spec.md#requirement-a-self-filter-can-name-a-field-inside-the-archival-metadata
+	 */
+	private function metadataPathConditions(array $path, string $column, callable $bind, bool $isPostgres): array {
+		$root       = new NestedPathTarget(expression: $column, bind: $bind, isPostgres: $isPostgres);
+		$expression = $this->nestedPaths->expression(column: $root, path: $path['path']);
+		if ($expression === null) {
+			return ['1 = 0'];
+		}
+
+		return $this->nestedPathCriterionConditions(
+			target: new NestedPathTarget(expression: $expression, bind: $bind, isPostgres: $isPostgres),
+			value: $path['value']
+		);
+	}//end metadataPathConditions()
 
 	/**
 	 * Resolve a `@self` field name to its magic-table metadata column
