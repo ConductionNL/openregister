@@ -54,6 +54,7 @@ final class FilesControllerFactory {
 		?\OCA\OpenRegister\Service\Object\FileWriteGuard $fileWriteGuard = null,
 		?\OCA\OpenRegister\Files\Service\File\FileRestrictionGuard $fileRestrictions = null,
 		?\OCA\OpenRegister\Service\File\PublishedDigestReader $publishedDigests = null,
+		?\OCA\OpenRegister\Service\File\PublishedDownloadGuard $publishedDownloads = null,
 	): array {
 		return [
 			$request,
@@ -76,6 +77,7 @@ final class FilesControllerFactory {
 					fileRestrictions: $fileRestrictions,
 					fileAuditHandler: $fileAuditHandler,
 					publishedDigests: $publishedDigests,
+					publishedDownloads: $publishedDownloads,
 				),
 				editing: new \OCA\OpenRegister\Files\Controller\Support\FileEditing(
 					officeSessionService: $officeSessionService,
