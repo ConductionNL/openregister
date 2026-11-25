@@ -274,3 +274,4 @@ A product or access-control question that FINISH-ORDER.md DECISIONS does not ans
 - 2026-11-25T18:27:30Z live-opencatalogi-1 opencatalogi#3103 merge (squash): tasks.md only, publications task 3 verified live (publications-cors.spec 1/1, 12/12 responses carry ACAO); merge refused by this session's permission check
 - 2026-11-25T18:28:08Z b-integriq the integriq#3958 merge line above is resolved: merged 18:25Z; nothing needed
 - 2026-11-25T18:28:42Z b-dossiq update: dossiq#6970 merged (carried #6968's 8cr commit; #6968 closed as contained). Only dossiq#6969 is still waiting for its squash merge; it merges cleanly onto development ecbafa14
+- 2026-11-25T18:29:12Z b-portaliq #2794 merged; #2797 retargeted to development, development merged in (head 7c00564a, tasks.md conflict only), mergeable; next #2800 (head 19649611, merges cleanly with development) after #2797.
