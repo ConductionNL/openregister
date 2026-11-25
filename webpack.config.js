@@ -65,6 +65,16 @@ if (!isDev) {
 	// A worker is its own unnamed entry point, so the explorer's editor workers
 	// stay self-contained too.
 	const selfContainedEntries = ['integrationGlobal', 'graphqlExplorer']
+	// Entries whose own initial chunk keeps its node_modules instead of sending
+	// them to openregister-vendor. They run on another app's pages and need
+	// little at load: `filesSidebar` (every Files page and every page embedding
+	// the Files sidebar: @nextcloud/files and @nextcloud/l10n) and `mailSidebar`
+	// (every Mail page: Vue and @nextcloud/l10n; the panel itself is lazy). In
+	// the vendor group each put the whole openregister-vendor chunk (~12 MB) on
+	// those pages. Their lazy chunks still share code as before.
+	const leanInitialEntries = ['filesSidebar', 'mailSidebar']
+	const isLeanInitial = (chunk) => [...chunk.groupsIterable]
+		.some((group) => leanInitialEntries.includes(group.name))
 	const entriesOf = (group, seen = new Set()) => {
 		if (seen.has(group)) {
 			return []
@@ -86,7 +96,7 @@ if (!isDev) {
 			vendor: {
 				test: /[\\/]node_modules[\\/]/,
 				name: 'openregister-vendor',
-				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk),
+				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk) && !isLeanInitial(chunk),
 				priority: 10,
 			},
 		},
