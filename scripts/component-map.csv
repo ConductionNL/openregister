@@ -234,6 +234,7 @@ Controller/ArchivalHeldBackController.php,,Controller,,,,,Compliance
 Controller/ArchivalOverviewController.php,,Controller,,,,,Compliance
 Controller/AuditQueryController.php,109,Controller,Compliance,Compliance/Controller/AuditQueryController.php,0,,Compliance
 Controller/AuditSinkController.php,70,Controller,Compliance,Compliance/Controller/AuditSinkController.php,0,,Compliance
+Controller/AuditReportController.php,,Controller,,,,,Compliance
 Controller/AuditTrailController.php,557,Controller,Compliance,Compliance/Controller/AuditTrailController.php,0,,Compliance
 Controller/BagAddressController.php,55,Controller,Integrations,Integrations/Controller/BagAddressController.php,0,,Integrations
 Controller/BookmarkLinksController.php,138,Controller,Integrations,Integrations/Controller/BookmarkLinksController.php,0,,Integrations
@@ -265,6 +266,7 @@ Controller/CredentialController.php,506,Controller,Integrations,Integrations/Con
 Controller/CredentialOauth2Controller.php,300,Controller,Integrations,Integrations/Controller/CredentialOauth2Controller.php,0,,Integrations
 Controller/CredentialOrganisationController.php,,Controller,,,,,Integrations
 Controller/CredentialProviderApprovalController.php,63,Controller,Integrations,Integrations/Controller/CredentialProviderApprovalController.php,0,,Integrations
+Controller/DeclaredCredentialProvidersController.php,,Controller,,,,,Integrations
 Controller/DataSubjectRequestController.php,117,Controller,Compliance,Compliance/Controller/DataSubjectRequestController.php,0,,Compliance
 Controller/DeckController.php,100,Controller,Integrations,Integrations/Controller/DeckController.php,0,,Integrations
 Controller/DeckLinksController.php,154,Controller,Integrations,Integrations/Controller/DeckLinksController.php,0,,Integrations
@@ -822,6 +824,7 @@ Db/MagicMapper/RbacResolvers.php,14,Db,Service,Service/Db/MagicMapper/RbacResolv
 Db/MagicMapper/RecentLensOrder.php,46,Db,Service,Service/Db/MagicMapper/RecentLensOrder.php,0,,Core
 Db/MagicMapper/ReferenceFacetConfig.php,,Db,,,,,Core
 Db/MagicMapper/RegisterSchemaFilter.php,16,Db,Service,Service/Db/MagicMapper/RegisterSchemaFilter.php,0,,Core
+Db/MagicMapper/RegistryLens.php,0,Db,Service,Service/Db/MagicMapper/RegistryLens.php,0,,Core
 Db/MagicMapper/SearchLeaf.php,36,Db,Service,Service/Db/MagicMapper/SearchLeaf.php,0,,Core
 Db/MagicMapper/SearchLeafScope.php,23,Db,Service,Service/Db/MagicMapper/SearchLeafScope.php,0,,Core
 Db/MagicMapper/SortRequest.php,15,Db,Service,Service/Db/MagicMapper/SortRequest.php,0,,Core
@@ -1122,6 +1125,7 @@ Exception/RecordTemplateRefused.php,16,Exception,Exception,Exception/RecordTempl
 Exception/ReferenceValidationException.php,51,Exception,Exception,Exception/ReferenceValidationException.php,0,,Core
 Exception/ReferentialIntegrityException.php,27,Exception,Exception,Exception/ReferentialIntegrityException.php,2,,Kernel
 Exception/RegisterNotFoundException.php,12,Exception,Exception,Exception/RegisterNotFoundException.php,7,,Kernel
+Exception/RegistryLensException.php,0,Exception,Exception,Exception/RegistryLensException.php,0,,Kernel
 Exception/RelatedRowFilterNotSupportedException.php,6,Exception,Exception,Exception/RelatedRowFilterNotSupportedException.php,0,,Kernel
 Exception/RepairRefusedException.php,14,Exception,Exception,Exception/RepairRefusedException.php,0,,Configuration
 Exception/SanitizationException.php,26,Exception,Exception,Exception/SanitizationException.php,4,,Files
@@ -1949,6 +1953,8 @@ Service/Audit/AuditAggregationService.php,61,Service,Compliance,Compliance/Servi
 Service/Audit/AuditSink.php,152,Service,Compliance,Compliance/Service/Audit/AuditSink.php,0,,Compliance
 Service/Audit/AuditSinkStatus.php,74,Service,Compliance,Compliance/Service/Audit/AuditSinkStatus.php,0,,Compliance
 Service/Audit/AccessLinkUseRecorder.php,,Service,,,,,Compliance
+Service/Audit/AuditReport.php,,Service,,,,,Compliance
+Service/Audit/AuditReportFile.php,,Service,,,,,Compliance
 Service/Audit/AuditTrailPageService.php,46,Service,Compliance,Compliance/Service/Audit/AuditTrailPageService.php,0,,Compliance
 Service/Audit/ContentReportService.php,143,Service,Compliance,Compliance/Service/Audit/ContentReportService.php,0,,Compliance
 Service/Audit/EntityEditAuditor.php,468,Service,Compliance,Compliance/Service/Audit/EntityEditAuditor.php,0,,Compliance
@@ -5030,6 +5036,7 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Service/Import/BaseImportPlanner.php,,Service,,,,,Configuration
 Service/Authorization/PermissionMatrixExport.php,,Service,,,,,Core
 Service/Authorization/PermissionMatrixExporter.php,,Service,,,,,Core
 Service/Authorization/PermissionMatrixProvenance.php,,Service,,,,,Core
@@ -5038,6 +5045,8 @@ Service/Authorization/PermissionMatrixSubject.php,,Service,,,,,Core
 Controller/Support/StreamedTextResponse.php,,Controller,,,,,Core
 Controller/Support/PermissionsAuditMatrix.php,,Controller,,,,,Core
 Service/Authorization/PermissionMatrixSubjects.php,,Service,,,,,Core
+Listener/TaskDueSoonListener.php,,Listener,,,,,Processes
+Service/Task/TaskDueSoonWarning.php,,Service,,,,,Processes
 Kernel/Contracts/CsvCell.php,,Kernel,,,,,Kernel
 Command/ApiConformanceCommand.php,130,Command,Service,Service/Command/ApiConformanceCommand.php,0,,Core
 Service/Oas/NlGovConformanceReport.php,200,Service,Service,Service/Oas/NlGovConformanceReport.php,0,,Core
@@ -5049,6 +5058,7 @@ Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
 Service/Flow/Timer/TimerCalendarSwitch.php,,Service,,,,,Processes
 Kernel/Contracts/AdministratorCheck.php,63,Kernel,Kernel,Kernel/Contracts/AdministratorCheck.php,0,,Kernel
+Migration/Version1Date20261125013000.php,,Migration,,,,,Platform
 Collaboration/ObjectMembership.php,,Collaboration,,,,,Platform
 Controller/ObjectTransferController.php,,Controller,,,,,Core
 Service/Organisation/ObjectGraphTransfer.php,,Service,,,,,Core

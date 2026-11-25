@@ -136,6 +136,7 @@ exports[`EditWorkingCalendarModal form renders a new calendar 1`] = `
         </div>
         <!--v-if-->
       </section>
+      <x-termdiagnosticpanel definitionof="function () { [native code] }"></x-termdiagnosticpanel>
     </div>
   </slot-default>
 </x-ncdialog>"
@@ -336,6 +337,7 @@ exports[`EditWorkingCalendarModal form renders an existing calendar 1`] = `
         </div>
         <!--v-if-->
       </section>
+      <x-termdiagnosticpanel definitionof="function () { [native code] }"></x-termdiagnosticpanel>
     </div>
   </slot-default>
 </x-ncdialog>"
