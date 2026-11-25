@@ -26,11 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Search\Service\Reporting;
 
+use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregateReportPeriods;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunnerInterface;
 
 /**
  * Runs one template section with the caller's rights and shapes its groups.
@@ -39,12 +38,10 @@ class ReportSectionQuery {
 	/**
 	 * Constructor.
 	 *
-	 * @param AggregationRunnerInterface          $runner    Runs the section with the caller's rights.
-	 * @param TimeseriesRequestValidatorInterface $validator Builds a series section's query.
+	 * @param AggregationControllerServices $services The aggregation runner (the caller's rights) and the series validator.
 	 */
 	public function __construct(
-		private readonly AggregationRunnerInterface $runner,
-		private readonly TimeseriesRequestValidatorInterface $validator,
+		private readonly AggregationControllerServices $services,
 	) {
 	}//end __construct()
 
@@ -97,7 +94,7 @@ class ReportSectionQuery {
 	private function seriesGroups(ReportSectionSource $source, array $section, ReportPeriod $period): array {
 		$gap = strtolower((string)($section['interval'] ?? 'month'));
 		$range = ['from' => $period->from, 'to' => $period->exclusiveEnd()];
-		$query = $this->validator->validate(
+		$query = $this->services->validator->validate(
 			input: [
 				'field' => $source->dateField,
 				'interval' => $gap,
@@ -108,7 +105,7 @@ class ReportSectionQuery {
 				'filter' => $source->filter,
 				'cumulative' => false,
 			],
-			schema: $this->runner->findSchema(schemaRef: $source->schema, registerRef: $source->register)
+			schema: $this->services->runner->findSchema(schemaRef: $source->schema, registerRef: $source->register)
 		);
 		$groups = AggregateReportPeriods::fillGaps(
 			groups: ($this->run(source: $source, query: $query)['groups'] ?? []),
@@ -165,7 +162,7 @@ class ReportSectionQuery {
 	 * @return array<string, mixed> The runner's envelope.
 	 */
 	private function run(ReportSectionSource $source, AggregationQuery $query): array {
-		return $this->runner->runAdhocByRef(registerRef: $source->register, schemaRef: $source->schema, query: $query);
+		return $this->services->runner->runAdhocByRef(registerRef: $source->register, schemaRef: $source->schema, query: $query);
 	}//end run()
 
 	/**

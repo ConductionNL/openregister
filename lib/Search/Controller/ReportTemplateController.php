@@ -31,9 +31,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Controller;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper\MagicObjectFinderInterface;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Search\Controller\Support\ReportGenerationFailures;
+use OCA\OpenRegister\Search\Controller\Support\ReportsControllerServices;
 use OCA\OpenRegister\Search\Service\Reporting\ReportPeriod;
 use OCA\OpenRegister\Search\Service\Reporting\ReportTemplateGenerator;
 use OCA\OpenRegister\Service\Resilience\Sheddable;
@@ -49,20 +49,27 @@ use OCP\IRequest;
  */
 class ReportTemplateController extends Controller {
 	/**
+	 * Answers a generation that failed.
+	 *
+	 * @var ReportGenerationFailures
+	 */
+	private readonly ReportGenerationFailures $failures;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                   $request      The current request.
-	 * @param ReportTemplateGenerator    $generator    Generates the report.
-	 * @param MagicObjectFinderInterface $objectMapper Loads the template with the caller's rights.
-	 * @param ReportGenerationFailures   $failures     Answers a generation that failed.
+	 * @param IRequest                  $request   The current request.
+	 * @param ReportTemplateGenerator   $generator Generates the report.
+	 * @param ReportsControllerServices $services  The template loader and the logger.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly ReportTemplateGenerator $generator,
-		private readonly MagicObjectFinderInterface $objectMapper,
-		private readonly ReportGenerationFailures $failures,
+		private readonly ReportsControllerServices $services,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
+
+		$this->failures = new ReportGenerationFailures(logger: $services->logger);
 	}//end __construct()
 
 	/**
@@ -132,7 +139,7 @@ class ReportTemplateController extends Controller {
 			$arg = (int)$identifier;
 		}
 
-		$data = $this->objectMapper->find($arg)->getObject();
+		$data = $this->services->objectMapper->find($arg)->getObject();
 		if (is_array($data) === false) {
 			return [];
 		}

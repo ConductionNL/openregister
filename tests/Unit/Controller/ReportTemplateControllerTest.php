@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Controller\ReportTemplateController;
 use OCA\OpenRegister\Search\Controller\Support\ReportGenerationFailures;
+use OCA\OpenRegister\Search\Controller\Support\ReportsControllerServices;
+use OCA\OpenRegister\Search\Service\Reporting\ReportRenderService;
 use OCA\OpenRegister\Search\Service\Reporting\ReportPeriod;
 use OCA\OpenRegister\Search\Service\Reporting\ReportTemplateGenerator;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -77,7 +79,11 @@ class ReportTemplateControllerTest extends TestCase {
 			);
 		}
 
-		return new ReportTemplateController($request, $generator, $finder, new ReportGenerationFailures($this->createMock(LoggerInterface::class)));
+		return new ReportTemplateController($request, $generator, new ReportsControllerServices(
+			$this->createMock(ReportRenderService::class),
+			$finder,
+			$this->createMock(LoggerInterface::class)
+		));
 	}//end controller()
 
 	public function testAYearRendersTheTemplateOverThatCalendarYear(): void {

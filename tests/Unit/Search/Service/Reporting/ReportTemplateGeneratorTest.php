@@ -30,7 +30,8 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationLayout;
 use OCA\OpenRegister\Search\Service\Aggregation\AggregationQuery;
-use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidatorInterface;
+use OCA\OpenRegister\Search\Controller\Support\AggregationControllerServices;
+use OCA\OpenRegister\Search\Service\Aggregation\TimeseriesRequestValidator;
 use OCA\OpenRegister\Search\Service\GraphQL\GraphQLService;
 use OCA\OpenRegister\Search\Service\Reporting\HtmlReportWriter;
 use OCA\OpenRegister\Search\Service\Reporting\PdfReportWriter;
@@ -94,7 +95,7 @@ class ReportTemplateGeneratorTest extends TestCase {
 				return ['groups' => $groups($query)];
 			}
 		);
-		$validator = $this->createMock(TimeseriesRequestValidatorInterface::class);
+		$validator = $this->createMock(TimeseriesRequestValidator::class);
 		$validator->method('validate')->willReturnCallback(
 			function (array $input): AggregationQuery {
 				$this->assertSame('2027-01-01', $input['to'], 'a series ends the day after the period');
@@ -120,7 +121,7 @@ class ReportTemplateGeneratorTest extends TestCase {
 			$this->createMock(LoggerInterface::class)
 		);
 
-		return new ReportTemplateGenerator(new ReportSectionQuery($runner, $validator), $render);
+		return new ReportTemplateGenerator(new ReportSectionQuery(new AggregationControllerServices($runner, $validator)), $render);
 	}//end generator()
 
 	private function generatedWidgets(array $template, string $from = '2026-01-01', string $to = '2026-12-31'): array {
@@ -204,7 +205,7 @@ class ReportTemplateGeneratorTest extends TestCase {
 		$runner = $this->createMock(AggregationRunnerInterface::class);
 		$runner->method('runAdhocByRef')->willThrowException(new NotAuthorizedException('no read'));
 		$generator = new ReportTemplateGenerator(
-			new ReportSectionQuery($runner, $this->createMock(TimeseriesRequestValidatorInterface::class)),
+			new ReportSectionQuery(new AggregationControllerServices($runner, $this->createMock(TimeseriesRequestValidator::class))),
 			$this->createMock(ReportRenderService::class)
 		);
 
