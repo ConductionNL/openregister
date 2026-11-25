@@ -841,7 +841,9 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		// A scope requiring a second factor is final, administrators included;
 		// only the userless system reads it without one.
-		if ($this->isTrustedSystemCaller(user: $user) === false && $this->secondFactorRefuses(schema: $call->schema, action: $call->action, userId: $call->userId) === true) {
+		if ($this->isTrustedSystemCaller(user: $user) === false
+			&& $this->secondFactorRefuses(schema: $call->schema, action: $call->action, userId: $call->userId) === true
+		) {
 			$call->denyAll();
 			return;
 		}

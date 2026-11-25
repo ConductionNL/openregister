@@ -56,7 +56,7 @@ final class SecondFactorReadGate {
 	 *
 	 * @var string
 	 */
-	public const ANNOTATION = 'x-openregister-second-factor';
+	public const ANNOTATION = Schema::SECOND_FACTOR_ANNOTATION;
 
 	/**
 	 * Nextcloud's backup-codes provider, which is not a second factor on its own.

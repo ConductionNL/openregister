@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Confidentiality\ConfidentialityAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\AccessDeclarationValidators;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
+use OCA\OpenRegister\Service\Rbac\SecondFactorReadGate;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -42,6 +43,7 @@ final class AnnotationKeysTest extends TestCase {
 		self::assertSame('x-openregister-hierarchy', Schema::HIERARCHY_ANNOTATION);
 		self::assertSame('x-openregister-classification', Schema::CLASSIFICATION_ANNOTATION);
 		self::assertSame('x-openregister-confidentiality', Schema::CONFIDENTIALITY_ANNOTATION);
+		self::assertSame('x-openregister-second-factor', Schema::SECOND_FACTOR_ANNOTATION);
 	}
 
 	public function testTheServicesNameTheSchemaKeys(): void {
@@ -49,10 +51,11 @@ final class AnnotationKeysTest extends TestCase {
 		self::assertSame(Schema::HIERARCHY_ANNOTATION, AccessDeclarationValidators::HIERARCHY_ANNOTATION);
 		self::assertSame(Schema::CLASSIFICATION_ANNOTATION, ClassificationScale::ANNOTATION);
 		self::assertSame(Schema::CONFIDENTIALITY_ANNOTATION, ConfidentialityAnnotationValidator::ANNOTATION);
+		self::assertSame(Schema::SECOND_FACTOR_ANNOTATION, SecondFactorReadGate::ANNOTATION);
 	}
 
 	public function testTheVocabularyKeepsTheKeysAndSchemaReadsTheSameList(): void {
-		foreach ([Schema::HIERARCHY_ANNOTATION, Schema::CLASSIFICATION_ANNOTATION, Schema::CONFIDENTIALITY_ANNOTATION] as $key) {
+		foreach ([Schema::HIERARCHY_ANNOTATION, Schema::CLASSIFICATION_ANNOTATION, Schema::CONFIDENTIALITY_ANNOTATION, Schema::SECOND_FACTOR_ANNOTATION] as $key) {
 			self::assertContains($key, AnnotationVocabulary::KEYS);
 			self::assertFalse((new AnnotationVocabulary())->isUnknownAnnotation(key: $key));
 		}

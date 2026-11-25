@@ -323,6 +323,12 @@ final class AnnotationVocabulary {
 		// setConfiguration() would drop it and every take would be refused as
 		// undeclared while its author read a 200.
 		Schema::BREAK_GLASS_ANNOTATION,
+		// Whether reading this schema's objects requires a verified second
+		// factor (REQ-IHC-003). Read by SecondFactorReadGate on the find and
+		// list paths. Absent from this list setConfiguration() would drop it
+		// and the schema would read with a single factor while its author
+		// read a 200.
+		Schema::SECOND_FACTOR_ANNOTATION,
 	];
 
 
