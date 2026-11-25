@@ -53,6 +53,12 @@ use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\FlowLinkPlatform;
 use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCA\OpenRegister\Service\Task\TaskServiceInterface;
+use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerSubjects;
 use OCA\OpenRegister\Service\Task\ObjectTaskReader;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
@@ -242,6 +248,8 @@ final class FlowWiring {
 		self::registerLifecycleState(context: $context);
 		self::registerTaskServices(context: $context);
 		$context->registerService(FlowLinkService::class, self::buildFlowLinkService(...));
+		$context->registerService(FlowTimerDefinitionStore::class, self::buildFlowTimerDefinitionStore(...));
+		$context->registerService(FlowTimerSubjects::class, self::buildFlowTimerSubjects(...));
 
 		// The flow tasks the searcher would see in their inbox (flow-task-search-provider).
 		$context->registerSearchProvider(FlowTasksProvider::class);
@@ -480,6 +488,49 @@ final class FlowWiring {
 				substitution: $container->get(\OCA\OpenRegister\Service\Task\TaskSubstitution::class)
 			);
 	}//end buildTaskInboxService()
+
+	/**
+	 * Build the timer definition store with its object reader deferred.
+	 *
+	 * The object service reaches this store through its save path (property
+	 * access, named conditions, relative time, the working calendar); handing it
+	 * the object reader eagerly is a constructor cycle the container recurses in
+	 * until the stack runs out, which stops the app from enabling.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return FlowTimerDefinitionStore
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 */
+	private static function buildFlowTimerDefinitionStore(ContainerInterface $container): FlowTimerDefinitionStore {
+		return new FlowTimerDefinitionStore(
+			objects: static fn (): ObjectOperationsInterface => $container->get(ObjectOperationsInterface::class),
+			appManager: $container->get(IAppManager::class),
+			logger: $container->get(LoggerInterface::class)
+		);
+	}//end buildFlowTimerDefinitionStore()
+
+	/**
+	 * Build the timer's subject collaborators with the task service deferred.
+	 *
+	 * The task service reaches the object service, and the object service reaches
+	 * the timers when a move re-anchors them; handing it over eagerly is a
+	 * constructor cycle that stops the app from enabling.
+	 *
+	 * @param ContainerInterface $container The container.
+	 *
+	 * @return FlowTimerSubjects
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md
+	 */
+	private static function buildFlowTimerSubjects(ContainerInterface $container): FlowTimerSubjects {
+		return new FlowTimerSubjects(
+			tasks: $container->get(TaskMapper::class),
+			taskService: static fn (): TaskServiceInterface => $container->get(TaskServiceInterface::class),
+			dispatcher: $container->get(IEventDispatcher::class)
+		);
+	}//end buildFlowTimerSubjects()
 
 	/**
 	 * Build the FlowLinkService with its platform bundle.

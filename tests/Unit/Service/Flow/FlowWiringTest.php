@@ -255,6 +255,8 @@ final class FlowWiringTest extends TestCase {
 				PortalPartyResolver::class,
 				TaskService::class,
 				FlowLinkService::class,
+				\OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore::class,
+				\OCA\OpenRegister\Service\Flow\Timer\FlowTimerSubjects::class,
 			],
 			actual: array_keys($this->factories)
 		);

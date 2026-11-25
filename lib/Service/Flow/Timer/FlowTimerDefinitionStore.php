@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use Closure;
 use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Repair\FlowTimerRegisterPathInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -71,12 +72,20 @@ class FlowTimerDefinitionStore {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface $objects Reads the seeded objects.
-	 * @param IAppManager $appManager Locates the shipped descriptor.
-	 * @param LoggerInterface $logger Diagnostics.
+	 * The object reader may arrive as a Closure that builds it on first use: the
+	 * object service reaches this store through the save path (property access,
+	 * named conditions, relative time, the working calendar), so building it
+	 * eagerly is a constructor cycle the container never leaves. FlowWiring
+	 * registers it deferred.
+	 *
+	 * @param ObjectOperationsInterface|Closure $objects    Reads the seeded objects, or builds the reader on first use.
+	 * @param IAppManager                       $appManager Locates the shipped descriptor.
+	 * @param LoggerInterface                   $logger     Diagnostics.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
+		private readonly ObjectOperationsInterface|Closure $objects,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
 	) {
@@ -142,6 +151,21 @@ class FlowTimerDefinitionStore {
 	}//end definitions()
 
 	/**
+	 * The object reader, built on first use when it was handed in deferred.
+	 *
+	 * @return ObjectOperationsInterface The reader.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md#requirement-business-time-is-measured-against-one-resolvable-working-calendar
+	 */
+	private function objectReader(): ObjectOperationsInterface {
+		if ($this->objects instanceof Closure) {
+			return ($this->objects)();
+		}
+
+		return $this->objects;
+	}//end objectReader()
+
+	/**
 	 * The seeded objects of a schema, as stored.
 	 *
 	 * @param string $schema The schema slug.
@@ -150,7 +174,7 @@ class FlowTimerDefinitionStore {
 	 */
 	private function fromRegister(string $schema): array {
 		try {
-			$result = $this->objects->searchObjectsBySlug(
+			$result = $this->objectReader()->searchObjectsBySlug(
 				target: new RegisterSchemaSlugs(register: self::REGISTER, schema: $schema),
 				filters: [],
 				_rbac: false,

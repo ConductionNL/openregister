@@ -40,6 +40,8 @@ class FlowRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Portal\PortalPartyResolver',
 				'OCA\OpenRegister\Service\TaskService',
 				'OCA\OpenRegister\Service\FlowLinkService',
+				'OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore',
+				'OCA\OpenRegister\Service\Flow\Timer\FlowTimerSubjects',
 			],
 			actual: $context->services
 		);

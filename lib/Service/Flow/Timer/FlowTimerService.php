@@ -1026,7 +1026,7 @@ class FlowTimerService implements FlowTimerControlInterface {
 		}
 
 		try {
-			$this->subjects->taskService->applyTimerOutcome(
+			$this->subjects->taskService()->applyTimerOutcome(
 				uuid: (string)$timer->getSubjectUuid(),
 				outcome: new TimerOutcome(
 					outcome: $outcome,

@@ -22,12 +22,18 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Timer;
 
+use Closure;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskServiceInterface;
 use OCP\EventDispatcher\IEventDispatcher;
 
 /**
- * The collaborators of FlowTimerService that reach the timer's subject, wired by DI autowiring.
+ * The collaborators of FlowTimerService that reach the timer's subject.
+ *
+ * The task service may arrive as a Closure that builds it on first use: it
+ * reaches the object service, and the object service reaches this bundle when
+ * a move re-anchors timers, so building it eagerly is a constructor cycle the
+ * container never leaves. FlowWiring registers it deferred.
  *
  * @spec openspec/specs/flow-business-timers/spec.md
  */
@@ -35,14 +41,31 @@ final class FlowTimerSubjects {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param TaskMapper           $tasks       The task table, for the projection and the subject read.
-	 * @param TaskServiceInterface $taskService Applies enforcing outcomes as named task actions.
-	 * @param IEventDispatcher     $dispatcher  Raises the fired transitions.
+	 * @param TaskMapper                   $tasks       The task table, for the projection and the subject read.
+	 * @param TaskServiceInterface|Closure $taskService Applies enforcing outcomes as named task actions, or builds it on first use.
+	 * @param IEventDispatcher             $dispatcher  Raises the fired transitions.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function __construct(
 		public readonly TaskMapper $tasks,
-		public readonly TaskServiceInterface $taskService,
+		private readonly TaskServiceInterface|Closure $taskService,
 		public readonly IEventDispatcher $dispatcher,
 	) {
 	}//end __construct()
+
+	/**
+	 * The task service, built on first use when it was handed in deferred.
+	 *
+	 * @return TaskServiceInterface The task service.
+	 *
+	 * @spec openspec/specs/flow-business-timers/spec.md
+	 */
+	public function taskService(): TaskServiceInterface {
+		if ($this->taskService instanceof Closure) {
+			return ($this->taskService)();
+		}
+
+		return $this->taskService;
+	}//end taskService()
 }//end class
