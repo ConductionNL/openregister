@@ -5266,3 +5266,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-25T23:36:15Z session-20261125T205345-6045ec77 23:36Z builder-opencatalogi: officer-flow-accessibility 3.1 (virtual screen reader) stopped: running the in-page @guidepup/virtual-screen-reader probe was refused by the permission check; not worked around. 1.1/2.1 ticked, 1.2/2.2 built (fixed upstream nextcloud-vue#2398, #2401), all on opencatalogi#3144.
 2026-11-25T23:36:32Z precheck-20261125T224643-e74a78d1 AUTOPARK openregister#11077 e32a4be4 sbom: package-lock.json changed without sbom.cdx.json (tree ea498c88d3)
+2026-11-25T23:36:44Z integrator-20261125T214524-15eb134c MERGED-TREE c84e5b9a83: 5 PRs, main now 1079b4ab29 = tested tree
