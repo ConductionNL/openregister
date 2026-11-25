@@ -5285,22 +5285,25 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return Register The register.
      *
-     * @throws OcpDoesNotExistException When the slug is missing or belongs to a foreign organisation.
+     * @throws OcpDoesNotExistException When the slug is missing.
      *
      * @spec openspec/specs/zoeken-filteren/spec.md
      */
     private function registerForSlugSearch(string $slug, AccessFlags $access): Register
     {
-        // Resolve register slug → numeric ID via the existing mapper find()
-        // which already accepts slug strings and applies the standard
-        // organisation filter. Throws DoesNotExistException if the slug is
-        // missing or belongs to a foreign organisation — same contract as
-        // every other lookup in OR.
+        // Resolve register slug → numeric ID via the mapper's find(), which
+        // accepts slug strings. The register is configuration, not tenant
+        // data: an app's register is stamped with the organisation that was
+        // active when it was imported (the Default Organisation on a fresh
+        // install), so filtering it by the caller's organisation refused every
+        // slug search by a user of any other organisation, while the same
+        // search by numeric ID went through. The objects stay scoped: the
+        // caller's multitenancy flag still reaches searchObjects() below.
         try {
             return $this->registerMapper->find(
                 id: $slug,
                 _rbac: $access->rbac,
-                _multitenancy: $access->multitenancy
+                _multitenancy: false
             );
         } catch (OcpDoesNotExistException $e) {
             throw new OcpDoesNotExistException(

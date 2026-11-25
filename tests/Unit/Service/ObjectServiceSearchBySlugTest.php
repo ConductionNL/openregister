@@ -204,6 +204,45 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 	}//end testSearchObjectsBySlugResolvesAndDelegates()
 
 	/**
+	 * REQ: The register of a slug search is found whatever organisation it is
+	 * stamped with, while the objects stay scoped to the caller.
+	 *
+	 * An app's register carries the organisation that was active when it was
+	 * imported (the Default Organisation on a fresh install). Filtering the
+	 * register lookup by the caller's organisation refused every slug search by
+	 * a user of another organisation, while the numeric-ID search went through.
+	 */
+	public function testTheRegisterIsFoundAcrossOrganisationsAndTheObjectsStayScoped(): void {
+		$register = new Register();
+		$register->setId(26);
+		$register->setSlug('filinq');
+		$register->setSchemas([42]);
+
+		$schema = new Schema();
+		$schema->setId(42);
+		$schema->setSlug('organisationSettings');
+
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo('filinq'), $this->equalTo(true), $this->equalTo(false))
+			->willReturn($register);
+		$this->schemaMapper->method('findBySlugInIds')->willReturn($schema);
+
+		$this->queryHandler
+			->expects($this->once())
+			->method('searchObjects')
+			->with($this->anything(), $this->equalTo(true), $this->equalTo(true))
+			->willReturn([]);
+
+		$this->service->searchObjectsBySlug(
+			new RegisterSchemaSlugs(register: 'filinq', schema: 'organisationSettings'),
+			[]
+		);
+
+	}//end testTheRegisterIsFoundAcrossOrganisationsAndTheObjectsStayScoped()
+
+	/**
 	 * REQ: Unknown register slug throws DoesNotExistException with a message
 	 * that identifies which slug failed.
 	 */
