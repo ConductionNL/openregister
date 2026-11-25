@@ -136,7 +136,7 @@ final class ConfigurationValidator {
 		try {
 			$accepted = $this->entries->validateConfigurationEntry(key: $key, value: $value);
 		} catch (InvalidArgumentException $e) {
-			return $this->afterRefusal(key: $key, refusal: $e);
+			return $this->afterRefusal(key: $key, value: $value, refusal: $e);
 		}
 
 		if ($accepted === [] && $this->vocabulary->isUnknownAnnotation(key: (string)$key) === true) {
@@ -217,13 +217,14 @@ final class ConfigurationValidator {
 	 * wrong. So this one fails loudly, naming the property.
 	 *
 	 * @param int|string               $key     The refused key.
+	 * @param mixed                    $value   The refused value.
 	 * @param InvalidArgumentException $refusal Why it was refused.
 	 *
 	 * @throws \InvalidArgumentException The refusal, for a key that must fail the whole save.
 	 *
-	 * @return array The values the key keeps: none, or `false` for `draftLifetimeDays`.
+	 * @return array The values the key keeps: none, `false` for `draftLifetimeDays`, or the known ids of `linkedTypes`.
 	 */
-	private function afterRefusal(int|string $key, InvalidArgumentException $refusal): array {
+	private function afterRefusal(int|string $key, mixed $value, InvalidArgumentException $refusal): array {
 		if ((string)$key === Schema::WRITEONLY_PATHS_ANNOTATION || $refusal instanceof CalendarDateKindException) {
 			throw $refusal;
 		}
@@ -233,6 +234,16 @@ final class ConfigurationValidator {
 		$kept = [];
 		if ($key === 'draftLifetimeDays') {
 			$kept = [false];
+		}
+
+		// A `linkedTypes` list keeps its known ids: one id whose app is not
+		// installed must not take the registered ones with it. The key is
+		// still recorded so the import warns about the id it left out.
+		if ($key === 'linkedTypes' && is_array($value) === true) {
+			$known = (new LinkedTypesRule())->knownLinkedTypes(value: $value);
+			if ($known !== []) {
+				$kept = [$known];
+			}
 		}
 
 		$this->dropped[] = (string)$key;

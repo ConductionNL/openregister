@@ -68,6 +68,40 @@ final class LinkedTypesRule {
 	}//end validateLinkedTypesValue()
 
 	/**
+	 * The ids of a refused `linkedTypes` list that are strings and known.
+	 *
+	 * A list naming one id whose provider is not registered on this instance
+	 * (its app is not installed) used to lose every id with it, so a schema
+	 * declaring `["decidesk-decisions", "calendar"]` on an instance without
+	 * decidesk kept no calendar either. The validator keeps these instead.
+	 *
+	 * A list holding anything but strings is malformed rather than naming an
+	 * app that is not installed, and keeps nothing.
+	 *
+	 * @param array<int|string, mixed> $value The configured linked types.
+	 *
+	 * @return array<int, string> The known ids, in their configured order.
+	 *
+	 * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
+	 */
+	public function knownLinkedTypes(array $value): array {
+		foreach ($value as $type) {
+			if (is_string($type) === false) {
+				return [];
+			}
+		}
+
+		$known = array_merge(self::legacyLinkedTypeIds(), $this->resolveIntegrationRegistryIds());
+
+		return array_values(
+			array_filter(
+				$value,
+				static fn (string $type): bool => in_array($type, $known, true) === true
+			)
+		);
+	}//end knownLinkedTypes()
+
+	/**
 	 * Refuse a linked type that is no string, or that neither the legacy allow-list nor the registry knows.
 	 *
 	 * @param mixed                                                      $type  One configured linked type.
