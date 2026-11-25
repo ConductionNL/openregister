@@ -25,7 +25,8 @@ final class WebhooksControllerFactory {
 	 * @param LoggerInterface $logger Constructor argument.
 	 * @param ?IUserSession $userSession Constructor argument.
 	 * @param ?IGroupManager $groupManager Constructor argument.
-	 * @param ?WebhookOwnership $ownership Constructor argument.
+	 * @param ?WebhookOwnership $ownership Constructor argument (8th, positional callers rely on it).
+	 * @param ?OutboundAllowlist $allowlist Constructor argument; pass it by name.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -37,8 +38,8 @@ final class WebhooksControllerFactory {
 		\Psr\Log\LoggerInterface $logger,
 		?\OCP\IUserSession $userSession = null,
 		?\OCP\IGroupManager $groupManager = null,
-		?\OCA\OpenRegister\Service\Outbound\OutboundAllowlist $allowlist = null,
 		?\OCA\OpenRegister\Controller\Support\WebhookOwnership $ownership = null,
+		?\OCA\OpenRegister\Service\Outbound\OutboundAllowlist $allowlist = null,
 	): array {
 		return [
 			$request,
