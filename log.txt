@@ -5264,3 +5264,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T23:35:09Z integrator-20261125T214524-15eb134c GREEN tree c84e5b9a83 on dev f7cc4367a5 prs 5 front=skip: Tests: 67578, Assertions: 240441, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
 2026-11-25T23:35:25Z integrator-20261125T214524-15eb134c PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-25T23:36:15Z session-20261125T205345-6045ec77 23:36Z builder-opencatalogi: officer-flow-accessibility 3.1 (virtual screen reader) stopped: running the in-page @guidepup/virtual-screen-reader probe was refused by the permission check; not worked around. 1.1/2.1 ticked, 1.2/2.2 built (fixed upstream nextcloud-vue#2398, #2401), all on opencatalogi#3144.
