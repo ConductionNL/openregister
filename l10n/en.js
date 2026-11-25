@@ -4181,7 +4181,12 @@ OC.L10N.register(
     "Promote anyway" : "Promote anyway",
     "Promoting would overwrite changes published since this draft was made." : "Promoting would overwrite changes published since this draft was made.",
     "The changes must be a JSON object." : "The changes must be a JSON object.",
-    "The drafts could not be read" : "The drafts could not be read"
+    "The drafts could not be read" : "The drafts could not be read",
+    "Could not load which notification rules reached nobody." : "Could not load which notification rules reached nobody.",
+    "Every notification rule reached at least one recipient." : "Every notification rule reached at least one recipient.",
+    "Notification rules that reached nobody" : "Notification rules that reached nobody",
+    "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients.",
+    "Times reached nobody: {count}. Last on {date}." : "Times reached nobody: {count}. Last on {date}."
 },
 "nplurals=2; plural=(n != 1);"
 );

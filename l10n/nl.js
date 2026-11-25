@@ -4294,7 +4294,12 @@ OC.L10N.register(
     "Promote anyway" : "Toch publiceren",
     "Promoting would overwrite changes published since this draft was made." : "Publiceren zou wijzigingen overschrijven die gepubliceerd zijn sinds dit concept is gemaakt.",
     "The changes must be a JSON object." : "De wijzigingen moeten een JSON-object zijn.",
-    "The drafts could not be read" : "De concepten konden niet worden gelezen"
+    "The drafts could not be read" : "De concepten konden niet worden gelezen",
+    "Could not load which notification rules reached nobody." : "Kon niet laden welke meldingsregels niemand bereikten.",
+    "Every notification rule reached at least one recipient." : "Elke meldingsregel heeft ten minste één ontvanger bereikt.",
+    "Notification rules that reached nobody" : "Meldingsregels die niemand bereikten",
+    "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Regels waarvoor geen enkele ontvanger is gevonden, zodat er niets is verstuurd en niemand op de hoogte is gebracht. Voeg leden toe aan de groepen die ze noemen, of wijzig hun ontvangers.",
+    "Times reached nobody: {count}. Last on {date}." : "Aantal keer zonder ontvanger: {count}. Laatst op {date}."
 },
 "nplurals=2; plural=(n != 1);"
 );

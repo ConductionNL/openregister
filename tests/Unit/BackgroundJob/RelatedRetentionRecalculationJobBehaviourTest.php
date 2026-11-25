@@ -26,6 +26,8 @@ use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionLookup;
 use OCA\OpenRegister\BackgroundJob\Support\RelatedRetentionRules;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -93,6 +95,19 @@ class RelatedRetentionRecalculationJobBehaviourTest extends TestCase {
 	private array $rows = [];
 
 	/**
+	 * An object port whose system scope is the real one.
+	 *
+	 * @return ObjectOperationsInterface The port.
+	 */
+	private function systemScope(): ObjectOperationsInterface {
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->method('runAsSystem')->willReturnCallback(
+			static fn (callable $operation): mixed => SystemOperationContext::run($operation)
+		);
+		return $objects;
+	}//end systemScope()
+
+	/**
 	 * Uuids written through update(), with the register and schema ids.
 	 *
 	 * @var list<array{0: string, 1: int, 2: int}>
@@ -112,7 +127,8 @@ class RelatedRetentionRecalculationJobBehaviourTest extends TestCase {
 			$this->createMock(ITimeFactory::class),
 			new RelatedRetentionLookup(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			new RelatedRetentionRules($this->index, $this->calculator, $this->retention),
-			$this->logger
+			$this->logger,
+			$this->systemScope()
 		);
 
 		$this->objectMapper->method('update')->willReturnCallback(
