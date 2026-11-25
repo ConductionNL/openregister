@@ -68,6 +68,7 @@ use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -697,7 +698,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectOperationsInterface $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
-		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas);
+		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas, magicMapper: $magicMapper);
 		if (empty($pairs) === true) {
 			return new JSONResponse(
 				data: ['message' => 'No valid magic-mapped register+schema combinations found', 'results' => [], 'total' => 0],
@@ -763,22 +764,27 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * Register::isMagicMappingEnabledForSchema() reads both the new and the legacy
 	 * magic-mapping configuration.
 	 *
-	 * @param array $registers Register IDs/slugs.
-	 * @param array $schemas   Schema IDs/slugs.
+	 * A pair counts when magic mapping is enabled for it, or when its table
+	 * already exists: objects are stored in a register+schema table whether or
+	 * not the register's configuration lists the schema, and the mapper reads an
+	 * existing table the same way. Requiring the configuration refused every
+	 * cross-table search over a register created through the API with a 404.
+	 *
+	 * @param array                    $registers   Register IDs/slugs.
+	 * @param array                    $schemas     Schema IDs/slugs.
+	 * @param MagicMapperInterface|null $magicMapper The mapper, asked whether a pair's table exists.
 	 *
 	 * @return array<int, array{register: Register, schema: Schema}> The pairs.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	private function crossTablePairs(array $registers, array $schemas): array {
+	private function crossTablePairs(array $registers, array $schemas, ?MagicMapperInterface $magicMapper=null): array {
 		$registerEntities = $this->crossTableEntities(ids: $registers, kind: 'register');
 		$schemaEntities   = $this->crossTableEntities(ids: $schemas, kind: 'schema');
 		$pairs            = [];
 		foreach ($registerEntities as $registerEntity) {
 			foreach ($this->crossTableSchemasOf(register: $registerEntity, schemaEntities: $schemaEntities) as $schemaEntity) {
-				if ($registerEntity->isMagicMappingEnabledForSchema(
-					schemaId: $schemaEntity->getId(),
-					schemaSlug: $schemaEntity->getSlug()
-				) === true
-				) {
+				if ($this->isCrossTablePair(register: $registerEntity, schema: $schemaEntity, magicMapper: $magicMapper) === true) {
 					$pairs[] = ['register' => $registerEntity, 'schema' => $schemaEntity];
 				}
 			}
@@ -786,6 +792,33 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $pairs;
 	}//end crossTablePairs()
+
+	/**
+	 * Whether one register+schema pair is searchable across tables: mapped, or its table exists.
+	 *
+	 * @param Register                  $register    The register.
+	 * @param Schema                    $schema      The schema.
+	 * @param MagicMapperInterface|null $magicMapper The mapper, asked whether the table exists.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function isCrossTablePair(Register $register, Schema $schema, ?MagicMapperInterface $magicMapper): bool {
+		if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
+			return true;
+		}
+
+		if ($magicMapper === null) {
+			return false;
+		}
+
+		try {
+			return $magicMapper->existsTableForRegisterSchema(register: $register, schema: $schema);
+		} catch (\Throwable $e) {
+			return false;
+		}
+	}//end isCrossTablePair()
 
 	/**
 	 * The schemas a cross-table search names, as seen from one register.
