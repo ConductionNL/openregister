@@ -886,3 +886,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: phpstan method.notFound at Service/Task/TaskSequenceService.php (3x $this->services->sequences->update()) on any PR that touches that file.
 - Cause: main c557d73 narrowed the mapper to TaskSequenceMapperInterface (findByUuid, findNewestForAnchor, insert) without update(); main's own lines.
 - Fix: none in a PR (inherited); belongs in a main fix adding update(Entity): Entity to the interface. Seen on #11086.
+## Processes/other-area CSV export needs the formula rule (or-fix-9)
+- Symptom: BLOCK 'CSV cells written raw, route through SpreadsheetCell::csvRow'; doing so trips testNoComponentEdgeBeyondTheBaseline '<file> -> lib/Service/Export/SpreadsheetCell.php (Processes -> Core)'.
+- Fix: call Kernel\Contracts\CsvCell::row()/value() (root Kernel, on #11059 7bfad984 until it lands: SpreadsheetCell delegates to it; copy the class + csv row 'Kernel/Contracts/CsvCell.php,,Kernel,,,,,Kernel' if main lacks it).
