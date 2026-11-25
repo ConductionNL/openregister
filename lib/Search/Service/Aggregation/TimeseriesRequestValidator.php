@@ -83,6 +83,7 @@ class TimeseriesRequestValidator implements TimeseriesRequestValidatorInterface 
 	 *   for the value object.
 	 *
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
+	 * @spec openspec/changes/aggregations-a-shipped-report-may-rely-on/specs/aggregation-api/spec.md#requirement-a-shipped-report-shall-be-able-to-rely-on-a-stable-count-by-aggregation
 	 */
 	public function validate(array $input, Schema $schema): AggregationQuery {
 		$request = $this->validatedRequest(input: $input, schema: $schema);
@@ -92,7 +93,7 @@ class TimeseriesRequestValidator implements TimeseriesRequestValidatorInterface 
 		return AggregationQuery::create(
 			metric: $this->requestedMetric(input: $input),
 			field: $request->metricField,
-			filter: (array) ($input['filter'] ?? []),
+			filter: (new TimeseriesDateRangeFilter())->apply(input: $input, schema: $schema, filter: (array) ($input['filter'] ?? [])),
 			layout: new AggregationLayout(
 				groupBy: $request->groupBy,
 				dateBucket: $request->dateBucket,
