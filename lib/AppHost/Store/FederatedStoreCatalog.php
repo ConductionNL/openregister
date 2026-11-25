@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\AppHost\Store;
 
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreSearch;
+use OCA\OpenRegister\AppHost\Service\StoreSearchCache;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\ShareableConfigCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp;
@@ -67,10 +68,12 @@ class FederatedStoreCatalog {
 	 *
 	 * @param ShareableConfigCatalogueInterface $catalogue Declared types, discovery, fetch, trust and install.
 	 * @param LoggerInterface                   $logger    PSR logger, server-side detail only.
+	 * @param StoreSearchCache                  $searchCache Keeps a search answer for a minute.
 	 */
 	public function __construct(
 		private readonly ShareableConfigCatalogueInterface $catalogue,
 		private readonly LoggerInterface $logger,
+		private readonly StoreSearchCache $searchCache=new StoreSearchCache(),
 	) {
 	}//end __construct()
 
@@ -130,6 +133,28 @@ class FederatedStoreCatalog {
 	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-a-configuration-set-reaches-the-store-surface
 	 */
 	public function search(StoreDescriptor $descriptor, StoreSearch $search = new StoreSearch()): array {
+		// Every declared type is a GitHub topic search (unauthenticated: about
+		// ten a minute for the whole instance), and apps list these cards on
+		// paths every page load reads, such as a setup wizard's status. The
+		// answer is kept for a minute, keyed by app, types and terms.
+		return $this->searchCache->remember(
+			appId: $descriptor->appId,
+			parts: ['federated', implode(',', $descriptor->types), (string)$search->query, (string)$search->kind],
+			fetch: fn (): array => $this->searchLive(descriptor: $descriptor, search: $search)
+		);
+	}//end search()
+
+	/**
+	 * Browse every declared type's published configuration, without the cache.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param StoreSearch     $search     The free-text and type-id filters.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/changes/store-over-federated-config/specs/apphost-store-plane/spec.md#scenario-a-configuration-set-reaches-the-store-surface
+	 */
+	private function searchLive(StoreDescriptor $descriptor, StoreSearch $search): array {
 		$cards = [];
 
 		foreach ($descriptor->types as $typeId) {
@@ -140,7 +165,7 @@ class FederatedStoreCatalog {
 		}
 
 		return ['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => $cards];
-	}//end search()
+	}//end searchLive()
 
 	/**
 	 * The registered type behind a declared type id, or null with a warning.

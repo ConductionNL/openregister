@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Tests\Unit\AppHost;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
 use OCA\OpenRegister\AppHost\Service\StoreListing;
 use OCA\OpenRegister\AppHost\Service\StoreSearch;
+use OCA\OpenRegister\AppHost\Service\StoreSearchCache;
 use OCA\OpenRegister\AppHost\Service\StoreSharing;
 use OCA\OpenRegister\AppHost\Store\FederatedStoreCatalog;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
@@ -32,6 +33,8 @@ use OCA\OpenRegister\Service\Config\ShareableConfigCatalogue;
 use OCA\OpenRegister\Service\Config\ShareableConfigTypeRegistry;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -42,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\AppHost\Service\StoreDescriptor
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifest
  * @uses \OCA\OpenRegister\AppHost\Service\StoreSearch
+ * @uses \OCA\OpenRegister\AppHost\Service\StoreSearchCache
  * @uses \OCA\OpenRegister\AppHost\Store\DeclaredShareableType
  * @uses \OCA\OpenRegister\Service\Config\ShareableConfigCatalogue
  * @uses \OCA\OpenRegister\AppHost\Store\StoreManifestCatalogue
@@ -149,6 +153,51 @@ class FederatedStoreCatalogTest extends TestCase {
 
 		$this->assertSame([], $this->catalog->ownedTypes(typeIds: ['nldesign.theme']));
 	}//end testOwnedTypesIsEmptyWhenNothingIsRegistered()
+
+	/**
+	 * A second search with the same terms comes from the cache, for
+	 * StoreSearchCache::TTL seconds; other terms are their own entry.
+	 *
+	 * @return void
+	 */
+	public function testASecondSearchComesFromTheCache(): void {
+		$this->registry->method('get')->willReturn(
+			$this->type(id: 'openregister.configset', topic: 'openregister-configset', name: 'Configuration set')
+		);
+		$this->federated->expects($this->exactly(2))->method('discover')->willReturn([
+			['repo' => 'ConductionNL/default-gemeente', 'name' => 'default-gemeente', 'description' => '', 'url' => ''],
+		]);
+
+		$kept    = [];
+		$ttls    = [];
+		$cache   = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(static function (string $key) use (&$kept) {
+			return $kept[$key] ?? null;
+		});
+		$cache->method('set')->willReturnCallback(static function (string $key, mixed $value, int $ttl=0) use (&$kept, &$ttls): bool {
+			$kept[$key] = $value;
+			$ttls[]     = $ttl;
+			return true;
+		});
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('isAvailable')->willReturn(true);
+		$factory->method('createDistributed')->willReturn($cache);
+
+		$catalog = new FederatedStoreCatalog(
+			catalogue: new ShareableConfigCatalogue(registry: $this->registry, federated: $this->federated),
+			logger: $this->createMock(LoggerInterface::class),
+			searchCache: new StoreSearchCache(cacheFactory: $factory)
+		);
+
+		$first  = $catalog->search(descriptor: $this->descriptor());
+		$second = $catalog->search(descriptor: $this->descriptor());
+		$other  = $catalog->search(descriptor: $this->descriptor(), search: new StoreSearch(query: 'gemeente'));
+
+		$this->assertSame($first, $second);
+		$this->assertCount(1, $first['cards']);
+		$this->assertCount(1, $other['cards']);
+		$this->assertSame([StoreSearchCache::TTL, StoreSearchCache::TTL], $ttls);
+	}//end testASecondSearchComesFromTheCache()
 
 	/**
 	 * A discovered configuration set becomes one card naming its type.
