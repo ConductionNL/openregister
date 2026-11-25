@@ -16,9 +16,15 @@
 ## 3. Tests
 
 - [x] 3.1 Unit tests for scope parsing and the two paths.
-- [ ] 3.2 `tests/e2e/ci/content-search-index.spec.ts`: attach a text file to
+- [x] 3.2 `tests/e2e/ci/content-search-index.spec.ts`: attach a text file to
       an object, search a word from the file, see a file hit that deep-links
       to the object. (live pass, decision 139)
+      > 2026-11-25: written and run, 4/4 green on a Nextcloud 34 + MariaDB
+      > sandbox, through `/ocs/v2.php/search/providers/...`. Green needs #11229
+      > (the provider list answered 500 for a redeclared built-in `provider`
+      > filter) and #11230 (the cross-table search failed on MariaDB/MySQL with
+      > `GREATEST()` of one column). On SQLite object writes fail
+      > (`information_schema`), so the spec needs MariaDB or PostgreSQL.
 
 ## What was built: the scopes (1.2) and their test (part of 3.1)
 
