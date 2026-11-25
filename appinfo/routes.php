@@ -1290,6 +1290,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // A form open to visitors without an account (`access: anonymous`), on a page that needs no account.
         ['name' => 'publicFormPage#show', 'url' => '/forms/{formId}', 'verb' => 'GET'],
         ['name' => 'objectExport#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
+        // One record as a PDF (export-pdf-house-style task 2.4): its readable fields, the export right checked first.
+        ['name' => 'recordPdf#show', 'url' => '/api/objects/{register}/{schema}/{id}/pdf', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // The reporting aggregation (rapportage-bi-export): literal, so before objects#show.
         ['name' => 'aggregation#report', 'url' => '/api/objects/{register}/{schema}/aggregate', 'verb' => 'GET'],
         // Chart labels and series over the same report (rapportage-bi-export): literal, so before objects#show.
