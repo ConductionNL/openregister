@@ -4221,6 +4221,8 @@ OC.L10N.register(
     "Multipolygon" : "Multipolygoon",
     "Point" : "Punt",
     "Polygon" : "Polygoon",
+    "Could not load the workflow progress." : "De voortgang van de workflow kon niet worden geladen.",
+    "Workflow progress" : "Voortgang van de workflow",
     "Could not load which notification rules reached nobody." : "Kon niet laden welke meldingsregels niemand bereikten.",
     "Every notification rule reached at least one recipient." : "Elke meldingsregel heeft ten minste één ontvanger bereikt.",
     "Notification rules that reached nobody" : "Meldingsregels die niemand bereikten",

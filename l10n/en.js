@@ -4108,6 +4108,8 @@ OC.L10N.register(
     "Multipolygon" : "Multipolygon",
     "Point" : "Point",
     "Polygon" : "Polygon",
+    "Could not load the workflow progress." : "Could not load the workflow progress.",
+    "Workflow progress" : "Workflow progress",
     "Could not load which notification rules reached nobody." : "Could not load which notification rules reached nobody.",
     "Every notification rule reached at least one recipient." : "Every notification rule reached at least one recipient.",
     "Notification rules that reached nobody" : "Notification rules that reached nobody",

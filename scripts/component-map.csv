@@ -888,6 +888,8 @@ Db/SchemaRunEntryMapper.php,31,Db,Service,Service/Db/SchemaRunEntryMapper.php,0,
 Db/SchemaRunMapper.php,60,Db,Service,Service/Db/SchemaRunMapper.php,0,349,Core
 Db/SearchTrail.php,149,Db,Compliance,Compliance/Db/SearchTrail.php,0,,Compliance
 Db/SearchTrailMapper.php,570,Db,Compliance,Compliance/Db/SearchTrailMapper.php,0,32,Compliance
+Db/ForeignIdentifier.php,,Db,,,,,Core
+Db/ForeignIdentifierMapper.php,,Db,,,,,Core
 Db/SelectByColumnTrait.php,22,Db,Integrations,Integrations/Db/SelectByColumnTrait.php,0,,Core
 Db/Sequence.php,26,Db,Configuration,Configuration/Db/Sequence.php,0,,Processes
 Db/SequenceMapper.php,44,Db,Configuration,Configuration/Db/SequenceMapper.php,0,,Processes
@@ -1475,6 +1477,8 @@ Mcp/Tool/SchemaTool.php,289,Mcp,Mcp,Mcp/Tool/SchemaTool.php,0,,Integrations
 Mcp/Tool/StreamingToolInstanceWrapper.php,60,Mcp,Mcp,Mcp/Tool/StreamingToolInstanceWrapper.php,0,,Integrations
 Mcp/Tool/ToolInterface.php,9,Mcp,Mcp,Mcp/Tool/ToolInterface.php,4,,Integrations
 Mcp/ToolScanSubject.php,15,Mcp,Mcp,Mcp/ToolScanSubject.php,0,,Integrations
+Middleware/AddressAllowlistMiddleware.php,,Middleware,,,,,Platform
+Middleware/AddressNotAllowedException.php,,Middleware,,,,,Platform
 Middleware/AnonymousEnvelopeMiddleware.php,26,Middleware,Platform,Platform/Middleware/AnonymousEnvelopeMiddleware.php,0,,Platform
 Middleware/ApiCallerMiddleware.php,77,Middleware,Platform,Platform/Middleware/ApiCallerMiddleware.php,0,,Platform
 Middleware/ApiVersionMiddleware.php,80,Middleware,Platform,Platform/Middleware/ApiVersionMiddleware.php,0,,Platform
@@ -2653,6 +2657,7 @@ Service/Handoff/HandoffContractBindingValidator.php,160,Service,Integrations,Int
 Service/Handoff/HandoffKindContracts.php,40,Service,Integrations,Integrations/Service/Handoff/HandoffKindContracts.php,0,419,Integrations
 Service/Handoff/HandoffMappingEvaluator.php,79,Service,Integrations,Integrations/Service/Handoff/HandoffMappingEvaluator.php,0,,Integrations
 Service/Handoff/HandoffService.php,587,Service,Integrations,Integrations/Service/Handoff/HandoffService.php,12,33,Integrations
+Service/Hardening/AddressAllowlist.php,,Service,,,,,Compliance
 Service/Hardening/ElevationRequiredException.php,23,Service,Compliance,Compliance/Service/Hardening/ElevationRequiredException.php,0,,Compliance
 Service/Hardening/ElevationService.php,99,Service,Compliance,Compliance/Service/Hardening/ElevationService.php,0,,Compliance
 Service/Hardening/HardeningAuditWriter.php,34,Service,Compliance,Compliance/Service/Hardening/HardeningAuditWriter.php,0,,Compliance
@@ -3357,6 +3362,8 @@ Service/SearchTrailService.php,511,Service,Compliance,Compliance/Service/SearchT
 Service/Security/OutboundAddressGuard.php,106,Service,Integrations,Integrations/Service/Security/OutboundAddressGuard.php,0,262,Core
 Service/SecurityService.php,391,Service,Service,Service/SecurityService.php,3,56,Core
 Service/SemanticTypeResolver.php,210,Service,Service,Service/SemanticTypeResolver.php,2,107,Core
+Service/ForeignIdentifierConflictException.php,,Service,,,,,Core
+Service/ForeignIdentifierRegistry.php,,Service,,,,,Core
 Service/SequenceService.php,107,Service,Configuration,Configuration/Service/SequenceService.php,1,259,Processes
 Service/Serializer/RegisterSerializer.php,110,Service,Service,Service/Serializer/RegisterSerializer.php,0,,Core
 Service/ServiceRegistrar.php,209,Service,Access,Access/Service/ServiceRegistrar.php,0,,Core
@@ -4390,6 +4397,7 @@ Service/GraphQL/AdminQueryAudit.php,,Service,,,,,Core
 Service/GraphQL/AdminQueryExport.php,,Service,,,,,Core
 Exception/ReadOnlyQueryException.php,,Exception,,,,,Kernel
 Exception/NoTabularResultException.php,,Exception,,,,,Kernel
+Migration/Version1Date20261114141600.php,,Migration,,,,,Platform
 Migration/Version1Date20261121170011.php,63,Migration,,,,,Platform
 Exception/FederatedShareNotDeliveredException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261121180018.php,80,Migration,,,,,Platform
@@ -4427,6 +4435,9 @@ BackgroundJob/AutomationRecordRetentionJob.php,,BackgroundJob,,,,,Processes
 Service/Flow/FlowErrorPolicy.php,,Service,,,,,Processes
 Service/Flow/FlowErrorBranch.php,,Service,,,,,Processes
 Service/Flow/FlowItemsFailed.php,,Service,,,,,Processes
+Service/Flow/FlowProgressPeriod.php,,Service,,,,,Processes
+Service/Flow/FlowProgressService.php,,Service,,,,,Processes
+Service/Flow/FlowProgressTaskReads.php,,Service,,,,,Processes
 Service/Flow/FlowStepAttempts.php,,Service,,,,,Processes
 Service/Flow/FlowStepFailure.php,,Service,,,,,Processes
 Service/Flow/FlowStepRetry.php,,Service,,,,,Processes
@@ -4554,6 +4565,7 @@ Service/CalendarEvent/CalendarLinkListenerRegistrar.php,,Service,,,,,Integration
 Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
+Exception/ObjectSourceQueryRefusedException.php,40,Exception,Exception,Exception/ObjectSourceQueryRefusedException.php,0,,Kernel
 Migration/Version1Date20261114100009.php,,Migration,,,,,Platform
 Db/SchemaMapper/AdministeredValidationCheck.php,,Db,,,,,Processes
 Controller/Support/CopyRun.php,,Controller,,,,,Core
@@ -4604,6 +4616,14 @@ Service/Anonymisation/DetectorEvaluationService.php,92,Service,Compliance,Compli
 Service/Anonymisation/DetectorEvaluationStore.php,87,Service,Compliance,Compliance/Service/Anonymisation/DetectorEvaluationStore.php,0,,Compliance
 Service/Anonymisation/EvaluationCorpus.php,128,Service,Compliance,Compliance/Service/Anonymisation/EvaluationCorpus.php,0,,Compliance
 Command/EvaluateDetectorCommand.php,,Command,,,,,Compliance
+BackgroundJob/IdentifierSchemeMigrationJob.php,,BackgroundJob,,,,,Core
+Controller/IdentifierSchemeMigrationsController.php,,Controller,,,,,Core
+Db/IdentifierSchemeRun.php,,Db,,,,,Core
+Db/IdentifierSchemeRunMapper.php,,Db,,,,,Core
+Migration/Version1Date20261114181600.php,,Migration,,,,,Platform
+Service/IdentifierSchemeMigrationRunningException.php,,Service,,,,,Core
+Service/IdentifierSchemeMigrationService.php,,Service,,,,,Core
+Service/IdentifierSchemePass.php,,Service,,,,,Core
 Search/FileHitSearch.php,,Search,,,,,Search
 Kernel/Contracts/FileOwnerLookupInterface.php,,Kernel,,,,,Kernel
 Service/Import/RecordImport/FailedRowExport.php,,Service,,,,,Core
@@ -4678,6 +4698,7 @@ Service/Export/SpreadsheetCell.php,,Service,,,,,Core
 Contract/ObjectFileReaderInterface.php,4,Contract,Contract,Contract/ObjectFileReaderInterface.php,1,,Kernel
 Service/File/ObjectFileReader.php,14,Service,Service,Service/File/ObjectFileReader.php,0,,Core
 Controller/FileEntityRelationsController.php,,Controller,,,,,Processes
+Controller/FlowProgressController.php,,Controller,,,,,Processes
 Db/ProcessesMapperBindings.php,,Db,,,,,Processes
 Db/ProcessesMapperRegistrar.php,,Db,,,,,Processes
 Db/IntegrationsMapperBindings.php,,Db,,,,,Integrations
@@ -4901,6 +4922,7 @@ Service/File/ShareLinkRequest.php,,Service,,,,,Files
 Service/File/UpdateFileGuards.php,,Service,,,,,Files
 Service/File/UpdateFileLocator.php,,Service,,,,,Files
 Db/AuditTrail/RevertOptions.php,,Db,,,,,Core
+Db/StoredMomentTrait.php,,Db,,,,,Processes
 Service/ObjectAction/ObjectActionElevationAttribution.php,,Service,,,,,Processes
 Listener/CoreListenerRegistrar.php,,Listener,,,,,Core
 Listener/Registrar/ComplianceListenerRegistrar.php,,Listener,,,,,Compliance
@@ -4980,6 +5002,14 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Service/Authorization/PermissionMatrixExport.php,,Service,,,,,Core
+Service/Authorization/PermissionMatrixExporter.php,,Service,,,,,Core
+Service/Authorization/PermissionMatrixProvenance.php,,Service,,,,,Core
+Service/Authorization/PermissionMatrixRequest.php,,Service,,,,,Core
+Service/Authorization/PermissionMatrixSubject.php,,Service,,,,,Core
+Controller/Support/StreamedTextResponse.php,,Controller,,,,,Core
+Controller/Support/PermissionsAuditMatrix.php,,Controller,,,,,Core
+Service/Authorization/PermissionMatrixSubjects.php,,Service,,,,,Core
 Kernel/Contracts/CsvCell.php,,Kernel,,,,,Kernel
 Command/ApiConformanceCommand.php,130,Command,Service,Service/Command/ApiConformanceCommand.php,0,,Core
 Service/Oas/NlGovConformanceReport.php,200,Service,Service,Service/Oas/NlGovConformanceReport.php,0,,Core
@@ -4989,12 +5019,20 @@ Service/Resolver/Exception/ResolverConfigException.php,,Service,,,,,Kernel
 Service/Resolver/Exception/ResolverConfigKey.php,,Service,,,,,Kernel
 Service/Resolver/Exception/UnresolvedValueException.php,,Service,,,,,Kernel
 Kernel/Contracts/UnavailableServiceExceptionInterface.php,,Kernel,,,,,Kernel
+Service/Flow/Timer/TimerCalendarSwitch.php,,Service,,,,,Processes
 Kernel/Contracts/AdministratorCheck.php,63,Kernel,Kernel,Kernel/Contracts/AdministratorCheck.php,0,,Kernel
 Collaboration/ObjectMembership.php,,Collaboration,,,,,Platform
 Controller/ObjectTransferController.php,,Controller,,,,,Core
 Service/Organisation/ObjectGraphTransfer.php,,Service,,,,,Core
 Service/Organisation/ObjectGraphTransferRefusal.php,,Service,,,,,Core
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
+BackgroundJob/SealAuditBacklogJob.php,,BackgroundJob,,,,,Compliance
+Command/SealAuditBacklogCommand.php,,Command,,,,,Compliance
+Service/Audit/AuditSealBacklogCursor.php,,Service,,,,,Compliance
+Service/Audit/AuditSealBacklogCursorInterface.php,,Service,,,,,Compliance
+Service/Audit/AuditSealBacklogInterface.php,,Service,,,,,Compliance
+Service/Audit/AuditSealBacklogService.php,,Service,,,,,Compliance
+Service/Audit/AuditSealWindowInterface.php,,Service,,,,,Compliance
 Service/Flow/IFlowNodeRuntime.php,,Service,Flows,Flows/Service/Flow/IFlowNodeRuntime.php,0,,Processes
 Notifications/Service/Notification/RuleReachLedger.php,176,Notifications,Notifications,Notifications/Service/Notification/RuleReachLedger.php,0,,Notifications
 Notifications/Controller/NotificationRuleReachController.php,63,Notifications,Notifications,Notifications/Controller/NotificationRuleReachController.php,0,,Notifications
