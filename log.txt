@@ -4732,3 +4732,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T07:57:41Z session-20261125T074731-cca17e53 cloud-or-reviewer-7: APPROVE 11119 (fast path, only main merge + l10n re-serialise), 11127 (full); 7721 10631 10639 11023 11071 11079 11087 11103 ledgered at head; no lane-7 PR conflicts with main 28d6ce8f
 2026-11-25T08:21:56Z session-20261125T082156-38ec64e0 or-fix-0 start (cloud lanes K=0,5)
 2026-11-25T08:25:42Z session-20261125T082156-38ec64e0 or-fix-5: share N%10==5 (10515, 10635 approved and clean with main; 11035 already noted obsolete): nothing to fix; precheck blocked (gitleaks install refused)
+2026-11-25T08:25:49Z session-20261125T082156-38ec64e0 or-fix-0: done: #10550 merged main (l10n conflict) -> 5b9be2ba REVERIFY; #8450 obsolete (main UserDirectory = SessionPrincipal), commented; rest of share approved/clean or noted; precheck blocked
