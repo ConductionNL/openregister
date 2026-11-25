@@ -9,3 +9,10 @@ buildiq	01d41a3c	php=RED	Tests: 4265, Failures: 0, Errors: 0	phpmd,psalm,gates	j
 dossiq	0830cd672	php=RED	not run	composer-install	js=RED	vendor incomplete (same 3 GitHub zipballs 403); eslint 2 err; vitest 13/7409 fail in 12 files e.g. capabilityComparison
 learniq	df08493c	php=RED	Tests 7615/Failures 4/Errors 0	phpcs,phpmd,psalm,phpunit	js=n/a	phpunit: StubSignatureParity, HigherEducationExampleSet, PortalManifestGolden, OpenApiDocument; phpmd 186; psalm PHP<8.3.16
 planninq	41ef612d	php=RED	Tests 1340/Failures 0/Errors 0	psalm	js=GREEN	only psalm fails: needs PHP>=8.3.16 (env 8.3.6); phpcs/phpmd/phpstan clean; vitest 3638 passed
+filinq	dfe8549d	php=RED	not run	composer-install	js=RED	vendor incomplete (3 GitHub zipballs 403); eslint exit 2: 0 err but unpruned suppressions; vitest 1116 pass
+hermiq	c534923a	php=RED	Tests: 6791, Failures: 0, Errors: 3	phpcs,phpmd,psalm,phpstan,phpunit	js=RED	ToolAccessRequestPropertyRulesTest: OR FieldRulesSourceInterface unresolvable; phpstan 4; eslint unpruned suppressions
+versioniq	6aeac92e	php=RED	phpunit not in check:strict	cs:check,psalm	js=RED	cs-fixer: Nextcloud CodingStandard Config missing; psalm not installed; eslint parse err fixture; HistoryPanel.sbom.spec .css fail
+humaniq	aea494a6	php=RED	Tests: 4772, Failures: 0, Errors: 0	phpmd,psalm	js=n/a	phpmd ~170 (132 StaticAccess); psalm not run: needs PHP>=8.3.16 (have 8.3.6); phpunit green
+thematiq	39ae6dbb	php=RED	not run	composer-install	js=GREEN	vendor incomplete (3 GitHub zipballs 403); eslint clean; vitest 2013 pass
+larpinq	533abab1	php=RED	not run	composer-install	js=GREEN	vendor incomplete (3 GitHub zipballs 403); eslint 0 err; vitest 889 pass
+keepiq	6d629b7f	php=RED	Tests: 5802, Failures: 0, Errors: 0	phpmd,psalm	js=GREEN	phpmd 2 viol (ExcessiveClassComplexity, CyclomaticComplexity); psalm needs PHP>=8.3.16 (env 8.3.6)
