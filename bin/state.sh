@@ -45,8 +45,10 @@ _st_push() {
 	_g commit -q -m "$msg" -m "$TRAILER" || return 2
 	for i in $(seq 1 "${ST_PUSH_TRIES:-150}"); do
 		err=$(_g push -q origin "HEAD:refs/heads/$ST_BRANCH" 2>&1) && return 0
-		# A refused push (no write access to openregister) never succeeds on retry.
-		if grep -qiE '403|permission|denied|not allowed|authenticat|could not read Username|repository not found' <<<"$err"; then
+		# A refused push (no write access to openregister) never succeeds on retry. A lost race always carries
+		# [rejected] (fetch first / non-fast-forward) and its remote: advisory lines can match any wording, so it is retried.
+		if ! grep -qE '\[rejected\]|fetch first|non-fast-forward' <<<"$err" &&
+			grep -qiE '403|permission|denied|not allowed|authenticat|could not read Username|repository not found' <<<"$err"; then
 			echo "STATE PUSH REFUSED: attach ConductionNL/openregister with push access (add_repo) first: ${err:0:200}" >&2
 			return 4
 		fi
