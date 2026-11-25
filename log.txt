@@ -4752,3 +4752,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T09:30:42Z session-20261125T081911-61762723 or-builder-2: opened #11134 #11136 #11138 (functional-areas-depend-in-one-direction, Core-port slices); remaining scanned changes need live/e2e/Newman, another repo, or a decision
 2026-11-25T09:34:14Z integrator-20261125T091917-ff3156fa NORESULT tree 84f67697a0: checker floor not measured (exit 2)
 2026-11-25T09:35:24Z integrator-20261125T091917-ff3156fa NORESULT tree 84f67697a0: checker floor not measured (exit 2)
+2026-11-25T09:39:23Z or-fix-2: main 28d6ce8f88; share 11032@b15b5ec7 BLOCK (read-audit memo, product decision asked) 11082@9006ca82 BLOCK (babel traverse 8 needs babel 8 toolchain, queued) 11092@8a9b5790 11112@e85d18a0 11122@94472f2b APPROVE; all merge clean, none parked; nothing to fix; precheck: deps installed with --ignore-platform-req=php-64bit (psalm 7.16 vs platform 8.3)
