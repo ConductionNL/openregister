@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Migration;
 
 use Closure;
+use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Db\CalendarLinkDuplicates;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -162,11 +163,14 @@ class Version1Date20261114101600 extends TargetedMigrationStep {
 	/**
 	 * Whether any unique index on the table covers exactly the triple, under any name.
 	 *
-	 * @param ITable $table The link table.
+	 * Nextcloud 34 hands the migration a Doctrine table, later versions an ITable;
+	 * both list their indexes the same way.
+	 *
+	 * @param ITable|Table $table The link table.
 	 *
 	 * @return bool
 	 */
-	private static function hasUniqueTriple(ITable $table): bool {
+	private static function hasUniqueTriple(ITable|Table $table): bool {
 		$wanted = self::COLUMNS;
 		sort($wanted);
 

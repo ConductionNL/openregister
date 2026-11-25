@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
+use Doctrine\DBAL\Schema\Table;
 use OCA\OpenRegister\Db\CalendarLinkDuplicates;
 use OCA\OpenRegister\Migration\Version1Date20261114101600;
 use OCP\DB\IResult;
@@ -132,6 +133,21 @@ class Version1Date20261114101600Test extends TestCase {
 
 		$schema    = $this->schema($table);
 		$this->assertSame($schema, $migration->changeSchema($this->createMock(IOutput::class), fn () => $schema, []));
+	}
+
+	public function testADoctrineTableAsNextcloud34HandsItIsRead(): void {
+		// Nextcloud 34's schema wrapper returns a Doctrine table, not an ITable:
+		// enabling the app on 34 died here with a TypeError.
+		$table = new Table('oc_openregister_calendar_links');
+		foreach (['object_uuid', 'calendar_uri', 'event_uid'] as $column) {
+			$table->addColumn($column, 'string', ['length' => 255]);
+		}
+
+		$check = new \ReflectionMethod(Version1Date20261114101600::class, 'hasUniqueTriple');
+		$this->assertFalse($check->invoke(null, $table));
+
+		$table->addUniqueIndex(['event_uid', 'calendar_uri', 'object_uuid'], 'other_name');
+		$this->assertTrue($check->invoke(null, $table));
 	}
 
 	public function testANonUniqueOrWiderIndexDoesNotCount(): void {
