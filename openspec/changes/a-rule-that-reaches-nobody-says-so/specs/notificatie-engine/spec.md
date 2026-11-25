@@ -62,10 +62,10 @@ knowing which string to search the log for.
 The recorder MUST be a shared service, not built privately inside the
 dispatcher, or the aggregate is discarded with the dispatcher instance.
 
-> 🔴 **NOT MET as of `parity/round2` `1a895e046`.** `report()` has no
-> caller and the recorder has no service registration, so this
-> requirement is declared and unimplemented on purpose, rather than left
-> to be rediscovered. See tasks 3.1 to 3.3.
+> Met by tasks 3.1 and 3.2: the recorder is one shared service, its
+> counts persist in `RuleReachLedger`, and the admin settings read them
+> through `GET /api/notification-rule-reach`. Task 3.3, a notification to
+> somebody who is not looking, stays open as a decision.
 
 #### Scenario: An administrator sees that a rule is unstaffed
 
