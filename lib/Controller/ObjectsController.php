@@ -5459,8 +5459,9 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * under the caller's own rights and reported per link
 	 * ({@see \OCA\OpenRegister\Service\Object\CopyObject}). The create and
 	 * the links share one transaction: a refused create leaves nothing behind.
-	 * Copying files is not offered yet and is refused with 422 rather than
-	 * silently left out.
+	 * With `files` the attached files are copied after that transaction
+	 * commits, each reported on its own. A link kind the copy does not know is
+	 * refused with 422 rather than silently left out.
 	 *
 	 * @param string                    $register      The register.
 	 * @param string                    $schema        The schema.

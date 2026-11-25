@@ -4672,6 +4672,9 @@ Db/AuditTrail/AuditDiffStoreInterface.php,8,Db,Compliance,Compliance/Db/AuditTra
 Service/Audit/AuditResealInterface.php,7,Service,Compliance,Compliance/Service/Audit/AuditResealInterface.php,0,,Compliance
 Service/Archival/AnonymisationAuthority.php,11,Service,Compliance,Compliance/Service/Archival/AnonymisationAuthority.php,0,,Compliance
 Service/Archival/AuditTrailAnonymisationTarget.php,104,Service,Compliance,Compliance/Service/Archival/AuditTrailAnonymisationTarget.php,0,,Compliance
+Service/SemanticProviderCatalogue.php,,Service,,,,,Core
+Kernel/Contracts/SemanticProvidersInterface.php,,Kernel,,,,,Kernel
+Listener/SemanticProviderCacheListener.php,,Listener,,,,,Core
 Exception/PersonRegisterPurposeMissingException.php,,Exception,,,,,Kernel
 Service/Anonymisation/PersonRegisterSource.php,,Service,,,,,Kernel
 Service/Anonymisation/RegisterNameReader.php,,Service,,,,,Files
@@ -5045,6 +5048,7 @@ Service/Authorization/PermissionMatrixSubject.php,,Service,,,,,Core
 Controller/Support/StreamedTextResponse.php,,Controller,,,,,Core
 Controller/Support/PermissionsAuditMatrix.php,,Controller,,,,,Core
 Service/Authorization/PermissionMatrixSubjects.php,,Service,,,,,Core
+Service/File/PublishedDigestReader.php,,Service,,,,,Files
 Listener/TaskDueSoonListener.php,,Listener,,,,,Processes
 Service/Task/TaskDueSoonWarning.php,,Service,,,,,Processes
 Kernel/Contracts/CsvCell.php,,Kernel,,,,,Kernel
@@ -5064,6 +5068,11 @@ Controller/ObjectTransferController.php,,Controller,,,,,Core
 Service/Organisation/ObjectGraphTransfer.php,,Service,,,,,Core
 Service/Organisation/ObjectGraphTransferRefusal.php,,Service,,,,,Core
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
+Service/Operations/IndexReconciliationProbes.php,,Service,,,,,Configuration
+Service/Operations/IndexReconciliationReport.php,,Service,,,,,Configuration
+BackgroundJob/IndexReconciliationJob.php,,BackgroundJob,,,,,Configuration
+Kernel/Contracts/FileExtractionQueueInterface.php,,Kernel,,,,,Kernel
+BackgroundJob/FileExtractionQueue.php,,BackgroundJob,,,,,Processes
 BackgroundJob/SealAuditBacklogJob.php,,BackgroundJob,,,,,Compliance
 Command/SealAuditBacklogCommand.php,,Command,,,,,Compliance
 Service/Audit/AuditSealBacklogCursor.php,,Service,,,,,Compliance
