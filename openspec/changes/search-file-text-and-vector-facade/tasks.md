@@ -17,7 +17,7 @@
 
 ## 4. Proof and docs
 
-- [ ] 4.1 Newman: extract a PDF, read `GET /api/files/{id}/text` as its owner (200) and as another user (404).
+- [x] 4.1 Newman: extract a PDF, read `GET /api/files/{id}/text` as its owner (200) and as another user (404). (verified 2026-11-25: `tests/integration/openregister-file-text-read.postman_collection.json`, 9 requests and 13 assertions green on a sandbox Nextcloud 34 on MariaDB: `tests/fixtures/pdf/testdoc.pdf` uploaded over WebDAV and extracted; the owner reads its text, another user gets 404 with the same message as a file that does not exist, and no text.)
 - [x] 4.2 Document the text read and the facade in `docs/`, and close issue #4106 with the PR. (verified: docs/api/vector-search-api.md, sections "Reading a file's extracted text" and "Vector search facade"; the PR body closes #4106.)
 
 Acceptance:
