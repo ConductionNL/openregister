@@ -151,3 +151,4 @@
 2026-11-25T14:31:48Z RED prs=11067 main=2fc34e4540 integrator-cloud (failed-solo: architecture component tests, yaml not regenerated)
 2026-11-25T14:46:06Z GREEN prs=11092,11114,11119,11141 main=2fc34e4540 integrator-cloud (merged)
 2026-11-25T14:50:28Z RED prs=11171,11176,11181,11185 main=987938d424 integrator-cloud (MagicSearchHandlerRowToEntityTest; suspect #11171)
+2026-11-25T15:02:03Z GREEN prs=11176,11181,11185 main=987938d424 integrator-cloud (merged)
