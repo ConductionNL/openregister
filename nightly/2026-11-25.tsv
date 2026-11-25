@@ -11,3 +11,4 @@ learniq	df08493c	php=RED	Tests 7615/Failures 4/Errors 0	phpcs,phpmd,psalm,phpuni
 planninq	41ef612d	php=RED	Tests 1340/Failures 0/Errors 0	psalm	js=GREEN	only psalm fails: needs PHP>=8.3.16 (env 8.3.6); phpcs/phpmd/phpstan clean; vitest 3638 passed
 filinq	dfe8549d	php=RED	not run	composer-install	js=RED	vendor incomplete (3 GitHub zipballs 403); eslint exit 2: 0 err but unpruned suppressions; vitest 1116 pass
 hermiq	c534923a	php=RED	Tests: 6791, Failures: 0, Errors: 3	phpcs,phpmd,psalm,phpstan,phpunit	js=RED	ToolAccessRequestPropertyRulesTest: OR FieldRulesSourceInterface unresolvable; phpstan 4; eslint unpruned suppressions
+versioniq	6aeac92e	php=RED	phpunit not in check:strict	cs:check,psalm	js=RED	cs-fixer: Nextcloud CodingStandard Config missing; psalm not installed; eslint parse err fixture; HistoryPanel.sbom.spec .css fail
