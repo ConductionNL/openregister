@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 266;
+	private const LISTENER_COUNT = 267;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -44,11 +44,12 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Then SlotOccupantAuditListener took the three person-link events in the Access slot
 	 * (grants-that-follow-a-slot-a-relation-or-a-reason, count 260 -> 263).
 	 * Then the Collaboration team resource provider registration (CoreListenerRegistrar::teamResources)
-	 * (count 263 -> 264).
+	 * (count 263 -> 264). The deadline warning then appended one TaskDueSoonListener
+	 * registration on FlowTimerFiredEvent, after CaseItemTimerListener (264 -> 265).
 	 * Then two JourneyValidationListener registrations (ObjectCreatingEvent, ObjectUpdatingEvent)
-	 * (count 264 -> 266).
+	 * (count 265 -> 267).
 	 */
-	private const SEQUENCE_SHA256 = 'cc1df74aab6715907c9e76c3a4dd1e19f1abced61b79db79e0d8b65f20c8ffb6';
+	private const SEQUENCE_SHA256 = '4f42900929debdf09c6a6ec965190ff8b82079ac14fdbbd59fd350d9c6616b9b';
 
 	/**
 	 * The registration calls, in call order, with every argument.
