@@ -671,19 +671,28 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * the caller's group may not read and encrypted values handled the way every
 	 * other read of an object does.
 	 *
-	 * Only a request that names `fields` has properties to carry, so only then
-	 * is anything done. The entities are copied first: the originals are what
-	 * the walk reads the parent property from, and are never written back.
+	 * Only a request that names `fields` has properties to carry, and only an
+	 * object without a name of its own is called by the declared party name
+	 * property, so only then is anything done: a node's name never shows a
+	 * property the caller may not read. The entities are copied first: the
+	 * originals are what the walk reads the parent property from, and are
+	 * never written back.
 	 *
 	 * @param array<string, ObjectEntity> $objects Uuid => object, as the mapper loaded them.
-	 * @param array<string, mixed>        $walk    The walk: `fields` (the properties the request names) and
-	 *                                             `rbac` (whether the read is the caller's own, so property
-	 *                                             read access applies).
+	 * @param array<string, mixed>        $walk    The walk: `fields` (the properties the request names),
+	 *                                             `nameProperty` (the declared party name property, if any)
+	 *                                             and `rbac` (whether the read is the caller's own, so
+	 *                                             property read access applies).
 	 *
 	 * @return array<string, ObjectEntity> Uuid => the redacted copy.
 	 */
 	private function redacted(array $objects, array $walk): array {
-		if ($walk['fields'] === [] || $objects === []) {
+		if ($objects === []) {
+			return $objects;
+		}
+
+		$namedByProperty = (($walk['nameProperty'] ?? null) !== null) && self::anyUnnamed(objects: $objects);
+		if ($walk['fields'] === [] && $namedByProperty === false) {
 			return $objects;
 		}
 
@@ -692,6 +701,41 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 
 		return $copies;
 	}//end redacted()
+
+	/**
+	 * Whether any of the objects has no name of its own, so its node is called by the declared party name property.
+	 *
+	 * @param array<string, ObjectEntity> $objects Uuid => object.
+	 *
+	 * @return bool True when at least one object has no own name.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md#requirement-an-objects-tree-along-its-declared-parent-property-can-be-read-req-otr-001
+	 */
+	private static function anyUnnamed(array $objects): bool {
+		foreach ($objects as $object) {
+			if (self::ownName(object: $object) === null) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyUnnamed()
+
+	/**
+	 * The object's own name, null when it has none (empty, or only its uuid).
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return string|null The own name.
+	 */
+	private static function ownName(ObjectEntity $object): ?string {
+		$own = $object->getName();
+		if (is_string($own) === true && $own !== '' && $own !== (string)$object->getUuid()) {
+			return $own;
+		}
+
+		return null;
+	}//end ownName()
 
 	/**
 	 * One node of the answer, placed as the root (level 0, no parent).
@@ -741,8 +785,12 @@ class ObjectTreeService implements ObjectTreeServiceInterface {
 	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md#requirement-an-objects-tree-along-its-declared-parent-property-can-be-read-req-otr-001
 	 */
 	private static function nameOf(?ObjectEntity $loaded, string $uuid, ?string $nameProperty): string {
-		$own = $loaded?->getName();
-		if (is_string($own) === true && $own !== '' && $own !== $uuid) {
+		$own = null;
+		if ($loaded !== null) {
+			$own = self::ownName(object: $loaded);
+		}
+
+		if ($own !== null) {
 			return $own;
 		}
 

@@ -346,6 +346,48 @@ class ObjectTreeServiceTest extends TestCase {
 	}//end testANodeWithoutANameIsCalledByTheDeclaredPartyName()
 
 	/**
+	 * A node's name never shows a party name property the caller may not read.
+	 *
+	 * Without `fields` the objects are still redacted when a node would be
+	 * called by the declared name property, and the name is read from what
+	 * comes back: a stripped name property leaves the node called by its uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md#requirement-an-objects-tree-along-its-declared-parent-property-can-be-read-req-otr-001
+	 */
+	public function testTheDeclaredNameIsReadThroughTheRedaction(): void {
+		$this->unnamed = true;
+		$redactions    = 0;
+		$renderer      = $this->createMock(originalClassName: RenderObject::class);
+		$renderer->method('redactWriteOnlyFromRows')->willReturnCallback(
+			function (array &$rows, bool $_rbac = true) use (&$redactions): void {
+				foreach ($rows as $row) {
+					$redactions++;
+					$data = $row->getObject();
+					unset($data['tradeName']);
+					$row->setObject($data);
+				}
+			}
+		);
+		$this->renderer = $renderer;
+
+		$root = $this->organisation(uuid: 'holding', parent: null);
+		$tree = $this->service(parentOf: self::group())->tree(query: new ObjectTreeQuery(root: $root));
+
+		$this->assertSame(expected: 4, actual: $redactions);
+		$this->assertSame(
+			expected: ['holding' => 'holding', 'sub-a' => 'sub-a', 'sub-b' => 'sub-b', 'sub-a1' => 'sub-a1'],
+			actual: array_column(array: $tree['nodes'], column_key: 'name', index_key: 'uuid')
+		);
+		$this->assertSame(
+			expected: 'Org holding',
+			actual: $root->getObject()['tradeName'],
+			message: 'The entity the caller passed in is not changed.'
+		);
+	}//end testTheDeclaredNameIsReadThroughTheRedaction()
+
+	/**
 	 * A cycle in the data ends the walk instead of repeating it.
 	 *
 	 * @return void
