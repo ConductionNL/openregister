@@ -1,47 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`EntitiesTab golden renders grouped entities and reloads when the message changes 1`] = `
-"<div class="or-tab-entities">
-  <div>
-    <div class="or-entity-group">
-      <h4 class="or-entity-group-title">t:Email Addresses</h4>
-      <ul class="or-entity-list">
-        <li class="or-entity-item"><span class="or-entity-value">a@example.com</span>
-          <!--v-if-->
-        </li>
-      </ul>
-    </div>
-    <div class="or-entity-group">
-      <h4 class="or-entity-group-title">t:People</h4>
-      <ul class="or-entity-list">
-        <li class="or-entity-item"><span class="or-entity-value">Alice</span>
-          <!--v-if-->
-        </li>
-      </ul>
-    </div>
-    <div class="or-entity-group">
-      <h4 class="or-entity-group-title">t:Links</h4>
-      <ul class="or-entity-list">
-        <li class="or-entity-item"><span class="or-entity-value">https://example.com/x</span>
-          <!--v-if-->
-        </li>
-      </ul>
-    </div>
-    <div class="or-entity-group">
-      <h4 class="or-entity-group-title">t:Phone Numbers</h4>
-      <ul class="or-entity-list">
-        <li class="or-entity-item"><span class="or-entity-value">+31 6 12345678</span>
-          <!--v-if-->
-        </li>
-      </ul>
-    </div>
-  </div>
-</div>"
-`;
-
 exports[`EntitiesTab golden renders the empty state without a message and makes no request 1`] = `
 "<div class="or-tab-entities">
   <div class="or-tab-empty">t:No entities detected for this email.</div>
+</div>"
+`;
+
+exports[`EntitiesTab golden renders the found values and reloads when the message changes 1`] = `
+"<div class="or-tab-entities">
+  <ul class="or-entity-list">
+    <li class="or-entity-item"><span class="or-entity-icon material-design-icon account-outline-icon or-entity-icon" aria-hidden="true" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,6A2,2 0 0,0 10,8A2,2 0 0,0 12,10A2,2 0 0,0 14,8A2,2 0 0,0 12,6M12,13C14.67,13 20,14.33 20,17V20H4V17C4,14.33 9.33,13 12,13M12,14.9C9.03,14.9 5.9,16.36 5.9,17V18.1H18.1V17C18.1,16.36 14.97,14.9 12,14.9Z"></path></svg></span><span class="or-entity-value">Alice</span><span class="or-entity-kind">t:sender</span><button type="button" class="or-entity-search" aria-label="t:Search for Alice">t:Search</button></li>
+    <li class="or-entity-item"><span class="or-entity-icon material-design-icon email-outline-icon or-entity-icon" aria-hidden="true" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6M20 6L12 11L4 6H20M20 18H4V8L12 13L20 8V18Z"></path></svg></span><span class="or-entity-value">a@example.com</span><span class="or-entity-kind">t:email address</span><button type="button" class="or-entity-search" aria-label="t:Search for a@example.com">t:Search</button></li>
+    <li class="or-entity-item"><i data-icon="LinkVariant" size="18" class="or-entity-icon"></i><span class="or-entity-value">https://example.com/x</span><span class="or-entity-kind">t:link</span><button type="button" class="or-entity-search" aria-label="t:Search for https://example.com/x">t:Search</button></li>
+    <li class="or-entity-item"><span class="or-entity-icon material-design-icon phone-outline-icon or-entity-icon" aria-hidden="true" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="18" height="18" viewBox="0 0 24 24"><!--v-if--><path d="M20,15.5C18.8,15.5 17.5,15.3 16.4,14.9C16.3,14.9 16.2,14.9 16.1,14.9C15.8,14.9 15.6,15 15.4,15.2L13.2,17.4C10.4,15.9 8,13.6 6.6,10.8L8.8,8.6C9.1,8.3 9.2,7.9 9,7.6C8.7,6.5 8.5,5.2 8.5,4C8.5,3.5 8,3 7.5,3H4C3.5,3 3,3.5 3,4C3,13.4 10.6,21 20,21C20.5,21 21,20.5 21,20V16.5C21,16 20.5,15.5 20,15.5M5,5H6.5C6.6,5.9 6.8,6.8 7,7.6L5.8,8.8C5.4,7.6 5.1,6.3 5,5M19,19C17.7,18.9 16.4,18.6 15.2,18.2L16.4,17C17.2,17.2 18.1,17.4 19,17.4V19Z"></path></svg></span><span class="or-entity-value">+31 6 12345678</span><span class="or-entity-kind">t:phone number</span><button type="button" class="or-entity-search" aria-label="t:Search for +31 6 12345678">t:Search</button></li>
+  </ul>
 </div>"
 `;
 
@@ -51,23 +23,26 @@ exports[`EntitiesTab golden renders the loading state while the body loads 1`] =
 </div>"
 `;
 
-exports[`ObjectsTab golden renders nothing and counts zero without an account 1`] = `"<!--v-if-->"`;
-
 exports[`ObjectsTab golden renders the linked objects and reloads when the message changes 1`] = `
 "<section class="or-tab-objects" aria-label="t:Connected to">
   <h4 class="or-mail-panel__section-title">t:Connected to</h4>
   <div class="or-mail-object-list">
     <div class="or-mail-object-card">
-      <div class="or-mail-object-card__header"><span class="or-mail-object-card__schema"><i data-icon="default" size="16" class="or-mail-object-card__icon"></i> Zaken</span>
+      <div class="or-mail-object-card__header"><span class="or-mail-object-card__kind"><span class="or-mail-object-card__schema">Zaken</span>
+        <!--v-if--></span>
         <div data-stub="NcButton" variant="tertiary" aria-label="t:Remove connection to Zaak 1"><i data-icon="Close" size="20"></i></div>
-      </div><a class="or-mail-object-card__title" href="/index.php/apps/openregister/registers/2/5/u-1" target="_blank" title="t:Open connected item">Zaak 1</a>
-      <p class="or-mail-object-card__drop">t:Drop an attachment here to add it</p>
+      </div><a class="or-mail-object-card__title" href="/index.php/apps/openregister/registers/2/5/u-1" title="t:Open connected item">Zaak 1</a>
+      <!--v-if-->
+      <!--v-if-->
+      <!--v-if-->
     </div>
     <div class="or-mail-object-card">
-      <div class="or-mail-object-card__header"><span class="or-mail-object-card__schema"><i data-icon="default" size="16" class="or-mail-object-card__icon"></i> Leads</span>
+      <div class="or-mail-object-card__header"><span class="or-mail-object-card__kind"><span class="or-mail-object-card__schema">Leads</span><span class="or-mail-object-card__id">#L-2</span></span>
         <div data-stub="NcButton" variant="tertiary" aria-label="t:Remove connection to Lead 2"><i data-icon="Close" size="20"></i></div>
-      </div><a class="or-mail-object-card__title" href="/apps/pipelinq/leads/u-2" target="_blank" title="t:Open connected item">Lead 2</a>
-      <p class="or-mail-object-card__drop">t:Drop an attachment here to add it</p>
+      </div><a class="or-mail-object-card__title" href="/apps/pipelinq/leads/u-2" title="t:Open connected item">Lead 2</a>
+      <p class="or-mail-object-card__sub">Met at the trade fair</p>
+      <!--v-if-->
+      <!--v-if-->
     </div>
   </div>
   <!---->
@@ -80,6 +55,14 @@ exports[`ObjectsTab golden renders the loading state while the links load 1`] = 
   <div class="or-tab-loading">
     <div data-stub="NcLoadingIcon" size="20"></div><span>t:Loading connections...</span>
   </div>
+  <!---->
+</section>"
+`;
+
+exports[`ObjectsTab golden says it is not connected yet and counts zero without an account 1`] = `
+"<section class="or-tab-objects" aria-label="t:Connected to">
+  <h4 class="or-mail-panel__section-title">t:Connected to</h4>
+  <p class="or-mail-object-empty">t:Not connected to anything yet.</p>
   <!---->
 </section>"
 `;

@@ -7,6 +7,10 @@ exports[`ObjectsTab requests (golden) asks nothing without a message 1`] = `
       "count",
       0,
     ],
+    [
+      "objects",
+      [],
+    ],
   ],
   "loading": false,
   "objects": [],
@@ -20,6 +24,10 @@ exports[`ObjectsTab requests (golden) clears the list on a failure 1`] = `
     [
       "count",
       0,
+    ],
+    [
+      "objects",
+      [],
     ],
   ],
   "loading": false,
@@ -42,6 +50,10 @@ exports[`ObjectsTab requests (golden) lists nothing on an answer without results
       "count",
       0,
     ],
+    [
+      "objects",
+      [],
+    ],
   ],
   "loading": false,
   "objects": [],
@@ -62,6 +74,14 @@ exports[`ObjectsTab requests (golden) lists the linked objects 1`] = `
     [
       "count",
       1,
+    ],
+    [
+      "objects",
+      [
+        {
+          "uuid": "o1",
+        },
+      ],
     ],
   ],
   "loading": false,

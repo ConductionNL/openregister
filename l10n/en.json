@@ -10,6 +10,8 @@
         "{schema} {title} deleted": "{schema} {title} deleted",
         "Object \"%1$s\" created": "Object \"%1$s\" created",
         "Object \"%1$s\" updated": "Object \"%1$s\" updated",
+        "New note on \"%1$s\"": "New note on \"%1$s\"",
+        "New note on \"%1$s\" in register \"%2$s\"": "New note on \"%1$s\" in register \"%2$s\"",
         "Object \"%1$s\" assigned to you": "Object \"%1$s\" assigned to you",
         "3": "3",
         "30": "30",
@@ -3497,7 +3499,44 @@
         "Connected to": "Connected to",
         "Drop an attachment here to add it": "Drop an attachment here to add it",
         "Number or words": "Number or words",
-        "New {name} from this mail": "New {name} from this mail"
+        "New {name} from this mail": "New {name} from this mail",
+        "New {name} from this mail": "New {name} from this mail",
+        "Fields marked * are required. The new {name} is connected to this mail.": "Fields marked * are required. The new {name} is connected to this mail.",
+        "(optional)": "(optional)",
+        "Create and connect": "Create and connect",
+        "No {name} matches “{term}”.": "No {name} matches “{term}”.",
+        "Not connected to anything yet.": "Not connected to anything yet.",
+        "Connecting": "Connecting",
+        "Connected to {name} #{number}": "Connected to {name} #{number}",
+        "Undo": "Undo",
+        "Add to {name}": "Add to {name}",
+        "_%n connection_::_%n connections_": [
+            "%n connection",
+            "%n connections"
+        ],
+        "Search for {value}": "Search for {value}",
+        "sender": "sender",
+        "person": "person",
+        "address": "address",
+        "email address": "email address",
+        "phone number": "phone number",
+        "link": "link",
+        "other": "other",
+        "connected to {name} #{number}": "connected to {name} #{number}",
+        "connected to {name}": "connected to {name}",
+        "_%n message_::_%n messages_": [
+            "%n message",
+            "%n messages"
+        ],
+        "Scheduled report \"%s\"": "Scheduled report \"%s\"",
+        "all schemas": "all schemas",
+        "Source: %1$s / %2$s.": "Source: %1$s / %2$s.",
+        "Schedule: %s.": "Schedule: %s.",
+        "The export (%1$s) exceeds the %2$sMB email attachment limit and was not attached. It has been saved to your Nextcloud Files at %3$s%4$s instead.": "The export (%1$s) exceeds the %2$sMB email attachment limit and was not attached. It has been saved to your Nextcloud Files at %3$s%4$s instead.",
+        "_Your scheduled report \"%s\" ran and delivered %n row._::_Your scheduled report \"%s\" ran and delivered %n rows._": [
+            "Your scheduled report \"%s\" ran and delivered %n row.",
+            "Your scheduled report \"%s\" ran and delivered %n rows."
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

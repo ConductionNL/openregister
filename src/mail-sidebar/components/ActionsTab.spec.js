@@ -135,7 +135,7 @@ describe('ActionsTab schemas', () => {
 		const wrapper = await mountTab()
 		const buttons = wrapper.findAll('.or-action-create')
 		expect(buttons).toHaveLength(1)
-		expect(buttons[0].text()).toBe('New Leads from this mail')
+		expect(buttons[0].text()).toBe('New leads from this mail')
 	})
 
 	it('says there is nothing to connect to when no schema links to mail', async () => {
@@ -180,7 +180,7 @@ describe('ActionsTab search', () => {
 		const wrapper = await mountTab()
 		expect(wrapper.find('.or-action-results').exists()).toBe(false)
 		await wrapper.find('.or-action-input').trigger('focus')
-		const items = wrapper.findAll('.or-action-result-name')
+		const items = wrapper.findAll('.or-object-row__name')
 		expect(items.map((i) => i.text())).toContain('Acme')
 	})
 
@@ -207,7 +207,7 @@ describe('ActionsTab search', () => {
 		await flushPromises()
 		expect(axios.get).toHaveBeenCalledTimes(1)
 		expect(axios.get).toHaveBeenCalledWith(LEADS_OBJECTS, {
-			params: { _search: 'acm', _limit: 20 },
+			params: { _search: 'acm', _limit: 20, _extend: 'status' },
 			timeout: 10000,
 		})
 		expect(wrapper.vm.searching[5]).toBe(false)
@@ -288,9 +288,15 @@ describe('ActionsTab connect', () => {
 		axios.post.mockImplementation(
 			() => new Promise((resolve) => (release = resolve)),
 		)
-		const pending = wrapper.vm.linkObject(LEADS, { uuid: 'u2' })
+		const pending = wrapper.vm.linkObject(LEADS, { uuid: 'u2', title: 'Lead two', identifier: 'L-2', statusLabel: 'new' })
 		await wrapper.vm.$nextTick()
-		expect(wrapper.find('.or-action-connecting').text()).toBe('Connecting…')
+		const picked = wrapper.find('.or-action-picked')
+		expect(picked.attributes('aria-label')).toBe('Connecting…')
+		expect(picked.find('.or-action-result--picked').exists()).toBe(true)
+		expect(picked.find('.or-object-row__id').text()).toBe('#L-2')
+		expect(picked.find('.or-object-row__name').text()).toBe('Lead two')
+		expect(picked.find('.or-object-status').text()).toBe('new')
+		expect(picked.find('.or-object-row__trailing').text()).toBe('Connecting')
 		expect(wrapper.find('.or-action-block--busy').exists()).toBe(true)
 		release({})
 		await flushPromises()
@@ -421,7 +427,7 @@ describe('ActionsTab create from email', () => {
 		await wrapper.vm.openCreate(LEADS)
 		axios.post.mockRejectedValue({ response: { data: { error: 'bad' } } })
 		await wrapper.vm.submitCreate({ title: 'T' })
-		expect(showError).toHaveBeenCalledWith('Failed to create Leads from email')
+		expect(showError).toHaveBeenCalledWith('Failed to create leads from email')
 		expect(wrapper.vm.createDialog.show).toBe(true)
 		expect(wrapper.vm.createSaving).toBe(false)
 	})
@@ -444,5 +450,54 @@ describe('ActionsTab create from email', () => {
 		wrapper.vm.createSaving = false
 		dialog.vm.$emit('cancel')
 		expect(wrapper.vm.createDialog).toEqual({ show: false, schema: null, data: {} })
+	})
+})
+
+describe('ActionsTab no match', () => {
+	it('says so once a search for the typed words finished empty', async () => {
+		const wrapper = await mountTab()
+		wrapper.vm.searchTerms[5] = 'nothing like this'
+		expect(wrapper.vm.noMatch(LEADS)).toBe(false)
+		wrapper.vm.searchedTerms[5] = 'nothing like this'
+		wrapper.vm.searchResults[5] = []
+		wrapper.vm.searching[5] = false
+		expect(wrapper.vm.noMatch(LEADS)).toBe(true)
+		wrapper.vm.searching[5] = true
+		expect(wrapper.vm.noMatch(LEADS)).toBe(false)
+		wrapper.vm.searching[5] = false
+		wrapper.vm.searchTerms[5] = ''
+		expect(wrapper.vm.noMatch(LEADS)).toBe(false)
+	})
+})
+
+describe('ActionsTab found values and names', () => {
+	it('searches the first kind for a value found in the mail', async () => {
+		const wrapper = await mountTab()
+		const first = wrapper.vm.schemas[0]
+		const search = jest.spyOn(wrapper.vm, 'searchObjects').mockImplementation(() => {})
+		wrapper.vm.searchFor('Lindelaan 14')
+		expect(wrapper.vm.searchTerms[first.id]).toBe('Lindelaan 14')
+		expect(wrapper.vm.visibleResults[first.id]).toBe(true)
+		expect(search).toHaveBeenCalledWith(first)
+	})
+
+	it('shows a handler once the name is read, and asks for each user once', async () => {
+		const wrapper = await mountTab()
+		expect(wrapper.vm.nameOf('')).toBe('')
+		wrapper.vm.names.pieter = 'Pieter Jansen'
+		expect(wrapper.vm.nameOf('pieter')).toBe('Pieter Jansen')
+		const before = axios.get.mock.calls.length
+		wrapper.vm.resolveNames([{ assignee: 'pieter' }, { assignee: 'pieter' }, {}])
+		expect(axios.get.mock.calls.length).toBe(before)
+	})
+
+	it('marks the typed words in a match', async () => {
+		const wrapper = await mountTab()
+		await wrapper.find('.or-action-input').trigger('focus')
+		wrapper.vm.searchTerms[5] = 'acm'
+		await wrapper.vm.$nextTick()
+		const mark = wrapper.find('.or-object-row__mark')
+		expect(mark.exists()).toBe(true)
+		expect(mark.text().toLowerCase()).toBe('acm')
 	})
 })
