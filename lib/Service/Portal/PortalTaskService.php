@@ -41,6 +41,8 @@ use DateTime;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\MalwareScanRefusal;
+use OCA\OpenRegister\Service\File\UploadMalwareCheck;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
@@ -86,11 +88,13 @@ class PortalTaskService implements PortalTaskServiceInterface {
 	 * @param PortalTaskSources $sources The task service, the task rows, the inbox and the temporal projection.
 	 * @param FileWriterInterface $files Stores uploads onto the case object.
 	 * @param LoggerInterface $logger Diagnostics.
+	 * @param UploadMalwareCheck|null $malwareCheck Scans every upload before any is stored; without it uploads are refused.
 	 */
 	public function __construct(
 		private readonly PortalTaskSources $sources,
 		private readonly FileWriterInterface $files,
 		private readonly LoggerInterface $logger,
+		private readonly ?UploadMalwareCheck $malwareCheck = null,
 	) {
 
 	}//end __construct()
@@ -486,15 +490,22 @@ class PortalTaskService implements PortalTaskServiceInterface {
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-an-upload-completion-lands-as-a-file-attachment-on-the-case-object
 	 */
 	private function storeFiles(Task $task, array $files): array {
-		$references = [];
+		// REQ-UMS-001: every upload is scanned before any is stored, so a refused one leaves nothing behind.
+		$check = ($this->malwareCheck ?? throw MalwareScanRefusal::unavailable());
+		$scanned = [];
 		foreach ($files as $file) {
-			$name = (string)$file['name'];
 			$content = $this->contentOf(file: $file);
+			$scanned[] = ['name' => (string)$file['name'], 'content' => $content, 'verdict' => $check->scanPosted(fileName: (string)$file['name'], content: $content)];
+		}
+
+		$references = [];
+		foreach ($scanned as ['name' => $name, 'content' => $content, 'verdict' => $verdict]) {
 			$stored = $this->files->addFile(
 				target: new FileTarget(object: (string)$task->getObjectUuid(), registerId: $task->getRegisterId()),
 				upload: new FileUpload(fileName: $name, content: $content, share: false, tags: [self::FILE_TAG_PREFIX . (string)$task->getUuid()])
 			);
 
+			$check->record(fileId: (int)$stored->getId(), verdict: $verdict);
 			if (is_resource($content) === true) {
 				fclose($content);
 			}

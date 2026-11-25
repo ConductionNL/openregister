@@ -34,6 +34,8 @@ use OCP\Files\Folder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCA\OpenRegister\Service\File\FileRename;
+use OCA\OpenRegister\Service\File\MalwareScanRefusal;
+use OCA\OpenRegister\Service\File\UploadMalwareCheck;
 
 /**
  * The object folder as a small tree the files browser can walk.
@@ -86,10 +88,12 @@ class ObjectFolderBrowser {
 	 *
 	 * @param FileServiceInterface               $fileService  Resolves the object folder and runs the file pipeline.
 	 * @param FileRestrictionGuard|null $restrictions Leaves out a restricted file the caller is not admitted to. Null only in legacy fixtures.
+	 * @param UploadMalwareCheck|null   $malwareCheck Scans an upload before it is written; without it an upload is refused.
 	 */
 	public function __construct(
 		private readonly FileServiceInterface $fileService,
 		private readonly ?FileRestrictionGuard $restrictions = null,
+		private readonly ?UploadMalwareCheck $malwareCheck = null,
 	) {
 	}//end __construct()
 
@@ -176,10 +180,14 @@ class ObjectFolderBrowser {
 			$fileName = $relative . '/' . $name;
 		}
 
+		// REQ-UMS-001: the upload is scanned before anything is written.
+		$check = ($this->malwareCheck ?? throw MalwareScanRefusal::unavailable());
+		$verdict = $check->scanPosted(fileName: $name, content: $upload->content);
 		$file = $this->fileService->addFile(
 			target: new FileTarget(object: $object),
 			upload: new FileUpload(fileName: $fileName, content: $upload->content, share: false)
 		);
+		$check->record(fileId: (int)$file->getId(), verdict: $verdict);
 
 		return $this->describe(root: $root, node: $file);
 	}//end upload()
