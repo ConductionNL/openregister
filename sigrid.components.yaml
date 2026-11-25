@@ -2562,6 +2562,8 @@ components:
       - ".*/lib/Search/FileHitSearch[.]php"
       - ".*/lib/Search/ObjectsProvider[.]php"
       - ".*/lib/Search/ObjectsProviderOutput[.]php"
+      - ".*/lib/Search/SearchProviderIdentities[.]php"
+      - ".*/lib/Search/SearchProviderIdentity[.]php"
       - ".*/lib/Search/SearchProviderRegistrar[.]php"
       - ".*/lib/Search/SearchRegistrar[.]php"
       - ".*/lib/Search/SearchScopeCatalog[.]php"

@@ -49,6 +49,13 @@ final class RequestIdentityMap {
 	private array $entries = [];
 
 	/**
+	 * Every row of the table, as one unfiltered read returned it, by organisation scope.
+	 *
+	 * @var array<int, list<Entity>>
+	 */
+	private array $lists = [];
+
+	/**
 	 * The key of an identifier under an organisation scope, such as `slug:1`.
 	 *
 	 * @param int|string $identifier   The id, uuid or slug.
@@ -113,6 +120,8 @@ final class RequestIdentityMap {
 	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
 	 */
 	public function forget(int $entityId): void {
+		// A changed row changes the full list it is part of.
+		$this->lists = [];
 		foreach ($this->entries as $key => $entity) {
 			if ($entity->getId() === $entityId) {
 				unset($this->entries[$key]);
@@ -129,7 +138,77 @@ final class RequestIdentityMap {
 	 */
 	public function clear(): void {
 		$this->entries = [];
+		$this->lists   = [];
 	}//end clear()
+
+	/**
+	 * Remember the answer of one unfiltered read of every row.
+	 *
+	 * Only a read with no limit, offset, filter or search condition belongs
+	 * here: anything narrower is a different question. The entities are copied
+	 * in, so a caller changing what it was given does not change what the next
+	 * caller reads.
+	 *
+	 * @param bool                      $multitenancy Whether the organisation filter applied.
+	 * @param array<int|string, Entity> $entities     The rows read.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is part of the key.
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
+	 */
+	public function rememberAll(bool $multitenancy, array $entities): void {
+		$this->lists[(int)$multitenancy] = self::copies(entities: $entities);
+	}//end rememberAll()
+
+	/**
+	 * Every row as the unfiltered read of this request returned it, or null when it was not read yet.
+	 *
+	 * Each call hands out its own copies of the entities.
+	 *
+	 * @param bool $multitenancy Whether the organisation filter applies.
+	 *
+	 * @return list<Entity>|null The rows, or null.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is part of the key.
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
+	 */
+	public function all(bool $multitenancy): ?array {
+		if (isset($this->lists[(int)$multitenancy]) === false) {
+			return null;
+		}
+
+		return self::copies(entities: $this->lists[(int)$multitenancy]);
+	}//end all()
+
+	/**
+	 * Drop the remembered full lists, keeping the entries found by identifier.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
+	 */
+	public function forgetAll(): void {
+		$this->lists = [];
+	}//end forgetAll()
+
+	/**
+	 * A copy of each entity, in order.
+	 *
+	 * @param array<int|string, Entity> $entities The entities.
+	 *
+	 * @return list<Entity>
+	 */
+	private static function copies(array $entities): array {
+		$copies = [];
+		foreach ($entities as $entity) {
+			$copies[] = clone $entity;
+		}
+
+		return $copies;
+	}//end copies()
 
 	/**
 	 * The keys held, in insertion order.
