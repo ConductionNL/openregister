@@ -2200,6 +2200,20 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 			'verb' => 'GET',
 			'requirements' => ['register' => '[^/]+', 'survey' => '[^/]+'],
 		],
+		// Answering a survey from its invitation link, with no account
+		// (survey-object REQ-SURV-002): read the form, submit the answers.
+		[
+			'name' => 'surveyAnswer#show',
+			'url' => '/api/public/surveys/{anchor}',
+			'verb' => 'GET',
+			'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+		],
+		[
+			'name' => 'surveyAnswer#submit',
+			'url' => '/api/public/surveys/{anchor}',
+			'verb' => 'POST',
+			'requirements' => ['anchor' => '[A-Za-z0-9]+'],
+		],
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
 		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],

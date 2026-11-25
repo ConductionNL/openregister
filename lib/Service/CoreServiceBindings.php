@@ -321,6 +321,8 @@ use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuard;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkService;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectAccessLinksInterface;
+use OCA\OpenRegister\Service\Sharing\ObjectAccessLinks;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubject;
 use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectInterface;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
@@ -567,6 +569,7 @@ final class CoreServiceBindings {
 		AccessLinkActsInterface::class => AccessLinkActs::class,
 		AccessLinkMintGuardInterface::class => AccessLinkMintGuard::class,
 		AccessLinkServiceInterface::class => AccessLinkService::class,
+		ObjectAccessLinksInterface::class => ObjectAccessLinks::class,
 		AccessLinkSubjectInterface::class => AccessLinkSubject::class,
 		SharePrincipalDeriverInterface::class => SharePrincipalDeriver::class,
 		SourceRecordResolverInterface::class => SourceRecordResolver::class,
