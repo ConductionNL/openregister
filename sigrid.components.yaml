@@ -2247,6 +2247,7 @@ components:
       - ".*/lib/Controller/Support/ObjectIntegrationsControllerServices[.]php"
       - ".*/lib/Controller/Support/ObjectIntegrationsDomain[.]php"
       - ".*/lib/Controller/Support/OpenProjectLinksControllerServices[.]php"
+      - ".*/lib/Controller/Support/OwnMailReverseLookup[.]php"
       - ".*/lib/Controller/Support/PhotoLinksControllerServices[.]php"
       - ".*/lib/Controller/Support/PollLinksControllerServices[.]php"
       - ".*/lib/Controller/Support/RelationsCollaboration[.]php"
