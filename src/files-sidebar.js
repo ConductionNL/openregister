@@ -10,6 +10,7 @@
 
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp, defineAsyncComponent, h, reactive } from 'vue'
+import { registerAttachAction } from './files/attachAction.js'
 
 /**
  * The integration registry bootstrap and the library translations, loaded once,
@@ -45,6 +46,10 @@ const ExtractionTab = defineAsyncComponent(() => prepare()
 	.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/ExtractionTab.vue')))
 const MailThreadTab = defineAsyncComponent(() => prepare()
 	.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/MailThreadTab.vue')))
+
+// The Files action "Add to object" (files-leaf-save-to-object). Registered at
+// load, before Files renders its file list, as Files expects of an action.
+registerAttachAction()
 
 // MDI icon SVG paths (inline to avoid icon library dependency).
 // database-outline

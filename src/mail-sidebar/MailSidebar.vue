@@ -30,9 +30,20 @@
 				<ObjectsTab
 					ref="objectsTab"
 					:accountId="accountId"
-					:messageId="messageId" />
+					:messageId="messageId"
+					@count="objectsCount = $event"
+					@objects="connected = $event" />
+
+				<p v-if="justConnected" class="or-mail-panel__connected" role="status">
+					<Check :size="18" class="or-mail-panel__connected-icon" />
+					<span>{{ justConnectedText }}</span>
+					<button type="button" class="or-mail-panel__undo" @click="undoConnect">
+						{{ t('openregister', 'Undo') }}
+					</button>
+				</p>
 
 				<ActionsTab
+					ref="actionsTab"
 					:accountId="accountId"
 					:messageId="messageId"
 					@linked="onLinked" />
@@ -51,26 +62,31 @@
 						<span class="or-mail-panel__found-hint">{{
 							t('openregister', 'Names, addresses and numbers')
 						}}</span>
-						<ChevronDown v-if="foundOpen" :size="20" />
-						<ChevronRight v-else :size="20" />
+						<ChevronUp v-if="foundOpen" :size="20" />
+						<ChevronDown v-else :size="20" />
 					</button>
 					<div v-if="foundOpen" id="or-mail-panel-found">
-						<EntitiesTab :accountId="accountId" :messageId="messageId" />
+						<EntitiesTab
+							:accountId="accountId"
+							:messageId="messageId"
+							@search="searchFound" />
 					</div>
 				</div>
 			</div>
 		</aside>
 
 		<button
-			v-else
-			class="or-mail-sidebar__collapsed-toggle"
-			:aria-label="t('openregister', 'Open connections sidebar')"
-			:title="t('openregister', 'Open connections sidebar')"
+			type="button"
+			class="or-mail-connections-button"
+			:class="{ 'or-mail-connections-button--panel-open': !collapsed }"
+			:aria-pressed="String(!collapsed)"
 			@click="toggleCollapsed">
-			<LinkVariant :size="16" />
-			<span class="or-mail-sidebar__collapsed-label">{{
-				t('openregister', 'Connections')
-			}}</span>
+			<LinkVariant :size="18" />
+			<span>{{ t('openregister', 'Connections') }}</span>
+			<span
+				v-if="objectsCount"
+				class="or-mail-connections-button__count"
+				:aria-label="n('openregister', '%n connection', '%n connections', objectsCount)">{{ objectsCount }}</span>
 		</button>
 	</div>
 </template>
@@ -86,19 +102,25 @@
  * @spec openspec/specs/mail-sidebar/spec.md
  */
 import axios from '@nextcloud/axios'
-import { translate as t } from '@nextcloud/l10n'
+import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
+import { computed, ref } from 'vue'
+import Check from 'vue-material-design-icons/Check.vue'
 import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
-import ChevronRight from 'vue-material-design-icons/ChevronRight.vue'
+import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import Close from 'vue-material-design-icons/Close.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import TextSearch from 'vue-material-design-icons/TextSearch.vue'
 import ActionsTab from './components/ActionsTab.vue'
 import EntitiesTab from './components/EntitiesTab.vue'
 import ObjectsTab from './components/ObjectsTab.vue'
+import { useAddToObject } from './composables/useAddToObject.js'
 import { useAttachmentDrag } from './composables/useAttachmentDrag.js'
 import { useMailObserver } from './composables/useMailObserver.js'
+import { useSubjectLine } from './composables/useSubjectLine.js'
+import { objectIdentifier } from './objectRow.js'
+import { sentenceName } from './sentenceName.js'
 
 const COLLAPSED_STORAGE_KEY = 'openregister-mail-sidebar-collapsed'
 
@@ -109,8 +131,9 @@ export default {
 		ActionsTab,
 		ObjectsTab,
 		EntitiesTab,
+		Check,
 		ChevronDown,
-		ChevronRight,
+		ChevronUp,
 		Close,
 		LinkVariant,
 		TextSearch,
@@ -122,7 +145,15 @@ export default {
 	setup() {
 		const mailObserver = useMailObserver({ debounceMs: 300 })
 		useAttachmentDrag()
-		return { ...mailObserver }
+		// The items the open mail is connected to, as the card list reports them.
+		const connected = ref([])
+		const objectsTab = ref(null)
+		const addLabel = computed(() => (connected.value.length > 0
+			? t('openregister', 'Add to {name}', { name: sentenceName(connected.value[0].schema) })
+			: ''))
+		useAddToObject(addLabel, (attachment) => objectsTab.value?.addAttachment(attachment))
+		useSubjectLine(connected)
+		return { ...mailObserver, connected, objectsTab }
 	},
 
 	data() {
@@ -130,7 +161,28 @@ export default {
 			collapsed: false,
 			foundOpen: false,
 			subject: '',
+			// How many items the open mail is connected to; null until known.
+			objectsCount: null,
+			// The connection just made, for the "Connected to" line with Undo.
+			justConnected: null,
 		}
+	},
+
+	computed: {
+		/**
+		 * "Connected to case #2026-4833", for the line under the cards.
+		 *
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		justConnectedText() {
+			const link = this.justConnected
+			if (!link) return ''
+			const name = sentenceName(link.schema?.title || '')
+			const number = objectIdentifier(link.object)
+			return number
+				? t('openregister', 'Connected to {name} #{number}', { name, number })
+				: t('openregister', 'Connected to {name}', { name })
+		},
 	},
 
 	watch: {
@@ -143,6 +195,8 @@ export default {
 			 */
 			handler() {
 				this.foundOpen = false
+				this.objectsCount = null
+				this.justConnected = null
 				this.loadSubject()
 			},
 		},
@@ -160,6 +214,7 @@ export default {
 
 	methods: {
 		t,
+		n,
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
@@ -194,12 +249,39 @@ export default {
 		},
 
 		/**
+		 * A connection was made: reload the cards and say so, with Undo.
+		 *
+		 * @param {{schema: object, object: object}} [link] The schema and the item connected.
 		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-sidebar-panel-ui-with-linked-objects-display
 		 */
-		onLinked() {
+		onLinked(link) {
 			if (this.$refs.objectsTab) {
 				this.$refs.objectsTab.loadObjects()
 			}
+			this.justConnected = link?.object ? link : null
+		},
+
+		/**
+		 * Take back the connection just made.
+		 *
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		async undoConnect() {
+			const uuid = this.justConnected?.object?.id || this.justConnected?.object?.uuid
+			if (!uuid || !this.$refs.objectsTab) return
+			if (await this.$refs.objectsTab.unlinkNow(uuid)) {
+				this.justConnected = null
+			}
+		},
+
+		/**
+		 * Search the first kind of item for a value found in the mail.
+		 *
+		 * @param {string} value The found value.
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
+		searchFound(value) {
+			this.$refs.actionsTab?.searchFor(value)
 		},
 	},
 }
