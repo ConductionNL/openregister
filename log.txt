@@ -4745,3 +4745,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-25T09:09:41Z session-20261125T084604-389971f7 cloud-or-reviewer-6: APPROVE 10550 (fast path, only main merge 28d6ce8f), 11134 (full: two Core-port retypes, same bound instances); 10526 10614 11086 11094 11126 ledgered at head; no lane-6 PR conflicts with main 28d6ce8f
 2026-11-25T09:15:45Z integrator-20261125T091248-61562fa2 NORESULT tree f90aadce79: deps failed
 2026-11-25T09:15:52Z session-20261125T083748-feeadcef or-fix-8: main 28d6ce8f; fixed (merged main, REVERIFY) #5968 -> 951813c9 (info.xml dev.17), #10508 -> 044e6eed (yaml), #11128 -> 5454b3cd (l10n en/nl); #11008 #11068 #11108 approved+clean, untouched (NO CHURN); precheck next
+2026-11-25T09:16:47Z precheck-20261125T085905-5d01d28f NORESULT tree fdb556d260: checker floor not measured (exit 2)
