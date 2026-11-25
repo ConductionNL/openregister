@@ -47,10 +47,12 @@ class NamedConditionEvaluator {
 	 *
 	 * @param ConditionDialect      $dialect The evaluator both dialects go through.
 	 * @param NamedConditionLibrary $library The vocabulary and its walk.
+	 * @param RelativeTimeEvaluation|null $time The `$age` evaluation; without it a `$age` node refuses.
 	 */
 	public function __construct(
 		private readonly ConditionDialect $dialect,
 		private readonly NamedConditionLibrary $library,
+		private readonly ?RelativeTimeEvaluation $time = null,
 	) {
 	}//end __construct()
 
@@ -89,14 +91,67 @@ class NamedConditionEvaluator {
 			return $this->holdsReference(name: (string)$node[NamedConditionLibrary::REF], evaluation: $evaluation);
 		}
 
+		if (array_key_exists(RelativeTimeCondition::KEY, $node) === true) {
+			return $this->holdsRelativeTime(node: $node, evaluation: $evaluation);
+		}
+
 		// A node with no reference inside goes to the dialect whole: composition costs nothing
 		// on the common case, and the two evaluators cannot disagree about ordinary nodes.
-		if ($this->library->referencesIn(node: $node) === []) {
+		if ($this->library->referencesIn(node: $node) === [] && self::containsRelativeTime(node: $node) === false) {
 			return $this->dialect->holds(node: $node, document: $evaluation->document);
 		}
 
 		return $this->holdsBranch(node: $node, evaluation: $evaluation);
 	}//end evaluate()
+
+	/**
+	 * Whether a `$age` node holds now (task 1.2b, design question 2).
+	 *
+	 * Evaluated here rather than in the dialect, so it works in administered
+	 * validations and inside named conditions alike. Without the time
+	 * evaluation it REFUSES: a dialect handed `$age` reads an unknown operator,
+	 * and a false there fails open one negation later.
+	 *
+	 * @param array<string, mixed> $node       The `$age` node.
+	 * @param ConditionEvaluation  $evaluation The document and the object's organisation.
+	 *
+	 * @return bool True when it holds.
+	 *
+	 * @throws ConditionRefusedException When it cannot be evaluated.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function holdsRelativeTime(array $node, ConditionEvaluation $evaluation): bool {
+		if ($this->time === null) {
+			throw new ConditionRefusedException(
+				conditionName: RelativeTimeCondition::KEY,
+				why: 'relative time is not available where this condition is evaluated'
+			);
+		}
+
+		return $this->time->holds(node: $node, document: $evaluation->document, organisation: $evaluation->organisation);
+	}//end holdsRelativeTime()
+
+	/**
+	 * Whether a node holds a `$age` condition anywhere inside it.
+	 *
+	 * @param mixed $node The node.
+	 *
+	 * @return bool True when it does.
+	 */
+	private static function containsRelativeTime(mixed $node): bool {
+		if (is_array($node) === false) {
+			return false;
+		}
+
+		foreach ($node as $key => $value) {
+			if ((string)$key === RelativeTimeCondition::KEY || self::containsRelativeTime(node: $value) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end containsRelativeTime()
 
 	/**
 	 * Resolve one reference and evaluate what it names, one level deeper.
@@ -177,9 +232,16 @@ class NamedConditionEvaluator {
 			return $this->holdsJunction(node: $node, evaluation: $evaluation);
 		}
 
+		$names = $this->library->referencesIn(node: $node);
+		$what  = 'a named condition';
+		if ($names === []) {
+			$names = [RelativeTimeCondition::KEY];
+			$what  = 'a relative-time condition';
+		}
+
 		throw new ConditionRefusedException(
-			conditionName: implode(', ', $this->library->referencesIn(node: $node)),
-			why: sprintf('a named condition sits inside "%s", which this evaluator cannot compose', $op)
+			conditionName: implode(', ', $names),
+			why: sprintf('%s sits inside "%s", which this evaluator cannot compose', $what, $op)
 		);
 	}//end holdsBranch()
 
