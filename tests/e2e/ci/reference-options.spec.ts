@@ -28,8 +28,9 @@
  */
 import type { APIRequestContext } from '@playwright/test'
 
-import { expect, test } from '@playwright/test'
+import { expect, request as pwRequest, test } from '@playwright/test'
 import * as path from 'path'
+import { resolveBaseUrl } from '../base-url.ts'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 const API = '/index.php/apps/openregister/api'
@@ -37,6 +38,12 @@ const REGISTERS = `${API}/registers`
 const SCHEMAS = `${API}/schemas`
 
 const RUN_ID = `e2e-${Date.now()}`
+
+// A non-administrator: administrators skip reference validation by default
+// (`reference_validation_admin_bypass`), so a write refused for everybody else
+// is accepted for them. From tests/e2e/ci/seed.sh.
+const OWNER = process.env.E2E_OWNER_USER || 'e2e-owner'
+const OWNER_PASS = process.env.E2E_SEED_PASSWORD || 'E2e-Share-Pass-123'
 
 const JSON_HEADERS = {
 	Accept: 'application/json',
@@ -97,6 +104,7 @@ test.describe('reference-options', () => {
 		const caseSchema = await create(request, SCHEMAS, {
 			title: `E2E case ${RUN_ID}`,
 			properties: {
+				title: { type: 'string' },
 				organisation: { type: 'string' },
 				contact: {
 					type: 'string',
@@ -123,10 +131,13 @@ test.describe('reference-options', () => {
 		contactInB = b['@self']?.id ?? b.id ?? b.uuid
 
 		// A case with NO organisation chosen yet: the state a picker opens in.
+		// It carries a title only, because an empty body (`{}`) is refused by
+		// the object validator as "expects object but got empty" before any
+		// reference logic runs.
 		const made = await create(
 			request,
 			`${API}/objects/${registerId}/${caseSchemaId}`,
-			{},
+			{ title: 'A case without an organisation' },
 		)
 		caseId = made['@self']?.id ?? made.id ?? made.uuid
 	})
@@ -217,22 +228,35 @@ test.describe('reference-options', () => {
 		expect(resp.status()).toBe(422)
 	})
 
-	test('a write outside the filter is still refused, so the picker and the save agree', async ({
-		request,
-	}) => {
+	test('a write outside the filter is still refused, so the picker and the save agree', async () => {
 		// The two halves of one rule. If this ever diverges from the options
-		// above, one of them is a second evaluator.
-		const resp = await request.post(
-			`${API}/objects/${registerId}/${caseSchemaId}`,
-			{
-				headers: JSON_HEADERS,
-				data: { organisation: orgA, contact: contactInB },
+		// above, one of them is a second evaluator. Written as a non-administrator.
+		const owner = await pwRequest.newContext({
+			baseURL: resolveBaseUrl(),
+			extraHTTPHeaders: {
+				Authorization: `Basic ${Buffer.from(`${OWNER}:${OWNER_PASS}`).toString('base64')}`,
+				'OCS-APIRequest': 'true',
 			},
-		)
+		})
+		const url = `${API}/objects/${registerId}/${caseSchemaId}`
 
+		const outside = await owner.post(url, {
+			headers: JSON_HEADERS,
+			data: { organisation: orgA, contact: contactInB },
+		})
 		expect(
-			resp.status(),
+			outside.status(),
 			'The picker would not have offered this contact, so the save must not accept it.',
 		).toBeGreaterThanOrEqual(400)
+		expect(await outside.text()).toContain('contact')
+
+		// The control: the contact the picker DID offer is accepted.
+		const inside = await owner.post(url, {
+			headers: JSON_HEADERS,
+			data: { organisation: orgA, contact: contactInA },
+		})
+		expect(inside.status(), await inside.text()).toBeLessThan(300)
+
+		await owner.dispose()
 	})
 })
