@@ -53,6 +53,14 @@ final class RoutePostureTest extends TestCase {
 	private const SIGNATURE = 'a signed assertion of the acting subject, verified before the action';
 
 	/**
+	 * A webhook address: the token in the URL names the trigger and the body carries an HMAC made
+	 * with that trigger's secret; both are checked before a run is queued.
+	 *
+	 * @var string
+	 */
+	private const SIGNED_HOOK = 'a token in the URL naming the trigger and an HMAC of the body with its secret, both checked before the run is queued';
+
+	/**
 	 * The object rule: the schema's authorization decides what an anonymous caller may do.
 	 *
 	 * @var string
@@ -129,6 +137,7 @@ final class RoutePostureTest extends TestCase {
 		'Controller\\FederationController::object' => self::TOKEN,
 		'Controller\\FederationController::objects' => self::TOKEN,
 		'Controller\\FederationController::updateObject' => self::TOKEN,
+		'Controller\\FlowWebhookController::receive' => self::SIGNED_HOOK,
 		'Controller\\FormsController::submit' => self::PUBLISHED_FORM,
 		'Controller\\FormsController::upload' => self::PUBLISHED_FORM,
 		'Controller\\IconController::mdi' => self::PUBLIC_DOCUMENT,
