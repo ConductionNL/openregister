@@ -1,0 +1,459 @@
+{
+	"info": {
+		"name": "OpenRegister — reading a file's extracted text",
+		"description": "search-file-text-and-vector-facade task 4.1: the PDF fixture `tests/fixtures/pdf/testdoc.pdf` is uploaded to the administrator's files over WebDAV and extracted; `GET /api/files/{id}/text` answers its text to the owner (200) and 404 to another user, with the same message as a file that does not exist. Run from the repository root (Newman resolves the PDF's path from the working directory). Creates its own user and file and deletes them. Requests send no cookies, so the other user's request runs as that user.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && given !== '') {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"if (!pm.collectionVariables.get('stamp')) {",
+					"    pm.collectionVariables.set('stamp', 'ftxt' + Date.now().toString(36));",
+					"}",
+					"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'));",
+					"pm.collectionVariables.set('otherToken', Buffer.from(pm.collectionVariables.get('stamp') + '-other:' + pm.collectionVariables.get('otherPassword')).toString('base64'));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "otherPassword",
+			"value": "Ftxt-Other-Pass-2026"
+		},
+		{
+			"key": "stamp",
+			"value": ""
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "otherToken",
+			"value": ""
+		},
+		{
+			"key": "fileId",
+			"value": ""
+		},
+		{
+			"key": "otherBody",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 — setup",
+			"item": [
+				{
+					"name": "create the other user",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user created', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userid\": \"{{stamp}}-other\",\n  \"password\": \"{{otherPassword}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "upload the PDF",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('uploaded', () => pm.response.to.have.status(201))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/pdf"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{stamp}}.pdf",
+						"body": {
+							"mode": "file",
+							"file": {
+								"src": "tests/fixtures/pdf/testdoc.pdf"
+							}
+						}
+					}
+				},
+				{
+					"name": "read its file id",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 207', () => pm.response.to.have.status(207))",
+									"const id = /<oc:fileid>(\\d+)<\\/oc:fileid>/.exec(pm.response.text())",
+									"pm.test('has a file id', () => pm.expect(id).to.not.eql(null))",
+									"pm.collectionVariables.set('fileId', id[1])"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PROPFIND",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/xml"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{stamp}}.pdf",
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\"?><d:propfind xmlns:d=\"DAV:\" xmlns:oc=\"http://owncloud.org/ns\"><d:prop><oc:fileid/></d:prop></d:propfind>"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 — the text read",
+			"item": [
+				{
+					"name": "extract the PDF",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{fileId}}/extract",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					}
+				},
+				{
+					"name": "the owner reads the text",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const body = pm.response.json()",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('it is the PDF\\'s text', () => {",
+									"    pm.expect(body.fileId).to.eql(Number(pm.collectionVariables.get('fileId')))",
+									"    pm.expect(body.text).to.include('Simply a PDF Parser')",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{fileId}}/text"
+					}
+				},
+				{
+					"name": "another user gets 404",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 404', () => pm.response.to.have.status(404))",
+									"pm.test('no text leaks', () => pm.expect(pm.response.text()).to.not.include('Simply a PDF Parser'))",
+									"pm.collectionVariables.set('otherBody', pm.response.json().message)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{otherToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{fileId}}/text"
+					}
+				},
+				{
+					"name": "a file that does not exist answers the same",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 404', () => pm.response.to.have.status(404))",
+									"pm.test('the same message as an unreadable file, so 404 is no oracle', () => pm.expect(pm.response.json().message).to.eql(pm.collectionVariables.get('otherBody')))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/2147483646/text"
+					}
+				}
+			]
+		},
+		{
+			"name": "99 — teardown",
+			"item": [
+				{
+					"name": "delete the PDF",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/remote.php/dav/files/{{username}}/{{stamp}}.pdf"
+					}
+				},
+				{
+					"name": "delete the other user",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user deleted', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users/{{stamp}}-other?format=json"
+					}
+				}
+			]
+		}
+	]
+}
