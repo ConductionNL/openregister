@@ -2864,6 +2864,8 @@ Service/Object/MigrationSide.php,14,Service,Service,Service/Object/MigrationSide
 Service/Object/MoveAddress.php,15,Service,Service,Service/Object/MoveAddress.php,0,,Core
 Service/Object/MoveObject.php,191,Service,Service,Service/Object/MoveObject.php,0,,Core
 Service/Object/CopyPayload.php,,Service,,,,,Core
+Service/Object/CopyObject.php,,Service,,,,,Core
+Service/Object/CopyFiles.php,,Service,,,,,Files
 Service/Object/DraftService.php,133,Service,Service,Service/Object/DraftService.php,0,,Core
 Service/Object/MovedObjectLookup.php,71,Service,Service,Service/Object/MovedObjectLookup.php,0,,Core
 Service/Object/MovedObjectLookupInterface.php,6,Service,Service,Service/Object/MovedObjectLookupInterface.php,0,,Core
@@ -4508,6 +4510,7 @@ Collaboration/ObjectCollections.php,,Collaboration,,,,,Platform
 Controller/ObjectCollectionsController.php,,Controller,,,,,Platform
 Controller/VersionsController.php,310,Controller,Service,Service/Controller/VersionsController.php,0,,Core
 Migration/Version1Date20261114100009.php,,Migration,,,,,Platform
+Controller/Support/CopyRun.php,,Controller,,,,,Core
 Controller/Support/DestroyedTombstones.php,66,Controller,Service,Service/Controller/Support/DestroyedTombstones.php,0,,Core
 Kernel/Contracts/Value/DestructionQuery.php,25,Kernel,,,,,Kernel
 Db/SchemaMapper/NamedConditionCheck.php,,Db,,,,,Processes
@@ -4860,6 +4863,7 @@ Service/Lifecycle/TransitionSubmission.php,,Service,,,,,Processes
 Search/Listener/SearchDeclarationChecksListener.php,,Search,,,,,Search
 Kernel/Contracts/CapacityPolicyReaderInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/CapacityPolicy.php,,Kernel,,,,,Kernel
+Kernel/Contracts/ObjectFileCopierInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/MailObjectBinding.php,,Kernel,,,,,Kernel
 Kernel/Contracts/OutboundMailLinkRecorderInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel
