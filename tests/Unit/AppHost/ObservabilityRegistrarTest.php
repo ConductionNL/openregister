@@ -15,6 +15,7 @@ use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricsAccessGuard;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCA\OpenRegister\AppHost\ObservabilityRegistrar;
 use OCP\AppFramework\IAppContainer;
@@ -48,6 +49,7 @@ class ObservabilityRegistrarTest extends TestCase {
 				'OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource',
 				'OCA\OpenRegister\AppHost\Observability\PrometheusRenderer',
 				'OCA\OpenRegister\AppHost\IMetricsProvider::openregister',
+				'OCA\OpenRegister\AppHost\IHealthCheckProvider::openregister',
 				'OCA\OpenRegister\AppHost\Observability\MetricsEngine',
 				'AppHost\Controller\GenericHealthController',
 				'AppHost\Controller\GenericMetricsController',
@@ -56,6 +58,21 @@ class ObservabilityRegistrarTest extends TestCase {
 		);
 		$this->assertCount(expectedCount: 0, haystack: $context->listeners);
 	}//end testRegistersTheServicesInOrder()
+
+	/**
+	 * OpenRegister registers its operations dashboard widget; another app id does not.
+	 *
+	 * @return void
+	 */
+	public function testOnlyOpenRegisterRegistersTheOperationsWidget(): void {
+		$own = new RecordingRegistrationContext();
+		ObservabilityRegistrar::register(context: $own, appId: 'openregister');
+		$this->assertSame(expected: [\OCA\OpenRegister\Dashboard\OperationsDashboardWidget::class], actual: $own->widgets);
+
+		$leaf = new RecordingRegistrationContext();
+		ObservabilityRegistrar::register(context: $leaf, appId: 'leafapp');
+		$this->assertSame(expected: [], actual: $leaf->widgets);
+	}//end testOnlyOpenRegisterRegistersTheOperationsWidget()
 
 	/**
 	 * The health and metrics controllers are built for the app id passed in.
@@ -71,6 +88,7 @@ class ObservabilityRegistrarTest extends TestCase {
 			ManifestLoader::class => $this->createMock(originalClassName: ManifestLoader::class),
 			HealthCheckExecutor::class => $this->createMock(originalClassName: HealthCheckExecutor::class),
 			MetricsEngine::class => $this->createMock(originalClassName: MetricsEngine::class),
+			MetricsAccessGuard::class => $this->createMock(originalClassName: MetricsAccessGuard::class),
 		];
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturnCallback(
