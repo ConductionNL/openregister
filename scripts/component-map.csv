@@ -4474,6 +4474,7 @@ Service/File/ImageRegionNotBurnableException.php,,Service,,,,,Core
 Service/File/OcrWordLocator.php,,Service,,,,,Files
 Service/File/OcrWords.php,,Service,,,,,Core
 Service/File/OfficeMediaBurner.php,,Service,,,,,Files
+Service/File/PdfImageBurner.php,,Service,,,,,Core
 AppHost/Controller/GenericReadinessController.php,,AppHost,,,,,Integrations
 Service/Reference/ReferenceCardDeclaration.php,,Service,,,,,Core
 Service/Task/TaskVerbList.php,152,Service,Work,Work/Service/Task/TaskVerbList.php,0,,Processes
