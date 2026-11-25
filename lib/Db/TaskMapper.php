@@ -940,6 +940,8 @@ class TaskMapper extends QBMapper {
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	private function applyTerm(IQueryBuilder $qb, ?string $term): void {
 		foreach (self::termWords(term: $term) as $word) {
@@ -961,6 +963,8 @@ class TaskMapper extends QBMapper {
 	 * @return array<int, string>
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public static function termWords(?string $term): array {
 		$words = preg_split('/\s+/u', trim((string) $term), -1, PREG_SPLIT_NO_EMPTY);
