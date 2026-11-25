@@ -4931,3 +4931,4 @@ Service/Authorization/ActingHumanGuard.php,,Service,,,,,Core
 Service/Authorization/ActingHumanGuardInterface.php,,Service,,,,,Core
 Service/Authorization/ActingHumanContext.php,,Service,,,,,Core
 Exception/ActingHumanRefusedException.php,,Exception,,,,,Core
+Service/Flow/IFlowNodeRuntime.php,,Service,Flows,Flows/Service/Flow/IFlowNodeRuntime.php,0,,Processes
