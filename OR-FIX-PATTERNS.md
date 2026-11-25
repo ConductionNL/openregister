@@ -954,3 +954,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: RoutePostureTest::testEveryPublicMethodNamesWhatGuardsIt lists the PR's method; testEveryRoutedMethodHasAPostureNextcloudEnforces 'N+1 is identical to N'.
 - Cause: main's tests/Unit/Platform/RoutePostureTest.php keeps PUBLIC_METHODS, every public routed method with the check it relies on.
 - Fix: read the method, add '<Area>\\Controller\\<Class>::<method>' => self::<guard> in sorted place (TOKEN, PUBLISHED_FILE, OBJECT_RULE, PUBLIC_DOCUMENT, ...). A public method with no real guard is a review question, not a list entry. #11069 (verifyDigest).
+## info.xml <version> conflict: never take one side whole (or-fix-1, 25 Nov)
+- Symptom: BLOCK 'main merge dropped main's registrations from appinfo/info.xml' (<job>/<command> lines gone) after a merge resolved with git checkout --ours appinfo/info.xml.
+- Fix: rebuild from main: git show origin/main:appinfo/info.xml, re-apply only the PR's own delta (git diff $(git merge-base origin/main <pr>) <pr> -- appinfo/info.xml: its version and its own job/command lines), xmllint, php scripts/check-migration-version-bump.php --base=origin/main (#10451).
+## Unit runs 100x faster with --no-coverage (or-fix-1, 25 Nov)
+- phpunit-unit.xml collects coverage: every phpunit call spends ~34 s on the 248k-line coverage report. Pass --no-coverage: one Architecture file 34 s -> 0.2 s; all 204 Architecture files in ~4.5 min with xargs -P 4; tests/Unit/Service (38k tests) in ~4 min.
