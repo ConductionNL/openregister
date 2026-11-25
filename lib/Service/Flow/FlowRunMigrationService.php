@@ -249,8 +249,15 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 		$this->logger->info(
 			message: '[FlowRunMigrationService] run ' . $migration->runUuid . ' migrated from version '
 				. (string)$move->from . ' to ' . $migration->targetVersion . ' by ' . $migration->actor,
-			context: ['file' => __FILE__, 'line' => __LINE__, 'timersSuperseded' => $moved, 'tasksAndStreamsMoved' => $retargeted]
+			context: ['file' => __FILE__, 'line' => __LINE__, 'timersSuperseded' => $moved]
 		);
+		if ($retargeted > 0) {
+			$this->logger->info(
+				message: '[FlowRunMigrationService] run ' . $migration->runUuid . ': ' . $retargeted
+					. ' open task(s) and stream(s) moved to the renamed node(s)',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
 	}//end apply()
 
 	/**
