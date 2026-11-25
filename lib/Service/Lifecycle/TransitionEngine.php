@@ -1077,13 +1077,21 @@ class TransitionEngine implements LifecycleTransitionInterface {
 				$description = (string)$spec['description'];
 			}
 
-			$available[] = [
+			$item = [
 				'action' => (string)$action,
 				'to' => (string)($spec['to'] ?? ''),
 				'requires' => $requires,
 				'description' => $description,
 				'inputs' => $this->publishedInputs(inputs: (array)($spec['inputs'] ?? [])),
 			];
+
+			// The schema's own name for the move ("Take up" for `startHandling`).
+			// Without it every menu read the camel-cased action key.
+			if (isset($spec['label']) === true && is_string($spec['label']) === true && trim($spec['label']) !== '') {
+				$item['label'] = $spec['label'];
+			}
+
+			$available[] = $item;
 		}//end foreach
 
 		return $available;
