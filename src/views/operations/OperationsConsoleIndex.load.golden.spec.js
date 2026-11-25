@@ -11,6 +11,7 @@ import OperationsConsoleIndex from './OperationsConsoleIndex.vue'
 jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: { get: jest.fn() } }))
 jest.mock('@nextcloud/l10n', () => ({ __esModule: true, t: (app, text) => `t:${text}`, n: (app, one, many) => many }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => `/gen${path}` }))
+jest.mock('./QueryConsoleSection.vue', () => ({ __esModule: true, default: { name: 'QueryConsoleSection', render: () => null } }))
 jest.mock('@nextcloud/vue', () => ({}))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({}))
 

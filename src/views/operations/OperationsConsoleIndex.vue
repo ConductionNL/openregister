@@ -316,6 +316,9 @@
 						}}
 					</p>
 				</section>
+
+				<!-- Query console: a bounded read-only GraphQL query, administrators only -->
+				<QueryConsoleSection v-if="isAdministrator" />
 			</template>
 		</div>
 	</NcAppContent>
@@ -323,11 +326,13 @@
 
 <script>
 import { CnDataTable } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { n, t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DependenciesSection from './DependenciesSection.vue'
+import QueryConsoleSection from './QueryConsoleSection.vue'
 import SeedReportSection from './SeedReportSection.vue'
 import { pageShellComponents } from '../pageShell.js'
 
@@ -360,6 +365,7 @@ export default {
 		CnDataTable,
 		CogOutline,
 		DependenciesSection,
+		QueryConsoleSection,
 		SeedReportSection,
 		...pageShellComponents,
 	},
@@ -383,6 +389,16 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the signed-in user is an administrator: the query console is theirs alone.
+		 *
+		 * @spec openspec/changes/operate-admin-query-console/specs/admin-query-console/spec.md#requirement-an-administrator-runs-a-bounded-read-only-query
+		 * @return {boolean} True for an administrator.
+		 */
+		isAdministrator() {
+			return getCurrentUser()?.isAdmin === true
+		},
+
 		/**
 		 * The jobs table columns; the row actions add the "Do" column.
 		 *

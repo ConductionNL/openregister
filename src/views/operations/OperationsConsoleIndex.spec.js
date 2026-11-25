@@ -2,6 +2,7 @@ import axios from '@nextcloud/axios'
 import { flushPromises, mount } from '@vue/test-utils'
 import DependenciesSection from './DependenciesSection.vue'
 import OperationsConsoleIndex from './OperationsConsoleIndex.vue'
+import QueryConsoleSection from './QueryConsoleSection.vue'
 
 /**
  * The console's Dependencies section: an open breaker is listed with its next
@@ -23,11 +24,13 @@ jest.mock('@nextcloud/l10n', () => ({
 	n: (app, one, many, count) => many.replace('%n', String(count)),
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
+jest.mock('./QueryConsoleSection.vue', () => ({ __esModule: true, default: { name: 'QueryConsoleSection', render: () => null } }))
 jest.mock('@nextcloud/vue', () => jest.requireActual('../../../tests/unit/support/ncGolden.js').ncLibrary())
 jest.mock('@conduction/nextcloud-vue', () => {
 	const { CnDataTableStub } = jest.requireActual('../../../tests/unit/support/tableGolden.js')
 	return { __esModule: true, CnDataTable: CnDataTableStub }
 })
+jest.mock('@nextcloud/auth', () => ({ getCurrentUser: jest.fn(() => null) }))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({ __esModule: true, default: { render: () => null } }))
 
 const NEXT_PROBE = 1794729600
@@ -181,5 +184,22 @@ describe('OperationsConsoleIndex Dependencies section', () => {
 
 		expect(section.find('[type="error"]').text()).toBe('The dependencies could not be read.')
 		expect(section.find('table').exists()).toBe(false)
+	})
+})
+
+describe('OperationsConsoleIndex query console', () => {
+	it('shows the query console to an administrator only', async () => {
+		const { getCurrentUser } = require('@nextcloud/auth')
+		answering({ dependencies: [], pressure: { enabled: false }, shared: true })
+
+		getCurrentUser.mockReturnValue({ uid: 'admin', isAdmin: true })
+		const asAdmin = mount(OperationsConsoleIndex)
+		await flushPromises()
+		expect(asAdmin.findComponent(QueryConsoleSection).exists()).toBe(true)
+
+		getCurrentUser.mockReturnValue({ uid: 'ada', isAdmin: false })
+		const asUser = mount(OperationsConsoleIndex)
+		await flushPromises()
+		expect(asUser.findComponent(QueryConsoleSection).exists()).toBe(false)
 	})
 })

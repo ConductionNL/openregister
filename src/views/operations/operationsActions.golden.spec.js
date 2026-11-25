@@ -20,6 +20,7 @@ jest.mock('@nextcloud/l10n', () => ({
 	n: (app, one, many) => many,
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
+jest.mock('./QueryConsoleSection.vue', () => ({ __esModule: true, default: { name: 'QueryConsoleSection', render: () => null } }))
 jest.mock('@nextcloud/vue', () => ({}))
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({}))
 

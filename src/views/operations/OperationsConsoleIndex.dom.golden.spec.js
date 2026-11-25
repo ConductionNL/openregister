@@ -22,6 +22,7 @@ jest.mock('@nextcloud/l10n', () => ({
 	n: (app, one, many, count) => `n:${count}:${many}`,
 }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
+jest.mock('./QueryConsoleSection.vue', () => ({ __esModule: true, default: { name: 'QueryConsoleSection', render: () => null } }))
 jest.mock('@nextcloud/vue', () => jest.requireActual('../../../tests/unit/support/ncGolden.js').ncLibrary())
 jest.mock('@conduction/nextcloud-vue', () => {
 	const { CnDataTableStub } = jest.requireActual('../../../tests/unit/support/tableGolden.js')
