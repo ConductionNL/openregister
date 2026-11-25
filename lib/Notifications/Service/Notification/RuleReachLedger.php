@@ -35,6 +35,8 @@ use OCP\IAppConfig;
 
 /**
  * Reads and writes the per-rule reach record kept in app config.
+ *
+ * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md#requirement-the-record-reaches-a-person-not-only-a-log-req-rrn-03
  */
 class RuleReachLedger {
 
@@ -115,7 +117,12 @@ class RuleReachLedger {
 	/**
 	 * The rules on record, newest first, in the shape the settings page reads.
 	 *
-	 * @return array{rulesReachingNobody: list<array{rule: string, occurrences: int, lastSeen: string}>, ruleCount: int, occurrences: int, needsAPerson: bool}
+	 * @return array{
+	 *     rulesReachingNobody: list<array{rule: string, occurrences: int, lastSeen: string}>,
+	 *     ruleCount: int,
+	 *     occurrences: int,
+	 *     needsAPerson: bool
+	 * }
 	 *
 	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md#requirement-the-record-reaches-a-person-not-only-a-log-req-rrn-03
 	 */
