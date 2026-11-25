@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.2.0-dev.7</version>
+    <version>2.2.0-dev.14</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -133,6 +133,7 @@ Vrij en open source onder de EUPL-licentie.
 	<background-jobs>
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
 		<job>OCA\OpenRegister\BackgroundJob\RequestAlertJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\BackfillCalendarLinksJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\PublishedDigestVerifyJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledMessageSweepJob</job>
@@ -576,6 +577,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResetSchemaToShippedCommand</command>
 		<command>OCA\OpenRegister\Command\DocumentStoreStatusCommand</command>
+		<command>OCA\OpenRegister\Command\DocumentStoreMoveCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
 		<command>OCA\OpenRegister\Command\AdoptOrganisationlessRowsCommand</command>
 		<command>OCA\OpenRegister\Command\UniqueUuidIndexCommand</command>

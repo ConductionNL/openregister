@@ -61,6 +61,8 @@ class AuditTrailAccessGoldenTest extends TestCase {
 
 	private IGroupManager&MockObject $groupManager;
 
+	private \Psr\Log\LoggerInterface&MockObject $logger;
+
 	/**
 	 * The request parameters.
 	 *
@@ -79,6 +81,7 @@ class AuditTrailAccessGoldenTest extends TestCase {
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->logger = $this->createMock(\Psr\Log\LoggerInterface::class);
 	}
 
 	/**
@@ -100,7 +103,9 @@ class AuditTrailAccessGoldenTest extends TestCase {
 				new AuditExportSource($this->createMock(AuditTrailPageQuery::class), $this->logService),
 				$this->createMock(IJobList::class)
 			),
-			$this->createMock(ObjectHistoryForReaders::class)
+			$this->createMock(ObjectHistoryForReaders::class),
+			null,
+			$this->logger
 		);
 	}
 
@@ -233,15 +238,19 @@ class AuditTrailAccessGoldenTest extends TestCase {
 		$this->assertSame(['5' => [['id' => 'masked']], 'note' => 'n'], $response->getData());
 	}
 
-	public function testAFailingSubjectTrailIs500WithItsPrefix(): void {
+	public function testAFailingSubjectTrailIsAGeneric500WithItsPrefixInTheLog(): void {
 		$this->signIn(true);
 		$this->params = ['identifier' => 'bsn-1'];
 		$this->auditTrailMapper->method('findByIdentifier')->willThrowException(new \RuntimeException('db'));
+		$this->logger->expects($this->once())->method('error')->with(
+			'[OCA\\OpenRegister\\Controller\\AuditTrailController] Subject audit-trail lookup failed: db',
+			$this->anything()
+		);
 
 		$response = $this->controller()->subjectAuditTrail();
 
 		$this->assertSame(500, $response->getStatus());
-		$this->assertSame(['error' => 'Subject audit-trail lookup failed: db'], $response->getData());
+		$this->assertSame(['error' => 'Internal server error'], $response->getData());
 	}
 
 	// --- export -----------------------------------------------------------

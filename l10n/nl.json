@@ -3744,7 +3744,16 @@
         "New {name} from this mail": "Nieuwe {name} vanuit deze e-mail",
         "Fields marked * are required. The new {name} is connected to this mail.": "Velden met * zijn verplicht. De nieuwe {name} wordt aan deze e-mail gekoppeld.",
         "(optional)": "(niet verplicht)",
-        "Create and connect": "Aanmaken en koppelen"
+        "Create and connect": "Aanmaken en koppelen",
+        "Scheduled report \"%s\"": "Geplande rapportage \"%s\"",
+        "_Your scheduled report \"%s\" ran and delivered %n row._::_Your scheduled report \"%s\" ran and delivered %n rows._": [
+            "Je geplande rapportage \"%s\" is uitgevoerd en leverde %n rij op.",
+            "Je geplande rapportage \"%s\" is uitgevoerd en leverde %n rijen op."
+        ],
+        "all schemas": "alle schema's",
+        "Source: %1$s / %2$s.": "Bron: %1$s / %2$s.",
+        "Schedule: %s.": "Planning: %s.",
+        "The export (%1$s) exceeds the %2$sMB email attachment limit and was not attached. It has been saved to your Nextcloud Files at %3$s%4$s instead.": "De export (%1$s) is groter dan de bijlagelimiet van %2$sMB voor e-mail en is niet bijgevoegd. Hij staat in plaats daarvan in je Nextcloud Bestanden op %3$s%4$s."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
