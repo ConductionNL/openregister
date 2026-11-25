@@ -18,7 +18,7 @@
 
 ## 3. Assessment records (REQ-ROD-003)
 
-- [ ] 3.1 After `access-owner-and-condition-scopes` has landed: `tests/Unit/Service/Authorization/AssessmentOwnershipTest.php::testASecondReviewerCannotEditTheFirstsAssessment` and `testTheCoordinatorCan` on a fixture schema. If that change has not landed when this one is built, the test is written and marked skipped with the reason, and the PR body says 12.28's assessment half waits on it.
+- [x] 3.1 After `access-owner-and-condition-scopes` has landed: `tests/Unit/Service/Authorization/AssessmentOwnershipTest.php::testASecondReviewerCannotEditTheFirstsAssessment` and `testTheCoordinatorCan` on a fixture schema. If that change has not landed when this one is built, the test is written and marked skipped with the reason, and the PR body says 12.28's assessment half waits on it.
 - [ ] 3.2 Tell the lane that ships `wooAssessment` (dossiq after D1, or opencatalogi while it still ships the schema) the block to set. Verify: the PR body quotes it and links the consumer issue.
 
 ## V. Verification and done

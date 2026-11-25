@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Rules;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface;
 use OCA\OpenRegister\Service\Rules\Support\AdministeredValidationChecks;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -48,12 +49,14 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 * @param AdministeredValidationChecks $checks The declared checks, the named-condition vocabulary and the caller's language.
 	 * @param AdministeredValidationRunLog $runLog Records what a validation decided.
 	 * @param LoggerInterface $logger The logger.
+	 * @param SaveWarningsInterface|null $saveWarnings The request's save warnings, which the response carries (task 4.3b).
 	 */
 	public function __construct(
 		private readonly SchemaMapperInterface $schemaMapper,
 		private readonly AdministeredValidationChecks $checks,
 		private readonly AdministeredValidationRunLog $runLog,
 		private readonly LoggerInterface $logger,
+		private readonly ?SaveWarningsInterface $saveWarnings=null,
 	) {
 	}//end __construct()
 
@@ -95,8 +98,15 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 */
 	private function refusalOfWrite(ValidatedWrite $write, array $document): ?array {
 		$outcome = $this->evaluate(write: $write, document: $document);
-		$this->recordOutcome(write: $write, outcome: $outcome);
+		$this->recordOutcome(write: $write, outcome: $outcome, document: $document);
 		if ($outcome['refusals'] === []) {
+			// The write proceeds: its warnings travel to the response beside
+			// the event, which carries errors only. A refused write carries
+			// them in its refusal instead.
+			foreach ($outcome['warnings'] as $warning) {
+				$this->saveWarnings?->add(object: $write->object->getUuid(), warning: $warning);
+			}
+
 			return null;
 		}
 
@@ -150,7 +160,12 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 */
 	private function evaluate(ValidatedWrite $write, array $document): array {
 		$library = $this->checks->conditions->libraryFrom(annotation: ($write->configuration()[NamedConditionLibrary::ANNOTATION] ?? null));
-		$input   = new ValidationInput(document: $document, library: $library, language: $this->checks->l10n->getLanguageCode());
+		$input   = new ValidationInput(
+			document: $document,
+			library: $library,
+			language: $this->checks->l10n->getLanguageCode(),
+			organisation: $write->object->getOrganisation()
+		);
 
 		return $this->checks->validations->evaluate(annotation: $this->declaredOn(schema: $write->schema), input: $input);
 	}//end evaluate()
@@ -160,25 +175,47 @@ class AdministeredValidationEnforcer implements AdministeredValidationEnforcerIn
 	 *
 	 * @param ValidatedWrite $write The object being saved and its schema.
 	 * @param array{refusals: array<int, array<string, mixed>>, warnings: array<int, array<string, mixed>>} $outcome The outcome.
+	 * @param array<string, mixed> $document The document the validations read, for which side decided.
 	 *
 	 * @return void
 	 */
-	private function recordOutcome(ValidatedWrite $write, array $outcome): void {
+	private function recordOutcome(ValidatedWrite $write, array $outcome, array $document): void {
 		foreach ($outcome['warnings'] as $warning) {
-			// 🔑 RECORDED, NOT RETURNED — and that is a gap, not a decision.
-			// The spec says a warning saves AND returns its message, and the
-			// save events carry `setErrors()` and nothing else: there is no
-			// warnings channel on a save response to put it in. Writing it to
-			// the run log keeps the evaluation honest and visible while the
-			// channel is missing, and `tasks.md` names the missing half rather
-			// than letting a silent drop look like a feature.
-			$this->runLog->recordWarning(write: $write, entry: $warning);
+			// Recorded AND returned: the run log keeps the evaluation
+			// visible after the fact, and `refusalOfWrite()` hands the
+			// warning to the response through `SaveWarningsInterface`.
+			$this->runLog->recordWarning(write: $write, entry: $warning, decidedBy: $this->decidedBy(write: $write, entry: $warning, document: $document));
 		}
 
 		if ($outcome['refusals'] !== []) {
-			$this->runLog->recordRefusal(write: $write, entry: $outcome['refusals'][0]);
+			$first = $outcome['refusals'][0];
+			$this->runLog->recordRefusal(write: $write, entry: $first, decidedBy: $this->decidedBy(write: $write, entry: $first, document: $document));
 		}
 	}//end recordOutcome()
+
+	/**
+	 * Which side of the write a recorded verdict turned on (task 2.3b).
+	 *
+	 * Null for a check that could not be evaluated: it turned on nothing.
+	 *
+	 * @param ValidatedWrite       $write    The write, whose schema declares the validation.
+	 * @param array<string, mixed> $entry    The recorded outcome, naming its validation.
+	 * @param array<string, mixed> $document The document it was evaluated against.
+	 *
+	 * @return string|null `transition`, `after` or `unchanged`; null when unevaluable.
+	 *
+	 * @spec openspec/changes/rules-compose-read-transitions-and-time/specs/flow-engine/spec.md
+	 */
+	private function decidedBy(ValidatedWrite $write, array $entry, array $document): ?string {
+		if (($entry['unevaluable'] ?? false) === true) {
+			return null;
+		}
+
+		$declared  = ($this->declaredOn(schema: $write->schema) ?? []);
+		$condition = ($declared[(string)($entry['validation'] ?? '')]['condition'] ?? null);
+
+		return (new TransitionDocument())->decidedBy(node: $condition, document: $document);
+	}//end decidedBy()
 
 	/**
 	 * The refusal to put on the event, led by the first refusing validation.

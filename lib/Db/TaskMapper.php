@@ -279,6 +279,28 @@ class TaskMapper extends QBMapper {
 	}//end findByKey()
 
 	/**
+	 * Every task on one object, open and finished, oldest first.
+	 *
+	 * Unscoped by caller: the published {@see \OCA\OpenRegister\Contract\ObjectTaskReaderInterface}
+	 * leaves the object's read rights to its caller.
+	 *
+	 * @param string $objectUuid The object's uuid.
+	 *
+	 * @return array<int, Task> The tasks, oldest first.
+	 *
+	 * @spec openspec/changes/object-task-reader/specs/flow-tasks/spec.md#requirement-a-consuming-app-reads-the-tasks-on-its-object
+	 */
+	public function findByObjectUuid(string $objectUuid): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->orderBy('id', 'ASC');
+
+		return $this->findEntities(query: $qb);
+	}//end findByObjectUuid()
+
+	/**
 	 * Update a task ONLY while it is still open: the conditional write every
 	 * state-changing verb goes through.
 	 *
@@ -1139,6 +1161,8 @@ class TaskMapper extends QBMapper {
 	 * @return void
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	private function applyTerm(IQueryBuilder $qb, ?string $term): void {
 		foreach (self::termWords(term: $term) as $word) {
@@ -1160,6 +1184,8 @@ class TaskMapper extends QBMapper {
 	 * @return array<int, string>
 	 *
 	 * @spec openspec/changes/flow-task-search-provider/tasks.md#task-1.1
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public static function termWords(?string $term): array {
 		$words = preg_split('/\s+/u', trim((string) $term), -1, PREG_SPLIT_NO_EMPTY);
