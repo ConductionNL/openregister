@@ -316,6 +316,8 @@
 						}}
 					</p>
 				</section>
+
+				<QueryConsoleSection />
 			</template>
 		</div>
 	</NcAppContent>
@@ -328,6 +330,7 @@ import { n, t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DependenciesSection from './DependenciesSection.vue'
+import QueryConsoleSection from './QueryConsoleSection.vue'
 import SeedReportSection from './SeedReportSection.vue'
 import { pageShellComponents } from '../pageShell.js'
 
@@ -360,6 +363,7 @@ export default {
 		CnDataTable,
 		CogOutline,
 		DependenciesSection,
+		QueryConsoleSection,
 		SeedReportSection,
 		...pageShellComponents,
 	},
