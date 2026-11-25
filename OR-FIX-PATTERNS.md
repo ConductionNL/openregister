@@ -970,3 +970,6 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: MagicSearchHandlerRowToEntityTest::testRowHydratesTheRecordedEntity fails on a PR's own new case: actual has 'matchedFileId'/'matchedMember' that the expected lacks.
 - Cause: main added entity fields to every case in tests/Unit/Db/MagicMapper/fixtures/row-to-entity.php; a PR that added a case before that has the old field list.
 - Fix: after merging main, add the missing keys (NULL) after 'matchedFile' in the PR's case only (see #11171).
+## A non-Core file needs the default organisation: Kernel DefaultOrganisationInterface (or-fix-0)
+- Symptom: testNoComponentEdgeBeyondTheBaseline lists '<Configuration/other file> -> lib/Service/OrganisationServiceInterface.php (X -> Core)' for a call to ensureDefaultOrganisation().
+- Fix: #11210 8386d7e7 adds root Kernel\Contracts\DefaultOrganisationInterface (ensureDefaultOrganisation(): Kernel OrganisationInterface), implemented by OrganisationService and bound in CoreServiceBindings; get it from the container and narrow with instanceof Db\Organisation. Until #11210 lands, copy those 4 lines (interface file, csv row 'Kernel/Contracts/DefaultOrganisationInterface.php,,Kernel,,,,,Kernel', implements, binding).
