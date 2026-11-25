@@ -171,6 +171,8 @@ final class RoutePostureTest extends TestCase {
 		'Controller\\SchemasController::index' => self::PUBLIC_DOCUMENT,
 		'Controller\\SchemasController::resolveByImplements' => self::PUBLIC_DOCUMENT,
 		'Controller\\SchemasController::show' => self::PUBLIC_DOCUMENT,
+		'Controller\\SurveyAnswerController::show' => self::TOKEN,
+		'Controller\\SurveyAnswerController::submit' => self::TOKEN,
 		'Controller\\TagsController::getAllTags' => self::SESSION,
 		'Controller\\UserController::login' => self::CREDENTIALS,
 		'Controller\\UserController::logout' => self::SESSION,

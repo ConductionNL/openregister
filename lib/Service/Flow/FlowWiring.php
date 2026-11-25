@@ -69,6 +69,7 @@ use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterfa
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowNamingDocumentsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
@@ -92,6 +93,8 @@ use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
 use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
@@ -177,6 +180,7 @@ final class FlowWiring {
 		ObjectWatchersInterface::class => WatcherService::class,
 		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
 		SchemaRenameWarningsInterface::class => FlowTriggerRenameCheck::class,
+		FlowNamingDocumentsInterface::class => FlowNamingDocuments::class,
 		SchemaFormDependentsInterface::class => FormDependentsCheck::class,
 		ApprovalPositionFormCheckInterface::class => ApprovalPositionFormGuard::class,
 		BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,
@@ -188,6 +192,7 @@ final class FlowWiring {
 		CodeNodeInterface::class => CodeNode::class,
 		CodeRunnerClientInterface::class => CodeRunnerClient::class,
 		TagObjectNodeInterface::class => TagObjectNode::class,
+		SurveyInviteNodeInterface::class => SurveyInviteNode::class,
 		AuditTrailNodeInterface::class => AuditTrailNode::class,
 		ExtendInputNodeInterface::class => ExtendInputNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,

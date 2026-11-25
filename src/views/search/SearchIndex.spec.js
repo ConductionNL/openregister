@@ -703,3 +703,13 @@ describe('SearchIndex — map presentation and area search (REQ-GEOMAP-002)', ()
 		expect(ctx.mapArea).toBeNull()
 	})
 })
+
+describe('SearchIndex — column sort header (case-insensitive-ordering 1.4)', () => {
+	it('reads the sorted column back from the _order the search sends', () => {
+		mockObjectStore.searchParams = { register: 'r', schema: 's', _order: { title: 'desc' } }
+		expect(computedCall('headerSort', {})).toEqual({ sortKey: 'title', sortOrder: 'desc' })
+
+		mockObjectStore.searchParams = { register: 'r', schema: 's' }
+		expect(computedCall('headerSort', {})).toEqual({ sortKey: null, sortOrder: 'asc' })
+	})
+})
