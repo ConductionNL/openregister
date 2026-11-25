@@ -69,6 +69,7 @@ use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterfa
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowNamingDocumentsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
@@ -179,6 +180,7 @@ final class FlowWiring {
 		ObjectWatchersInterface::class => WatcherService::class,
 		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
 		SchemaRenameWarningsInterface::class => FlowTriggerRenameCheck::class,
+		FlowNamingDocumentsInterface::class => FlowNamingDocuments::class,
 		SchemaFormDependentsInterface::class => FormDependentsCheck::class,
 		ApprovalPositionFormCheckInterface::class => ApprovalPositionFormGuard::class,
 		BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,

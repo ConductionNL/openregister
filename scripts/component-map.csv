@@ -4454,6 +4454,7 @@ Db/AutomationRecordFilter.php,,Db,,,,,Processes
 Db/AutomationRecordMapper.php,,Db,,,,,Processes
 Service/AutomationRecordWriter.php,,Service,,,,,Processes
 Service/AutomationRecordService.php,,Service,,,,,Processes
+Service/AutomationOutcome.php,,Service,,,,,Processes
 Service/Lifecycle/LifecycleActionRecorder.php,,Service,,,,,Processes
 Listener/LifecycleActionRecordListener.php,,Listener,,,,,Processes
 Notifications/Service/Notification/NotificationRunTally.php,,Notifications,,,,,Notifications
@@ -5061,6 +5062,9 @@ Service/File/ScopedContentSearchService.php,,Service,,,,,Files
 Kernel/Contracts/RecentLensInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/DeclaredGroupRightsInterface.php,,Kernel,Kernel,,,,Kernel
 Kernel/Contracts/DeclaredGroupsReconcileInterface.php,,Kernel,Kernel,,,,Kernel
+Service/Schema/RenameReferenceWarnings.php,,Service,,,,,Core
+Service/Flow/FlowNamingDocuments.php,,Service,,,,,Processes
+Search/Service/ViewNamingDocuments.php,,Search,,,,,Search
 Service/Import/BaseImportPlanner.php,,Service,,,,,Configuration
 Service/Authorization/PermissionMatrixExport.php,,Service,,,,,Core
 Service/Authorization/PermissionMatrixExporter.php,,Service,,,,,Core

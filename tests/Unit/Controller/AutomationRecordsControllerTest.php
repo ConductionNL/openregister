@@ -47,6 +47,8 @@ use RuntimeException;
 /**
  * @covers \OCA\OpenRegister\Controller\AutomationRecordsController
  * @uses   \OCA\OpenRegister\Db\AutomationRecordFilter
+ * @uses   \OCA\OpenRegister\Db\AutomationRecord
+ * @uses   \OCA\OpenRegister\Service\AutomationOutcome
  */
 class AutomationRecordsControllerTest extends TestCase {
 
@@ -144,5 +146,63 @@ class AutomationRecordsControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
 		$this->assertSame(['error' => 'Automation records could not be read'], $response->getData());
+	}
+
+	public function testOutcomesWithoutASessionReadNothing(): void {
+		$this->user = null;
+		$this->records->expects($this->never())->method('find');
+
+		$response = $this->controller()->outcomes();
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
+		$this->assertSame(['error' => 'Authentication required'], $response->getData());
+	}
+
+	public function testOutcomesReadByKeyPrefixAndAnswerTheOutcomeShape(): void {
+		$this->params = ['keyPrefix' => 'aut-7f3c', 'kind' => 'notification', 'limit' => '5'];
+		$record = new AutomationRecord();
+		$record->setKind(AutomationRecord::KIND_NOTIFICATION);
+		$record->setAutomationKey('aut-7f3c-reminder');
+		$record->setObjectUuid('Z-2026-0042');
+		$record->setOutcome('sent');
+		$record->setChannels('{"email":{"sent":2,"failed":0}}');
+		$record->setMessage(null);
+		$seen = null;
+		$this->records->expects($this->once())->method('find')->willReturnCallback(
+			function (AutomationRecordFilter $filter) use (&$seen, $record): array {
+				$seen = $filter;
+				return [$record];
+			}
+		);
+
+		$response = $this->controller()->outcomes();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame('aut-7f3c', $seen->keyPrefix);
+		$this->assertSame(AutomationRecord::KIND_NOTIFICATION, $seen->kind);
+		$data = $response->getData();
+		$this->assertSame(5, $data['limit']);
+		$this->assertSame(0, $data['offset']);
+		$this->assertCount(1, $data['results']);
+		$this->assertSame('notification', $data['results'][0]['kind']);
+		$this->assertSame('Z-2026-0042', $data['results'][0]['subject']['id']);
+		$this->assertSame('sent', $data['results'][0]['outcome']);
+		$this->assertSame(2, $data['results'][0]['recipients']);
+		$this->assertArrayNotHasKey('channels', $data['results'][0]);
+	}
+
+	public function testOutcomesAnswerOnlyWhatTheServiceLetsTheCallerSee(): void {
+		$this->records->expects($this->once())->method('find')->willReturn([]);
+
+		$this->assertSame([], $this->controller()->outcomes()->getData()['results']);
+	}
+
+	public function testAFailingOutcomeReadAnswers500WithoutItsMessage(): void {
+		$this->records->method('find')->willThrowException(new RuntimeException('SQLSTATE[42S02] table missing'));
+
+		$response = $this->controller()->outcomes();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['error' => 'Automation outcomes could not be read'], $response->getData());
 	}
 }//end class

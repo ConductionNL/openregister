@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Schema\PropertyConversionServiceInterface;
+use OCA\OpenRegister\Service\Schema\RenameReferenceWarnings;
 use OCA\OpenRegister\Service\Schema\SchemaMigrationServiceInterface;
 use OCA\OpenRegister\Service\Schema\SchemaObjectReaderInterface;
 use OCA\OpenRegister\Service\Schema\SchemaRevalidatorInterface;
@@ -40,6 +41,7 @@ final class SchemaMigrationDomain {
 	 * @param SchemaMigrationServiceInterface     $migrationService    Migration engine.
 	 * @param SchemaObjectReaderInterface         $objectReader        Locates a schema's register and reads its stored values.
 	 * @param ?PropertyConversionServiceInterface $conversions         Publishes and previews a property type change.
+	 * @param ?RenameReferenceWarnings            $renameWarnings      Names what a rename leaves pointing at the old name.
 	 *
 	 * @spec openspec/specs/runtime-schema-api/spec.md
 	 */
@@ -48,6 +50,7 @@ final class SchemaMigrationDomain {
 		public readonly SchemaMigrationServiceInterface $migrationService,
 		public readonly SchemaObjectReaderInterface $objectReader,
 		public readonly ?PropertyConversionServiceInterface $conversions = null,
+		public readonly ?RenameReferenceWarnings $renameWarnings = null,
 	) {
 	}//end __construct()
 }//end class
