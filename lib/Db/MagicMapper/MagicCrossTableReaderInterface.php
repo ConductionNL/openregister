@@ -40,13 +40,19 @@ interface MagicCrossTableReaderInterface {
 	 * This method efficiently searches all magic tables for multiple UUIDs in batch.
 	 * It's optimized for performance by searching all UUIDs in each table with a single query.
 	 *
-	 * @param array    $uuids           Array of UUIDs to search for.
-	 * @param bool     $includeDeleted  Whether to include soft-deleted objects.
-	 * @param int|null $registerIdScope Only look in this register's tables (null: every table).
+	 * @param array          $uuids           Array of UUIDs to search for.
+	 * @param bool           $includeDeleted  Whether to include soft-deleted objects.
+	 * @param int|null       $registerIdScope Only look in this register's tables (null: every table).
+	 * @param list<int>|null $schemaIdScope   Only look in these schemas' tables, in any register (null: every schema).
 	 *
 	 * @return ObjectEntity[] Array of found objects (may be fewer than requested if some not found).
 	 */
-	public function findMultipleAcrossAllMagicTables(array $uuids, bool $includeDeleted = false, ?int $registerIdScope = null): array;
+	public function findMultipleAcrossAllMagicTables(
+		array $uuids,
+		bool $includeDeleted = false,
+		?int $registerIdScope = null,
+		?array $schemaIdScope = null,
+	): array;
 
 	/**
 	 * Find objects by uuid across all magic tables, each with every stored column.
