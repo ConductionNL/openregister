@@ -1002,3 +1002,4 @@
 2026-11-25T13:51:49Z help-portaliq-2 live: merged portaliq #2744 (submission-records-its-action-title 1.4: Inzendingen lists Sanne's askQuestion submissions as 'Stel een vraag'; change archived, requirement synced into supplier-portal)
 2026-11-25T13:51:56Z help-portaliq-1 merged portaliq #2745 (intake reference page finds a case by the uuid OR's FormSubmitService answers when the destination has no own reference; e2e portal-intake-form-as-an-object 4/5 live, catalogue red remains: opencatalogi/publication contract)
 2026-11-25T13:52:07Z b-launchpad built (live): merged launchpad #2036 (e2e-coverage-programme 1.1 admin-settings done: 72 admin-settings e2e tests green live; api spec key list follows getSettings() incl. leaverHandover)
+2026-11-25T13:53:00Z versioniq (helping launchpad e2e): merged launchpad #2037 (live-data-tile-widget 15/15 live: spec follows the REQ-LIVETILE-020 board form; needs allow_local_remote_servers for its fixture)
