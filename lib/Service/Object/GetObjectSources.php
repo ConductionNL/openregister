@@ -34,14 +34,18 @@ final class GetObjectSources {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
-	 * @param LoggerInterface      $logger               Logger for object-source delegation warnings.
+	 * @param ObjectSourceRegistry          $objectSourceRegistry Registry of object-source providers (virtual schemas).
+	 * @param LoggerInterface               $logger               Logger for object-source delegation warnings.
+	 * @param PermissionCheckInterface|null $permissions          Answers whether the caller may read a sourced object;
+	 *                                                            null leaves the read check to the caller.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md#requirement-read-access-parity-and-no-enumeration-oracle
 	 */
 	public function __construct(
 		public readonly ObjectSourceRegistry $objectSourceRegistry,
 		public readonly LoggerInterface $logger,
+		public readonly ?PermissionCheckInterface $permissions=null,
 	) {
 	}//end __construct()
 }//end class

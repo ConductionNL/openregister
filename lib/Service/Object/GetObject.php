@@ -158,7 +158,7 @@ class GetObject
         // provider and never read from the magic table. Absent/denied → 404.
         $source = $this->sourceBinding(scope: $scope);
         if ($source !== null) {
-            return $this->findInSource(source: $source, id: $request->id);
+            return $this->findInSource(source: $source, id: $request->id, rbac: $request->rbac);
         }
 
         // Register the read on the audit trail (read-history-on-audit-trail).
@@ -177,29 +177,65 @@ class GetObject
     }//end find()
 
     /**
-     * Fetch one object live from its object-source provider; a missing provider or object is a 404.
+     * Fetch one object live from its object source.
      *
-     * @param ObjectSourceBinding $source The provider (null when missing or disabled), register and schema.
+     * A provider reads the external store without the caller's rights, so the
+     * read check runs here, on the object it answered: a caller who may not read
+     * it gets the same "not found" as for an id that does not exist, which is
+     * what a native schema answers (its RBAC-filtered query finds nothing). A
+     * refusal that differed from a miss would tell anyone probing ids which
+     * external rows exist.
+     *
+     * @param ObjectSourceBinding $source The schema's object source.
      * @param string              $id     The object id.
+     * @param bool                $rbac   Whether the caller's read right is checked.
      *
-     * @return ObjectEntity The object
+     * @return ObjectEntity The object.
      *
-     * @throws DoesNotExistException When the provider is unavailable or has no such object.
+     * @throws DoesNotExistException When the source has no such object, or the caller may not read it.
      *
-     * @spec openspec/specs/object-lifecycle/spec.md
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md#requirement-read-access-parity-and-no-enumeration-oracle
      */
-    private function findInSource(ObjectSourceBinding $source, string $id): ObjectEntity
+    private function findInSource(ObjectSourceBinding $source, string $id, bool $rbac=true): ObjectEntity
     {
         $virtual = $source->provider?->find(
             source: new SourcedTable(table: new RegisterSchema(register: $source->register, schema: $source->schema), config: $source->config()),
             id: $id
         );
-        if ($virtual === null) {
+        if ($virtual === null || $this->mayNotReadSourced(source: $source, object: $virtual, rbac: $rbac) === true) {
             throw new DoesNotExistException(sprintf('Object %s not found', $id));
         }
 
         return $virtual;
     }//end findInSource()
+
+    /**
+     * Whether the caller is refused the read of an object a source answered.
+     *
+     * Asked like the read of a native object: the schema's read rule, with the
+     * object and its owner, for the signed-in user. Without a permission check
+     * wired, or with RBAC off for this read, nothing is refused here.
+     *
+     * @param ObjectSourceBinding $source The schema's object source.
+     * @param ObjectEntity        $object The object the source answered.
+     * @param bool                $rbac   Whether the caller's read right is checked.
+     *
+     * @return bool True when the caller may not read the object.
+     *
+     * @spec openspec/changes/dbal-virtual-registers/specs/dbal-virtual-registers/spec.md#requirement-read-access-parity-and-no-enumeration-oracle
+     */
+    private function mayNotReadSourced(ObjectSourceBinding $source, ObjectEntity $object, bool $rbac): bool
+    {
+        if ($rbac === false || $this->sources->permissions === null) {
+            return false;
+        }
+
+        $ask = (new PermissionAsk(schema: $source->schema, action: 'read'))
+            ->askedBy(userId: null, objectOwner: $object->getOwner())
+            ->about(object: $object, register: null);
+
+        return $this->sources->permissions->hasPermission(ask: $ask, _rbac: true) === false;
+    }//end mayNotReadSourced()
 
     /**
      * Read one object from the magic table, hydrating files when asked.
@@ -270,7 +306,7 @@ class GetObject
         // Object-source delegation (silent read, no audit) — see find().
         $source = $this->sourceBinding(scope: $scope);
         if ($source !== null) {
-            return $this->findInSource(source: $source, id: $request->id);
+            return $this->findInSource(source: $source, id: $request->id, rbac: $request->rbac);
         }
 
         // No audit trail creation - this is a silent read.
