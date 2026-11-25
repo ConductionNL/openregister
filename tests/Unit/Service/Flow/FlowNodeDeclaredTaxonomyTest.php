@@ -64,6 +64,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LoopNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\MapNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\MergeNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode
@@ -124,6 +125,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			// register is the category's business, not the kind's.
 			'ObjectReadNode' => ['serviceTask', 'objects'],
 			'AuditTrailNode' => ['serviceTask', 'objects'],
+			'ExtendInputNode' => ['serviceTask', 'objects'],
 			'ObjectWriteNode' => ['serviceTask', 'objects'],
 			'LockObjectNode' => ['serviceTask', 'objects'],
 			'UnlockObjectNode' => ['serviceTask', 'objects'],
