@@ -126,6 +126,8 @@ class SubjectDeclaredFieldIndex {
 	 * @param string|null $type The id type to keep, or null for every type.
 	 *
 	 * @return list<array{0: int, 1: array<string, string>}> Schema id and its fields per id type.
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md#requirement-discovery-also-finds-records-through-schema-declared-subject-id-fields
 	 */
 	private function declaringSchemas(?string $type): array {
 		try {
@@ -154,6 +156,8 @@ class SubjectDeclaredFieldIndex {
 	 * @param int $schemaId The schema.
 	 *
 	 * @return list<int>
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md#requirement-declared-field-results-are-scoped-and-held-like-entity-index-results
 	 */
 	private function registersOf(int $schemaId): array {
 		try {
@@ -177,6 +181,8 @@ class SubjectDeclaredFieldIndex {
 	 * @param array{0: bool, 1: bool}           $scope     RBAC and tenant scoping.
 	 *
 	 * @return list<ObjectEntity>
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md#requirement-declared-field-results-are-scoped-and-held-like-entity-index-results
 	 */
 	private function search(array $table, string $field, string $subjectId, array $scope): array {
 		try {
@@ -215,6 +221,8 @@ class SubjectDeclaredFieldIndex {
 	 * @param string $subjectId The subject id.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md#requirement-discovery-also-finds-records-through-schema-declared-subject-id-fields
 	 */
 	private static function holds(mixed $value, string $subjectId): bool {
 		if (is_array($value) === true) {
@@ -237,6 +245,8 @@ class SubjectDeclaredFieldIndex {
 	 * @param ObjectEntity $object The object.
 	 *
 	 * @return string|null `uuid:<uuid>`, `id:<id>`, or null when it names neither.
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md#requirement-each-discovered-object-records-what-included-it
 	 */
 	private static function groupKey(ObjectEntity $object): ?string {
 		$uuid = (string)($object->getUuid() ?? '');
