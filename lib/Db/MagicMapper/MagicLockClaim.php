@@ -127,7 +127,9 @@ final class MagicLockClaim {
 	 */
 	private function unchanged(IQueryBuilder $qb, ?array $previous): string {
 		$column   = self::COLUMN;
-		$platform = $this->db->getDatabaseProvider();
+		// strict: without it Nextcloud reports MariaDB as `mysql`, and MariaDB rejects
+		// the MySQL branch's CAST(... AS JSON) (SQLSTATE 42000), so every lock failed.
+		$platform = $this->db->getDatabaseProvider(strict: true);
 		if ($previous === null || $previous === []) {
 			// Unlocked: SQL NULL, or a JSON null or empty value.
 			return match ($platform) {

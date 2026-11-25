@@ -78,7 +78,11 @@ class MagicLockClaimTest extends TestCase {
 		$qb->method('executeQuery')->willReturn($result);
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturn($qb);
-		$db->method('getDatabaseProvider')->willReturn($platform);
+		// Answer the way Nextcloud does: MariaDB is reported as `mysql` unless the
+		// caller asks in strict mode.
+		$db->method('getDatabaseProvider')->willReturnCallback(
+			static fn (bool $strict = false): string => ($platform === IDBConnection::PLATFORM_MARIADB && $strict === false) ? IDBConnection::PLATFORM_MYSQL : $platform
+		);
 
 		return new MagicLockClaim(db: $db);
 	}//end claim()
@@ -113,6 +117,16 @@ class MagicLockClaimTest extends TestCase {
 			$this->trace
 		);
 	}//end testAnUnlockedRowIsClaimedOnlyWhileItIsStillUnlocked()
+
+	public function testMariaDbGetsItsOwnConditionNotTheMySqlCast(): void {
+		// MariaDB has no CAST(... AS JSON); the MySQL condition fails there with
+		// SQLSTATE 42000 and every lock is refused. Nextcloud only reports
+		// `mariadb` in strict mode.
+		$this->assertTrue($this->claim(platform: IDBConnection::PLATFORM_MARIADB)->swap('t', 'u-1', null, ['user' => 'a']));
+
+		$this->assertStringContainsString('JSON_COMPACT(_locked)', end($this->trace));
+		$this->assertStringNotContainsString('AS JSON', implode("\n", $this->trace));
+	}//end testMariaDbGetsItsOwnConditionNotTheMySqlCast()
 
 	#[DataProvider('platforms')]
 	public function testAHeldRowIsReplacedOnlyWhileItHoldsTheLockThatWasRead(string $platform, string $unlocked, string $held): void {
