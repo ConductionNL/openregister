@@ -262,6 +262,9 @@ class MappingService {
 				$contributed['names']
 			)
 		);
+		// Twig marks SandboxExtension internal since 3.29; registering it is still how an existing environment is sandboxed.
+		// phpcs:ignore Squiz.Commenting.InlineComment.DocBlock -- Psalm only reads @psalm-suppress from a /** */ block.
+		/** @psalm-suppress InternalClass, InternalMethod */
 		$this->twig->addExtension(new SandboxExtension($policy, sandboxed: true));
 
 		// Initialize distributed cache for mapping entity lookups.
