@@ -1606,7 +1606,12 @@ export default {
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
-		const backendState = this.settingsStore.getAnonymisationBackendState()
+		const backendState = Promise.resolve()
+			.then(() => this.settingsStore.getAnonymisationBackendState())
+			.catch((error) => {
+				console.error('Failed to load anonymisation backend state:', error)
+				return null
+			})
 		await Promise.all([this.loadSettings(), this.loadExtractionStats()])
 		await this.loadBackendState(backendState)
 	},
