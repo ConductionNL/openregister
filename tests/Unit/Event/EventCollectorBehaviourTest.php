@@ -91,8 +91,8 @@ class EventCollectorBehaviourTest extends TestCase {
 
 		$this->assertSame([], $event->getForms());
 
-		$first  = new FormDependent(new PublishedForm('f-1', 'appA', 'Intake'), 'alice', ['name' => 'naam']);
-		$second = new FormDependent(new PublishedForm('f-2', 'appB', 'Survey', 'public'), null, []);
+		$first  = new FormDependent(form: new PublishedForm('f-1', 'appA', 'Intake'), author: 'alice', mapping: ['name' => 'naam']);
+		$second = new FormDependent(form: new PublishedForm('f-2', 'appB', 'Survey', 'public'), author: null, mapping: []);
 		$event->addForm($first);
 		$event->addForm($second);
 		$event->addForm($first);
