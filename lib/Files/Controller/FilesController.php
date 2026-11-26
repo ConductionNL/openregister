@@ -1267,6 +1267,11 @@ class FilesController extends Controller {
 	/**
 	 * Add a new file to an object
 	 *
+	 * BUG-RATE-1 (#11359): without a user limit Nextcloud applies the anon limit of 30 a
+	 * minute to signed-in users, which refused an editor adding 91 documents in OpenCatalogi.
+	 * The user limit is unreachable on purpose, as decided in the #11359 review; RBAC and the
+	 * upload size bound signed-in users. Do not tighten it to the anon value.
+	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The ID of the object
@@ -1476,6 +1481,11 @@ class FilesController extends Controller {
 	 * whether to create a new file or update an existing one. Perfect for synchronization
 	 * scenarios where you want to "upsert" files.
 	 *
+	 * BUG-RATE-1 (#11359): without a user limit Nextcloud applies the anon limit of 30 a
+	 * minute to signed-in users, which refused an editor adding 91 documents in OpenCatalogi.
+	 * The user limit is unreachable on purpose, as decided in the #11359 review; RBAC and the
+	 * upload size bound signed-in users. Do not tighten it to the anon value.
+	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The ID of the object to save the file to
@@ -1574,6 +1584,11 @@ class FilesController extends Controller {
 	 *  - 200 + bare list of formatted files — every file stored (unchanged shape);
 	 *  - 207 + {results, rejected, summary} — some stored, the refused ones named;
 	 *  - 400 + {error, rejected} — nothing could be stored.
+	 *
+	 * BUG-RATE-1 (#11359): without a user limit Nextcloud applies the anon limit of 30 a
+	 * minute to signed-in users, which refused an editor adding 91 documents in OpenCatalogi.
+	 * The user limit is unreachable on purpose, as decided in the #11359 review; RBAC and the
+	 * upload size bound signed-in users. Do not tighten it to the anon value.
 	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
