@@ -189,6 +189,60 @@ class ProviderCatalogueTest extends TestCase {
 		$this->assertStringContainsString('{secret}', $entry['authScheme']['template']);
 	}//end testFleetProviderIsBrokerable()
 
+	/**
+	 * The calls integriq's Mollie provider makes, as the broker matches them.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function mollieCallProvider(): array {
+		return [
+			'create payment' => ['POST', '/v2/payments'],
+			'read payment' => ['GET', '/v2/payments/tr_7UhSN1zuXS'],
+			'refund payment' => ['POST', '/v2/payments/tr_7UhSN1zuXS/refunds'],
+			'key check' => ['GET', '/v2/profiles/me'],
+			'terminal list' => ['GET', '/v2/terminals'],
+			'settlement list' => ['GET', '/v2/settlements'],
+			'settlement payments' => ['GET', '/v2/settlements/stl_jDk30akdN/payments'],
+			'settlement refunds' => ['GET', '/v2/settlements/stl_jDk30akdN/refunds'],
+			'settlement chargebacks' => ['GET', '/v2/settlements/stl_jDk30akdN/chargebacks'],
+		];
+	}//end mollieCallProvider()
+
+	/**
+	 * Every call integriq makes to Mollie is allowed. Before v1.13.0 the key check, the
+	 * terminal list and the settlement pull were refused with "no allow-rule matches".
+	 *
+	 * @dataProvider mollieCallProvider
+	 */
+	public function testMollieAllowsEveryCallIntegriqMakes(string $method, string $path): void {
+		$entry = $this->catalogue->get('mollie');
+		$this->assertIsArray($entry);
+
+		$allowed = false;
+		foreach ($entry['allowRules'] as $rule) {
+			$allowed = $allowed || ($rule['method'] === $method && fnmatch($rule['pathPattern'], $path) === true);
+		}
+
+		$this->assertTrue($allowed, 'mollie must allow ' . $method . ' ' . $path);
+	}//end testMollieAllowsEveryCallIntegriqMakes()
+
+	/**
+	 * The added Mollie reads are reads: no new write and no settlement or terminal write.
+	 */
+	public function testMollieWritesStayPaymentsAndRefunds(): void {
+		$entry = $this->catalogue->get('mollie');
+		$this->assertIsArray($entry);
+
+		$writes = [];
+		foreach ($entry['allowRules'] as $rule) {
+			if ($rule['method'] !== 'GET') {
+				$writes[] = $rule['method'] . ' ' . $rule['pathPattern'];
+			}
+		}
+
+		$this->assertSame(['POST /v2/payments', 'POST /v2/payments/*/refunds'], $writes);
+	}//end testMollieWritesStayPaymentsAndRefunds()
+
 	// -------------------------------------------------------------------------
 	// Security invariants. The allow-rules ARE the security control — they bound
 	// what any credential can ever do, and they cannot be widened at runtime. So
