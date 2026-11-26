@@ -67,7 +67,7 @@ class LinkedRetentionConflictFinderTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->objects = $this->createMock(MagicMapperInterface::class);
-		$this->objects->method('findMultiple')->willReturnCallback(
+		$this->objects->method('findStoredAcrossAllMagicTables')->willReturnCallback(
 			fn (array $ids): array => array_values(array_filter(array_map(fn (string $id): ?ObjectEntity => ($this->records[$id] ?? null), $ids)))
 		);
 		$this->schemas = $this->createMock(SchemaMapperInterface::class);
@@ -232,7 +232,7 @@ class LinkedRetentionConflictFinderTest extends TestCase {
 	public function testALinkedRecordOnTheSameListIsIgnored(): void {
 		$document = $this->record(uuid: 'doc-1', retention: ['archiefnominatie' => 'vernietigen'], relations: ['zaak' => self::CASE]);
 		$this->objects->method('findByRelationBatchInSchema')->willReturn([$document]);
-		$this->objects->expects($this->never())->method('findMultiple');
+		$this->objects->expects($this->never())->method('findStoredAcrossAllMagicTables');
 
 		$found = $this->finder->forList(entries: [$this->case(relations: ['docs' => ['doc-1']]), $document], referencing: [self::referencing(id: 20)]);
 
@@ -253,7 +253,7 @@ class LinkedRetentionConflictFinderTest extends TestCase {
 		}
 
 		$this->schemas->method('find')->willReturn(new Schema());
-		$this->objects->expects($this->once())->method('findMultiple')
+		$this->objects->expects($this->once())->method('findStoredAcrossAllMagicTables')
 			->with($this->callback(static fn (array $ids): bool => count($ids) === 50 && in_array('doc-51', $ids, true) === false))
 			->willReturnCallback(fn (array $ids): array => array_map(fn (string $id): ObjectEntity => $this->records[$id], $ids));
 
@@ -279,4 +279,50 @@ class LinkedRetentionConflictFinderTest extends TestCase {
 
 		$this->assertFalse($this->finder->forList(entries: [$this->case(relations: ['docs' => $targets])], referencing: [])[self::CASE]['truncated']);
 	}//end testFiftyLinksAreComplete()
+
+	/**
+	 * A row the relation query returns without its relations column is matched by the field it was found through.
+	 *
+	 * On a magic table the batched row comes back with no relations, so the
+	 * decision whose `zaak` names the case was matched to no entry and the list
+	 * showed no conflict.
+	 *
+	 * @return void
+	 */
+	public function testAnIncomingRowWithoutRelationsIsMatchedByItsField(): void {
+		$decision = $this->record(
+			uuid: 'B-2019-0007',
+			retention: ['archiefnominatie' => 'bewaren'],
+			relations: [],
+			schema: '14',
+			data: ['zaak' => self::CASE]
+		);
+		$this->objects->method('findByRelationBatchInSchema')->willReturn([$decision]);
+
+		$found = $this->finder->forList(entries: [$this->case()], referencing: [self::referencing(id: 14)]);
+
+		$this->assertSame(['linked-kept-permanently'], array_column($found[self::CASE]['conflicts'], 'kind'));
+	}//end testAnIncomingRowWithoutRelationsIsMatchedByItsField()
+
+	/**
+	 * An incoming link is judged on the stored record, not on the partial row the relation query hands back.
+	 *
+	 * The row carries no retention block, which reads as `linked-date-unknown`
+	 * for a decision that is in fact kept permanently.
+	 *
+	 * @return void
+	 */
+	public function testAnIncomingLinkIsJudgedOnTheStoredRecord(): void {
+		$row = new ObjectEntity();
+		$row->setUuid('B-2019-0007');
+		$row->setSchema('14');
+		$row->setObject(['zaak' => self::CASE]);
+		$this->record(uuid: 'B-2019-0007', retention: ['archiefnominatie' => 'bewaren'], relations: ['zaak' => self::CASE], schema: '14');
+		$this->objects->method('findByRelationBatchInSchema')->willReturn([$row]);
+
+		$found = $this->finder->forList(entries: [$this->case()], referencing: [self::referencing(id: 14)]);
+
+		$this->assertSame(['linked-kept-permanently'], array_column($found[self::CASE]['conflicts'], 'kind'));
+		$this->assertSame('bewaren', $found[self::CASE]['conflicts'][0]['archiefnominatie']);
+	}//end testAnIncomingLinkIsJudgedOnTheStoredRecord()
 }//end class

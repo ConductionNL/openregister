@@ -11,14 +11,13 @@ When a destruction list is created, each entry SHALL carry `linkConflicts`: the 
 - **GIVEN** case `Z-2019-0042` with archive date 2026-09-01 and nomination `vernietigen`, and decision `B-2019-0007`, nominated `bewaren`, that references the case
 - **WHEN** the destruction check puts the case on a new list and a records officer calls `GET /api/archival/destruction-lists/{id}`
 - **THEN** the case's entry carries one conflict of kind `linked-kept-permanently`, direction `incoming`, naming `B-2019-0007`
-- @e2e exclude {specified only; task 4.2 adds tests/e2e/ci/destruction-linked-conflict.spec.ts}
 
 #### Scenario: a sub-case that takes its date from the case is flagged
 
 - **GIVEN** a sub-case whose schema derives its brondatum with method `hoofdzaak` from the case on the list, and which is not on the list itself
 - **WHEN** a records officer reads the list
 - **THEN** the case's entry carries a conflict of kind `linked-derives-date-from-this` naming the sub-case
-- @e2e exclude {specified only; task 4.2 adds tests/e2e/ci/destruction-linked-conflict.spec.ts}
+- @e2e exclude {not in tests/e2e/ci/destruction-linked-conflict.spec.ts, which covers the kept-permanently path; covered by LinkedRetentionConflictFinderTest}
 
 #### Scenario: records destroyed together do not warn about each other
 
@@ -36,7 +35,7 @@ When a destruction list is created, each entry SHALL carry `linkConflicts`: the 
 - **GIVEN** a list created on Monday with no conflict for case `Z-2019-0042`, and on Tuesday a reviewer on another list retains a linked document with a new date in 2035
 - **WHEN** the case's reviewer opens their worklist with `GET /api/archival/reviews/pending` on Wednesday
 - **THEN** the case's entry shows a `linked-kept-longer` conflict naming the document and its 2035 date
-- @e2e exclude {specified only; task 4.2 adds tests/e2e/ci/destruction-linked-conflict.spec.ts}
+- @e2e exclude {not in tests/e2e/ci/destruction-linked-conflict.spec.ts, which covers the kept-permanently path; a date moved on a second list is not run end to end}
 
 ### Requirement: Destroying over a conflict needs an explicit acknowledgement
 
@@ -48,7 +47,6 @@ When a destruction list is created, each entry SHALL carry `linkConflicts`: the 
 - **WHEN** they post `{"answer": "destroy", "reason": "Termijn verstreken"}` to its decision endpoint
 - **THEN** the response is 422 listing the conflict with decision `B-2019-0007`
 - **AND** the record is not changed and the list's decision history is unchanged
-- @e2e exclude {specified only; task 4.2 adds tests/e2e/ci/destruction-linked-conflict.spec.ts}
 
 #### Scenario: an acknowledged destroy is recorded with what it overrode
 
@@ -56,7 +54,6 @@ When a destruction list is created, each entry SHALL carry `linkConflicts`: the 
 - **WHEN** the records officer posts `{"answer": "destroy", "reason": "Besluit bevat de zaakgegevens zelf", "acknowledgeConflicts": true}`
 - **THEN** the response is 200 and the decision in the history carries `overriddenConflicts` with the conflict with `B-2019-0007`
 - **AND** when the list is approved, the approval records `destroyedOverConflict` 1
-- @e2e exclude {specified only; task 4.2 adds tests/e2e/ci/destruction-linked-conflict.spec.ts}
 
 #### Scenario: retaining needs no acknowledgement
 
