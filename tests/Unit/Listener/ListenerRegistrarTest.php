@@ -13,8 +13,10 @@ namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Event\DraftDeletedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectWriteValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
 use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Listener\DetectionPatternValidationListener;
 use OCA\OpenRegister\Listener\RedactionPolicyCacheListener;
 use OCA\OpenRegister\Listener\ListenerRegistrar;
 use OCA\OpenRegister\Notifications\Listener\NotificationDedupePruneListener;
@@ -72,6 +74,7 @@ class ListenerRegistrarTest extends TestCase {
 
 		$this->assertSame(
 			expected: [
+				ObjectWriteValidatorInterface::class => DetectionPatternValidationListener::class,
 				ObjectWriteCacheFollowerInterface::class => RedactionPolicyCacheListener::class,
 				ObjectWritePushInterface::class => NotifyPushListener::class,
 			],

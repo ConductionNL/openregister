@@ -95,6 +95,7 @@
 		"OCA\\OpenRegister\\Listener\\SurvivorshipRecomputeListener",
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarValidationListener",
 		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\ObjectWriteValidatorInterface",
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
@@ -205,6 +206,7 @@
 		"OCA\\OpenRegister\\Listener\\SurvivorshipRecomputeListener",
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarValidationListener",
 		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\ObjectWriteValidatorInterface",
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
@@ -385,7 +387,8 @@
 		"OCA\\OpenRegister\\Listener\\OcmResourceTypeListener"
 	],
 	"OCP\\Share\\Events\\BeforeShareCreatedEvent": [
-		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener"
+		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener",
+		"OCA\\OpenRegister\\Listener\\ObjectFolderReshareGuard"
 	],
 	"OCP\\Share\\Events\\ShareCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"

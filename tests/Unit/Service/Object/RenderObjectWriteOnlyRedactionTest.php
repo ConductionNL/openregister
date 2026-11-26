@@ -138,7 +138,11 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase {
 	 *
 	 * @return RenderObject
 	 */
-	private function renderer(Schema $schema, ?\Psr\Container\ContainerInterface $container = null): RenderObject {
+	private function renderer(
+		Schema $schema,
+		?\Psr\Container\ContainerInterface $container = null,
+		?\OCA\OpenRegister\Service\Object\RenderReadExtensions $extensions = null
+	): RenderObject {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
@@ -171,7 +175,7 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase {
 			),
 			runtime: new \OCA\OpenRegister\Service\Object\RenderRuntime(
 				logger: $this->createMock(\Psr\Log\LoggerInterface::class),
-				extensions: new \OCA\OpenRegister\Service\Object\RenderReadExtensions(),
+				extensions: ($extensions ?? new \OCA\OpenRegister\Service\Object\RenderReadExtensions()),
 				container: $container
 			),
 			propertyRbacHandler: $this->realPropertyRbacHandler()
@@ -659,5 +663,118 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase {
 		$this->assertSame(['title' => 'Case', 'bsn' => '***', '@self' => ['schema' => 214]], $rows[1]);
 		$this->assertSame(['title' => 'Plain', 'bsn' => '***', '@self' => ['schema' => 214]], $rows[2]);
 	}
-}
 
+	/**
+	 * A schema with one encrypted property and no property read rules.
+	 *
+	 * @return Schema
+	 */
+	private function schemaWithAnEncryptedProperty(): Schema {
+		$schema = new Schema();
+		$ref = new ReflectionClass($schema);
+		$idProp = $ref->getProperty('id');
+		$idProp->setAccessible(true);
+		$idProp->setValue($schema, 213);
+		$schema->setSlug('care-record');
+		$schema->setProperties(
+			[
+				'player' => ['type' => 'string'],
+				'allergies' => ['type' => 'string', 'x-openregister-encrypted' => true],
+			]
+		);
+
+		return $schema;
+	}
+
+	/**
+	 * Read extensions whose encryption handler turns `enc:<value>` into `<value>` for the encrypted properties.
+	 *
+	 * @return \OCA\OpenRegister\Service\Object\RenderReadExtensions
+	 */
+	private function decryptingExtensions(): \OCA\OpenRegister\Service\Object\RenderReadExtensions {
+		$handler = $this->createMock(originalClassName: \OCA\OpenRegister\Service\FieldEncryptionHandler::class);
+		$handler->method('decryptInScope')->willReturnCallback(
+			static function (array $data, \OCA\OpenRegister\Service\FieldDecryptionScope $scope): array {
+				foreach ($scope->schema->getEncryptedProperties() as $property) {
+					if (is_string($data[$property] ?? null) === true && str_starts_with($data[$property], 'enc:') === true) {
+						$data[$property] = substr($data[$property], 4);
+					}
+				}
+
+				return $data;
+			}
+		);
+
+		return new \OCA\OpenRegister\Service\Object\RenderReadExtensions(fieldEncryptionHandler: $handler);
+	}
+
+	/**
+	 * An entity row of the care-record schema with an encrypted allergy.
+	 *
+	 * @return ObjectEntity
+	 */
+	private function careRecord(): ObjectEntity {
+		$entity = new ObjectEntity();
+		$entity->setUuid('aaaaaaaa-bbbb-cccc-dddd-ffffffffffff');
+		$entity->setSchema(213);
+		$entity->setRegister(65);
+		$entity->setObject(['player' => 'Anna', 'allergies' => 'enc:hazelnuts']);
+
+		return $entity;
+	}
+
+	/**
+	 * A list row of a schema without property read rules is decrypted, as the
+	 * single-object read of the same object is; it used to keep the envelope.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
+	 *
+	 * @return void
+	 */
+	public function testCheapPathDecryptsEntityRowsOfASchemaWithoutReadRules(): void {
+		$rows = [$this->careRecord()];
+
+		$this->renderer(schema: $this->schemaWithAnEncryptedProperty(), extensions: $this->decryptingExtensions())->redactWriteOnlyFromRows($rows, true);
+
+		$this->assertSame(expected: 'hazelnuts', actual: $rows[0]->getObject()['allergies']);
+	}
+
+	/**
+	 * An admin's list (`_rbac: false` from ObjectsController) is decrypted too,
+	 * for entity and array rows alike.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
+	 *
+	 * @return void
+	 */
+	public function testCheapPathDecryptsAnAdminsRbacFalseList(): void {
+		$rows = [
+			$this->careRecord(),
+			['player' => 'Karel', 'allergies' => 'enc:gluten', '@self' => ['schema' => 213]],
+		];
+
+		$this->renderer(schema: $this->schemaWithAnEncryptedProperty(), extensions: $this->decryptingExtensions())->redactWriteOnlyFromRows($rows, false);
+
+		$this->assertSame(expected: 'hazelnuts', actual: $rows[0]->getObject()['allergies']);
+		$this->assertSame(expected: 'gluten', actual: $rows[1]['allergies']);
+	}
+
+	/**
+	 * A system operation reads the stored envelope, as before.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md
+	 *
+	 * @return void
+	 */
+	public function testCheapPathLeavesTheEnvelopeInASystemOperation(): void {
+		$rows = [$this->careRecord()];
+
+		\OCA\OpenRegister\Service\SystemOperationContext::run(
+			function () use (&$rows) {
+				$this->renderer(schema: $this->schemaWithAnEncryptedProperty(), extensions: $this->decryptingExtensions())->redactWriteOnlyFromRows($rows, true);
+			}
+		);
+
+		$this->assertSame(expected: 'enc:hazelnuts', actual: $rows[0]->getObject()['allergies']);
+	}
+}

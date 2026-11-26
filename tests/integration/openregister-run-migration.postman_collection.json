@@ -1,0 +1,1148 @@
+{
+	"info": {
+		"_postman_id": "or-run-migration-2026-11-25",
+		"name": "OpenRegister Run Migration API",
+		"description": "A run parked at a user task is migrated to a version that renamed the step, and finishes there (change migrate-run-between-versions, task 4.1).\n\nVersion 1 waits at a user task `review`; version 2 renames it `assess`. A run started on version 1 parks with its task in the inbox. Migrating without a mapping is refused with 422 naming `review`; a dry run with the mapping says the token lands on `assess` and writes nothing; the real migration moves the run to version 2 at `assess` with a `migrated` log entry, and the task moves with the step. Completing the task then finishes the run on version 2 in the completing request (the task's `advance: all`).\n\nWhy Newman and not tests/e2e/ci/run-migration.spec.ts, which the task names: every step is an API call, and gate-19 puts API contracts in Newman.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "setUp: a flow whose run waits at a user task \"review\"",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flows",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flows"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"nodes\": [\n  {\n   \"id\": \"start\",\n   \"type\": \"openregister.trigger-manual\",\n   \"config\": {},\n   \"position\": {\n    \"x\": 0,\n    \"y\": 0\n   }\n  },\n  {\n   \"id\": \"review\",\n   \"type\": \"openregister.user-task\",\n   \"config\": {\n    \"title\": \"Review {{suffix}}\",\n    \"assignee\": \"{{admin_user}}\",\n    \"outcomes\": \"approved, rejected\",\n    \"advance\": \"all\"\n   },\n   \"position\": {\n    \"x\": 0,\n    \"y\": 0\n   }\n  },\n  {\n   \"id\": \"end\",\n   \"type\": \"openregister.end\",\n   \"config\": {\n    \"message\": \"done\"\n   },\n   \"position\": {\n    \"x\": 0,\n    \"y\": 0\n   }\n  }\n ],\n \"edges\": [\n  {\n   \"id\": \"e0\",\n   \"from\": \"start\",\n   \"to\": \"review\"\n  },\n  {\n   \"id\": \"e1\",\n   \"from\": \"review\",\n   \"to\": \"end\"\n  }\n ],\n \"name\": \"Run migration {{suffix}}\",\n \"trigger\": \"manual\",\n \"enabled\": true\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.collectionVariables.set('suffix', Date.now().toString(36) + Math.random().toString(36).slice(2, 8));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the flow is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
+							"pm.collectionVariables.set('flowId', pm.response.json().uuid);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: publish version 1",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flows/{{flowId}}/publish",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flows",
+						"{{flowId}}",
+						"publish"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('version 1 is published', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('it is version 1', () => pm.expect(pm.response.json().version).to.eql(1));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "A run on version 1 parks at the task",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-runs/test",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-runs",
+						"test"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"flowId\": \"{{flowId}}\", \"seedItems\": [{\"json\": {\"name\": \"Case 9\"}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the run starts', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.collectionVariables.set('runId', o.uuid);",
+							"pm.test('suspended on version 1 at review', () => { pm.expect(o.status).to.eql('suspended'); pm.expect(o.flowVersion).to.eql(1); pm.expect(o.marking).to.eql({ review: 1 }); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Its task waits in the inbox",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks?scope=assigned&isTerminal=false&limit=100",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks"
+					],
+					"query": [
+						{
+							"key": "scope",
+							"value": "assigned"
+						},
+						{
+							"key": "isTerminal",
+							"value": "false"
+						},
+						{
+							"key": "limit",
+							"value": "100"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the inbox answers', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const task = pm.response.json().results.find(t => t.runUuid === pm.collectionVariables.get('runId'));",
+							"pm.test('one open task, on review', () => { pm.expect(task).to.be.an('object'); pm.expect(task.nodeId).to.eql('review'); });",
+							"pm.collectionVariables.set('taskId', task.uuid);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: open a draft of version 2",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flows/{{flowId}}/draft",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flows",
+						"{{flowId}}",
+						"draft"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the draft is opened', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: version 2 renames the step to \"assess\"",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flows/{{flowId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flows",
+						"{{flowId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"nodes\": [\n  {\n   \"id\": \"start\",\n   \"type\": \"openregister.trigger-manual\",\n   \"config\": {},\n   \"position\": {\n    \"x\": 0,\n    \"y\": 0\n   }\n  },\n  {\n   \"id\": \"assess\",\n   \"type\": \"openregister.user-task\",\n   \"config\": {\n    \"title\": \"Review {{suffix}}\",\n    \"assignee\": \"{{admin_user}}\",\n    \"outcomes\": \"approved, rejected\",\n    \"advance\": \"all\"\n   },\n   \"position\": {\n    \"x\": 0,\n    \"y\": 0\n   }\n  },\n  {\n   \"id\": \"end\",\n   \"type\": \"openregister.end\",\n   \"config\": {\n    \"message\": \"done\"\n   },\n   \"position\": {\n    \"x\": 0,\n    \"y\": 0\n   }\n  }\n ],\n \"edges\": [\n  {\n   \"id\": \"e0\",\n   \"from\": \"start\",\n   \"to\": \"assess\"\n  },\n  {\n   \"id\": \"e1\",\n   \"from\": \"assess\",\n   \"to\": \"end\"\n  }\n ]\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the draft is saved', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: publish version 2",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flows/{{flowId}}/publish",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flows",
+						"{{flowId}}",
+						"publish"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('version 2 is published', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('it is version 2', () => pm.expect(pm.response.json().version).to.eql(2));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Without a mapping the migration is refused and names the step",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-runs/{{runId}}/migrate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-runs",
+						"{{runId}}",
+						"migrate"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"targetVersion\": 2, \"reason\": \"Version 2 renamed the review step\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('refused with 422', () => pm.expect(pm.response.code, pm.response.text()).to.eql(422));",
+							"const o = pm.response.json();",
+							"pm.test('not migrated, review unmapped', () => { pm.expect(o.migrated).to.eql(false); pm.expect(o.unmapped).to.include('review'); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "A dry run with the mapping says where the token lands, and writes nothing",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-runs/{{runId}}/migrate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-runs",
+						"{{runId}}",
+						"migrate"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"targetVersion\": 2, \"mapping\": {\"review\": \"assess\"}, \"dryRun\": true}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the preview answers 200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('a dry run, landing on assess', () => { pm.expect(o.dryRun).to.eql(true); pm.expect(o.migrated).to.eql(false); pm.expect(o.marking).to.eql({ assess: 1 }); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The run is still on version 1 after the refusal and the dry run",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-runs/{{runId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-runs",
+						"{{runId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the run is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('version 1, at review', () => { pm.expect(o.flowVersion).to.eql(1); pm.expect(o.marking).to.eql({ review: 1 }); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Migrate the run with the mapping",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-runs/{{runId}}/migrate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-runs",
+						"{{runId}}",
+						"migrate"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"targetVersion\": 2, \"mapping\": {\"review\": \"assess\"}, \"reason\": \"Version 2 renamed the review step\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('migrated', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('from 1 to 2, landing on assess', () => { pm.expect(o.migrated).to.eql(true); pm.expect(o.from).to.eql(1); pm.expect(o.to).to.eql(2); pm.expect(o.marking).to.eql({ assess: 1 }); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The run is on version 2 at assess, and its log says it was migrated",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-runs/{{runId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-runs",
+						"{{runId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the run is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('version 2, at assess, still suspended', () => { pm.expect(o.flowVersion).to.eql(2); pm.expect(o.marking).to.eql({ assess: 1 }); pm.expect(o.status).to.eql('suspended'); });",
+							"pm.test('a migrated entry in the log', () => pm.expect(o.log.map(e => e.type)).to.include('migrated'));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The task moved with the step",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{taskId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks",
+						"{{taskId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the task is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('it names assess', () => pm.expect(pm.response.json().nodeId).to.eql('assess'));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Complete the task",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{taskId}}/complete",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks",
+						"{{taskId}}",
+						"complete"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"outcome\": \"approved\", \"comment\": null}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the task is completed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('completed', () => pm.expect(pm.response.json().state).to.eql('completed'));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The migrated run finishes on version 2",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-runs/{{runId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-runs",
+						"{{runId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the run is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('ended, in the completing request', () => pm.expect(['completed', 'stopped']).to.include(o.status));",
+							"pm.test('it walked assess and the end of version 2', () => { const walked = o.log.map(e => e.transition); pm.expect(walked).to.include('assess'); pm.expect(walked).to.include('end'); });",
+							"pm.test('still on version 2', () => pm.expect(o.flowVersion).to.eql(2));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the flow",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flows/{{flowId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flows",
+						"{{flowId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the flow is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "suffix",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "flowId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "runId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "taskId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

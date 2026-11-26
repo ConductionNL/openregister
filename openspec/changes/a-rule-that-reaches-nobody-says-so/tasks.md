@@ -14,16 +14,22 @@
 ## 3. Reach a person
 
 - [x] 3.1 Register `RuleReachRecorder` as a shared service rather than a private built inside the dispatcher, so the aggregate survives the dispatcher instance (REQ-RRN-03)
-- [ ] 3.2 Read `report()` on the notification settings page, where an administrator configuring notifications is already standing (REQ-RRN-03)
+- [x] 3.2 Read `report()` on the notification settings page, where an administrator configuring notifications is already standing (REQ-RRN-03)
+      > 2026-11-25: the counts are persisted first. `RuleReachLedger` keeps, per rule, the
+      > latest run's count and when it was last seen, in one lazy app config value
+      > (`notification_rule_reach`, newest first, capped at 200 rules). The shared recorder
+      > writes it on a rule's first occurrence, on each doubling (a storm of 400 is nine
+      > writes) and the remainder on `flush()` or release; a rule that reaches somebody again
+      > drops off. `GET /api/notification-rule-reach` (`NotificationRuleReachController`,
+      > administrators only by the middleware) serves `RuleReachLedger::report()`, and the
+      > admin settings show it in the `NotificationRuleReach` section beside Push Notifications
+      > (`RuleReachLedgerTest`, `RuleReachRecorderLedgerTest`,
+      > `AnnotationNotificationDispatcherRuleReachTest`, `NotificationRuleReachControllerTest`,
+      > `NotificationRuleReach.spec.js`). Not seen in a browser here (no live instance).
 - [ ] 3.3 Decide, with the storm question answered first, whether a scheduled job should raise a notification when `needsAPerson` is true, or whether the settings row is enough (REQ-RRN-03)
 
-🔴 **3.2 and 3.3 are open, and until they are done `report()` has no caller.**
-3.1 is done: `NotificationsWiring` registers `RuleReachRecorder` as one shared
-service, so the dispatcher's `DeliveryLedger` is autowired with it and the
-aggregate outlives a dispatcher instance. It still lives only as long as the
-process that dispatched: a dispatch runs in the request or background job that
-saved the object, and the settings page is served by another request, which
-would read an empty report. So 3.2 needs the counts persisted first, which is
-the question 3.3 leaves open. The warning line is logged and findable by whoever
-already suspects the problem; the aggregate is not on any screen. Do not read the
-tests in #3961 as evidence that an operator is told.
+3.2 is done: the aggregate is persisted in `RuleReachLedger` and is on the admin
+settings page. 🔴 **3.3 is open**: whether a scheduled job should also raise a
+Nextcloud notification when `needsAPerson` is true, so somebody who is not
+looking is told. That is a decision about storms and nagging, not code, and the
+persisted ledger is what such a job would read.

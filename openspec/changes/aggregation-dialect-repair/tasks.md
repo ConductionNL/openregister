@@ -66,8 +66,10 @@ adds a fourth cross-cutting loud-discard fix, folds in two adjacent silent-failu
 
 ## 10. Verification
 
-- [ ] 10.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and the Hydra mechanical gates; fix any pre-existing issues touched.
-- [ ] 10.2 Run `openspec validate --change aggregation-dialect-repair --strict`; resolve any errors.
+- [x] 10.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and the Hydra mechanical gates; fix any pre-existing issues touched.
+      > 2026-11-25: run on the six files this change touched. phpcs, phpmd (both rulesets) and phpstan clean after the fixes (unused locals in `MagicMapper::countOrFailIn`/`findAllInRegisterSchemaTable`, a 169-char line in `ImportHandler::newSeedEntity`, the long `$shippedRegisterBaseline` name, documented StaticAccess suppressions in `ValidateObject`). Psalm: the same 177 findings on origin/main and on the branch, none added; the one in this change's own code (the seed uuid map's key type) fixed; the rest are in methods this change did not touch, 161 of them `MissingOverrideAttribute`. Hydra gates (`--scope-to-diff`): gate-67 contract parity and gate-102 manifest l10n red tree-wide, not in these files. Unit: Architecture, Db, Service/Object, Service/Configuration green.
+- [x] 10.2 Run `openspec validate --change aggregation-dialect-repair --strict`; resolve any errors.
+      > 2026-11-25: valid. Strict refused five requirement texts over 500 characters; shortened, the v1 operator vocabulary moved into its own scenario.
 
 ## Acceptance Criteria
 

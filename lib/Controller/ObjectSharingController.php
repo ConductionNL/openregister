@@ -50,6 +50,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectRef;
 use OCA\OpenRegister\Db\RegisterSchema;
+use OCA\OpenRegister\Exception\GrantExceedsGranterException;
+use OCA\OpenRegister\Service\Authorization\GrantedRight;
 use OCA\OpenRegister\Service\Rbac\GrantRequest;
 use OCA\OpenRegister\Service\Rbac\GrantTerms;
 use OCA\OpenRegister\Service\Rbac\LinkInvitation;
@@ -65,6 +67,13 @@ use OCP\IRequest;
  * Owner-checked endpoints for an object's scope and its grants.
  */
 class ObjectSharingController extends Controller {
+	/**
+	 * The object action each platform permission bit gives, as the ceiling judges it.
+	 *
+	 * @var array<int, string>
+	 */
+	private const PERMISSION_ACTIONS = [1 => 'read', 2 => 'update', 4 => 'create', 8 => 'delete'];
+
 	/**
 	 * The controller's injected services.
 	 *
@@ -269,6 +278,10 @@ class ObjectSharingController extends Controller {
 		$type = (string)($this->request->getParam('type') ?? 'user');
 		$shareWith = (string)($this->request->getParam('shareWith') ?? '');
 		$permissions = $this->requestedPermissions();
+		$refusal = $this->grantCeilingRefusal(object: $object, permissions: $permissions);
+		if ($refusal !== null) {
+			return $refusal;
+		}
 
 		$grantRequest = new GrantRequest(type: $type, shareWith: $shareWith, terms: new GrantTerms(permissions: $permissions));
 		$grant        = fn (): array => $this->services->sharing->grantWithTerms(object: $object, request: $grantRequest);
@@ -288,6 +301,11 @@ class ObjectSharingController extends Controller {
 			return $object;
 		}
 
+		$refusal = $this->grantCeilingRefusal(object: $object, permissions: $this->requestedPermissions());
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		$link = fn (): array => $this->linkTo(object: $object);
 		return $this->endpoint->answerCreated(operation: $link, context: 'createLink');
 	}//end createLinkOn()
@@ -303,6 +321,11 @@ class ObjectSharingController extends Controller {
 		$object = $this->resolved(ref: $ref);
 		if ($object instanceof JSONResponse) {
 			return $object;
+		}
+
+		$refusal = $this->grantCeilingRefusal(object: $object, permissions: $this->requestedPermissions());
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$invite = fn (): array => $this->invitationTo(object: $object);
@@ -342,6 +365,63 @@ class ObjectSharingController extends Controller {
 	private function resolved(ObjectRef $ref): ObjectEntity|JSONResponse {
 		return $this->endpoint->resolve(ref: $ref);
 	}//end resolved()
+
+	/**
+	 * Refuse a share, link or invitation that gives an action the granter does not hold on this object.
+	 *
+	 * Each platform bit the request sets names an object action; the granter
+	 * must hold every one of them on this object themselves (REQ-RAH-002), by
+	 * the same evaluation as any read or write, owner rights included. An
+	 * administrator may grant anything. Nobody signed in, or a schema that
+	 * cannot be read, refuses: a grant is never stored on a guess. Without the
+	 * ceiling wired (a hand-built controller) the share goes on to its own
+	 * owner check.
+	 *
+	 * @param ObjectEntity $object      The object shared.
+	 * @param int          $permissions The platform permission bitmask asked for.
+	 *
+	 * @return JSONResponse|null A 403 naming every excess right, or null when the grant may go on.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	private function grantCeilingRefusal(ObjectEntity $object, int $permissions): ?JSONResponse {
+		$ceiling = $this->services->ceiling;
+		if ($ceiling === null) {
+			return null;
+		}
+
+		$actions = [];
+		foreach (self::PERMISSION_ACTIONS as $bit => $action) {
+			if (($permissions & $bit) !== 0) {
+				$actions[] = $action;
+			}
+		}
+
+		try {
+			$granter = $this->services->userSession?->getUser();
+			$schema = $this->services->catalog->schemas()->find(id: (int)$object->getSchema(), _multitenancy: false, _rbac: false);
+			$register = (string)$object->getRegister();
+			$grants = array_map(
+				static fn (string $action): GrantedRight => new GrantedRight(schema: $schema, action: $action, register: $register, object: $object),
+				$actions
+			);
+			if ($granter === null) {
+				throw new GrantExceedsGranterException(excess: array_map(static fn (GrantedRight $grant): array => $grant->named(), $grants));
+			}
+
+			$ceiling->assertWithin(granter: $granter, grants: $grants);
+		} catch (GrantExceedsGranterException $refusal) {
+			return new JSONResponse(data: $refusal->body(), statusCode: Http::STATUS_FORBIDDEN);
+		} catch (\Throwable $e) {
+			$this->services->logger->warning(
+				message: '[ObjectSharingController] The grant could not be judged against the granter\'s rights; refused',
+				context: ['object' => $object->getUuid(), 'error' => $e->getMessage()]
+			);
+			return new JSONResponse(data: ['error' => 'The grant could not be checked against your own rights'], statusCode: Http::STATUS_FORBIDDEN);
+		}
+
+		return null;
+	}//end grantCeilingRefusal()
 
 	/**
 	 * The requested permission bitmask, defaulting to READ.

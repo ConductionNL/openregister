@@ -59,6 +59,13 @@ final class FileReadCheck {
 	public ?array $groups = null;
 
 	/**
+	 * Nextcloud's administrator verdict for the caller, resolved once per check.
+	 *
+	 * @var boolean|null
+	 */
+	public ?bool $administrator = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string|null $userId The caller's uid; null when anonymous.
