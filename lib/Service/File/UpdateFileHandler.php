@@ -604,7 +604,7 @@ class UpdateFileHandler {
 	 */
 	private function writeContent(File $file, mixed $content): void {
 		if (is_resource($content) === false) {
-			// base64_decode(..., true) returns false for the common case of
+			// A strict base64_decode() returns false for the common case of
 			// real (non-base64) binary content, and base64_encode(false) is a
 			// TypeError in PHP 8+ — check the decode result before re-encoding it.
 			$decodedContent = base64_decode($content, true);

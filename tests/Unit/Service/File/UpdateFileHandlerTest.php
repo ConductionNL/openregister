@@ -174,6 +174,46 @@ class UpdateFileHandlerTest extends TestCase {
 	}//end testUpdateWritesWhenUpdateable()
 
 	// =========================================================================
+	// updateFile - non-base64 string content (#10872)
+	// =========================================================================
+	public function testUpdateWritesNonBase64BinaryContentUnchanged(): void {
+		// Raw binary (a PDF's bytes) is not valid strict base64, so the strict
+		// base64_decode() returns false. That MUST NOT reach base64_encode(),
+		// which is a TypeError under strict_types; the bytes are written as-is.
+		$binary = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n\x00\xff\x01binary-body";
+
+		$file = $this->fileResolvedById(updateable: true);
+		$file->expects($this->once())->method('putContent')->with(data: $binary);
+
+		$result = $this->handler->updateFile(
+			filePath: 42,
+			content: $binary,
+			tags: [],
+			object: $this->createMock(ObjectEntity::class)
+		);
+
+		$this->assertSame($file, $result);
+	}//end testUpdateWritesNonBase64BinaryContentUnchanged()
+
+	public function testUpdateDecodesBase64EncodedBinaryContent(): void {
+		// The same binary bytes, sent base64-encoded, MUST still be decoded before
+		// they are written.
+		$binary = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n\x00\xff\x01binary-body";
+
+		$file = $this->fileResolvedById(updateable: true);
+		$file->expects($this->once())->method('putContent')->with(data: $binary);
+
+		$result = $this->handler->updateFile(
+			filePath: 42,
+			content: base64_encode($binary),
+			tags: [],
+			object: $this->createMock(ObjectEntity::class)
+		);
+
+		$this->assertSame($file, $result);
+	}//end testUpdateDecodesBase64EncodedBinaryContent()
+
+	// =========================================================================
 	// updateFile - streamed (resource) content path (stream-file-content #110)
 	// =========================================================================
 	public function testUpdateStreamsResourceWhenUpdateable(): void {
