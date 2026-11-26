@@ -2551,9 +2551,39 @@ class SaveObject implements SaveObjectInterface {
 	private function normalizeCallTranslations(ObjectSaveCall $call): void {
 		$call->data = $this->translationHandler->normalizeTranslationsForSave(
 			objectData: $call->data,
-			scope: new TranslationScope(schema: $call->schema, register: $call->register)
+			scope: new TranslationScope(schema: $call->schema, register: $call->register),
+			stored: $this->storedDataForTranslationTarget(call: $call)
 		);
 	}//end normalizeCallTranslations()
+
+	/**
+	 * The stored object's data, when this save writes one language
+	 * (`X-Translation-Target-Language`) of an existing object; otherwise none.
+	 *
+	 * Writing one language must keep the others: without the stored languages a
+	 * translation save replaced the source language, and a PATCH was refused
+	 * because it carries the stored language maps of the properties it leaves alone.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return array The stored data, or an empty array.
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+	 */
+	private function storedDataForTranslationTarget(ObjectSaveCall $call): array {
+		$target = $this->translationHandler->targetLanguage();
+		if ($target === null || $target === '' || $call->uuid === null) {
+			return [];
+		}
+
+		try {
+			$existing = $this->findAndValidateExistingObject(call: $call);
+		} catch (\Throwable $e) {
+			return [];
+		}
+
+		return ($existing?->getObject() ?? []);
+	}//end storedDataForTranslationTarget()
 
 	/**
 	 * Refuse properties the caller may not write, when RBAC applies and the schema guards properties.
