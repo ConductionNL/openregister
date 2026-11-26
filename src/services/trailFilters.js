@@ -54,6 +54,25 @@ export function addPresent(filters, pairs) {
 }
 
 /**
+ * A date as the ISO 8601 text the server parses; a non-date value as it is.
+ *
+ * A Date put on a query string became `Date.toString()` ("Wed Nov 25 2026
+ * 01:30:31 GMT+0000 (Coordinated Universal Time)"), which the server cannot
+ * read, so the audit page's date range filtered nothing.
+ *
+ * @param {Date|string|null|undefined} value The date
+ * @return {string|null|undefined} The ISO text, or the value unchanged
+ *
+ * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+ */
+export function isoDate(value) {
+	if (value instanceof Date) {
+		return Number.isNaN(value.getTime()) ? null : value.toISOString()
+	}
+	return value
+}
+
+/**
  * The distinct users of a trail list, as picker options.
  *
  * @param {Array<object>|undefined} trails The trail entries
