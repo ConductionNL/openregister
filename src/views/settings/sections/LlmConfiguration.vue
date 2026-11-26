@@ -359,7 +359,9 @@
 		</div>
 
 		<!-- LLM Configuration Modal -->
+		<!-- Mounted only while open: it reads the LLM settings twice and the database info on mount, which the settings page paid for with the dialog closed. -->
 		<LLMConfigModal
+			v-if="showLLMConfigDialog"
 			:show="showLLMConfigDialog"
 			@closing="onLLMConfigClosed"
 			@embeddingsCleared="loadAllStats" />
@@ -370,12 +372,16 @@
 			@closing="showFileManagementDialog = false" />
 
 		<!-- Object Management Modal -->
+		<!-- Mounted only while open: it reads the settings, the views and the LLM settings on mount, which the settings page paid for with the dialog closed. -->
 		<ObjectManagementModal
+			v-if="showObjectManagementDialog"
 			:show="showObjectManagementDialog"
 			@closing="showObjectManagementDialog = false" />
 
 		<!-- Object Vectorization Modal -->
+		<!-- Mounted only while open: it reads the views, the vectorisation settings and its stats on mount, which the settings page paid for with the dialog closed. -->
 		<ObjectVectorizationModal
+			v-if="showObjectVectorizationModal"
 			:show="showObjectVectorizationModal"
 			@closing="showObjectVectorizationModal = false"
 			@completed="loadAllStats" />

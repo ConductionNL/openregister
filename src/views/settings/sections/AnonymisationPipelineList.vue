@@ -65,7 +65,20 @@ export default {
 	},
 
 	watch: {
-		refreshKey() {
+		/**
+		 * Read the list again after a save. The parent's first backend state
+		 * (null until its own read answers) is not a save: the list mounted
+		 * with the same server state and has read it already.
+		 *
+		 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md#requirement-every-content-altering-step-reports-its-state-req-adi-006
+		 * @param {*} value The new key
+		 * @param {*} previous The key before
+		 * @return {void}
+		 */
+		refreshKey(value, previous) {
+			if (previous === null || previous === undefined) {
+				return
+			}
 			this.load()
 		},
 	},
