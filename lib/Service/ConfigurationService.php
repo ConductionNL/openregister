@@ -538,10 +538,12 @@ class ConfigurationService {
 	 * - Handles version checking
 	 * - Calls importFromJson with proper entity tracking
 	 *
-	 * @param string $appId The application ID (e.g. 'opencatalogi')
-	 * @param array $data The configuration data to import
-	 * @param string $version The version of the configuration
-	 * @param bool $force Whether to force import regardless of version checks
+	 * @param string             $appId         The application ID (e.g. 'opencatalogi')
+	 * @param array              $data          The configuration data to import
+	 * @param string             $version       The version of the configuration
+	 * @param bool               $force         Whether to force import regardless of version checks
+	 * @param Configuration|null $configuration The configuration being synced (cron sync of a remote
+	 *                                          source), or null to resolve it from the bundle
 	 *
 	 * @return array The import results
 	 * @throws Exception If import fails
@@ -562,7 +564,13 @@ class ConfigurationService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
 	 */
-	public function importFromApp(string $appId, array $data, string $version, bool $force = false): array {
+	public function importFromApp(
+		string $appId,
+		array $data,
+		string $version,
+		bool $force = false,
+		?Configuration $configuration = null
+	): array {
 		// App config imports are code-initiated (the data is the app's own
 		// shipped register config) but frequently run without a user session:
 		// app boot happens before session resolution and webcron never has
@@ -573,7 +581,8 @@ class ConfigurationService {
 				appId: $appId,
 				data: $data,
 				version: $version,
-				force: $force
+				force: $force,
+				configuration: $configuration
 			)
 		);
 	}//end importFromApp()
