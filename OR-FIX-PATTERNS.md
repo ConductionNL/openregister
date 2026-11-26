@@ -996,3 +996,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: testNoComponentEdgeBeyondTheBaseline lists 'lib/Db/<X>Mapper.php -> lib/Db/LikeOperator.php (Processes -> Core)' (also LikeOperators.php if switched to the factory), e.g. the PostgreSQL json LIKE fix in FlowMapper (#11305, same change in #11307).
 - Cause: main keeps LikeOperator/LikeOperatorInterface/LikeOperators in Core; a mapper of another component now builds its LIKE through it.
 - Fix: they are pure SQL-string builders with no imports: set their component-map.csv rows' last column to Kernel and run python3 scripts/component-patterns.py (only csv + yaml change); never add the edge to the baseline. If main already did this, the PR needs nothing. (#11305 f91e420b)
+
+## Processes/other area code using Core's Db\LikeOperator(s) (or-fix-7)
+- Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline names '<file> -> lib/Db/LikeOperator.php (or LikeOperators.php) (Processes -> Core)'.
+- Cause: LikeOperator/LikeOperators/LikeOperatorInterface are Core, not a Kernel contract; LikeOperators::forPlatform does not help outside Core.
+- Fix: for a plain json/text column substring match use Nextcloud's $qb->expr()->like($qb->expr()->castColumn(column: 'col', type: IQueryBuilder::PARAM_STR), param) with escapeLikeParameter (see #11307 22e6d48b).
