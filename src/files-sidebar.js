@@ -11,6 +11,8 @@
 import { translate as t } from '@nextcloud/l10n'
 import { registerAttachAction } from './files/attachAction.js'
 
+import './services/axiosDefaults.js'
+
 /**
  * The integration registry bootstrap and the library translations, loaded once,
  * the first time a tab renders. This entry runs on every page with a Files
