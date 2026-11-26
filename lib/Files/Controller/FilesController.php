@@ -75,6 +75,7 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
@@ -1281,6 +1282,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: PHP_INT_MAX, period: 60)]
 	public function create(string $register, string $schema, string $id): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
@@ -1491,6 +1493,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: PHP_INT_MAX, period: 60)]
 	public function save(string $register, string $schema, string $id): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
@@ -1590,6 +1593,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: PHP_INT_MAX, period: 60)]
 	public function createMultipart(string $register, string $schema, string $id): JSONResponse {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before accepting uploads.
