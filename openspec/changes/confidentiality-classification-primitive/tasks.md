@@ -37,8 +37,10 @@ Reuses `MagicRbacHandler`/`ConditionMatcher`'s `$now` dynamic variable
 
 ## 5. Verification
 
-- [ ] 5.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and the Hydra mechanical gates (spdx-headers, unsafe-auth-resolver, orphan-auth); fix any pre-existing issues touched.
-- [ ] 5.2 Run `openspec validate --change confidentiality-classification-primitive --strict`; resolve any errors.
+- [x] 5.1 Run `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) and the Hydra mechanical gates (spdx-headers, unsafe-auth-resolver, orphan-auth); fix any pre-existing issues touched.
+      > 2026-11-25: run on `lib/Service/Confidentiality/*`, `lib/Db/Schema.php` and `lib/Db/SchemaMapper.php`. phpcs, phpmd (both rulesets) and phpstan clean after the fixes (`clearanceErrors` split for complexity, with `testEveryBadClearanceEntryIsReportedInOrder`; `Schema`'s `getFacets` docblock typed like its implementation). Psalm: nothing left beyond `MissingOverrideAttribute`. Hydra gates (`--scope-to-diff`): spdx-headers, unsafe-auth-resolver and orphan-auth pass; gate-67 contract parity and gate-102 manifest l10n red tree-wide, not in these files. Unit: Architecture, Db, Service/Confidentiality green.
+- [x] 5.2 Run `openspec validate --change confidentiality-classification-primitive --strict`; resolve any errors.
+      > 2026-11-25: valid. Strict refused four requirement texts over 500 characters; shortened, with the tier default and the query-level join moved into their own scenarios.
 
 ## Acceptance Criteria
 

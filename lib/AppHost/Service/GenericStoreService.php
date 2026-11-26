@@ -212,6 +212,36 @@ class GenericStoreService {
 
 		$params = ['_limit' => self::SEARCH_LIMIT] + $search->filters();
 
+		// A `local` registry is read in-process and stays live. A remote
+		// registry's answer is kept for a minute: apps list store cards on
+		// paths every page load reads, and each load waited on the registry.
+		if ($this->isLocal(descriptor: $descriptor) === true) {
+			return $this->searchFetched(descriptor: $descriptor, params: $params);
+		}
+
+		return $this->registry->searchCache->remember(
+			appId: $descriptor->appId,
+			parts: [
+				trim($this->registryUrl(descriptor: $descriptor)),
+				$this->registerSlug(descriptor: $descriptor),
+				$descriptor->schema,
+				http_build_query($params),
+			],
+			fetch: fn (): array => $this->searchFetched(descriptor: $descriptor, params: $params)
+		);
+	}//end searchStore()
+
+	/**
+	 * Fetch a search from the registry and turn its rows into cards.
+	 *
+	 * @param StoreDescriptor $descriptor The calling app's store parameters.
+	 * @param array<string, mixed> $params The registry query.
+	 *
+	 * @return array{outcome: string, cards: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/specs/apphost-store-plane/spec.md
+	 */
+	private function searchFetched(StoreDescriptor $descriptor, array $params): array {
 		$result = $this->fetch(descriptor: $descriptor, params: $params);
 		if ($result['outcome'] !== self::OUTCOME_OK) {
 			return ['outcome' => $result['outcome'], 'cards' => []];
@@ -225,7 +255,7 @@ class GenericStoreService {
 		}
 
 		return ['outcome' => self::OUTCOME_OK, 'cards' => $cards];
-	}//end searchStore()
+	}//end searchFetched()
 
 	/**
 	 * Resolve a single remote item by slug, returning its FULL payload for the

@@ -66,12 +66,11 @@ if (!isDev) {
 	// stay self-contained too.
 	const selfContainedEntries = ['integrationGlobal', 'graphqlExplorer']
 	// Entries whose own initial chunk keeps its node_modules instead of sending
-	// them to openregister-vendor. They run on another app's pages and need
+	// them to a shared vendor chunk. They run on another app's pages and need
 	// little at load: `filesSidebar` (every Files page and every page embedding
 	// the Files sidebar: @nextcloud/files and @nextcloud/l10n) and `mailSidebar`
 	// (every Mail page: Vue and @nextcloud/l10n; the panel itself is lazy). In
-	// the vendor group each put the whole openregister-vendor chunk (~12 MB) on
-	// those pages. Their lazy chunks still share code as before.
+	// the vendor group each could pull a shared vendor chunk onto those pages. Their lazy chunks still share code as before.
 	const leanInitialEntries = ['filesSidebar', 'mailSidebar']
 	const isLeanInitial = (chunk) => [...chunk.groupsIterable]
 		.some((group) => leanInitialEntries.includes(group.name))
@@ -87,6 +86,10 @@ if (!isDev) {
 		.flatMap((group) => entriesOf(group))
 		.every((entry) => typeof entry.name === 'string' && !selfContainedEntries.includes(entry.name))
 
+	// Vendor code is split per combination of entries that use it, NOT into one
+	// named chunk: a single `openregister-vendor` chunk held the node_modules of
+	// EVERY entry (22 MB), and the small mail and files sidebar entries, which
+	// load on Mail and on every page with a Files sidebar, had to load all of it.
 	webpackConfig.optimization.splitChunks = {
 		chunks: (chunk) => sharesChunks(chunk),
 		cacheGroups: {
@@ -95,9 +98,9 @@ if (!isDev) {
 			// demand does not grow the vendor chunk every page loads.
 			vendor: {
 				test: /[\\/]node_modules[\\/]/,
-				name: 'openregister-vendor',
 				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk) && !isLeanInitial(chunk),
 				priority: 10,
+				reuseExistingChunk: true,
 			},
 		},
 	}
@@ -252,6 +255,14 @@ webpackConfig.resolve.alias = {
 	// integration registry and the l10n module directly, not the barrel) map
 	// onto the same files in the sibling checkout's src/. Listed before the
 	// package alias, which would otherwise turn them into src/dist/esm/....
+	// Two dist files have no same-named source file: the generated stylesheet
+	// module and a compiled SFC (the dashboard tile's widget grid).
+	...(useLocalLib
+		? {
+			'@conduction/nextcloud-vue/dist/esm/library-style.js$': path.join(localLib, 'css/index.css'),
+			'@conduction/nextcloud-vue/dist/esm/components/CnIntegrationWidgetGrid/CnIntegrationWidgetGrid.vue.js$': path.join(localLib, 'components/CnIntegrationWidgetGrid/CnIntegrationWidgetGrid.vue'),
+		}
+		: {}),
 	...(useLocalLib ? { '@conduction/nextcloud-vue/dist/esm': localLib } : {}),
 	...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 	// Deduplicate shared packages so the aliased library source uses

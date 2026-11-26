@@ -53,6 +53,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
@@ -102,13 +103,6 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 * @var string
 	 */
 	public const NOTIFICATION_SUBJECT = 'object_ownership_changed';
-
-	/**
-	 * The administrator group.
-	 *
-	 * @var string
-	 */
-	private const ADMIN_GROUP = 'admin';
 
 	/**
 	 * How many generations of children one transfer walks.
@@ -1021,7 +1015,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 			return;
 		}
 
-		if (in_array(needle: self::ADMIN_GROUP, haystack: $this->callerGroups(), strict: true) === false) {
+		if ($this->callerIsAdministrator() === false) {
 			throw new NotAuthorizedException(
 				message: 'Only an administrator may assign a record to somebody else'
 			);
@@ -1047,7 +1041,7 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	 */
 	private function requireAssignRight(OwnedRecord $record, bool $cascade): void {
 		if (SystemOperationContext::isActive() === true
-			|| in_array(needle: self::ADMIN_GROUP, haystack: $this->callerGroups(), strict: true) === true
+			|| $this->callerIsAdministrator() === true
 		) {
 			return;
 		}
@@ -1161,6 +1155,23 @@ class ObjectOwnershipService implements ObjectOwnershipServiceInterface {
 	private function callerUid(): ?string {
 		return $this->guards->userSession->getUser()?->getUID();
 	}//end callerUid()
+
+	/**
+	 * Whether the session caller is an administrator, by Nextcloud's own check.
+	 *
+	 * Through `IGroupManager::isAdmin()`, so an `admin` group member outside
+	 * `allowed_admin_ranges` is not one.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
+	 */
+	private function callerIsAdministrator(): bool {
+		return AdministratorCheck::isAdministrator(
+			groupManager: $this->sources->directory->groupManager,
+			user: $this->guards->userSession->getUser()
+		);
+	}//end callerIsAdministrator()
 
 	/**
 	 * The caller's group ids.

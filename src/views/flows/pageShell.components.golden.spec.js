@@ -21,6 +21,9 @@ jest.mock('@conduction/nextcloud-vue', () => new Proxy({ __esModule: true }, {
 	get: (target, key) => (key in target ? target[key] : { name: String(key), render: () => null }),
 }))
 jest.mock('@nextcloud/auth', () => ({ __esModule: true, getCurrentUser: () => null, getRequestToken: () => '' }))
+// OperationsConsoleIndex renders the query console, whose editor is the ESM-only vue-codemirror6.
+jest.mock('vue-codemirror6', () => ({ __esModule: true, default: { name: 'CodeMirror', render: () => null } }))
+jest.mock('@codemirror/lang-json', () => ({ json: () => ({}) }))
 
 jest.mock('vue-material-design-icons/CogOutline.vue', () => ({ __esModule: true, default: { render: () => null } }))
 jest.mock('vue-material-design-icons/Download.vue', () => ({ __esModule: true, default: { render: () => null } }))

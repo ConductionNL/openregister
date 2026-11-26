@@ -76,6 +76,88 @@ class TranslationHandlerTargetLanguageTest extends TestCase {
 		);
 	}//end testFullLanguageBodyAndHeaderThrowsConflict()
 
+	/**
+	 * Writing one language of an existing object keeps its other languages.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+	 */
+	public function testScalarBodyAndHeaderMergesIntoTheStoredLanguages(): void {
+		$languageService = new LanguageService();
+		$languageService->setTargetLanguage('en');
+		$handler = new TranslationHandler($languageService, new NullLogger());
+
+		$normalised = $handler->normalizeTranslationsForSave(
+			objectData: ['title' => 'Welcome'],
+			scope: new TranslationScope($this->schema, $this->register),
+			stored: ['title' => ['nl' => 'Welkom']]
+		);
+
+		$this->assertSame(['nl' => 'Welkom', 'en' => 'Welcome'], $normalised['title']);
+	}//end testScalarBodyAndHeaderMergesIntoTheStoredLanguages()
+
+	/**
+	 * A PATCH carries the stored language map of a property it leaves alone: that is kept, not refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+	 */
+	public function testTheStoredMapUnchangedIsKeptWithAHeader(): void {
+		$languageService = new LanguageService();
+		$languageService->setTargetLanguage('en');
+		$handler = new TranslationHandler($languageService, new NullLogger());
+
+		$normalised = $handler->normalizeTranslationsForSave(
+			objectData: ['title' => ['nl' => 'Welkom']],
+			scope: new TranslationScope($this->schema, $this->register),
+			stored: ['title' => ['nl' => 'Welkom']]
+		);
+
+		$this->assertSame(['nl' => 'Welkom'], $normalised['title']);
+	}//end testTheStoredMapUnchangedIsKeptWithAHeader()
+
+	/**
+	 * A language map that differs from the stored one still conflicts with a target language.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+	 */
+	public function testAChangedMapWithAHeaderStillConflicts(): void {
+		$languageService = new LanguageService();
+		$languageService->setTargetLanguage('en');
+		$handler = new TranslationHandler($languageService, new NullLogger());
+
+		$this->expectException(TranslationTargetConflictException::class);
+
+		$handler->normalizeTranslationsForSave(
+			objectData: ['title' => ['nl' => 'Hallo', 'en' => 'Hello']],
+			scope: new TranslationScope($this->schema, $this->register),
+			stored: ['title' => ['nl' => 'Welkom']]
+		);
+	}//end testAChangedMapWithAHeaderStillConflicts()
+
+	/**
+	 * Without a target language the stored data changes nothing: a scalar is wrapped under the default.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+	 */
+	public function testWithoutAHeaderTheStoredDataIsIgnored(): void {
+		$handler = new TranslationHandler(new LanguageService(), new NullLogger());
+
+		$normalised = $handler->normalizeTranslationsForSave(
+			objectData: ['title' => 'Hallo'],
+			scope: new TranslationScope($this->schema, $this->register),
+			stored: ['title' => ['nl' => 'Welkom', 'en' => 'Welcome']]
+		);
+
+		$this->assertSame(['nl' => 'Hallo'], $normalised['title']);
+	}//end testWithoutAHeaderTheStoredDataIsIgnored()
+
 	public function testScalarBodyWithoutHeaderWrapsUnderRegisterDefault(): void {
 		$languageService = new LanguageService();
 		// No setTargetLanguage call — legacy behaviour.

@@ -65,5 +65,8 @@ final class EntityRelationFieldTypes {
 		'uncertain' => 'boolean',
 		'archiveMember' => 'string',
 		'createdAt' => 'datetime',
+		'redactionDecision' => 'string',
+		'decidedBy' => 'string',
+		'decidedAt' => 'datetime',
 	];
 }//end class
