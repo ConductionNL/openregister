@@ -30,6 +30,7 @@
 import type { APIRequestContext } from '@playwright/test'
 
 import { expect, request as pwRequest, test } from '@playwright/test'
+import { randomBytes } from 'crypto'
 import * as path from 'path'
 import { resolveBaseUrl } from '../base-url.ts'
 
@@ -38,7 +39,7 @@ const ADMIN = process.env.ADMIN_USER || process.env.OR_USER || 'admin'
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 
-const RUN = Math.random().toString(36).slice(2, 10)
+const RUN = randomBytes(4).toString('hex')
 const API = '/index.php/apps/openregister/api'
 const CASEWORKER = `e2e-shed-${RUN}`
 const CASEWORKER_PASS = 'E2e-Shed-Pass-2026'
