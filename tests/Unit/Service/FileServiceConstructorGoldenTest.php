@@ -17,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionNamedType;
 
 /**
  * Golden test for the FileService constructor: the debug log lines and the handlers
@@ -74,7 +75,8 @@ class FileServiceConstructorGoldenTest extends TestCase {
 	private function argumentsFor(string $class): array {
 		$arguments = [];
 		foreach ((new ReflectionMethod($class, '__construct'))->getParameters() as $parameter) {
-			$type = (string)$parameter->getType();
+			$declared = $parameter->getType();
+			$type = $declared instanceof ReflectionNamedType ? $declared->getName() : (string)$declared;
 			if (class_exists($type) === true && (new ReflectionClass($type))->isFinal() === true) {
 				$arguments[] = new $type(...$this->argumentsFor($type));
 				continue;

@@ -12,6 +12,8 @@ import { tableText } from '../../../tests/unit/support/tableGolden.js'
  * @copyright 2026 Conduction B.V.
  */
 
+jest.mock('vue-codemirror6', () => ({ name: 'CodeMirror', render: () => null }))
+jest.mock('@codemirror/lang-json', () => ({ json: () => ({}) }))
 jest.mock('@nextcloud/axios', () => ({
 	__esModule: true,
 	default: { get: jest.fn(() => Promise.reject(new Error('offline'))), post: jest.fn(() => new Promise(() => {})) },
@@ -116,6 +118,7 @@ describe('OperationsConsoleIndex tables', () => {
 		const retry = wrapper.findAll('button').find((b) => b.text() === 't:Retry')
 		await retry.trigger('click')
 		expect(wrapper.vm.acting).toBe('j2')
-		expect(wrapper.findAll('button').filter((b) => b.attributes('disabled') !== undefined).map((b) => b.text())).toEqual(['t:Resume', 't:Retry'])
+		// The query console's buttons wait for a query of their own; only the job rows act here.
+		expect(wrapper.findAll('button').filter((b) => b.element.closest('.queryConsole') === null && b.attributes('disabled') !== undefined).map((b) => b.text())).toEqual(['t:Resume', 't:Retry'])
 	})
 })

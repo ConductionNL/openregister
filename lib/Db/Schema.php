@@ -80,7 +80,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setProperties(?array $properties)
  * @method array|null getArchive()
  * @method void setArchive(?array $archive)
- * @method array|null getFacets()
+ * @method array<string, mixed>|null getFacets()
  * @method void setFacets(?array $facets)
  * @method string|null getSource()
  * @method void setSource(?string $source)
@@ -874,6 +874,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string
 	 */
 	public const BREAK_GLASS_ANNOTATION = 'x-openregister-break-glass';
+
+	/**
+	 * The second-factor annotation: reading this schema's objects requires a verified second factor (REQ-IHC-003).
+	 *
+	 * @var string
+	 */
+	public const SECOND_FACTOR_ANNOTATION = 'x-openregister-second-factor';
 
 	/**
 	 * The property keys whose falsy value is a real one.

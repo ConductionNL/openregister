@@ -36,4 +36,13 @@
 ## 5. Verification
 
 - [ ] 5.1 `composer check:strict` once before the push; exit code in the PR body
-- [ ] 5.2 Live (decision 139): a webhook and a flow on "created" stay silent on a draft's autosave and run once on activation
+- [x] 5.2 Live (decision 139): a webhook and a flow on "created" stay silent on a draft's autosave and run once on activation
+  - 2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16, main 292aa09: a schema requiring `subject` and `channel`; a
+    webhook on `ObjectCreatedEvent` (`allowPrivateTargets`, to a local receiver) and a published flow
+    `openregister.trigger-object` (`object.created`, the register and schema) -> `openregister.end`, sync.
+  - Control: an ordinary create gave one flow run at once and one webhook delivery after `cron.php`.
+  - A draft (`@self.status: draft`, `channel` missing) and two autosaves (`PATCH`, 200 each), then `cron.php`:
+    no delivery and no run (deliveries 2 -> 2, runs 1 -> 1, the draft's uuid in no delivery).
+  - `POST .../activate` with `channel` (200): one flow run naming the draft's uuid at once; one delivery after
+    the queued job ran (`ObjectCreatedEvent`, action `create`, `@self.status: active`, `channel: phone`). A further
+    `cron.php` delivered nothing more: one delivery, one run. Webhook logs: every delivery `success`, 200.

@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 280;
+	private const LISTENER_COUNT = 281;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -50,11 +50,13 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Then three FlowCalendarIndexListener registrations after FlowTriggerListener on the object
 	 * created, updated and deleted events (273 -> 276).
 	 * The write validator then listens on ObjectCreatingEvent and ObjectUpdatingEvent (count 276 -> 278).
+	 * Then ObjectFolderReshareGuard on BeforeShareCreatedEvent, right after
+	 * PlatformShareRoutingListener in the same slot (count 278 -> 279).
 	 * Then the ChangeGateListener took the decided approval sequences too,
 	 * on TaskSequenceCompletedEvent after the ApprovalChainAdvanceListener and on the new
-	 * TaskSequenceRejectedEvent (278 -> 280).
+	 * TaskSequenceRejectedEvent (279 -> 281).
 	 */
-	private const SEQUENCE_SHA256 = '31c4da0b364f1c50da5b3d8a6a516bc973a01d6b4d6e8b788cd674e5626982ed';
+	private const SEQUENCE_SHA256 = 'd57c79019fc3f8ec1ed20378a85b33b300560b0ad63d41506ec80eae8c15c1a1';
 
 	/**
 	 * The registration calls, in call order, with every argument.

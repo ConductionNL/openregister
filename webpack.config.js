@@ -65,6 +65,15 @@ if (!isDev) {
 	// A worker is its own unnamed entry point, so the explorer's editor workers
 	// stay self-contained too.
 	const selfContainedEntries = ['integrationGlobal', 'graphqlExplorer']
+	// Entries whose own initial chunk keeps its node_modules instead of sending
+	// them to a shared vendor chunk. They run on another app's pages and need
+	// little at load: `filesSidebar` (every Files page and every page embedding
+	// the Files sidebar: @nextcloud/files and @nextcloud/l10n) and `mailSidebar`
+	// (every Mail page: Vue and @nextcloud/l10n; the panel itself is lazy). In
+	// the vendor group each could pull a shared vendor chunk onto those pages. Their lazy chunks still share code as before.
+	const leanInitialEntries = ['filesSidebar', 'mailSidebar']
+	const isLeanInitial = (chunk) => [...chunk.groupsIterable]
+		.some((group) => leanInitialEntries.includes(group.name))
 	const entriesOf = (group, seen = new Set()) => {
 		if (seen.has(group)) {
 			return []
@@ -77,6 +86,10 @@ if (!isDev) {
 		.flatMap((group) => entriesOf(group))
 		.every((entry) => typeof entry.name === 'string' && !selfContainedEntries.includes(entry.name))
 
+	// Vendor code is split per combination of entries that use it, NOT into one
+	// named chunk: a single `openregister-vendor` chunk held the node_modules of
+	// EVERY entry (22 MB), and the small mail and files sidebar entries, which
+	// load on Mail and on every page with a Files sidebar, had to load all of it.
 	webpackConfig.optimization.splitChunks = {
 		chunks: (chunk) => sharesChunks(chunk),
 		cacheGroups: {
@@ -85,9 +98,9 @@ if (!isDev) {
 			// demand does not grow the vendor chunk every page loads.
 			vendor: {
 				test: /[\\/]node_modules[\\/]/,
-				name: 'openregister-vendor',
-				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk),
+				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk) && !isLeanInitial(chunk),
 				priority: 10,
+				reuseExistingChunk: true,
 			},
 		},
 	}
