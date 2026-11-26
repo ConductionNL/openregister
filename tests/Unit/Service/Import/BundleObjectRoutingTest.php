@@ -77,8 +77,16 @@ class BundleObjectRoutingTest extends TestCase {
 		$this->assertSame([], $summary['updated']);
 		$this->assertSame(
 			[
-				['object' => 2, 'error' => 'The object names schema "elsewhere", which is not in this register bundle (melding, melder).', 'type' => 'UnassignedSchema'],
-				['object' => 3, 'error' => 'The object names schema "none", which is not in this register bundle (melding, melder).', 'type' => 'UnassignedSchema'],
+				[
+					'object' => 2,
+					'error' => 'The object names schema "elsewhere", which is not in this register bundle (melding, melder).',
+					'type' => 'UnassignedSchema',
+				],
+				[
+					'object' => 3,
+					'error' => 'The object names schema "none", which is not in this register bundle (melding, melder).',
+					'type' => 'UnassignedSchema',
+				],
 			],
 			$summary['errors']
 		);

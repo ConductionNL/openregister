@@ -70,7 +70,11 @@ class RegisterRoundTripTest extends TestCase {
 	private string $run = '';
 
 	protected function setUp(): void {
-		$url = (getenv('NEXTCLOUD_URL') ?: getenv('BASE_URL'));
+		$url = getenv('NEXTCLOUD_URL');
+		if (is_string($url) === false || $url === '') {
+			$url = getenv('BASE_URL');
+		}
+
 		if (is_string($url) === false || $url === '') {
 			$this->markTestSkipped('Set NEXTCLOUD_URL (or BASE_URL) to a Nextcloud with OpenRegister to run the register round-trip API test.');
 		}
@@ -183,7 +187,8 @@ class RegisterRoundTripTest extends TestCase {
 		foreach (['melding', 'melder'] as $base) {
 			$listed = $this->request(method: 'GET', path: '/objects/' . $this->slug(base: 'meldingen') . '/' . $this->slug(base: $base));
 			foreach (($listed['body']['results'] ?? []) as $record) {
-				$this->request(method: 'DELETE', path: '/objects/' . $this->slug(base: 'meldingen') . '/' . $this->slug(base: $base) . '/' . $record['@self']['id']);
+				$path = '/objects/' . $this->slug(base: 'meldingen') . '/' . $this->slug(base: $base) . '/' . $record['@self']['id'];
+				$this->request(method: 'DELETE', path: $path);
 			}
 		}
 
@@ -243,7 +248,7 @@ class RegisterRoundTripTest extends TestCase {
 	 * @return array{status: int, body: mixed, raw: string}
 	 */
 	private function request(string $method, string $path, array $options = []): array {
-		$options['auth'] = [(getenv('ADMIN_USER') ?: 'admin'), (getenv('ADMIN_PASSWORD') ?: 'admin')];
+		$options['auth'] = [self::env(name: 'ADMIN_USER'), self::env(name: 'ADMIN_PASSWORD')];
 		$options['headers'] = ['OCS-APIRequest' => 'true', 'Accept' => 'application/json'];
 
 		$response = (new Client(['http_errors' => false]))->request($method, $this->baseUrl . '/index.php/apps/openregister/api' . $path, $options);
@@ -251,6 +256,22 @@ class RegisterRoundTripTest extends TestCase {
 
 		return ['status' => $response->getStatusCode(), 'body' => json_decode($raw, true), 'raw' => $raw];
 	}//end request()
+
+	/**
+	 * An administrator credential from the environment, admin when unset.
+	 *
+	 * @param string $name The variable.
+	 *
+	 * @return string
+	 */
+	private static function env(string $name): string {
+		$value = getenv($name);
+		if (is_string($value) === false || $value === '') {
+			return 'admin';
+		}
+
+		return $value;
+	}//end env()
 
 	/**
 	 * A register or schema slug unique to this run.
