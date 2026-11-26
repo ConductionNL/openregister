@@ -5347,3 +5347,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-26T01:37:27Z integrator-20261125T214524-15eb134c PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-26T01:37:55Z integrator-20261125T214524-15eb134c MERGED-TREE c5f6416d1c: 2 PRs, main now d50af8842c = tested tree
+2026-11-26T01:39:45Z session-20261126T013940-0d9dafb8 b-filinq run ends (not building): merges refused by the permission check, 8 local-green filinq PRs wait in COORDINATOR-QUEUE; building more on the same register/version files would only stack conflicts. Next startable filinq work (archive documents-in-and-out-of-the-building) needs #2446 merged first; redaction-at-scale is leased by live-filinq-1.
