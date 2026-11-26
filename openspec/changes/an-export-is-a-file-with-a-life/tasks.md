@@ -71,7 +71,7 @@ profile and the export verb.
 
 ## 4. The area
 
-- [ ] 4.1 `GET /api/exports` with filters on register, schema, profile,
+- [x] 4.1 `GET /api/exports` with filters on register, schema, profile,
       actor and period, scoped by the export verb.
       > PARTLY DONE 2026-09-22. The route exists with filters on register,
       > schema, profile, source and status, scoped to the caller's own runs
@@ -86,6 +86,14 @@ profile and the export verb.
         no-op returns exactly what an administrator sees, which is
         indistinguishable from a working page until two accounts are
         compared.
+      > 2026-11-25 (live probe, Nextcloud 34 on PostgreSQL 16, main 55f2aa3e): two organisations. In the default one
+      > `e2e-other` (in the schema's `export` group) and `e2e-owner` (read only, no export grant); in a second one
+      > `e2e-tenant-b`, active there and ALSO in the export group. Each of `e2e-other` and `e2e-tenant-b` ran a profile on
+      > a schema of their own organisation. `GET /api/exports`: admin lists the runs of both actors; `e2e-other` only
+      > its own; `e2e-tenant-b` only its own (the export verb does not carry it across the tenant boundary);
+      > `e2e-owner` none. `?actor=e2e-other` answers 0 rows to `e2e-owner` and `e2e-tenant-b`. A download of the
+      > other tenant's run is 404 for both non-owners, the same answer as an unknown uuid. The scope is not a no-op:
+      > the administrator's list differs from every user's.
 - [x] 4.2 An index surface listing the runs, naming an expired export as
       expired rather than rendering it as a broken link.
       - A missing file and a file nobody produced look the same on a list
@@ -100,10 +108,19 @@ profile and the export verb.
 
 - [x] 5.1 Unit tests for the record, the sweep, the count and the scope.
       (`ExportRunRecorderTest` covers record, sweep and count; `ExportRunsControllerTest` the scope.)
-- [ ] 5.2 `tests/e2e/ci/an-export-is-a-file-with-a-life.spec.ts`: run an
+- [x] 5.2 `tests/e2e/ci/an-export-is-a-file-with-a-life.spec.ts`: run an
       export, see the row, download it, see the count move, expire it, see
       it named as expired.
       (live pass, decision 139) 2026-10-10 (B3): the spec is written for the part an API
       run can reach: a profile run lands in the area for its maker and not for a stranger,
       and a run without a file answers 410 to its maker and 404 to a stranger. A run with a
       file needs a cron tick and expiry needs the clock, so those stay with the unit tests.
+      > 2026-11-25 (live pass, Nextcloud 34 on PostgreSQL 16, main 55f2aa3e): the spec passes (with
+      > `export-profile.spec.ts`, 14 passed once the sheet-title fix is in; without it that neighbour file fails on a
+      > schema slug over 31 characters). The file half was driven by hand on the same instance: a profile with
+      > `retentionDays: 1` behind a scheduled report, `POST /api/scheduled-reports/{id}/run-now`, one cron tick ->
+      > a run with a file in `Reports/`, status `available`, expiry one day out. The maker's download answers 200
+      > `text/csv` with the row and the run's count goes 0 -> 1; a stranger and the other tenant get 404. With the
+      > expiry moved into the past, `SweepExpiredExportRunsJob` keeps the row, marks it `expired` and deletes the file
+      > from Files; the maker's download is then 410, a stranger's 404, and the Export page (as the maker, in a
+      > browser) shows the run with an `Expired` pill and no link.

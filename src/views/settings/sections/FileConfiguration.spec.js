@@ -180,3 +180,17 @@ describe('anonymisationDisclosure helpers', () => {
 		expect(Object.keys(statementsPayload(backendState(), 'presidio', { trainingUse: 'permitted', retention: 'none' }))).toEqual(['presidio', 'llm'])
 	})
 })
+
+describe('FileConfiguration malware scan state', () => {
+	/**
+	 * @spec openspec/changes/upload-malware-scan/specs/file-actions/spec.md
+	 */
+	it('renders the scan state block at the top of the section, before the document store', () => {
+		const source = require('fs').readFileSync(require('path').join(__dirname, 'FileConfiguration.vue'), 'utf8')
+
+		expect(FileConfiguration.components.MalwareScanStatus).toBeDefined()
+		expect(source.indexOf('<MalwareScanStatus />')).toBeGreaterThan(-1)
+		expect(source.indexOf('<MalwareScanStatus />')).toBeLessThan(source.indexOf('<DocumentStoreStatus />'))
+		expect(source.indexOf('<MalwareScanStatus />')).toBeLessThan(source.indexOf('<SettingsCard'))
+	})
+})

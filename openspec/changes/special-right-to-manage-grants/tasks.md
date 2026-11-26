@@ -24,4 +24,5 @@
 
 ## 5. Live
 - [ ] 5.1 A grant written by a service account that holds the right, on a running instance (the consuming app's live pass)
-- [ ] 5.2 `grant_manage` in the organisation editor's Special Rights tab (it is assignable through the API and `give()` only)
+- [x] 5.2 `grant_manage` in the organisation editor's Special Rights tab (it is assignable through the API and `give()` only)
+  - Built: a third row in `SPECIAL_RIGHTS` (`src/modals/organisation/organisationRights.js`), offered without "Everyone" because the server admits nobody through `*` under this right. Entries narrowed to a register or schemas (`{group, register?, schemas?}`) are not edited by the group picker: `splitEntries()` separates them, the table lists them under the picker in words (`narrowedEntryLabel()`), and `mergeEntries()` writes them back in front of the picked group ids, so saving the editor never drops one. Strings in en, nl and de. Verified by `organisationRights.spec.js` (the row, the split, the merge, the labels, the options per row) and `EditOrganisation.dom.golden.spec.js` (a narrowed entry survives a change of the picked groups; snapshots gain the row).

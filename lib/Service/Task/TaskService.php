@@ -1474,6 +1474,44 @@ class TaskService implements TaskServiceInterface, TaskManagerInterface {
 	}//end record()
 
 	/**
+	 * Record a NAMED action on an open task without moving its state.
+	 *
+	 * Unlike {@see record()}, the action becomes the task's last action, so
+	 * the committed act is announced AS that action and the notification
+	 * rules that address it deliver it (the `due-soon` warning a timer
+	 * raises). A system act: it is not authorized against a person, which is
+	 * why only the engine calls it. The state is untouched; the row is written
+	 * only while still open, so a task closed concurrently is never stamped.
+	 *
+	 * @param TaskAuditEntry $entry The task uuid, the action, the identity recorded as acting and the reason.
+	 *
+	 * @return Task The task, its state unchanged and its last action set.
+	 *
+	 * @throws TaskConflictException When the task is terminal, or was closed concurrently.
+	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such task exists.
+	 *
+	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-task-nearing-its-deadline-warns-its-assignee-once
+	 */
+	public function recordAction(TaskAuditEntry $entry): Task {
+		$task = $this->services->tables->tasks->findByUuid(uuid: $entry->uuid);
+		if ($task->isInTerminalState() === true) {
+			throw new TaskConflictException(
+				message: sprintf("Action '%s' refused: task '%s' is already in terminal state '%s'.", $entry->action, $entry->uuid, (string)$task->getState())
+			);
+		}
+
+		$act = new TaskAct(verb: $entry->action, actor: $entry->actor, reason: $entry->reason);
+
+		return $this->transactional(
+			mutation: function () use ($task, $act): Task {
+				$task->setLastAction($act->verb);
+
+				return $this->persistAudited(task: $task, act: $act);
+			}
+		);
+	}//end recordAction()
+
+	/**
 	 * Append an audit entry without changing the task.
 	 *
 	 * @param Task $task The task.

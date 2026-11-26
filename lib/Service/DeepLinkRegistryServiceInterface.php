@@ -37,9 +37,9 @@ interface DeepLinkRegistryServiceInterface extends DeepLinkResolverInterface, De
 	/**
 	 * Ask the apps for their deep links, once per process.
 	 *
-	 * OpenRegister's boot() calls this with its dispatcher. A process that
-	 * never boots OpenRegister reaches it through resolve() instead, so the
-	 * registry is filled in a background job the same way as in a request.
+	 * The first read of an empty registry (resolve(), registrations(),
+	 * hasRegistrations()) calls this, so the apps are asked only in a process
+	 * that needs a deep link, in a request and a background job alike.
 	 *
 	 * @param IEventDispatcher|null $dispatcher The dispatcher, or null to take it from the container.
 	 *

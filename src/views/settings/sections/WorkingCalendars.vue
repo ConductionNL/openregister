@@ -124,6 +124,7 @@
 		<EditWorkingCalendarModal
 			:show="editing"
 			:calendar="selected"
+			:initialSla="linkedSla"
 			@close="editing = false"
 			@saved="onSaved" />
 	</SettingsSection>
@@ -138,6 +139,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import EditWorkingCalendarModal from '../../../modals/settings/EditWorkingCalendarModal.vue'
+import { readDeepLink } from '../../../services/termDiagnosticLink.js'
 
 /**
  * Working calendars section.
@@ -188,14 +190,38 @@ export default {
 			outcome: null,
 			editing: false,
 			selected: null,
+			// The term a deep link asked the "Try a date" panel to start from.
+			linkedSla: null,
 		}
 	},
 
-	mounted() {
-		this.load()
+	async mounted() {
+		await this.load()
+		this.openDeepLink(window.location.search)
 	},
 
 	methods: {
+		/**
+		 * Open the calendar a deep link names, with its term in the "Try a date" panel.
+		 * A link naming a calendar this instance does not have opens nothing.
+		 *
+		 * @param {string} search The page's query string.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/term-engine-diagnostic/specs/flow-business-timers/spec.md#requirement-the-diagnostic-is-reachable-from-the-calendar-admin-page-and-by-deep-link
+		 */
+		openDeepLink(search) {
+			const link = readDeepLink(search)
+			const calendar = link
+				? this.calendars.find((entry) => entry.slug === link.calendar)
+				: null
+			if (!calendar) {
+				return
+			}
+			this.edit(calendar)
+			this.linkedSla = link.sla
+		},
+
 		/**
 		 * Read every working calendar through the objects API.
 		 *
@@ -254,6 +280,7 @@ export default {
 		 */
 		edit(calendar) {
 			this.selected = calendar
+			this.linkedSla = null
 			this.editing = true
 		},
 

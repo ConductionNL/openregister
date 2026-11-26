@@ -59,6 +59,8 @@ use OCA\OpenRegister\Files\Service\NoteVersionService;
 use OCA\OpenRegister\Files\Service\RiskLevelService;
 use OCA\OpenRegister\Files\Service\RiskLevelServiceInterface;
 use OCA\OpenRegister\Files\Service\Sharing\AccessLinkReader;
+use OCA\OpenRegister\Contract\FileTextReaderInterface;
+use OCA\OpenRegister\Files\Service\TextExtraction\FileTextReader;
 use OCA\OpenRegister\Files\Service\TextExtraction\PatternSet\PatternSetVersion;
 use OCA\OpenRegister\Files\Service\TextExtractionService;
 use OCA\OpenRegister\Files\Service\UploadService;
@@ -114,6 +116,7 @@ final class FilesRegistrar
         FileMapperInterface::class                => FileMapper::class,
         FileOwnerLookupInterface::class           => FileMapper::class,
         FileSizeTotalsInterface::class            => FileMapper::class,
+        FileTextReaderInterface::class            => FileTextReader::class,
         FileOwnershipHandlerInterface::class      => FileOwnershipHandler::class,
         AntivirusScannerInterface::class          => AntivirusScannerAdapter::class,
         FileReadRestrictionInterface::class       => FileRestrictionGuard::class,

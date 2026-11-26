@@ -150,6 +150,16 @@ class IntegrationWiringTest extends TestCase {
 		}
 	}//end testTheWebhookHelpersAreBoundByIntegrationsOnly()
 
+	/**
+	 * The request metrics port the middleware and the object cache type on is answered by the Integrations recorder.
+	 *
+	 * @return void
+	 */
+	public function testTheRequestMetricsPortIsAnsweredByTheRecorder(): void {
+		$this->assertSame(\OCA\OpenRegister\Service\Observability\RequestMetricsRecorder::class, IntegrationWiring::BINDINGS[\OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface::class]);
+		$this->assertTrue(is_a(\OCA\OpenRegister\Service\Observability\RequestMetricsRecorder::class, \OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface::class, true));
+	}//end testTheRequestMetricsPortIsAnsweredByTheRecorder()
+
 	public function testTheRegistryAndSemanticValidatorFactoriesBuildFromTheContainer(): void {
 		$this->registerAll();
 		$container = $this->createMock(ContainerInterface::class);
@@ -203,6 +213,12 @@ class IntegrationWiringTest extends TestCase {
 				return true;
 			}
 		);
+		$loader = null;
+		$registry->method('setBuiltinLoader')->willReturnCallback(
+			static function (callable $installed) use (&$loader): void {
+				$loader = $installed;
+			}
+		);
 		$logger->expects($this->once())->method('warning')->with(
 			'OpenRegister: integration provider failed to construct and was dropped from the registry: {provider} — {message}',
 			$this->callback(
@@ -213,6 +229,9 @@ class IntegrationWiringTest extends TestCase {
 		);
 
 		IntegrationWiring::boot($server);
+		$this->assertSame(expected: [], actual: $built, message: 'boot() constructs no provider.');
+		$this->assertIsCallable(actual: $loader);
+		$loader();
 
 		$this->assertSame(array_values($built), $added);
 		$this->assertSame(FilesProvider::class, array_key_first($built));
@@ -224,6 +243,12 @@ class IntegrationWiringTest extends TestCase {
 	public function testAFailingProviderIsDroppedSilentlyWithoutALogger(): void {
 		$registry = $this->createMock(IntegrationRegistry::class);
 		$registry->expects($this->never())->method('addProvider');
+		$loader = null;
+		$registry->method('setBuiltinLoader')->willReturnCallback(
+			static function (callable $installed) use (&$loader): void {
+				$loader = $installed;
+			}
+		);
 		$server = $this->createMock(ContainerInterface::class);
 		$server->method('get')->willReturnCallback(
 			static function (string $id) use ($registry): mixed {
@@ -236,6 +261,8 @@ class IntegrationWiringTest extends TestCase {
 		);
 
 		IntegrationWiring::boot($server);
+		$this->assertIsCallable(actual: $loader);
+		$loader();
 	}//end testAFailingProviderIsDroppedSilentlyWithoutALogger()
 
 	public function testBootObjectSourcesAddsTheExternalRegisterProvider(): void {

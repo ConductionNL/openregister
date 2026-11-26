@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
+use OCA\OpenRegister\Service\Export\Odt\OdtFont;
 use OCA\OpenRegister\Service\Export\Odt\OdtLogo;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
@@ -58,6 +59,13 @@ class DocumentStyleReader {
 	 * @var string
 	 */
 	public const ASSET_SERVICE = 'OCA\\Thematiq\\Service\\DocumentAssetService';
+
+	/**
+	 * The service class thematiq keeps its uploaded fonts in.
+	 *
+	 * @var string
+	 */
+	public const FONT_SERVICE = 'OCA\\Thematiq\\Service\\FontService';
 
 	/**
 	 * Constructor.
@@ -149,6 +157,81 @@ class DocumentStyleReader {
 
 		return $checked;
 	}//end logo()
+
+	/**
+	 * The profile's uploaded fonts that can be embedded, per role, read in-process.
+	 *
+	 * A role's font is read from thematiq's font store by the id in its URL
+	 * (`/thematiq/fonts/<id>.woff2`); nothing is fetched over HTTP. A role
+	 * without an uploaded font, a font that cannot be read, or one that
+	 * {@see OdtFont::fromBytes()} refuses (WOFF2 among them) is left out, so that
+	 * role keeps the export's default font. Never throws.
+	 *
+	 * @param array<string, mixed>|null $profile The profile {@see forUser()} returned, or null.
+	 *
+	 * @return list<OdtFont> The fonts, heading first.
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-pdf-export-carries-the-organisations-house-style
+	 */
+	public function fonts(?array $profile): array {
+		$section = ($profile['fonts'] ?? null);
+		if (is_array($section) === false) {
+			return [];
+		}
+
+		$fonts = [];
+		foreach ([OdtFont::ROLE_HEADING, OdtFont::ROLE_BODY] as $role) {
+			$entry = ($section[$role] ?? null);
+			if (is_array($entry) === false || is_string($entry['url'] ?? null) === false) {
+				continue;
+			}
+
+			$font = $this->font(role: $role, family: ($entry['family'] ?? null), url: $entry['url']);
+			if ($font !== null) {
+				$fonts[] = $font;
+			}
+		}
+
+		return $fonts;
+	}//end fonts()
+
+	/**
+	 * One role's uploaded font, or null when it cannot be read or embedded.
+	 *
+	 * @param string $role   `heading` or `body`.
+	 * @param mixed  $family The profile's family name.
+	 * @param string $url    The profile's font URL.
+	 *
+	 * @return OdtFont|null
+	 */
+	private function font(string $role, mixed $family, string $url): ?OdtFont {
+		$path = (string) parse_url($url, PHP_URL_PATH);
+		if (preg_match('#/' . self::THEMATIQ_APP . '/fonts/(custom-[a-z0-9-]+)\.woff2$#', $path, $matches) !== 1
+			|| class_exists(self::FONT_SERVICE) === false
+		) {
+			return null;
+		}
+
+		try {
+			$bytes = $this->container->get(self::FONT_SERVICE)->readFontBytes($matches[1]);
+		} catch (Throwable $e) {
+			$this->logger->debug('DocumentStyleReader: the ' . $role . ' font could not be read: ' . $e->getMessage());
+			return null;
+		}
+
+		if (is_string($bytes) === false) {
+			return null;
+		}
+
+		$font = OdtFont::fromBytes(role: $role, family: $family, bytes: $bytes);
+		if ($font === null) {
+			$this->logger->debug(
+				'DocumentStyleReader: the ' . $role . ' font is not a TrueType, OpenType or WOFF font that can be embedded; that role keeps the default font.'
+			);
+		}
+
+		return $font;
+	}//end font()
 
 	/**
 	 * The uploaded document logo from thematiq's asset store, or null when there is none.

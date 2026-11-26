@@ -44,6 +44,7 @@ use OCA\OpenRegister\AppHost\Store\GenericStoreInstaller;
 use OCA\OpenRegister\AppHost\Store\Source\GitHubStoreSource;
 use OCA\OpenRegister\AppHost\Store\StoreActionAuthorizer;
 use OCA\OpenRegister\AppHost\Store\StoreActionCheck;
+use OCA\OpenRegister\AppHost\Store\StoreInstallLedger;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCA\OpenRegister\Kernel\Contracts\Value\BundleObjectStamp;
 use OCP\AppFramework\Http;
@@ -109,6 +110,9 @@ class GenericStoreControllerTest extends TestCase {
 	/** @var IRequest&MockObject */
 	private $request;
 
+	/** @var StoreInstallLedger&MockObject */
+	private $ledger;
+
 	/**
 	 * Build the collaborators.
 	 *
@@ -134,6 +138,8 @@ class GenericStoreControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->request = $this->createMock(IRequest::class);
+		$this->ledger = $this->getMockBuilder(className: StoreInstallLedger::class)
+			->disableOriginalConstructor()->onlyMethods(['record', 'installedIn'])->getMock();
 	}//end setUp()
 
 	/**
@@ -156,7 +162,8 @@ class GenericStoreControllerTest extends TestCase {
 				),
 				install: new GenericStoreInstall(
 					installer: $this->installer,
-					actionAuthorizer: $this->actionAuthorizer
+					actionAuthorizer: $this->actionAuthorizer,
+					ledger: $this->ledger
 				),
 				platform: new GenericStorePlatform(
 					userSession: $this->userSession,
@@ -1074,4 +1081,65 @@ class GenericStoreControllerTest extends TestCase {
 
 		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getStatus());
 	}//end testThePostureIsCheckedBeforeTheTarget()
+
+	/**
+	 * A search answers with where each item is installed, read from the app's own ledger.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-installed-in/specs/apphost-store-plane/spec.md#requirement-the-store-reports-where-each-item-is-installed
+	 */
+	public function testSearchReportsWhereEachItemIsInstalled(): void {
+		$this->signIn();
+		$this->manifestLoader->method('loadStore')->willReturn(value: $this->worldStore());
+		$this->catalog->method('ownedTypes')->willReturn(value: ['openregister.configset']);
+		$this->catalog->method('search')->willReturn(value: ['outcome' => 'ok', 'cards' => [['slug' => 'a-set']]]);
+		$this->ledger->expects($this->once())
+			->method(constraint: 'installedIn')
+			->with('larpinq')
+			->willReturn(value: ['a-set' => ['world-1']]);
+
+		$data = $this->controller(appId: 'larpinq')->search()->getData();
+
+		$this->assertSame(expected: ['a-set' => ['world-1']], actual: $data['installed']);
+	}//end testSearchReportsWhereEachItemIsInstalled()
+
+	/**
+	 * A whole install is recorded with the target it went into.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-installed-in/specs/apphost-store-plane/spec.md#requirement-the-store-reports-where-each-item-is-installed
+	 */
+	public function testAWholeInstallIsRecordedWithItsTarget(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn(value: $this->worldStore());
+		$this->request->method('getParam')->willReturnMap(valueMap: [['target', null, 'world-1']]);
+		$this->catalog->method('resolve')->willReturn(
+			value: ['typeId' => 'openregister.configset', 'repo' => 'a/b', 'source' => 's', 'bundle' => []]
+		);
+		$this->catalog->method('install')->willReturn(value: ['success' => true, 'components' => []]);
+		$this->ledger->expects($this->once())->method(constraint: 'record')->with('larpinq', 'a-set', 'world-1');
+
+		$this->assertTrue(condition: $this->controller(appId: 'larpinq')->install(slug: 'a-set')->getData()['success']);
+	}//end testAWholeInstallIsRecordedWithItsTarget()
+
+	/**
+	 * An install that is refused in part is not recorded, so no card claims it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/store-installed-in/specs/apphost-store-plane/spec.md#requirement-the-store-reports-where-each-item-is-installed
+	 */
+	public function testAPartialInstallIsNotRecorded(): void {
+		$this->signIn(isAdmin: true);
+		$this->manifestLoader->method('loadStore')->willReturn(value: $this->enabledStore());
+		$this->storeService->method('resolve')->willReturn(value: ['components' => []]);
+		$this->installer->method('install')->willReturn(
+			value: ['success' => false, 'components' => [['schema' => 'x', 'status' => 'refused', 'message' => '']]]
+		);
+		$this->ledger->expects($this->never())->method(constraint: 'record');
+
+		$this->assertFalse(condition: $this->controller()->install(slug: 'vth')->getData()['success']);
+	}//end testAPartialInstallIsNotRecorded()
 }//end class

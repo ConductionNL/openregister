@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Db\Flow\FlowTriggerSet;
 use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
@@ -217,7 +218,7 @@ class FlowTriggerMapper implements FlowTriggerMapperInterface {
 	 */
 	private function insertRow(array $row, bool $enabled): void {
 		$qb = $this->db->getQueryBuilder();
-		$values = array_map(static fn (string $value): string => $qb->createNamedParameter($value), $row);
+		$values = array_map(static fn (string $value): IParameter|string => $qb->createNamedParameter($value), $row);
 		$values['enabled'] = $qb->createNamedParameter($enabled, IQueryBuilder::PARAM_BOOL);
 		$qb->insert(self::TABLE)->values($values);
 		$qb->executeStatement();

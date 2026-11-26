@@ -356,11 +356,15 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 	}//end snippetText()
 
 	/**
-	 * The owner, register and schema names a hit's subline names.
+	 * The owner, register and schema names a hit's subline names, and the
+	 * archive member a content-search hit was found in.
 	 *
 	 * @param ObjectSearchHit $hit The hit.
 	 *
-	 * @return array<int, string> The owning app (or Open Register), then the register and schema names when known.
+	 * @return array<int, string> The owning app (or Open Register), then the register and schema names when known,
+	 *     then `archive › member` for a hit inside a zip attachment.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
 	 */
 	private function sublineParts(ObjectSearchHit $hit): array {
 		$parts = [self::ownerOf(appLabel: $hit->appLabel())];
@@ -372,8 +376,44 @@ final class ObjectSearchResultFormatter implements ObjectSearchResultFormatterIn
 			$parts[] = $this->formatter->resolveSchemaName(schemaId: $hit->schemaId());
 		}
 
+		$member = self::matchedMemberOf(object: $hit->object());
+		if ($member !== null) {
+			$parts[] = $member;
+		}
+
 		return $parts;
 	}//end sublineParts()
+
+	/**
+	 * The archive and member a content-search hit was found in, as `archive.zip › path/in/archive.pdf`.
+	 *
+	 * Only for a hit whose matching text is in a member of a zip attachment;
+	 * a path inside the archive, never text from it.
+	 *
+	 * @param array $object The rendered object.
+	 *
+	 * @return string|null The archive and member, or null for any other hit.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	private static function matchedMemberOf(array $object): ?string {
+		$self = ($object['@self'] ?? []);
+		if (is_array($self) === false) {
+			return null;
+		}
+
+		$member = ($self['matchedMember'] ?? null);
+		if (is_string($member) === false || $member === '') {
+			return null;
+		}
+
+		$archive = ($self['matchedFile'] ?? null);
+		if (is_string($archive) === false || $archive === '') {
+			return $member;
+		}
+
+		return $archive.' › '.$member;
+	}//end matchedMemberOf()
 
 	/**
 	 * The owner a subline names: the hit's app, or Open Register.

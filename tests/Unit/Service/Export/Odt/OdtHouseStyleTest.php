@@ -110,4 +110,33 @@ class OdtHouseStyleTest extends TestCase {
 		$this->assertSame($style, OdtHouseStyle::withLogo($style, null));
 		$this->assertNull(OdtHouseStyle::withLogo(null, null));
 	}
+
+	public function testWithFontsPutsEachFontOnItsRoleAndKeepsTheRest(): void {
+		require_once __DIR__ . '/OdtFontTest.php';
+		require_once __DIR__ . '/OdtLogoTest.php';
+		$logo = \OCA\OpenRegister\Service\Export\Odt\OdtLogo::fromBytes(OdtLogoTest::png(10, 10));
+		$heading = \OCA\OpenRegister\Service\Export\Odt\OdtFont::fromBytes('heading', 'Kop', OdtFontTest::sfnt());
+		$body = \OCA\OpenRegister\Service\Export\Odt\OdtFont::fromBytes('body', 'Tekst', OdtFontTest::sfnt());
+		$style = new OdtHouseStyle(headBackground: '#112233', footerLines: ['Regel'], logo: $logo);
+
+		$combined = OdtHouseStyle::withFonts($style, [$body, $heading]);
+		$this->assertSame('#112233', $combined?->headBackground);
+		$this->assertSame(['Regel'], $combined->footerLines);
+		$this->assertSame($logo, $combined->logo);
+		$this->assertSame($heading, $combined->headingFont);
+		$this->assertSame($body, $combined->bodyFont);
+		$this->assertSame([$heading, $body], $combined->fonts());
+
+		$bodyOnly = OdtHouseStyle::withFonts(null, [$body]);
+		$this->assertNull($bodyOnly?->headingFont);
+		$this->assertSame($body, $bodyOnly->bodyFont);
+		$this->assertSame([$body], $bodyOnly->fonts());
+
+		$this->assertSame($style, OdtHouseStyle::withFonts($style, []));
+		$this->assertNull(OdtHouseStyle::withFonts(null, []));
+
+		// Adding the logo afterwards keeps the fonts.
+		$this->assertSame($heading, OdtHouseStyle::withLogo($combined, $logo)?->headingFont);
+		$this->assertSame($body, OdtHouseStyle::withLogo($combined, $logo)?->bodyFont);
+	}
 }//end class

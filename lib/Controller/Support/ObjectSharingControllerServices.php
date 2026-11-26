@@ -24,7 +24,9 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Service\Authorization\GrantCeiling;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingServiceInterface;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -40,6 +42,8 @@ final class ObjectSharingControllerServices {
 	 * @param SchemaCatalogInterface          $catalog       Resolves the register and schema entities.
 	 * @param ObjectSharingServiceInterface   $sharing       Performs the checked writes.
 	 * @param LoggerInterface                 $logger        Records unexpected failures.
+	 * @param GrantCeiling|null               $ceiling       Refuses a grant beyond the granter's own rights (REQ-RAH-002).
+	 * @param IUserSession|null               $userSession   The granter.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
@@ -48,6 +52,8 @@ final class ObjectSharingControllerServices {
 		public readonly SchemaCatalogInterface $catalog,
 		public readonly ObjectSharingServiceInterface $sharing,
 		public readonly LoggerInterface $logger,
+		public readonly ?GrantCeiling $ceiling = null,
+		public readonly ?IUserSession $userSession = null,
 	) {
 	}//end __construct()
 }//end class

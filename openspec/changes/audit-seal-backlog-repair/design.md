@@ -210,3 +210,22 @@ completes. That is the honest answer, but it is a visible change for consumers o
 the verification endpoint. The migration sets the marker to the time it runs, so
 pre-existing rows are classified as legacy and the alarm reflects only rows that
 *should* have been sealed by the current code.
+
+## Decided during the build: the driver seals in place only after the newest link
+
+Measured against the code as it stands, not as Q1 assumed it: `verifyChain()`
+recomputes every sealed row over the walk's previous hash, and an unsealed row
+does not move that hash. A row sealed inline while an older row sat unsealed was
+therefore chained over the gap. Giving the gap a hash afterwards moves the walk's
+previous hash, so the sealed row after it no longer recomputes to its stored hash
+and verification reports the chain broken there: a fan-out (two rows on one
+predecessor), the failure `MAX_SWEEP_RECHAIN` in `AuditHashService` already names.
+
+So "never re-hash a sealed row" and "every unsealed row sealed, chain verifying"
+can only both hold for rows after the newest chain link (a row with a hash that is
+no retention tombstone; a tombstone is carried forward without a recompute, so a
+gap before one is safe). The driver starts after that link. Unsealed rows before
+it are counted as `unsealedBehindChain` and named, with their remedy, by the
+command and the job: `occ openregister:rechain-audit-trail`, the deliberate repair
+that may rewrite sealed rows. Those before the cutover marker are legacy and do
+not fail verification; with inline sealing gone, no new gap can open behind a link.

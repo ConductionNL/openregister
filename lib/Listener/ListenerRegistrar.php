@@ -45,6 +45,7 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectWriteValidatorInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWritePushInterface;
 use OCA\OpenRegister\Listener\Registrar\ComplianceListenerRegistrar;
 use OCA\OpenRegister\Mcp\Listener\ContextChatSubmissionListener;
@@ -244,6 +245,13 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectDeletedEvent::class, FlowTriggerListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, FlowTriggerListener::class);
 
+		// Calendar flow triggers (flow-calendar-and-webhook-triggers): a write
+		// places, moves or removes the record's moment on every calendar trigger
+		// of its schema; FlowCalendarWorker fires the moments that come due.
+		$context->registerEventListener(ObjectCreatedEvent::class, FlowCalendarIndexListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, FlowCalendarIndexListener::class);
+		$context->registerEventListener(ObjectDeletedEvent::class, FlowCalendarIndexListener::class);
+
 		// Flow preflight — refuse a flow document naming a step type this
 		// instance cannot run. Registered FIRST on both events so an unrunnable
 		// flow is rejected before any other listener does work on the way in.
@@ -367,6 +375,12 @@ final class ListenerRegistrar {
 		// enforcing expiry terminates the item. The case layer keeps no clock.
 		$context->registerEventListener(CaseItemTransitionedEvent::class, CaseItemTimerListener::class);
 		$context->registerEventListener(FlowTimerFiredEvent::class, CaseItemTimerListener::class);
+
+		// The deadline warning (flow-task-inbox-projections, task 7): a fired
+		// preBreach rung of a task's due timer is recorded as the task's
+		// `due-soon` action, once per deadline value, which the `taskDueSoon`
+		// notification rule delivers.
+		$context->registerEventListener(FlowTimerFiredEvent::class, TaskDueSoonListener::class);
 
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): the SAME terminal event, and the run-terminal one, also cancel
@@ -553,6 +567,10 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectUpdatingEvent::class, WorkingCalendarValidationListener::class);
 		$context->registerEventListener(ObjectCreatingEvent::class, DecisionTableValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, DecisionTableValidationListener::class);
+		// A write-time check another area owns the rules of; today the redaction policy's
+		// detection patterns (Configuration binds the contract to DetectionPatternValidationListener).
+		$context->registerEventListener(ObjectCreatingEvent::class, ObjectWriteValidatorInterface::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, ObjectWriteValidatorInterface::class);
 
 		// ... and the other half: a calendar an armed or suspended timer names
 		// cannot be deleted, because the resolver refuses an unknown name
@@ -782,6 +800,9 @@ final class ListenerRegistrar {
 		// listener never fails the move: the projection is derived and
 		// rebuildable, the transition is not.
 		CoreListenerRegistrar::stateHistory(context: $context);
+
+		// The semantic provider list the integrations capability advertises follows schemas, registers and apps.
+		CoreListenerRegistrar::semanticProviders(context: $context);
 	}//end registerCacheEvictionListeners()
 
 	/**
@@ -819,6 +840,8 @@ final class ListenerRegistrar {
 		$context->registerEventListener(ObjectTransitionedEvent::class, StateEntryFreezeListener::class);
 		$context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
+		// Queue-mode handoff drain on app enable: a provider may have appeared.
+		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
 	}//end registerProjectionAndHandoffListeners()
 
 	/**

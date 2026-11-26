@@ -13,10 +13,14 @@ import ExternalRegisterCard from './ExternalRegisterCard.vue'
 jest.mock('@nextcloud/axios', () => ({ get: jest.fn() }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => '/gen' + path }))
 jest.mock('@nextcloud/l10n', () => ({ t: (app, text, vars = {}) => text.replace(/\{(\w+)\}/g, (all, k) => (k in vars ? vars[k] : all)) }))
-jest.mock('@nextcloud/vue', () => ({
-	NcButton: { name: 'NcButton', emits: ['click'], template: '<button @click="$emit(\'click\')"><slot /></button>' },
-	NcLoadingIcon: { name: 'NcLoadingIcon', template: '<span class="loading" />' },
-}))
+jest.mock('@nextcloud/vue/components/NcButton', () => ({
+	__esModule: true,
+	default: { name: 'NcButton', emits: ['click'], template: '<button @click="$emit(\'click\')"><slot /></button>' },
+}), { virtual: true })
+jest.mock('@nextcloud/vue/components/NcLoadingIcon', () => ({
+	__esModule: true,
+	default: { name: 'NcLoadingIcon', template: '<span class="loading" />' },
+}), { virtual: true })
 
 /**
  * Mount the card and let it load.

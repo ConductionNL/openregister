@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service\Sharing;
 
 use OCA\OpenRegister\Db\SchemaCatalogInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ViewFinderInterface;
+use OCA\OpenRegister\Service\Rbac\ViewerReachCheckInterface;
 
 /**
  * The view, register and schema mappers, each asked under the caller's own rules.
@@ -37,12 +38,18 @@ final readonly class AccessLinkViewReaders {
 	/**
 	 * Bundle the collaborators.
 	 *
-	 * @param ViewFinderInterface    $views   Resolves a view under the caller's own rules.
-	 * @param SchemaCatalogInterface $catalog Resolves the registers and schemas a view names, same rules.
+	 * @param ViewFinderInterface            $views   Resolves a view under the caller's own rules.
+	 * @param SchemaCatalogInterface         $catalog Resolves the registers and schemas a view names, same rules.
+	 * @param ViewerReachCheckInterface|null $reach   Whether a view reaches the caller (owned, shared with one of
+	 *                                                their groups, public, or administrator), the rule the views
+	 *                                                endpoint answers a read with.
+	 *
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
 	 */
 	public function __construct(
 		public ViewFinderInterface $views,
 		public SchemaCatalogInterface $catalog,
+		public ?ViewerReachCheckInterface $reach = null,
 	) {
 	}//end __construct()
 }//end class

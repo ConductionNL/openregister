@@ -58,12 +58,14 @@
 	],
 	"OCA\\OpenRegister\\Event\\FlowTimerFiredEvent": [
 		"OCA\\OpenRegister\\Listener\\PortalTaskReminderListener",
-		"OCA\\OpenRegister\\Listener\\CaseItemTimerListener"
+		"OCA\\OpenRegister\\Listener\\CaseItemTimerListener",
+		"OCA\\OpenRegister\\Listener\\TaskDueSoonListener"
 	],
 	"OCA\\OpenRegister\\Event\\ObjectCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\ObjectChangeListener",
 		"OCA\\OpenRegister\\Listener\\AutoTransitionRecordListener",
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\Listener\\FlowCalendarIndexListener",
 		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
@@ -93,6 +95,7 @@
 		"OCA\\OpenRegister\\Listener\\SurvivorshipRecomputeListener",
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarValidationListener",
 		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\ObjectWriteValidatorInterface",
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
@@ -103,6 +106,7 @@
 	],
 	"OCA\\OpenRegister\\Event\\ObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\Listener\\FlowCalendarIndexListener",
 		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Search\\Listener\\ObjectMetricsListener",
@@ -164,6 +168,7 @@
 		"OCA\\OpenRegister\\Listener\\ObjectChangeListener",
 		"OCA\\OpenRegister\\Listener\\AutoTransitionRecordListener",
 		"OCA\\OpenRegister\\Listener\\FlowTriggerListener",
+		"OCA\\OpenRegister\\Listener\\FlowCalendarIndexListener",
 		"OCA\\OpenRegister\\Listener\\CaseObjectEventListener",
 		"OCA\\OpenRegister\\AppHost\\Listener\\ApplicationPublishListener",
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarChangedListener",
@@ -201,6 +206,7 @@
 		"OCA\\OpenRegister\\Listener\\SurvivorshipRecomputeListener",
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarValidationListener",
 		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListener",
+		"OCA\\OpenRegister\\Kernel\\Contracts\\ObjectWriteValidatorInterface",
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
@@ -223,6 +229,7 @@
 	],
 	"OCA\\OpenRegister\\Event\\RegisterCreatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
 		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
@@ -230,6 +237,7 @@
 	],
 	"OCA\\OpenRegister\\Event\\RegisterDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
 		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
@@ -238,6 +246,7 @@
 	"OCA\\OpenRegister\\Event\\RegisterUpdatedEvent": [
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
 		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
@@ -249,6 +258,7 @@
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\NotificationsAnnotationInstallListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
@@ -261,6 +271,7 @@
 		"OCA\\OpenRegister\\Listener\\SourceRecordChangeListener",
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\WebhookEventListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\ActivityEventListener",
 		"OCA\\OpenRegister\\Listener\\RecordTypeAuditListener",
@@ -274,6 +285,7 @@
 		"OCA\\OpenRegister\\Listener\\GrantableRightsInvalidationListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener",
 		"OCA\\OpenRegister\\Listener\\AuthorizationCacheInvalidationListener",
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\NotificationsAnnotationInstallListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener",
 		"OCA\\OpenRegister\\Notifications\\Listener\\NotificationDedupeAnnotationSyncListener",
@@ -329,7 +341,11 @@
 		"OCA\\OpenRegister\\Listener\\LeafScriptListener",
 		"OCA\\OpenRegister\\Listener\\PushClientScriptListener"
 	],
+	"OCP\\App\\Events\\AppDisableEvent": [
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener"
+	],
 	"OCP\\App\\Events\\AppEnableEvent": [
+		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener"
 	],
 	"OCP\\Calendar\\Events\\CalendarObjectDeletedEvent": [
@@ -371,7 +387,8 @@
 		"OCA\\OpenRegister\\Listener\\OcmResourceTypeListener"
 	],
 	"OCP\\Share\\Events\\BeforeShareCreatedEvent": [
-		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener"
+		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener",
+		"OCA\\OpenRegister\\Listener\\ObjectFolderReshareGuard"
 	],
 	"OCP\\Share\\Events\\ShareCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"

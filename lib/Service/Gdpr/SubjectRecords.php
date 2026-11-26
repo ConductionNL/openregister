@@ -41,6 +41,8 @@ final class SubjectRecords {
 	 * @param SubjectObjectWriter $writer DSAR-attributed, audited, scoped writes.
 	 * @param SubjectDeclaredFieldIndex|null $declaredFields Discovery through schema-declared subject id fields;
 	 *                                                       null searches the entity index only.
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md#requirement-discovery-also-finds-records-through-schema-declared-subject-id-fields
 	 */
 	public function __construct(
 		public readonly SubjectEntityIndex $index,

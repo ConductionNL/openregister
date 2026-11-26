@@ -1,0 +1,745 @@
+{
+ "info": {
+  "_postman_id": "or-dsar-declared-subject-id-2026-11-25",
+  "name": "OpenRegister DSAR Declared Subject Id",
+  "description": "GET /api/gdpr/access-export for a subject found only through a declared subject id field (change dsar-finds-records-by-declared-subject-id, task 2.3).\n\nWHAT IT ASSERTS: a schema declaring `subjectIdFields: {learnerId: learnerId}` holds two enrolments of one learner and one of another; the access export for the learner lists exactly those two, each with `subjectFields` naming `learnerId` and no detected entities (an internal uuid is never detected); narrowed to type `learnerId` it still finds both, and under another type it finds none through a declared field (CONTROL).\n\nHermetic: it creates its schema, register and enrolments, and removes them.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{admin_user}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{admin_password}}",
+    "type": "string"
+   }
+  ]
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "http://localhost",
+   "type": "string"
+  },
+  {
+   "key": "admin_user",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "admin_password",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "run",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "learner",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "otherLearner",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "schemaId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "registerId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "uuid0",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "uuid1",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "uuid2",
+   "value": "",
+   "type": "string"
+  }
+ ],
+ "item": [
+  {
+   "name": "setUp: a schema declaring learnerId as its subject id",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"dsar declared id {{run}}\", \"slug\": \"dsardeclared{{run}}\", \"properties\": {\"cursus\": {\"type\": \"string\"}, \"learnerId\": {\"type\": \"string\"}}, \"configuration\": {\"x-openregister-processing\": {\"subjectIdFields\": {\"learnerId\": \"learnerId\"}}}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "prerequest",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10));",
+       "pm.collectionVariables.set('learner', pm.variables.replaceIn('{{$guid}}'));",
+       "pm.collectionVariables.set('otherLearner', pm.variables.replaceIn('{{$guid}}'));"
+      ]
+     }
+    },
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a register",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"dsar declared register {{run}}\", \"slug\": \"dsardeclaredregister{{run}}\", \"schemas\": [{{schemaId}}]}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: an enrolment in Wiskunde",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"cursus\": \"Wiskunde\", \"learnerId\": \"{{learner}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('created', () => pm.response.to.have.status(201));",
+       "pm.collectionVariables.set('uuid0', pm.response.json()['@self'].id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: an enrolment in Biologie",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"cursus\": \"Biologie\", \"learnerId\": \"{{learner}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('created', () => pm.response.to.have.status(201));",
+       "pm.collectionVariables.set('uuid1', pm.response.json()['@self'].id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: an enrolment in Ander",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"cursus\": \"Ander\", \"learnerId\": \"{{otherLearner}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('created', () => pm.response.to.have.status(201));",
+       "pm.collectionVariables.set('uuid2', pm.response.json()['@self'].id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the access export for the learner",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/gdpr/access-export?subject={{learner}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "gdpr",
+      "access-export"
+     ],
+     "query": [
+      {
+       "key": "subject",
+       "value": "{{learner}}"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('answered', () => pm.response.to.have.status(200));",
+       "const b = pm.response.json();",
+       "const ours = (b.objects || []).filter(o => o.object && o.object['@self'] && [pm.collectionVariables.get('uuid0'), pm.collectionVariables.get('uuid1'), pm.collectionVariables.get('uuid2')].includes(o.object['@self'].id));",
+       "pm.test('exactly the two enrolments of this learner', () => pm.expect(ours.map(o => o.object.cursus).sort()).to.eql(['Biologie', 'Wiskunde']));",
+       "pm.test('found only through the declared field', () => ours.forEach(o => {",
+       "  pm.expect(o.subjectFields).to.deep.include({ type: 'learnerId', field: 'learnerId' });",
+       "  pm.expect(o.gdprEntities || []).to.eql([]);",
+       "}));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the same export narrowed to the declared type",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/gdpr/access-export?subject={{learner}}&type=learnerId",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "gdpr",
+      "access-export"
+     ],
+     "query": [
+      {
+       "key": "subject",
+       "value": "{{learner}}"
+      },
+      {
+       "key": "type",
+       "value": "learnerId"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('answered', () => pm.response.to.have.status(200));",
+       "pm.test('the two enrolments', () => pm.expect((pm.response.json().objects || []).filter(o => o.subjectFields && o.subjectFields.length).length).to.eql(2));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the same export under another type (control)",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/gdpr/access-export?subject={{learner}}&type=employeeId",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "gdpr",
+      "access-export"
+     ],
+     "query": [
+      {
+       "key": "subject",
+       "value": "{{learner}}"
+      },
+      {
+       "key": "type",
+       "value": "employeeId"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('answered', () => pm.response.to.have.status(200));",
+       "pm.test('no field is declared under that type, so nothing is found through one', () => pm.expect((pm.response.json().objects || []).filter(o => o.subjectFields && o.subjectFields.length).length).to.eql(0));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete enrolment 0",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{uuid0}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "{{uuid0}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete enrolment 1",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{uuid1}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "{{uuid1}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete enrolment 2",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{uuid2}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "{{uuid2}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the register",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers",
+      "{{registerId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the schema",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas",
+      "{{schemaId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

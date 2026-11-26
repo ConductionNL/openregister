@@ -863,6 +863,11 @@ class FlowTimerServiceTest extends TestCase {
 		self::assertSame([['type' => 'group', 'id' => 'vergunningen', 'role' => 'handler']], $this->dispatched[0]->getRecipients(), 'the group path');
 		self::assertSame('low', $this->dispatched[0]->getPriority());
 		self::assertSame('termijn-7d', $this->dispatched[1]->getMessage());
+		self::assertSame(
+			expected: ['preBreach', 'preBreach'],
+			actual: array_map(callback: static fn (FlowTimerFiredEvent $e): ?string => $e->getRungTrigger(), array: $this->dispatched),
+			message: 'the fired event names the rung trigger, which a custom key cannot (flow-task-inbox-projections 7.1)'
+		);
 		self::assertSame(['handler', 'teamleader'], $this->store->fires[1]->getRecipientRoles());
 		self::assertSame('2026-10-25 09:00', $timer->getNextRungAt()->format('Y-m-d H:i'), 'next: the 2-day rung');
 		$this->assertInvariants($timer);

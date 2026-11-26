@@ -49,8 +49,10 @@ use OCA\OpenRegister\Db\FlowRunListing;
 use OCA\OpenRegister\Db\FlowRunMapperInterface;
 use OCA\OpenRegister\Db\FlowRunSubjectScope;
 use OCA\OpenRegister\Db\FlowRunViewer;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapperInterface;
+use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Kernel\Contracts\TimerAnchorMove;
 use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
@@ -88,12 +90,16 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 	 * @param FlowRunMigrationValidator $validator Whether a run fits the target version.
 	 * @param FlowRunMigrationTimers    $timers    Open timers of a run, and their supersession.
 	 * @param LoggerInterface           $logger    The logger.
+	 * @param TaskMapper|null           $tasks     The open tasks a run raised, re-pointed at the node they moved to.
+	 * @param FlowStreamMapperInterface|null $streams The run's streams, moved to the place their node moved to.
 	 */
 	public function __construct(
 		private readonly FlowRunMapperInterface $runs,
 		private readonly FlowRunMigrationValidator $validator,
 		private readonly FlowRunMigrationTimers $timers,
 		private readonly LoggerInterface $logger,
+		private readonly ?TaskMapper $tasks = null,
+		private readonly ?FlowStreamMapperInterface $streams = null,
 	) {
 	}//end __construct()
 
@@ -230,18 +236,28 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 		$log       = $this->appendLog(run: $run, migration: $migration);
 		$run->setFlowVersion($migration->targetVersion);
 		$run->setMarking($marking);
+		$this->moveWaitingState(run: $run, mapping: $migration->mapping());
 		$run->setLog($log);
 		$this->runs->update($run);
 
 		// AFTER the run is written, deliberately. A timer superseded against a
 		// run that then failed to save would point at a node the run is not on.
 		$moved = $this->supersedeTimers(migration: $migration);
+		$retargeted = $this->retargetTasks(migration: $migration);
+		$retargeted += $this->moveStreams(migration: $migration);
 
 		$this->logger->info(
 			message: '[FlowRunMigrationService] run ' . $migration->runUuid . ' migrated from version '
 				. (string)$move->from . ' to ' . $migration->targetVersion . ' by ' . $migration->actor,
 			context: ['file' => __FILE__, 'line' => __LINE__, 'timersSuperseded' => $moved]
 		);
+		if ($retargeted > 0) {
+			$this->logger->info(
+				message: '[FlowRunMigrationService] run ' . $migration->runUuid . ': ' . $retargeted
+					. ' open task(s) and stream(s) moved to the renamed node(s)',
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
 	}//end apply()
 
 	/**
@@ -538,6 +554,179 @@ class FlowRunMigrationService implements FlowRunMigrationServiceInterface {
 
 		return $moved;
 	}//end supersedeTimers()
+
+	/**
+	 * Move what waits at a place along with its token: the items held there and the node's resume state.
+	 *
+	 * The marking says where the tokens are; `placeItems` holds the items each
+	 * place carries and `context.resumeState` what a parked node needs to
+	 * resume (the task it asked, when, with which budget). Both are keyed by
+	 * place, so a renamed node left them under its old name and the resumed run
+	 * found nothing at the new one: it stayed suspended after its task was done.
+	 *
+	 * @param FlowRun               $run     The run being moved.
+	 * @param array<string, string> $mapping Old node id to new node id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function moveWaitingState(FlowRun $run, array $mapping): void {
+		if ($mapping === []) {
+			return;
+		}
+
+		$placeItems = $run->getPlaceItems();
+		if (is_array($placeItems) === true) {
+			$run->setPlaceItems(self::rekeyed(byPlace: $placeItems, mapping: $mapping));
+		}
+
+		$context = $run->getContext();
+		if (is_array($context) === true && is_array($context['resumeState'] ?? null) === true) {
+			$context['resumeState'] = self::rekeyed(byPlace: $context['resumeState'], mapping: $mapping);
+			$run->setContext($context);
+		}
+	}//end moveWaitingState()
+
+	/**
+	 * A by-place map with each mapped node's key renamed, a join place's edge suffix kept.
+	 *
+	 * @param array<string, mixed>  $byPlace Values keyed by place.
+	 * @param array<string, string> $mapping Old node id to new node id.
+	 *
+	 * @return array<string, mixed> The same values under their new places.
+	 */
+	private static function rekeyed(array $byPlace, array $mapping): array {
+		$moved = [];
+		foreach ($byPlace as $place => $value) {
+			$place = (string)$place;
+			$joinAt = strpos($place, FlowGraph::PLACE_JOIN);
+			$nodeId = $place;
+			$suffix = '';
+			if ($joinAt !== false) {
+				$nodeId = substr($place, 0, $joinAt);
+				$suffix = substr($place, $joinAt);
+			}
+
+			$target = (string)($mapping[$nodeId] ?? $nodeId);
+			$moved[explode(FlowGraph::PLACE_JOIN, $target, 2)[0] . $suffix] = $value;
+		}
+
+		return $moved;
+	}//end rekeyed()
+
+	/**
+	 * Move the run's live streams to the place their node moved to.
+	 *
+	 * A completed task finds the stream to wake by the place it stands on;
+	 * on a renamed node it found none and the run did not continue. Logged,
+	 * not fatal, for the same reason as the timers and tasks.
+	 *
+	 * @param FlowRunMigration $migration The run and the node mapping.
+	 *
+	 * @return int How many streams were moved.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function moveStreams(FlowRunMigration $migration): int {
+		$mapping = $migration->mapping();
+		if ($mapping === [] || $this->streams === null) {
+			return 0;
+		}
+
+		$moved = 0;
+		foreach ($this->streams->findByRun(runUuid: $migration->runUuid) as $stream) {
+			$place = (string)$stream->getPlace();
+			if ($stream->isTerminal() === true || $place === '') {
+				continue;
+			}
+
+			$target = (string)array_key_first(self::rekeyed(byPlace: [$place => true], mapping: $mapping));
+			if ($target === $place) {
+				continue;
+			}
+
+			try {
+				$stream->setPlace($target);
+				$this->streams->update($stream);
+				$moved++;
+			} catch (Throwable $e) {
+				$this->logger->error(
+					message: '[FlowRunMigrationService] a stream of migrated run ' . $migration->runUuid
+						. ' still stands on ' . $place . ': ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e]
+				);
+			}
+		}
+
+		return $moved;
+	}//end moveStreams()
+
+	/**
+	 * Point the run's open tasks at the node the mapping moved them to.
+	 *
+	 * A task names the step that raised it, and its form and its completion
+	 * are resolved against the run's graph by that name. Left on the old name,
+	 * a task whose step was renamed cannot be completed on the target version
+	 * ("Version 2 has no step ..."), so the run parks for good. Like the
+	 * timers, a task that cannot be re-pointed is logged, not fatal: the run
+	 * has already moved.
+	 *
+	 * @param FlowRunMigration $migration The run and the node mapping.
+	 *
+	 * @return int How many tasks were re-pointed.
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	private function retargetTasks(FlowRunMigration $migration): int {
+		$mapping = $migration->mapping();
+		if ($mapping === [] || $this->tasks === null) {
+			return 0;
+		}
+
+		$retargeted = 0;
+		foreach ($this->tasks->findOpenByRunUuid(runUuid: $migration->runUuid) as $task) {
+			$target = self::mappedStep(nodeId: trim((string)$task->getNodeId()), mapping: $mapping);
+			if ($target === null) {
+				continue;
+			}
+
+			try {
+				$task->setNodeId($target);
+				$this->tasks->update($task);
+				$retargeted++;
+			} catch (Throwable $e) {
+				$this->logger->error(
+					message: '[FlowRunMigrationService] task ' . (string)$task->getUuid() . ' of migrated run '
+						. $migration->runUuid . ' still names its old step: ' . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e]
+				);
+			}
+		}
+
+		return $retargeted;
+	}//end retargetTasks()
+
+	/**
+	 * The step a mapping moves a node to, without a join place's edge suffix; null when it does not move it.
+	 *
+	 * @param string                $nodeId  The task's step.
+	 * @param array<string, string> $mapping Old node id to new node id.
+	 *
+	 * @return string|null The new step, or null when the mapping leaves the node where it is.
+	 */
+	private static function mappedStep(string $nodeId, array $mapping): ?string {
+		if ($nodeId === '' || array_key_exists($nodeId, $mapping) === false) {
+			return null;
+		}
+
+		$target = explode(FlowGraph::PLACE_JOIN, (string)$mapping[$nodeId], 2)[0];
+		if ($target === '' || $target === $nodeId) {
+			return null;
+		}
+
+		return $target;
+	}//end mappedStep()
 
 	/**
 	 * Whether a timer's node is one the mapping moves.

@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Service\Audit\AuditResealInterface;
+use OCA\OpenRegister\Service\Audit\AuditSealWindowInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -89,7 +90,13 @@ use RuntimeException;
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
-class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface, AuditResealInterface {
+class AuditHashService implements
+	AuditHashServiceInterface,
+	AuditSealInterface,
+	AuditRechainInterface,
+	AuditResealInterface,
+	AuditSealWindowInterface
+{
 	/**
 	 * The genesis seed used for the first entry in the hash chain.
 	 *
@@ -422,6 +429,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @return int Number of rows sealed.
 	 *
 	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md#requirement-the-seal-pass-shall-never-re-hash-an-already-sealed-row
 	 */
 	public function sealRows(array $ids): int {
 		$ids = self::positiveIds(ids: $ids);

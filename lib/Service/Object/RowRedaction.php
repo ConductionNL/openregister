@@ -58,4 +58,14 @@ final class RowRedaction {
 	 * @var boolean
 	 */
 	public bool $doGated = false;
+
+	/**
+	 * Whether encrypted properties are decrypted: every read outside a system
+	 * operation, as on the single-object read. Independent of the read strip, so
+	 * a schema without property read rules, or an admin's `_rbac: false` list,
+	 * no longer serves `openregister:enc:v1:` envelopes.
+	 *
+	 * @var boolean
+	 */
+	public bool $decrypt = true;
 }//end class

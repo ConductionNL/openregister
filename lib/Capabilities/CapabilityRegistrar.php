@@ -57,7 +57,9 @@ final class CapabilityRegistrar {
 					groupManager: $container->get('OCP\IGroupManager'),
 					services: new IntegrationsCapabilityServices(
 						appManager: $container->get('OCP\App\IAppManager'),
-						leafRegistry: $container->get(\OCA\OpenRegister\Service\Integration\LeafRegistryInterface::class)
+						leafRegistry: $container->get(\OCA\OpenRegister\Service\Integration\LeafRegistryInterface::class),
+						// The cached semantic provider list advertised under `semanticProviders`.
+						semanticProviders: $container->get(\OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface::class)
 					)
 				);
 			}

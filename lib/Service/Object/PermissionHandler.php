@@ -32,8 +32,10 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
+use OCA\OpenRegister\Service\Rbac\AuthorizationRuleEvaluator;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
+use OCA\OpenRegister\Service\Rbac\SecondFactorReadGate;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
@@ -280,27 +282,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public const SCOPE_MCP = McpScope::SCOPE;
 
 	/**
-	 * Write actions that fail closed for anonymous callers.
-	 *
-	 * For an anonymous principal (no resolved Nextcloud user), these actions are
-	 * denied unless the schema's `authorization` explicitly grants the `public`
-	 * group the action. This closes the implicit default-open write hole (#1955)
-	 * while preserving schemas that opt in to public submissions. Object reads are
-	 * intentionally NOT listed here — read default-open is a separate policy
-	 * question and is unchanged by this constant.
-	 *
-	 * @var string[]
-	 */
-	private const ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS = [
-		'create',
-		'update',
-		'delete',
-		'destroy',
-		'addFiles',
-		'deleteFiles',
-	];
-
-	/**
 	 * Write actions affected by the `enforce_default_closed` opt-in flag.
 	 *
 	 * When `IAppConfig::getValueBool('openregister', 'enforce_default_closed')`
@@ -362,6 +343,21 @@ class PermissionHandler implements PermissionHandlerInterface {
 		private readonly PermissionGrantServices $grants,
 	) {
 	}//end __construct()
+
+	/**
+	 * The shared reader of rule lists, the same one the entity plane asks.
+	 *
+	 * Built on demand rather than injected: it has no collaborators, and this
+	 * class is built by hand in many tests, so a new constructor argument
+	 * would be a fatal at each of those sites for no gain.
+	 *
+	 * @return AuthorizationRuleEvaluator The evaluator.
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
+	 */
+	private function ruleEvaluator(): AuthorizationRuleEvaluator {
+		return new AuthorizationRuleEvaluator();
+	}//end ruleEvaluator()
 
 	/**
 	 * The shared deny resolver.
@@ -931,7 +927,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		if ($this->classificationRefuses(ask: $ask) === true || $this->confidentialityRefuses(ask: $ask) === true) {
+		if ($this->classificationRefuses(ask: $ask) === true
+			|| $this->confidentialityRefuses(ask: $ask) === true
+			|| $this->secondFactorRefusal(ask: $ask) !== null
+		) {
 			$this->lastRefusalFinal = true;
 			return false;
 		}
@@ -973,9 +972,50 @@ class PermissionHandler implements PermissionHandlerInterface {
 		return $gate->refusal(
 			schema: $ask->schema,
 			object: $ask->object,
-			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
+			caller: new ClassificationCaller(
+				userId: $userId,
+				groups: $this->groupsOf(userId: $userId),
+				action: $ask->action,
+				administrator: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $userId)
+			)
 		) !== null;
 	}//end classificationRefuses()
+
+	/**
+	 * Why a read of this schema's objects needs a second factor this caller lacks, or null.
+	 *
+	 * A schema or a register holding it may require a verified second factor
+	 * for reading (REQ-IHC-003). The refusal is final like classification:
+	 * no grant, administrator bypass or elevation re-opens it. It applies to a
+	 * read of one object and to a schema-level read alike, since it is about
+	 * the caller, not the object. A container that cannot supply the gate
+	 * (only a test double; the app container autowires it) declares nothing,
+	 * and the read goes on to the grants.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return string|null The refusal, naming the requirement and its scope.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorRefusal(PermissionAsk $ask): ?string {
+		if ($ask->action !== 'read') {
+			return null;
+		}
+
+		try {
+			$gate = $this->data->container->get(SecondFactorReadGate::class);
+		} catch (\Throwable) {
+			// Autowired in every running instance; only a container double lacks it.
+			return null;
+		}
+
+		if (($gate instanceof SecondFactorReadGate) === false) {
+			return null;
+		}
+
+		return $gate->readRefusal(schema: $ask->schema, userId: $this->callerId(userId: $ask->userId));
+	}//end secondFactorRefusal()
 
 	/**
 	 * Whether the schema's confidentiality block refuses this caller a read of this object.
@@ -1007,7 +1047,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 			envelope: $ask->object->getMatchEnvelope(),
 			userId: $userId,
 			groups: $this->groupsOf(userId: $userId),
-			owner: ($ask->objectOwner ?? $ask->object->getOwner())
+			owner: ($ask->objectOwner ?? $ask->object->getOwner()),
+			administrator: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $userId)
 		);
 	}//end confidentialityRefuses()
 
@@ -1221,16 +1262,69 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @param PermissionCheck $check The check
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
 	 */
 	private function anonymousVerdict(PermissionCheck $check): bool {
-		if (in_array(needle: $check->action, haystack: self::ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS, strict: true) === true
-			&& $this->publicGroupExplicitlyGranted(authorization: $check->authorization, action: $check->action) === false
-		) {
+		$evaluator = $this->ruleEvaluator();
+		if ($evaluator->refusesAnonymousWrite(authorization: $check->authorization, action: $check->action) === true) {
+			$this->recordAnonymousRefusal(evaluator: $evaluator, check: $check, failClosedWrite: true);
 			return false;
 		}
 
-		return $this->publicGrantForStranger(check: $check);
+		if ($this->publicGrantForStranger(check: $check) === true) {
+			return true;
+		}
+
+		$this->recordAnonymousRefusal(evaluator: $evaluator, check: $check, failClosedWrite: false);
+		return false;
 	}//end anonymousVerdict()
+
+	/**
+	 * Record an anonymous refusal on the object plane, once per schema and verb per request.
+	 *
+	 * Names the plane, the schema, the verb and the cause, so an operator reading a 403
+	 * can tell "no authorization block names this verb" (`no-rule`) from "a rule names
+	 * the verb and does not admit `public`" (`rule-refused`). `failClosedWrite` says the
+	 * anonymous write default (#1955) decided it rather than the read rules. A list that
+	 * refuses many rows records one line, keyed through the shared evaluator.
+	 *
+	 * @param AuthorizationRuleEvaluator $evaluator       The evaluator holding the per-request memory.
+	 * @param PermissionCheck            $check           The refused check.
+	 * @param bool                       $failClosedWrite Whether the anonymous write default refused it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-a-refusal-and-a-grant-must-both-be-observable
+	 */
+	private function recordAnonymousRefusal(AuthorizationRuleEvaluator $evaluator, PermissionCheck $check, bool $failClosedWrite): void {
+		$authorization = $check->authorization;
+		$declared = is_array($authorization) === true && $authorization !== [];
+		$cause = 'no-rule';
+		if (is_array($authorization) === true && empty($authorization[$check->action]) === false) {
+			$cause = 'rule-refused';
+		}
+
+		$schemaId = (string) $check->schema->getId();
+		if ($evaluator->firstRefusal(plane: 'object', entityType: 'schema:' . $schemaId, action: $check->action, cause: $cause) === false) {
+			return;
+		}
+
+		$this->data->logger->info(
+			message: '[PermissionHandler] Anonymous caller refused: to admit it, add the `public` group to the'
+				. ' schema\'s authorization for this verb',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'plane' => 'object',
+				'schemaId' => $schemaId,
+				'action' => $check->action,
+				'cause' => $cause,
+				'authorizationDeclared' => $declared,
+				'failClosedWrite' => $failClosedWrite,
+			]
+		);
+	}//end recordAnonymousRefusal()
 
 	/**
 	 * Whether the `public` group grants the action to a caller who is not a known user.
@@ -2342,6 +2436,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 			->askedBy(userId: $options->userId, objectOwner: $options->objectOwner)
 			->about(object: $options->object, register: $options->register);
 		if ($this->permits(ask: $ask, _rbac: $_rbac) === false) {
+			$secondFactor = $this->secondFactorRefusal(ask: $ask);
+			if ($secondFactor !== null) {
+				throw new NotAuthorizedException(message: $secondFactor);
+			}
+
 			throw $this->notAuthorized(ask: $ask);
 		}
 	}//end checkPermission()
@@ -2744,39 +2843,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return false;
 	}//end anyRuleEntryGrants()
-
-	/**
-	 * Determine whether the `public` group is EXPLICITLY granted an action.
-	 *
-	 * Unlike {@see hasGroupPermission()}, this does NOT treat a missing
-	 * `authorization` block or a missing action entry as a grant (the
-	 * default-open behaviour that {@see hasGroupPermission()} relies on for
-	 * authenticated users). It returns true only when the schema's
-	 * `authorization[$action]` list contains a `public` reference — either as a
-	 * bare string entry (`"public"`) or as a complex entry whose `group` is
-	 * `public` (with or without a `match` clause). This is the opt-in signal for
-	 * anonymous-write fail-closed scoping (#1955): the conditional `match`, if
-	 * present, is still evaluated downstream by {@see hasGroupPermission()}.
-	 *
-	 * @param array|null $authorization The schema's authorization array.
-	 * @param string $action The CRUD action being checked.
-	 *
-	 * @return bool True only when `public` is explicitly listed for the action.
-	 */
-	private function publicGroupExplicitlyGranted(?array $authorization, string $action): bool {
-		$rules = ($authorization[$action] ?? null);
-		if (is_array($rules) === false) {
-			return false;
-		}
-
-		foreach ($rules as $entry) {
-			if (self::entryNamesGroup(entry: $entry, group: 'public') === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end publicGroupExplicitlyGranted()
 
 	/**
 	 * Whether the `enforce_default_closed` opt-in flag is active.
@@ -3739,24 +3805,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private static function isMcpScopeEntry(mixed $entry): bool {
 		return McpScope::isScopeEntry(entry: $entry);
 	}//end isMcpScopeEntry()
-
-	/**
-	 * Whether a single authorization entry names the group, as a bare string or as `{"group": ...}`.
-	 *
-	 * @param mixed  $entry One entry from an action's rule list.
-	 * @param string $group The group.
-	 *
-	 * @return bool True when the entry names the group.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private static function entryNamesGroup(mixed $entry, string $group): bool {
-		if (is_array($entry) === true) {
-			return (($entry['group'] ?? null) === $group);
-		}
-
-		return ($entry === $group);
-	}//end entryNamesGroup()
 
 	/**
 	 * Resolve whether authenticated users inherit `public` group rights for a schema.

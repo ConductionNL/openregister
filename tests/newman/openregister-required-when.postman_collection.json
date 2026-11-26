@@ -1,0 +1,460 @@
+{
+	"info": {
+		"name": "OpenRegister required-when enforced",
+		"description": "openspec/changes/modelling-required-when-enforced task 2.2: a create with requestType Klacht and no complaintCategory answers 422 naming the property; with the category it answers 201. Also an update that drops the category, another request type, and a schema whose condition names an undeclared field. Seeds and removes its own schema, register and records. Run: newman run tests/newman/openregister-required-when.postman_collection.json --env-var base_url=<instance>",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "schema_id",
+			"value": ""
+		},
+		{
+			"key": "register_id",
+			"value": ""
+		},
+		{
+			"key": "klacht_id",
+			"value": ""
+		},
+		{
+			"key": "vraag_id",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "Setup: schema verzoek with a conditional requirement",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Date.now().toString(36)); }"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code).to.equal(201));",
+							"pm.collectionVariables.set('schema_id', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Required when {{run}}\",\"slug\":\"required-when-{{run}}\",\"properties\":{\"requestType\":{\"type\":\"string\"},\"complaintCategory\":{\"type\":\"string\",\"x-openregister-required-when\":{\"field\":\"requestType\",\"op\":\"eq\",\"value\":\"Klacht\"}}}}"
+				}
+			}
+		},
+		{
+			"name": "Setup: a register holding it",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code).to.equal(201));",
+							"pm.collectionVariables.set('register_id', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Required when {{run}}\",\"slug\":\"required-when-{{run}}\",\"schemas\":[{{schema_id}}]}"
+				}
+			}
+		},
+		{
+			"name": "A Klacht without complaintCategory is refused with 422",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 422', () => pm.expect(pm.response.code).to.equal(422));",
+							"const body = pm.response.json();",
+							"const named = ((body.errors || {}).errors || []).map((e) => e.property);",
+							"pm.test('the refusal names complaintCategory', () => pm.expect(named).to.include('complaintCategory'));",
+							"pm.test('the code is required_when', () => pm.expect((body.errors || {}).code).to.equal('required_when'));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"requestType\":\"Klacht\"}"
+				}
+			}
+		},
+		{
+			"name": "A Klacht with complaintCategory is created",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 201', () => pm.expect(pm.response.code).to.equal(201));",
+							"pm.collectionVariables.set('klacht_id', pm.response.json()['@self'].id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"requestType\":\"Klacht\",\"complaintCategory\":\"geluidsoverlast\"}"
+				}
+			}
+		},
+		{
+			"name": "Another request type needs no complaintCategory",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 201', () => pm.expect(pm.response.code).to.equal(201));",
+							"pm.collectionVariables.set('vraag_id', pm.response.json()['@self'].id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"requestType\":\"Vraag\"}"
+				}
+			}
+		},
+		{
+			"name": "An update that drops complaintCategory from a Klacht is refused with 422",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 422', () => pm.expect(pm.response.code).to.equal(422));",
+							"const body = pm.response.json();",
+							"const named = ((body.errors || {}).errors || []).map((e) => e.property);",
+							"pm.test('the refusal names complaintCategory', () => pm.expect(named).to.include('complaintCategory'));",
+							"pm.test('the code is required_when', () => pm.expect((body.errors || {}).code).to.equal('required_when'));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{klacht_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"requestType\":\"Klacht\"}"
+				}
+			}
+		},
+		{
+			"name": "A schema whose condition names an undeclared field is refused",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 422', () => pm.expect(pm.response.code).to.equal(422));",
+							"pm.test('the refusal names the missing field', () => pm.expect(pm.response.json().error).to.include('soort'));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Required when bad {{run}}\",\"slug\":\"required-when-bad-{{run}}\",\"properties\":{\"a\":{\"type\":\"string\",\"x-openregister-required-when\":{\"field\":\"soort\",\"op\":\"eq\",\"value\":\"x\"}}}}"
+				}
+			}
+		},
+		{
+			"name": "Cleanup: klacht_id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the record is removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{klacht_id}}"
+			}
+		},
+		{
+			"name": "Cleanup: vraag_id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the record is removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/{{vraag_id}}"
+			}
+		},
+		{
+			"name": "Cleanup: the register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+			}
+		},
+		{
+			"name": "Cleanup: the schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
+			}
+		}
+	]
+}

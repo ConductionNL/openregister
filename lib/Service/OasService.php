@@ -1182,19 +1182,29 @@ class OasService implements OasServiceInterface {
 	}//end createCommonQueryParameters()
 
 	/**
-	 * The filter parameter of every schema property a collection can filter on.
+	 * The filter parameter of every schema property a collection can filter on, and this caller may read.
+	 *
+	 * A filter parameter is named after its property, so a parameter for a
+	 * property the caller may not read prints the very name the schema
+	 * description withholds. It is asked the same question, of the same
+	 * annotator, as the described properties are.
 	 *
 	 * @param object $schema The schema.
 	 *
 	 * @return array The parameters.
 	 *
 	 * @spec openspec/specs/oas-validation/spec.md
+	 * @spec openspec/changes/schema-shape-exposure/specs/rbac-scopes/spec.md#requirement-a-propertys-existence-is-described-only-to-a-caller-who-may-read-it-req-rbac-141
 	 */
 	private function propertyFilterParameters(object $schema): array {
 		$parameters = [];
 		foreach ($schema->getProperties() ?? [] as $propertyName => $propertyDefinition) {
 			// Metadata properties are skipped, and id is already a path parameter.
 			if (str_starts_with($propertyName, '@') === true || $propertyName === 'id') {
+				continue;
+			}
+
+			if ($this->rbacAnnotator->mayDescribe(schema: $schema, property: (string)$propertyName) === false) {
 				continue;
 			}
 

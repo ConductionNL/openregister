@@ -65,9 +65,54 @@ class PrometheusRendererBehaviourTest extends TestCase {
 	}
 
 	public function testUnknownTypeRendersAsGauge(): void {
-		$out = (new PrometheusRenderer())->render('app', [new MetricSample('m', 'histogram', 'H', [['labels' => [], 'value' => 1]])]);
+		$out = (new PrometheusRenderer())->render('app', [new MetricSample('m', 'summary', 'H', [['labels' => [], 'value' => 1]])]);
 
 		$this->assertStringContainsString("# TYPE app_m gauge\n", $out);
+	}
+
+	public function testAHistogramRendersItsBucketSumAndCountSeries(): void {
+		$out = (new PrometheusRenderer())->render(
+			'app',
+			[
+				new MetricSample(
+					'd_seconds',
+					'histogram',
+					'H',
+					[
+						['labels' => ['le' => '0.1'], 'value' => 1, 'suffix' => '_bucket'],
+						['labels' => ['le' => '+Inf'], 'value' => 2, 'suffix' => '_bucket'],
+						['labels' => [], 'value' => 0.25, 'suffix' => '_sum'],
+						['labels' => [], 'value' => 2, 'suffix' => '_count'],
+					]
+				),
+			]
+		);
+
+		$this->assertSame(
+			"# HELP app_d_seconds H\n# TYPE app_d_seconds histogram\n"
+			."app_d_seconds_bucket{le=\"0.1\"} 1\napp_d_seconds_bucket{le=\"+Inf\"} 2\n"
+			."app_d_seconds_sum 0.25\napp_d_seconds_count 2\n\n",
+			$out
+		);
+	}
+
+	public function testAnUnknownHistogramSuffixIsDropped(): void {
+		$out = (new PrometheusRenderer())->render('app', [new MetricSample('d', 'histogram', 'H', [['labels' => [], 'value' => 1, 'suffix' => '_x{a="b"}']])]);
+
+		$this->assertStringContainsString("\napp_d 1\n", $out);
+	}
+
+	public function testASuffixOnAGaugeOrCounterPointIsIgnored(): void {
+		$out = (new PrometheusRenderer())->render(
+			'app',
+			[
+				new MetricSample('g', 'gauge', 'H', [['labels' => [], 'value' => 1, 'suffix' => '_bucket']]),
+				new MetricSample('c', 'counter', 'H', [['labels' => [], 'value' => 2, 'suffix' => '_sum']]),
+			]
+		);
+
+		$this->assertStringContainsString("\napp_g 1\n", $out);
+		$this->assertStringContainsString("\napp_c 2\n", $out);
 	}
 
 	public function testFloatValuesKeepFractionAndIntegralFloatsLoseIt(): void {

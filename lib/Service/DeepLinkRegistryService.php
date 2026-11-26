@@ -233,8 +233,6 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface, AppDe
 	 */
 	public function resolve(int $registerId, int $schemaId): ?DeepLinkRegistration {
 		if (empty(self::$registrations) === true) {
-			// A process that never booted OpenRegister (a background worker
-			// does not load apps) never dispatched the registration event.
 			$this->requestRegistrations();
 		}
 
@@ -390,9 +388,9 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface, AppDe
 	/**
 	 * Ask the apps for their deep links, once per process.
 	 *
-	 * OpenRegister's boot() calls this with its dispatcher. A process that
-	 * never boots OpenRegister reaches it through resolve() instead, so the
-	 * registry is filled in a background job the same way as in a request.
+	 * The first read of an empty registry (resolve(), registrations(),
+	 * hasRegistrations()) calls this, so the apps are asked only in a process
+	 * that needs a deep link, in a request and a background job alike.
 	 *
 	 * @param IEventDispatcher|null $dispatcher The dispatcher, or null to take it from the container.
 	 *
@@ -534,6 +532,10 @@ class DeepLinkRegistryService implements DeepLinkRegistryServiceInterface, AppDe
 	 * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
 	 */
 	public function hasRegistrations(): bool {
+		if (empty(self::$registrations) === true) {
+			$this->requestRegistrations();
+		}
+
 		return empty(self::$registrations) === false;
 	}//end hasRegistrations()
 

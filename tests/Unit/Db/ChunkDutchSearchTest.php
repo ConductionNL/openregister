@@ -128,7 +128,7 @@ final class ChunkDutchSearchTest extends TestCase {
 			->searchByKeyword(search: new KeywordChunkSearch(query: 'besluiten', limit: 5));
 
 		$this->assertSame(
-			"SELECT id, source_type, source_id, text_content, chunk_index, ts_rank(to_tsvector('simple', text_content), plainto_tsquery('simple', :query)) AS score "
+			"SELECT id, source_type, source_id, text_content, chunk_index, position_reference, ts_rank(to_tsvector('simple', text_content), plainto_tsquery('simple', :query)) AS score "
 			. "FROM *PREFIX*openregister_chunks WHERE to_tsvector('simple', text_content) @@ plainto_tsquery('simple', :query) ORDER BY score DESC LIMIT 5",
 			$this->sql[0]
 		);

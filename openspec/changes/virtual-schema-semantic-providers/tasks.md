@@ -52,7 +52,15 @@ report no errors on those files. 4.1 to 4.3 are live checks on a running instanc
 
 ## 5. Follow-ons (OUT of this change — one PR each)
 
-- [ ] 5.1 Contacts/Calendar/Files/Deck/Talk/Tasks object-source providers (reuse
+- [x] 5.1 Contacts/Calendar/Files/Deck/Talk/Tasks object-source providers (reuse
   the Integration Registry read code) + their seed-map rows.
+  > 2026-11-25, audited on main: `ContactsObjectSourceProvider` (`contacts-source`), `CalendarEventObjectSourceProvider`
+  > (`calendar-event-source`), `FilesObjectSourceProvider` (`files-source`), `DeckObjectSourceProvider` (`deck-source`),
+  > `TalkObjectSourceProvider` (`talk-source`) and, for Tasks, the existing `CalDavVtodoObjectSourceProvider`
+  > (`caldav-vtodo`) are all in `ObjectSourceWiring::BUILTIN_PROVIDERS`. Each has its `NcEntitySemanticMap` row on its own
+  > app-named register (`contacts`, `calendar`, `files`, `deck`, `talk`, `tasks`; `nc-` prefixed schemas, gated on the
+  > backing app). Tests green: `ContactsObjectSourceProvider{,Failure}Test`, `CalendarEventObjectSourceProvider{,Failure}Test`,
+  > `FilesObjectSourceProvider{,Failure}Test`, `DeckObjectSourceProviderTest`, `TalkObjectSourceProviderTest`,
+  > `CalDavVtodoObjectSourceProvider{,Failure}Test` and `SeedDirectoryVirtualSchemasTest` (44 tests).
 - [ ] 5.2 Physical dedup of leaf `organization`/`Payee` copies behind the stable
   URIs (deferred; needs data migration + go-ahead).

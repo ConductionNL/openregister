@@ -331,6 +331,7 @@ class LinkedEntityController extends Controller {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md#requirement-reverse-lookup-across-tables
 	 * @spec openspec/specs/linked-entity-types/spec.md
+	 * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -338,6 +339,13 @@ class LinkedEntityController extends Controller {
 		// SEC-CTRL: LinkedEntityService::reverseLookup scans magic tables with RBAC
 		// and multitenancy off. An admin gets the scan as is; anybody else only
 		// for mail in their own Mail account, and only the objects they may read.
+		// A mail named by its RFC Message-ID answers, for everybody, only the
+		// objects the caller may read.
+		$messageId = $this->services->byMessageId->messageIdOf(type: $type, entityId: $entityId);
+		if ($messageId !== null) {
+			return $this->services->byMessageId->answer(messageId: $messageId);
+		}
+
 		if ($this->isCurrentUserAdmin() === false) {
 			if ($this->services->ownMail->handles(type: $type) === false) {
 				return $this->adminRequired();

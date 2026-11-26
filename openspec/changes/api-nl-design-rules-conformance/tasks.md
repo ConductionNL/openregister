@@ -26,7 +26,8 @@
 
 ## 5. Register list dialog
 
-- [ ] 5.1 Add `src/dialogs/register/NlGovConformanceDialog.vue` (NcDialog) and a "Check Dutch API design rules" row action in `src/views/register/RegistersIndex.vue`; the "Probe responses" button shows only for administrators. Verify: `src/dialogs/register/NlGovConformanceDialog.spec.js` renders a report fixture grouped by result.
+- [x] 5.1 Add `src/dialogs/register/NlGovConformanceDialog.vue` (NcDialog) and a "Check Dutch API design rules" row action in `src/views/register/RegistersIndex.vue`; the "Probe responses" button shows only for administrators. Verify: `src/dialogs/register/NlGovConformanceDialog.spec.js` renders a report fixture grouped by result.
+  - Built: the dialog reads `GET /api/registers/{id}/oas/conformance` and groups the rules fail, deviation, manual, not-probed, pass (empty groups left out, an unknown result last), with the findings and the declared deviation reason per rule; "Probe responses" shows only when `getCurrentUser().isAdmin` and posts to `/conformance/probe`, keeping the report when the probe fails. The row action sits after "Download API Specification" in `RegistersIndex.vue`. Strings in en, nl and de. Verified by `src/dialogs/register/NlGovConformanceDialog.spec.js` (a report fixture grouped by result, the probe, the hidden button for a non-administrator, both failures) and `RegistersIndex.actions.golden.spec.js` (the entry opens the dialog for the clicked register).
 
 ## 6. CI lint
 

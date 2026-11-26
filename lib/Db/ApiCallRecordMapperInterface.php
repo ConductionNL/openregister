@@ -34,7 +34,7 @@ use DateTime;
 interface ApiCallRecordMapperInterface {
 
 	/**
-	 * Count one call against a caller, route, method and version.
+	 * Count calls against a caller, route, method and version.
 	 *
 	 * Tries the increment first and inserts only when nothing was updated, so
 	 * the common path (a caller that has called before) is one statement. A
@@ -43,13 +43,14 @@ interface ApiCallRecordMapperInterface {
 	 * swallowed.
 	 *
 	 * @param ApiCallKey $key    The caller, route, method and version.
-	 * @param DateTime   $moment When the call happened.
+	 * @param DateTime   $moment When the last of the calls happened.
+	 * @param int        $calls  How many calls to add, at least one.
 	 *
-	 * @return bool True when the call was counted.
+	 * @return bool True when the calls were counted.
 	 *
 	 * @spec openspec/specs/api-surface-governance/spec.md#requirement-every-api-call-records-its-caller-and-a-caller-carries-a-limit-and-an-address-binding-req-avs-003
 	 */
-	public function count(ApiCallKey $key, DateTime $moment): bool;
+	public function count(ApiCallKey $key, DateTime $moment, int $calls=1): bool;
 
 	/**
 	 * The records whose last call falls in a period.

@@ -11,8 +11,13 @@
 
 ## 2. Verification
 
-- [ ] 2.1 HTTP round-trip test: PUT an object with a known key order into an object-keyed property, read back, assert the exact key sequence; then reverse the keys, save, re-read, assert reversed (drag-reorder simulation) (REQ-OBJ-KO-01)
+- [x] 2.1 HTTP round-trip test: PUT an object with a known key order into an object-keyed property, read back, assert the exact key sequence; then reverse the keys, save, re-read, assert reversed (drag-reorder simulation) (REQ-OBJ-KO-01)
   - Run in the `nextcloud:34` container: `docker run --rm -v $PWD:/app -w /app <nc-image> php vendor/bin/phpunit`.
+  > 2026-11-25: `tests/integration/openregister-put-preserve-key-order.postman_collection.json` creates a register and a
+  > schema with an object-typed `rows`, creates `{b, a, c}`, reads it back, PUTs `{c, a, b}`, re-reads, PUTs `{b, a, c}`,
+  > re-reads; every step asserts the exact key sequence and that the unchanged sibling `title` survives. Run with Newman
+  > against Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e): 11 requests, 22 assertions, 0 failed. PostgreSQL is the
+  > platform that would reorder (jsonb sorts keys), so it is the one that proves the write path stores text in order.
 
 - [x] 2.2 PUT-semantic guard: assert a non-changed sibling field survives the write while key order is being preserved (REQ-OBJ-KO-01)
 

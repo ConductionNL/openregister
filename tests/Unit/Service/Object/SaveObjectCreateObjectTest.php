@@ -30,6 +30,7 @@ use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\RetentionServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordRetentionStampsInterface;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TmloService;
 use OCA\OpenRegister\Service\TranslationProjectionService;
@@ -321,7 +322,7 @@ final class SaveObjectCreateObjectTest extends TestCase {
 			return $object;
 		});
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === RetentionServiceInterface::class) ? $retention : throw new \RuntimeException('no ' . $id));
+		$container->method('get')->willReturnCallback(static fn (string $id): object => ($id === RecordRetentionStampsInterface::class) ? $retention : throw new \RuntimeException('no ' . $id));
 		$folders = $this->createMock(FolderManagementHandler::class);
 		$translations = $this->createMock(TranslationHandler::class);
 		$translations->method('normalizeTranslationsForSave')->willReturnCallback(static fn (array $objectData): array => $objectData);

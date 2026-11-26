@@ -32,7 +32,11 @@
             "capacityConfirmedAt": null,
             "personMatch": null,
             "uncertain": null,
-            "createdAt": "2026-01-02T03:04:05+00:00"
+            "archiveMember": null,
+            "createdAt": "2026-01-02T03:04:05+00:00",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -82,7 +86,11 @@
             "capacityConfirmedAt": null,
             "personMatch": null,
             "uncertain": null,
-            "createdAt": "now"
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -120,7 +128,11 @@
             "capacityConfirmedAt": null,
             "personMatch": null,
             "uncertain": null,
-            "createdAt": "now"
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -158,7 +170,11 @@
             "capacityConfirmedAt": null,
             "personMatch": null,
             "uncertain": null,
-            "createdAt": "now"
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -196,7 +212,11 @@
             "capacityConfirmedAt": null,
             "personMatch": null,
             "uncertain": null,
-            "createdAt": "now"
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -234,7 +254,11 @@
             "capacityConfirmedAt": null,
             "personMatch": null,
             "uncertain": null,
-            "createdAt": "now"
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -272,7 +296,11 @@
             "capacityConfirmedAt": null,
             "personMatch": null,
             "uncertain": null,
-            "createdAt": "now"
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",

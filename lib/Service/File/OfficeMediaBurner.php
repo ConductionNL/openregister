@@ -54,6 +54,8 @@ class OfficeMediaBurner {
 		'jpg' => 'image/jpeg',
 		'jpeg' => 'image/jpeg',
 		'webp' => 'image/webp',
+		'tif' => 'image/tiff',
+		'tiff' => 'image/tiff',
 	];
 
 	/**

@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace Unit\Event;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectActivatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -29,6 +30,7 @@ use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectEventSubscription;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
+use OCA\OpenRegister\Event\ObjectReadStatePropertiesEvent;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -179,6 +181,10 @@ class ObjectEventProxyEveryEventTest extends TestCase {
 				ObjectActivatedEvent::class,
 				fn (ObjectEntity $o): Event => new ObjectActivatedEvent($o, new \DateTimeImmutable('2026-10-12T09:15:00+02:00')),
 			],
+			'readStateProperties' => [
+				ObjectReadStatePropertiesEvent::class,
+				fn (ObjectEntity $o): Event => new ObjectReadStatePropertiesEvent(object: $o, schema: new Schema(), declared: ['title']),
+			],
 		];
 
 	}//end objectEvents()
@@ -286,7 +292,7 @@ class ObjectEventProxyEveryEventTest extends TestCase {
 		}
 
 		$this->assertSame([], $missing, 'object event classes not covered by the filter tests');
-		$this->assertCount(12, $listed);
+		$this->assertCount(13, $listed);
 
 	}//end testProviderCoversEveryObjectEventClass()
 

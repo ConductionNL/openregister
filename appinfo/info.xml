@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.2.0-dev.17</version>
+    <version>2.2.0-dev.51</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -132,9 +132,11 @@ Vrij en open source onder de EUPL-licentie.
 
 	<background-jobs>
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\RequestAlertJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BackfillCalendarLinksJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\PublishedDigestVerifyJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\OriginalRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledMessageSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SharerAccessSweepJob</job>
@@ -163,6 +165,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\ImportRunRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\QualityAuditScheduleJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\SealAuditBacklogJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\OneUseJobKeySweepJob</job>
 		<!--
 			Deletes the files of expired export runs and keeps the rows. An
@@ -194,6 +197,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\ExpiredObjectSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowRunWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowScheduleWorker</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowCalendarWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\FlowTimerWorker</job>
 		<job>OCA\OpenRegister\BackgroundJob\CasePlanTimerRearmJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\HandoffQueueDrainJob</job>
@@ -211,6 +215,7 @@ Vrij en open source onder de EUPL-licentie.
 		-->
 		<job>OCA\OpenRegister\BackgroundJob\DraftExpiryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SeedDirectoryJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\IndexReconciliationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BagRefreshJob</job>
 	</background-jobs>
 
@@ -228,6 +233,10 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\NarrowMagicJsonColumns</step>
 		</pre-migration>
 		<post-migration>
+			<!-- Heals an instance installed fresh since the audit seal migrations shipped,
+			     which has neither idx_audit_unsealed nor the cutover marker (see <install>).
+			     Idempotent: the index is created only when missing, a marker never moves. -->
+			<step>OCA\OpenRegister\Repair\PrepareAuditSealing</step>
 			<!--
 				The two job-list steps are a pair and run together.
 
@@ -490,6 +499,11 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedFromDirectory</step>
 		</post-migration>
 		<install>
+			<!-- FIRST, before any step writes an audit row: a fresh install runs the
+			     migrations schema-only, which skips the post-schema steps creating
+			     idx_audit_unsealed and recording audit_seal_cutover_id. Recorded here,
+			     the cutover is 1 and every row this instance writes must be sealed. -->
+			<step>OCA\OpenRegister\Repair\PrepareAuditSealing</step>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
@@ -598,6 +612,7 @@ Vrij en open source onder de EUPL-licentie.
 		     rollback tool, deliberately NOT a repair step. -->
 		<command>OCA\OpenRegister\Command\RollbackApprovalMigrationCommand</command>
 		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
+		<command>OCA\OpenRegister\Command\SealAuditBacklogCommand</command>
 		<!-- Read-only report: federated shares whose creator does not hold the rights the share grants. -->
 		<command>OCA\OpenRegister\Command\FederationShareRightsCommand</command>
 		<command>OCA\OpenRegister\Command\FederationSharesExpiringCommand</command>

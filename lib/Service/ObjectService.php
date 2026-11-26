@@ -2289,6 +2289,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $value = ($config['filters'][$key] ?? null);
         if (is_array($value) === true || empty($value) === true) {
+            // Consuming apps scope a findAll() under `@self` (pipelinq's POS
+            // line lookups); without this read it ran unscoped and matched nothing.
+            $value = ($config['filters']['@self'][$key] ?? null);
+        }
+
+        if (is_array($value) === true || empty($value) === true) {
             return null;
         }
 

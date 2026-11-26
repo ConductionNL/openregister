@@ -524,7 +524,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			$params['sourceType'] = $search->sourceType();
 		}
 
-		$sql = 'SELECT id, source_type, source_id, text_content, chunk_index, '
+		$sql = 'SELECT id, source_type, source_id, text_content, chunk_index, position_reference, '
 			. $rank . ' AS score '
 			. 'FROM *PREFIX*openregister_chunks '
 			. 'WHERE ' . implode(' AND ', $where) . ' '
@@ -574,22 +574,60 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	/**
 	 * Shape one chunk row as a keyword-search hit.
 	 *
+	 * A chunk of an archive member carries the member's path in `metadata.member`,
+	 * so a hit can say which file inside the archive matched; any other chunk has
+	 * empty metadata.
+	 *
 	 * @param array $row   The chunk row.
 	 * @param float $score The hit's score.
 	 *
 	 * @return array{entity_type: string, entity_id: string, score: float,
 	 *               chunk_text: string|null, chunk_index: int, metadata: array}
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
 	 */
 	private static function keywordHit(array $row, float $score): array {
+		$metadata = [];
+		$member = self::memberOf(positionReference: ($row['position_reference'] ?? null));
+		if ($member !== null) {
+			$metadata['member'] = $member;
+		}
+
 		return [
 			'entity_type' => (string)($row['source_type'] ?? 'file'),
 			'entity_id' => (string)$row['source_id'],
 			'score' => $score,
 			'chunk_text' => $row['text_content'],
 			'chunk_index' => (int)$row['chunk_index'],
-			'metadata' => [],
+			'metadata' => $metadata,
 		];
 	}//end keywordHit()
+
+	/**
+	 * The archive member path a chunk's stored position reference names, or null.
+	 *
+	 * @param mixed $positionReference The `position_reference` column: JSON text, an array or null.
+	 *
+	 * @return string|null The member path, or null for a chunk that is not an archive member's.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	private static function memberOf(mixed $positionReference): ?string {
+		if (is_string($positionReference) === true) {
+			$positionReference = json_decode($positionReference, true);
+		}
+
+		$member = null;
+		if (is_array($positionReference) === true) {
+			$member = ($positionReference['member'] ?? null);
+		}
+
+		if (is_string($member) === false || $member === '') {
+			return null;
+		}
+
+		return $member;
+	}//end memberOf()
 
 	/**
 	 * Unranked `LIKE` fallback for platforms without a `tsvector` index (e.g. MariaDB).
@@ -611,7 +649,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 		$qb = $this->db->getQueryBuilder();
 		$searchPattern = '%' . $this->db->escapeLikeParameter($search->query) . '%';
 
-		$qb->select('id', 'source_type', 'source_id', 'text_content', 'chunk_index')
+		$qb->select('id', 'source_type', 'source_id', 'text_content', 'chunk_index', 'position_reference')
 			->from($this->getTableName())
 			->where(
 				$qb->expr()->iLike(

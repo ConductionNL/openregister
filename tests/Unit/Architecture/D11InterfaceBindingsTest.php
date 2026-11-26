@@ -80,14 +80,9 @@ final class D11InterfaceBindingsTest extends TestCase {
 	/**
 	 * Outside files still allowed to name the class, and why.
 	 *
-	 * Application::boot() resolves the deep-link registry inside a 43-line
-	 * method this refactor does not reshape.
-	 *
 	 * @var array<class-string, list<string>>
 	 */
-	private const KEPT_CALLERS = [
-		DeepLinkRegistryService::class => ['AppInfo/Application.php'],
-	];
+	private const KEPT_CALLERS = [];
 
 	/**
 	 * The class and its interface, one case per class.

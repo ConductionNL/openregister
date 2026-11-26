@@ -165,9 +165,9 @@ class ImportValueCaster {
 	private function byType(mixed $value, mixed $type): mixed {
 		switch ($type) {
 			case 'integer':
-				return (int)$value;
+				return $this->integerValue(value: $value);
 			case 'number':
-				return (float)$value;
+				return $this->numberValue(value: $value);
 			case 'boolean':
 				return $this->booleanValue(value: $value);
 			case 'array':
@@ -176,6 +176,45 @@ class ImportValueCaster {
 				return (string)$value;
 		}
 	}//end byType()
+
+	/**
+	 * Read a value as an integer; a value that is not a whole number stays as it is.
+	 *
+	 * A cell such as "veel" or "42abc" is kept, so the schema's validation refuses
+	 * the row by name instead of the import storing 0 or 42 in silence.
+	 *
+	 * @param mixed $value The value
+	 *
+	 * @return mixed The integer, or the value unchanged
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function integerValue(mixed $value): mixed {
+		$text = trim((string)$value);
+		if (preg_match('/^[+-]?\d+$/', $text) === 1) {
+			return (int)$text;
+		}
+
+		return $value;
+	}//end integerValue()
+
+	/**
+	 * Read a value as a number; a value that is not numeric stays as it is.
+	 *
+	 * @param mixed $value The value
+	 *
+	 * @return mixed The number, or the value unchanged
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function numberValue(mixed $value): mixed {
+		$text = trim((string)$value);
+		if (is_numeric($text) === true) {
+			return (float)$text;
+		}
+
+		return $value;
+	}//end numberValue()
 
 	/**
 	 * Cast an object property: a relation keeps its UUID text.

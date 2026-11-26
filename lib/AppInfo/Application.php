@@ -55,7 +55,6 @@ use OCA\OpenRegister\Mcp\McpRegistrar;
 use OCA\OpenRegister\Search\SearchRegistrar;
 use OCA\OpenRegister\Notifications\NotificationsRegistrar;
 use OCA\OpenRegister\Service\ContractBindingsRegistrar;
-use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Flow\FlowRegistrar;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistrar;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistrar;
@@ -70,7 +69,6 @@ use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
-use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Federation\ICloudFederationProviderManager;
 use OCP\IAppConfig;
 use OCP\Security\IContentSecurityPolicyManager;
@@ -247,24 +245,14 @@ class Application extends App implements IBootstrap {
 	 */
 	public function boot(IBootContext $context): void {
 		\OCA\OpenRegister\Service\WritePhase::stamp('or.boot.in');
-		// Dispatch the deep link registration event so consuming apps
-		// (Procest, Pipelinq, etc.) can register their URL patterns.
-		// DeepLinkRegistryService uses ContainerInterface for lazy mapper
-		// resolution, so no circular DI issues during registration.
+		// The deep link registry asks the apps for their links on its first
+		// read, not here: boot() runs on every Nextcloud request.
 		$server = $context->getServerContainer();
-		$dispatcher = $server->get(IEventDispatcher::class);
-		// Through the registry, so a later read in the same process does not
-		// ask a second time.
-		$registry = $server->get(DeepLinkRegistryService::class);
-		$registry->requestRegistrations(dispatcher: $dispatcher);
 
-		// Register the built-in IntegrationProvider implementations
-		// with the IntegrationRegistry. The 5 wrap existing services
-		// (FileService / NoteService / TaskService / system tag manager /
-		// AuditTrailMapper) and surface them through the unified
-		// registry contract. Each provider is constructed lazily — the
-		// registry never touches a provider's wrapped service unless a
-		// caller actually invokes that provider's CRUD path.
+		// Install the loaders for the built-in IntegrationProvider
+		// implementations and the leaf providers. Both run on the
+		// registry's first read, so a request that never reads it
+		// constructs none of them.
 		IntegrationRegistrar::boot(server: $server);
 		IntegrationRegistrar::bootLeafRegistry(server: $server);
 		ObjectSourceRegistrar::boot(server: $server);

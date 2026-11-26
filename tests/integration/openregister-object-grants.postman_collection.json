@@ -1,0 +1,2412 @@
+{
+	"info": {
+		"_postman_id": "or-object-grants-2026-11-25",
+		"name": "OpenRegister Object Grants API",
+		"description": "GET /api/objects/{register}/{schema}/{id}/grants, asserted over HTTP (change an-object-lists-its-grants-with-their-origin, tasks 4.4 and 4.5).\n\nFOUR CALLERS: the administrator, the record's owner, a reader who may read the record through a schema rule naming a group, and an outsider who may not read it. Every request carries its own basic auth and sends no cookies (protocolProfileBehavior.disableCookies), and the 'who am I' steps assert the server sees the account each step names.\n\nWHAT IT ASSERTS, each with its control (the reader can read the record, the outsider cannot):\n  * /grants answers 404 to the outsider, 403 to the reader and 200 to the owner, and a refusal names nobody\n  * the owner's rows are the owner (origin owner) and the group (origin rule, schema level), nobody else; principalTypes keeps only the asked type\n  * an unknown record is 404\n  * regression: /permissions and /shares give the owner 200 and the reader 403, as before, and the outsider 404",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin"
+		},
+		{
+			"key": "ownerId",
+			"value": ""
+		},
+		{
+			"key": "ownerPassword",
+			"value": ""
+		},
+		{
+			"key": "readerId",
+			"value": ""
+		},
+		{
+			"key": "readerPassword",
+			"value": ""
+		},
+		{
+			"key": "outsiderId",
+			"value": ""
+		},
+		{
+			"key": "outsiderPassword",
+			"value": ""
+		},
+		{
+			"key": "groupId",
+			"value": ""
+		},
+		{
+			"key": "registerId",
+			"value": ""
+		},
+		{
+			"key": "schemaId",
+			"value": ""
+		},
+		{
+			"key": "objectUuid",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "setUp: the record owner",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{ownerId}}\", \"password\": \"{{ownerPassword}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Three callers: the owner, a reader through a schema rule, and an outsider who may not read the record. All are removed in tearDown.",
+							"const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);",
+							"const password = () => 'Gr4nt!' + suffix + '-' + Math.random().toString(36).slice(2) + 'Zq9';",
+							"pm.collectionVariables.set('ownerId', 'or-grants-owner-' + suffix);",
+							"pm.collectionVariables.set('ownerPassword', password());",
+							"pm.collectionVariables.set('readerId', 'or-grants-reader-' + suffix);",
+							"pm.collectionVariables.set('readerPassword', password());",
+							"pm.collectionVariables.set('outsiderId', 'or-grants-outsider-' + suffix);",
+							"pm.collectionVariables.set('outsiderPassword', password());",
+							"pm.collectionVariables.set('groupId', 'or-grants-readers-' + suffix);"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the owner account is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a reader",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{readerId}}\", \"password\": \"{{readerPassword}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the reader account is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: an outsider",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{outsiderId}}\", \"password\": \"{{outsiderPassword}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the outsider account is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the group the schema rule names",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/groups?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"groups"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"groupid\": \"{{groupId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the group is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the owner joins the group",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{ownerId}}/groups?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{ownerId}}",
+						"groups"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"groupid\": \"{{groupId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the owner is in the group', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the reader joins the group",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{readerId}}/groups?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{readerId}}",
+						"groups"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"groupid\": \"{{groupId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the reader is in the group', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET who am I as the owner -> each step runs as the account its name claims",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/user?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"user"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{ownerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{ownerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the owner is known', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('the server sees the owner', () => pm.expect(pm.response.json().ocs.data.id).to.eql(pm.collectionVariables.get('ownerId')));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET who am I as the reader -> each step runs as the account its name claims",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/user?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"user"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{readerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{readerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the reader is known', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('the server sees the reader', () => pm.expect(pm.response.json().ocs.data.id).to.eql(pm.collectionVariables.get('readerId')));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET who am I as the outsider -> each step runs as the account its name claims",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/user?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"user"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{outsiderId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{outsiderPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the outsider is known', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('the server sees the outsider', () => pm.expect(pm.response.json().ocs.data.id).to.eql(pm.collectionVariables.get('outsiderId')));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"grants origin newman register\", \"description\": \"grants collection fixture\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a schema only the group may read",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"grants origin newman schema\", \"description\": \"grants collection fixture\", \"properties\": {\"title\": {\"type\": \"string\"}}, \"authorization\": {\"read\": [\"{{groupId}}\"], \"create\": [\"{{groupId}}\"], \"update\": [\"{{groupId}}\"], \"delete\": [\"{{groupId}}\"]}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the register carries the schema",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"schemas\": [\"{{schemaId}}\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register carries the schema', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the owner creates the record",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{ownerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{ownerPassword}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"a record with people on it\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the record is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+							"pm.collectionVariables.set('objectUuid', pm.response.json()['@self'].id);",
+							"pm.test('the owner is recorded', () => pm.expect(pm.response.json()['@self'].owner).to.eql(pm.collectionVariables.get('ownerId')));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET the record as the reader -> 200, the reader may read it",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{readerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{readerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the reader reads the record', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET the record as the outsider -> 404, the outsider may not read it",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{outsiderId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{outsiderPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the outsider cannot read the record', () => pm.expect(pm.response.code, pm.response.text()).to.eql(404));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../grants as the outsider -> 404, nothing about the record is told",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/grants",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"grants"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{outsiderId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{outsiderPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a caller who cannot read the record gets 404', () => pm.expect(pm.response.code, pm.response.text()).to.eql(404));",
+							"pm.test('the answer is JSON, not an error page', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.match(/^application\\/(problem\\+)?json/));",
+							"pm.test('the answer names nobody who holds access', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.collectionVariables.get('ownerId')); pm.expect(t).to.not.include(pm.collectionVariables.get('groupId')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../grants as the reader -> 403, reading the record is not reading who holds it",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/grants",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"grants"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{readerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{readerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a reader without the right gets 403', () => pm.expect(pm.response.code, pm.response.text()).to.eql(403));",
+							"pm.test('the answer is JSON, not an error page', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.match(/^application\\/(problem\\+)?json/));",
+							"pm.test('the answer names nobody who holds access', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.collectionVariables.get('ownerId')); pm.expect(t).to.not.include(pm.collectionVariables.get('groupId')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../grants as the owner -> 200, one row per principal and origin",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/grants",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"grants"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{ownerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{ownerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the owner gets the rows', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const body = pm.response.json();",
+							"pm.test('the rows are about this record', () => pm.expect(body.object).to.eql(pm.collectionVariables.get('objectUuid')));",
+							"const owner = body.results.find(r => r.origin === 'owner');",
+							"pm.test('the owner holds a row with origin owner', () => { pm.expect(owner, JSON.stringify(body.results)).to.not.be.undefined; pm.expect(owner.principal).to.include({ type: 'user', id: pm.collectionVariables.get('ownerId') }); });",
+							"const rule = body.results.find(r => r.origin === 'rule' && r.principal.type === 'group');",
+							"pm.test('the group holds a row with origin rule at schema level', () => { pm.expect(rule, JSON.stringify(body.results)).to.not.be.undefined; pm.expect(rule.principal.id).to.eql(pm.collectionVariables.get('groupId')); pm.expect(rule.level).to.eql('schema'); pm.expect(rule.verbs).to.include('read'); });",
+							"pm.test('nobody else is listed', () => pm.expect(body.results.length, JSON.stringify(body.results)).to.eql(2));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../grants?principalTypes=group as the owner -> only the group rows",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/grants?principalTypes=group",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"grants"
+					],
+					"query": [
+						{
+							"key": "principalTypes",
+							"value": "group"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{ownerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{ownerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the owner gets the filtered rows', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const rows = pm.response.json().results;",
+							"pm.test('every row is a group', () => { pm.expect(rows.length).to.be.above(0); rows.forEach(r => pm.expect(r.principal.type).to.eql('group')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../grants as the administrator -> 200",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/grants",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"grants"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('an administrator gets the rows', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../grants on an unknown record as the owner -> 404",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/00000000-0000-4000-8000-000000000000/grants",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"00000000-0000-4000-8000-000000000000",
+						"grants"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{ownerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{ownerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('an unknown record is 404', () => pm.expect(pm.response.code, pm.response.text()).to.eql(404));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../permissions as the owner -> 200, as before",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/permissions",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"permissions"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{ownerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{ownerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the owner reads the access set', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('it is the access set of this record', () => { const b = pm.response.json(); pm.expect(b.object).to.eql(pm.collectionVariables.get('objectUuid')); pm.expect(b.owner).to.eql(pm.collectionVariables.get('ownerId')); pm.expect(b.holders).to.be.an('array'); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../permissions as the reader -> 403, as before",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/permissions",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"permissions"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{readerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{readerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a reader cannot review access', () => pm.expect(pm.response.code, pm.response.text()).to.eql(403));",
+							"pm.test('the answer is JSON, not an error page', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.match(/^application\\/(problem\\+)?json/));",
+							"pm.test('the answer names nobody who holds access', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.collectionVariables.get('ownerId')); pm.expect(t).to.not.include(pm.collectionVariables.get('groupId')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../permissions as the outsider -> 404",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/permissions",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"permissions"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{outsiderId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{outsiderPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('an outsider learns nothing', () => pm.expect(pm.response.code, pm.response.text()).to.eql(404));",
+							"pm.test('the answer is JSON, not an error page', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.match(/^application\\/(problem\\+)?json/));",
+							"pm.test('the answer names nobody who holds access', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.collectionVariables.get('ownerId')); pm.expect(t).to.not.include(pm.collectionVariables.get('groupId')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../shares as the owner -> 200, as before",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/shares",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"shares"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{ownerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{ownerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the owner lists the shares', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"pm.test('the record has no shares yet', () => pm.expect(pm.response.json().results).to.eql([]));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../shares as the reader -> 403, as before",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/shares",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"shares"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{readerId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{readerPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('a reader cannot list shares', () => pm.expect(pm.response.code, pm.response.text()).to.eql(403));",
+							"pm.test('the answer is JSON, not an error page', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.match(/^application\\/(problem\\+)?json/));",
+							"pm.test('the answer names nobody who holds access', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.collectionVariables.get('ownerId')); pm.expect(t).to.not.include(pm.collectionVariables.get('groupId')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "GET .../shares as the outsider -> 404",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/shares",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}",
+						"shares"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{outsiderId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{outsiderPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('an outsider learns nothing', () => pm.expect(pm.response.code, pm.response.text()).to.eql(404));",
+							"pm.test('the answer is JSON, not an error page', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.match(/^application\\/(problem\\+)?json/));",
+							"pm.test('the answer names nobody who holds access', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.collectionVariables.get('ownerId')); pm.expect(t).to.not.include(pm.collectionVariables.get('groupId')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the record",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectUuid}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the record is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the schema",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the group",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/groups/{{groupId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"groups",
+						"{{groupId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the group is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the owner",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{ownerId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{ownerId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the owner account is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the reader",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{readerId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{readerId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the reader account is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the outsider",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{outsiderId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{outsiderId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the outsider account is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		}
+	]
+}

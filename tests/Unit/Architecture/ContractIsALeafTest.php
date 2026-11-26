@@ -41,6 +41,7 @@ class ContractIsALeafTest extends TestCase {
 		'BulkBatchDefaults.php',
 		'BulkSaveOptions.php',
 		'EmailLinkReaderInterface.php',
+		'FileTextReaderInterface.php',
 		'LockRequest.php',
 		'LockRunStep.php',
 		'ObjectDeletion.php',

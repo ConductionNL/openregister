@@ -11,4 +11,13 @@
 
 ## 3. Verification
 
-- [ ] 3.1 Newman: a manager lists and revokes a member's link on a shared view on a live instance (planninq's `Public Share` folder covers the consumer side).
+- [x] 3.1 Newman: a manager lists and revokes a member's link on a shared view on a live instance (planninq's `Public Share` folder covers the consumer side).
+  > 2026-11-25: `tests/integration/openregister-access-links-per-subject.postman_collection.json`, against a sandbox
+  > Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e), with the CI users `e2e-owner` (manager, owns the views) and
+  > `e2e-other` (member). The member mints a read link over the manager's shared view A; the manager lists it with
+  > its creator and use count and without its anchor; a revoke naming view B is 404 and the link stays live; the
+  > revoke naming A is 200 and the link then answers 404. On the manager's private view C the member's list, mint and
+  > revoke of the manager's link all answer 404 and that link stays live. The run found that the publish check let a
+  > view through that the caller cannot read in their own organisation (the views endpoint answers 404 on it); this
+  > PR gives the check the views endpoint's own read rule. 23 requests, 28 assertions, 0 failed with it; 4 fail
+  > without it.

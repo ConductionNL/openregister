@@ -4633,16 +4633,16 @@
         },
         {
             "name": "web-token/jwt-library",
-            "version": "4.2.7",
+            "version": "4.2.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/web-token/jwt-library.git",
-                "reference": "62643a2f31274c546a7d158ceab6dd5c052db911"
+                "reference": "a1909b6b7c9171529f65e6bb6ecae615cd8a92ed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/web-token/jwt-library/zipball/62643a2f31274c546a7d158ceab6dd5c052db911",
-                "reference": "62643a2f31274c546a7d158ceab6dd5c052db911",
+                "url": "https://api.github.com/repos/web-token/jwt-library/zipball/a1909b6b7c9171529f65e6bb6ecae615cd8a92ed",
+                "reference": "a1909b6b7c9171529f65e6bb6ecae615cd8a92ed",
                 "shasum": ""
             },
             "require": {
@@ -4706,7 +4706,7 @@
                 "symfony"
             ],
             "support": {
-                "source": "https://github.com/web-token/jwt-library/tree/4.2.7"
+                "source": "https://github.com/web-token/jwt-library/tree/4.2.8"
             },
             "funding": [
                 {
@@ -4718,7 +4718,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2026-11-08T14:44:36+00:00"
+            "time": "2026-11-23T18:54:04+00:00"
         },
         {
             "name": "webonyx/graphql-php",
@@ -6941,16 +6941,16 @@
         },
         {
             "name": "doctrine/dbal",
-            "version": "3.10.5",
+            "version": "3.10.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/doctrine/dbal.git",
-                "reference": "95d84866bf3c04b2ddca1df7c049714660959aef"
+                "reference": "92156a662c2e177a1c9305711a0ef3ee94dcdd2c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/doctrine/dbal/zipball/95d84866bf3c04b2ddca1df7c049714660959aef",
-                "reference": "95d84866bf3c04b2ddca1df7c049714660959aef",
+                "url": "https://api.github.com/repos/doctrine/dbal/zipball/92156a662c2e177a1c9305711a0ef3ee94dcdd2c",
+                "reference": "92156a662c2e177a1c9305711a0ef3ee94dcdd2c",
                 "shasum": ""
             },
             "require": {
@@ -6969,11 +6969,11 @@
                 "doctrine/coding-standard": "14.0.0",
                 "fig/log-test": "^1",
                 "jetbrains/phpstorm-stubs": "2023.1",
-                "phpstan/phpstan": "2.1.30",
+                "phpstan/phpstan": "2.3.4",
                 "phpstan/phpstan-strict-rules": "^2",
-                "phpunit/phpunit": "9.6.34",
-                "slevomat/coding-standard": "8.27.1",
-                "squizlabs/php_codesniffer": "4.0.1",
+                "phpunit/phpunit": "9.6.36",
+                "slevomat/coding-standard": "8.31.1",
+                "squizlabs/php_codesniffer": "4.0.4",
                 "symfony/cache": "^5.4|^6.0|^7.0|^8.0",
                 "symfony/console": "^4.4|^5.4|^6.0|^7.0|^8.0"
             },
@@ -7035,7 +7035,7 @@
             ],
             "support": {
                 "issues": "https://github.com/doctrine/dbal/issues",
-                "source": "https://github.com/doctrine/dbal/tree/3.10.5"
+                "source": "https://github.com/doctrine/dbal/tree/3.10.7"
             },
             "funding": [
                 {
@@ -7051,7 +7051,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-02-24T08:03:57+00:00"
+            "time": "2026-11-08T21:35:21+00:00"
         },
         {
             "name": "doctrine/deprecations",
@@ -9092,11 +9092,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.3.5",
+            "version": "2.3.7",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/645a1bd6bead15fc1b8474137467961d0fa30a79",
-                "reference": "645a1bd6bead15fc1b8474137467961d0fa30a79",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/90c91c2498849ab8cc4e873864bbf1cb2bf6ea12",
+                "reference": "90c91c2498849ab8cc4e873864bbf1cb2bf6ea12",
                 "shasum": ""
             },
             "require": {
@@ -9152,7 +9152,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-11-03T12:14:22+00:00"
+            "time": "2026-11-19T10:31:11+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",

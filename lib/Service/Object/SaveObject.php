@@ -124,11 +124,11 @@ use OCA\OpenRegister\Service\OrganisationContext;
 use OCA\OpenRegister\Service\Rbac\OmittedWriteOnly;
 use OCA\OpenRegister\Service\OrganisationServiceInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
-use OCA\OpenRegister\Search\Service\Quality\DedupCreatePolicyInterface;
 use OCA\OpenRegister\Service\Quality\UniqueHintChecker;
 use OCA\OpenRegister\Service\Quality\UniqueHintCandidate;
 use OCA\OpenRegister\Service\Quality\UniqueHintScope;
 use OCA\OpenRegister\Kernel\Contracts\CreateCandidate;
+use OCA\OpenRegister\Kernel\Contracts\CreateGuardInterface;
 use OCA\OpenRegister\Service\SettingsServiceInterface;
 use OCA\OpenRegister\Service\SharedMasterDataService;
 use OCA\OpenRegister\Service\TenantLogRedactor;
@@ -149,6 +149,7 @@ use RuntimeException;
 use Throwable;
 use Symfony\Component\Uid\Uuid;
 use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\RecordRetentionStampsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DerivedTranslationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ExpressionDefaultsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface;
@@ -812,13 +813,17 @@ class SaveObject implements SaveObjectInterface {
 	 * MagicMapper -> SettingsService -> ValidationOperationsHandler -> ValidateObject
 	 * cycle. That cycle ate 19 GB in a unit-test run on 2026-09-08.
 	 *
-	 * @return \OCA\OpenRegister\Service\RetentionServiceInterface|null The service, or null when unavailable
+	 * It is asked as the Core port RecordRetentionStampsInterface, which carries the
+	 * four calls a save makes; the retention service (Compliance) answers it.
+	 *
+	 * @return RecordRetentionStampsInterface|null The service, or null when unavailable
 	 *
 	 * @spec openspec/specs/retention-management/spec.md#requirement-objects-must-carry-mdto-compliant-archival-metadata-in-the-retention-field
 	 * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
+	 * @spec openspec/changes/functional-areas-depend-in-one-direction/specs/backend-modularity/spec.md#requirement-areas-reference-only-lower-areas
 	 */
-	private function resolveRetentionService(): ?\OCA\OpenRegister\Service\RetentionServiceInterface {
-		return $this->containerService(id: \OCA\OpenRegister\Service\RetentionServiceInterface::class, label: 'RetentionService');
+	private function resolveRetentionService(): ?RecordRetentionStampsInterface {
+		return $this->containerService(id: RecordRetentionStampsInterface::class, label: 'RetentionService');
 	}//end resolveRetentionService()
 
 	/**
@@ -2426,17 +2431,18 @@ class SaveObject implements SaveObjectInterface {
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/functional-areas-depend-in-one-direction/specs/backend-modularity/spec.md#requirement-areas-reference-only-lower-areas
 	 */
 	private function takeDedupOverrideFromBody(ObjectSaveCall $call): void {
-		if (array_key_exists(DedupCreatePolicyInterface::OVERRIDE_KEY, $call->data) === false) {
+		if (array_key_exists(CreateGuardInterface::OVERRIDE_KEY, $call->data) === false) {
 			return;
 		}
 
-		if (filter_var($call->data[DedupCreatePolicyInterface::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
+		if (filter_var($call->data[CreateGuardInterface::OVERRIDE_KEY], FILTER_VALIDATE_BOOLEAN) === true) {
 			$call->flags->dedupOverride = true;
 		}
 
-		unset($call->data[DedupCreatePolicyInterface::OVERRIDE_KEY]);
+		unset($call->data[CreateGuardInterface::OVERRIDE_KEY]);
 	}//end takeDedupOverrideFromBody()
 
 	/**
@@ -2545,9 +2551,39 @@ class SaveObject implements SaveObjectInterface {
 	private function normalizeCallTranslations(ObjectSaveCall $call): void {
 		$call->data = $this->translationHandler->normalizeTranslationsForSave(
 			objectData: $call->data,
-			scope: new TranslationScope(schema: $call->schema, register: $call->register)
+			scope: new TranslationScope(schema: $call->schema, register: $call->register),
+			stored: $this->storedDataForTranslationTarget(call: $call)
 		);
 	}//end normalizeCallTranslations()
+
+	/**
+	 * The stored object's data, when this save writes one language
+	 * (`X-Translation-Target-Language`) of an existing object; otherwise none.
+	 *
+	 * Writing one language must keep the others: without the stored languages a
+	 * translation save replaced the source language, and a PATCH was refused
+	 * because it carries the stored language maps of the properties it leaves alone.
+	 *
+	 * @param ObjectSaveCall $call The save call.
+	 *
+	 * @return array The stored data, or an empty array.
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+	 */
+	private function storedDataForTranslationTarget(ObjectSaveCall $call): array {
+		$target = $this->translationHandler->targetLanguage();
+		if ($target === null || $target === '' || $call->uuid === null) {
+			return [];
+		}
+
+		try {
+			$existing = $this->findAndValidateExistingObject(call: $call);
+		} catch (\Throwable $e) {
+			return [];
+		}
+
+		return ($existing?->getObject() ?? []);
+	}//end storedDataForTranslationTarget()
 
 	/**
 	 * Refuse properties the caller may not write, when RBAC applies and the schema guards properties.
@@ -3021,12 +3057,16 @@ class SaveObject implements SaveObjectInterface {
 	 * global container knows nothing of this app's registrations and would
 	 * autowire the cycle instead of failing.
 	 *
-	 * @return DedupCreatePolicyInterface|null The policy, or null when unavailable.
+	 * It is asked as the Kernel port CreateGuardInterface, which the duplicate
+	 * policy (Search) binds in its own wiring.
+	 *
+	 * @return CreateGuardInterface|null The policy, or null when unavailable.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/changes/functional-areas-depend-in-one-direction/specs/backend-modularity/spec.md#requirement-areas-reference-only-lower-areas
 	 */
-	private function resolveDedupCreatePolicy(): ?DedupCreatePolicyInterface {
-		return $this->containerService(id: DedupCreatePolicyInterface::class, label: 'DedupCreatePolicy');
+	private function resolveDedupCreatePolicy(): ?CreateGuardInterface {
+		return $this->containerService(id: CreateGuardInterface::class, label: 'DedupCreatePolicy');
 	}//end resolveDedupCreatePolicy()
 
 	/**

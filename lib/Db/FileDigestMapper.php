@@ -110,4 +110,27 @@ class FileDigestMapper extends QBMapper {
 		return $this->findEntities(query: $qb);
 
 	}//end findOpenAfter()
+	/**
+	 * The open record of a file: the publication it is in now, or null when it is not published.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return FileDigest|null The newest record without an unpublication date, or null.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	public function findOpenForFile(int $fileId): ?FileDigest {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNull('unpublished_at'))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		$found = $this->findEntities(query: $qb);
+
+		return ($found[0] ?? null);
+
+	}//end findOpenForFile()
 }//end class

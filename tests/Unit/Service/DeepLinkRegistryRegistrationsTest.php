@@ -95,6 +95,22 @@ class DeepLinkRegistryRegistrationsTest extends TestCase {
 	}//end testAnEmptyRegistryAsksTheAppsOnce()
 
 	/**
+	 * A new registry asks nobody until it is read, and hasRegistrations() is such a read.
+	 *
+	 * @return void
+	 */
+	public function testTheAppsAreAskedOnTheFirstReadOnly(): void {
+		$dispatched = 0;
+		$registry = $this->registry(dispatched: $dispatched);
+		self::assertSame(expected: 0, actual: $dispatched);
+
+		self::assertTrue(condition: $registry->hasRegistrations());
+		self::assertTrue(condition: $registry->hasRegistrations());
+		self::assertSame(expected: ['zaken::zaak'], actual: self::claims(registrations: $registry->registrations()));
+		self::assertSame(expected: 1, actual: $dispatched);
+	}//end testTheAppsAreAskedOnTheFirstReadOnly()
+
+	/**
 	 * A registry that holds registrations lists them without asking the apps.
 	 *
 	 * @return void
