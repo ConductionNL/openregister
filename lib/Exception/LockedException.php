@@ -118,6 +118,30 @@ class LockedException extends Exception {
 	}//end forObject()
 
 	/**
+	 * The refusal of a lock another holder has, worded as the entity has always worded it.
+	 *
+	 * `forObject()` words a refused write; a refused lock keeps the shorter
+	 * "Object is locked by <holder>" that callers and tests match on, and now
+	 * carries the holder so the lock endpoint can answer 423 instead of 500.
+	 *
+	 * @param ObjectEntity $object The object whose lock another holder has.
+	 *
+	 * @return self The refusal carrying the holder.
+	 *
+	 * @spec openspec/changes/run-scoped-object-locking/specs/run-scoped-object-locking/spec.md#requirement-a-lock-refuses-a-write-and-names-its-holder
+	 */
+	public static function lockHeldBy(ObjectEntity $object): self {
+		$holder    = (string)$object->describeLockHolder();
+		$exception = new self(message: sprintf('Object is locked by %s', $holder));
+
+		$exception->lockedBy    = $object->getLockedBy();
+		$exception->lockedByRun = $object->getLockedByRun();
+		$exception->holder      = $holder;
+
+		return $exception;
+	}//end lockHeldBy()
+
+	/**
 	 * Get the user holding the lock, when a person holds it.
 	 *
 	 * @return string|null The holding user id, or null when a run holds it.

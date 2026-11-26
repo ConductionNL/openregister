@@ -3632,7 +3632,8 @@ class ObjectsControllerTest extends TestCase {
 
 		$result = $this->controller->lock('reg1', 'schema1', 'uuid-123');
 
-		$this->assertSame(500, $result->getStatus());
+		// A lock another holder has is the canonical 423, as a refused write gets, not a 500.
+		$this->assertSame(423, $result->getStatus());
 	}
 
 	// =========================================================================
