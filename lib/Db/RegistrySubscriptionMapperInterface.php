@@ -44,6 +44,20 @@ interface RegistrySubscriptionMapperInterface {
 	public function findActiveByIdentity(string $registry, string $identityValue): array;
 
 	/**
+	 * Every REQUESTED or ACTIVE row subscribed to a given registry+identity
+	 * value: the inbound update endpoint's lookup path, which also settles a
+	 * requested subscription on the connector's confirmation.
+	 *
+	 * @param string $registry The registry id (`brp`, `kvk`, ...).
+	 * @param string $identityValue The identity value the registry pushed a change for.
+	 *
+	 * @return array<int, RegistrySubscription> Matching requested and active rows.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	public function findLiveByIdentity(string $registry, string $identityValue): array;
+
+	/**
 	 * The subscription row for one object, or null when it never requested one.
 	 *
 	 * @param string $objectUuid The object's uuid.
