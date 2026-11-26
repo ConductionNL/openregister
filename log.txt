@@ -5334,3 +5334,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-26T01:14:22Z integrator-20261125T214524-15eb134c MERGED-TREE 8213083512: 3 PRs, main now 8b3332a0dd = tested tree
 2026-11-26T01:18:16Z session-20261126T004628-9ba36458 or-fix-3: main e07d9e1b; share 10533 11303 11313 11323 11333 all merge clean, none parked/BLOCK at head; 11303 11323 11333 (tests/openspec only) merged with main: Architecture 2401 OK + ApiCoverage OK; nothing to fix. or-fix-8: lease held by another session. Precheck not run: gitleaks release download refused by the permission check
+2026-11-26T01:19:49Z precheck-20261126T004703-08c14450 GREEN tree c6198a03db on dev 32f02f2ec8 prs 1 front=skip: Tests: 67623, Assertions: 240579, Errors: 5, Failures: 1, Warnings: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
