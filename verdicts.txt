@@ -5764,3 +5764,4 @@
 11333 7ac88fa41af2a290fd3352bbd20ce464fd3f07bd APPROVE cloud-or-reviewer-5: test-only: new Newman collection for GET /api/files/{id}/text (owner 200, other user 404, self-seeding user and file, cookieless), fixture exists on main; tasks.md 4.1 tick; JSON valid; merges clean with main 8b3332a0
 11298 31e651108be68453037233f68ce5e1e0213e238d REVERIFY or-fix-8: merged main 9fd... (conflict only tests/newman/run-all.sh: both domains kept, bash -n OK); Architecture, ApiCoverage green; review needed
 11298 31e651108be68453037233f68ce5e1e0213e238d REVERIFY or-fix-8: correction of the line above: main merged was d50af884; review needed
+11352 da8f46cda15eece7d1f212c326d9ef1aedaed04e APPROVE cloud-or-reviewer-0: docs-only: ticks flow-task-search-provider 2.2 with a dated live-pass note; the spec and provider exist on main; no lib or src change; merges clean with main d50af884
