@@ -5149,12 +5149,14 @@ Service/Archival/DestructionCopyTarget.php,,Service,,,,,Compliance
 Service/Flow/Timer/TimerCalendarSwitch.php,,Service,,,,,Processes
 Kernel/Contracts/AdministratorCheck.php,63,Kernel,Kernel,Kernel/Contracts/AdministratorCheck.php,0,,Kernel
 Migration/Version1Date20261125013000.php,,Migration,,,,,Platform
+Migration/Version1Date20261126090000.php,,Migration,,,,,Platform
 Collaboration/ObjectMembership.php,,Collaboration,,,,,Platform
 Controller/ObjectTransferController.php,,Controller,,,,,Core
 Service/Organisation/ObjectGraphTransfer.php,,Service,,,,,Core
 Service/Organisation/ObjectGraphTransferRefusal.php,,Service,,,,,Core
 Search/Service/Aggregation/TimeseriesDateRangeFilter.php,,Search,,,,,Search
 Service/Operations/IndexReconciliationProbes.php,,Service,,,,,Configuration
+Service/Operations/PublishedDigestProbes.php,,Service,,,,,Configuration
 Service/Operations/IndexReconciliationReport.php,,Service,,,,,Configuration
 BackgroundJob/IndexReconciliationJob.php,,BackgroundJob,,,,,Configuration
 Kernel/Contracts/FileExtractionQueueInterface.php,,Kernel,,,,,Kernel
