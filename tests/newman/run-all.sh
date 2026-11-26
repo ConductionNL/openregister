@@ -127,6 +127,7 @@ DOMAIN_ORDER=(
     "nlgov-conformance"
     "reply-threading"
     "licence-plate-detection"
+    "run-migration"
     "lifecycle-side-moves"
     "import-run-readback"
 )
@@ -242,6 +243,9 @@ declare -A DOMAIN_COLLECTIONS=(
     # detection-dutch-licence-plates 4.1: a plate and a BSN detected by the nl pattern set, Dutch placeholders in
     # the anonymised copy, and no detection with the set switched off. Saves and restores the whole file settings.
     [licence-plate-detection]="$REPO_ROOT/tests/integration/openregister-licence-plate-detection.postman_collection.json"
+    # migrate-run-between-versions 4.1: a run parked at a user task is migrated to a version that renamed the
+    # step (422 without a mapping, a dry run that writes nothing, then the move), and its task completes there.
+    [run-migration]="$REPO_ROOT/tests/integration/openregister-run-migration.postman_collection.json"
     # lifecycle-over-reference-field 3.2: a graph lifecycle's side moves (suspend freezes the graph, resume),
     # the closing form (422 naming the missing result, one save and one audit entry), and a reopen offered to
     # a manager only. HTTP-shaped: the moves are derived from status type objects in the case's own register,

@@ -153,6 +153,37 @@ class RegistryUpdatesControllerTest extends TestCase {
 		$this->assertSame($result, $response->getData());
 	}
 
+	/**
+	 * @return array<string, array{0: mixed, 1: string|null}>
+	 */
+	public static function subscriptionStateProvider(): array {
+		return [
+			'active' => ['active', 'active'],
+			'failed' => ['failed', 'failed'],
+			'anything else' => ['ended', null],
+			'absent' => [null, null],
+		];
+	}
+
+	/**
+	 * The connector's subscriptionState and error reach the service; an unknown state is dropped.
+	 *
+	 * @dataProvider subscriptionStateProvider
+	 */
+	public function testTheConnectorsSubscriptionStateIsPassedOn(mixed $given, ?string $expected): void {
+		$params = ['identity' => '999990019', 'properties' => [], 'error' => 'why'];
+		if ($given !== null) {
+			$params['subscriptionState'] = $given;
+		}
+
+		$this->givenParams($params);
+		$this->subscriptions->expects($this->once())->method('applyInboundUpdate')
+			->with($this->callback(static fn (InboundUpdate $update): bool => $update->subscriptionState === $expected && $update->error === 'why' && $update->properties === []))
+			->willReturn(['matched' => 1, 'applied' => [], 'rejected' => []]);
+
+		$this->assertSame(200, $this->controller->update('brp')->getStatus());
+	}
+
 	public function testUnexpectedErrorIsAGeneric500(): void {
 		$this->givenParams(['identity' => '123']);
 		$this->subscriptions->method('applyInboundUpdate')->willThrowException(new RuntimeException('db gone'));
