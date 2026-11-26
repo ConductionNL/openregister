@@ -127,6 +127,7 @@ DOMAIN_ORDER=(
     "nlgov-conformance"
     "reply-threading"
     "search-dutch-stemming"
+    "lifecycle-side-moves"
     "import-run-readback"
 )
 
@@ -241,6 +242,11 @@ declare -A DOMAIN_COLLECTIONS=(
     # search-dutch-language-quality 1.5: _search=omgevingsvergunningen finds "Omgevingsvergunning bouwen" where the
     # database stems Dutch (PostgreSQL), and nothing where it does not; the capability says which.
     [search-dutch-stemming]="$REPO_ROOT/tests/integration/openregister-search-dutch-stemming.postman_collection.json"
+    # lifecycle-over-reference-field 3.2: a graph lifecycle's side moves (suspend freezes the graph, resume),
+    # the closing form (422 naming the missing result, one save and one audit entry), and a reopen offered to
+    # a manager only. HTTP-shaped: the moves are derived from status type objects in the case's own register,
+    # which unit tests mock, and that read found nothing on a real instance before it was scoped.
+    [lifecycle-side-moves]="$REPO_ROOT/tests/integration/openregister-lifecycle-side-moves.postman_collection.json"
     # runs-recorded-and-causes-named 4.4: an import run read back after it finished: its header and counts,
     # a written row naming its object, refused rows with their reasons, the failing rows as CSV, the created
     # object's audit entry naming the run, and a retry naming the original. Uploads the two CSVs beside it.
