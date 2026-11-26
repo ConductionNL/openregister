@@ -56,7 +56,7 @@ class FileFormattingHandler {
 	 *
 	 * @var array{published: null, depublished: null, isPublished: false}
 	 */
-	private const UNPUBLISHED = ['published' => null, 'depublished' => null, 'isPublished' => false];
+	private const UNPUBLISHED = ['published' => null, 'depublished' => null, 'isPublished' => false, 'publishedDigest' => null];
 
 	/**
 	 * Reference to FileService for cross-handler coordination (circular dependency break).
@@ -101,11 +101,14 @@ class FileFormattingHandler {
 	 * @param FileMapperInterface|null $fileMapper  Optional OR-side metadata mapper for description / category /
 	 *                                              labels / downloadCount enrichment. When null (test fixtures,
 	 *                                              legacy callers), enrichment is skipped silently.
+	 * @param PublishedDigestReader|null $publishedDigests The seal of a published file, for `publishedDigest`;
+	 *                                                     when null the key stays null.
 	 */
 	public function __construct(
 		ILockManager $lockManager,
 		FileSession $session,
 		private readonly ?FileMapperInterface $fileMapper = null,
+		private readonly ?PublishedDigestReader $publishedDigests = null,
 	) {
 		$this->userSession = $session->userSession;
 		$this->logger = $session->logger;
@@ -133,6 +136,11 @@ class FileFormattingHandler {
 	 *
 	 * Anonymous callers MUST NOT see who holds a lock (design.md Decision 6).
 	 *
+	 * A published file carries `publishedDigest` (`sha256`, `size`,
+	 * `publishedAt`, `sealedBy.uuid|hash`) beside the `published` date, so a
+	 * reader of any listing can verify the bytes; it is null otherwise
+	 * (REQ-PFD-002, decided as a new key so `published` keeps its type).
+	 *
 	 * @param Node $file The file node to format.
 	 *
 	 * @psalm-return   array{labels: list<string>,...}
@@ -143,6 +151,7 @@ class FileFormattingHandler {
 	 * @throws Exception If formatting fails.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
 	 */
 	public function formatFile(Node $file): array {
 		$metadata = $this->baseMetadata(file: $file);
@@ -154,7 +163,13 @@ class FileFormattingHandler {
 			$metadata = $this->withOrMetadata(file: $file, metadata: $metadata);
 		}
 
-		return $this->withLabelFields(metadata: $metadata);
+		$metadata = $this->withLabelFields(metadata: $metadata);
+		if ($this->publishedDigests !== null) {
+			// After the label fields, so a `publishedDigest:` label cannot stand in for the seal.
+			$metadata['publishedDigest'] = $this->publishedDigests->publishedOf(fileId: (int)$file->getId());
+		}
+
+		return $metadata;
 	}//end formatFile()
 
 	/**

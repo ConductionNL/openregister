@@ -59,6 +59,38 @@ function scopeParams() {
 }
 
 /**
+ * The register list request in flight, shared by preload() and
+ * preloadRegisters() so a page that calls both sends it once.
+ *
+ * @type {Promise<Array>|null}
+ */
+let registersInFlight = null
+
+/**
+ * The preload() in flight, so a second caller waits for it instead of
+ * returning early or sending everything again.
+ *
+ * @type {Promise<Array>|null}
+ */
+let preloadInFlight = null
+
+/**
+ * Fetch the register list, or join the fetch already in flight.
+ *
+ * @param {object} store The dashboard store.
+ * @return {Promise<Array>}
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+function loadRegistersOnce(store) {
+	if (registersInFlight === null) {
+		registersInFlight = store.fetchRegisters().finally(() => {
+			registersInFlight = null
+		})
+	}
+	return registersInFlight
+}
+
+/**
  * Load one dashboard panel into the store, unless it is already loading.
  *
  * @param {object} store The dashboard store.
@@ -185,12 +217,14 @@ export const useDashboardStore = defineStore('dashboard', {
 					() => schemaStore.schemaItem?.id,
 				],
 				async () => {
-					// Fetch registers to update sidebar tables
-					await this.fetchRegisters()
-					// Fetch all chart data to update dashboard charts
-					await this.fetchAllChartData()
-					// Fetch all statistics to update audit trail sidebar
-					await this.fetchAllStatistics()
+					// Registers (sidebar tables), charts and statistics only read
+					// the active register/schema ids, not each other: load them
+					// side by side instead of one wave after another.
+					await Promise.all([
+						this.fetchRegisters(),
+						this.fetchAllChartData(),
+						this.fetchAllStatistics(),
+					])
 				},
 			)
 		},
@@ -347,17 +381,40 @@ export const useDashboardStore = defineStore('dashboard', {
 		},
 
 		/**
-		 * Preload dashboard data
+		 * Preload dashboard data: registers, charts and statistics, side by side
+		 * (none of them reads another's answer).
 		 *
 		 * @return {Promise<Array>}
 		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async preload() {
-			if (!this.isInitialized && !this.loading) {
-				await this.fetchRegisters()
-				await this.fetchAllChartData()
-				await this.fetchAllStatistics()
+			if (!this.isInitialized && preloadInFlight === null) {
+				preloadInFlight = Promise.all([
+					loadRegistersOnce(this),
+					this.fetchAllChartData(),
+					this.fetchAllStatistics(),
+				]).finally(() => {
+					preloadInFlight = null
+				})
+				await preloadInFlight
 				this.isInitialized = true
+			} else if (preloadInFlight !== null) {
+				await preloadInFlight
+			}
+			return this.registers
+		},
+
+		/**
+		 * Load the register list once, for views that show only the registers
+		 * and their totals (the Registers sidebar), without the charts and
+		 * statistics `preload()` adds.
+		 *
+		 * @return {Promise<Array>}
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
+		 */
+		async preloadRegisters() {
+			if (!this.isInitialized && this.registers.length === 0) {
+				await loadRegistersOnce(this)
 			}
 			return this.registers
 		},
