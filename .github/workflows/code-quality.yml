@@ -339,7 +339,20 @@ jobs:
       # reconcile against and goes stale silently.
       # See https://github.com/ConductionNL/.github/tree/main/hydra-gates
       enable-hydra-gates: true
-      # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
+      # `hydra-gates-ref` IS pinned on this release branch, to hold it still:
+      # the escape hatch the paragraph below describes. Gates taken from @main
+      # judge this tree against `main`. Gate 67 (openregister-contract-parity)
+      # compares `lib/Contract/` with the contract set shipped at the gate
+      # package's ref, and gate 124 (perf-budget) wants a speed budget this
+      # release line never had. Both were red on every pull request to this
+      # branch, for reasons no pull request here can fix without backporting
+      # features. v1.19.0 ships exactly the contract files this branch has,
+      # byte for byte, and predates gate 124. The price is the one named below:
+      # gate fixes and new gates after v1.19.0 do not reach this branch. Move
+      # the pin when the contract set on this branch changes; do not copy it to
+      # `main`.
+      hydra-gates-ref: v1.19.0
+      # `main` sets no `hydra-gates-ref`, on purpose. The shared workflow defaults it
       # to @main, and this workflow is itself consumed at @main, so the two
       # sides move together and a gate fix reaches this repo without a commit
       # in this repo. A pin is a silent expiry date: 22 repos sat on v1.0.1 and
