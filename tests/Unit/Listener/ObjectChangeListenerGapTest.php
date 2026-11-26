@@ -9,9 +9,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Listener\ObjectChangeListener;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCP\BackgroundJob\IJobList;
+use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -38,6 +40,8 @@ class ObjectChangeListenerGapTest extends TestCase {
 			$this->settingsService,
 			$this->jobList,
 			$this->logger,
+			$this->inlineDeferral(),
+			$this->createStub(IAppConfig::class),
 		);
 	}
 
@@ -144,5 +148,15 @@ class ObjectChangeListenerGapTest extends TestCase {
 			->with(99, false);
 
 		$this->listener->handle($event);
+	}
+
+	/**
+	 * A deferral with the kill switch on (`listenerDeferral=inline`): the
+	 * listener queues one job per object, the behaviour these tests record.
+	 */
+	private function inlineDeferral(): ListenerDeferralService {
+		$deferral = $this->createStub(ListenerDeferralService::class);
+		$deferral->method('isDeferralEnabled')->willReturn(false);
+		return $deferral;
 	}
 }
