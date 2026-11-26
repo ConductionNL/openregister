@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Controller\Support\RawRequestBody;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -83,6 +84,19 @@ class ObjectsControllerRoutedRegisterSchemaTest extends TestCase {
 		return $reflection->invokeArgs($this->controller, $arguments);
 	}
 
+	/**
+	 * Give the request a JSON body, as the bytes the client sent.
+	 *
+	 * @param array<string, mixed> $body The body.
+	 */
+	private function sentJson(array $body): void {
+		$file = tempnam(sys_get_temp_dir(), 'or-body');
+		file_put_contents($file, json_encode($body));
+		$this->request->method('getHeader')->willReturnCallback(static fn (string $name): string => strtolower($name) === 'content-type' ? 'application/json' : '');
+		$property = new \ReflectionProperty(ObjectsController::class, 'rawRequestBody');
+		$property->setValue($this->controller, new RawRequestBody($file));
+	}
+
 	private function schemaDeclaring(array $properties): Schema {
 		$schema = new Schema();
 		$schema->setProperties($properties);
@@ -104,8 +118,9 @@ class ObjectsControllerRoutedRegisterSchemaTest extends TestCase {
 
 	public function testABodyRegisterAndSchemaAreKeptWhenTheSchemaDeclaresThem(): void {
 		$this->request->method('getMethod')->willReturn('POST');
-		$this->request->post = ['name' => 'form', 'register' => 'portaliq', 'schema' => 'portalCase'];
-		$body = ['name' => 'form', 'register' => 'portaliq', 'schema' => 'portalCase', 'uuid' => 'x'];
+		$this->sentJson(['name' => 'form', 'register' => 'portaliq', 'schema' => 'portalCase']);
+		// The merged parameters, in which the route's register and schema win.
+		$body = ['name' => 'form', 'register' => 'buildiq', 'schema' => 'registrationForm', 'uuid' => 'x'];
 		$schema = $this->schemaDeclaring(['name' => ['type' => 'string'], 'register' => ['type' => 'string'], 'schema' => ['type' => 'string']]);
 
 		$kept = $this->call('submittableBody', [$body, $schema]);
@@ -117,7 +132,7 @@ class ObjectsControllerRoutedRegisterSchemaTest extends TestCase {
 
 	public function testAnUndeclaredRegisterAndSchemaAreStillDropped(): void {
 		$this->request->method('getMethod')->willReturn('POST');
-		$this->request->post = ['title' => 'x', 'register' => 'other', 'schema' => 'other'];
+		$this->sentJson(['title' => 'x', 'register' => 'other', 'schema' => 'other']);
 		$schema = $this->schemaDeclaring(['title' => ['type' => 'string']]);
 
 		$kept = $this->call('submittableBody', [['title' => 'x', 'register' => 'other', 'schema' => 'other'], $schema]);
@@ -127,11 +142,34 @@ class ObjectsControllerRoutedRegisterSchemaTest extends TestCase {
 
 	public function testARouteValueTheBodyDidNotCarryIsNeverStoredAsData(): void {
 		$this->request->method('getMethod')->willReturn('PATCH');
-		$this->request->patch = ['name' => 'renamed'];
+		$this->sentJson(['name' => 'renamed']);
 		$schema = $this->schemaDeclaring(['name' => ['type' => 'string'], 'register' => ['type' => 'string']]);
 
 		$kept = $this->call('submittableBody', [['name' => 'renamed', 'register' => 'buildiq'], $schema]);
 
 		$this->assertArrayNotHasKey('register', $kept, 'the merged parameters carried the route register, the body did not');
+	}
+
+	public function testTheMergedPostParametersAreNotTakenForTheBody(): void {
+		// Live on Nextcloud 34, $request->post answers the merged parameters (the
+		// route's register over the body's), so reading it stored the route value.
+		$this->request->method('getMethod')->willReturn('POST');
+		$this->request->post = ['name' => 'form', 'register' => 'shillinq', 'schema' => 'FeeSchedule'];
+		$this->sentJson(['name' => 'form', 'register' => 'dossiq', 'schema' => 'Zaak']);
+		$schema = $this->schemaDeclaring(['name' => ['type' => 'string'], 'register' => ['type' => 'string'], 'schema' => ['type' => 'string']]);
+
+		$kept = $this->call('submittableBody', [['name' => 'form', 'register' => 'shillinq', 'schema' => 'FeeSchedule'], $schema]);
+
+		$this->assertSame(['name' => 'form', 'register' => 'dossiq', 'schema' => 'Zaak'], $kept);
+	}
+
+	public function testAFormBodyKeepsNoRoutingWord(): void {
+		$this->request->method('getMethod')->willReturn('POST');
+		$this->request->method('getHeader')->willReturn('multipart/form-data; boundary=x');
+		$schema = $this->schemaDeclaring(['register' => ['type' => 'string']]);
+
+		$kept = $this->call('submittableBody', [['register' => 'buildiq'], $schema]);
+
+		$this->assertArrayNotHasKey('register', $kept);
 	}
 }//end class

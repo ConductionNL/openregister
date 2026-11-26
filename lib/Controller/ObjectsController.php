@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\RawRequestBody;
 use OCA\OpenRegister\Controller\Support\FormerSlugSignal;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
@@ -185,6 +186,20 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @var array<int, string>
 	 */
 	private const SUBMITTABLE_RESERVED_KEYS = ['@self', Schema::NOT_SUPPLIED_KEY];
+
+	/**
+	 * The most bytes of a request body read raw for its declared register/schema values.
+	 *
+	 * @var int
+	 */
+	private const RAW_BODY_MAX_BYTES = 16777216;
+
+	/**
+	 * Reads the request body raw; replaced in tests.
+	 *
+	 * @var RawRequestBody|null
+	 */
+	private ?RawRequestBody $rawRequestBody = null;
 
 	/**
 	 * Whether show() is already reading an object at the address it moved to.
@@ -3867,13 +3882,15 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return [];
 		}
 
-		try {
-			// The concrete request answers post, put and patch with its decoded body.
-			$body = $this->request->{$method};
-		} catch (\Throwable) {
+		// Only a JSON body can carry a typed register or schema value. The request's
+		// own post/put/patch accessors answer the MERGED parameters, in which the
+		// route's register and schema win, so the body is decoded from the raw bytes.
+		if (preg_match('/^application\/(?:[\w.+-]+\+)?json\b/i', (string)$this->request->getHeader('Content-Type')) !== 1) {
 			return [];
 		}
 
+		$this->rawRequestBody ??= new RawRequestBody();
+		$body = json_decode($this->rawRequestBody->read(max: self::RAW_BODY_MAX_BYTES), true);
 		if (is_array($body) === false) {
 			return [];
 		}
