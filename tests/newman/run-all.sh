@@ -126,6 +126,7 @@ DOMAIN_ORDER=(
     "public-export"
     "nlgov-conformance"
     "reply-threading"
+    "import-run-readback"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -236,6 +237,10 @@ declare -A DOMAIN_COLLECTIONS=(
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
     # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
     [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
+    # runs-recorded-and-causes-named 4.4: an import run read back after it finished: its header and counts,
+    # a written row naming its object, refused rows with their reasons, the failing rows as CSV, the created
+    # object's audit entry naming the run, and a retry naming the original. Uploads the two CSVs beside it.
+    [import-run-readback]="$REPO_ROOT/tests/integration/openregister-import-run-readback.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

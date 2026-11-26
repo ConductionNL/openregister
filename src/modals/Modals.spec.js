@@ -58,7 +58,6 @@ jest.mock('./webhook/ViewWebhookLog.vue', () => ({ __esModule: true, default: { 
 
 // Mounted regardless of the navigation state (they gate themselves).
 const ALWAYS = [
-	'ImportRegister',
 	'ExportRegister',
 	'PublishRegister',
 	'DeleteRegister',
@@ -74,14 +73,15 @@ const ALWAYS = [
 	'DeleteSource',
 	'DeleteObject',
 	'LockObject',
-	'ViewObject',
 	'UploadFiles',
-	'ViewSource',
 	'ViewConfiguration',
 ]
 
 // Mounted only while navigationStore[key] === value.
 const GATED = [
+	['ImportRegister', 'modal', 'importRegister'],
+	['ViewObject', 'modal', 'viewObject'],
+	['ViewSource', 'modal', 'viewSource'],
 	['EditConfiguration', 'modal', 'editConfiguration'],
 	['ExploreSchema', 'dialog', 'exploreSchema'],
 	['EditSchema', 'modal', 'editSchema'],

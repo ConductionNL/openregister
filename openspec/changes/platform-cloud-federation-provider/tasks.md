@@ -49,5 +49,6 @@
       path: `shareReceived()` is untouched by this change and `CloudFederationShareReceivedGoldenTest`
       still passes unmodified. The remote principal: `RemoteRecipientGateTest` (8, over the real
       evaluator), `FederationControllerRemoteRecipientTest` (2).
-- [ ] 2.3 `openspec validate platform-cloud-federation-provider --strict`.
+- [x] 2.3 `openspec validate platform-cloud-federation-provider --strict`.
+      > 2026-11-25: `Change 'platform-cloud-federation-provider' is valid` (strict), on main 50949d88a4b.
 - [ ] 3.1 Hand over to the dossiq lane: declare the federatable schemas and the default payload, register no provider.

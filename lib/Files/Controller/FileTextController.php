@@ -31,6 +31,7 @@ use OCA\OpenRegister\Controller\Trait\RequiresJsonBodyTrait;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
 use OCA\OpenRegister\Exception\ManualEntityException;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Exception\ReviewRequiredException;
 use OCA\OpenRegister\Files\Service\File\ManualEntityRequest;
 use OCA\OpenRegister\Files\Service\File\ManualEntityResult;
 use OCA\OpenRegister\Files\Service\File\ManualEntityService;
@@ -411,6 +412,8 @@ class FileTextController extends Controller {
 				+ ['entities_replaced' => count($entities), 'residual_count' => count($residualEntities), 'residual_entities' => $residualEntities];
 
 			return $this->anonymizedFileResponse(responseData: $responseData);
+		} catch (ReviewRequiredException $e) {
+			return new JSONResponse(data: $e->toRefusal(), statusCode: Http::STATUS_CONFLICT);
 		} catch (PdfAnonymisationException $e) {
 			return $this->pdfAnonymisationFailure(exception: $e, fileId: $fileId);
 		} catch (\Exception $e) {
@@ -623,6 +626,12 @@ class FileTextController extends Controller {
 		$structureResult = $this->fileService->getLastStructurePreservation();
 		if ($structureResult !== null) {
 			$responseData['structurePreservation'] = $structureResult->jsonSerialize();
+		}
+
+		// Route and count only, never a value (REQ-RRS-001).
+		$verification = $this->fileService->getLastVerification();
+		if ($verification !== null) {
+			$responseData['verification'] = $verification;
 		}
 
 		return new JSONResponse(data: $responseData);
