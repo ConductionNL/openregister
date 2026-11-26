@@ -24,14 +24,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Operations;
 
-use OCA\OpenRegister\Db\FileDigestMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 
 /**
  * Lists the files that are public now and no longer match the digest they were published with.
  *
  * The nightly `PublishedDigestVerifyJob` and the public download both mark the
- * open record of such a file (`FileDigestMapper::flagMismatch()`); this probe
+ * open record of such a file (the Files component's `flagMismatch()`); this probe
  * reads those marks in the shape {@see ConsistencyCheckService} runs, so the
  * read-only guard covers it like every other probe.
  *
@@ -55,6 +54,12 @@ class PublishedDigestProbes {
 	public const CHANGED = 'published-file-changed';
 
 	/**
+	 * The digest records' table (`FileDigestMapper::TABLE`), named here so the
+	 * console reads it without depending on the Files component.
+	 */
+	public const TABLE = 'openregister_file_digests';
+
+	/**
 	 * The probes, keyed by slug.
 	 *
 	 * @return array<string, array<string, mixed>> The probes.
@@ -70,7 +75,7 @@ class PublishedDigestProbes {
 				'repair' => 'Republish or unpublish each file; which of the two is decided per file.',
 				'repairKind' => self::REPAIR_DECIDE_PER_FILE,
 				'repairColumn' => 'file_id',
-				'table' => FileDigestMapper::TABLE,
+				'table' => self::TABLE,
 				'query' => self::changedQuery(...),
 			],
 		];
@@ -86,7 +91,7 @@ class PublishedDigestProbes {
 	 */
 	private static function changedQuery(IQueryBuilder $qb): IQueryBuilder {
 		return $qb->select('id', 'file_id', 'object_uuid', 'sha256', 'mismatch_sha256', 'mismatch_at')
-			->from(FileDigestMapper::TABLE)
+			->from(self::TABLE)
 			->where($qb->expr()->isNull('unpublished_at'))
 			->andWhere($qb->expr()->isNotNull('mismatch_at'));
 
