@@ -21,13 +21,14 @@
 import type { APIRequestContext } from '@playwright/test'
 
 import { expect, request as pwRequest, test } from '@playwright/test'
+import { randomBytes } from 'crypto'
 import { resolveBaseUrl } from '../base-url.ts'
 
 const BASE = resolveBaseUrl()
 const ADMIN = process.env.ADMIN_USER || process.env.OR_USER || 'admin'
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 
-const RUN = Math.random().toString(36).slice(2, 10)
+const RUN = randomBytes(4).toString('hex')
 const API = '/index.php/apps/openregister/api'
 const COLLABORATION = '/ocs/v2.php/collaboration/resources'
 const READER = `e2e-coll-${RUN}`
