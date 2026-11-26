@@ -127,6 +127,7 @@ DOMAIN_ORDER=(
     "nlgov-conformance"
     "reply-threading"
     "search-dutch-stemming"
+    "import-run-readback"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -240,6 +241,10 @@ declare -A DOMAIN_COLLECTIONS=(
     # search-dutch-language-quality 1.5: _search=omgevingsvergunningen finds "Omgevingsvergunning bouwen" where the
     # database stems Dutch (PostgreSQL), and nothing where it does not; the capability says which.
     [search-dutch-stemming]="$REPO_ROOT/tests/integration/openregister-search-dutch-stemming.postman_collection.json"
+    # runs-recorded-and-causes-named 4.4: an import run read back after it finished: its header and counts,
+    # a written row naming its object, refused rows with their reasons, the failing rows as CSV, the created
+    # object's audit entry naming the run, and a retry naming the original. Uploads the two CSVs beside it.
+    [import-run-readback]="$REPO_ROOT/tests/integration/openregister-import-run-readback.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
