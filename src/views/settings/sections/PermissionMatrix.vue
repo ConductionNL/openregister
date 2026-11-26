@@ -378,14 +378,18 @@ export default {
 		},
 
 		/**
-		 * @param {object} register
-		 * @spec exclude settings-matrix lookup helper; resolves a register's schemas for display
+		 * The schemas of a register, whether the register lists them as ids or,
+		 * read with `_extend[]=schemas` as the register store does, as schema
+		 * objects. Matching only ids left every register of the matrix without
+		 * schema rows.
+		 *
+		 * @param {object} register The register
+		 * @return {Array<object>} Its schemas, in the order of the schema list
+		 * @spec openspec/changes/rights-screen-stated/specs/rbac-scopes/spec.md#requirement-rights-are-managed-in-a-permission-matrix-screen-req-rss-001
 		 */
 		getRegisterSchemas(register) {
-			const schemaIds = register.schemas || []
-			return this.schemas.filter(
-				(s) => schemaIds.includes(s.id) || schemaIds.includes(String(s.id)),
-			)
+			const schemaIds = (register.schemas || []).map((entry) => String(entry && typeof entry === 'object' ? entry.id : entry))
+			return this.schemas.filter((s) => schemaIds.includes(String(s.id)))
 		},
 
 		/**
