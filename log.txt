@@ -5358,3 +5358,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-26T02:05:19Z precheck-20261126T004703-08c14450 GREEN tree 34a2002852 on dev d50af8842c prs 1 front=skip: Tests: 67629, Assertions: 240599, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
 2026-11-26T02:12:14Z session-20261126T020804-874aa245 cloud-or-reviewer-0: APPROVE 11352 (docs-only tick), 11344 (settings read sharing); 5968 10640 11032 11040 11256 11296 11304 11312 11336 ledgered at head; 9880 10464 never land; lane 0 otherwise ledgered at head
 2026-11-26T02:12:25Z precheck-20261126T021052-a39f94e1 NORESULT tree 624766f175: deps failed
+2026-11-26T02:14:05Z precheck-20261126T015947-1547ae34 NORESULT tree f7fb1b19bf: checker floor not measured (exit 2)
