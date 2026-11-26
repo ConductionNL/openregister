@@ -992,3 +992,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: a PR's RBAC test with an 'admin'-group caller fails: row predicate not null ('without a token the administrator keeps the bypass'), hasPermission false for the admin.
 - Cause: main's RbacAccessCall/RbacPermissionCheck/PropertyAccessRequest/ClassificationCaller now take the admin verdict from IGroupManager::isAdmin() (AdministratorCheck), not the literal admin group; a bare IGroupManager mock answers isAdmin false.
 - Fix: in the test add `$groupManager->method('isAdmin')->willReturn(true)` (or in_array('admin', $groups, true)) next to getUserGroupIds, as main's MagicRbac*Test do (#10514 52d8794d).
+## ComponentDependencyRulesTest: a Processes/other-component Db mapper uses LikeOperator (or-fix-5)
+- Symptom: testNoComponentEdgeBeyondTheBaseline lists 'lib/Db/<X>Mapper.php -> lib/Db/LikeOperator.php (Processes -> Core)' (also LikeOperators.php if switched to the factory), e.g. the PostgreSQL json LIKE fix in FlowMapper (#11305, same change in #11307).
+- Cause: main keeps LikeOperator/LikeOperatorInterface/LikeOperators in Core; a mapper of another component now builds its LIKE through it.
+- Fix: they are pure SQL-string builders with no imports: set their component-map.csv rows' last column to Kernel and run python3 scripts/component-patterns.py (only csv + yaml change); never add the edge to the baseline. If main already did this, the PR needs nothing. (#11305 f91e420b)
