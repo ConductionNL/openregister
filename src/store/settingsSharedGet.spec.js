@@ -30,30 +30,6 @@ function deferred() {
 	return { promise, resolve }
 }
 
-/**
- * Let pending promise callbacks run.
- *
- * @return {Promise<void>}
- */
-function settle() {
-	return new Promise((done) => setTimeout(done, 0))
-}
-
-/**
- * An Options-API component instance over plain state, its methods bound to it.
- *
- * @param {object} component The component definition
- * @param {object} state Extra state
- * @return {object} The instance
- */
-function instance(component, state = {}) {
-	const vm = { ...state }
-	for (const [name, method] of Object.entries(component.methods)) {
-		vm[name] = method.bind(vm)
-	}
-	return vm
-}
-
 beforeEach(() => {
 	jest.clearAllMocks()
 	setActivePinia(createPinia())

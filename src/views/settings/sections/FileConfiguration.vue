@@ -1609,6 +1609,7 @@ export default {
 		const backendState = Promise.resolve()
 			.then(() => this.settingsStore.getAnonymisationBackendState())
 			.catch((error) => {
+				// eslint-disable-next-line no-console
 				console.error('Failed to load anonymisation backend state:', error)
 				return null
 			})
