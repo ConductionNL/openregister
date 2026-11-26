@@ -34,14 +34,34 @@ final class ReadRuleCaller {
 	 *
 	 * @param string|null        $userId The user, or null when anonymous.
 	 * @param array<int, string> $groups The user's group ids.
+	 * @param bool|null          $administrator Nextcloud's administrator verdict, or null to read the groups.
 	 *
 	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
 	 */
 	public function __construct(
 		public readonly ?string $userId,
 		public readonly array $groups = [],
+		public readonly ?bool $administrator = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the caller is an administrator.
+	 *
+	 * Nextcloud's verdict when the builder passed one, so an `admin` group member
+	 * outside `allowed_admin_ranges` is not one; else group membership.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
+	 */
+	public function isAdministrator(): bool {
+		if ($this->administrator !== null) {
+			return $this->administrator;
+		}
+
+		return in_array('admin', $this->groups, true);
+	}//end isAdministrator()
 
 	/**
 	 * The principals a rule entry may name for this caller, in the permission check's order.
