@@ -66,6 +66,9 @@ final class DocumentReferenceMap {
 		['table' => 'openregister_text_disclosures', 'column' => 'file_id', 'kind' => self::KIND_FILE, 'where' => []],
 		['table' => 'openregister_text_signatures', 'column' => 'file_id', 'kind' => self::KIND_FILE, 'where' => []],
 		['table' => 'openregister_mail_headers', 'column' => 'file_id', 'kind' => self::KIND_FILE, 'where' => []],
+		['table' => 'openregister_redaction_review_marks', 'column' => 'file_id', 'kind' => self::KIND_FILE, 'where' => []],
+		['table' => 'openregister_custody', 'column' => 'original_file_id', 'kind' => self::KIND_FILE, 'where' => []],
+		['table' => 'openregister_custody', 'column' => 'copy_file_id', 'kind' => self::KIND_FILE, 'where' => []],
 	];
 
 	/**
