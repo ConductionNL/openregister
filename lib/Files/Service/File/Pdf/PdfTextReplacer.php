@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Files\Service\File\Pdf;
 use OCA\OpenRegister\Kernel\Contracts\StructurePreservation;
 use ddn\sapp\PDFDoc;
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Files\Service\File\Sanitizer\MetadataMask;
 use OCA\OpenRegister\Files\Service\TextExtraction\PdfExtractor;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -634,7 +635,8 @@ class PdfTextReplacer {
 	 * bytes, the unsanitised input (which still carries the original
 	 * document metadata) is never returned.
 	 *
-	 * @param string $pdfBytes PDF bytes, typically the output of {@see replaceInPdf()}.
+	 * @param string            $pdfBytes PDF bytes, typically the output of {@see replaceInPdf()}.
+	 * @param MetadataMask|null $mask     An anonymisation run's substitution map: descriptive fields are masked, not stripped.
 	 *
 	 * @return string The re-serialised PDF without document metadata.
 	 *
@@ -642,7 +644,7 @@ class PdfTextReplacer {
 	 *
 	 * @spec openspec/specs/pdf-anonymisation/spec.md
 	 */
-	public function sanitizeMetadata(string $pdfBytes): string {
+	public function sanitizeMetadata(string $pdfBytes, ?MetadataMask $mask = null): string {
 		$doc = PDFDoc::from_string(buffer: $pdfBytes);
 		if ($doc === false) {
 			throw new PdfAnonymisationException(
@@ -652,7 +654,7 @@ class PdfTextReplacer {
 			);
 		}
 
-		(new PdfMetadataSanitizer(logger: $this->logger))->sanitize(doc: $doc);
+		(new PdfMetadataSanitizer(logger: $this->logger))->sanitize(doc: $doc, mask: $mask);
 		$serialised = $doc->to_pdf_file_s(rebuild: true);
 		if ($serialised === false || $serialised === '') {
 			throw new PdfAnonymisationException(
