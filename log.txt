@@ -5351,3 +5351,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-26T01:50:15Z session-20261126T010411-3697e038 or-builder-0: opened #11347 (audit-and-dashboard-screens-stated 2.1+2.2 e2e, 3+2 passed on sandbox NC34+MariaDB; fixes /api/audit-trails dropping register/schema/date filters, export ignoring dateFrom/dateTo, dashboard Last N days excluding today)
 2026-11-26T01:50:38Z precheck-20261126T004703-08c14450 GREEN tree d8382efbc8 on dev 53cc7d3aa0 prs 1 front=skip: Tests: 67644, Assertions: 240649, Errors: 5, Warnings: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
 2026-11-26T01:51:44Z precheck-20261126T004703-08c14450 GREEN tree d8382efbc8 on dev 53cc7d3aa0 prs 1 front=skip: Tests: 67644, Assertions: 240649, Errors: 5, Warnings: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
+2026-11-26T01:52:24Z precheck-20261126T004703-08c14450 CONFLICT-DEV #11339 c6545206
