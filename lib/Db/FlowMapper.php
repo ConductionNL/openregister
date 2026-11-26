@@ -319,20 +319,19 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 * `nodes` is a json column. PostgreSQL has no LIKE on json, and its error
 	 * aborts the surrounding transaction: a flow run that wrote an object
 	 * (the calendar index listener calls this on every object write) then
-	 * failed on its next write. The platform-aware operator casts to text first.
+	 * failed on its next write. castColumn() casts it to text per platform first.
 	 *
 	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
 	 */
 	public function findWithNodeType(string $nodeType): array {
-		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
-		$qb   = $this->db->getQueryBuilder();
+		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
 			->where(
-				$like->condition(
-					column: $qb->getColumnName('nodes'),
-					patternSql: (string) $qb->createNamedParameter($like->pattern(term: $nodeType))
+				$qb->expr()->like(
+					$qb->expr()->castColumn(column: 'nodes', type: IQueryBuilder::PARAM_STR),
+					$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($nodeType) . '%')
 				)
 			);
 
