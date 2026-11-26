@@ -245,18 +245,62 @@ class RegistrySubscriptionService implements RegistrySubscriptionLifecycleInterf
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-inbound-registry-update-writes-owned-properties-only
 	 */
 	public function applyInboundUpdate(InboundUpdate $update): array {
-		$rows = $this->subscriptionMapper->findActiveByIdentity(
+		$rows = $this->subscriptionMapper->findLiveByIdentity(
 			registry: $update->identity->registry,
 			identityValue: $update->identity->identityValue
 		);
 
 		$run = new InboundUpdateRun(update: $update);
 		foreach ($rows as $row) {
+			if ($this->settleRequested(update: $update, row: $row) === false) {
+				continue;
+			}
+
 			$this->applyToRow(run: $run, row: $row);
 		}
 
 		return ['matched' => count($rows), 'applied' => $run->applied, 'rejected' => $run->rejected];
 	}//end applyInboundUpdate()
+
+	/**
+	 * Settle a requested subscription on the connector's answer.
+	 *
+	 * A requested row becomes failed, with the connector's reason, when the
+	 * connector says it could not subscribe; nothing is applied to it then. A
+	 * confirmation (no properties) makes it active here. A change for it is
+	 * applied as for an active row, and recordApplied() makes it active (the
+	 * connector only polls what it subscribed). An active row is left as it is.
+	 *
+	 * @param InboundUpdate        $update The connector's update.
+	 * @param RegistrySubscription $row    A requested or active subscription.
+	 *
+	 * @return bool Whether the update's properties may be applied to the row.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	private function settleRequested(InboundUpdate $update, RegistrySubscription $row): bool {
+		if ($row->getState() !== RegistrySubscription::STATE_REQUESTED) {
+			return true;
+		}
+
+		if ($update->subscriptionState === RegistrySubscription::STATE_FAILED) {
+			$row->setState(RegistrySubscription::STATE_FAILED);
+			$row->setRefusalReason($update->error !== '' ? $update->error : 'The connector could not subscribe.');
+			$row->setUpdatedAt(new DateTime());
+			$this->subscriptionMapper->save(subscription: $row);
+
+			return false;
+		}
+
+		if (count($update->properties) === 0) {
+			$row->setState(RegistrySubscription::STATE_ACTIVE);
+			$row->setRefusalReason(null);
+			$row->setUpdatedAt(new DateTime());
+			$this->subscriptionMapper->save(subscription: $row);
+		}
+
+		return true;
+	}//end settleRequested()
 
 	/**
 	 * Apply the update to one subscribed object, or record why it was not.

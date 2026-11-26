@@ -105,7 +105,9 @@ class RegistryUpdatesController extends Controller {
 				update: new InboundUpdate(
 					identity: new RegistryIdentity(registry: $registry, identityValue: $this->requiredIdentity(data: $data)),
 					properties: $this->requiredProperties(data: $data),
-					eventReference: (string)($data['eventReference'] ?? '')
+					eventReference: (string)($data['eventReference'] ?? ''),
+					subscriptionState: self::subscriptionStateOf(data: $data),
+					error: (string)($data['error'] ?? '')
 				)
 			);
 			$this->assertNotAllRejected(result: $result);
@@ -133,6 +135,24 @@ class RegistryUpdatesController extends Controller {
 
 		return $identity;
 	}//end requiredIdentity()
+
+	/**
+	 * The connector's answer to a requested subscription: `active`, `failed`, or null.
+	 *
+	 * @param array<string, mixed> $data The request parameters.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	private static function subscriptionStateOf(array $data): ?string {
+		$state = (string)($data['subscriptionState'] ?? '');
+		if (in_array($state, ['active', 'failed'], true) === false) {
+			return null;
+		}
+
+		return $state;
+	}//end subscriptionStateOf()
 
 	/**
 	 * The pushed properties, which must be an object.
