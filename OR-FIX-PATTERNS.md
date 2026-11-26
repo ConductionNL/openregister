@@ -1001,3 +1001,8 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 - Symptom: ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline names '<file> -> lib/Db/LikeOperator.php (or LikeOperators.php) (Processes -> Core)'.
 - Cause: LikeOperator/LikeOperators/LikeOperatorInterface are Core, not a Kernel contract; LikeOperators::forPlatform does not help outside Core.
 - Fix: for a plain json/text column substring match use Nextcloud's $qb->expr()->like($qb->expr()->castColumn(column: 'col', type: IQueryBuilder::PARAM_STR), param) with escapeLikeParameter (see #11307 22e6d48b).
+
+## tests/newman/run-all.sh: both sides added a domain (or-fix-3/8, 26 Nov 2026)
+Symptom: CONFLICT in tests/newman/run-all.sh, in DOMAIN_ORDER and DOMAIN_COLLECTIONS, after main lands another newman PR.
+Cause: every newman PR appends its domain at the end of both lists; main took another one first.
+Fix: keep both sides' lines (union of each hunk: ours then theirs), then bash -n and check no duplicate domain in DOMAIN_ORDER or key in DOMAIN_COLLECTIONS.
