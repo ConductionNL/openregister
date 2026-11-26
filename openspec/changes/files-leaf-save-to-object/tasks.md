@@ -66,5 +66,12 @@
       including both silent failures, the declaration that cannot widen, the
       bounded search, and the refusals that name a schema to nobody who did
       not already pick it. Attach-by-node waits on 1.1.
-- [ ] 3.2 `tests/e2e/ci/files-leaf-save-to-object.spec.ts`: from Files, (not run: e2e needs a browser and the Files action (2.1))
+- [x] 3.2 `tests/e2e/ci/files-leaf-save-to-object.spec.ts`: from Files,
       run the action on a file, pick an object, see the file on the object.
+      As the non-administrator `e2e-owner`: the picker's offer over HTTP holds the
+      schema they may change and not the one they may only read (the administrator
+      finds both cases), and in the browser the Files row's "Add to object" opens
+      the picker, the case is found by its title, picking it shows "Added to ...",
+      and the file is listed on the case. Live run (26 Nov, sandbox Nextcloud 34 on
+      MariaDB, `php -S`): 2 passed. On SQLite the fixture cannot save an object at
+      all (magic tables), which is the sandbox, not this change.
