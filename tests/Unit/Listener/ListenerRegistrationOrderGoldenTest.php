@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 279;
+	private const LISTENER_COUNT = 280;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -53,7 +53,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Then ObjectFolderReshareGuard on BeforeShareCreatedEvent, right after
 	 * PlatformShareRoutingListener in the same slot (count 278 -> 279).
 	 */
-	private const SEQUENCE_SHA256 = '5f2b00e560fc050c10851217988fad5bdeaabc48c9324d755026f9ae41911a8e';
+	private const SEQUENCE_SHA256 = 'b581886e5dbcfdc6782ea9e2110a93cb6eb717dbac0b0426cd0982e9b8bca56d';
 
 	/**
 	 * The registration calls, in call order, with every argument.

@@ -337,6 +337,7 @@
 	],
 	"OCP\\AppFramework\\Http\\Events\\BeforeTemplateRenderedEvent": [
 		"OCA\\OpenRegister\\Listener\\MailAppScriptListener",
+		"OCA\\OpenRegister\\Listener\\TalkAppScriptListener",
 		"OCA\\OpenRegister\\Listener\\IntegrationGlobalScriptListener",
 		"OCA\\OpenRegister\\Listener\\LeafScriptListener",
 		"OCA\\OpenRegister\\Listener\\PushClientScriptListener"

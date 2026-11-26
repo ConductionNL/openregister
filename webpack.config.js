@@ -64,7 +64,9 @@ if (!isDev) {
 	// Split a chunk only when every entry it is reached from shares chunks.
 	// A worker is its own unnamed entry point, so the explorer's editor workers
 	// stay self-contained too.
-	const selfContainedEntries = ['integrationGlobal', 'graphqlExplorer']
+	// `talkActions` runs on Talk's page and is added there as one script
+	// (TalkAppScriptListener), so it must not need a shared chunk either.
+	const selfContainedEntries = ['integrationGlobal', 'graphqlExplorer', 'talkActions']
 	// Entries whose own initial chunk keeps its node_modules instead of sending
 	// them to a shared vendor chunk. They run on another app's pages and need
 	// little at load: `filesSidebar` (every Files page and every page embedding
@@ -336,6 +338,13 @@ webpackConfig.entry = {
 	mailSidebar: {
 		import: path.join(__dirname, 'src', 'mail-sidebar.js'),
 		filename: appId + '-mail-sidebar.js',
+	},
+	// The Talk message action "Save chat to object" (files-leaf-save-to-object).
+	// Added to Talk's page by TalkAppScriptListener with Util::addScript, so it
+	// is one self-contained file (see selfContainedEntries); the picker is lazy.
+	talkActions: {
+		import: path.join(__dirname, 'src', 'talk-actions.js'),
+		filename: appId + '-talk-actions.js',
 	},
 	// ADR-019 Phase E (Option B): umbrella widget for NC user-dashboard.
 	// Loaded by `OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::load()`
