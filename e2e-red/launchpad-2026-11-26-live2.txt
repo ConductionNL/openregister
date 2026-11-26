@@ -1,0 +1,27 @@
+# launchpad e2e, live-launchpad-2 run 2 (25 Nov 21:30Z - 26 Nov 01:30Z)
+# Sandbox: NC 34.0.6, MariaDB, Redis (distributed+locking), APCu; first php -S :8097 + router, then the reference stack
+#   nginx + php-fpm 8.3 (opcache) on :8098 (put mjs in /etc/nginx/mime.types; a server-level types{} block replaces the
+#   whole mime map and serves CSS as octet-stream). OpenRegister main 292aa09d. launchpad development 69a89446, later d6d9c728.
+# Sweep: the 116 files of e2e-red/launchpad-2026-11-25.txt not held by another lease, serially (globalTimeout 38 min in
+#   playwright.config.ts cuts a long run; pass --global-timeout). 683 + 373 passed over two passes; every failure re-run alone.
+# Tags: PR <n> | SANDBOX <why> | OTHER <who has it>
+
+manifest-boot.spec.ts (2)                     PR #2098 merged (kept manifest REQ-INIT-009)
+section-heading-widget.spec.ts:54             PR #2099 merged (chooseAndAdd picker)
+dashboard-edit-bar.spec.ts:117                PR #2101 merged APP FIX (6/8 columns rendered 12)
+phone-hidden-widgets-many.spec.ts:176         PR #2103 merged
+permissions.spec.ts:612                       PR #2104 merged (helper read a stale menu; app correct)
+template-rollout-choices.spec.ts:153          PR #2105 (window closes on resynced; success line unreachable, note in PR)
+people-widget-new-colleagues.spec.ts:227      PR #2109 APP FIX (no viewer -> role/team refused)
+setup-wizard-cli.spec.ts:300 + setup-wizard.spec.ts fresh-instance x4   PR #2110 (NC AppConfig 3 s local cache; afterAll leak)
+dashboards-personal-layer.spec.ts:247         PR #2120 (race)
+resource-uploads.spec.ts:440,479              fixed by #2102 (other lane); my #2113 closed as duplicate
+resource-uploads.spec.ts:647                  SANDBOX php -S decodes %2F (no file contents served); green behind nginx is untested
+resource-serve.spec.ts:47, resource-uploads:1006, widgets-picker:258   OTHER image-widget lease (#2100, #2102)
+ci/manifest-grants.spec.ts:119                OTHER openregister #11203 / #11264 (sharer view lacks PERMISSION_SHARE; NC 34 RestrictInteractionListener)
+launchpad-adopt-or-abstractions.spec.ts:171   waits for an nc-vue release after 2.232.2 (contains #2394)
+discover-server-services.spec.ts:113          SANDBOX Deck not installed (app store off)
+integrations-page.spec.ts (4)                 SANDBOX integriq not installed
+grid-layout-drag-resize.spec.ts:474           OPEN red on development too (PUT not seen within 15 s), not triaged
+cross-widget-filter-performance.spec.ts       skipped without the 50k data set (see builders-idle for the measured run, if any)
+ADR-124 Workspace                             584 ms median on the reference stack (budget 300) RED; lever: shell-boot task 4 (nc-vue release)
