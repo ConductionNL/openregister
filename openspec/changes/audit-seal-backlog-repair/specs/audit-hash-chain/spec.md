@@ -96,7 +96,9 @@ foreground writes are never starved.
 ### Requirement: Verification SHALL distinguish legacy unsealed rows from unsealed rows written after the cutover
 
 `verifyChain()` SHALL classify a row with a null or empty `hash` using a
-persisted cutover marker recorded when the hash-chain migration ran.
+persisted cutover marker recorded when the hash-chain migration ran (on a
+fresh install, whose migrations run schema-only, by the `PrepareAuditSealing`
+install repair step, which records it before any audit row is written).
 
 Rows created **before** the marker SHALL continue to be counted as
 `skippedNullHashes` without failing the chain. Rows created **after** the marker

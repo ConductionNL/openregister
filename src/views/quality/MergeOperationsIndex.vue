@@ -52,8 +52,8 @@
 							v-for="operation in mergeOperations"
 							:key="operation.id"
 							data-testid="mdm-merge-operation-row">
-							<td>{{ operation.into }}</td>
-							<td>{{ operation.from }}</td>
+							<td>{{ survivorOf(operation) }}</td>
+							<td>{{ mergedFromOf(operation) }}</td>
 							<td>{{ operation.reason || '—' }}</td>
 							<td>
 								{{ operation.mergedAt || operation.created || '—' }}
@@ -222,6 +222,40 @@ export default {
 		},
 
 		/**
+		 * The survivor, as the stored operation names it.
+		 *
+		 * The `mergeOperation` object records it as `mergedIntoUuid`; `into` is
+		 * the shape of the merge request.
+		 *
+		 * @param {object} operation Merge operation row.
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-steward-reverses-a-merge-within-its-reversal-window
+		 * @return {string}
+		 */
+		survivorOf(operation) {
+			return operation?.mergedIntoUuid ?? operation?.into ?? ''
+		},
+
+		/**
+		 * The objects merged away, as the stored operation names them.
+		 *
+		 * The `mergeOperation` object records them as `mergedFromUuids`, a list
+		 * (one merge may fold several objects into the survivor); `from` is the
+		 * single-object shape of the merge request.
+		 *
+		 * @param {object} operation Merge operation row.
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-steward-reverses-a-merge-within-its-reversal-window
+		 * @return {string}
+		 */
+		mergedFromOf(operation) {
+			if (Array.isArray(operation?.mergedFromUuids)) {
+				return operation.mergedFromUuids.join(', ')
+			}
+			return operation?.from ?? ''
+		},
+
+		/**
+		 * Whether a merge operation is still reversible.
+		 *
 		 * A "Reverse" action is only shown for operations still within their
 		 * reversal window — an already-reversed or expired operation shows
 		 * no action. The endpoint remains the sole authority: reversing

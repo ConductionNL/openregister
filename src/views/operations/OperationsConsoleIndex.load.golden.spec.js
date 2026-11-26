@@ -8,6 +8,8 @@
 import axios from '@nextcloud/axios'
 import OperationsConsoleIndex from './OperationsConsoleIndex.vue'
 
+jest.mock('vue-codemirror6', () => ({ name: 'CodeMirror', render: () => null }))
+jest.mock('@codemirror/lang-json', () => ({ json: () => ({}) }))
 jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: { get: jest.fn() } }))
 jest.mock('@nextcloud/l10n', () => ({ __esModule: true, t: (app, text) => `t:${text}`, n: (app, one, many) => many }))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => `/gen${path}` }))
