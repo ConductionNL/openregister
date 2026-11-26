@@ -20,8 +20,8 @@ resource-uploads.spec.ts:647                  SANDBOX php -S decodes %2F (no fil
 resource-serve.spec.ts:47, resource-uploads:1006, widgets-picker:258   OTHER image-widget lease (#2100, #2102)
 ci/manifest-grants.spec.ts:119                OTHER openregister #11203 / #11264 (sharer view lacks PERMISSION_SHARE; NC 34 RestrictInteractionListener)
 launchpad-adopt-or-abstractions.spec.ts:171   waits for an nc-vue release after 2.232.2 (contains #2394)
-discover-server-services.spec.ts:113          SANDBOX Deck not installed (app store off)
-integrations-page.spec.ts (4)                 SANDBOX integriq not installed
+discover-server-services.spec.ts:113          SANDBOX Deck not installed (app store off; installing a release tarball was refused by this session's permission check)
+integrations-page.spec.ts (4)                 GREEN 4/4 once integriq (development) is installed: SANDBOX only
 grid-layout-drag-resize.spec.ts:474           GREEN on development d6d9c728 (24/24 with --repeat-each=2); was red on 69a89446
 cross-widget-filter-performance.spec.ts       GREEN 3/3 with the 50k set on the reference stack (numbers in builders-idle)
 ADR-124 Workspace                             584 ms median on the reference stack (budget 300) RED; lever: shell-boot task 4 (nc-vue release)
