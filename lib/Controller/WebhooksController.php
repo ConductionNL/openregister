@@ -673,7 +673,7 @@ class WebhooksController extends Controller {
 	 * >
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Existing suppression, kept.
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
@@ -1260,7 +1260,7 @@ class WebhooksController extends Controller {
 	 *
 	 * @NoCSRFRequired
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Existing suppression, kept.
 	 *
 	 * @spec openspec/specs/webhook-payload-mapping/spec.md
 	 */
