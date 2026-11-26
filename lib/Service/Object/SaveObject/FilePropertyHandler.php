@@ -241,8 +241,12 @@ class FilePropertyHandler {
 				return false;
 			}//end if
 
-			// Base64 encoded string (simple heuristic).
-			if (base64_encode(base64_decode($value, true)) === $value && strlen($value) > 100) {
+			// Base64 encoded string (simple heuristic). A strict base64_decode()
+			// returns false for ordinary non-base64 content; checking that first
+			// keeps the round-trip from comparing against base64_encode(false),
+			// which would be a TypeError if this file adopted strict_types.
+			$decodedValue = base64_decode($value, true);
+			if ($decodedValue !== false && base64_encode($decodedValue) === $value && strlen($value) > 100) {
 				return true;
 			}
 		}//end if
@@ -276,7 +280,8 @@ class FilePropertyHandler {
 					}//end if
 
 					// Base64.
-					if (base64_encode(base64_decode($item, true)) === $item && strlen($item) > 100) {
+					$decodedItem = base64_decode($item, true);
+					if ($decodedItem !== false && base64_encode($decodedItem) === $item && strlen($item) > 100) {
 						return true;
 					}
 				} elseif (is_array($item) === true && $this->isFileObject(value: $item) === true) {
