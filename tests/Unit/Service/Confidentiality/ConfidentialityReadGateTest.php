@@ -157,6 +157,20 @@ final class ConfidentialityReadGateTest extends TestCase {
 		$this->assertFalse($admin);
 	}
 
+	/**
+	 * Nextcloud's verdict wins over the group list: an `admin` member outside the allowed range is narrowed.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
+	 */
+	public function testNextcloudsAdministratorVerdictWinsOverTheGroupList(): void {
+		$besluit = ['confidentialityTier' => 'confidential'];
+		$outsideRange = $this->gate()->refuses(schema: self::schema(), action: 'read', envelope: $besluit, userId: 'root', groups: ['admin'], owner: 'someone-else', administrator: false);
+		$insideRange  = $this->gate()->refuses(schema: self::schema(), action: 'read', envelope: $besluit, userId: 'root', groups: ['admin'], owner: 'someone-else', administrator: true);
+
+		$this->assertTrue($outsideRange);
+		$this->assertFalse($insideRange);
+	}
+
 	public function testAnAnonymousCallerIsNeverTheOwnerOfAnUnownedObject(): void {
 		$refused = $this->gate()->refuses(schema: self::schema(), action: 'read', envelope: ['confidentialityTier' => 'confidential'], userId: null, groups: [], owner: null);
 		$this->assertTrue($refused);

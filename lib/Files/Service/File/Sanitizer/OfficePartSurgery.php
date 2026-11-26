@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Files\Service\File\Sanitizer;
 
 use DOMDocument;
+use DOMElement;
 use DOMNode;
 use OCA\OpenRegister\Exception\SanitizationException;
 
@@ -41,6 +42,21 @@ use OCA\OpenRegister\Exception\SanitizationException;
  * @spec openspec/specs/office-document-sanitization/spec.md
  */
 final class OfficePartSurgery {
+
+	/**
+	 * The OOXML custom properties namespace.
+	 */
+	private const NS_CUSTOM = 'http://schemas.openxmlformats.org/officeDocument/2006/custom-properties';
+
+	/**
+	 * The OOXML variant types namespace.
+	 */
+	private const NS_VT = 'http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes';
+
+	/**
+	 * The variant types that hold text a mask can rewrite.
+	 */
+	private const TEXT_TYPES = ['lpwstr', 'lpstr', 'bstr'];
 	/**
 	 * Constructor.
 	 *
@@ -169,4 +185,112 @@ final class OfficePartSurgery {
 
 		return $count;
 	}//end scrubNodes()
+
+	/**
+	 * Mask the descriptive fields in place, or replace them by the sentinel
+	 * when the run does not mask.
+	 *
+	 * @param DOMDocument                    $dom    The part.
+	 * @param array<int, array{string, string}> $fields Namespace and local name of each field.
+	 * @param MetadataMask                   $mask   The run's substitution map.
+	 *
+	 * @return int The number of fields changed.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function maskElements(DOMDocument $dom, array $fields, MetadataMask $mask): int {
+		if ($mask->isActive() === false) {
+			return $this->scrubElements(dom: $dom, fields: $fields);
+		}
+
+		$count = 0;
+		foreach ($fields as [$namespace, $local]) {
+			$count += $this->maskNodes(nodes: $dom->getElementsByTagNameNS($namespace, $local), mask: $mask);
+		}
+
+		return $count;
+	}//end maskElements()
+
+	/**
+	 * Mask the text of every node in place, or replace it by the sentinel
+	 * when the run does not mask.
+	 *
+	 * @param iterable<DOMNode> $nodes The candidate nodes.
+	 * @param MetadataMask      $mask  The run's substitution map.
+	 *
+	 * @return int The number of nodes changed.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function maskNodes(iterable $nodes, MetadataMask $mask): int {
+		if ($mask->isActive() === false) {
+			return $this->scrubNodes(nodes: $nodes);
+		}
+
+		$count = 0;
+		foreach (iterator_to_array($nodes) as $node) {
+			assert($node instanceof DOMNode);
+			$masked = $mask->apply(text: $node->textContent);
+			if ($masked !== $node->textContent) {
+				$node->textContent = $masked;
+				$count++;
+			}
+		}
+
+		return $count;
+	}//end maskNodes()
+
+	/**
+	 * Mask the text-typed OOXML custom properties (`docProps/custom.xml`) and
+	 * remove, naming them, the ones whose value is not text.
+	 *
+	 * Without masking, text-typed values go to the sentinel and the others
+	 * stay, as the sanitisers always did.
+	 *
+	 * @param DOMDocument  $dom  The custom properties part.
+	 * @param MetadataMask $mask The run's substitution map.
+	 *
+	 * @return int The number of properties changed or removed.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-a-value-inside-a-metadata-field-is-masked-and-unmaskable-fields-are-named-req-rrs-004
+	 */
+	public function maskOoxmlCustomProperties(DOMDocument $dom, MetadataMask $mask): int {
+		$properties = iterator_to_array($dom->getElementsByTagNameNS(self::NS_CUSTOM, 'property'));
+		$count      = 0;
+		foreach ($properties as $property) {
+			assert($property instanceof DOMElement);
+			$values = array_values(
+				array_filter(
+					iterator_to_array($property->childNodes),
+					static fn (DOMNode $child): bool => $child instanceof DOMElement
+				)
+			);
+			$textValues = array_values(
+				array_filter(
+					$values,
+					static fn (DOMElement $value): bool => $value->namespaceURI === self::NS_VT
+						&& in_array($value->localName, self::TEXT_TYPES, true)
+				)
+			);
+
+			if (count($values) === count($textValues)) {
+				$count += $this->maskNodes(nodes: $textValues, mask: $mask);
+				continue;
+			}
+
+			if ($mask->isActive() === false) {
+				continue;
+			}
+
+			$type = 'vt:' . (string) ($values[0]->localName ?? '');
+			$mask->noteUnmaskable(
+				field: $property->getAttribute('name'),
+				reason: 'not a text value (' . $type . ')'
+			);
+			$property->parentNode?->removeChild($property);
+			$count++;
+		}//end foreach
+
+		return $count;
+	}//end maskOoxmlCustomProperties()
 }//end class

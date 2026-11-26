@@ -18,102 +18,107 @@
  * @license EUPL-1.2
  */
 
-import { CnIntegrationWidgetGrid } from '@conduction/nextcloud-vue'
-import { translatePlural as n, translate as t } from '@nextcloud/l10n'
-import { createApp, h } from 'vue'
-import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
-import { registerLibraryTranslations } from './services/libraryTranslations.js'
+/**
+ * The umbrella app itself (`./user-dashboard/umbrella.js`: the widget grid,
+ * the library stylesheet, translations and the integration registry) is
+ * imported only once the tile exists. Nextcloud calls every registered
+ * widget's `load()` on every Dashboard render, also when the user's layout
+ * does not hold this tile, so this entry stays a few KB and carries no
+ * dependencies: with no static import it never joins the shared vendor
+ * chunk (user-dashboard.spec.js guards that).
+ */
 
-// Register nextcloud-vue's own catalogue before anything renders, so the
-// library's labels follow the reader's language on this page too.
-registerLibraryTranslations()
-
-// Install + populate the integration registry on this entry bundle's
-// JS scope. Each NC entry bundle runs in isolation, so bootstrap must
-// happen here in addition to main.js. Idempotent.
-ensureIntegrationRegistry()
-
-// Nextcloud's dashboard renders each widget into an element with id
-// `<widget-id>` — see apps/dashboard/lib/Controller/DashboardController.
-// Our IntegrationDashboardWidget::getId() returns 'openregister-integrations'.
-const MOUNT_SELECTOR = '#openregister-integrations'
+// The id IntegrationDashboardWidget::getId() returns.
+const WIDGET_ID = 'openregister-integrations'
+// Older dashboards rendered each widget into an element with that id.
+const MOUNT_SELECTOR = '#' + WIDGET_ID
 
 /**
- * The umbrella widget grid app, with `t` and `n` installed.
+ * Mount the umbrella app into a tile element, once.
  *
- * @return {object} The app, not yet mounted
+ * @spec openspec/changes/archive/2026-07-07-frontend-code-splitting-and-fetch-efficiency/tasks.md
+ * @param {HTMLElement} el The tile element
+ * @return {void}
  */
-function createUmbrellaApp() {
-	// Vue 3: a plain options object handed to createApp() replaces
-	// Vue.extend(); `h` is imported from 'vue' rather than injected into
-	// render(), and props pass FLAT (no `props:` wrapper).
-	const app = createApp({
-		name: 'IntegrationDashboardUmbrella',
-		components: { CnIntegrationWidgetGrid },
-		render() {
-			return h(CnIntegrationWidgetGrid, { surface: 'user-dashboard' })
-		},
-	})
+function mountInto(el) {
+	// Guard against double-mount when NC reloads the widget (e.g. on
+	// dashboard layout change).
+	if (el.dataset.openregisterMounted === '1') {
+		return
+	}
+	el.dataset.openregisterMounted = '1'
 
-	// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL — one call in main.js gave `t`/`n` to
-	// every Vue instance on the page, including the ones this entry bundle
-	// mounts. Vue 3's `app.mixin()` is scoped to a single app instance, so each
-	// entry now has to install it for itself or `this.t(...)` is undefined in
-	// anything it renders.
-	app.mixin({ methods: { t, n } })
-	return app
+	import(/* webpackChunkName: "user-dashboard-umbrella" */ './user-dashboard/umbrella.js')
+		.then(({ mountUmbrellaApp }) => mountUmbrellaApp(el))
+		.catch((error) => {
+			el.dataset.openregisterMounted = ''
+			// No logger import here: any package import would put this entry
+			// back on the shared vendor chunk.
+			// eslint-disable-next-line no-console
+			console.error('OpenRegister: could not load the dashboard integrations', error)
+		})
 }
 
 /**
- * Mount the umbrella Vue app once the DOM is ready and the NC
- * dashboard has rendered the tile container. The tile may not exist
- * yet when this script loads, so we retry on DOMContentLoaded and
- * fall back to a short polling window for late renders.
+ * Hand the dashboard a callback for the tile.
+ *
+ * Nextcloud's dashboard (`OCA.Dashboard.register`) calls it with the panel
+ * element, and only when the user's layout holds the tile; until then the
+ * panel shows a spinner. Without this registration the tile never mounted.
+ *
+ * @spec openspec/changes/archive/2026-07-07-frontend-code-splitting-and-fetch-efficiency/tasks.md
+ * @return {boolean} Whether the dashboard API was there
+ */
+function registerWithDashboard() {
+	const dashboard = window.OCA?.Dashboard
+	if (typeof dashboard?.register !== 'function') {
+		return false
+	}
+	dashboard.register(WIDGET_ID, (el) => mountInto(el))
+	return true
+}
+
+/**
+ * Register with the dashboard, or mount into an element with the widget id.
+ *
+ * @return {boolean} Whether there is nothing left to wait for
  */
 function mountUmbrella() {
+	if (registerWithDashboard()) {
+		return true
+	}
 	const el = document.querySelector(MOUNT_SELECTOR)
 	if (el === null) {
 		return false
 	}
-
-	// Guard against double-mount when NC reloads the widget (e.g. on
-	// dashboard layout change).
-	if (el.dataset.openregisterMounted === '1') {
-		return true
-	}
-	el.dataset.openregisterMounted = '1'
-
-	const app = createUmbrellaApp()
-
-	const target = document.createElement('div')
-	el.appendChild(target)
-	app.mount(target)
-
+	mountInto(el)
 	return true
 }
 
 /**
  * Schedule mount: try immediately, then on DOMContentLoaded, then
- * poll briefly (Dashboard widgets often render after initial load).
+ * poll briefly (the dashboard API or the tile can appear after this
+ * script has run).
  */
 function scheduleMount() {
 	if (mountUmbrella() === true) {
 		return
 	}
 
+	let done = false
 	const tryMount = () => {
-		if (mountUmbrella() === true) {
-			return true
+		if (done === false && mountUmbrella() === true) {
+			done = true
 		}
-		return false
+		return done
 	}
 
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', tryMount, { once: true })
 	}
 
-	// Polling window for late-mounting dashboard tiles. Stops as soon
-	// as the umbrella mounts or after ~3 seconds.
+	// Polling window for a late dashboard. Stops as soon as it is
+	// found or after ~3 seconds.
 	let attempts = 0
 	const interval = window.setInterval(() => {
 		attempts += 1
