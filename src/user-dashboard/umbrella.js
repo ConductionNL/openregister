@@ -21,6 +21,7 @@ import { createApp, h } from 'vue'
 import { ensureIntegrationRegistry } from '../integrations/bootstrap.js'
 import { registerLibraryTranslations } from '../services/libraryTranslations.js'
 
+import '../services/axiosDefaults.js'
 import '@conduction/nextcloud-vue/dist/esm/library-style.js'
 
 /**

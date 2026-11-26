@@ -17,6 +17,7 @@ import { createElement } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createExplorerFetcher } from './services/graphqlExplorerFetcher.js'
 
+import './services/axiosDefaults.js'
 import 'graphiql/setup-workers/webpack'
 import 'graphiql/style.css'
 

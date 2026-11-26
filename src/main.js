@@ -20,6 +20,7 @@ import pinia from './pinia.js'
 import registry from './registry.js'
 import { registerLibraryTranslations } from './services/libraryTranslations.js'
 
+import './services/axiosDefaults.js'
 import '@conduction/nextcloud-vue/css/index.css'
 import 'gridstack/dist/gridstack.min.css'
 

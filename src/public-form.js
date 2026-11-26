@@ -8,6 +8,8 @@ import { createApp, h } from 'vue'
 import PublicFormPage from './views/publicForm/PublicFormPage.vue'
 import { registerLibraryTranslations } from './services/libraryTranslations.js'
 
+import './services/axiosDefaults.js'
+
 // The page renders library components, which translate under their own app id.
 registerLibraryTranslations()
 

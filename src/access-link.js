@@ -7,6 +7,8 @@ import { loadState } from '@nextcloud/initial-state'
 import { createApp, h } from 'vue'
 import AccessLinkPage from './views/accessLink/AccessLinkPage.vue'
 
+import './services/axiosDefaults.js'
+
 const anchor = loadState('openregister', 'accessLinkAnchor', '')
 
 createApp({

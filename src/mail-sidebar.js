@@ -13,6 +13,8 @@
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { createApp } from 'vue'
 
+import './services/axiosDefaults.js'
+
 /**
  * Load the sidebar app: the component, the library translations and the
  * integration registry bootstrap, as one chunk. This entry runs on every Mail

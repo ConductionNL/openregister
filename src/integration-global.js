@@ -22,6 +22,8 @@
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import { loadLibraryTranslations } from './services/libraryTranslations.js'
 
+import './services/axiosDefaults.js'
+
 // Register nextcloud-vue's own catalogue so the library's labels follow the
 // reader's language on this page too. Only the reader's language is fetched,
 // as a separate chunk: this script runs on every Nextcloud page, and carrying
