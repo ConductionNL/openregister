@@ -114,6 +114,7 @@ DOMAIN_ORDER=(
     "flow-engine"
     "flow-subjects"
     "delegation"
+    "task-delegation-mandate"
     "register-descriptors"
     "working-calendars"
     "object-watchers"
@@ -148,6 +149,10 @@ declare -A DOMAIN_COLLECTIONS=(
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
     [flow-engine]="$REPO_ROOT/tests/integration/openregister-flow-engine.postman_collection.json"
+    # A task delegated under a mandate, and substituted for an absence set
+    # through Nextcloud's own out-of-office API
+    # (tasks-delegation-and-substitution 4.1).
+    [task-delegation-mandate]="$REPO_ROOT/tests/integration/openregister-task-delegation-mandate.postman_collection.json"
     # A run's DECLARED subject set, and a task attached to one. Registered
     # here rather than left to a Playwright spec in tests/e2e/api-direct/,
     # for the same reason as `delegation` and `register-descriptors` below:
