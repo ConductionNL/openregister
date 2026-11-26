@@ -28,7 +28,10 @@ use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\FileDigest;
 use OCA\OpenRegister\Db\FileDigestMapper;
 use OCA\OpenRegister\Files\Db\FileMapper;
+use OCA\OpenRegister\Service\File\FileFormattingHandler;
+use OCA\OpenRegister\Service\File\FileSession;
 use OCA\OpenRegister\Service\File\PublishedDigestReader;
+use OCA\OpenRegister\Service\File\PublishedDownloadGuard;
 use OCA\OpenRegister\Service\File\PublishedDigestService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -36,8 +39,11 @@ use OCA\OpenRegister\Tests\Unit\Controller\Support\FilesControllerFactory;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
+use OCP\Files\Lock\ILockManager;
+use OCP\Files\Node;
 use OCP\FilesMetadata\IFilesMetadataManager;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -49,6 +55,9 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\OpenRegister\Service\File\PublishedDigestReader
  * @covers \OCA\OpenRegister\Files\Controller\FilesController
+ * @covers \OCA\OpenRegister\Service\File\FileFormattingHandler
+ * @covers \OCA\OpenRegister\Service\File\PublishedDownloadGuard
+ * @uses   \OCA\OpenRegister\Service\File\FileSession
  */
 class PublishedDigestContractTest extends TestCase {
 
@@ -109,6 +118,45 @@ class PublishedDigestContractTest extends TestCase {
 		self::assertSame(['uuid', 'hash'], array_keys($block['sealedBy']));
 		self::assertSame('2025-11-24T10:00:00+00:00', $block['publishedAt']);
 	}//end testThePublishedBlockKeys()
+
+	/**
+	 * A file listing carries the block under `publishedDigest`, and `published` stays the date (decided 25 Nov 2026).
+	 *
+	 * @return void
+	 */
+	public function testTheListingKeyIsPublishedDigest(): void {
+		$lockManager = $this->createMock(ILockManager::class);
+		$lockManager->method('isLockProviderAvailable')->willReturn(false);
+		$formatter = new FileFormattingHandler(
+			$lockManager,
+			new FileSession($this->createMock(IUserSession::class), $this->createMock(IGroupManager::class), $this->createMock(LoggerInterface::class)),
+			null,
+			$this->reader()
+		);
+		$formatter->setFileService($this->createMock(FileService::class));
+		$node = $this->createMock(Node::class);
+		$node->method('getId')->willReturn(42);
+		$node->method('getName')->willReturn('besluit.pdf');
+		$node->method('getPath')->willReturn('/openregister/files/besluit.pdf');
+
+		$entry = $formatter->formatFile($node);
+
+		self::assertSame(['sha256', 'size', 'publishedAt', 'sealedBy'], array_keys($entry['publishedDigest']));
+		self::assertSame(hash('sha256', self::BYTES), $entry['publishedDigest']['sha256']);
+		self::assertArrayHasKey('published', $entry);
+	}//end testTheListingKeyIsPublishedDigest()
+
+	/**
+	 * A public download names the digest as RFC 9530 `sha-256=:<base64>:`.
+	 *
+	 * @return void
+	 */
+	public function testTheReprDigestFormat(): void {
+		self::assertSame(
+			'sha-256=:' . base64_encode(hash('sha256', self::BYTES, true)) . ':',
+			PublishedDownloadGuard::reprDigest(sha256: hash('sha256', self::BYTES))
+		);
+	}//end testTheReprDigestFormat()
 
 	/**
 	 * A real reader over one sealed record.

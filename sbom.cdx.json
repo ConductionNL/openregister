@@ -3501,10 +3501,10 @@
       ]
     },
     {
-      "bom-ref": "web-token/jwt-library-4.2.7.0",
+      "bom-ref": "web-token/jwt-library-4.2.8.0",
       "type": "library",
       "name": "jwt-library",
-      "version": "4.2.7",
+      "version": "4.2.8",
       "group": "web-token",
       "description": "JWT library",
       "author": "Florent Morselli, All contributors",
@@ -3515,17 +3515,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/web-token/jwt-library@4.2.7",
+      "purl": "pkg:composer/web-token/jwt-library@4.2.8",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/web-token/jwt-library/zipball/62643a2f31274c546a7d158ceab6dd5c052db911",
-          "comment": "dist reference: 62643a2f31274c546a7d158ceab6dd5c052db911"
+          "url": "https://api.github.com/repos/web-token/jwt-library/zipball/a1909b6b7c9171529f65e6bb6ecae615cd8a92ed",
+          "comment": "dist reference: a1909b6b7c9171529f65e6bb6ecae615cd8a92ed"
         },
         {
           "type": "vcs",
           "url": "https://github.com/web-token/jwt-library.git",
-          "comment": "source reference: 62643a2f31274c546a7d158ceab6dd5c052db911"
+          "comment": "source reference: a1909b6b7c9171529f65e6bb6ecae615cd8a92ed"
         },
         {
           "type": "website",
@@ -3534,18 +3534,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/web-token/jwt-library/tree/4.2.7",
+          "url": "https://github.com/web-token/jwt-library/tree/4.2.8",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "62643a2f31274c546a7d158ceab6dd5c052db911"
+          "value": "a1909b6b7c9171529f65e6bb6ecae615cd8a92ed"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "62643a2f31274c546a7d158ceab6dd5c052db911"
+          "value": "a1909b6b7c9171529f65e6bb6ecae615cd8a92ed"
         },
         {
           "name": "cdx:composer:package:type",
@@ -25931,8 +25931,8 @@
     {
       "type": "library",
       "name": "prettier",
-      "version": "3.9.9",
-      "bom-ref": "openregister@1.0.0|prettier@3.9.9",
+      "version": "3.10.1",
+      "bom-ref": "openregister@1.0.0|prettier@3.10.1",
       "licenses": [
         {
           "license": {
@@ -25940,15 +25940,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/prettier@3.9.9",
+      "purl": "pkg:npm/prettier@3.10.1",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/prettier/-/prettier-3.9.9.tgz",
+          "url": "https://registry.npmjs.org/prettier/-/prettier-3.10.1.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "67f0891c891dba33bf3ad37b9d75228b445fdd54f9491ba18c103cd97beed978415205f79e13faed3d0b1dc7817502dec7b38e1464e8c7e439620f09936422be"
+              "content": "ef4be9dd9518a0f9456c5f6e8937571d4502184229edde3eea9fbc0d86e49b68cfef1ff78bfa5a5d517a768a52237cddfc2122b6b64dd6b7388bce715a699796"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -32067,7 +32067,7 @@
         "psr/log-3.0.2.0",
         "spomky-labs/base64url-2.0.4.0",
         "symfony/polyfill-php83-1.43.0.0",
-        "web-token/jwt-library-4.2.7.0"
+        "web-token/jwt-library-4.2.8.0"
       ]
     },
     {
@@ -32301,7 +32301,7 @@
       ]
     },
     {
-      "ref": "web-token/jwt-library-4.2.7.0",
+      "ref": "web-token/jwt-library-4.2.8.0",
       "dependsOn": [
         "brick/math-1.0.0.0",
         "psr/clock-1.0.0.0",
@@ -32365,7 +32365,7 @@
         "symfony/yaml-7.4.24.0",
         "theodo-group/llphant-1.10.12.0",
         "twig/twig-3.31.1.0",
-        "web-token/jwt-library-4.2.7.0",
+        "web-token/jwt-library-4.2.8.0",
         "webonyx/graphql-php-15.39.0.0",
         "zbateson/mail-mime-parser-3.0.9.0"
       ]
