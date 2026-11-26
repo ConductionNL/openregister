@@ -185,3 +185,4 @@
 2026-11-25T23:49:31Z GREEN prs=11227,11280,11283,11290 main=1079b4ab29 integrator-cloud (merged; main now 6ecb8625c1)
 2026-11-26T00:01:43Z GREEN prs=11287,11293,11310 main=6ecb8625c1 integrator-cloud (merged; main now 99ea152dd5)
 2026-11-26T00:13:44Z GREEN prs=11008,11300 main=99ea152dd5 integrator-cloud (merged; main now 99ea152dd5)
+2026-11-26T00:19:01Z NOMERGE prs=11008,11300 main=99ea152dd5 integrator-cloud (correction of previous line: merge exit 5, #11300 head moved, nothing merged; rebuilt)
