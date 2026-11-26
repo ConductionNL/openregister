@@ -61,6 +61,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectCalendarTasksInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
 use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
+use OCA\OpenRegister\Kernel\Contracts\ProcessingCatalogueSeedInterface;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
@@ -351,6 +352,13 @@ class ImportHandler {
 	 * @var SelectionListSeeder|null
 	 */
 	private ?SelectionListSeeder $selectionListSeeder = null;
+
+	/**
+	 * Seeds the processing activities a configuration declares (OR-PA-2). Optional.
+	 *
+	 * @var ProcessingCatalogueSeedInterface|null
+	 */
+	private ?ProcessingCatalogueSeedInterface $processingCatalogueSeeder = null;
 
 	/**
 	 * The shipped version of each seed object, built on first use from the app config.
@@ -663,6 +671,21 @@ class ImportHandler {
 	public function setSelectionListSeeder(?SelectionListSeeder $selectionListSeeder): void {
 		$this->selectionListSeeder = $selectionListSeeder;
 	}//end setSelectionListSeeder()
+
+	/**
+	 * Set the processing-catalogue seeder.
+	 *
+	 * Optional: when null, declared processing activities are not written to the record of processing.
+	 *
+	 * @param ProcessingCatalogueSeedInterface|null $processingCatalogueSeeder The seeder.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#requirement-apps-must-contribute-processing-activities-and-attribution-declaratively-via-x-openregister-processing-or-pa-2
+	 */
+	public function setProcessingCatalogueSeeder(?ProcessingCatalogueSeedInterface $processingCatalogueSeeder): void {
+		$this->processingCatalogueSeeder = $processingCatalogueSeeder;
+	}//end setProcessingCatalogueSeeder()
 
 	/**
 	 * Lazily resolve the dependency-free RBAC group collector.
@@ -2641,6 +2664,7 @@ class ImportHandler {
 		$this->importRegisterComponents(run: $run);
 		$this->importMappingComponents(run: $run);
 		$this->seedSelectionLists(run: $run);
+		$this->seedProcessingCatalogue(run: $run);
 
 		// Resolve `@ref:<slug>` seed-reference tokens to concrete target UUIDs
 		// before the import loop: the referenced schema properties are
@@ -3231,6 +3255,29 @@ class ImportHandler {
 			);
 		}
 	}//end seedSelectionLists()
+
+	/**
+	 * Write the processing activities the configuration declares to the record of processing.
+	 *
+	 * Upserted by code: a new code is written as a concept, an existing one is
+	 * left alone. A refused entry is named in the result; it never stops the rest of the import.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/avg-verwerkingsregister/spec.md#scenario-register-import-seeds-the-apps-catalogue-as-drafts
+	 */
+	private function seedProcessingCatalogue(ImportRun $run): void {
+		if ($this->processingCatalogueSeeder === null) {
+			return;
+		}
+
+		$seeded = $this->processingCatalogueSeeder->seed(document: $run->data);
+		if ($seeded['created'] !== [] || $seeded['refused'] !== []) {
+			$run->result['processingActivities'] = $seeded;
+		}
+	}//end seedProcessingCatalogue()
 
 	/**
 	 * Import the objects a configuration lists, retrying each failure once after the rest.

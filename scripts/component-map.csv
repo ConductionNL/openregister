@@ -1225,6 +1225,7 @@ Files/Service/File/PdfSanitizationReport.php,29,Files,Files,Files/Service/File/P
 Files/Service/File/PdfSanitizationResult.php,10,Files,Files,Files/Service/File/PdfSanitizationResult.php,0,,Files
 Files/Service/FileTextFacade.php,171,Files,Files,Files/Service/FileTextFacade.php,0,,Files
 Files/Service/NoteReplies.php,73,Files,Files,Files/Service/NoteReplies.php,0,,Files
+Kernel/Contracts/ProcessingCatalogueSeedInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/StructurePreservation.php,35,Kernel,Kernel,Kernel/Contracts/StructurePreservation.php,0,427,Kernel
 Files/Service/File/PlaceholderIdTranslator.php,47,Files,Files,Files/Service/File/PlaceholderIdTranslator.php,2,,Files
 Files/Service/File/PlaceholderLookup.php,20,Files,Files,Files/Service/File/PlaceholderLookup.php,0,,Files
@@ -2663,6 +2664,7 @@ Service/Gdpr/Lifecycle/DenialFinaliseGuard.php,26,Service,Compliance,Compliance/
 Service/Gdpr/Policy/DsarPolicyPackResolver.php,99,Service,Compliance,Compliance/Service/Gdpr/Policy/DsarPolicyPackResolver.php,0,,Compliance
 Service/Gdpr/PrivacyOfficerRecipientResolver.php,49,Service,Compliance,Compliance/Service/Gdpr/PrivacyOfficerRecipientResolver.php,0,,Compliance
 Service/Gdpr/ProcessingAnnotationReader.php,137,Service,Compliance,Compliance/Service/Gdpr/ProcessingAnnotationReader.php,0,,Compliance
+Service/Gdpr/ProcessingCatalogueSeeder.php,295,Service,Compliance,Compliance/Service/Gdpr/ProcessingCatalogueSeeder.php,0,,Compliance
 Service/Gdpr/Redaction/RedactionWriteService.php,48,Service,Compliance,Compliance/Service/Gdpr/Redaction/RedactionWriteService.php,0,,Compliance
 Service/Gdpr/Regulator/NullRegulatorEscalateProvider.php,15,Service,Compliance,Compliance/Service/Gdpr/Regulator/NullRegulatorEscalateProvider.php,0,,Compliance
 Service/Gdpr/Regulator/RegulatorEscalateProvider.php,7,Service,Compliance,Compliance/Service/Gdpr/Regulator/RegulatorEscalateProvider.php,4,,Compliance
