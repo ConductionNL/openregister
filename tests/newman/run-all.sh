@@ -126,6 +126,7 @@ DOMAIN_ORDER=(
     "public-export"
     "nlgov-conformance"
     "reply-threading"
+    "lifecycle-side-moves"
     "import-run-readback"
 )
 
@@ -237,6 +238,11 @@ declare -A DOMAIN_COLLECTIONS=(
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
     # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
     [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
+    # lifecycle-over-reference-field 3.2: a graph lifecycle's side moves (suspend freezes the graph, resume),
+    # the closing form (422 naming the missing result, one save and one audit entry), and a reopen offered to
+    # a manager only. HTTP-shaped: the moves are derived from status type objects in the case's own register,
+    # which unit tests mock, and that read found nothing on a real instance before it was scoped.
+    [lifecycle-side-moves]="$REPO_ROOT/tests/integration/openregister-lifecycle-side-moves.postman_collection.json"
     # runs-recorded-and-causes-named 4.4: an import run read back after it finished: its header and counts,
     # a written row naming its object, refused rows with their reasons, the failing rows as CSV, the created
     # object's audit entry naming the run, and a retry naming the original. Uploads the two CSVs beside it.
