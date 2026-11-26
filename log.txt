@@ -5354,3 +5354,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-26T01:52:24Z precheck-20261126T004703-08c14450 CONFLICT-DEV #11339 c6545206
 2026-11-26T01:52:31Z precheck-20261126T004703-08c14450 NORESULT tree : floor not measured (exit 9)
 2026-11-26T01:57:40Z session-20261126T010411-3697e038 or-builder-0: opened #11351 (modelling-validation-messages 3.2: property editor section for x-error-messages + 2 strings in 37 locales + e2e 3 passed on sandbox; stacked on #11345). Note: test:l10n:parity is red on main (de/fr/... missing keys), not from these PRs.
+2026-11-26T02:03:23Z session-20261126T010411-3697e038 or-builder-0: opened #11352 (flow-task-search-provider 2.2 passes live on main, tick) and rights-screen-stated PR (permission matrix showed no schema rows: register.schemas are objects under _extend; e2e 2 passed)
