@@ -5317,3 +5317,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-26T00:48:36Z precheck-20261126T000642-06f8b94a GREEN tree 71bcf3bdec on dev e07d9e1b14 prs 1 front=skip: Tests: 67610, Assertions: 240538, Errors: 5, Failures: 1, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
 2026-11-26T00:49:08Z integrator-20261125T214524-15eb134c MERGED-TREE f35506d965: 3 PRs, main now a3d3de3e2a = tested tree
 2026-11-26T00:51:34Z precheck-20261125T224643-e74a78d1 GREEN tree 8632dd728d on dev e07d9e1b14 prs 1 front=skip: Tests: 67599, Assertions: 240509, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
+2026-11-26T00:52:49Z precheck-20261125T230109-3774283b GREEN tree 3a2c906f18 on dev e07d9e1b14 prs 1 front=ok: Tests: 67599, Assertions: 240510, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
