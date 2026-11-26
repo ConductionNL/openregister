@@ -68,6 +68,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDurationMs(?int $durationMs)
  * @method string|null getSteps()
  * @method void setSteps(?string $steps)
+ * @method string|null getVerification()
+ * @method void setVerification(?string $verification)
  * @method string|null getDetector()
  * @method void setDetector(?string $detector)
  * @method DateTime getCreated()
@@ -179,6 +181,13 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	protected ?string $steps = null;
 
 	/**
+	 * The written copy's irreversibility verdict, as JSON: verdict, output mode, routes and counts.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $verification = null;
+
+	/**
 	 * The version record of the detection backend that ran, as JSON (REQ-ADI-001).
 	 *
 	 * @var string|null
@@ -210,6 +219,7 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'replacements', type: 'integer');
 		$this->addType(fieldName: 'durationMs', type: 'integer');
 		$this->addType(fieldName: 'steps', type: 'string');
+		$this->addType(fieldName: 'verification', type: 'string');
 		$this->addType(fieldName: 'detector', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
@@ -255,6 +265,26 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	}//end getStepsArray()
 
 	/**
+	 * Decode the irreversibility verdict.
+	 *
+	 * @return array<string, mixed>|null The verdict, or null when the run verified no copy.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.2
+	 */
+	public function getVerificationArray(): ?array {
+		if ($this->verification === null) {
+			return null;
+		}
+
+		$decoded = json_decode($this->verification, true);
+		if (is_array($decoded) === false) {
+			return null;
+		}
+
+		return $decoded;
+	}//end getVerificationArray()
+
+	/**
 	 * Decode the detector version record of the run.
 	 *
 	 * @return array<string, mixed>|null The record, or null when absent.
@@ -275,14 +305,15 @@ class AnonymisationLog extends Entity implements JsonSerializable {
 	}//end getDetectorArray()
 
 	/**
-	 * The serialised sanitization report, step outcomes and detector record, decoded.
+	 * The serialised sanitization report, step outcomes, verdict and detector record, decoded.
 	 *
-	 * @return array{sanitization: array|null, steps: array|null, detector: array|null}
+	 * @return array{sanitization: array|null, steps: array|null, verification: array|null, detector: array|null}
 	 */
 	protected function jsonOverrides(): array {
 		return [
 			'sanitization' => $this->getSanitizationArray(),
 			'steps' => $this->getStepsArray(),
+			'verification' => $this->getVerificationArray(),
 			'detector' => $this->getDetectorArray(),
 		];
 	}//end jsonOverrides()

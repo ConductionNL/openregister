@@ -823,7 +823,8 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @param array $rows Result rows by reference, mutated in place.
 	 * @param bool $_rbac Whether this is a user-facing read (true) or system context (false).
-	 *                    Gates ONLY the authorization.read strip and decryption — never writeOnly.
+	 *                    Gates ONLY the authorization.read strip — never writeOnly. Decryption
+	 *                    follows the single-object read: skipped only in a system operation.
 	 *
 	 * @return void
 	 *
@@ -835,11 +836,16 @@ class RenderObject implements RenderObjectInterface {
 			return;
 		}
 
-		// The trusted-internal-read bypass applies to property `authorization.read` and to
-		// decryption ONLY. The writeOnly strip deliberately does not consult it.
+		// The trusted-internal-read bypass applies to property `authorization.read` ONLY.
+		// The writeOnly strip deliberately does not consult it.
 		$pass = new RowRedaction();
 		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
+		// Decryption follows the single-object read (decryptRenderedProperties): every
+		// rendered read outside a system operation. `_rbac: false` here is an admin's
+		// list (ObjectsController), which reads the same object decrypted on its own.
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+		$pass->decrypt = (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
 			$row = $this->redactedRow(pass: $pass, row: $row);
@@ -886,7 +892,7 @@ class RenderObject implements RenderObjectInterface {
 	}//end planRowRedaction()
 
 	/**
-	 * Decrypt a row's fields when the gated strips apply and the schema encrypts properties.
+	 * Decrypt a row's fields when the pass decrypts and the schema encrypts properties.
 	 *
 	 * Runs AFTER redaction: a field the strip removed is no longer a key, so
 	 * decryptInScope() (which only acts on keys still present) skips it,
@@ -900,8 +906,9 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	private function decryptRedactedRow(RowRedaction $pass, array $data): array {
-		if ($pass->doGated === true
+		if ($pass->decrypt === true
 			&& $this->runtime->extensions->fieldEncryptionHandler !== null
+			&& $pass->schema !== null
 			&& $pass->schema->hasEncryptedProperties() === true
 		) {
 			return $this->runtime->extensions->fieldEncryptionHandler->decryptInScope(
@@ -936,6 +943,8 @@ class RenderObject implements RenderObjectInterface {
 		$this->planRowRedaction(pass: $pass, schemaId: $row->getSchema());
 		if ($pass->doWriteOnly === true || $pass->doGated === true) {
 			$this->redactEntityObject(pass: $pass, row: $row);
+		} else if (is_array($row->getObject()) === true) {
+			$row->setObject($this->decryptRedactedRow(pass: $pass, data: $row->getObject()));
 		}
 
 		$this->maskEntityReveals(entity: $row, schema: $pass->schema);
@@ -990,7 +999,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$this->planRowRedaction(pass: $pass, schemaId: $schemaId);
 		if ($pass->doWriteOnly === false && $pass->doGated === false) {
-			return $this->maskRowReveals(row: $row, schema: $pass->schema);
+			return $this->maskRowReveals(row: $this->decryptRedactedRow(pass: $pass, data: $row), schema: $pass->schema);
 		}
 
 		$row = $this->decryptRedactedRow(pass: $pass, data: $this->filteredArrayRow(pass: $pass, row: $row));

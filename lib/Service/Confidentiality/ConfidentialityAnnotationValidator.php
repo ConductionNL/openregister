@@ -147,18 +147,37 @@ final class ConfidentialityAnnotationValidator {
 
 		$errors = [];
 		foreach ($clearance as $tier => $group) {
-			if (in_array((string)$tier, $tiers, true) === false) {
-				$errors[] = 'clearance names tier "' . $tier . '", which is not one of tiers';
-				continue;
-			}
-
-			if (is_string($group) === false || trim($group) === '') {
-				$errors[] = 'clearance for tier "' . $tier . '" must be a group name';
+			$error = $this->clearanceEntryError(tier: (string)$tier, group: $group, tiers: $tiers);
+			if ($error !== null) {
+				$errors[] = $error;
 			}
 		}
 
 		return $errors;
 	}//end clearanceErrors()
+
+	/**
+	 * The error of one clearance entry: a known tier mapped to a group name.
+	 *
+	 * @param string        $tier  The tier the entry names.
+	 * @param mixed         $group The group as written.
+	 * @param array<string> $tiers The schema's declared tiers.
+	 *
+	 * @return string|null Null when the entry is valid.
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-schemas-must-be-able-to-declare-a-confidentiality-classification-via-x-openregister-confidentiality
+	 */
+	private function clearanceEntryError(string $tier, mixed $group, array $tiers): ?string {
+		if (in_array($tier, $tiers, true) === false) {
+			return 'clearance names tier "' . $tier . '", which is not one of tiers';
+		}
+
+		if (is_string($group) === false || trim($group) === '') {
+			return 'clearance for tier "' . $tier . '" must be a group name';
+		}
+
+		return null;
+	}//end clearanceEntryError()
 
 	/**
 	 * A release property the schema declares with format date-time.

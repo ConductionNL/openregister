@@ -22,6 +22,7 @@
 
 namespace OCA\OpenRegister\Service\Settings;
 
+use DateInterval;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\AnonymisationMethodsInterface;
@@ -46,6 +47,7 @@ use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
 use OCP\IAppConfig;
 use RuntimeException;
+use Throwable;
 
 /**
  * Handler for file management settings operations.
@@ -122,6 +124,11 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 	 * @var string
 	 */
 	public const UPLOAD_KEY = 'upload';
+
+	/**
+	 * The anonymisation setting that makes output wait for a person's check.
+	 */
+	public const REQUIRE_REVIEW_KEY = 'requireReview';
 
 	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
@@ -557,12 +564,70 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 		$settings['personRegister'] = PersonRegisterSource::personRegister(value: ($settings['personRegister'] ?? null));
 		$settings['personRegisterBoost'] = PersonRegisterSource::boost(value: ($settings['personRegisterBoost'] ?? null));
 		$settings['placeRegister'] = PersonRegisterSource::placeRegister(value: ($settings['placeRegister'] ?? null));
+		if (array_key_exists(self::REQUIRE_REVIEW_KEY, $settings) === true) {
+			$settings[self::REQUIRE_REVIEW_KEY] = ($settings[self::REQUIRE_REVIEW_KEY] === true);
+		}
+
+		if (array_key_exists(self::ORIGINAL_RETENTION_KEY, $settings) === true) {
+			$settings[self::ORIGINAL_RETENTION_KEY] = self::normaliseRetention(value: $settings[self::ORIGINAL_RETENTION_KEY]);
+		}
+
 		if (array_key_exists(BackendStatement::SETTINGS_KEY, $settings) === true) {
 			$settings[BackendStatement::SETTINGS_KEY] = self::statedBackends(statements: $settings[BackendStatement::SETTINGS_KEY]);
 		}
 
 		return $settings;
 	}//end readableAnonymisation()
+
+	/**
+	 * Whether anonymised output waits for a person's check of every detection.
+	 *
+	 * Off unless an administrator switched it on: only `true` turns it on.
+	 *
+	 * @return bool True when review is required.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.3
+	 */
+	public function requireReview(): bool {
+		return (($this->storedAnonymisation()[self::REQUIRE_REVIEW_KEY] ?? false) === true);
+	}//end requireReview()
+
+	/**
+	 * How long an unredacted original is kept after its redacted copy is
+	 * published: `keep` (the default, nothing is deleted) or an ISO 8601
+	 * duration such as `P90D`.
+	 *
+	 * @return string The retention.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
+	 */
+	public function originalRetention(): string {
+		return self::normaliseRetention(value: ($this->storedAnonymisation()[self::ORIGINAL_RETENTION_KEY] ?? null));
+	}//end originalRetention()
+
+	/**
+	 * A retention as stored: an ISO 8601 duration that reads, else `keep`,
+	 * so a value that cannot be read never deletes anything.
+	 *
+	 * @param mixed $value The submitted or stored value.
+	 *
+	 * @return string `keep` or the duration.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
+	 */
+	public static function normaliseRetention(mixed $value): string {
+		if (is_string($value) === false || preg_match('/^P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/', $value) !== 1) {
+			return self::ORIGINAL_RETENTION_KEEP;
+		}
+
+		try {
+			new DateInterval($value);
+		} catch (Throwable $unreadable) {
+			return self::ORIGINAL_RETENTION_KEEP;
+		}
+
+		return $value;
+	}//end normaliseRetention()
 
 	/**
 	 * The administrators' statements, per backend an administrator can state.
@@ -698,10 +763,24 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 		// A save that does not name the capacity policy or the officials
 		// source keeps the stored ones (REQ-DKP-001); what is kept is
 		// normalised, so an unknown capacity or decision never reaches a run.
-		$submitted += array_intersect_key(
-			$this->storedAnonymisation(),
-			['capacityPolicy' => true, 'officialsSource' => true, 'personRegister' => true, 'personRegisterBoost' => true, 'placeRegister' => true, BackendStatement::SETTINGS_KEY => true]
-		);
+		$kept       = [
+			'capacityPolicy'               => true,
+			'officialsSource'              => true,
+			'personRegister'               => true,
+			'personRegisterBoost'          => true,
+			'placeRegister'                => true,
+			self::REQUIRE_REVIEW_KEY       => true,
+			self::ORIGINAL_RETENTION_KEY   => true,
+			BackendStatement::SETTINGS_KEY => true,
+		];
+		$submitted += array_intersect_key($this->storedAnonymisation(), $kept);
+		if (array_key_exists(self::REQUIRE_REVIEW_KEY, $submitted) === true) {
+			$submitted[self::REQUIRE_REVIEW_KEY] = ($submitted[self::REQUIRE_REVIEW_KEY] === true);
+		}
+
+		if (array_key_exists(self::ORIGINAL_RETENTION_KEY, $submitted) === true) {
+			$submitted[self::ORIGINAL_RETENTION_KEY] = self::normaliseRetention(value: $submitted[self::ORIGINAL_RETENTION_KEY]);
+		}
 		$submitted['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($submitted['capacityPolicy'] ?? null))->rules();
 		$submitted['officialsSource'] = OfficialsSource::normalise(value: ($submitted['officialsSource'] ?? null));
 		$submitted['personRegister'] = PersonRegisterSource::submittedPersonRegister(value: ($submitted['personRegister'] ?? null));
