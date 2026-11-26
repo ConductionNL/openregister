@@ -31,6 +31,7 @@ use OCP\IAppConfig;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 
@@ -51,12 +52,13 @@ class ObjectTextExtractionChunkJobTest extends TestCase {
 	/**
 	 * A job whose extraction service records each id and throws for the ids in $failing.
 	 *
-	 * @param string          $objectManagement The objectManagement app config (JSON).
-	 * @param array<int, int> $failing          Ids for which extraction throws.
+	 * @param string               $objectManagement The objectManagement app config (JSON).
+	 * @param array<int, int>      $failing          Ids for which extraction throws.
+	 * @param LoggerInterface|null $logger           The job's logger; null = a NullLogger.
 	 *
 	 * @return ObjectTextExtractionChunkJob
 	 */
-	private function job(string $objectManagement = '{}', array $failing = []): ObjectTextExtractionChunkJob {
+	private function job(string $objectManagement = '{}', array $failing = [], ?LoggerInterface $logger = null): ObjectTextExtractionChunkJob {
 		$config = $this->createMock(IAppConfig::class);
 		$config->method('getValueString')->willReturnCallback(
 			static fn (string $app, string $key, string $default = ''): string => $key === 'objectManagement' ? $objectManagement : $default
@@ -77,7 +79,7 @@ class ObjectTextExtractionChunkJobTest extends TestCase {
 			userSession: $this->createMock(IUserSession::class),
 			userManager: $this->createMock(IUserManager::class),
 			organisation: $this->createMock(OrganisationService::class),
-			logger: new NullLogger(),
+			logger: $logger ?? new NullLogger(),
 			config: $config,
 			textExtractor: $extractor,
 		);
@@ -109,12 +111,20 @@ class ObjectTextExtractionChunkJobTest extends TestCase {
 	}//end testEveryObjectOfTheChunkIsExtracted()
 
 	/**
-	 * A failing object does not stop the rest of the chunk.
+	 * A failing object does not stop the rest of the chunk, and its failure is logged with its id.
 	 *
 	 * @return void
 	 */
 	public function testAFailureOnOneObjectDoesNotStopTheChunk(): void {
-		$this->runJob(job: $this->job(failing: [2]), entries: [['id' => 1], ['id' => 2], ['id' => 3]]);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('error')
+			->with(
+				$this->anything(),
+				$this->callback(static fn (array $context): bool => ($context['object_id'] ?? null) === 2)
+			);
+
+		$this->runJob(job: $this->job(failing: [2], logger: $logger), entries: [['id' => 1], ['id' => 2], ['id' => 3]]);
 
 		$this->assertSame([1, 2, 3], $this->extracted);
 	}//end testAFailureOnOneObjectDoesNotStopTheChunk()

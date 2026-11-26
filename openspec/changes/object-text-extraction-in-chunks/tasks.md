@@ -1,5 +1,9 @@
 # Tasks: object-text-extraction-in-chunks
 
+## 0. Deduplication check (ADR-012)
+
+- [x] 0.1 No new batching mechanism: the listener reuses `ListenerDeferralService` for chunking and dedupe, and the chunk job reuses `ActorForwardedJob` and `TextExtractionService::extractObject()`.
+
 ## 1. Listener and job
 
 - [x] 1.1 `ObjectChangeListener` defers the object id through `ListenerDeferralService` in background mode (and for an unknown mode), chunk size from `textExtractionChunkSize`, dedupe on the id; `listenerDeferral=inline` keeps one `ObjectTextExtractionJob` per object.
@@ -7,9 +11,9 @@
 
 ## 2. Tests
 
-- [x] 2.1 `tests/Unit/Listener/ObjectTextExtractionInChunksTest.php`: the listener with the real `ListenerDeferralService`: 250 saves → 3 chunks, configurable and invalid chunk size, the 4,000-character limit, an object saved twice, a single save, the kill switch.
-- [x] 2.2 `tests/Unit/BackgroundJob/ObjectTextExtractionChunkJobTest.php`: every entry extracted in order, a failure does not stop the chunk, an entry without an id, extraction off.
-- [x] 2.3 The existing `ObjectChangeListener` tests (unit, gap, golden) run with the kill switch on, so they keep recording the per-object behaviour unchanged.
+- [x] 2.1 `tests/Unit/Listener/ObjectTextExtractionInChunksTest.php`: the listener with the real `ListenerDeferralService`: 250 saves → 3 chunks, configurable, invalid and unreadable chunk size, the 4,000-character limit, an object saved twice, a single save, an unknown extraction mode, the kill switch.
+- [x] 2.2 `tests/Unit/BackgroundJob/ObjectTextExtractionChunkJobTest.php`: every entry extracted in order, a failure does not stop the chunk and is logged with the object id, an entry without an id, extraction off.
+- [x] 2.3 The existing `ObjectChangeListener` tests (unit, gap) run with the kill switch on, so they keep recording the per-object behaviour unchanged.
 - [ ] 2.4 Rig measurement before and after (700 objects saved item by item in one process, and as one bulk save with events): queued jobs per class and the time to work through them, in the PR body.
 
 ## 3. Docs

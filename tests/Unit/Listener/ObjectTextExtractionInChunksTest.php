@@ -35,7 +35,9 @@ use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\TextExtractionService;
+use Exception;
 use OCP\BackgroundJob\IJobList;
+use OCP\Exceptions\AppConfigTypeConflictException;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -65,12 +67,19 @@ class ObjectTextExtractionInChunksTest extends TestCase {
 	/**
 	 * A listener in the given deferral mode and chunk size, sharing the job list.
 	 *
-	 * @param string   $deferralMode `background` (default) or `inline` (kill switch).
-	 * @param int|null $chunkSize    The textExtractionChunkSize app config; null = not set.
+	 * @param string          $deferralMode   `background` (default) or `inline` (kill switch).
+	 * @param int|null        $chunkSize      The textExtractionChunkSize app config; null = not set.
+	 * @param string          $extractionMode The file settings' extractionMode.
+	 * @param Exception|null  $chunkSizeError Thrown by getValueInt for the chunk size key, as a type conflict would.
 	 *
 	 * @return ObjectChangeListener
 	 */
-	private function listener(string $deferralMode = 'background', ?int $chunkSize = null): ObjectChangeListener {
+	private function listener(
+		string $deferralMode = 'background',
+		?int $chunkSize = null,
+		string $extractionMode = 'background',
+		?Exception $chunkSizeError = null
+	): ObjectChangeListener {
 		$jobList = $this->createMock(IJobList::class);
 		$jobList->method('add')->willReturnCallback(
 			function (string $job, mixed $argument = null): void {
@@ -83,7 +92,13 @@ class ObjectTextExtractionInChunksTest extends TestCase {
 			static fn (string $app, string $key, string $default = ''): string => $key === 'listenerDeferral' ? $deferralMode : $default
 		);
 		$appConfig->method('getValueInt')->willReturnCallback(
-			static fn (string $app, string $key, int $default = 0): int => $key === ObjectChangeListener::CHUNK_SIZE_KEY && $chunkSize !== null ? $chunkSize : $default
+			static function (string $app, string $key, int $default = 0) use ($chunkSize, $chunkSizeError): int {
+				if ($key === ObjectChangeListener::CHUNK_SIZE_KEY && $chunkSizeError !== null) {
+					throw $chunkSizeError;
+				}
+
+				return $key === ObjectChangeListener::CHUNK_SIZE_KEY && $chunkSize !== null ? $chunkSize : $default;
+			}
 		);
 
 		$this->deferral = new ListenerDeferralService(
@@ -96,7 +111,7 @@ class ObjectTextExtractionInChunksTest extends TestCase {
 		);
 
 		$settings = $this->createMock(SettingsService::class);
-		$settings->method('getFileSettingsOnly')->willReturn(['extractionMode' => 'background']);
+		$settings->method('getFileSettingsOnly')->willReturn(['extractionMode' => $extractionMode]);
 
 		return new ObjectChangeListener(
 			$this->createMock(TextExtractionService::class),
@@ -202,11 +217,11 @@ class ObjectTextExtractionInChunksTest extends TestCase {
 	}//end testAChunkOfOneHundredFitsTheSmallestJobArgumentLimit()
 
 	/**
-	 * An object created and then updated in one process is extracted once.
+	 * An object created and then updated before its chunk is flushed is queued once.
 	 *
 	 * @return void
 	 */
-	public function testAnObjectSavedTwiceInOneProcessIsQueuedOnce(): void {
+	public function testAnObjectSavedTwiceWithinOneChunkIsQueuedOnce(): void {
 		$listener = $this->listener();
 		$object = new ObjectEntity();
 		$object->setId(7);
@@ -216,7 +231,7 @@ class ObjectTextExtractionInChunksTest extends TestCase {
 		$this->deferral->flushAll();
 
 		$this->assertSame([[7]], $this->chunks());
-	}//end testAnObjectSavedTwiceInOneProcessIsQueuedOnce()
+	}//end testAnObjectSavedTwiceWithinOneChunkIsQueuedOnce()
 
 	/**
 	 * A single save outside any bulk context still reaches the job list, as a chunk of one.
@@ -228,6 +243,30 @@ class ObjectTextExtractionInChunksTest extends TestCase {
 
 		$this->assertSame([[42]], $this->chunks());
 	}//end testASingleSaveIsAChunkOfOne()
+
+	/**
+	 * A chunk size the app config cannot read as an int falls back to the default.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableChunkSizeFallsBackToTheDefault(): void {
+		$listener = $this->listener(chunkSizeError: new AppConfigTypeConflictException('stored as a string'));
+		$this->save(listener: $listener, ids: range(1, 150));
+
+		$this->assertSame([range(1, 100), range(101, 150)], $this->chunks());
+	}//end testAnUnreadableChunkSizeFallsBackToTheDefault()
+
+	/**
+	 * An unknown extraction mode falls back to background, so its objects are chunked too.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownExtractionModeIsChunkedLikeBackground(): void {
+		$this->save(listener: $this->listener(extractionMode: 'bogus'), ids: range(1, 3));
+
+		$this->assertSame(0, $this->jobsOf(ObjectTextExtractionJob::class), 'no job per object');
+		$this->assertSame([[1, 2, 3]], $this->chunks());
+	}//end testAnUnknownExtractionModeIsChunkedLikeBackground()
 
 	/**
 	 * Kill switch listenerDeferral=inline: one ObjectTextExtractionJob per object, as before.

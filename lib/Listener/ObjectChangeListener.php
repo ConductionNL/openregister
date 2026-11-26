@@ -281,7 +281,7 @@ class ObjectChangeListener implements IEventListener {
 	 *
 	 * The entry is the object id only, so a chunk of 100 stays under the job
 	 * argument limit of Nextcloud 32 and 33; the id is also the dedupe key, so
-	 * an object saved twice in one process is extracted once.
+	 * an object saved twice before its chunk is flushed is queued once.
 	 *
 	 * @param int $objectId Object ID to extract.
 	 *

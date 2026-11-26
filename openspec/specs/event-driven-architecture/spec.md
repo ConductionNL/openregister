@@ -905,13 +905,16 @@ MUST hand the object id to the listener deferral service, which queues
 object-extraction chunk jobs of at most `textExtractionChunkSize` objects (app
 config, default 100; a value below 1 MUST be read as 100), so N object events
 in one process leave at most ⌈N / chunk size⌉ jobs. An entry MUST carry only
-the object id, which is also its dedupe key, so an object saved twice in one
-process is extracted once. A chunk job MUST extract its objects one by one,
+the object id, which is also its dedupe key, so an object saved twice before
+its chunk is flushed is queued once. A chunk job MUST extract its objects one by one,
 MUST skip an object that no longer exists, MUST continue after a failure on
 one object, and MUST extract nothing when `objectManagement.objectExtractionMode`
 is `none`. With `openregister/listenerDeferral` set to `inline` the listener
 MUST queue one per-object extraction job per object, as before this
-requirement.
+requirement. For this listener that overrides the kill-switch scenario of
+"Deferred listener jobs MUST be chunk-level, idempotent, and stale-safe",
+where an inline listener enqueues nothing: object extraction stays a
+background job, one per object.
 
 See: "Deferred listener jobs MUST be chunk-level, idempotent, and stale-safe"
 and "A deferred listener chunk fits the job argument limit" in this spec.
@@ -946,12 +949,12 @@ and "A deferred listener chunk fits the job argument limit" in this spec.
 - AND its JSON argument MUST be at most 4,000 characters
 - @e2e exclude pinned by `ObjectTextExtractionInChunksTest::testAChunkOfOneHundredFitsTheSmallestJobArgumentLimit`
 
-#### Scenario: An object saved twice in one process is extracted once
+#### Scenario: An object saved twice within one chunk is queued once
 
 - GIVEN one process that creates object 7 and then updates it
 - WHEN the buffer is flushed
 - THEN one chunk job MUST be queued, holding object 7 once
-- @e2e exclude pinned by `ObjectTextExtractionInChunksTest::testAnObjectSavedTwiceInOneProcessIsQueuedOnce`
+- @e2e exclude pinned by `ObjectTextExtractionInChunksTest::testAnObjectSavedTwiceWithinOneChunkIsQueuedOnce`
 
 #### Scenario: A failure on one object does not stop the chunk
 

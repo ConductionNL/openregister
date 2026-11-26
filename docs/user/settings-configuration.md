@@ -206,7 +206,7 @@ graph LR
 - **Immediate**: Process during upload (may slow down uploads)
 - **Manual Only**: Only extract when manually triggered via Actions menu
 
-The extraction mode also applies to OpenRegister objects. In **Background Job** mode, objects saved together, for example by a flow or an import, are extracted in batches of at most 100 objects per background job. A large harvest therefore no longer fills the job queue with one job per object. To change the batch size, run `occ config:app:set openregister textExtractionChunkSize --value=<number> --type=integer`.
+The extraction mode also applies to OpenRegister objects. In **Background Job** mode, objects saved one by one in one run, for example by a flow, are extracted in batches of at most 100 objects per background job. A large harvest therefore no longer fills the job queue with one job per object. A bulk save without events, such as an import with the default settings, raises no object events, so its objects are not extracted. To change the batch size, run `occ config:app:set openregister textExtractionChunkSize --value=<number> --type=integer`.
 
 #### Supported File Types
 Configure which file types should be processed:

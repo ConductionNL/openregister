@@ -576,7 +576,7 @@ Content-Type: application/json
 
 - A flow that writes 700 objects item by item in one cron run leaves 7 chunk jobs, not 700 extraction jobs. Other background jobs, such as the next scheduled flow, get their turn between two chunks.
 - A bulk save with events and a single save through the API go the same way. A single save becomes a chunk of one at the end of the request.
-- An object saved twice in one process is extracted once.
+- An object saved twice before its chunk is flushed is queued once. A buffer flushes every time it reaches the chunk size, so an object saved again after that lands in a later chunk as well; extraction skips an object whose text is already up to date.
 - The chunk job extracts its objects one by one. An object deleted in the meantime is skipped, and a failure on one object does not stop the rest of the chunk.
 
 | Setting | Default | Effect |
@@ -589,6 +589,8 @@ occ config:app:set openregister textExtractionChunkSize --value=50 --type=intege
 ```
 
 A chunk of 100 stays under the 4,000-character job argument limit of Nextcloud 32 and 33, because an entry carries only the object id.
+
+Ids wait in memory until their chunk is full or the process ends, and are queued then. A PHP fatal error, including the memory or execution-time limit, still runs the shutdown flush. A process killed by a signal before that (the kernel OOM killer, a pod eviction, an external timeout) leaves those objects without an extraction job; saving them again queues them.
 
 A bulk save without events (`saveObjects(events: false)`, or a flow node with `bulk: true`) raises no object events, so its objects are not extracted. A schema that wants extraction for bulk writes sets `fireEventsOnBulkWrites`.
 
