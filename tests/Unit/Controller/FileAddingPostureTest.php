@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/file-actions/spec.md
+ * @spec openspec/specs/file-actions/spec.md#requirement-adding-files-rate-limits-anonymous-callers-and-not-signed-in-users-req-farl-001
  */
 
 declare(strict_types=1);
