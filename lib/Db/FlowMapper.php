@@ -310,7 +310,10 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 *
 	 * A text match on the stored `nodes` JSON narrows the rows; the caller
 	 * still reads the node list itself, so a type named in another field
-	 * of a node never counts.
+	 * of a node never counts. The match goes through LikeOperator, which
+	 * casts the column to text: PostgreSQL stores `nodes` as json and has
+	 * no LIKE for it, and the failed query aborted the whole transaction
+	 * of the object save that triggered the calendar index refresh.
 	 *
 	 * @param string $nodeType The node type, e.g. `openregister.trigger-calendar`.
 	 *
@@ -319,10 +322,18 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
 	 */
 	public function findWithNodeType(string $nodeType): array {
-		$qb = $this->db->getQueryBuilder();
+		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
+		$qb   = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->like('nodes', $qb->createNamedParameter('%' . $this->db->escapeLikeParameter($nodeType) . '%')));
+			->where(
+				$qb->createFunction(
+					$like->condition(
+						column: $qb->getColumnName('nodes'),
+						patternSql: (string) $qb->createNamedParameter($like->pattern(term: $nodeType))
+					)
+				)
+			);
 
 		return $this->findEntities(query: $qb);
 	}//end findWithNodeType()
