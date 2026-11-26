@@ -36,10 +36,28 @@
       attaches through 1.1. Tests: `AttachTargetSearchTest` (6),
       `AttachTargetsControllerTest` (3), `attachAction.spec.js` (8),
       `AttachToObjectDialog.spec.js` (6).
-- [ ] 2.2 Talk conversation action "Save chat to object".
-- [ ] 2.3 Read `fileActions.attachTargets` from the consuming manifest. (The route takes
+- [x] 2.2 Talk conversation action "Save chat to object".
+      Talk offers other apps message actions, so the action sits in a message's
+      menu and saves the conversation that message belongs to:
+      `src/talk/saveChatAction.js` reads the conversation through Talk's own chat
+      API as the signed-in user (backwards a page of 200 at a time, at most 5000,
+      without moving the read marker, system messages left out, `{file}`-style
+      placeholders replaced by their names) and opens the picker in chat mode,
+      which posts to the 1.2 route. Registered from the new `talkActions` entry
+      (`src/talk-actions.js`, one self-contained script), which
+      `lib/Listener/TalkAppScriptListener.php` adds to Talk's page only, for a
+      signed-in user with Talk enabled. Tests: `saveChatAction.spec.js` (13),
+      `AttachToObjectDialog.spec.js` (+2 chat), `TalkAppScriptListenerTest` (6).
+- [x] 2.3 Read `fileActions.attachTargets` from the consuming manifest. (The route takes
       `targets` and the picker a `targets` prop; reading them from a consuming app's
       manifest is still open.)
+      The picker takes an `app` prop and reads that app's manifest
+      (`GET /api/manifest/{app}`) once, through `src/services/attachTargets.js`:
+      an entry is a schema slug or a `{ register, schema }` pair, the schema is
+      what the server narrows on, and a manifest that declares nothing or cannot
+      be read pins nothing (the server's offer is already only what the caller
+      may change). Passed `targets` win over the manifest. Tests:
+      `attachTargets.spec.js` (6), `AttachToObjectDialog.spec.js` (+3).
 
 ## 3. Tests
 
