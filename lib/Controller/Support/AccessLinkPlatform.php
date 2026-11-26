@@ -22,7 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
-use OCP\IURLGenerator;
 use OCP\IUserSession;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
@@ -39,7 +38,6 @@ final class AccessLinkPlatform {
 	 * @param IUserSession    $userSession The current session, on the owner endpoints.
 	 * @param IThrottler      $throttler   Brute-force throttler for rejected anchors.
 	 * @param LoggerInterface $logger      PSR logger.
-	 * @param IURLGenerator|null $urls    Builds the holder's download address of a file link.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
@@ -47,7 +45,6 @@ final class AccessLinkPlatform {
 		public readonly IUserSession $userSession,
 		public readonly IThrottler $throttler,
 		public readonly LoggerInterface $logger,
-		public readonly ?IURLGenerator $urls = null,
 	) {
 	}//end __construct()
 }//end class

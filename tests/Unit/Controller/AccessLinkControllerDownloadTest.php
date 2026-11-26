@@ -124,8 +124,8 @@ class AccessLinkControllerDownloadTest extends TestCase {
 					userSession: $this->createMock(IUserSession::class),
 					throttler: $this->throttler,
 					logger: $this->createMock(LoggerInterface::class),
-					urls: $urls,
 				),
+				urls: $urls,
 			)
 		);
 	}//end controller()

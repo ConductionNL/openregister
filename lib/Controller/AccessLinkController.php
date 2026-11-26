@@ -182,7 +182,7 @@ class AccessLinkController extends Controller {
 		$this->subjectLinks = $services->domain->subjectLinks;
 		$this->userSession = $services->platform->userSession;
 		$this->logger = $services->platform->logger;
-		$this->urls = $services->platform->urls;
+		$this->urls = $services->urls;
 		$this->rejections = self::rejectionCounter(platform: $services->platform);
 	}//end __construct()
 
