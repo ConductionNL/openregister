@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MappingMapper;
 use OCA\OpenRegister\Db\Register;
@@ -72,6 +73,7 @@ class ExportHandlerObjectNodesTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
+			flowMapper: $this->createMock(FlowMapper::class),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 

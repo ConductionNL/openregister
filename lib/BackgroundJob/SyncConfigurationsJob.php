@@ -312,12 +312,14 @@ class SyncConfigurationsJob extends TimedJob {
 		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
 		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
 
-		// Import the configuration (force update).
+		// Import the configuration (force update) into the configuration being
+		// synced, so the bundle cannot pick a trusted local one for itself.
 		$this->configurationService->importFromApp(
 			appId: $appId,
 			data: $configData,
 			version: $version,
-			force: true
+			force: true,
+			configuration: $configuration
 		);
 
 		// Update sync status.
@@ -367,12 +369,14 @@ class SyncConfigurationsJob extends TimedJob {
 		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
 		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
 
-		// Import the configuration (force update).
+		// Import the configuration (force update) into the configuration being
+		// synced, so the bundle cannot pick a trusted local one for itself.
 		$this->configurationService->importFromApp(
 			appId: $appId,
 			data: $configData,
 			version: $version,
-			force: true
+			force: true,
+			configuration: $configuration
 		);
 
 		// Update sync status.
@@ -413,12 +417,14 @@ class SyncConfigurationsJob extends TimedJob {
 		$appId = $configData['x-openregister']['app'] ?? $configuration->getApp() ?? 'unknown';
 		$version = $configData['info']['version'] ?? $configData['x-openregister']['version'] ?? '1.0.0';
 
-		// Import the configuration (force update).
+		// Import the configuration (force update) into the configuration being
+		// synced, so the bundle cannot pick a trusted local one for itself.
 		$this->configurationService->importFromApp(
 			appId: $appId,
 			data: $configData,
 			version: $version,
-			force: true
+			force: true,
+			configuration: $configuration
 		);
 
 		// Update sync status.

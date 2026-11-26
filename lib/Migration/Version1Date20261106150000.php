@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * Database migration to add flows column to configurations table.
+ *
+ * @category Migration
+ * @package  OCA\OpenRegister\Migration
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Migration;
+
+use Closure;
+use OCP\DB\ISchemaWrapper;
+use OCP\DB\Types;
+use OCP\Migration\IOutput;
+use OCP\Migration\SimpleMigrationStep;
+
+/**
+ * Adds the flows JSON column to openregister_configurations table.
+ *
+ * Allows Configuration entities to track which Flow uuids are managed by a
+ * given configuration, enabling Flow export/import through the same JSON
+ * config bundle mappings already use (@see Version1Date20260308000000).
+ *
+ * @package OCA\OpenRegister\Migration
+ */
+class Version1Date20261106150000 extends SimpleMigrationStep {
+	/**
+	 * Change the database schema.
+	 *
+	 * @param IOutput $output Migration output
+	 * @param Closure $schemaClosure Schema closure
+	 * @param array $options Migration options
+	 *
+	 * @return ISchemaWrapper|null The updated schema
+	 */
+	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+		// @var ISchemaWrapper $schema
+		$schema = $schemaClosure();
+
+		if ($schema->hasTable('openregister_configurations') === false) {
+			return $schema;
+		}
+
+		$table = $schema->getTable('openregister_configurations');
+
+		if ($table->hasColumn('flows') === true) {
+			return $schema;
+		}
+
+		$table->addColumn(
+			'flows',
+			Types::TEXT,
+			[
+				'notnull' => false,
+				'default' => null,
+			]
+		);
+
+		return $schema;
+	}//end changeSchema()
+}//end class
