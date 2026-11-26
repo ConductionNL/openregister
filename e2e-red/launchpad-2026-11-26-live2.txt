@@ -22,6 +22,6 @@ ci/manifest-grants.spec.ts:119                OTHER openregister #11203 / #11264
 launchpad-adopt-or-abstractions.spec.ts:171   waits for an nc-vue release after 2.232.2 (contains #2394)
 discover-server-services.spec.ts:113          SANDBOX Deck not installed (app store off)
 integrations-page.spec.ts (4)                 SANDBOX integriq not installed
-grid-layout-drag-resize.spec.ts:474           OPEN red on development too (PUT not seen within 15 s), not triaged
-cross-widget-filter-performance.spec.ts       skipped without the 50k data set (see builders-idle for the measured run, if any)
+grid-layout-drag-resize.spec.ts:474           GREEN on development d6d9c728 (24/24 with --repeat-each=2); was red on 69a89446
+cross-widget-filter-performance.spec.ts       GREEN 3/3 with the 50k set on the reference stack (numbers in builders-idle)
 ADR-124 Workspace                             584 ms median on the reference stack (budget 300) RED; lever: shell-boot task 4 (nc-vue release)
