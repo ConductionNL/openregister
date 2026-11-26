@@ -5730,3 +5730,4 @@
 11313 d897b4406afefe5526a4dba8312904f5833d89ca REVERIFY or-fix-3: merged main 01e805cd, conflict only in tests/newman/run-all.sh (both sides added a domain; kept both); review needed
 11338 aed6e7b3e9e0aa1b066f613611a2bc2913cca46d REVERIFY or-fix-8: merged main 01e805cd, conflict only in tests/newman/run-all.sh (both sides added domains; kept all); review needed
 11298 da788855e436d23c44a3cdc8225f7dd982ea1b6e REVERIFY or-fix-8: merged main 01e805cd, conflict only in tests/newman/run-all.sh (both sides added a domain; kept both); review needed
+10533 7ad911692805904edc3fb83c22ea1a8574178f2a REVERIFY or-fix-3: merged main 01e805cd, conflicts only in l10n/en.js+nl.js (draft keys vs query-console keys; kept both, no dup keys, parity unchanged vs main); review needed
