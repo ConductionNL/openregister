@@ -127,6 +127,7 @@ DOMAIN_ORDER=(
     "nlgov-conformance"
     "reply-threading"
     "licence-plate-detection"
+    "scheduled-messages"
     "run-migration"
     "lifecycle-side-moves"
     "import-run-readback"
@@ -152,6 +153,11 @@ declare -A DOMAIN_COLLECTIONS=(
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
     [flow-engine]="$REPO_ROOT/tests/integration/openregister-flow-engine.postman_collection.json"
+    # Messages scheduled on an object: schedule, list, cancel by the author
+    # or one who may update the object, 403/409/404 refusals
+    # (send-at-on-the-messaging-leaf 3.2). Every sendAt is two days out, so
+    # no mail server is needed.
+    [scheduled-messages]="$REPO_ROOT/tests/integration/openregister-scheduled-messages.postman_collection.json"
     # A run's DECLARED subject set, and a task attached to one. Registered
     # here rather than left to a Playwright spec in tests/e2e/api-direct/,
     # for the same reason as `delegation` and `register-descriptors` below:
