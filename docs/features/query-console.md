@@ -15,6 +15,23 @@ Every run is bounded and recorded:
   property-level RBAC, organisation scoping and field protection;
 - every run and every download is on the **audit trail**, with who ran what.
 
+## On the Operations page
+
+The **Query console** section sits under **Maintenance** on the Operations page,
+which only an administrator can open. It has:
+
+- a **GraphQL query** editor and a **Variables (JSON)** editor (an empty
+  variables box sends `{}`; anything that is not a JSON object is refused before
+  a request is sent);
+- **Run query**, which shows the first list of the answer as a table, the row
+  count and the duration, and a warning when the 1,000-row cap cut it short;
+- **Show the raw result**, the whole GraphQL answer as JSON;
+- **Download CSV** and **Download JSON**, which run the query again through the
+  download route below and save its file.
+
+A refusal (a mutation, a timeout, a result without a list to download) is shown
+under the buttons with the server's own message.
+
 ## Running a query
 
 `POST /api/operations/query` with a JSON body:
@@ -52,7 +69,9 @@ reach.
 returns the **first list** in the result as a file named
 `query-{yyyyMMdd-HHmm}.{csv|json}`.
 
-- A connection is read through `edges[].node`; a plain list is read as-is.
+- A connection is read through `edges[].node`; a plain list is read as-is; a
+  `groupBy` connection asked without its edges downloads its `groups` buckets
+  (`key`, `value`).
 - Each row is flattened to columns by dot path; an array value is written as its
   JSON.
 - The CSV is UTF-8 with a byte order mark so a spreadsheet opens it in the right

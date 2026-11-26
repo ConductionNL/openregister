@@ -28,9 +28,12 @@ use OCA\OpenRegister\Files\Db\PublicShareRequest;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Service\FileHandlerSupportInterface;
+use OCA\OpenRegister\Service\Anonymisation\OriginalCustodyService;
+use OCA\OpenRegister\Service\Anonymisation\RedactionVerdictStore;
 use OCP\Files\File;
 use OCP\IServerContainer;
 use Psr\Log\LoggerInterface;
+use Throwable;
 use ZipArchive;
 
 /**
@@ -174,6 +177,7 @@ class FilePublishingHandler {
 		$this->debug(message: '[FilePublishingHandler] publishFile: Creating share link for file: ' . $fileNode->getPath());
 
 		$this->assertNotRestricted(fileNode: $fileNode);
+		$this->assertRedactionVerdictPermits(fileNode: $fileNode);
 
 		// NO SEAL, NO PUBLICATION. The share is created inside the unit of work
 		// that records the file's digest and writes the `file.published` audit
@@ -188,8 +192,42 @@ class FilePublishingHandler {
 			}
 		);
 		$this->debug(message: '[FilePublishingHandler] publishFile: Successfully published file: ' . $fileNode->getName());
+		$this->scheduleOriginalCustody(fileNode: $fileNode, object: $object);
 		return $fileNode;
 	}//end publishFile()
+
+	/**
+	 * Schedule the deletion of a published redacted copy's original, when
+	 * `anonymisation.originalRetention` holds a duration (REQ-RRS-005).
+	 *
+	 * Runs after the share exists. A failure is logged and the publication
+	 * stands: an unscheduled original is kept, which deletes nothing.
+	 *
+	 * @param File         $fileNode The published file.
+	 * @param ObjectEntity $object   The object it belongs to.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
+	 */
+	private function scheduleOriginalCustody(File $fileNode, ObjectEntity $object): void {
+		if (OriginalCustodyService::isCopy(name: (string)$fileNode->getName()) === false) {
+			return;
+		}
+
+		try {
+			/*
+			 * @var OriginalCustodyService $custody
+			 */
+			$custody = $this->container->get(OriginalCustodyService::class);
+			$custody->scheduleOnPublication(copy: $fileNode, objectUuid: (string)($object->getUuid() ?? ''));
+		} catch (Throwable $error) {
+			$this->logger->error(
+				message: '[FilePublishingHandler] Scheduling the original of a published redacted copy failed; the original is kept',
+				context: ['fileId' => (int)$fileNode->getId(), 'error' => $error->getMessage()]
+			);
+		}
+	}//end scheduleOriginalCustody()
 
 	/**
 	 * Refuse to publish a restricted file: a public link is served without
@@ -208,6 +246,32 @@ class FilePublishingHandler {
 			throw new Exception('A restricted file cannot be published');
 		}
 	}//end assertNotRestricted()
+
+	/**
+	 * Refuse to publish an anonymised copy whose irreversibility verdict is not clean.
+	 *
+	 * Resolved only for an `_anonymized` copy, so publishing any other file
+	 * does not touch the verdict store.
+	 *
+	 * @param File $fileNode The file.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RedactionNotPublishableException When the copy is leaking or unverifiable.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-1.4
+	 */
+	private function assertRedactionVerdictPermits(File $fileNode): void {
+		if (str_contains((string)$fileNode->getName(), '_anonymized') === false) {
+			return;
+		}
+
+		/*
+		 * @var RedactionVerdictStore $verdicts
+		 */
+		$verdicts = $this->container->get(RedactionVerdictStore::class);
+		$verdicts->assertMayBePublished(file: $fileNode);
+	}//end assertRedactionVerdictPermits()
 
 	/**
 	 * The object, looked up when given by id.

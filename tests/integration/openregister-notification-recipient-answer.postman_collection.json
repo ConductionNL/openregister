@@ -1,0 +1,651 @@
+{
+ "info": {
+  "_postman_id": "or-recipient-answer-2026-11-25",
+  "name": "OpenRegister Notification Recipient Answer",
+  "description": "GET /api/notification-preferences/recipient-answer over HTTP (change notification-kinds-an-administrator-forces, task 4.2).\n\nWHAT IT ASSERTS: for a kind whose schema forces e-mail with a reason, the answer for a recipient names the channel, `forced: true`, the reason and the layer `administrator-forced`; a kind without forcing answers `forced: false` from another layer (CONTROL); a kind no schema declares and an unknown user answer 404, a question without its kind 422, and a non-administrator is refused 403.\n\nHermetic: it creates its schema and a second account, and removes both.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{admin_user}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{admin_password}}",
+    "type": "string"
+   }
+  ]
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "http://localhost",
+   "type": "string"
+  },
+  {
+   "key": "admin_user",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "admin_password",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "other_user",
+   "value": "recipient-answer-newman",
+   "type": "string"
+  },
+  {
+   "key": "other_password",
+   "value": "Recipient-Newman-Pass-123",
+   "type": "string"
+  },
+  {
+   "key": "run",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "schemaId",
+   "value": "",
+   "type": "string"
+  }
+ ],
+ "item": [
+  {
+   "name": "setUp: a schema with a forced kind and a free kind",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"recipient answer besluit {{run}}\", \"slug\": \"recipientanswer{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}}, \"configuration\": {\"x-openregister-notifications\": {\"decided\": {\"forcedChannels\": {\"channels\": [\"email\"], \"reason\": \"statutory notice\"}}, \"commented\": {\"channels\": [\"notification\"]}}}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "prerequest",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10));"
+      ]
+     }
+    },
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a second account, not an administrator",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "ocs",
+      "v2.php",
+      "cloud",
+      "users"
+     ],
+     "query": [
+      {
+       "key": "format",
+       "value": "json"
+      }
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"userid\": \"{{other_user}}\", \"password\": \"{{other_password}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the account exists', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the forced kind for a recipient",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences/recipient-answer?user={{other_user}}&schema=recipientanswer{{run}}&notification=decided",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "notification-preferences",
+      "recipient-answer"
+     ],
+     "query": [
+      {
+       "key": "user",
+       "value": "{{other_user}}"
+      },
+      {
+       "key": "schema",
+       "value": "recipientanswer{{run}}"
+      },
+      {
+       "key": "notification",
+       "value": "decided"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('answered', () => pm.response.to.have.status(200));",
+       "const b = pm.response.json();",
+       "pm.test('the forced channel, its reason and the deciding layer', () => {",
+       "  pm.expect(b.user).to.eql(pm.collectionVariables.get('other_user'));",
+       "  pm.expect(b.enabled).to.eql(true);",
+       "  pm.expect(b.channels).to.include('email');",
+       "  pm.expect(b.forced).to.eql(true);",
+       "  pm.expect(b.reason).to.eql('statutory notice');",
+       "  pm.expect(b.layer).to.eql('administrator-forced');",
+       "  pm.expect(b.layers).to.be.an('array');",
+       "});"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the free kind for the same recipient (control)",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences/recipient-answer?user={{other_user}}&schema=recipientanswer{{run}}&notification=commented",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "notification-preferences",
+      "recipient-answer"
+     ],
+     "query": [
+      {
+       "key": "user",
+       "value": "{{other_user}}"
+      },
+      {
+       "key": "schema",
+       "value": "recipientanswer{{run}}"
+      },
+      {
+       "key": "notification",
+       "value": "commented"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('answered', () => pm.response.to.have.status(200));",
+       "const b = pm.response.json();",
+       "pm.test('not forced, decided by another layer', () => {",
+       "  pm.expect(b.forced).to.eql(false);",
+       "  pm.expect(b.layer).to.not.eql('administrator-forced');",
+       "});"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "a kind no schema declares",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences/recipient-answer?user={{other_user}}&schema=recipientanswer{{run}}&notification=nosuchkind",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "notification-preferences",
+      "recipient-answer"
+     ],
+     "query": [
+      {
+       "key": "user",
+       "value": "{{other_user}}"
+      },
+      {
+       "key": "schema",
+       "value": "recipientanswer{{run}}"
+      },
+      {
+       "key": "notification",
+       "value": "nosuchkind"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('404', () => pm.response.to.have.status(404));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "an unknown user",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences/recipient-answer?user=no-such-user-{{run}}&schema=recipientanswer{{run}}&notification=decided",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "notification-preferences",
+      "recipient-answer"
+     ],
+     "query": [
+      {
+       "key": "user",
+       "value": "no-such-user-{{run}}"
+      },
+      {
+       "key": "schema",
+       "value": "recipientanswer{{run}}"
+      },
+      {
+       "key": "notification",
+       "value": "decided"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('404', () => pm.response.to.have.status(404));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "a question without its kind",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences/recipient-answer?user={{other_user}}&schema=recipientanswer{{run}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "notification-preferences",
+      "recipient-answer"
+     ],
+     "query": [
+      {
+       "key": "user",
+       "value": "{{other_user}}"
+      },
+      {
+       "key": "schema",
+       "value": "recipientanswer{{run}}"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('422', () => pm.response.to.have.status(422));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "a non-administrator asks",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/notification-preferences/recipient-answer?user={{other_user}}&schema=recipientanswer{{run}}&notification=decided",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "notification-preferences",
+      "recipient-answer"
+     ],
+     "query": [
+      {
+       "key": "user",
+       "value": "{{other_user}}"
+      },
+      {
+       "key": "schema",
+       "value": "recipientanswer{{run}}"
+      },
+      {
+       "key": "notification",
+       "value": "decided"
+      }
+     ]
+    },
+    "auth": {
+     "type": "basic",
+     "basic": [
+      {
+       "key": "username",
+       "value": "{{other_user}}",
+       "type": "string"
+      },
+      {
+       "key": "password",
+       "value": "{{other_password}}",
+       "type": "string"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('refused', () => pm.response.to.have.status(403));"
+      ]
+     }
+    }
+   ],
+   "protocolProfileBehavior": {
+    "disableCookies": true
+   }
+  },
+  {
+   "name": "tearDown: delete the schema",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas",
+      "{{schemaId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: the second account",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/ocs/v2.php/cloud/users/{{other_user}}?format=json",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "ocs",
+      "v2.php",
+      "cloud",
+      "users",
+      "{{other_user}}"
+     ],
+     "query": [
+      {
+       "key": "format",
+       "value": "json"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the account is removed', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

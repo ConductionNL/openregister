@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 278;
+	private const LISTENER_COUNT = 280;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -49,10 +49,11 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Then the cross-app semantic reference listeners (8 registrations, count 265 -> 273).
 	 * Then three FlowCalendarIndexListener registrations after FlowTriggerListener on the object
 	 * created, updated and deleted events (273 -> 276).
+	 * The write validator then listens on ObjectCreatingEvent and ObjectUpdatingEvent (count 276 -> 278).
 	 * Then two JourneyValidationListener registrations (ObjectCreatingEvent, ObjectUpdatingEvent)
-	 * (count 276 -> 278).
+	 * (count 278 -> 280).
 	 */
-	private const SEQUENCE_SHA256 = 'abb586c537a5136050f5c6144c861467744ae34573056ebd563b7b6bd10103ad';
+	private const SEQUENCE_SHA256 = '0d8514b243410ee4a9081a0e2ab32e7a317dc3680b6b0c9a1706948313230700';
 
 	/**
 	 * The registration calls, in call order, with every argument.

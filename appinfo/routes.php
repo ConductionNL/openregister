@@ -1592,6 +1592,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'notificationPreferences#update', 'url' => '/api/notification-preferences', 'verb' => 'PUT'],
         // What one recipient gets for one kind, and which layer decided it: an
         // administrator's read of another person's preferences (REQ-NKF-003).
+        // Which notification rules reached nobody (a-rule-that-reaches-nobody-says-so 3.2); administrators only.
+        ['name' => 'notificationRuleReach#index', 'url' => '/api/notification-rule-reach', 'verb' => 'GET'],
         ['name' => 'notificationRecipientAnswer#show', 'url' => '/api/notification-preferences/recipient-answer', 'verb' => 'GET'],
         // Notification Templates — the shipped text per platform event, the
         // events that have none, and an administrator's edit of either.
@@ -2097,6 +2099,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
 		// File Anonymization - Replace detected entities with placeholders.
 		['name' => 'fileText#anonymizeFile', 'url' => '/api/files/{fileId}/anonymize', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'redactionReviewMark#create', 'url' => '/api/files/{fileId}/anonymisation/review-mark', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],
+		['name' => 'redactionCustody#show', 'url' => '/api/files/{fileId}/anonymisation/custody', 'verb' => 'GET', 'requirements' => ['fileId' => '\\d+']],
 
 		// Manual entity addition - operator-supplied value, chunk-aware string matching, persists catalogue + relations.
 		['name' => 'fileText#addManualEntity', 'url' => '/api/files/{fileId}/manual-entities', 'verb' => 'POST', 'requirements' => ['fileId' => '\\d+']],

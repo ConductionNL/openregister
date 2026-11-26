@@ -396,6 +396,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Controller\\NotificationRuleReachController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationRuleReachController",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Controller\\NotificationSubscriptionsController": {
 			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationSubscriptionsController",
 			"eager": false,
