@@ -11,7 +11,6 @@
  * @spec openspec/changes/files-leaf-save-to-object/specs/file-actions/spec.md#requirement-a-files-action-attaches-a-file-to-a-register-object
  */
 
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import { Permission, registerFileAction } from '@nextcloud/files'
 import { translate as t } from '@nextcloud/l10n'
 
@@ -39,11 +38,12 @@ export const attachAction = {
 		&& Number.isInteger(nodes[0].fileid),
 	async exec({ nodes }) {
 		const node = nodes[0]
-		// The picker and its dialog load on first use, so the Files entry stays
-		// light on every page that carries it.
-		const [{ spawnDialog }, { default: AttachToObjectDialog }] = await Promise.all([
+		// The picker, its dialog and the toasts load on first use, so the Files
+		// entry stays light on every page that carries it.
+		const [{ spawnDialog }, { default: AttachToObjectDialog }, { showError, showSuccess }] = await Promise.all([
 			import(/* webpackChunkName: "files-sidebar-app" */ '@nextcloud/vue/functions/dialog'),
 			import(/* webpackChunkName: "files-sidebar-app" */ '../dialogs/files/AttachToObjectDialog.vue'),
+			import(/* webpackChunkName: "files-sidebar-app" */ '@nextcloud/dialogs'),
 		])
 		const attached = await spawnDialog(AttachToObjectDialog, { nodeId: node.fileid })
 		if (!attached) {

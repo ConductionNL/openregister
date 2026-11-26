@@ -7,5 +7,6 @@
 - [x] 1.5 Readability stays the object's readability, whichever collection was used (D-3).
 - [ ] 2.1 `tests/e2e/ci/platform-comments-entity.spec.ts`: a comment through an app's collection, refused for a foreign object.
 - [x] 2.2 Unit tests: the per-collection closure, the legacy collection, the visibility check.
-- [ ] 2.3 `openspec validate platform-comments-entity --strict`.
+- [x] 2.3 `openspec validate platform-comments-entity --strict`.
+      > 2026-11-25: `Change 'platform-comments-entity' is valid` (strict), on main 50949d88a4b.
 - [ ] 3.1 Hand over to the dossiq lane: claim the pairs, register no listener.

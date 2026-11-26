@@ -1534,8 +1534,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return 0;
 		}
 
-		$tableName = $target->tableName;
-
 		$result = $this->runCountQuery(query: $query, target: $target);
 		if (is_int($result) === false) {
 			throw new RuntimeException('The count query did not answer with a number.');
@@ -6721,12 +6719,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	public function findAllInRegisterSchemaTable(RegisterSchema $table, ListQuery $listing=new ListQuery(limit: ListQuery::UNBOUNDED)): array {
-		$register = $table->register;
-		$schema   = $table->schema;
-		$limit    = $listing->limitOrNull();
-		$offset   = $listing->offset;
-		$filters  = $listing->filters;
-		$sort     = $listing->sort;
+		$limit   = $listing->limitOrNull();
+		$offset  = $listing->offset;
+		$filters = $listing->filters;
+		$sort    = $listing->sort;
 
 		$query = [];
 
