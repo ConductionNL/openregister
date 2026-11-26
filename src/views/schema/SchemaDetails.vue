@@ -375,6 +375,8 @@ export default {
 			await dashboardStore.fetchAllChartData()
 		}
 
+		await this.loadRouteSchema()
+
 		// Fetch schema stats if schema is available
 		if (schemaStore.schemaItem?.id) {
 			await this.loadSchemaStats()
@@ -382,6 +384,38 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Load the schema the `:id` route names when the store holds another one.
+		 *
+		 * The schema list hands the active schema to the store before it
+		 * navigates here. A deep link or a page reload has no such hand-off, so
+		 * the page rendered without a title and the property form opened on a
+		 * schema that was not there. The route id may be the schema's id, uuid
+		 * or slug; a store already holding that schema is left as it is.
+		 *
+		 * @spec openspec/changes/modelling-stated-requirements/specs/entity-management-modals/spec.md#requirement-a-schemas-fields-are-built-in-a-form-req-msr-004
+		 * @return {Promise<void>}
+		 */
+		async loadRouteSchema() {
+			const routeId = this.$route?.params?.id
+			if (!routeId) {
+				return
+			}
+			const current = schemaStore.schemaItem
+			const held = [current?.id, current?.uuid, current?.slug]
+				.filter((value) => value !== undefined && value !== null)
+				.map(String)
+			if (held.includes(String(routeId))) {
+				return
+			}
+			try {
+				await schemaStore.getSchema(routeId, { setItem: true })
+			} catch (error) {
+				// Without the schema its statistics cannot load either; say why there.
+				this.statsError = error.message
+			}
+		},
+
 		/**
 		 * Open the schema editor, publishing directly or saving to the draft.
 		 *

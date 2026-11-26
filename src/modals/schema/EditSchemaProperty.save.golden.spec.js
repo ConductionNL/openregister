@@ -267,6 +267,24 @@ describe('EditSchemaProperty addSchemaProperty', () => {
 		])
 	})
 
+	// REQ-MSR-004: a property saved in the form is usable on the next create.
+	// A `null` numeric keyword made the object validator refuse every object.
+	it('leaves unset numeric keywords out and keeps the ones that are set', async () => {
+		schemaStore.schemaPropertyKey = null
+		schemaStore.schemaItem = { id: 3, properties: {} }
+		schemaStore.saveSchema = jest.fn(() => Promise.resolve({ response: { ok: true } }))
+		const ctx = form({ propertyTitle: 'prioriteit' })
+		Object.assign(ctx.properties, { type: 'string', minLength: '2', maxLength: 0, minimum: '', maximum: null, order: '3' })
+		await save(ctx)
+
+		const saved = schemaStore.saveSchema.mock.calls[0][0].properties.prioriteit
+		for (const keyword of ['maxLength', 'minimum', 'maximum', 'multipleOf', 'minItems', 'maxItems']) {
+			expect(saved).not.toHaveProperty(keyword)
+		}
+		expect(saved.minLength).toBe(2)
+		expect(saved.order).toBe(3)
+	})
+
 	it('records a failed save', async () => {
 		schemaStore.schemaPropertyKey = null
 		schemaStore.schemaItem = { id: 3, properties: {} }
