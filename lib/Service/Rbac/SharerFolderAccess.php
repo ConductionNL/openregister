@@ -126,15 +126,36 @@ class SharerFolderAccess {
 		$views = $this->viewsOn(folder: $folder, owner: $owner);
 		$this->endStaleViews(object: $object, views: $views);
 
+		$viewRights = self::viewRights(held: $held);
 		foreach ($views as $view) {
 			if ($view->getSharedWith() === $uid) {
-				$this->keepRights(view: $view, held: $held);
+				$this->keepRights(view: $view, held: $viewRights);
 				return;
 			}
 		}
 
-		$this->openView(folder: $folder, owner: $owner, uid: $uid, held: $held);
+		$this->openView(folder: $folder, owner: $owner, uid: $uid, held: $viewRights);
 	}//end ensureFor()
+
+	/**
+	 * The rights a sharer view carries: what the sharer holds, plus the re-share bit.
+	 *
+	 * Nextcloud 34 checks a share against the node as the SHARER reaches it
+	 * (files_sharing's RestrictInteractionListener): without the share bit on
+	 * the view, every share and link an owner makes of an object answered
+	 * "You are not allowed to share". The view exists only for a caller who
+	 * passed the manage-grants check, and the shares made through it still drop
+	 * the re-share bit, so a recipient cannot pass the object on.
+	 *
+	 * @param int $held The rights the sharer holds on the object's files.
+	 *
+	 * @return int The view's permission mask.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private static function viewRights(int $held): int {
+		return ($held | Constants::PERMISSION_SHARE);
+	}//end viewRights()
 
 	/**
 	 * End one user's view of an object's folder when that user may no longer share the object.
