@@ -65,7 +65,8 @@ class PublishedDigestProbes {
 		return [
 			self::CHANGED => [
 				'title' => 'Published files that changed after publication',
-				'description' => 'A file that is public now whose bytes no longer match the digest it was published with. Its public download is refused until it is republished or unpublished.',
+				'description' => 'A file that is public now whose bytes no longer match the digest it was published with. '
+					.'Its public download is refused until it is republished or unpublished.',
 				'repair' => 'Republish or unpublish each file; which of the two is decided per file.',
 				'repairKind' => self::REPAIR_DECIDE_PER_FILE,
 				'repairColumn' => 'file_id',
