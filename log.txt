@@ -5333,3 +5333,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-26T01:13:34Z integrator-20261125T214524-15eb134c PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-26T01:14:22Z integrator-20261125T214524-15eb134c MERGED-TREE 8213083512: 3 PRs, main now 8b3332a0dd = tested tree
+2026-11-26T01:18:16Z session-20261126T004628-9ba36458 or-fix-3: main e07d9e1b; share 10533 11303 11313 11323 11333 all merge clean, none parked/BLOCK at head; 11303 11323 11333 (tests/openspec only) merged with main: Architecture 2401 OK + ApiCoverage OK; nothing to fix. or-fix-8: lease held by another session. Precheck not run: gitleaks release download refused by the permission check
