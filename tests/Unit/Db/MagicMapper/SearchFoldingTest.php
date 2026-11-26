@@ -17,6 +17,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
+
 use OCA\OpenRegister\Db\MagicMapper\SearchFolding;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -44,11 +46,12 @@ final class SearchFoldingTest extends TestCase {
 				'openregister_fold("t"."name"::text) LIKE openregister_fold(\'%cafe%\')',
 				'openregister_fold(COALESCE("t"."name"::text, \'\')) LIKE openregister_fold(\'%cafe%\')',
 			],
-			'mysql exact lowers both sides' => [
+			'mysql exact lowers both sides and compares them binary, so accents count' => [
 				SearchFolding::PLATFORM_MYSQL,
 				false,
-				'LOWER(CAST("t"."name" AS CHAR)) LIKE LOWER(\'%cafe%\')',
-				'LOWER(CAST(COALESCE("t"."name", \'\') AS CHAR)) LIKE LOWER(\'%cafe%\')',
+				'LOWER(CAST("t"."name" AS CHAR CHARACTER SET utf8mb4)) COLLATE utf8mb4_bin LIKE CONVERT(LOWER(\'%cafe%\') USING utf8mb4) COLLATE utf8mb4_bin',
+				'LOWER(CAST(COALESCE("t"."name", \'\') AS CHAR CHARACTER SET utf8mb4)) COLLATE utf8mb4_bin'
+				. ' LIKE CONVERT(LOWER(\'%cafe%\') USING utf8mb4) COLLATE utf8mb4_bin',
 			],
 			'mysql folded compares under the unicode collation' => [
 				SearchFolding::PLATFORM_MYSQL,

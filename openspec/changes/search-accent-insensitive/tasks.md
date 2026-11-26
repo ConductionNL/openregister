@@ -18,7 +18,10 @@
 
 ## 3. Tests and docs
 
-- [ ] 3.1 Add `tests/e2e/ci/search-accents.spec.ts`: seed objects named "Café de Flore" and "reünie", search the object API and the index page with `cafe` and `reunie`, and with `_accents=exact`.
+- [x] 3.1 Add `tests/e2e/ci/search-accents.spec.ts`: seed objects named "Café de Flore" and "reünie", search the object API and the index page with `cafe` and `reunie`, and with `_accents=exact`.
+  - 2026-11-25: three tests, green on a sandbox Nextcloud 34 with MariaDB 10.11 (3 passed). The object API finds the three cafés for `cafe` and the reünie for `reunie`, the status facet adding up to the results each time; `_accents=exact` finds nothing for `cafe` or `reunie`, finds the cafés for `Café` and `CAFÉ`, and finds the plain name; the objects index page's search box lists the cafés for `cafe` and the reünie for `reunie`.
+  - 🔴 EXACT WAS NOT EXACT ON MARIADB, AND THE E2E IS WHAT FOUND IT. `_accents=exact` fell back to the historical `LOWER(CAST(col AS CHAR)) LIKE LOWER(pattern)`, which compares under the column's own collation, and MariaDB's default `utf8mb4_general_ci` ignores accents already: `cafe&_accents=exact` returned every café. The unit tests pinned that SQL string, which is why they agreed. Fixed: on MariaDB and MySQL the exact comparison lowers both sides and compares them under `utf8mb4_bin` (accent-sensitive, and still case-insensitive because both sides are lowered; it exists on every MariaDB and MySQL version, unlike the `_as_ci` collations), and `MagicSearchHandler::searchFolding()` hands that comparison out for `_accents=exact` on those platforms instead of none. PostgreSQL keeps its historical ILIKE, which was exact already. `SearchFoldingTest` and `MagicSearchHandlerAccentFoldingTest` assert the new SQL; the e2e's exact test is red on main and green with the fix.
+  - Not changed: the objects list labels its rows by uuid rather than by the name the search matched, so the index-page test finds the rows by uuid.
 - [x] 3.2 Document accent-insensitive search and the setting in `docs/features/`.
   - The "Accents (`_accents`)" section of `docs/features/search-and-faceting.md`.
 
