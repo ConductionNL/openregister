@@ -106,6 +106,8 @@ class AuditTrailFindAllGoldenTest extends TestCase {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->recordingBuilder());
 		$db->method('escapeLikeParameter')->willReturnCallback(fn (string $value): string => addcslashes($value, '%_\\'));
+		// The changed-search casts the json column per platform; record the PostgreSQL form.
+		$db->method('getDatabasePlatform')->willReturn(new \Doctrine\DBAL\Platforms\PostgreSQLPlatform());
 
 		$mapper = new AuditTrailMapper(
 			$db,

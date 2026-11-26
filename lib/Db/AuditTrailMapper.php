@@ -686,8 +686,14 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 */
 	private function applyChangedSearch(IQueryBuilder $qb, string|null $search): void {
 		if ($search !== null && $search !== '') {
+			// `changed` is a json column: PostgreSQL has no LIKE on json, so the
+			// platform-aware operator casts it to text first (and matches % and _ literally).
+			$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
 			$qb->andWhere(
-				$qb->expr()->like('changed', $qb->createNamedParameter('%' . $search . '%'))
+				$like->condition(
+					column: $qb->getColumnName('changed'),
+					patternSql: (string) $qb->createNamedParameter($like->pattern(term: $search))
+				)
 			);
 		}
 	}//end applyChangedSearch()
