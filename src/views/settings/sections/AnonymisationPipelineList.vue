@@ -71,8 +71,8 @@ export default {
 		 * with the same server state and has read it already.
 		 *
 		 * @spec openspec/changes/anonymisation-discloses-itself-pipeline/specs/anonymisation-disclosure/spec.md#requirement-every-content-altering-step-reports-its-state-req-adi-006
-		 * @param {*} value The new key
-		 * @param {*} previous The key before
+		 * @param {boolean|object|string|number|null} value The new key
+		 * @param {boolean|object|string|number|null} previous The key before
 		 * @return {void}
 		 */
 		refreshKey(value, previous) {

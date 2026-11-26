@@ -1597,12 +1597,6 @@ export default {
 	},
 
 	/**
-	 * Load settings and extraction stats on mount.
-	 *
-	 * @spec exclude UI plumbing — lifecycle hook delegating to loaders.
-	 * @return {Promise<void>}
-	 */
-	/**
 	 * Load the section: settings, extraction stats and the backend state are
 	 * read side by side (they were four requests in a row); the state is
 	 * applied after the settings, because it resolves the recognition method
