@@ -375,9 +375,15 @@ class ImportHandlerFlowTest extends TestCase {
 	}//end testImportFlowLeavesExistingDraftAlone()
 
 	/**
-	 * importFlow() falls back to a direct published patch when publish() refuses a dead end.
+	 * importFlow() leaves the flow a draft, and logs, when publish() refuses a dead end.
+	 *
+	 * A dead-ended graph has no published FlowVersion row and is refused
+	 * again by the preflight every dispatch path goes through regardless of
+	 * lifecycleStatus — marking it "published" anyway only corrupted the
+	 * lifecycle state (refusing further edits/re-publish) without making it
+	 * run. Draft is the state every OTHER caller already expects.
 	 */
-	public function testImportFlowFallsBackToDirectPublishOnDeadEndRefusal(): void {
+	public function testImportFlowLeavesDraftOnDeadEndRefusal(): void {
 		$existing = new Flow();
 		$existing->setUuid('flow-uuid-1');
 		$existing->setOrganisation('org-1');
@@ -389,8 +395,8 @@ class ImportHandlerFlowTest extends TestCase {
 			new FlowLifecycleRefused(reason: FlowLifecycleRefused::REASON_DEAD_END, flowId: 'flow-uuid-1')
 		);
 
-		// Once for applyImportedFlowFields' persist, once for the fallback patch.
-		$this->flowMapper->expects($this->exactly(2))->method('update')->willReturnArgument(0);
+		// Only for applyImportedFlowFields' persist — no fallback patch call.
+		$this->flowMapper->expects($this->once())->method('update')->willReturnArgument(0);
 		$this->logger->expects($this->once())->method('warning');
 
 		$result = $this->invokeMethod($this->handler, 'importFlow', [
@@ -400,8 +406,8 @@ class ImportHandlerFlowTest extends TestCase {
 			false,
 		]);
 
-		$this->assertSame(FlowVersion::STATUS_PUBLISHED, $result->getLifecycleStatus());
-	}//end testImportFlowFallsBackToDirectPublishOnDeadEndRefusal()
+		$this->assertSame(FlowVersion::STATUS_DRAFT, $result->getLifecycleStatus());
+	}//end testImportFlowLeavesDraftOnDeadEndRefusal()
 
 	/**
 	 * importFlow() logs and leaves the flow as a draft for any OTHER publish refusal — no fallback patch.

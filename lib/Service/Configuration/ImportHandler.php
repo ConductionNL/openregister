@@ -1826,17 +1826,25 @@ class ImportHandler {
 	/**
 	 * Publish an imported flow's draft head so its graph actually runs.
 	 *
-	 * Tolerates the dead-end publish refusal a flow ending in `sweep` hits
-	 * on a checkout where `ContractSweepNode` does not yet implement
-	 * `IFlowEndNode` (integriq #2718, not merged here): rather than leave
-	 * such a flow stuck as an unusable draft purely because of this
-	 * environment's state, the head is marked published directly. Once
+	 * A dead-end publish refusal (a flow ending in `sweep` on a checkout
+	 * where `ContractSweepNode` does not yet implement `IFlowEndNode`,
+	 * integriq #2718, not merged here) used to be patched around by marking
+	 * the head published directly. That left the flow in a state no run
+	 * path honours: dispatch resolves a published graph from a
+	 * `FlowVersion` row `publish()` never wrote, and the preflight dead-end
+	 * check every dispatch path goes through refuses it again regardless —
+	 * so the flow never actually ran, it just looked published while every
+	 * edit was also refused (`refuseEditUnlessDraft`) and every re-import
+	 * opened yet another orphan draft version. Left as a draft instead: the
+	 * import still reports the refusal via the warning below, and the flow
+	 * is editable/re-importable like any other unpublished graph. Once
 	 * #2718 merges, `publish()` stops refusing these flows and this
-	 * fallback simply stops triggering.
+	 * tolerate-and-log path simply stops triggering.
 	 *
 	 * @param Flow $flow The flow to publish.
 	 *
-	 * @return Flow The flow, published where possible.
+	 * @return Flow The flow, published where possible, left as a draft
+	 *              otherwise.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -1857,13 +1865,11 @@ class ImportHandler {
 			}
 
 			$this->logger->warning(
-				message: '[ImportHandler] Flow "' . $flow->getUuid() . '" has a dead-end node the publish '
-					. 'guard refuses (see integriq #2718); marking it published directly so it still runs. '
-					. 'Not recorded as a version until that guard gap closes.',
+				message: '[ImportHandler] Flow "' . $flow->getUuid() . '" was imported as a draft: '
+					. 'its graph has a dead-end node the publish guard refuses (see integriq #2718). '
+					. 'Fix the graph or merge #2718, then re-import or publish it by hand.',
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-			$flow->setLifecycleStatus(FlowVersion::STATUS_PUBLISHED);
-			$flow = $this->flowMapper->update(entity: $flow);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				message: '[ImportHandler] Publishing imported flow "' . $flow->getUuid() . '" failed: ' . $e->getMessage(),
