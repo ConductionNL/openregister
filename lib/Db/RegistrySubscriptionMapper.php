@@ -117,6 +117,39 @@ class RegistrySubscriptionMapper extends QBMapper implements RegistrySubscriptio
 	}//end findActiveByIdentity()
 
 	/**
+	 * Every REQUESTED or ACTIVE row subscribed to a given registry+identity value.
+	 *
+	 * The connector confirms a requested subscription on this same endpoint
+	 * (`subscriptionState`), so a requested row must be found too: with only
+	 * active rows, no row ever left `requested` and no update was ever applied.
+	 *
+	 * @param string $registry The registry id (`brp`, `kvk`, ...).
+	 * @param string $identityValue The identity value the registry pushed a change for.
+	 *
+	 * @return array<int, RegistrySubscription> Matching requested and active rows.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 */
+	public function findLiveByIdentity(string $registry, string $identityValue): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('registry', $qb->createNamedParameter($registry)))
+			->andWhere($qb->expr()->eq('identity_value', $qb->createNamedParameter($identityValue)))
+			->andWhere(
+				$qb->expr()->in(
+					'state',
+					$qb->createNamedParameter(
+						[RegistrySubscription::STATE_REQUESTED, RegistrySubscription::STATE_ACTIVE],
+						IQueryBuilder::PARAM_STR_ARRAY
+					)
+				)
+			);
+
+		return $this->findEntities(query: $qb);
+	}//end findLiveByIdentity()
+
+	/**
 	 * Insert or update a state row, keyed by object uuid.
 	 *
 	 * @param RegistrySubscription $subscription The row to persist.
