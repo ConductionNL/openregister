@@ -2091,6 +2091,8 @@ export default {
 				delete newSchemaItem.properties[this.propertyTitle].items
 			}
 
+			this.dropUnsetNumbers(newSchemaItem.properties[this.propertyTitle])
+
 			if (this.properties.required === false) {
 				this.dropFromRequired(newSchemaItem)
 			}
@@ -2116,6 +2118,29 @@ export default {
 				.finally(() => {
 					this.loading = false
 				})
+		},
+
+		/**
+		 * Leave out the numeric keywords the form leaves unset.
+		 *
+		 * The form reads an empty or zero field as "not set" and used to save it
+		 * as `null`. JSON Schema wants a number for `minimum`, `maxLength` and the
+		 * rest, so the object validator refused every object of the schema with
+		 * "minimum must contain a valid number": a property added in the form
+		 * made the schema unusable for the next create. An unset keyword is now
+		 * absent, which is what JSON Schema means by "no constraint".
+		 *
+		 * @param {object} property The property about to be saved; changed in place
+		 * @spec openspec/changes/modelling-stated-requirements/specs/entity-management-modals/spec.md#requirement-a-schemas-fields-are-built-in-a-form-req-msr-004
+		 * @return {void}
+		 */
+		dropUnsetNumbers(property) {
+			const keywords = ['order', 'minLength', 'maxLength', 'minimum', 'maximum', 'multipleOf', 'minItems', 'maxItems']
+			for (const keyword of keywords) {
+				if (property[keyword] === null || property[keyword] === undefined) {
+					delete property[keyword]
+				}
+			}
 		},
 
 		/**

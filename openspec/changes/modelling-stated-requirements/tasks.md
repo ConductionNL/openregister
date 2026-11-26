@@ -17,7 +17,8 @@ The behaviour is built; these tasks tie the code to the requirements and add the
 
 ## 3. End-to-end
 
-- [ ] 3.1 `tests/e2e/ci/schema-property-form.spec.ts`: add a property in the form, create an object using it, and try to save the form without a name (REQ-MSR-004).
+- [x] 3.1 `tests/e2e/ci/schema-property-form.spec.ts`: add a property in the form, create an object using it, and try to save the form without a name (REQ-MSR-004).
+  - Done (26 Nov): 2 passed against a sandbox Nextcloud 34.0.6 + OpenRegister main on MariaDB. Red on main for two reasons, both fixed in the same PR: a deep link to `/schemas/{id}` never loaded the schema, so the form opened on nothing (`SchemaDetails::loadRouteSchema()`), and the form saved unset numeric keywords as `null`, so every object of the schema was refused with "minimum must contain a valid number" (`EditSchemaProperty::dropUnsetNumbers()`). The scenario's values `laag`, `normaal`, `hoog` are not asserted: the form has no input for allowed values.
 
 ## 4. Matrix
 
