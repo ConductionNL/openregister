@@ -80,7 +80,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setProperties(?array $properties)
  * @method array|null getArchive()
  * @method void setArchive(?array $archive)
- * @method array|null getFacets()
+ * @method array<string, mixed>|null getFacets()
  * @method void setFacets(?array $facets)
  * @method string|null getSource()
  * @method void setSource(?string $source)

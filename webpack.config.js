@@ -77,6 +77,10 @@ if (!isDev) {
 		.flatMap((group) => entriesOf(group))
 		.every((entry) => typeof entry.name === 'string' && !selfContainedEntries.includes(entry.name))
 
+	// Vendor code is split per combination of entries that use it, NOT into one
+	// named chunk: a single `openregister-vendor` chunk held the node_modules of
+	// EVERY entry (22 MB), and the small mail and files sidebar entries, which
+	// load on Mail and on every page with a Files sidebar, had to load all of it.
 	webpackConfig.optimization.splitChunks = {
 		chunks: (chunk) => sharesChunks(chunk),
 		cacheGroups: {
@@ -85,9 +89,9 @@ if (!isDev) {
 			// demand does not grow the vendor chunk every page loads.
 			vendor: {
 				test: /[\\/]node_modules[\\/]/,
-				name: 'openregister-vendor',
 				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk),
 				priority: 10,
+				reuseExistingChunk: true,
 			},
 		},
 	}

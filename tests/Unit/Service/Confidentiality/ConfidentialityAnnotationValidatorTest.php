@@ -111,6 +111,16 @@ final class ConfidentialityAnnotationValidatorTest extends TestCase {
 		$this->assertSame(['clearance for tier "confidential" must be a group name'], self::faults(self::block(['clearance' => ['confidential' => '']])));
 	}
 
+	public function testEveryBadClearanceEntryIsReportedInOrder(): void {
+		$this->assertSame(
+			[
+				'clearance for tier "confidential" must be a group name',
+				'clearance names tier "secret", which is not one of tiers',
+			],
+			self::faults(self::block(['clearance' => ['confidential' => 7, 'secret' => 'college', 'public' => 'iedereen']]))
+		);
+	}
+
 	public function testANonObjectBlockIsRefused(): void {
 		$this->assertSame(['must be an object with tiers, tierProperty and clearance'], self::faults('confidential'));
 	}

@@ -1307,7 +1307,7 @@ class TransitionEngine implements LifecycleTransitionInterface {
 			return [];
 		}
 
-		$siblings = $this->fetchOrderedSiblings(graph: $graph, parentValue: $parentValue);
+		$siblings = $this->fetchOrderedSiblings(graph: $graph, parentValue: $parentValue, register: (string)$object->getRegister());
 		if ($siblings === []) {
 			return [];
 		}
@@ -1482,15 +1482,17 @@ class TransitionEngine implements LifecycleTransitionInterface {
 	 * with a deterministic UUID tiebreak so derivation never depends on
 	 * database row order.
 	 *
-	 * @param array<string, mixed> $graph The `graph` block off the annotation.
-	 * @param string $parentValue The resolved parent reference.
+	 * @param array<string, mixed> $graph       The `graph` block off the annotation.
+	 * @param string               $parentValue The resolved parent reference.
+	 * @param string               $register    The transitioning object's register, which holds the siblings.
 	 *
 	 * @return array<int, ObjectEntity> The ordered sibling entities (0-indexed, re-keyed).
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md
 	 */
-	private function fetchOrderedSiblings(array $graph, string $parentValue): array {
-		$query = self::siblingQuery(graph: $graph, parentValue: $parentValue);
+	private function fetchOrderedSiblings(array $graph, string $parentValue, string $register = ''): array {
+		$query = self::siblingQuery(graph: $graph, parentValue: $parentValue, register: $register);
 		if ($query === null) {
 			return [];
 		}
@@ -1506,14 +1508,20 @@ class TransitionEngine implements LifecycleTransitionInterface {
 	/**
 	 * The read that finds a graph's siblings: its schema, under the parent, by order; null when incomplete.
 	 *
+	 * The read is scoped to the transitioning object's register as well: a
+	 * schema alone names no object table, so without the register the read
+	 * found no siblings on a real instance and the graph offered nothing.
+	 *
 	 * @param array<string, mixed> $graph       The `graph` block off the annotation.
 	 * @param string               $parentValue The resolved parent reference.
+	 * @param string               $register    The transitioning object's register; empty leaves the read unscoped.
 	 *
 	 * @return array<string, mixed>|null The findAll config.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md
 	 */
-	private static function siblingQuery(array $graph, string $parentValue): array|null {
+	private static function siblingQuery(array $graph, string $parentValue, string $register = ''): array|null {
 		$schemaSlug = (string)($graph['schema'] ?? '');
 		$parentField = (string)($graph['parentField'] ?? '');
 		$orderField = (string)($graph['orderField'] ?? '');
@@ -1521,11 +1529,16 @@ class TransitionEngine implements LifecycleTransitionInterface {
 			return null;
 		}
 
+		$filters = [
+			'schema' => $schemaSlug,
+			$parentField => $parentValue,
+		];
+		if ($register !== '') {
+			$filters = ['register' => $register] + $filters;
+		}
+
 		return [
-			'filters' => [
-				'schema' => $schemaSlug,
-				$parentField => $parentValue,
-			],
+			'filters' => $filters,
 			'sort' => [$orderField => 'ASC'],
 		];
 	}//end siblingQuery()

@@ -296,10 +296,41 @@ class RenderObjectFieldEncryptionTest extends TestCase {
 			],
 		];
 
-		// _rbac: false = trusted internal read; must NOT decrypt (ciphertext stays
-		// ciphertext for internal code that reads the raw row directly).
-		$this->handler->redactWriteOnlyFromRows($rows, false);
+		// A system operation is the trusted internal read: it must NOT decrypt
+		// (ciphertext stays ciphertext for internal code that reads the raw row).
+		// `_rbac: false` alone is an admin's list and decrypts like the single-object
+		// read (see testRedactWriteOnlyFromRowsDecryptsAnAdminsRbacFalseList).
+		\OCA\OpenRegister\Service\SystemOperationContext::run(
+			function () use (&$rows) {
+				$this->handler->redactWriteOnlyFromRows($rows, false);
+			}
+		);
 
 		$this->assertSame($envelope, $rows[0]['bsn']);
+	}
+
+	/**
+	 * An admin's list (`_rbac: false`) is decrypted like the single-object read.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
+	 *
+	 * @return void
+	 */
+	public function testRedactWriteOnlyFromRowsDecryptsAnAdminsRbacFalseList(): void {
+		$schema = $this->createSchema(id: 4, properties: [
+			'bsn' => ['type' => 'string', 'x-openregister-encrypted' => true],
+		]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$rows = [
+			[
+				'@self' => ['schema' => 4],
+				'bsn' => $this->fieldEncryptionHandler->encryptValue('222222222'),
+			],
+		];
+
+		$this->handler->redactWriteOnlyFromRows($rows, false);
+
+		$this->assertSame(expected: '222222222', actual: $rows[0]['bsn']);
 	}
 }

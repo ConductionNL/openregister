@@ -689,46 +689,18 @@ exports[`configuration publish modal close while loading 1`] = `
 exports[`configuration publish modal closed modal 1`] = `
 [
   {
-    "fetch": [
-      [
-        "/index.php/apps/openregister/api/configurations/github/repositories",
-        {
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "GET",
-        },
-      ],
-      [
-        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
-        {
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "GET",
-        },
-      ],
-      [
-        "/index.php/apps/openregister/api/configurations/github/branches?owner=acme&repo=site",
-        {
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "GET",
-        },
-      ],
-    ],
+    "fetch": [],
     "html": "<!--v-if-->",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
     "setModal": [],
     "state": {
-      "commitMessage": "Update configuration: Base",
+      "commitMessage": "",
       "error": null,
-      "filePath": "lib/settings/base.json",
+      "filePath": "",
       "loading": false,
-      "selectedBranch": "dev",
-      "selectedRepository": "acme/site",
+      "selectedBranch": null,
+      "selectedRepository": null,
       "success": false,
       "successMessage": "",
     },
@@ -3956,25 +3928,15 @@ exports[`register publish modal close while loading 1`] = `
 exports[`register publish modal closed modal 1`] = `
 [
   {
-    "fetch": [
-      [
-        "/index.php/apps/openregister/api/configurations/github/repositories",
-        {
-          "headers": {
-            "Content-Type": "application/json",
-          },
-          "method": "GET",
-        },
-      ],
-    ],
+    "fetch": [],
     "html": "<!--v-if-->",
     "refreshConfigurations": 0,
     "refreshRegisters": 0,
     "setModal": [],
     "state": {
-      "commitMessage": "Update register OAS: Parks",
+      "commitMessage": "",
       "error": null,
-      "filePath": "parks_openregister.json",
+      "filePath": "",
       "loading": false,
       "selectedBranch": null,
       "selectedRepository": null,
