@@ -1,0 +1,15 @@
+# launchpad e2e, live-launchpad-1 (K=1) 27 Nov 2026 08:20Z-09:45Z
+# Sandbox: NC 34 RELEASE TARBALL (download.nextcloud.com reachable this run; shipped apps incl. notifications, activity,
+#   recommendations, text, viewer), MariaDB, Redis (distributed + locking), APCu, php -S :8097 + router, bruteforce and
+#   ratelimit protection off, allow_local_remote_servers on, post_max_size 600M. OR main 1abff0ac, launchpad development 6bfe17ed.
+# Scope: every red file of e2e-red/launchpad-2026-11-27-done.txt except integrations-page (integriq), manifest-grants (OR bug),
+#   tiles-add-tiles-dialog (port-probing decision).
+nc-unified-search-integration.spec.ts   42/42 GREEN (done-lane :539/:982 Dutch provider name = sandbox, no change)
+dashboard-view-analytics.spec.ts        45/45 GREEN as a file (done-lane :1254 = Redis-only rig, no change)
+61 other red files, pass 1: 476 passed, 25 failed, 3 skipped, 53 did not run (56 min). Every red from test ~250 on is a 401 / login
+  page: the admin browser session from global setup expired about an hour into the run (php -S session GC), not an app red.
+pass 2 (the 19 failing/not-run files, fresh global setup): 157 passed, 0 failed, 6 skipped (15.9 min).
+  skipped by the specs themselves: office-tiles:171 (no office app), work-packages x3 (no OpenProject), runtime-shell-canEdit:171/:202.
+  admin-templates-resync:326 + resync-async:215 GREEN with the tarball's notifications app (was sandbox-only).
+RESULT: no app red left in the done-lane list on a tarball stack. Tip for long serial runs: rerun global setup per ~45 min
+  (or raise session.gc_maxlifetime) or later files fail with 401.
