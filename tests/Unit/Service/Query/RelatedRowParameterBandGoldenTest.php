@@ -118,7 +118,7 @@ class RelatedRowParameterBandGoldenTest extends TestCase {
 			'mysql json forward, scalar in, int bound, bool bound' => [
 				new RelatedRowFilter('cp', 'ref', $mixed, RelatedRowFilter::DIRECTION_FORWARD),
 				new RelatedRowSqlTarget(engine: 'mysql', table: 'tbl', outerAlias: 'o'),
-				'EXISTS (SELECT 1 FROM tbl r1 WHERE r1."schema" = :q1_schema AND r1.uuid = JSON_UNQUOTE(JSON_EXTRACT(o.object, \'$.ref\'))'
+				'EXISTS (SELECT 1 FROM tbl r1 WHERE r1.`schema` = :q1_schema AND r1.uuid = JSON_UNQUOTE(JSON_EXTRACT(o.object, \'$.ref\'))'
 				. ' AND r1.deleted IS NULL AND (P) AND JSON_UNQUOTE(JSON_EXTRACT(r1.object, \'$.a\')) IN (:q1_c0_0)'
 				. ' AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r1.object, \'$.b\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r1.object, \'$.b\')) AS DECIMAL(65,30)) > :q1_c1 ELSE FALSE END)'
 				. ' AND JSON_UNQUOTE(JSON_EXTRACT(r1.object, \'$.c\')) = :q1_c2'
@@ -170,7 +170,7 @@ class RelatedRowParameterBandGoldenTest extends TestCase {
 			'in on unknown engine' => [
 				new RelatedRowFilter('cp', 'ref', [['field' => 'x', 'operator' => 'in', 'value' => ['a']]], RelatedRowFilter::DIRECTION_FORWARD),
 				new RelatedRowSqlTarget(engine: 'oracle', table: 'tbl', outerAlias: 'o', storage: 'columns'),
-				'',
+				"No related-row SQL for engine 'oracle'.",
 			],
 			'unknown engine wins over unknown operator on json' => [
 				new RelatedRowFilter('cp', 'ref', [['field' => 'x', 'operator' => 'like', 'value' => '1']]),

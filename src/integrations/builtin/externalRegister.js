@@ -13,20 +13,14 @@
  * @see ADR-019 — Pluggable Integration Registry
  * @spec openspec/changes/external-register-view-leaf/tasks.md#2-leaf
  */
-// Imported from its own module, not the package barrel (see bookmarks.js).
 import { lazyComponent } from '@conduction/nextcloud-vue/dist/esm/utils/lazyComponent.js'
 import { t } from '@nextcloud/l10n'
 
-/**
- * OpenRegister's own card, loaded on first render. This file runs from the
- * script Nextcloud loads on every page; a static import of the card put the
- * card and the @nextcloud/vue components it uses (NcButton -> vue-router ->
- * Vue devtools, buffer) into that script.
- */
-const ExternalRegisterCard = lazyComponent(
-	() => import(/* webpackChunkName: "external-register-card" */ './ExternalRegisterCard.vue'),
-	'ExternalRegisterCard',
-)
+// The card loads on its first render, like the library's own integration
+// cards: this module is part of the script Nextcloud loads on every page, and
+// a static import put the card's whole tree (NcButton, vue-router and Vue's
+// devtools layer among it) in front of every page.
+const ExternalRegisterCard = lazyComponent(() => import(/* webpackChunkName: "external-register-card" */ './ExternalRegisterCard.vue'), 'ExternalRegisterCard')
 
 /**
  * The descriptor.

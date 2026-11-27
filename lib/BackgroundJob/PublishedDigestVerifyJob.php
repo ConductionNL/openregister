@@ -140,19 +140,30 @@ class PublishedDigestVerifyJob extends TimedJob {
 	}//end check()
 
 	/**
-	 * Log the mismatch for operations and write its audit row.
+	 * Log the mismatch for operations, mark its record for the console and write its audit row.
 	 *
 	 * @param FileDigest $record  The open record.
 	 * @param string     $current The digest the file has now, '' when it has none.
 	 * @param string     $reason  Why it does not match.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
 	 */
 	private function report(FileDigest $record, string $current, string $reason): void {
 		$this->logger->error(
 			message: '[PublishedDigestVerifyJob] A published file no longer matches its digest: ' . $reason,
 			context: ['fileId' => $record->getFileId(), 'objectUuid' => $record->getObjectUuid(), 'recorded' => $record->getSha256(), 'current' => $current]
 		);
+
+		try {
+			$this->service->flagMismatch(record: $record, current: $current);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[PublishedDigestVerifyJob] The mismatch could not be marked for the operations console: ' . $e->getMessage(),
+				context: ['fileId' => $record->getFileId()]
+			);
+		}
 
 		try {
 			$object = $this->objects->findAcrossAllSources(
