@@ -49,3 +49,8 @@ first-run-starter-widgets:78               PR #2326 merged (starter app tiles ar
 public-share-client-ip:315/:335/:356       ENV: this sandbox had ratelimit.protection.enabled=false
 service-health-ping:684                    ENV: needs memcache.distributed (Redis); 1/1 once set (APCu-only: CLI job cannot see web cache)
 setup-wizard, setup-wizard-cli, scheduled-exports(-delivery), public-start-page-default-app, admin-settings-persistence: GREEN with local occ
+widgets-nc-widget:276 DIAGNOSIS: CnNcWidgetWidget.tryMount() takes the native path only when a callback exists at mount. Since the
+  workspace boots from its initial state the grid mounts in the same task that installs widgetBridge (src/main.js imports
+  services/widgetBridge.js, then app.mount), and core replaces a pre-seeded window.OCA, so no callback can exist at mount: the
+  widget starts in API mode (widget-items, limit = API_ITEM_LIMIT 7), then the 200 ms poll switches it to native. Fix belongs to
+  the app or nc-vue (e.g. one poll tick before the API fetch, or mount the grid a task after the bridge), not to the spec.
