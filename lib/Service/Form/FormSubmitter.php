@@ -49,4 +49,53 @@ final readonly class FormSubmitter {
 		public ?DraftOwner $owner = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * This submitter for another scope and draft.
+	 *
+	 * With an owner reference the draft belongs to `<ownerScope>:<ownerReference>`; without one it keeps
+	 * this submitter's owner, or none when $keepOwner is false (the subject then owns it).
+	 *
+	 * @param string      $scope          The form or journey id the key and upload tokens belong to.
+	 * @param string|null $draftId        The draft saved into or left, or null.
+	 * @param string      $ownerScope     The scope of an asserted owner.
+	 * @param string|null $ownerReference The asserted owner's reference; null asserts none.
+	 * @param bool        $keepOwner      Keep this submitter's owner when no reference is given.
+	 *
+	 * @return self The rescoped submitter.
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-run-must-be-resumable-without-becoming-an-oracle
+	 */
+	public function rescoped(
+		string $scope,
+		?string $draftId,
+		string $ownerScope='',
+		?string $ownerReference=null,
+		bool $keepOwner=true
+	): self {
+		$owner = null;
+		if ($keepOwner === true) {
+			$owner = $this->owner;
+		}
+
+		if ($ownerReference !== null) {
+			$owner = DraftOwner::scoped(scope: $ownerScope, reference: $ownerReference);
+		}
+
+		return new self(subject: $this->subject, scope: $scope, draftId: $draftId, owner: $owner);
+	}//end rescoped()
+
+	/**
+	 * The owner value a scoped owner `<scope>:<reference>` is stored under.
+	 *
+	 * @param string $scope     The owner scope.
+	 * @param string $reference The owner reference.
+	 *
+	 * @return string The stored owner value.
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-run-must-be-resumable-without-becoming-an-oracle
+	 */
+	public static function scopedOwnerValue(string $scope, string $reference): string {
+		return DraftOwner::scoped(scope: $scope, reference: $reference)->value();
+	}//end scopedOwnerValue()
 }//end class

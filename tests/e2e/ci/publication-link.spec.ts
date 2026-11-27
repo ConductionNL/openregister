@@ -18,6 +18,7 @@ import type { APIRequestContext } from '@playwright/test'
  * @e2e public-access-links::revocation-is-immediate-and-silent
  * @e2e public-access-links::an-internal-note-stays-internal
  * @e2e public-access-links::a-hidden-property-stays-hidden
+ * @e2e public-access-links::a-file-is-opened-and-downloaded-at-its-link
  *
  * WHY THIS LAYER AND NOT PHPUNIT.
  *
@@ -139,11 +140,16 @@ test.describe('access by link rather than by account', () => {
 			data: {
 				name: `e2e besluitenlijst ${RUN}`,
 				description: 'e2e',
-				query: { '@self': { register: registerId, schema: schemaId } },
+				// The bounding shape the app saves and a view link requires:
+				// a view without `registers`/`schemas` is no bound and is refused.
+				query: { registers: [Number(registerId)], schemas: [Number(schemaId)] },
 			},
 		})
 		expect(view.ok(), `view create failed: ${await view.text()}`).toBeTruthy()
-		const viewBody = await view.json()
+		// The create answers `{view: {...}}`; read through the wrapper, or the
+		// view id is the string "undefined" and every view mint is a 404.
+		const viewResponse = await view.json()
+		const viewBody = viewResponse.view ?? viewResponse
 		viewUuid = String(viewBody.uuid ?? viewBody.id)
 		expect(viewUuid, 'no uuid came back from the view create').toBeTruthy()
 	})
@@ -272,6 +278,74 @@ test.describe('access by link rather than by account', () => {
 		}
 
 		await admin.delete(`${API}/access-links/${link.id}`)
+	})
+
+	test('a file is opened and downloaded at its link by somebody with no account', async () => {
+		// The file lives in the object's folder; nothing records it on the
+		// object itself, which is where a file link used to look, so every
+		// file link answered its holder 404.
+		const content = `Besluit op bezwaar ${RUN}`
+		const upload = await admin.post(
+			`${API}/objects/${registerId}/${schemaId}/${objectUuid}/files-multipart`,
+			{
+				multipart: {
+					files: {
+						name: `besluit-${RUN}.txt`,
+						mimeType: 'text/plain',
+						buffer: Buffer.from(content),
+					},
+				},
+			},
+		)
+		expect(upload.ok(), `file upload failed: ${await upload.text()}`).toBeTruthy()
+		const uploaded = await upload.json()
+		const fileId = String((Array.isArray(uploaded) ? uploaded[0] : uploaded).id)
+
+		const mint = await admin.post(`${API}/access-links`, {
+			data: {
+				subjectType: 'file',
+				subjectId: `${objectUuid}/${fileId}`,
+				expiresAt: inSevenDays(),
+			},
+		})
+		expect(mint.ok(), `file mint failed: ${await mint.text()}`).toBeTruthy()
+		const link = await mint.json()
+
+		const opened = await anon.get(`${API}/public/links/${link.anchor}`)
+		expect(
+			opened.ok(),
+			`an anonymous file open failed: ${await opened.text()}`,
+		).toBeTruthy()
+		const body = await opened.json()
+		expect(body.link.subjectType).toBe('file')
+		expect(body.file.title).toBe(`besluit-${RUN}.txt`)
+		expect(body.file.path, 'the instance\'s folders are not the holder\'s business').toBeUndefined()
+		expect(body.subject.bsn, 'the carrying record is filtered as always').toBeUndefined()
+
+		// The address the descriptor gives is one the holder can use: no
+		// session, no account route.
+		const downloadUrl = String(body.file.downloadUrl)
+		expect(downloadUrl).toContain(`/api/public/links/${link.anchor}/download`)
+		const download = await anon.get(downloadUrl)
+		expect(download.status(), 'the holder downloads the file').toBe(200)
+		expect(await download.text()).toBe(content)
+		expect(download.headers()['content-disposition']).toContain(`besluit-${RUN}.txt`)
+
+		// An object link opens no download: the route serves a file link only.
+		const objectMint = await admin.post(`${API}/access-links`, {
+			data: { subjectType: 'object', subjectId: objectUuid, expiresAt: inSevenDays() },
+		})
+		const objectLink = await objectMint.json()
+		expect(
+			(await anon.get(`${API}/public/links/${objectLink.anchor}/download`)).status(),
+			'an object link has nothing to download',
+		).toBe(404)
+
+		// Revoked, the download goes the way of the link.
+		await admin.delete(`${API}/access-links/${link.id}`)
+		expect((await anon.get(downloadUrl)).status()).toBe(404)
+
+		await admin.delete(`${API}/access-links/${objectLink.id}`)
 	})
 
 	test('knowing the case number is not knowing the link', async () => {

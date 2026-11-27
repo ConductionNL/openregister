@@ -36,12 +36,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Exception\TokenRateLimitExceededException;
+use OCA\OpenRegister\Kernel\Contracts\CurrentTokenGrantInterface;
+use OCP\ICacheFactory;
+
 /**
  * The grant in force for the current request.
  *
  * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
  */
-class TokenGrantSource {
+class TokenGrantSource implements CurrentTokenGrantInterface {
 
 	/**
 	 * The grant in force, when one is.
@@ -103,6 +107,57 @@ class TokenGrantSource {
 	public function current(): ?TokenGrant {
 		return $this->grant;
 	}//end current()
+
+	/**
+	 * The id of the token whose grant is bound to this request, or null when no
+	 * grant with an id is bound (an interactive session or an ungranted token).
+	 *
+	 * @return string|null The token id, or null.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-the-effective-grant-is-visible-and-writes-name-the-token
+	 */
+	public function currentTokenId(): ?string {
+		if ($this->grant === null || $this->grant->tokenId === '') {
+			return null;
+		}
+
+		return $this->grant->tokenId;
+	}//end currentTokenId()
+
+	/**
+	 * Count this call against the grant's own rate limit, refusing it when over.
+	 *
+	 * Counted at the moment the credential is accepted, before the request acts
+	 * as the consumer's user, so a call over the limit never runs. A grant
+	 * without a limit, or an instance without a distributed cache, counts and
+	 * refuses nothing.
+	 *
+	 * @param TokenGrant|null    $grant        The grant just bound, or null.
+	 * @param ICacheFactory|null $cacheFactory The cache the counter lives in, or null.
+	 * @param int                $now          The current time (unix seconds).
+	 *
+	 * @return void
+	 *
+	 * @throws TokenRateLimitExceededException When the call is over the grant's limit.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#scenario-one-runaway-integration-does-not-take-the-balie-down
+	 */
+	public function refuseOverGrantLimit(?TokenGrant $grant, ?ICacheFactory $cacheFactory, int $now): void {
+		if ($grant === null || $grant->rateLimit === null || $cacheFactory === null) {
+			return;
+		}
+
+		$outcome = (new TokenGrantRateLimiter(cacheFactory: $cacheFactory))->consume(grant: $grant, now: $now);
+		if ($outcome === null || $outcome['allowed'] === true) {
+			return;
+		}
+
+		throw new TokenRateLimitExceededException(
+			limit: $outcome['limit'],
+			window: TokenGrantRateLimiter::WINDOW_SECONDS,
+			retryAfter: ($outcome['resetAt'] - $now)
+		);
+	}//end refuseOverGrantLimit()
 
 	/**
 	 * Whether a machine principal was bound for this request.

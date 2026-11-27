@@ -142,6 +142,7 @@ import {
 	addJoinedValues,
 	addPresent,
 	addScopeIds,
+	isoDate,
 } from '../../services/trailFilters.js'
 import { routeBoundFilters, selectedScope } from '../routeBoundFilters.js'
 import { auditActionOptions } from './trailOptions.js'
@@ -445,6 +446,7 @@ export default {
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 * @spec openspec/specs/enhanced-audit-trail/spec.md
+		 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
 		 */
 		applyFiltersToStore() {
 			const filters = {}
@@ -452,8 +454,8 @@ export default {
 			addScopeIds(filters, selectedScope())
 			addJoinedValues(filters, ['user', this.selectedUsers])
 			addPresent(filters, [
-				['dateFrom', this.dateFrom],
-				['dateTo', this.dateTo],
+				['dateFrom', isoDate(this.dateFrom)],
+				['dateTo', isoDate(this.dateTo)],
 				['object', this.objectFilter],
 			])
 			if (this.showOnlyWithChanges) filters.onlyWithChanges = true

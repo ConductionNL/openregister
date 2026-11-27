@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 282;
+	private const LISTENER_COUNT = 285;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -55,9 +55,13 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Then the ChangeGateListener took the decided approval sequences too,
 	 * on TaskSequenceCompletedEvent after the ApprovalChainAdvanceListener and on the new
 	 * TaskSequenceRejectedEvent (279 -> 281).
-	 * Then TalkAppScriptListener in FlowsListenerRegistrar (files-leaf-save-to-object, 281 -> 282).
+	 * Then one PersonalTokenGrantRevokedListener registration on TokenInvalidatedEvent in
+	 * AccessListenerRegistrar (scoped-api-tokens, 281 -> 282).
+	 * Then two JourneyValidationListener registrations (ObjectCreatingEvent, ObjectUpdatingEvent)
+	 * (count 282 -> 284).
+	 * Then TalkAppScriptListener in FlowsListenerRegistrar (files-leaf-save-to-object, 284 -> 285).
 	 */
-	private const SEQUENCE_SHA256 = '21c708ab72d70bb484435407c30cec8bc727fdc38261bbbfa216f8f375b683cf';
+	private const SEQUENCE_SHA256 = 'b320fac0e245bd5fa820201c6c205b5203d6bc836e04b1d409ccdd4d0df7c5c6';
 
 	/**
 	 * The registration calls, in call order, with every argument.

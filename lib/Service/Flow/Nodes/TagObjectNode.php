@@ -319,17 +319,32 @@ class TagObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	/**
 	 * The uuid of the object an item names: the rendered `uuid` template, else the item's own uuid.
 	 *
+	 * An item's own uuid is its `uuid`, or, for an item that is a rendered object (what an object
+	 * trigger puts in the run), the `@self.id` of its envelope.
+	 *
 	 * @param array $json       The item's JSON.
 	 * @param mixed $configured The configured `uuid` template.
 	 *
 	 * @return string The uuid, or an empty string.
+	 *
+	 * @spec openspec/changes/flow-tag-object-step/specs/flow-engine/spec.md#requirement-a-flow-step-can-add-or-remove-a-tag-on-an-object
 	 */
 	private function targetOf(array $json, mixed $configured): string {
 		if (is_string($configured) === true && trim($configured) !== '') {
 			return trim((string)FlowValueTemplate::render($configured, $json));
 		}
 
-		return trim((string)($json['uuid'] ?? ''));
+		$own = trim((string)($json['uuid'] ?? ''));
+		if ($own !== '') {
+			return $own;
+		}
+
+		$envelope = ($json['@self'] ?? null);
+		if (is_array($envelope) === true && is_scalar($envelope['id'] ?? null) === true) {
+			return trim((string)$envelope['id']);
+		}
+
+		return '';
 	}//end targetOf()
 
 	/**
