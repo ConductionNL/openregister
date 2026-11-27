@@ -129,6 +129,7 @@ DOMAIN_ORDER=(
     "nlgov-conformance"
     "reply-threading"
     "licence-plate-detection"
+    "search-dutch-stemming"
     "scheduled-messages"
     "run-migration"
     "lifecycle-side-moves"
@@ -259,6 +260,9 @@ declare -A DOMAIN_COLLECTIONS=(
     # detection-dutch-licence-plates 4.1: a plate and a BSN detected by the nl pattern set, Dutch placeholders in
     # the anonymised copy, and no detection with the set switched off. Saves and restores the whole file settings.
     [licence-plate-detection]="$REPO_ROOT/tests/integration/openregister-licence-plate-detection.postman_collection.json"
+    # search-dutch-language-quality 1.5: _search=omgevingsvergunningen finds "Omgevingsvergunning bouwen" where the
+    # database stems Dutch (PostgreSQL), and nothing where it does not; the capability says which.
+    [search-dutch-stemming]="$REPO_ROOT/tests/integration/openregister-search-dutch-stemming.postman_collection.json"
     # migrate-run-between-versions 4.1: a run parked at a user task is migrated to a version that renamed the
     # step (422 without a mapping, a dry run that writes nothing, then the move), and its task completes there.
     [run-migration]="$REPO_ROOT/tests/integration/openregister-run-migration.postman_collection.json"
