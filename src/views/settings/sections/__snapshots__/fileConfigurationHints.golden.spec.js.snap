@@ -843,7 +843,9 @@ exports[`file configuration settings load golden loads objects and unknown ids 1
 
 exports[`file configuration settings load golden loads rejected 1`] = `
 {
-  "calls": [],
+  "calls": [
+    "loadObjectSettings",
+  ],
   "fileSettings": "{
  "extractionScope": {
   "id": "objects",

@@ -19,7 +19,8 @@
 
 ## 4. Tests and docs
 
-- [ ] 4.1 Add `tests/e2e/ci/task-delegation-mandate.spec.ts`: delegate to a holder and a non-holder, set an absence with a replacement through the Nextcloud absence API, create a task for the absent user, read the task and its audit.
+- [x] 4.1 Add `tests/e2e/ci/task-delegation-mandate.spec.ts`: delegate to a holder and a non-holder, set an absence with a replacement through the Nextcloud absence API, create a task for the absent user, read the task and its audit.
+  - done as Newman, not Playwright (every step is an API call; gate-19): `tests/integration/openregister-task-delegation-mandate.postman_collection.json`, registered as `task-delegation-mandate` in `tests/newman/run-all.sh`; 30 requests, 45 assertions, 0 failed against a live Nextcloud 34 on PostgreSQL. Unknown verb 400; delegation to a non-holder 422 naming user and verb, without a mandate 400, to a holder 200 with the mandate and the evidence in the audit; an absence set through Nextcloud's out-of-office API routes a new task to a stand-in who holds the mandate (`substitute` by `absence:<id>`) and keeps it with the absent user when the stand-in does not (`substitute-refused`).
 - [ ] 4.2 Document delegation with a mandate and substitution in `docs/features/`, with a screenshot of the audit tab showing a `substitute` entry.
 
 Acceptance:

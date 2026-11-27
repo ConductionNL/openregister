@@ -1629,15 +1629,24 @@ export default {
 	},
 
 	/**
-	 * Load settings and extraction stats on mount.
+	 * Load the section: settings, extraction stats and the backend state are
+	 * read side by side (they were four requests in a row); the state is
+	 * applied after the settings, because it resolves the recognition method
+	 * the settings set.
 	 *
-	 * @spec exclude UI plumbing — lifecycle hook delegating to loaders.
+	 * @spec openspec/specs/platform-administration-modals/spec.md
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
-		await this.loadSettings()
-		await this.loadExtractionStats()
-		await this.loadBackendState()
+		const backendState = Promise.resolve()
+			.then(() => this.settingsStore.getAnonymisationBackendState())
+			.catch((error) => {
+				// eslint-disable-next-line no-console
+				console.error('Failed to load anonymisation backend state:', error)
+				return null
+			})
+		await Promise.all([this.loadSettings(), this.loadExtractionStats()])
+		await this.loadBackendState(backendState)
 	},
 
 	methods: {
@@ -1734,6 +1743,8 @@ export default {
 		 */
 		async loadSettings() {
 			try {
+				// The object settings are their own read: send it beside this one.
+				const objectSettings = this.loadObjectSettings()
 				const settings = await this.settingsStore.getFileSettings()
 				if (settings) {
 					applySelectedOptions(this, settings)
@@ -1742,8 +1753,7 @@ export default {
 					applyPatternSets(this.fileSettings, settings)
 					applyRequireReview(this.fileSettings, settings)
 				}
-				// Load object settings
-				await this.loadObjectSettings()
+				await objectSettings
 			} catch (error) {
 				console.error('Failed to load file settings:', error)
 			}
@@ -1775,11 +1785,12 @@ export default {
 		 * Load the resolved anonymisation backend state and capture any ExApp hint.
 		 *
 		 * @spec exclude UI plumbing — admin-settings load hydrating backend status.
+		 * @param {Promise<object|null>|null} pending A read already sent (on mount), else one is sent now.
 		 * @return {Promise<void>}
 		 */
-		async loadBackendState() {
+		async loadBackendState(pending = null) {
 			try {
-				const state = await this.settingsStore.getAnonymisationBackendState()
+				const state = await (pending ?? this.settingsStore.getAnonymisationBackendState())
 				this.backendState = state
 				this.openAnonymiserError = null
 				if (state) {
