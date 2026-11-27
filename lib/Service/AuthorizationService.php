@@ -191,10 +191,13 @@ class AuthorizationService {
 	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md
 	 */
 	private function bindConsumerGrant(ResolvedConsumer $consumer, string $fallbackId): void {
-		$this->tokenGrantSource?->bindFromConsumer(
+		$grant = $this->tokenGrantSource?->bindFromConsumer(
 			storedAuthorization: $consumer->configuration,
 			tokenId: (string)($consumer->uuid ?? $fallbackId)
 		);
+
+		// Counted against the grant's own rate limit, before acting as the user.
+		$this->tokenGrantSource?->refuseOverGrantLimit(grant: $grant, cacheFactory: $this->cacheFactory, now: time());
 	}//end bindConsumerGrant()
 
 	/**

@@ -43,6 +43,7 @@ use OCA\OpenRegister\Event\AppWebhookEvents;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapperInterface;
 use OCA\OpenRegister\Db\WebhookMapperInterface;
+use OCA\OpenRegister\Service\Outbound\OutboundAllowlist;
 use OCA\OpenRegister\Service\WebhookEvent;
 use OCA\OpenRegister\Service\WebhookDelivery;
 use OCA\OpenRegister\Service\WebhookService;
@@ -440,6 +441,13 @@ class WebhooksController extends Controller {
 	private ?IGroupManager $groupManager;
 
 	/**
+	 * The administered outbound allowlist a destination is checked against at save; null checks nothing.
+	 *
+	 * @var OutboundAllowlist|null
+	 */
+	private ?OutboundAllowlist $allowlist = null;
+
+	/**
 	 * Lets a holder of `webhook.own` manage their own webhooks; null: administrators only.
 	 *
 	 * @var WebhookOwnership|null
@@ -463,6 +471,7 @@ class WebhooksController extends Controller {
 		$this->logger = $services->mappers->logger;
 		$this->userSession = $services->platform->userSession;
 		$this->groupManager = $services->platform->groupManager;
+		$this->allowlist = $services->allowlist;
 		$this->ownership = $services->ownership;
 	}//end __construct()
 
@@ -490,6 +499,36 @@ class WebhooksController extends Controller {
 
 		return $this->groupManager->isAdmin($user->getUID());
 	}//end isCurrentUserAdmin()
+
+	/**
+	 * The 422 a destination outside the administered outbound allowlist is refused with, or null.
+	 *
+	 * Checked at save, so the person who typed the destination hears it while
+	 * they are still there, not a delivery job at night (D-C40-3).
+	 *
+	 * @param mixed $url The destination as sent.
+	 *
+	 * @return JSONResponse|null The refusal naming the allowlist, or null when admitted.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-its-own-rate-limit-and-outbound-destinations-are-allowlisted-req-sat-005
+	 */
+	private function destinationRefused(mixed $url): ?JSONResponse {
+		if ($this->allowlist === null) {
+			return null;
+		}
+
+		$destination = '';
+		if (is_string($url) === true) {
+			$destination = $url;
+		}
+
+		$refusal = $this->allowlist->refusal(url: $destination);
+		if ($refusal === null) {
+			return null;
+		}
+
+		return new JSONResponse(data: ['error' => 'url: ' . $refusal, 'field' => 'url'], statusCode: 422);
+	}//end destinationRefused()
 
 	/**
 	 * The signed-in user, or null.
@@ -839,6 +878,11 @@ class WebhooksController extends Controller {
 				);
 			}
 
+			$refused = $this->destinationRefused(url: $data['url']);
+			if ($refused !== null) {
+				return $refused;
+			}
+
 			if ($this->isCurrentUserAdmin() === false) {
 				return $this->createOwned(data: $data);
 			}
@@ -886,6 +930,13 @@ class WebhooksController extends Controller {
 
 			// Remove ID from data if present.
 			unset($data['id']);
+
+			if (array_key_exists('url', $data) === true) {
+				$refused = $this->destinationRefused(url: $data['url']);
+				if ($refused !== null) {
+					return $refused;
+				}
+			}
 
 			$data = $this->ownedUpdate(id: $id, data: $data);
 			if ($data instanceof JSONResponse) {
