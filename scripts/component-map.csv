@@ -777,6 +777,7 @@ Db/IsoTimestampsTrait.php,17,Db,Core,Core/Db/IsoTimestampsTrait.php,0,,Core
 Db/JobRun.php,66,Db,Configuration,Configuration/Db/JobRun.php,0,,Configuration
 Db/JobRunMapper.php,121,Db,Configuration,Configuration/Db/JobRunMapper.php,0,,Configuration
 Db/JsonFieldsTrait.php,15,Db,Integrations,Integrations/Db/JsonFieldsTrait.php,0,,Kernel
+Db/LazySchemaCatalog.php,,Db,,,,,Core
 Db/LikeOperator.php,62,Db,Service,Service/Db/LikeOperator.php,0,,Core
 Db/LinkColumn.php,33,Db,Integrations,Integrations/Db/LinkColumn.php,0,,Core
 Db/MagicMapper.php,6709,Db,Service,Service/Db/MagicMapper.php,54,1,Core
