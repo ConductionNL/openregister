@@ -378,6 +378,80 @@ class AuditTrailController extends Controller {
 	}//end buildFiltersFromParams()
 
 	/**
+	 * The instance-wide list's register, schema and period, read from the query.
+	 *
+	 * `extractRequestParameters()` drops `register` and `schema` because an
+	 * object's own trail carries them as route slugs; the instance-wide list
+	 * takes them from the query, where the audit page sends the ids. The
+	 * period comes as `dateFrom`/`dateTo` (or `from`/`to`), and a bare date as
+	 * the end means the whole of that day. Without this the page's register,
+	 * schema and date filters were silently dropped and the list answered the
+	 * whole trail.
+	 *
+	 * @param array<string, mixed> $filters The column filters read so far.
+	 *
+	 * @return array<string, mixed> The filters with the scope and the period.
+	 *
+	 * @throws \InvalidArgumentException When a bound is not a date.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+	 */
+	private function listScope(array $filters): array {
+		$params = $this->request->getParams();
+		unset($filters['dateFrom'], $filters['dateTo']);
+
+		foreach (['register', 'schema'] as $key) {
+			$value = ($params[$key] ?? null);
+			if (is_scalar($value) === true && ctype_digit((string) $value) === true) {
+				$filters[$key] = (int) $value;
+			}
+		}
+
+		$bounds = [];
+		$from = trim((string) ($params['dateFrom'] ?? $params['from'] ?? ''));
+		if ($from !== '') {
+			$bounds['gte'] = self::periodBound(value: $from, endOfDay: false);
+		}
+
+		$till = trim((string) ($params['dateTo'] ?? $params['to'] ?? ''));
+		if ($till !== '') {
+			$bounds['lte'] = self::periodBound(value: $till, endOfDay: true);
+		}
+
+		if ($bounds !== []) {
+			$filters['created'] = $bounds;
+		}
+
+		return $filters;
+	}//end listScope()
+
+	/**
+	 * A period bound as a UTC `Y-m-d H:i:s`; a bare date as the end is the end of that day.
+	 *
+	 * @param string $value    The bound as given (an ISO 8601 datetime or a date).
+	 * @param bool   $endOfDay Whether a bare date means the end of the day.
+	 *
+	 * @return string The bound.
+	 *
+	 * @throws \InvalidArgumentException When the value is not a date.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+	 */
+	private static function periodBound(string $value, bool $endOfDay): string {
+		try {
+			$date = new \DateTimeImmutable($value);
+		} catch (\Exception) {
+			throw new \InvalidArgumentException(sprintf('"%s" is not a date.', $value));
+		}
+
+		if ($endOfDay === true && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1) {
+			$date = $date->setTime(23, 59, 59);
+		}
+
+		return $date->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+	}//end periodBound()
+
+	/**
 	 * Whether the caller asked for the keyset-paged list.
 	 *
 	 * @return bool True when `cursor` (or `_cursor`) is present, even empty for the first page.
@@ -397,13 +471,15 @@ class AuditTrailController extends Controller {
 	 * @return array<string, mixed> The filters for AuditTrailPageQuery.
 	 *
 	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
 	 */
 	private function pageFilters(): array {
 		$params = $this->request->getParams();
 		$filters = [
 			'actor' => ($params['actor'] ?? $params['user'] ?? null),
-			'from' => ($params['from'] ?? null),
-			'to' => ($params['to'] ?? null),
+			// The audit page sends its period as dateFrom/dateTo.
+			'from' => ($params['from'] ?? $params['dateFrom'] ?? null),
+			'to' => ($params['to'] ?? $params['dateTo'] ?? null),
 		];
 		foreach (['action', 'register', 'schema', 'object', 'tool', 'actionPrefix', 'toolPrefix'] as $key) {
 			$filters[$key] = ($params[$key] ?? null);
@@ -456,6 +532,7 @@ class AuditTrailController extends Controller {
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
 	 */
 	public function index(): JSONResponse {
 		$denial = $this->requireAdmin();
@@ -472,6 +549,11 @@ class AuditTrailController extends Controller {
 
 		// Extract common parameters.
 		$params = $this->extractRequestParameters();
+		try {
+			$params['filters'] = $this->listScope(filters: $params['filters']);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+		}
 
 		// Get logs from service. An explicit-reveal value reads masked for an
 		// administrator too (property-explicit-reveal).

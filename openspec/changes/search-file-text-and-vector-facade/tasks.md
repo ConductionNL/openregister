@@ -17,7 +17,7 @@
 
 ## 4. Proof and docs
 
-- [ ] 4.1 Newman: extract a PDF, read `GET /api/files/{id}/text` as its owner (200) and as another user (404).
+- [x] 4.1 Newman: extract a PDF, read `GET /api/files/{id}/text` as its owner (200) and as another user (404). (verified: `tests/integration/openregister-file-text-read.postman_collection.json`, registered as `file-text-read` in `tests/newman/run-all.sh`; 13 requests, 20 assertions, 0 failed against a live Nextcloud 34 on PostgreSQL. The PDF is built per run around a word unique to the run; before extraction the owner reads 404 'not extracted yet', after it 200 with that word; a stranger reads 404 with no text, the same answer as for an id that does not exist.)
 - [x] 4.2 Document the text read and the facade in `docs/`, and close issue #4106 with the PR. (verified: docs/api/vector-search-api.md, sections "Reading a file's extracted text" and "Vector search facade"; the PR body closes #4106.)
 
 Acceptance:

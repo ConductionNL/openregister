@@ -908,11 +908,19 @@ class CredentialBrokerService {
 		?string $actingUserId = null,
 		?string $actingOrganisationId = null,
 	): ObjectEntity {
+		// A sessionless caller (a counterparty request, a background job) has no
+		// active organisation, so a tenant-filtered lookup never finds an
+		// organisation credential and every guard below is skipped with
+		// "credential not found". Without a session the lookup is unscoped and
+		// Guard 1 alone decides, on the explicit acting user and organisation;
+		// with a session it stays scoped to that session's tenant.
+		$sessionless = ($this->sessionUser() === null);
 		try {
 			$credential = WriteCause::asLookup(fn () => $this->sources->objectService->find(
 				id: $credentialId,
 				options: new ObjectFindOptions(register: self::REGISTER, schema: self::SCHEMA),
-				_rbac: false
+				_rbac: false,
+				_multitenancy: ($sessionless === false)
 			));
 		} catch (Throwable $e) {
 			// Log the REASON. A credential that is genuinely absent and a lookup

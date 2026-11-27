@@ -83,6 +83,7 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 	 */
 	private function service(bool $fail): DashboardService {
 		$objects = $this->createMock(MagicMapper::class);
+		$objects->method('rememberPairCounts')->willReturnCallback(static fn (callable $work): mixed => $work());
 		$audit = $this->createMock(AuditTrailMapper::class);
 		$webhooks = $this->createMock(WebhookLogMapper::class);
 		$registers = $this->createMock(RegisterMapper::class);

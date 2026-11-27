@@ -185,7 +185,7 @@ final class CascadeRestoreServiceTest extends TestCase {
 
 	/**
 	 * @param list<AuditTrail>   $rows    The evidence the lookup returns.
-	 * @param list<ObjectEntity> $objects The objects the batched lookup returns.
+	 * @param list<ObjectEntity> $objects The objects as stored, deleted state included.
 	 */
 	private function given(array $rows, array $objects): void {
 		$this->auditTrails->method('findTriggeredActions')->willReturnCallback(
@@ -204,7 +204,19 @@ final class CascadeRestoreServiceTest extends TestCase {
 				return $rows;
 			}
 		);
-		$this->objects->method('findMultipleAcrossAllMagicTables')->willReturn($objects);
+		$this->objects->method('findStoredAcrossAllMagicTables')->willReturn($objects);
+		// The plain lookup fills only name, register, schema and data, as the real one does: a service that
+		// classified from it would read every dependant as never deleted.
+		$this->objects->method('findMultipleAcrossAllMagicTables')->willReturn(
+			array_map(
+				static function (ObjectEntity $object): ObjectEntity {
+					$plain = clone $object;
+					$plain->setDeleted(null);
+					return $plain;
+				},
+				$objects
+			)
+		);
 	}//end given()
 
 	/**
@@ -378,7 +390,7 @@ final class CascadeRestoreServiceTest extends TestCase {
 
 	public function testADeleteWithoutEvidenceSaysTheCascadeIsNotKnown(): void {
 		$this->given(rows: [], objects: []);
-		$this->objects->expects($this->never())->method('findMultipleAcrossAllMagicTables');
+		$this->objects->expects($this->never())->method('findStoredAcrossAllMagicTables');
 
 		$plan = $this->service->preview(root: self::root(), now: self::now());
 

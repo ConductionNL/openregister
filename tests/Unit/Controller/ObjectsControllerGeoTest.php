@@ -362,6 +362,68 @@ class ObjectsControllerGeoTest extends TestCase {
 		$this->assertSame(1, $data['total']);
 	}//end testGeoSearchPostFiltersOnlyTheRbacScopedRows()
 
+	/**
+	 * The geo-search body's own keys are withheld from its listing, and only while it runs.
+	 *
+	 * A filter on a property the schema does not declare matches nothing, so a
+	 * `geometry` key read as a filter emptied every geo-search.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+	 */
+	public function testTheGeoSearchBodyIsWithheldFromItsListingOnly(): void {
+		$parser = $this->createMock(GeoFilterParser::class);
+		$parser->method('fromGeoSearchBody')->willReturn([['op' => 'within', 'geometry' => []]]);
+		$applier = $this->createMock(GeoFilterApplier::class);
+		$applier->method('applyAll')->willReturnArgument(0);
+
+		$controller = $this->controllerWithGeoSearch($this->scopedRows(), $parser, $applier);
+		$withheld = new \ReflectionProperty(ObjectsController::class, 'listingWithheldParams');
+		$during = null;
+		$controller->method('index')->willReturnCallback(
+			function () use (&$during, $withheld, $controller): JSONResponse {
+				$during = $withheld->getValue($controller);
+				return new JSONResponse(['results' => $this->scopedRows(), 'total' => 2]);
+			}
+		);
+		$this->request->method('getParams')->willReturn(['geometry' => ['within' => []], 'property' => 'locatie']);
+
+		$controller->geoSearch('reg', 'sch', $this->createMock(ObjectService::class));
+
+		$this->assertSame(['geometry', 'property'], $during, 'the listing read the body as filters');
+		$this->assertSame([], $withheld->getValue($controller), 'a later listing on the same controller would lose its filters');
+	}//end testTheGeoSearchBodyIsWithheldFromItsListingOnly()
+
+	/**
+	 * A withheld parameter reaches no listing query; every other parameter still does.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+	 */
+	public function testAWithheldParameterReachesNoListingQuery(): void {
+		$controller = $this->controllerWithGeoSearch([], null, null);
+		$this->request->method('getParams')->willReturn(['geometry' => ['within' => []], 'property' => 'locatie', 'naam' => 'Jordaan', '_limit' => 5]);
+		$build = new \ReflectionMethod(ObjectsController::class, 'buildListingQuery');
+		$withheld = new \ReflectionProperty(ObjectsController::class, 'listingWithheldParams');
+		$listing = ['register' => 'reg', 'schema' => 'sch', 'resolved' => ['register' => 1, 'schema' => 2]];
+
+		$withheld->setValue($controller, ['geometry', 'property']);
+		$service = $this->createMock(ObjectService::class);
+		$service->expects($this->once())->method('buildSearchQuery')
+			->with(['naam' => 'Jordaan', '_limit' => 5], 1, 2)
+			->willReturn([]);
+		$build->invoke($controller, $listing, $service);
+
+		$withheld->setValue($controller, []);
+		$plain = $this->createMock(ObjectService::class);
+		$plain->expects($this->once())->method('buildSearchQuery')
+			->with(['geometry' => ['within' => []], 'property' => 'locatie', 'naam' => 'Jordaan', '_limit' => 5], 1, 2)
+			->willReturn([]);
+		$build->invoke($controller, $listing, $plain);
+	}//end testAWithheldParameterReachesNoListingQuery()
+
 	public function testGeoSearchReturns422ForAnUnparseableGeometry(): void {
 		$parser = $this->createMock(GeoFilterParser::class);
 		$parser->method('fromGeoSearchBody')

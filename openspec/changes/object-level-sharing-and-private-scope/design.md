@@ -162,6 +162,19 @@ For the credential and flow cases this is the right shape: the schema grants `re
 to `authenticated` (the ceiling is "any logged-in user"), the object is `private`
 (nobody but the owner), and a grant picks out the one colleague.
 
+### D3b amendment (Ruben, 25 Nov 2026) — a READ grant admits on its own
+
+Decided for launchpad's shared dashboards (REQ-RIC-002, openregister#11203): a
+dashboard shared with one colleague must open for them although the schema's
+audience rules do not list them. So for `read` only, the grant is an independent
+admit path beside the owner admits:
+
+    owner  OR  grantedReadToMe  OR  ((notPrivate OR grantedToMe) AND rules)
+
+The deny term, the tenant edge (D3c), classification and confidentiality are
+still ANDed over the whole predicate, and a draft stays with its owner. Every
+other action keeps D3b: the schema stays the ceiling for writes.
+
 ### D3c — The tenant edge is enforced by the EXISTING organisation filter, forced on
 
 A grant must never become a cross-tenant hole (ADR-002: the organisation UUID is

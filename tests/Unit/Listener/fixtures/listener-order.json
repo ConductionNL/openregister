@@ -302,7 +302,11 @@
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"
 	],
 	"OCA\\OpenRegister\\Event\\TaskSequenceCompletedEvent": [
-		"OCA\\OpenRegister\\Listener\\ApprovalChainAdvanceListener"
+		"OCA\\OpenRegister\\Listener\\ApprovalChainAdvanceListener",
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
+	],
+	"OCA\\OpenRegister\\Event\\TaskSequenceRejectedEvent": [
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
 	],
 	"OCA\\OpenRegister\\Event\\TaskTerminalEvent": [
 		"OCA\\OpenRegister\\Listener\\UserTaskTerminalListener",
@@ -348,6 +352,9 @@
 		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener"
 	],
+	"OCP\\Authentication\\Events\\TokenInvalidatedEvent": [
+		"OCA\\OpenRegister\\Listener\\PersonalTokenGrantRevokedListener"
+	],
 	"OCP\\Calendar\\Events\\CalendarObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\TaskVtodoWriteBackListener"
 	],
@@ -387,7 +394,8 @@
 		"OCA\\OpenRegister\\Listener\\OcmResourceTypeListener"
 	],
 	"OCP\\Share\\Events\\BeforeShareCreatedEvent": [
-		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener"
+		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener",
+		"OCA\\OpenRegister\\Listener\\ObjectFolderReshareGuard"
 	],
 	"OCP\\Share\\Events\\ShareCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"

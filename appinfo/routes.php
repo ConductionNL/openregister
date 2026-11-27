@@ -104,13 +104,15 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         // The runs of actions on this object, `action.run` and the older `action.macro`, newest first.
         ['name' => 'objectActions#history', 'url' => '/api/objects/{register}/{schema}/{id}/actions/history', 'verb' => 'GET',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
-        ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
-            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
+        // `{key}`, not `{action}`: the router keeps `action` for the controller
+        // method, so a route parameter of that name reaches the controller as null.
+        ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{key}', 'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
         // The same action on a selection: one run per object, reported per object.
         // Its own prefix, because `/api/objects/{register}/{schema}/...` with four
         // segments would be read as an object id by the routes above.
-        ['name' => 'objectActions#invokeOnSelection', 'url' => '/api/object-actions/{register}/{schema}/{action}', 'verb' => 'POST',
-            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'action' => '[^/]+']],
+        ['name' => 'objectActions#invokeOnSelection', 'url' => '/api/object-actions/{register}/{schema}/{key}', 'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'key' => '[^/]+']],
         // The actions offered on a selection (the `bulk` surface).
         ['name' => 'objectActions#selection', 'url' => '/api/object-actions/{register}/{schema}', 'verb' => 'GET',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
@@ -164,6 +166,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'versions#show', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
         ['name' => 'versions#update', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'PUT', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
         ['name' => 'versions#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
+        ['name' => 'versions#promote', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}/promote', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
+        ['name' => 'versions#preview', 'url' => '/api/objects/{register}/{schema}/{id}/versions/{key}/preview', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'key' => '[^/]+']],
 
         // Who holds which right on one object, and how that set changed. The
         // other direction of `/api/scopes`: that one answers a caller about
@@ -1160,7 +1164,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Access links (access-by-link-not-by-account). A scoped, expiring link
         // that opens one object, view or file for somebody with no account. The
-        // three `/api/public/links/` endpoints carry no session: the link row is
+        // four `/api/public/links/` endpoints carry no session: the link row is
         // the whole access decision, and it resolves a principal that is the
         // link itself. An unknown, revoked, switched-off or expired anchor all
         // answer the same 404. The four owner endpoints mint, list, switch off
@@ -1182,6 +1186,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'verb' => 'POST',
             'requirements' => ['anchor' => '[A-Za-z0-9]+'],
         ],
+        // The file a file link names, streamed to its holder (access-by-link 7.7).
+        ['name' => 'accessLink#download', 'url' => '/api/public/links/{anchor}/download', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
         // The page a holder lands on (#4061): renders what the link opens for a
         // person, reading the holder endpoints above; it decides nothing itself.
         ['name' => 'accessLinkPage#show', 'url' => '/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
@@ -1496,6 +1502,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
         ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
         ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        ['name' => 'operationsReindex#reindex', 'url' => '/api/operations/reindex', 'verb' => 'POST'],
         ['name' => 'operationsQuery#run', 'url' => '/api/operations/query', 'verb' => 'POST'],
         ['name' => 'operationsQuery#export', 'url' => '/api/operations/query/export', 'verb' => 'POST'],
         // Dependency breakers (operate-load-shedding D-7): administrator-only.
@@ -2172,6 +2179,14 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
 		// Scoped API tokens: the calling principal and the grant its token carries.
 		['name' => 'whoami#show', 'url' => '/api/whoami', 'verb' => 'GET'],
+		// Scoped API tokens: the grant on the caller's own personal tokens (app passwords).
+		// The grant editor on the account page: the caller's granted tokens, naming an app password, and the preview on one object.
+		['name' => 'personalTokenGrants#index', 'url' => '/api/tokens/grants', 'verb' => 'GET'],
+		['name' => 'personalTokenGrants#resolve', 'url' => '/api/tokens/grants/resolve', 'verb' => 'POST'],
+		['name' => 'personalTokenGrants#preview', 'url' => '/api/tokens/grants/preview', 'verb' => 'POST'],
+		['name' => 'personalTokenGrants#show', 'url' => '/api/tokens/{tokenId}/grant', 'verb' => 'GET', 'requirements' => ['tokenId' => '\\d+']],
+		['name' => 'personalTokenGrants#update', 'url' => '/api/tokens/{tokenId}/grant', 'verb' => 'PUT', 'requirements' => ['tokenId' => '\\d+']],
+		['name' => 'personalTokenGrants#destroy', 'url' => '/api/tokens/{tokenId}/grant', 'verb' => 'DELETE', 'requirements' => ['tokenId' => '\\d+']],
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
 		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],

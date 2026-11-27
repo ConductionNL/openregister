@@ -24,7 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Decision;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
+use OCP\Files\File;
 use OCP\Files\IRootFolder;
 
 /**
@@ -33,6 +35,11 @@ use OCP\Files\IRootFolder;
  * @spec openspec/specs/entity-relation-grondslagen/spec.md
  */
 final class ReviewPolicyFileOwners {
+	/**
+	 * The account whose home holds every object's files (the document store's account).
+	 */
+	private const ACCOUNT = 'openregister';
+
 	/**
 	 * Bundle the file lookups.
 	 *
@@ -46,4 +53,27 @@ final class ReviewPolicyFileOwners {
 		public readonly ManagedFileOwnerLookup $owners,
 	) {
 	}//end __construct()
+
+	/**
+	 * The object that owns a file in OpenRegister's own tree, found by the file's id.
+	 *
+	 * An object's files live in the openregister account's home, which the acting user has no mount on, so the file
+	 * is looked up there rather than through the acting user's own mounts.
+	 *
+	 * @param int $fileId The file.
+	 *
+	 * @return ObjectEntity|null The object, or null when the file is not there or belongs to no object.
+	 *
+	 * @throws \Throwable When the file's folder or the object lookup fails.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md
+	 */
+	public function objectOwningFile(int $fileId): ?ObjectEntity {
+		$node = $this->rootFolder->getUserFolder(self::ACCOUNT)->getFirstNodeById($fileId);
+		if ($node instanceof File === false) {
+			return null;
+		}
+
+		return $this->owners->find(file: $node);
+	}//end objectOwningFile()
 }//end class

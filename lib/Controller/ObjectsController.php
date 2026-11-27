@@ -27,6 +27,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Controller\Support\DraftVersionRead;
+use OCA\OpenRegister\Controller\Support\DraftKeysOnList;
+use DateTime;
+use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\FormerSlugSignal;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
@@ -186,6 +191,22 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @var array<int, string>
 	 */
 	private const SUBMITTABLE_RESERVED_KEYS = ['@self', Schema::NOT_SUPPLIED_KEY];
+
+	/**
+	 * The keys of a geo-search body that say where to search, not what to list.
+	 *
+	 * @var array<int, string>
+	 */
+	private const GEO_SEARCH_BODY_KEYS = ['geometry', 'property'];
+
+	/**
+	 * Request parameters the listing of the current call must not read as filters.
+	 *
+	 * Set by geoSearch() around its listing, empty otherwise.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $listingWithheldParams = [];
 
 	/**
 	 * Whether show() is already reading an object at the address it moved to.
@@ -1246,7 +1267,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -1475,6 +1496,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$responseData = $this->buildMagicResponse(page: $page, listing: $listing);
 		$responseData = $this->addIgnoredFilterHint(responseData: $responseData, ignoredFilters: $magicMapper->getIgnoredFilters());
 		$responseData = $this->addMagicFacets(responseData: $responseData, listing: $listing);
+		$responseData = $this->withDraftKeys(result: $responseData, listing: $listing, objectService: $objectService);
 
 		return $this->magicListingResponse(responseData: $responseData, listing: $listing);
 	}//end indexFromMagicTable()
@@ -1517,6 +1539,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	/**
 	 * Build the search query of a listing and warn about filter keys the schema does not know.
 	 *
+	 * Parameters withheld for this call (a geo-search body's own keys) are not filters.
+	 *
 	 * @param array $listing The listing scope.
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
@@ -1525,10 +1549,11 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @return array<string, mixed> The search query.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
 	 */
 	private function buildListingQuery(array $listing, ObjectOperationsInterface $objectService): array {
 		$query = $objectService->buildSearchQuery(
-			requestParams: $this->request->getParams(),
+			requestParams: array_diff_key($this->request->getParams(), array_flip($this->listingWithheldParams)),
 			register: $listing['resolved']['register'],
 			schema: $listing['resolved']['schema']
 		);
@@ -1950,6 +1975,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		// Spatial post-filter for ?geo.bbox= / ?geo.near=&geo.radius= / ?geo.property=.
 		$result = $this->applyGeoQueryFilters(params: $listing['params'], result: $result);
+		$result = $this->withDraftKeys(result: $result, listing: $listing, objectService: $objectService);
 
 		// Content negotiation: a JSON-LD @graph over the already-rendered,
 		// RBAC-filtered result (json-ld-output).
@@ -1964,6 +1990,47 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return new JSONResponse(data: $result);
 	}//end indexFromObjectService()
+
+	/**
+	 * With `_drafts=true`, the keys of the drafts the caller may see on each row, in `@self.drafts`.
+	 *
+	 * The rows themselves are not changed, added or removed: drafts live in
+	 * their own table and never come back as objects.
+	 *
+	 * @param array                     $result        The listing body.
+	 * @param array                     $listing       The listing scope.
+	 * @param ObjectOperationsInterface $objectService Reads a row's live object under the caller's access.
+	 *
+	 * @psalm-param array<string, mixed> $result
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array<string, mixed> The listing body.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-drafts-never-appear-as-objects-in-lists-or-search
+	 */
+	private function withDraftKeys(array $result, array $listing, ObjectOperationsInterface $objectService): array {
+		$schemaEntity   = ($listing['resolved']['schemaEntity'] ?? null);
+		$registerEntity = ($listing['resolved']['registerEntity'] ?? null);
+		if (DraftKeysOnList::asked(params: $listing['params']) === false
+			|| ($schemaEntity instanceof Schema) === false
+			|| is_array($result['results'] ?? null) === false
+		) {
+			return $result;
+		}
+
+		$result['results'] = DraftKeysOnList::annotate(
+			results: $result['results'],
+			drafts: $this->container->get(DraftService::class),
+			schema: $schemaEntity,
+			caller: $this->userSession->getUser()?->getUID(),
+			load: fn (string $uuid): mixed => $objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: $registerEntity, schema: $schemaEntity, render: false, audit: false)
+			)
+		);
+
+		return $result;
+	}//end withDraftKeys()
 
 	/**
 	 * Batched object-count endpoint — POST /api/objects/counts.
@@ -2278,6 +2345,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 60, period: 60)]
@@ -2292,11 +2360,18 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
-		// Reuse the standard listing path, then post-filter.
-		return $this->geoFilteredListing(
-			listing: $this->index(register: $register, schema: $schema, objectService: $objectService),
-			filters: $filters
-		);
+		// Reuse the standard listing path, then post-filter. The body's own
+		// keys are not filters on the listing: a filter on a property the
+		// schema does not declare matches nothing, so `geometry` reaching the
+		// listing emptied every geo-search before the post-filter ran.
+		$this->listingWithheldParams = self::GEO_SEARCH_BODY_KEYS;
+		try {
+			$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+		} finally {
+			$this->listingWithheldParams = [];
+		}
+
+		return $this->geoFilteredListing(listing: $listing, filters: $filters);
 	}//end geoSearch()
 
 	/**
@@ -2720,8 +2795,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -3030,7 +3105,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @return JSONResponse JSON response with the object or error
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -3281,6 +3356,11 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 				return $moved;
 			}
 
+			$version = trim((string)$this->request->getParam('version', ''));
+			if (DraftVersionRead::namesADraft(version: $version) === true) {
+				return $this->draftShow(show: $show, read: $read, object: $objectEntity, version: $version);
+			}
+
 			return $this->renderedShow(shown: new ShownEntity(show: $show, entity: $objectEntity, extend: $read->extend), read: $read);
 		} catch (DoesNotExistException $exception) {
 			return ($this->movedShow(show: $show, read: $read) ?? new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404));
@@ -3290,6 +3370,47 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return $this->ambiguousIdentifierResponse(id: $show->id);
 		}
 	}//end shownObject()
+
+	/**
+	 * The object at a draft version: the draft's delta merged onto the live data, rendered the same way.
+	 *
+	 * A draft that does not exist, or that the caller may not see, answers 404
+	 * like a missing object, so the answer does not tell which drafts exist.
+	 *
+	 * @param ObjectShow        $show    The request.
+	 * @param ObjectReadOptions $read    The read options.
+	 * @param ObjectEntity      $object  The live object, already read under the caller's access.
+	 * @param string            $version The draft key.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/records-draft-versions/design.md
+	 */
+	private function draftShow(ObjectShow $show, ObjectReadOptions $read, ObjectEntity $object, string $version): JSONResponse {
+		$schema = ($show->resolved['schemaEntity'] ?? null);
+		$draft  = null;
+		if ($schema instanceof Schema) {
+			$draft = DraftVersionRead::of(
+				drafts: $this->container->get(DraftService::class),
+				object: $object,
+				schema: $schema,
+				key: $version,
+				caller: $this->userSession->getUser()?->getUID()
+			);
+		}
+
+		if ($draft === null) {
+			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		}
+
+		$response = $this->renderedShow(shown: new ShownEntity(show: $show, entity: $draft->entity, extend: $read->extend), read: $read);
+		$data     = $response->getData();
+		if (is_array($data) === true) {
+			$response->setData($draft->stamped(rendered: $data));
+		}
+
+		return $response;
+	}//end draftShow()
 
 	/**
 	 * Find the object without rendering it.
@@ -4218,7 +4339,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @psalm-suppress NoValue
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -4462,8 +4583,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @PublicPage
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Existing suppression, kept.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
