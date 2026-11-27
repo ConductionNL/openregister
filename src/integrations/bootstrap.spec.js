@@ -9,7 +9,7 @@
 
 const mockRegistry = { name: 'shared' }
 const mockCalls = []
-jest.mock('@conduction/nextcloud-vue', () => ({
+jest.mock('./library.js', () => ({
 	getSharedRegistry: (win) => {
 		mockCalls.push(['shared', win === globalThis.window])
 		return mockRegistry
@@ -19,6 +19,9 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 }))
 jest.mock('./builtin/bookmarks.js', () => ({
 	registerBookmarksIntegration: (r) => mockCalls.push(['bookmarks', r]),
+}))
+jest.mock('./builtin/externalRegister.js', () => ({
+	registerExternalRegisterIntegration: (r) => mockCalls.push(['external-register', r]),
 }))
 
 describe('ensureIntegrationRegistry', () => {
@@ -33,6 +36,7 @@ describe('ensureIntegrationRegistry', () => {
 			['builtin', mockRegistry],
 			['leaf', mockRegistry],
 			['bookmarks', mockRegistry],
+			['external-register', mockRegistry],
 		])
 	})
 })

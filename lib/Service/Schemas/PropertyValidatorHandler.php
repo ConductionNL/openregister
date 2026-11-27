@@ -264,6 +264,12 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		// Nextcloud user id, checked against the user backend. The referenced
 		// user must exist. See UserFormat.
 		'user',
+		// A web address a person could type, with an optional http(s) scheme.
+		// See WebsiteFormat.
+		'website',
+		// A Dutch telephone number, reached through a 0 trunk or +31. See
+		// NlPhoneFormat.
+		'nl-phone',
 	];
 
 	/**
@@ -535,6 +541,10 @@ class PropertyValidatorHandler implements PropertyValidatorHandlerInterface {
 		'indexed' => [
 			'value' => 'boolean',
 			'description' => 'Keep a database index on the field, so filtering and sorting on it stays fast without making it a facet.',
+		],
+		'searchable' => [
+			'value' => 'boolean',
+			'description' => 'Keep a text-search index on the field, so searching inside its value stays fast. PostgreSQL with pg_trgm only.',
 		],
 		'facetConfig' => ['value' => 'object', 'description' => 'How the filter buckets its values.'],
 		'matchType' => ['value' => 'string', 'description' => 'How search compares a term against this field: exact, prefix, range, fuzzy or fulltext.'],

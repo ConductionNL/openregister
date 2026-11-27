@@ -230,6 +230,17 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 			$this->collectForType(run: $run);
 		}
 
+		// THE ISSUER KEEPS WHAT THEY ISSUED (D-3). A grant the caller issued
+		// conveys its access to the caller too, read from the grant itself
+		// (core records the issuer as `sharedBy`) and through the same
+		// folder check, so revoking the grant takes the issuer's access with
+		// it. Nothing is inferred from any other row.
+		$run->issued = true;
+		foreach (self::PRINCIPAL_SHARE_TYPES as $shareType) {
+			$run->shareType = $shareType;
+			$this->collectForType(run: $run);
+		}
+
 		$this->admitCandidates(run: $run);
 
 		return $this->expandDownHierarchies(granted: $run->granted);
@@ -489,6 +500,19 @@ class ObjectGrantResolver implements ObjectGrantResolverInterface {
 	 */
 	private function readPage(ShareGrantRun $run, int $page): array {
 		try {
+			if ($run->issued === true) {
+				// Only shares this caller initiated: not reshares of their
+				// objects by others, which are those others' grants.
+				return $run->manager->getSharesBy(
+					$run->userId,
+					$run->shareType,
+					null,
+					false,
+					self::PAGE_SIZE,
+					($page * self::PAGE_SIZE)
+				);
+			}
+
 			return $run->manager->getSharedWith(
 				$run->userId,
 				$run->shareType,

@@ -16,7 +16,7 @@ pass through unchanged.
 - **WHEN** a lead with value 25000 and a lead with value 4000 are created
 - **THEN** `GET /api/objects/{register}/{schema}/{id}/tags` lists "Large deal" for the first lead and nothing for the second
 - **AND** the tag "Large deal" carries colour `d94c3d`
-- @e2e exclude {specified only; task 3.1 adds tests/e2e/ci/flow-tag-object.spec.ts}
+- @e2e tests/e2e/ci/flow-tag-object.spec.ts
 
 #### Scenario: a run identity without update is refused
 

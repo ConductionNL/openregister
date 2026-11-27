@@ -14,12 +14,13 @@
  *
  * @see ADR-019 — Pluggable Integration Registry
  */
+import { registerBookmarksIntegration } from './builtin/bookmarks.js'
+import { registerExternalRegisterIntegration } from './builtin/externalRegister.js'
 import {
 	getSharedRegistry,
 	registerBuiltinIntegrations,
 	registerLeafIntegrations,
-} from '@conduction/nextcloud-vue'
-import { registerBookmarksIntegration } from './builtin/bookmarks.js'
+} from './library.js'
 
 let bootstrapped = false
 
@@ -45,5 +46,6 @@ export function ensureIntegrationRegistry() {
 	registerBuiltinIntegrations(registry)
 	registerLeafIntegrations(registry)
 	registerBookmarksIntegration(registry)
+	registerExternalRegisterIntegration(registry)
 	bootstrapped = true
 }

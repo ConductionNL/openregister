@@ -170,6 +170,7 @@ final class BuiltinIntegrationServices {
 			'xwikiLinkMapper' => \OCA\OpenRegister\Db\XwikiLinkMapperInterface::class,
 			'container'       => self::CONTAINER,
 			'runtime'         => \OCA\OpenRegister\Service\LinkServiceRuntime::class,
+			'cacheFactory'    => \OCP\ICacheFactory::class,
 		],
 		// @spec openspec/specs/integration-registry/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\KvkProvider::class => [
@@ -180,6 +181,22 @@ final class BuiltinIntegrationServices {
 		\OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider::class => [
 			'routing' => self::CONNECTOR_ROUTING,
 			'logger'  => \Psr\Log\LoggerInterface::class,
+		],
+		// @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+		\OCA\OpenRegister\Service\Integration\Providers\ExternalRegisterProvider::class => [
+			'lookup' => \OCA\OpenRegister\Service\Integration\ExternalRegisterLookupInterface::class,
+			'l10n'   => \OCP\IL10N::class,
+		],
+		// @spec openspec/changes/external-register-view-leaf/specs/object-source-providers/spec.md
+		\OCA\OpenRegister\Service\Integration\ExternalRegisterLookup::class => [
+			'registers'   => \OCA\OpenRegister\Db\RegisterMapperInterface::class,
+			'schemas'     => \OCA\OpenRegister\Db\SchemaMapperInterface::class,
+			'permissions' => \OCA\OpenRegister\Kernel\Contracts\SchemaReadCheckInterface::class,
+			'http'        => \OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider::class,
+			'degrade'     => \OCA\OpenRegister\Service\Integration\ExternalRegisterDegrade::class,
+			'caches'      => \OCP\ICacheFactory::class,
+			'time'        => \OCP\AppFramework\Utility\ITimeFactory::class,
+			'logger'      => \Psr\Log\LoggerInterface::class,
 		],
 		// @spec openspec/specs/integration-registry/spec.md
 		\OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider::class => [

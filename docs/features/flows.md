@@ -114,8 +114,77 @@ paths; a join there would wait forever.
 ### Errors per node
 
 A node may carry `onError`: `stop` (the default) ends the run as `failed`,
-`dead_letter` ends it as `dead_letter`, and `continue` logs the failure and
-goes on.
+`dead_letter` ends it as `dead_letter`, `continue` logs the failure and goes
+on, and `branch` sends the failed items down the node's `error` output (see
+[The error branch](#the-error-branch)). A policy the engine does not know, a
+typo for example, reads as `stop`, so a mistake fails safe.
+
+### Retrying a step
+
+A node may retry itself before its failure counts:
+
+```json
+{
+  "id": "fetch",
+  "type": "openregister.object-read",
+  "retry": { "attempts": 2, "delaySeconds": 30, "backoff": "exponential" },
+  "onError": "branch"
+}
+```
+
+- `attempts` is the number of **extra** tries after the first failure. With
+  `attempts: 2` the step runs at most three times. The cap is 10.
+- `delaySeconds` is the wait before the first extra try. The cap is 3600 (one
+  hour).
+- `backoff` is `fixed` (the same wait before every try, the default) or
+  `exponential` (the wait doubles per try, never above one hour).
+
+A `retry` over a cap, or with a value that is not a whole number, is refused
+when the flow is turned into a run, before any step runs, and the message names
+the node, the setting and its cap.
+
+A retry does not hold a worker while it waits. The run is suspended until the
+delay has passed, the attempt number is kept on the run's resume state, and
+the same step runs again with the same items. A restart of the server in
+between loses nothing. Only the failure of the **last** try reaches the
+`onError` policy.
+
+> **Retry only what is safe to repeat.** A step that already had a side effect
+> before it failed, such as a sent mail, a posted message or a call that a
+> remote system booked, does it again on every try. Use `retry` for idempotent
+> calls (a read, a lookup, a PUT of the same value), or for steps that fail
+> before they change anything. For anything else, leave `retry` out and use
+> the error branch to decide what happens next.
+
+The run log has one entry per failed try. A try that will be repeated carries
+its `attempt` number, the outcome `retrying` and `retryAt`, the moment of the
+next try. The entry of the last try carries the outcome `failed`, or
+`branched` with `itemsBranched`, the number of items sent down the error
+branch.
+
+### The error branch
+
+With `"onError": "branch"`, a step's failure does not end the run. The failed
+items leave through the node's `error` output, and the walk goes on along
+that edge:
+
+```json
+{ "id": "e5", "from": "fetch", "fromExit": "error", "to": "write-note" }
+```
+
+Each failed item carries what went wrong in `json.error`:
+
+```json
+{ "message": "Object not found", "step": "fetch", "attempt": 3, "at": "2026-11-24T10:15:00+00:00" }
+```
+
+A step that handles items one by one sends only the items that failed down the
+branch; the others go on along the normal edges. A step that fails as a whole
+sends all of its input items.
+
+A node with `branch` and no edge from its `error` output is refused the same
+way, before any step runs, naming the node: a branch to nowhere would lose the
+failed items without a trace.
 
 ### Annotations
 
@@ -147,7 +216,7 @@ use the draft.
 
 ## Triggers
 
-A trigger is the node where a run begins. A flow may carry several. Three
+A trigger is the node where a run begins. A flow may carry several. Five
 trigger types ship:
 
 | Step id | Name in the palette | Config keys |
@@ -155,6 +224,8 @@ trigger types ship:
 | `openregister.trigger-object` | When an object changes | `event`, `register`, `schema`, `scope`, `transition`, `changedFields` |
 | `openregister.trigger-schedule` | On a schedule | `cron`, `runAs` |
 | `openregister.trigger-manual` | When someone runs it | `next` |
+| `openregister.trigger-calendar` | At a date on a record | `register`, `schema`, `dateProperty`, `offset`, `workingCalendar`, `runAs` |
+| `openregister.trigger-webhook` | When another system calls | `runAs`, `token`, `rotateSecret` |
 
 **`openregister.trigger-object`** names exactly one `event`, one `register` and
 one `schema`. `event` must be `object.created`, `object.updated`,
@@ -221,6 +292,23 @@ schedule itself is picked up today.
 `next`, is a hint shown after the run (an `openregister.end` node can override
 it). A flow with a manual trigger says "a person starts this"; a flow with no
 trigger at all just looks unfinished.
+
+**`openregister.trigger-calendar`** starts the flow at a moment counted from a
+date on each record: a contract's end date minus thirty days, a permit's expiry,
+an appointment plus a week. It names the `register` and `schema` whose records
+carry the date and the `dateProperty`, which must be a property of that schema
+with the format `date` or `date-time`. `offset` is an ISO 8601 duration from that
+date, optionally negative (`-P30D`, `P1W`, `P0D` for the date itself). The
+optional `workingCalendar` names a calendar by its slug to count the offset in
+working time. `runAs` is required and must be an existing account, as for a
+scheduled run. The record is the run's subject. Publishing refuses a trigger
+that could never fire as written.
+
+**`openregister.trigger-webhook`** starts a run when another system posts a
+signed JSON body to the flow's own address. Saving the flow issues the `token`
+in that address and a signing secret, both shown once; `rotateSecret` replaces
+the secret on the next save. Runs act as `runAs`. Addresses, signing and answers:
+[Starting a flow from a date or from another system](../Features/flow-triggers.md).
 
 ### The event catalogue
 
@@ -338,6 +426,32 @@ flow holds.
 { "operation": "set", "key": "lastSyncedAt", "from": "updated" }
 ```
 
+**`openregister.code`** (Run code). Runs authored JavaScript on the items. The
+code never runs inside Nextcloud: the step sends it, the items and its limits
+to the `flow-code-runner` ExApp and takes the items it returns. Keys: `source`
+(required), `language` (only `javascript`), `mode` (`perItem`, the default, or
+`allItems`), `timeoutMs` (default 5000), `memoryMb` (default 64), `egress` (a
+list of public host names the code may call; none by default). A limit above
+the instance's ceiling (`flow_code_max_timeout_ms`, default 30000;
+`flow_code_max_memory_mb`, default 256) is refused. Without the runner the step
+is not offered, and a flow that holds one is refused at save, publish and run.
+A failing run fails the step, so its `onError` decides. In `perItem` mode each
+output keeps its input's place, so provenance survives the step.
+
+The refusal without the runner names it: the preflight reports the step as one
+that "cannot run on this instance" because it needs the `flow-code-runner` ExApp,
+rather than as a config it cannot read. Install the runner as an ExApp through
+AppAPI and enable it; the step appears in the palette once its health check
+answers. The step's run record keeps what ran: the `source` and its SHA-256
+`sourceHash`, the mode, the runner's duration and item counts, and the runner's
+log lines (also when the run failed), beside the items in and out every step
+records.
+
+Adding or changing a code step needs the `flow.code` right, which is seeded to
+administrators only; grant it to a group under Admin settings, Action rights. A
+maker without it gets a 403 naming `flow.code` on every save path, and an
+existing flow that holds a code step cannot be edited by them either.
+
 ### Branching and ending
 
 **`openregister.switch`** (Switch). No keys. Passes its items through unchanged;
@@ -411,6 +525,19 @@ object or entry that does not resolve fails the step.
 { "object": "{{ uuid }}", "output": "history" }
 ```
 
+**`openregister.extend-input`** (Extend references). Replaces the object
+references in chosen fields of each item with the objects they name. Keys:
+`properties` (required, a list or comma-separated text of fields; dots reach
+nested fields). A field holding a uuid, an id or a URL ending in one becomes the
+object; a field holding a list of them becomes the list of objects. A field that
+is absent, empty or already holds an object is left alone. The objects are read
+with the run's acting identity, and a reference that does not resolve fails the
+step rather than leaving the raw reference in place.
+
+```json
+{ "properties": ["owner", "case.documents"] }
+```
+
 **`openregister.object-write`** (Write an object). Creates, updates, upserts or
 deletes one object per item. Keys: `register`, `schema`, `operation`, `fields`,
 `payloadFrom`, `match`, `replace`, `bulk`, `skipWhen`, `output`,
@@ -443,6 +570,51 @@ Keys: `uuid` (default: the item's object), `duration` (default one hour),
 `waitSeconds` (how long to keep retrying while another run holds it, default one
 hour), `process`, `subjectRole`. A held lock parks the run and retries; when the
 wait runs out the step fails. It never breaks someone else's lock.
+
+**`openregister.tag-object`** (Tag an object). Adds or removes a Nextcloud
+tag on each item's object. Keys: `operation` (`add` or `remove`), `tag`
+(placeholders allowed), `color` (set on a tag it creates, or on an existing tag
+without one), `uuid` (default: the item's object), `createIfMissing`. The step
+acts as `runAs`, else whoever triggered the run, and the object must be one that
+identity may update; otherwise the step fails. Adding a tag the object already
+has, or removing one it lacks, changes nothing, so a flow triggered on a tag
+event does not start again because of its own step.
+
+```json
+{ "operation": "add", "tag": "urgent", "color": "#d10000" }
+```
+
+Which object: a configured `uuid` (a template such as `{{ lead }}`), else the
+item's own `uuid`, else the `@self.id` of the item when the item is an object
+itself, as an object trigger hands it.
+
+A sales manager labels every large lead. The flow starts on a lead being
+created, keeps the leads whose `value` is above 10000, and tags them:
+
+```json
+{
+  "nodes": [
+    { "id": "created", "type": "openregister.trigger-object",
+      "config": { "event": "object.created", "register": "sales", "schema": "lead" } },
+    { "id": "large", "type": "openregister.filter",
+      "config": { "condition": { ">": [{ "var": "json.value" }, 10000] } } },
+    { "id": "tag", "type": "openregister.tag-object",
+      "config": { "operation": "add", "tag": "Large deal", "color": "d94c3d" } },
+    { "id": "end", "type": "openregister.end" }
+  ],
+  "edges": [
+    { "id": "a", "from": "created", "to": "large" },
+    { "id": "b", "from": "large", "to": "tag" },
+    { "id": "c", "from": "tag", "to": "end" }
+  ]
+}
+```
+
+A lead of 25000 gets the tag "Large deal" in red; a lead of 4000 gets nothing.
+`GET /api/objects/{register}/{schema}/{id}/tags` lists it. The step's form in
+the flow editor:
+
+![The "Tag an object" step's form: action, tag, colour, object and the create switch](flow-tag-object-step-form.png)
 
 **`openregister.unlock-object`** (Unlock an object). Keys: `uuid`. Releases a
 lock this run holds. Optional: a run releases all its locks when it ends,
@@ -513,6 +685,57 @@ decides whether an opt-out applies; empty means service mail.
 `conversation` (required, a token or an item field), `message` (required). The
 message is posted as the run's acting user, who must already be a participant.
 The step never adds anyone to a conversation; "not a participant" fails it.
+
+**`openregister.survey-invite`** (Invite to a survey). Sends one survey
+invitation per item, after an optional `delay` that suspends the run as the
+Wait step does. Keys: `register`, `survey`, `respondent` (required),
+`subject` (the item's own object when empty), `expiresIn` (default 30 days),
+`delay`. The outcome is put on the item under `surveyInvitation`, with the
+answering `url` for a sent invitation, so a following
+`openregister.send-email` step can mail the link. An invitation refused by the
+fatigue limit is recorded as blocked rather than sent.
+
+### Steps that need a right
+
+Some steps reach people or remove data, so putting one in a flow is a right of
+its own, separate from the right to create or change flows:
+
+| Right | Needed by |
+| --- | --- |
+| `flow.node.send-email` | `openregister.send-email` |
+| `flow.node.send-notification` | `openregister.send-notification` |
+| `flow.node.send-talk-message` | `openregister.send-talk-message` |
+| `flow.node.object-delete` | `openregister.object-write` with `delete` |
+
+Administrators always hold every right. Anyone else needs the right through a
+group. Without it, the step is marked `locked` for them in the node catalogue
+(`GET /api/flow/node-catalog`) that the editor reads. Every save path refuses a
+flow that holds a step they may not place: create, update, publish, draft,
+adopt and BPMN import. The refusal is a 403 that names the step type and the
+right. The check covers the new document and the stored one, so a flow that
+already holds the step cannot be changed by someone without the right either.
+
+**Granting a right.** Administrators set the rights in **Administration
+settings → Open Register → Action rights**, grouped as Flows, Flow steps,
+Objects and Other. Each right shows what it allows and which step types need
+it, with a group picker. "Every signed-in user" is the open grant, and a right
+with no group chosen is held by administrators alone. The same matrix is served
+by `GET` and `PUT /api/settings/action-rights` (administrators only), with
+`groups` keyed by right. A `PUT` changes only the rights it names, and an
+unknown right is refused with a 400 that names it. `nodeRights` in the same
+body lets an administrator move a step type onto another right, or lift its
+requirement with `null`. The administrator's map wins over what the step
+declares. `GET /api/permissions` publishes the rights with their step types
+under `actions`, so other apps can read who may do what.
+
+![The Action rights section of the Open Register admin settings](../screenshots/openregister-action-rights.png)
+
+**On upgrade.** A repair step (`InitializeFlowNodeRights`) adds every declared
+step right that is missing from the matrix as `["admin"]`, and leaves every
+entry that already exists as it is. A customised `flow.create`, for example,
+keeps its groups. After the upgrade, only administrators can put these steps
+into a flow until an administrator grants them to a group. Flows that already
+hold such a step keep running. Changing one needs the right.
 
 ### Steps from other apps
 

@@ -30,12 +30,11 @@ Every version is stored as a full snapshot in the audit trail. Users can:
 
 ### Draft / Published Lifecycle
 
-Objects support a draft/published lifecycle for editorial workflows:
-
-- Objects start in draft state
-- Draft changes are version-tracked but not visible to read-only users
-- Publishing promotes a draft to the active version (MINOR increment)
-- The previous published version remains in history for comparison
+A record can have named drafts beside its published version. A draft stores
+only the changed fields, is visible to its creator and to users who may change
+the record, and becomes the published version when it is promoted, after a
+per-field conflict check against the version it was made from. See
+[Draft Versions](draft-versions.md).
 
 ## Immutable Audit Trail
 
@@ -125,12 +124,76 @@ Every create, update, and delete produces an audit trail entry containing:
 | `ipAddress` | Client IP address |
 | `sessionId` | Nextcloud session or API token identifier |
 
+### Which rule allowed a read
+
+A `read` entry records who opened an object and when. When one of the schema's `read`
+rules let the reader see it, the entry also records **which** rule:
+
+| Field | Meaning |
+|---|---|
+| `ruleDigest` | SHA-256 (64 hex characters) of the canonical JSON of the matched rule entry, as declared on the schema |
+| `ruleVersion` | The schema version that rule belonged to at the time of the read |
+
+The rule named is the first entry in the schema's `read` list the reader matched, with its
+`group` and `match` as declared, not as resolved for this reader: two handlers reading their
+own meldingen under the same rule get the same digest. A read no rule mediated (an
+administrator, the object's owner, or a schema without read rules) has both fields `null`.
+
+**Proving which rule was in force.** Take the schema as it stood at `ruleVersion`, find the
+rule entry the reader matched, and compute its digest: sort the keys of every map
+(recursively; list order is kept), encode as compact JSON with unescaped slashes and unicode,
+and take SHA-256. A bare group name (`"behandelaars"`) is digested as the JSON string. The
+result equals `ruleDigest`. The rule may have changed since; the digest still names the one
+that applied.
+
+Both fields are part of the hash chain when present, so a digest cannot be altered, removed
+or added after sealing without `GET /api/audit-trails/verify` reporting the entry. When they
+are absent they are left out of the sealed form entirely, so entries written before the fields
+existed verify exactly as before.
+
 ### Retention
 
 - Audit trail entries have a minimum 10-year retention requirement
 - Entries cannot be modified or deleted via the API
 - Background jobs enforce the minimum retention period before any physical removal
 - Audit trail is included in e-Depot SIP packages for permanent archival
+
+## Schema, Register and Organisation Edits
+
+Every create, update and delete of a schema, a register or an organisation writes one sealed row on the same hash-chained audit trail, whichever door the write came through: the API, `updateFromArray`, a tool provider, a configuration import or a repair step. The row is written by a listener on the entity's own event, so a door added later is covered without changes.
+
+### Actions
+
+| Action | Written when |
+|-|-|
+| `schema.created`, `schema.updated`, `schema.deleted` | A schema is stored, changed or removed. |
+| `register.created`, `register.updated`, `register.deleted` | A register is stored, changed or removed. |
+| `organisation.created`, `organisation.updated`, `organisation.deleted` | An organisation is stored, changed or removed. |
+
+A save that changes nothing writes no row. Derived fields (`updated`, `created`, `facets`, `version`) never count as a change on their own.
+
+### Row shape
+
+Each row carries the actor (`user`, `userName`, or `system` without a session), the `organisationId` (the entity's organisation, or the organisation itself for `organisation.*`), the `cause` and `causeRun` of the write (`person`, `import`, `migration`, `scheduled`, ...) and a `changed` block:
+
+- **created**: `slug`, `title`, `version` and, for a schema, the property names.
+- **updated**: `slug`, for a schema or register `versionBefore` and `versionAfter`, and `fields`: one `{path, old, new}` per changed path, for example `properties.age.maxLength` or `authorization.read`.
+- **deleted**: `slug`, `title`, `version`, the property count and a `sha256` of the definition as it was; the definition itself is not kept.
+
+A value longer than 2 KB is stored as its hash and length instead of the value.
+
+### Masking
+
+A value under a key that names a credential (`password`, `secret`, `token`, `apiKey`, `clientSecret`, `privateKey`, in any case) is never stored: the row shows `********` for it, old and new. A changed credential is still visible as a changed path.
+
+### Reading the edits
+
+```
+GET /api/schemas/{id}/changes?_page=1&_limit=20
+GET /api/registers/{id}/changes?_page=1&_limit=20
+```
+
+Both are for administrators only (403 otherwise) and answer `{results, page, limit, hasMore}`, newest first. `_limit` defaults to 20 and is at most 100. Organisation edits are read from the audit trail list, `GET /api/audit-trails?action=organisation.updated`.
 
 ## Deletion Audit Trail
 

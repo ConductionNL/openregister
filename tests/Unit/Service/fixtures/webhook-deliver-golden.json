@@ -33,6 +33,7 @@
                     "errorMessage": "Could not resolve host",
                     "attempt": 1,
                     "nextRetryAt": null,
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ],
@@ -144,6 +145,7 @@
                     "errorMessage": "Client error: Forbidden",
                     "attempt": 1,
                     "nextRetryAt": "<time>",
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -220,6 +222,7 @@
                     "errorMessage": "Client error: Invalid",
                     "attempt": 1,
                     "nextRetryAt": "<time>",
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -296,6 +299,7 @@
                     "errorMessage": "Client error",
                     "attempt": 1,
                     "nextRetryAt": "<time>",
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -361,6 +365,7 @@
                     "errorMessage": "Client error",
                     "attempt": 3,
                     "nextRetryAt": null,
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":3}"
                 }
             ]
@@ -437,6 +442,7 @@
                     "errorMessage": "Client error",
                     "attempt": 1,
                     "nextRetryAt": "<time>",
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -513,6 +519,7 @@
                     "errorMessage": "Timed out",
                     "attempt": 1,
                     "nextRetryAt": "<time>",
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -577,6 +584,7 @@
                     "errorMessage": "Reset",
                     "attempt": 1,
                     "nextRetryAt": null,
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -642,6 +650,7 @@
                     "errorMessage": "Client error",
                     "attempt": 1,
                     "nextRetryAt": null,
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -718,6 +727,7 @@
                     "errorMessage": "Client error: inside",
                     "attempt": 1,
                     "nextRetryAt": "<time>",
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -785,6 +795,7 @@
                     "errorMessage": "Webhook endpoint returned non-2xx status: 199",
                     "attempt": 1,
                     "nextRetryAt": "<time>",
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -841,6 +852,7 @@
                     "errorMessage": "Webhook endpoint returned non-2xx status: 302",
                     "attempt": 3,
                     "nextRetryAt": null,
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":3}"
                 }
             ]
@@ -897,6 +909,7 @@
                     "errorMessage": "Webhook endpoint returned non-2xx status: 404",
                     "attempt": 1,
                     "nextRetryAt": null,
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -964,6 +977,7 @@
                     "errorMessage": "Webhook endpoint returned non-2xx status: 500",
                     "attempt": 1,
                     "nextRetryAt": "<time>",
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -1019,6 +1033,7 @@
                     "errorMessage": null,
                     "attempt": 1,
                     "nextRetryAt": null,
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ]
@@ -1074,6 +1089,7 @@
                     "errorMessage": null,
                     "attempt": 2,
                     "nextRetryAt": null,
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":2}"
                 }
             ]
@@ -1113,6 +1129,7 @@
                     "errorMessage": "kaput",
                     "attempt": 1,
                     "nextRetryAt": null,
+                    "durationMs": "<ms>",
                     "payloadRaw": "{\"event\":\"Golden\\\\Event\",\"webhook\":{\"id\":\"webhook-uuid-7\",\"name\":\"Golden hook\"},\"data\":{\"kind\":\"thing\",\"id\":5},\"timestamp\":\"<time>\",\"attempt\":1}"
                 }
             ],

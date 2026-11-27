@@ -6,13 +6,15 @@
   - `canAccessResource()` is `ObjectOperationsInterface::find()` with RBAC and multitenancy on. The read path answers for the signed-in user, so a question about another user, a guest or no session is refused (fail closed).
 - [x] 1.3 A schema declaration opting its objects into collections, defaulting to out (D-3).
   - `configuration.collaborationResources: true` on the schema; anything else, or a schema that cannot be read, stays out.
-- [ ] 1.4 Membership changes require update rights and are audited (D-2).
-  - Not built: Nextcloud core adds and removes collection members and asks the provider only `canAccessResource()`; enforcing update rights and writing the audit entry needs a hook on those core calls that the provider interface does not give.
+- [x] 1.4 Membership changes require update rights and are audited (D-2).
+  - `POST /api/objects/{register}/{schema}/{id}/collections` (`collectionId`) and `DELETE .../collections/{collectionId}` (`ObjectCollectionsController::create()`/`destroy()`, `lib/Collaboration/ObjectMembership.php`): the object is read as the caller (404), the schema must opt in (400), the caller must hold `update` through `ObjectUpdateRightsInterface` (403, and a check that throws refuses), the collection must be one the caller may access (404). A change that happened writes one `collection.added` / `collection.removed` entry on the object's audit trail naming the collection; a no-op writes none.
+  - Not covered: Nextcloud core's own collection endpoints ask the provider only `canAccessResource()`, so a change made from core's sidebar is not update-guarded or audited. The provider interface gives no hook for it; `docs/features/collaboration-resources.md` says so.
 - [x] 1.5 Reading an object returns its collections and the members the reader may access.
   - `GET /api/objects/{register}/{schema}/{id}/collections` (`ObjectCollectionsController`, `lib/Collaboration/ObjectCollections.php`): the object is read through the object read path first (404 when unreadable); collections and members the reader may not access are left out.
-- [ ] 2.1 `tests/e2e/ci/platform-collaboration-resources.spec.ts`: add a case to a collection, see the folder beside it, fail to remove it as a reader.
-- [ ] 2.2 Unit tests: the access branch, the opted-out schema, the audit entry.
-  - The access branch and the opted-out schema: `tests/Unit/Collaboration/ObjectResourceProviderTest.php`. The audit entry waits on 1.4.
+- [x] 2.1 `tests/e2e/ci/platform-collaboration-resources.spec.ts`: add a case to a collection, see the folder beside it, fail to remove it as a reader.
+  - 2026-11-25: 3 passed against a sandbox Nextcloud 34 on MariaDB: the case joins a collection started on a folder and lists the folder beside it, core's collection holds the case with name, icon and link, a colleague who may read but not update it is refused 403 and the case stays, and an object of a schema that declares nothing is refused 400. The first run found that `collaborationResources` was not on the schema configuration allowlist (`ConfigurationEntryRules::CONFIG_BOOL_FIELDS`), so every save dropped it and no schema could opt in; added, with `SchemaCollaborationResourcesConfigurationTest`. With main's allowlist the spec fails.
+- [x] 2.2 Unit tests: the access branch, the opted-out schema, the audit entry.
+  - The access branch and the opted-out schema: `tests/Unit/Collaboration/ObjectResourceProviderTest.php`. The audit entry, the update refusal, the fail-closed check and the no-op: `tests/Unit/Collaboration/ObjectMembershipTest.php`; the status mapping: `tests/Unit/Controller/ObjectCollectionsControllerTest.php`.
 - [x] 2.3 `openspec validate platform-collaboration-resources --strict`.
 - [x] 3.1 Hand over to the dossiq lane: declare which schemas may join, render the collection, register no provider.
   - `docs/features/collaboration-resources.md`: the opt-in, the collections endpoint and its answer, and that a leaf app registers no provider.

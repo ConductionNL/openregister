@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
@@ -49,6 +50,8 @@ use RuntimeException;
  * Allowed and refused outcomes of the purpose API.
  */
 final class ProcessingPurposeControllerA24GoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * The purpose mapper of the controller under test.
@@ -111,6 +114,7 @@ final class ProcessingPurposeControllerA24GoldenTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$memberships = ['users'];
 		if ($admin === true) {
 			$memberships = ['users', 'admin'];

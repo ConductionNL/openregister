@@ -1,0 +1,169 @@
+{
+ "info": {
+  "name": "OpenRegister: reply threading resolve",
+  "description": "openspec/changes/reply-threading-by-headers task 3.1. POST /api/emails/resolve answers a reply whose headers match no link with 200 and the named state unthreaded in the caller's scope, reads a References chain without an In-Reply-To, and refuses an anonymous caller.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{username}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{password}}",
+    "type": "string"
+   }
+  ]
+ },
+ "event": [
+  {
+   "listen": "prerequest",
+   "script": {
+    "type": "text/javascript",
+    "exec": [
+     "if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+    ]
+   }
+  }
+ ],
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "http://localhost:8080"
+  },
+  {
+   "key": "username",
+   "value": "admin"
+  },
+  {
+   "key": "password",
+   "value": "admin"
+  },
+  {
+   "key": "run",
+   "value": ""
+  }
+ ],
+ "item": [
+  {
+   "name": "No link matches: 200 unthreaded in the user scope",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+       "const body = pm.response.json();",
+       "pm.test('the state is named unthreaded', () => pm.expect(body.state).to.equal('unthreaded'));",
+       "pm.test('the scope is user', () => pm.expect(body.scope).to.equal('user'));",
+       "pm.test('nothing is named', () => pm.expect(body.candidates || []).to.have.lengthOf(0));"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": "{{base_url}}/index.php/apps/openregister/api/emails/resolve",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"inReplyTo\": \"<nolink-{{run}}@newman.invalid>\"}"
+    }
+   }
+  },
+  {
+   "name": "A References chain alone is read and still unthreaded",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+       "pm.test('the state is unthreaded', () => pm.expect(pm.response.json().state).to.equal('unthreaded'));"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": "{{base_url}}/index.php/apps/openregister/api/emails/resolve",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"references\": \"<a-{{run}}@newman.invalid> <b-{{run}}@newman.invalid>\"}"
+    }
+   }
+  },
+  {
+   "name": "An anonymous caller is refused",
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('status is 401', () => pm.expect(pm.response.code).to.equal(401));"
+      ]
+     }
+    }
+   ],
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": "{{base_url}}/index.php/apps/openregister/api/emails/resolve",
+    "body": {
+     "mode": "raw",
+     "raw": "{\"inReplyTo\": \"<nolink-{{run}}@newman.invalid>\"}"
+    },
+    "auth": {
+     "type": "noauth"
+    }
+   }
+  }
+ ]
+}

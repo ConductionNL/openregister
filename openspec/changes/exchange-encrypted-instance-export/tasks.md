@@ -2,8 +2,8 @@
 
 ## 1. Container
 
-- [ ] 1.1 Add `lib/Service/Exchange/EncryptedSetWriter.php` and `EncryptedSetReader.php` with the format in design D-1, the header as additional data, and `verify()` that reads to the final tag without writing (D-4); declare `ext-sodium` in `composer.json`. Verify: `tests/Unit/Service/Exchange/EncryptedSetRoundTripTest.php` round-trips 10 MiB, and refuses a flipped byte in a chunk, a changed header field, a missing final chunk and a wrong key, each with the same message.
-      **Built**: `EncryptedSetHeader`, `EncryptedSetWriter`, `EncryptedSetReader` (with `verify()`) and `EncryptedSetException`, tested by `EncryptedSetRoundTripTest` (14). **Open**: declaring `ext-sodium` in `composer.json`, which needs the lock file regenerated with it.
+- [x] 1.1 Add `lib/Service/Exchange/EncryptedSetWriter.php` and `EncryptedSetReader.php` with the format in design D-1, the header as additional data, and `verify()` that reads to the final tag without writing (D-4); declare `ext-sodium` in `composer.json`. Verify: `tests/Unit/Service/Exchange/EncryptedSetRoundTripTest.php` round-trips 10 MiB, and refuses a flipped byte in a chunk, a changed header field, a missing final chunk and a wrong key, each with the same message.
+      **Built**: `EncryptedSetHeader`, `EncryptedSetWriter`, `EncryptedSetReader` (with `verify()`) and `EncryptedSetException`, tested by `EncryptedSetRoundTripTest` (14). **Built** (2026-11-25): `ext-sodium` is required in `composer.json`, and the lock's `platform` block and `content-hash` follow (a full `composer update --lock` does not resolve at this sha, so the lock was brought in line by hand and `composer validate` reports it current), pinned by `SodiumDeclarationTest` (3).
 
 ## 2. Keys
 
@@ -15,15 +15,18 @@
 ## 3. Wiring into the serialisation
 
 - [ ] 3.1 Once `import-preview-and-conflict-policy` tasks 5.1 and 5.2 land: accept the `encryption` block on export and load, wrap the set stream, verify before load, and carry field-encrypted values per design D-5 (plaintext inside encryption, omitted and listed in a plain set). Verify: `tests/Unit/Service/Exchange/EncryptedSerialisationTest.php`; `tests/Integration/EncryptedInstanceMoveTest.php` exports a register with an encrypted field and loads it into a second fixture instance where the field reads back.
-- [ ] 3.2 Once task 4.1 of that change lands: the `destructionCopyEncryption` setting (`off`, `when-key`, `required`), refusing a destruction under `required` without a key, and naming the copy's key fingerprint in the destruction record (D-6). Verify: `tests/Unit/Service/Exchange/DestructionCopyEncryptionTest.php`.
+- [x] 3.2 Once task 4.1 of that change lands: the `destructionCopyEncryption` setting (`off`, `when-key`, `required`), refusing a destruction under `required` without a key, and naming the copy's key fingerprint in the destruction record (D-6). Verify: `tests/Unit/Service/Exchange/DestructionCopyEncryptionTest.php`.
+      **Built** (2026-11-25): `DestructionCopies` (`destructionCopyEncryption`, default `off` in the archival settings; an unknown value reads as `required`) used by `DestructionListRun`; `DestructionCopyWriter::writeSealed()` writes `<uuid>.json.orsetenc` and never a plaintext copy; the key comes from `ExportKeySealersInterface` (Kernel contract, `ExportKeySealers` in Exchange: the organisation's newest export key the broker admits, read through `ExportKeyService::use()` so the use is audited, looked up once per run). The audited destruction carries `copyKeyFingerprint`; with `required` and no usable key nothing is destroyed and the list's `copyRefusal` names the organisation whose key is missing. Tested by `DestructionCopyEncryptionTest` (10), `ExportKeySealersTest` (4), `DestructionListRunBehaviourTest` (+2), `DestructionCopyWriterTest` (+2).
 
 ## 4. Screens
 
 - [ ] 4.1 Add the encryption choice to the export and load screens that the serialisation adds (passphrase with confirmation, or an export key) with the lost-key warning, and a new `src/views/settings/sections/ExportKeysConfiguration.vue` section in the Open Register admin settings to create, rotate and delete keys. Verify: `src/views/settings/sections/ExportKeysConfiguration.spec.js` shows the recovery string once and never again on reload; the export screen's test asserts the lost-key warning must be confirmed before an encrypted export starts.
+      **Built** (2026-11-25), the key half: `ExportKeysController` (`GET`/`POST /api/export-keys`, `POST /api/export-keys/{id}/rotate`, `DELETE /api/export-keys/{id}`; administrator-only, the caller's active organisation through the new Kernel contract `ActiveOrganisationReaderInterface`, a key outside the organisation's own list answered 404 untouched, the recovery string only in the create and rotate answers with `no-store`), `ExportKeyDirectory` (lists keys by fingerprint and date from the credential objects, never reading a key), and `src/views/settings/sections/ExportKeysConfiguration.vue` in the admin settings. Tested by `ExportKeysControllerTest` (10), `ExportKeyDirectoryTest` (5), `ActiveOrganisationReaderTest` (3) and `ExportKeysConfiguration.spec.js` (10: the recovery string once, never after dismissal or reload). **Open**: the encryption choice on the export and load screens, which the serialisation of task 3.1 adds.
 
 ## 5. Docs and end-to-end test
 
-- [ ] 5.1 Document the format, the two key kinds, key rotation, the lost-key rule, the field-encryption rule and the destruction setting in `docs/features/data-import-export.md`. Verify: `npm run build` in `docs/` succeeds.
+- [x] 5.1 Document the format, the two key kinds, key rotation, the lost-key rule, the field-encryption rule and the destruction setting in `docs/features/data-import-export.md`. Verify: `npm run build` in `docs/` succeeds.
+      **Built** (2026-11-25): "Encrypted Instance Sets" in `docs/features/data-import-export.md`; `npm run build` in `docs/` succeeds.
 - [ ] 5.2 Add `tests/e2e/ci/encrypted-instance-export.spec.ts`: an administrator exports a register encrypted with a passphrase, sees that the file does not contain a known record title in the clear, loads it with the wrong passphrase and is refused with nothing written, then loads it with the right one. Verify: the spec runs green in the Playwright CI project.
 
 ## Acceptance

@@ -110,4 +110,53 @@ class FileDigestMapper extends QBMapper {
 		return $this->findEntities(query: $qb);
 
 	}//end findOpenAfter()
+
+	/**
+	 * Mark a record as no longer matching its file, keeping the first moment it was found.
+	 *
+	 * Only a record without a mismatch is written: a file refused on every
+	 * download stays flagged from the first refusal, not from the latest one.
+	 *
+	 * @param int      $id      The record id.
+	 * @param DateTime $at      When the mismatch was found.
+	 * @param string   $current The digest the file has now, '' when it is gone or unreadable.
+	 *
+	 * @return int The number of records marked: 1, or 0 when it already was.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	public function flagMismatch(int $id, DateTime $at, string $current): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableName())
+			->set('mismatch_at', $qb->createNamedParameter($at, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			->set('mismatch_sha256', $qb->createNamedParameter($current, IQueryBuilder::PARAM_STR))
+			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNull('mismatch_at'));
+
+		return $qb->executeStatement();
+
+	}//end flagMismatch()
+	/**
+	 * The open record of a file: the publication it is in now, or null when it is not published.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return FileDigest|null The newest record without an unpublication date, or null.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	public function findOpenForFile(int $fileId): ?FileDigest {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->isNull('unpublished_at'))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		$found = $this->findEntities(query: $qb);
+
+		return ($found[0] ?? null);
+
+	}//end findOpenForFile()
 }//end class

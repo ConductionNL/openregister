@@ -121,6 +121,59 @@ class TranslationHandler implements TranslationHandlerInterface {
 	}//end resolveTranslationsForRender()
 
 	/**
+	 * The object name in the reader's language, when the stored name came from a translatable property.
+	 *
+	 * `@self.name` is written once at save time from the name property's first
+	 * language, so a reader in another language sees it untranslated next to a
+	 * translated property. When the stored name is one of the values of a
+	 * translatable property's language map, the property's resolved value is the
+	 * name this reader should see.
+	 *
+	 * @param array       $stored   The object data before translation, with its language maps.
+	 * @param array       $resolved The same data after resolveTranslationsForRender().
+	 * @param Schema      $schema   The object's schema.
+	 * @param string|null $name     The stored object name.
+	 *
+	 * @return string|null The translated name, or null when the stored name stays.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function translatedName(array $stored, array $resolved, Schema $schema, ?string $name): ?string {
+		if ($name === null || $name === '') {
+			return null;
+		}
+
+		$candidates = [];
+		foreach ($this->propertiesToResolve(schema: $schema) as $propName) {
+			$map = ($stored[$propName] ?? null);
+			$text = ($resolved[$propName] ?? null);
+			if ($this->isLanguageKeyedValue(value: $map) === false || is_string($text) === false || $text === '') {
+				continue;
+			}
+
+			if (in_array($name, $map, true) === true) {
+				$candidates[$propName] = $text;
+			}
+		}
+
+		// Several properties can carry the name in the source language (a title
+		// and an untranslated subject); the configured name field decides, else
+		// the first one that has a translation for this reader.
+		$nameField = ($schema->getConfiguration()['objectNameField'] ?? null);
+		if (is_string($nameField) === true && isset($candidates[$nameField]) === true) {
+			return $candidates[$nameField];
+		}
+
+		foreach ($candidates as $text) {
+			if ($text !== $name) {
+				return $text;
+			}
+		}
+
+		return null;
+	}//end translatedName()
+
+	/**
 	 * The translatable properties a render resolves: none when all translations are returned.
 	 *
 	 * @param Schema $schema The schema.
@@ -221,6 +274,10 @@ class TranslationHandler implements TranslationHandlerInterface {
 	 *
 	 * @param array            $objectData The incoming object data.
 	 * @param TranslationScope $scope      The schema for property definitions and the register for language configuration.
+	 * @param array            $stored     The stored object's data when a save with a target language updates an
+	 *                                     existing object: a scalar for the target language is merged into the
+	 *                                     stored language map instead of replacing it, and a language map equal to
+	 *                                     the stored one (a PATCH carries the untouched properties along) is kept.
 	 *
 	 * @return array The normalized object data with translations wrapped correctly.
 	 *
@@ -229,7 +286,7 @@ class TranslationHandler implements TranslationHandlerInterface {
 	 *
 	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
 	 */
-	public function normalizeTranslationsForSave(array $objectData, TranslationScope $scope): array {
+	public function normalizeTranslationsForSave(array $objectData, TranslationScope $scope, array $stored=[]): array {
 		$translatableProps = $this->getTranslatableProperties(schema: $scope->schema);
 		if (empty($translatableProps) === true) {
 			return $objectData;
@@ -238,12 +295,27 @@ class TranslationHandler implements TranslationHandlerInterface {
 		$target = $this->saveTarget(scope: $scope);
 		foreach ($translatableProps as $propName) {
 			if (isset($objectData[$propName]) === true) {
-				$objectData[$propName] = $this->valueForSave(value: $objectData[$propName], target: $target->forProperty(property: (string)$propName));
+				$objectData[$propName] = $this->valueForSave(
+					value: $objectData[$propName],
+					target: $target->forProperty(property: (string)$propName),
+					stored: ($stored[$propName] ?? null)
+				);
 			}
 		}
 
 		return $objectData;
 	}//end normalizeTranslationsForSave()
+
+	/**
+	 * The language a save writes (`X-Translation-Target-Language`), or null.
+	 *
+	 * @return string|null The target language.
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+	 */
+	public function targetLanguage(): ?string {
+		return $this->languageService->getTargetLanguage();
+	}//end targetLanguage()
 
 	/**
 	 * The default and target language a save is normalised for.
@@ -264,6 +336,7 @@ class TranslationHandler implements TranslationHandlerInterface {
 	 *
 	 * @param mixed                 $value  The non-null value.
 	 * @param TranslationSaveTarget $target The languages and the property.
+	 * @param mixed                 $stored The property's stored value, when the save updates an existing object.
 	 *
 	 * @return mixed The value to save.
 	 *
@@ -271,9 +344,21 @@ class TranslationHandler implements TranslationHandlerInterface {
 	 *
 	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
 	 */
-	private function valueForSave(mixed $value, TranslationSaveTarget $target): mixed {
+	private function valueForSave(mixed $value, TranslationSaveTarget $target, mixed $stored=null): mixed {
+		$storedMap = null;
+		if ($target->hasTarget() === true && $this->isLanguageKeyedValue(value: $stored) === true) {
+			$storedMap = $stored;
+		}
+
 		if ($this->isLanguageKeyedValue(value: $value) === false) {
-			return [$target->wrappingLanguage() => $value];
+			// Writing one language of an existing object keeps the other languages.
+			return array_merge(($storedMap ?? []), [$target->wrappingLanguage() => $value]);
+		}
+
+		if ($storedMap !== null && self::sameLanguageMap(left: $value, right: $storedMap) === true) {
+			// The stored map, unchanged: a PATCH merges the untouched properties
+			// of the stored object into its body. That is no conflicting intent.
+			return $value;
 		}
 
 		if ($target->hasTarget() === true) {
@@ -289,6 +374,23 @@ class TranslationHandler implements TranslationHandlerInterface {
 
 		return $value;
 	}//end valueForSave()
+
+	/**
+	 * Whether two language maps hold the same values per language, in any key order.
+	 *
+	 * @param array $left  One map.
+	 * @param array $right The other map.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+	 */
+	private static function sameLanguageMap(array $left, array $right): bool {
+		ksort($left);
+		ksort($right);
+
+		return $left === $right;
+	}//end sameLanguageMap()
 
 	/**
 	 * Whether a value is an array keyed by language.

@@ -34,10 +34,13 @@ use OCA\OpenRegister\Capabilities\IntegrationsCapabilityServices;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\LeafRegistry;
+use OCA\OpenRegister\Service\SemanticProviderCatalogue;
 use OCP\App\IAppManager;
+use OCP\ICache;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
+use OCP\L10N\IFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -289,4 +292,183 @@ class IntegrationsCapabilityTest extends TestCase {
 		$this->assertArrayHasKey('authStatus', $row);
 		$this->assertArrayHasKey('openConnectorSource', $row);
 	}//end testAdminGetsOperationalFields()
+
+	/**
+	 * Build the capability with the given semantic provider catalogue.
+	 *
+	 * @param SemanticProviderCatalogue|null $catalogue The catalogue, or null when not wired.
+	 *
+	 * @return IntegrationsCapability
+	 */
+	private function capabilityWithProviders(?SemanticProviderCatalogue $catalogue): IntegrationsCapability {
+		return new IntegrationsCapability(
+			registry: $this->registryWith([]),
+			userSession: $this->userSession(uid: 'alice'),
+			groupManager: $this->groupManager(isAdmin: false),
+			services: new IntegrationsCapabilityServices(
+				appManager: $this->appManager(enabledApps: []),
+				leafRegistry: $this->leafRegistry(),
+				semanticProviders: $catalogue
+			)
+		);
+	}//end capabilityWithProviders()
+
+	/**
+	 * The semantic provider rows are advertised as the catalogue lists them.
+	 *
+	 * @return void
+	 */
+	public function testSemanticProvidersAreAdvertised(): void {
+		$row = [
+			'uri' => 'https://schema.org/Organization',
+			'register' => 3,
+			'registerSlug' => 'finance',
+			'schema' => 7,
+			'schemaSlug' => 'payee',
+			'appId' => 'shillinq',
+			'available' => false,
+			'reason' => SemanticProviderCatalogue::REASON_APP_NOT_INSTALLED,
+		];
+		$catalogue = $this->createMock(SemanticProviderCatalogue::class);
+		$catalogue->expects($this->once())->method('list')->willReturn([$row]);
+
+		$payload = $this->capabilityWithProviders(catalogue: $catalogue)->getCapabilities();
+
+		$this->assertSame([$row], $payload['openregister']['integrations']['semanticProviders']);
+	}//end testSemanticProvidersAreAdvertised()
+
+	/**
+	 * Without a catalogue, or when it fails, the list is empty and the capability still builds.
+	 *
+	 * @return void
+	 */
+	public function testSemanticProvidersAreEmptyWithoutAWorkingCatalogue(): void {
+		$failing = $this->createMock(SemanticProviderCatalogue::class);
+		$failing->method('list')->willThrowException(new \RuntimeException('cache down'));
+
+		$this->assertSame([], $this->capabilityWithProviders(catalogue: null)->getCapabilities()['openregister']['integrations']['semanticProviders']);
+		$this->assertSame([], $this->capabilityWithProviders(catalogue: $failing)->getCapabilities()['openregister']['integrations']['semanticProviders']);
+	}//end testSemanticProvidersAreEmptyWithoutAWorkingCatalogue()
+	/**
+	 * How often a fresh request's registry built its providers.
+	 *
+	 * @var int
+	 */
+	private int $builds = 0;
+
+	/**
+	 * An in-memory cache shared by the "requests" of one test.
+	 *
+	 * @param array<string, mixed> $store The backing store, by reference.
+	 *
+	 * @return ICache The cache.
+	 */
+	private function memoryCache(array &$store): ICache {
+		$cache = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(
+			function (string $key) use (&$store): mixed {
+				return ($store[$key] ?? null);
+			}
+		);
+		$cache->method('set')->willReturnCallback(
+			function (string $key, mixed $value) use (&$store): bool {
+				$store[$key] = $value;
+				return true;
+			}
+		);
+		return $cache;
+	}//end memoryCache()
+
+	/**
+	 * The capability as one request builds it: a fresh registry whose built-ins load on first read.
+	 *
+	 * @param ICache      $cache    The cache shared across requests.
+	 * @param string      $uid      The reader.
+	 * @param string      $language The reader's language.
+	 * @param array<string, string> $apps The enabled apps and their versions.
+	 *
+	 * @return IntegrationsCapability The capability.
+	 */
+	private function requestCapability(ICache $cache, string $uid='alice', string $language='nl', array $apps=['openregister' => '2.2.0']): IntegrationsCapability {
+		$registry = new IntegrationRegistry(new NullLogger());
+		$registry->setBuiltinLoader(
+			function () use ($registry): void {
+				$this->builds++;
+				$registry->addProvider(new _CapStubProvider(id: 'files'));
+				$registry->addProvider(new _CapStubProvider(id: 'deck', requiredApp: 'deck'));
+			}
+		);
+
+		$appManager = $this->appManager(enabledApps: array_keys($apps));
+		$appManager->method('getAppInstalledVersions')->willReturn($apps);
+		$l10nFactory = $this->createMock(IFactory::class);
+		$l10nFactory->method('findLanguage')->willReturn($language);
+
+		return new IntegrationsCapability(
+			registry: $registry,
+			userSession: $this->userSession(uid: $uid),
+			groupManager: $this->groupManager(isAdmin: false),
+			services: new IntegrationsCapabilityServices(
+				appManager: $appManager,
+				leafRegistry: $this->leafRegistry(),
+				cache: $cache,
+				l10nFactory: $l10nFactory
+			)
+		);
+	}//end requestCapability()
+
+	/**
+	 * A second page render for the same reader takes the rows from the cache and builds no provider.
+	 *
+	 * @return void
+	 */
+	public function testASecondRenderForTheSameReaderBuildsNoProvider(): void {
+		$store = [];
+		$cache = $this->memoryCache(store: $store);
+
+		$first  = $this->requestCapability(cache: $cache)->getCapabilities();
+		$second = $this->requestCapability(cache: $cache)->getCapabilities();
+
+		$this->assertSame(1, $this->builds);
+		$this->assertSame($first, $second);
+		$this->assertSame(['files', 'deck'], $second['openregister']['integrations']['registered']);
+		$this->assertFalse($second['openregister']['integrations']['providers'][1]['available']);
+	}//end testASecondRenderForTheSameReaderBuildsNoProvider()
+
+	/**
+	 * Another reader, language or set of enabled apps gets its own rows.
+	 *
+	 * @return void
+	 */
+	public function testAnotherReaderLanguageOrAppSetBuildsItsOwnRows(): void {
+		$store = [];
+		$cache = $this->memoryCache(store: $store);
+
+		$this->requestCapability(cache: $cache)->getCapabilities();
+		$this->requestCapability(cache: $cache, uid: 'bob')->getCapabilities();
+		$this->requestCapability(cache: $cache, language: 'en')->getCapabilities();
+		$withDeck = $this->requestCapability(cache: $cache, apps: ['openregister' => '2.2.0', 'deck' => '1.16.0'])->getCapabilities();
+
+		$this->assertSame(4, $this->builds);
+		$this->assertTrue($withDeck['openregister']['integrations']['providers'][1]['available']);
+	}//end testAnotherReaderLanguageOrAppSetBuildsItsOwnRows()
+
+	/**
+	 * A cache entry that is not the expected shape is rebuilt, not trusted.
+	 *
+	 * @return void
+	 */
+	public function testAMalformedCacheEntryIsRebuilt(): void {
+		$store = [];
+		$cache = $this->memoryCache(store: $store);
+		$this->requestCapability(cache: $cache)->getCapabilities();
+		foreach (array_keys($store) as $key) {
+			$store[$key] = ['registered' => 'files'];
+		}
+
+		$payload = $this->requestCapability(cache: $cache)->getCapabilities();
+
+		$this->assertSame(2, $this->builds);
+		$this->assertSame(['files', 'deck'], $payload['openregister']['integrations']['registered']);
+	}//end testAMalformedCacheEntryIsRebuilt()
 }//end class

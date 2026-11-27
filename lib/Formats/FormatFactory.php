@@ -56,6 +56,8 @@ final class FormatFactory {
 			'time-zone' => new TimeZoneFormat(),
 			'user'      => new UserFormat(userManager: $userManager, planned: $planned),
 			'date-time' => new Iso8601DateTimeFormat(),
+			'website'   => new WebsiteFormat(),
+			'nl-phone'  => new NlPhoneFormat(),
 		];
 	}//end customStringFormats()
 

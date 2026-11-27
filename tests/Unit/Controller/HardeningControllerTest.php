@@ -107,6 +107,7 @@ class HardeningControllerTest extends TestCase {
 
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($body);
+		$request->method('getRemoteAddress')->willReturn('192.0.2.44');
 		$request->method('getParam')->willReturnCallback(
 			static fn (string $key, $default = null) => ($body[$key] ?? $default)
 		);
@@ -251,6 +252,55 @@ class HardeningControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$this->assertSame(['https://example.nl'], $response->getData()['allowedOrigins']);
+	}
+
+	/**
+	 * Each surface's list goes to the writer with the address this request comes from, and is answered back.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function testAddressAllowlistsAreStoredWithTheRequestersAddress(): void {
+		$controller = $this->controller(body: ['addressAllowlists' => ['admin' => ['b' => '192.0.2.0/24'], 'api' => []]]);
+		$calls = [];
+		$this->settings->method('setAddressAllowlist')->willReturnCallback(
+			function (string $surface, array $entries, string $requesterAddress) use (&$calls): array {
+				$calls[] = [$surface, $entries, $requesterAddress];
+				return $entries;
+			}
+		);
+
+		$response = $controller->updateControls();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame([['admin', ['192.0.2.0/24'], '192.0.2.44'], ['api', [], '192.0.2.44']], $calls);
+		$this->assertSame(['admin' => ['192.0.2.0/24'], 'api' => []], $response->getData()['addressAllowlists']);
+	}
+
+	/**
+	 * A refused list, and a list that is not a list, answer 400.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function testARefusedAddressAllowlistAnswers400(): void {
+		$controller = $this->controller(body: ['addressAllowlists' => ['admin' => ['203.0.113.0/24']]]);
+		$this->settings->method('setAddressAllowlist')->willThrowException(new \InvalidArgumentException('locks you out'));
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $controller->updateControls()->getStatus());
+
+		$controller = $this->controller(body: ['addressAllowlists' => ['admin' => '192.0.2.1']]);
+		$this->settings->expects($this->never())->method('setAddressAllowlist');
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $controller->updateControls()->getStatus());
+	}
+
+	/**
+	 * Address allowlists are an administration write: a lapsed elevation stores none.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	public function testAddressAllowlistsNeedTheFreshSignIn(): void {
+		$controller = $this->controller(body: ['addressAllowlists' => ['admin' => ['192.0.2.0/24']]], elevated: false);
+		$this->settings->expects($this->never())->method('setAddressAllowlist');
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $controller->updateControls()->getStatus());
 	}
 
 	public function testADeclaredFloorAnswersWithWhatIsNowInForce(): void {

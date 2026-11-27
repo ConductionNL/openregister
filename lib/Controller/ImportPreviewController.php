@@ -32,10 +32,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Import\BaseImportPlanner;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Import\ImportCommit;
 use OCA\OpenRegister\BackgroundJob\ConfigurationJobHandlesInterface;
 use OCA\OpenRegister\Controller\Support\ImportPreviewControllerServices;
+use OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 use OCA\OpenRegister\Db\ImportPreview;
 use OCA\OpenRegister\Db\ImportPreviewMapperInterface;
 use OCA\OpenRegister\Db\ImportPreviewRowMapperInterface;
@@ -59,6 +61,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -76,6 +79,14 @@ use Throwable;
  * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md
  */
 class ImportPreviewController extends Controller {
+	use HandlesExceptionsTrait;
+
+	/**
+	 * Logger, read by HandlesExceptionsTrait to log the detail of a failure.
+	 *
+	 * @var LoggerInterface|null
+	 */
+	protected readonly ?LoggerInterface $logger;
 
 	/**
 	 * The largest page of rows one request returns.
@@ -141,6 +152,13 @@ class ImportPreviewController extends Controller {
 	private readonly IGroupManager $groupManager;
 
 	/**
+	 * Plans the import of a whole base export, or null where a test built the controller without it.
+	 *
+	 * @var BaseImportPlanner|null
+	 */
+	private readonly ?BaseImportPlanner $basePlanner;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request HTTP request.
@@ -159,6 +177,8 @@ class ImportPreviewController extends Controller {
 		$this->jobList = $services->platform->jobList;
 		$this->userSession = $services->platform->userSession;
 		$this->groupManager = $services->platform->groupManager;
+		$this->basePlanner = $services->domain->basePlanner;
+		$this->logger = $services->logger;
 	}//end __construct()
 
 	/**
@@ -294,6 +314,50 @@ class ImportPreviewController extends Controller {
 	}//end create()
 
 	/**
+	 * Read a whole base export and propose the register it becomes. Writes nothing (REQ-IPC-006).
+	 *
+	 * The answer is the plan a person confirms: the proposed register,
+	 * schemas and relations, the per-row outcomes of links to rows outside the
+	 * export, each table's row count and the order the tables load in.
+	 * Confirming it creates a register, which only an administrator may do, so
+	 * only an administrator may ask for the proposal.
+	 *
+	 * @return JSONResponse 200 with the plan, or 400 / 401 / 403 / 500.
+	 *
+	 * @spec openspec/changes/import-preview-and-conflict-policy/specs/data-import-export/spec.md#REQ-IPC-006
+	 */
+	#[NoAdminRequired]
+	public function proposeBase(): JSONResponse {
+		$uid = $this->currentUid();
+		if ($uid === null) {
+			return $this->authRequired();
+		}
+
+		if ($this->groupManager->isAdmin($uid) === false) {
+			return new JSONResponse(data: ['error' => 'Only administrators may create registers, so only they may import a whole base'], statusCode: 403);
+		}
+
+		$uploadedFile = $this->request->getUploadedFile('file');
+		if ($uploadedFile === null || ($uploadedFile['tmp_name'] ?? '') === '') {
+			return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
+		}
+
+		if ($this->basePlanner === null) {
+			return new JSONResponse(data: ['error' => 'Importing a whole base is not available'], statusCode: 503);
+		}
+
+		try {
+			return new JSONResponse(
+				data: $this->basePlanner->plan(format: (string)$this->request->getParam('format', 'baserow'), filePath: (string)$uploadedFile['tmp_name'])
+			);
+		} catch (InvalidArgumentException $exception) {
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
+		} catch (Throwable $exception) {
+			return new JSONResponse(data: ['error' => 'The base could not be read'], statusCode: 500);
+		}
+	}//end proposeBase()
+
+	/**
 	 * The uuid of the run a retry names through `retryOf`, which the caller must be able to read.
 	 *
 	 * A retry is a new run naming the original as its cause (D-6). The cause
@@ -327,7 +391,7 @@ class ImportPreviewController extends Controller {
 	 *
 	 * @param array<string, mixed> $params The preview parameters.
 	 *
-	 * @return JSONResponse 201 with the preview, 202 for a queued one, or 400 / 500.
+	 * @return JSONResponse 201 with the preview, 202 for a queued one, or 400, a typed status, or a generic 500.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -345,7 +409,7 @@ class ImportPreviewController extends Controller {
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
 		} catch (Throwable $exception) {
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $exception, context: 'Failed to build an import preview');
 		}//end try
 	}//end runPreview()
 
@@ -468,7 +532,7 @@ class ImportPreviewController extends Controller {
 	 * @param ImportPreview $preview    The caller's own preview.
 	 * @param string|null   $sourceHash The source file's hash, or null when none was sent.
 	 *
-	 * @return JSONResponse 200 with the committed preview, 202 for a queued commit, or 409 / 400 / 500.
+	 * @return JSONResponse 200 with the committed preview, 202 for a queued commit, or 409 / 400, a typed status, or a generic 500.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
@@ -500,7 +564,7 @@ class ImportPreviewController extends Controller {
 		} catch (InvalidArgumentException $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 400);
 		} catch (Throwable $exception) {
-			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+			return $this->handleApiException(e: $exception, context: 'Failed to commit an import preview');
 		}//end try
 	}//end runCommit()
 

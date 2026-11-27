@@ -58,11 +58,13 @@ exports[`page-shell views register their components OperationsConsoleIndex 1`] =
 [
   "CnDataTable",
   "CogOutline",
+  "DependenciesSection",
   "NcAppContent",
   "NcButton",
   "NcEmptyContent",
   "NcLoadingIcon",
   "NcNoteCard",
+  "QueryConsoleSection",
   "SeedReportSection",
 ]
 `;

@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Event;
 
+use OCA\OpenRegister\Event\FileAddedEvent;
 use OCA\OpenRegister\Event\FileCopiedEvent;
 use OCA\OpenRegister\Event\FileLockedEvent;
 use OCA\OpenRegister\Event\FileMovedEvent;
@@ -35,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  * Each file-action event is an Event that hands back the object, file and data it was given.
  *
  * @covers \OCA\OpenRegister\Event\AbstractObjectFileEvent
+ * @covers \OCA\OpenRegister\Event\FileAddedEvent
  * @covers \OCA\OpenRegister\Event\FileCopiedEvent
  * @covers \OCA\OpenRegister\Event\FileLockedEvent
  * @covers \OCA\OpenRegister\Event\FileMovedEvent
@@ -45,12 +47,13 @@ use PHPUnit\Framework\TestCase;
 class ObjectFileEventsTest extends TestCase {
 
 	/**
-	 * The six file-action event classes.
+	 * The seven file-action event classes.
 	 *
 	 * @return array<string, array{0: class-string}>
 	 */
 	public static function events(): array {
 		return [
+			'added' => [FileAddedEvent::class],
 			'copied' => [FileCopiedEvent::class],
 			'locked' => [FileLockedEvent::class],
 			'moved' => [FileMovedEvent::class],

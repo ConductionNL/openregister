@@ -57,7 +57,13 @@ final class CapabilityRegistrar {
 					groupManager: $container->get('OCP\IGroupManager'),
 					services: new IntegrationsCapabilityServices(
 						appManager: $container->get('OCP\App\IAppManager'),
-						leafRegistry: $container->get(\OCA\OpenRegister\Service\Integration\LeafRegistryInterface::class)
+						leafRegistry: $container->get(\OCA\OpenRegister\Service\Integration\LeafRegistryInterface::class),
+						// The cached semantic provider list advertised under `semanticProviders`.
+						semanticProviders: $container->get(\OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface::class),
+						// Nextcloud renders the capabilities into every page: the provider rows
+						// are kept per reader so a page render does not build all providers.
+						cache: $container->get('OCP\ICacheFactory')->createDistributed(IntegrationsCapability::CACHE_PREFIX),
+						l10nFactory: $container->get('OCP\L10N\IFactory')
 					)
 				);
 			}
@@ -74,5 +80,8 @@ final class CapabilityRegistrar {
 		// AuthorizationCapability — the access scope kinds the engine enforces
 		// (access-owner-and-condition-scopes).
 		$context->registerCapability(AuthorizationCapability::class);
+		// SearchCapability — whether `_search` stems, and with which text
+		// search configuration (search-dutch-language-quality).
+		$context->registerCapability(SearchCapability::class);
 	}//end register()
 }//end class

@@ -97,6 +97,23 @@ class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRe
 	private bool $leavesLoaded = false;
 
 	/**
+	 * Optional lazy loader that adds OpenRegister's built-in providers.
+	 *
+	 * Set by `Application::boot()`. Invoked once, on the first registry READ,
+	 * so a request that never reads the registry does not construct them.
+	 *
+	 * @var (callable():void)|null
+	 */
+	private $builtinLoader = null;
+
+	/**
+	 * Whether the lazy built-in loader has already run this request.
+	 *
+	 * @var boolean
+	 */
+	private bool $builtinsLoaded = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger for collision and config warnings.
@@ -126,6 +143,69 @@ class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRe
 		$this->leafLoader = $loader;
 
 	}//end setLeafLoader()
+
+	/**
+	 * Install the lazy built-in provider loader.
+	 *
+	 * The loader adds the built-in providers through `addProvider()`; it runs
+	 * at most once, on the first read. The built-ins keep their place ahead of
+	 * any provider another app added before that read, so the order and the
+	 * first-registration-wins rule are those of an eager boot.
+	 *
+	 * @param callable $loader Zero-arg loader closure.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/integration-registry/spec.md
+	 */
+	public function setBuiltinLoader(callable $loader): void {
+		$this->builtinLoader = $loader;
+
+	}//end setBuiltinLoader()
+
+	/**
+	 * Run the lazy loaders once, on the first registry read: built-ins, then leaves.
+	 *
+	 * @return void
+	 */
+	private function ensureLoaded(): void {
+		$this->ensureBuiltinsLoaded();
+		$this->ensureLeavesLoaded();
+
+	}//end ensureLoaded()
+
+	/**
+	 * Run the lazy built-in loader once, ahead of the providers added so far.
+	 *
+	 * The providers added before this read are set aside, the built-ins are
+	 * added, and the earlier providers are added again behind them. A throwing
+	 * loader is logged and the earlier providers are kept.
+	 *
+	 * @return void
+	 */
+	private function ensureBuiltinsLoaded(): void {
+		if ($this->builtinsLoaded === true || $this->builtinLoader === null) {
+			return;
+		}
+
+		$this->builtinsLoaded = true;
+		$earlier = $this->providers;
+		$this->providers = [];
+
+		try {
+			($this->builtinLoader)();
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[IntegrationRegistry] built-in loader failed: {message}',
+				['message' => $e->getMessage(), 'exception' => $e]
+			);
+		}
+
+		foreach ($earlier as $provider) {
+			$this->addProvider(provider: $provider);
+		}
+
+	}//end ensureBuiltinsLoaded()
 
 	/**
 	 * Run the lazy leaf loader once, on the first registry read.
@@ -260,7 +340,7 @@ class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRe
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
 	 */
 	public function list(): array {
-		$this->ensureLeavesLoaded();
+		$this->ensureLoaded();
 		return array_values($this->providers);
 	}//end list()
 
@@ -276,7 +356,7 @@ class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRe
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
 	 */
 	public function listIds(): array {
-		$this->ensureLeavesLoaded();
+		$this->ensureLoaded();
 		return array_keys($this->providers);
 	}//end listIds()
 
@@ -290,7 +370,7 @@ class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRe
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
 	 */
 	public function get(string $id): ?IntegrationProvider {
-		$this->ensureLeavesLoaded();
+		$this->ensureLoaded();
 		return $this->providers[$id] ?? null;
 	}//end get()
 
@@ -306,7 +386,7 @@ class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRe
 	 * @return bool True when the id is registered.
 	 */
 	public function isValidIntegrationId(string $id): bool {
-		$this->ensureLeavesLoaded();
+		$this->ensureLoaded();
 		return isset($this->providers[$id]);
 	}//end isValidIntegrationId()
 
@@ -437,7 +517,7 @@ class IntegrationRegistry implements IntegrationCatalogueInterface, PageWidgetRe
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-3
 	 */
 	public function getEnabled(): array {
-		$this->ensureLeavesLoaded();
+		$this->ensureLoaded();
 		$enabled = [];
 		foreach ($this->providers as $provider) {
 			if ($provider->isEnabled() === true) {

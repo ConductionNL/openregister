@@ -20,11 +20,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 10,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -55,13 +56,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "entityPatternSets": []
         },
@@ -88,11 +96,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 1,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -122,13 +131,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": false
@@ -144,7 +160,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":1,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":1,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -181,11 +197,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 25,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -215,13 +232,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": true
@@ -237,7 +261,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":25,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":25,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -276,11 +300,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 10,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -310,13 +335,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": false
@@ -332,7 +364,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -365,11 +397,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 10,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -399,13 +432,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": false
@@ -421,7 +461,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -454,11 +494,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 10,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -488,13 +529,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": false
@@ -510,7 +558,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -533,11 +581,12 @@
                 "pdf"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 500,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "d",
@@ -567,13 +616,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": false
@@ -589,7 +645,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":true,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":50,\"chunkOverlap\":200,\"enabledFileTypes\":[\"pdf\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":500,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"d\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"user\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":true,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":50,\"chunkOverlap\":200,\"enabledFileTypes\":[\"pdf\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":500,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"d\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"user\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -826,6 +882,13 @@
                 "maxRatio": 100,
                 "maxDepth": 2
             },
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
+            },
             "anonymisation": {
                 "confidenceThreshold": 0.5,
                 "capacityPolicy": {
@@ -846,7 +909,10 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "openAnonymiserUsername": "",
             "openAnonymiserPasswordSet": false,
@@ -1088,11 +1154,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 10,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -1123,13 +1190,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "entityPatternSets": []
         },
@@ -1176,6 +1250,13 @@
                 "maxRatio": 100,
                 "maxDepth": 2
             },
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
+            },
             "anonymisation": {
                 "confidenceThreshold": 0.5,
                 "capacityPolicy": {
@@ -1196,7 +1277,10 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "openAnonymiserUsername": "",
             "openAnonymiserPasswordSet": true,
@@ -1225,11 +1309,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 1,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -1259,13 +1344,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": false
@@ -1281,7 +1373,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":1,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":1,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -1318,11 +1410,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 25,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -1352,13 +1445,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": true
@@ -1374,7 +1474,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":25,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":25,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -1413,11 +1513,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 10,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -1447,13 +1548,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": true
@@ -1469,7 +1577,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -1502,11 +1610,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 10,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -1536,13 +1645,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": true
@@ -1558,7 +1674,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -1591,11 +1707,12 @@
                 "xls"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 10,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "",
@@ -1625,13 +1742,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": true
@@ -1647,7 +1771,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":false,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":1000,\"chunkOverlap\":200,\"enabledFileTypes\":[\"txt\",\"md\",\"html\",\"json\",\"xml\",\"csv\",\"pdf\",\"docx\",\"doc\",\"xlsx\",\"xls\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":10,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -1670,11 +1794,12 @@
                 "pdf"
             ],
             "ocrEnabled": false,
-            "maxFileSizeMB": 100,
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
             "extractionScope": "objects",
             "textExtractor": "llphant",
             "extractionMode": "background",
-            "maxFileSize": 100,
             "batchSize": 500,
             "dolphinApiEndpoint": "",
             "dolphinApiKey": "d",
@@ -1704,13 +1829,20 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "archive": {
                 "maxMembers": 2000,
                 "maxTotalBytes": 1073741824,
                 "maxRatio": 100,
                 "maxDepth": 2
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
             },
             "anonymisationReview": null,
             "openAnonymiserPasswordSet": true
@@ -1726,7 +1858,7 @@
             [
                 "setValueString",
                 "fileManagement",
-                "{\"vectorizationEnabled\":true,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":50,\"chunkOverlap\":200,\"enabledFileTypes\":[\"pdf\"],\"ocrEnabled\":false,\"maxFileSizeMB\":100,\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"maxFileSize\":100,\"batchSize\":500,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"d\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"user\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"anonymisationReview\":null}",
+                "{\"vectorizationEnabled\":true,\"provider\":null,\"chunkingStrategy\":\"RECURSIVE_CHARACTER\",\"chunkSize\":50,\"chunkOverlap\":200,\"enabledFileTypes\":[\"pdf\"],\"ocrEnabled\":false,\"textExtraction\":{\"maxBytes\":104857600},\"extractionScope\":\"objects\",\"textExtractor\":\"llphant\",\"extractionMode\":\"background\",\"batchSize\":500,\"dolphinApiEndpoint\":\"\",\"dolphinApiKey\":\"d\",\"presidioApiEndpoint\":\"\",\"openAnonymiserApiEndpoint\":\"\",\"openAnonymiserSource\":\"internal\",\"openAnonymiserUsername\":\"user\",\"entityRecognitionEnabled\":false,\"entityRecognitionMethod\":\"auto\",\"anonymisation\":{\"confidenceThreshold\":0.5,\"capacityPolicy\":{\"public-office\":{\"decision\":\"release\",\"ground\":null},\"professional\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"private\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"},\"unknown\":{\"decision\":\"withhold\",\"ground\":\"5.1.2e\"}},\"officialsSource\":null,\"personRegister\":null,\"personRegisterBoost\":0.2,\"placeRegister\":null},\"archive\":{\"maxMembers\":2000,\"maxTotalBytes\":1073741824,\"maxRatio\":100,\"maxDepth\":2},\"upload\":{\"partSizeBytes\":10485760,\"sessionTtl\":\"PT24H\"},\"anonymisationReview\":null}",
                 false
             ],
             [
@@ -1748,6 +1880,13 @@
                 "maxRatio": 100,
                 "maxDepth": 2
             },
+            "textExtraction": {
+                "maxBytes": 104857600
+            },
+            "upload": {
+                "partSizeBytes": 10485760,
+                "sessionTtl": "PT24H"
+            },
             "anonymisation": {
                 "confidenceThreshold": 0.5,
                 "capacityPolicy": {
@@ -1768,7 +1907,10 @@
                         "ground": "5.1.2e"
                     }
                 },
-                "officialsSource": null
+                "officialsSource": null,
+                "personRegister": null,
+                "personRegisterBoost": 0.2,
+                "placeRegister": null
             },
             "openAnonymiserPasswordSet": false,
             "entityPatternSets": []

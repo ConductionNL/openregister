@@ -215,14 +215,22 @@ An `x-openregister-extends-form` declaration SHALL accept a map role that the
 shipped consumer reads to steer the form rather than to fill a property key.
 Such a form role SHALL NOT count as a forwarded vocabulary key and SHALL NOT
 become a key of a property built from a form submission. The accepted form
-roles SHALL be published on the extending-forms read. Today the one form role
-is `hideOnCreate`.
+roles SHALL be published on the extending-forms read. The form roles are
+`hideOnCreate`, `sort` (where the field sits), `group` (the heading it sits
+under) and `placeholder` (the empty input's example text).
 
 #### Scenario: a declaration that maps hideOnCreate is accepted
 
 - **GIVEN** an app whose form declaration maps `hideOnCreate` to its own field
 - **WHEN** a schema carrying that declaration is imported
 - **THEN** the schema is saved and the declaration reports no errors
+- @e2e exclude {validator, covered by unit tests and the dossiq register import}
+
+#### Scenario: a declaration that maps the layout roles is accepted
+
+- **GIVEN** an app whose form declaration maps `sort`, `group` and `placeholder` to its own fields
+- **WHEN** a schema carrying that declaration is imported
+- **THEN** the schema is saved, the declaration reports no errors and none of the three is a forwarded key
 - @e2e exclude {validator, covered by unit tests and the dossiq register import}
 
 #### Scenario: a form role forwards no key

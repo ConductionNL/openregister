@@ -82,7 +82,8 @@ final class MapperWiring {
 			services: new SchemaMapperServices(
 				eventDispatcher: $eventDispatcher,
 				validator: $validator,
-				logger: $container->get('Psr\Log\LoggerInterface')
+				logger: $container->get('Psr\Log\LoggerInterface'),
+				cacheFactory: $container->get('OCP\ICacheFactory')
 			)
 		);
 	}//end schemaMapper()

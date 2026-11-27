@@ -29,9 +29,26 @@
 
 ## 2. Surface
 
-- [ ] 2.1 The "Try a date" panel and the deep link. Vue, on the
+- [x] 2.1 The "Try a date" panel and the deep link. Vue, on the
       `working-calendar-admin` section, which is where the calendar
-      definition the endpoint wants is already in hand. Not started.
+      definition the endpoint wants is already in hand.
+      > Done. `src/modals/settings/TermDiagnosticPanel.vue`, under "Preview a
+      > year" in `EditWorkingCalendarModal`: start moment, length, unit
+      > (business days, calendar days, hours) and what happens when the term
+      > ends on a day nobody works (`rollToWorkingDay`). It posts the calendar
+      > definition as it stands in the form to `POST /api/flow-timers/diagnostic`,
+      > so unsaved rules are explained too. It shows the end moment, the roll
+      > (`unrolledAt`, `rolledBy`) and the walk: every day with "Working day",
+      > "Weekend" or the rule's own name, skipped days muted, and a note when the
+      > listed walk was cut short.
+      > Deep link: `src/services/termDiagnosticLink.js` reads
+      > `?section=calendars&calendar=<slug>&sla=<value>:<unit>[:<roll>]`.
+      > `WorkingCalendars.vue` opens that calendar with the term filled in,
+      > waiting for a start moment. An unknown calendar opens nothing.
+      > `deepLinkQuery()` writes the same link for a consuming app.
+      > The 20 labels are in all 37 bundles, one commit per locale.
+      > Tests: `TermDiagnosticPanel.spec.js` (7, the Easter walk among them),
+      > `termDiagnosticLink.spec.js` (5) and `WorkingCalendars.spec.js` (+3).
 
 ## 3. Tests
 

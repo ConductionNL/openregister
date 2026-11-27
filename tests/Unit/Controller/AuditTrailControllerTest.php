@@ -91,6 +91,72 @@ class AuditTrailControllerTest extends TestCase {
 		$this->assertArrayHasKey('total', $data);
 	}
 
+	/**
+	 * The audit page's register, schema and period reach the list query.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+	 */
+	public function testIndexFiltersOnRegisterSchemaAndPeriod(): void {
+		$this->request->method('getParams')->willReturn([
+			'limit' => '50',
+			'action' => 'update',
+			'register' => '32',
+			'schema' => '46',
+			'dateFrom' => '2026-11-25T08:00:00.000+01:00',
+			'dateTo' => '2026-11-26',
+		]);
+		$expected = [
+			'action' => 'update',
+			'register' => 32,
+			'schema' => 46,
+			'created' => ['gte' => '2026-11-25 07:00:00', 'lte' => '2026-11-26 23:59:59'],
+			// REQ-HSA-011: record history unless another category is asked.
+			'category' => 'domain',
+		];
+		$this->logService->expects($this->once())->method('getAllLogs')
+			->with($this->callback(fn (array $params): bool => $params['filters'] === $expected))
+			->willReturn([]);
+		$this->logService->expects($this->once())->method('countAllLogs')->with($expected)->willReturn(0);
+
+		$this->assertSame(200, $this->controller->index()->getStatus());
+	}
+
+	/**
+	 * `from`/`to` name the period as well; a register or schema that is not an id is no filter.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+	 */
+	public function testIndexReadsFromAndToAndIgnoresAScopeThatIsNotAnId(): void {
+		$this->request->method('getParams')->willReturn([
+			'register' => 'my-register',
+			'schema' => '',
+			'from' => '2026-11-25',
+		]);
+		$this->logService->expects($this->once())->method('countAllLogs')
+			->with(['created' => ['gte' => '2026-11-25 00:00:00'], 'category' => 'domain'])
+			->willReturn(0);
+		$this->logService->method('getAllLogs')->willReturn([]);
+
+		$this->assertSame(200, $this->controller->index()->getStatus());
+	}
+
+	/**
+	 * A bound that is not a date is refused, not dropped: a dropped bound answers the whole trail.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+	 */
+	public function testIndexRefusesAPeriodThatIsNotADate(): void {
+		$this->request->method('getParams')->willReturn([
+			'dateFrom' => 'Wed Nov 25 2026 01:30:31 GMT+0000 (Coordinated Universal Time)',
+		]);
+		$this->logService->expects($this->never())->method('getAllLogs');
+
+		$result = $this->controller->index();
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $result->getStatus());
+		$this->assertStringContainsString('is not a date', $result->getData()['error']);
+	}
+
 	public function testShowSuccess(): void {
 		$log = ['id' => 1, 'action' => 'create'];
 		$this->logService->method('getLog')->willReturn($log);
@@ -254,6 +320,31 @@ class AuditTrailControllerTest extends TestCase {
 		$data = $result->getData();
 		$this->assertTrue($data['valid']);
 		$this->assertEquals(50, $data['entriesVerified']);
+	}
+
+	public function testVerifyTypedFailureKeepsItsStatus(): void {
+		$this->request->method('getParam')
+			->willReturnMap([
+				['from', null, null],
+				['to', null, null],
+			]);
+		$this->auditHashService->method('verifyChain')
+			->willThrowException(new \InvalidArgumentException('from must not be after to'));
+
+		$result = $this->controller->verify();
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertSame(['message' => 'from must not be after to', 'error' => 'invalid-argument'], $result->getData());
+	}
+
+	public function testIntegrityUntypedFailureIsAGeneric500(): void {
+		$this->auditHashService->method('getIntegrityStatus')
+			->willThrowException(new \RuntimeException('hash table missing'));
+
+		$result = $this->controller->integrity();
+
+		$this->assertSame(500, $result->getStatus());
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
 	}
 
 	public function testVerifyWithRange(): void {
@@ -552,8 +643,7 @@ class AuditTrailControllerTest extends TestCase {
 		$result = $this->controller->clearAll();
 
 		$this->assertEquals(500, $result->getStatus());
-		$data = $result->getData();
-		$this->assertFalse($data['success']);
+		$this->assertSame(['error' => 'Internal server error'], $result->getData());
 	}
 
 	public function testDestroyMultipleWithArrayIds(): void {
@@ -759,7 +849,8 @@ class AuditTrailControllerTest extends TestCase {
 		$entry = new AuditTrail();
 		$entry->setId(2);
 		$this->pageQuery->expects($this->once())->method('page')
-			->with(new AuditPageRequest(new AuditTrailCriteria(['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'], null), 2, 0))
+			// REQ-HSA-011: the list reads record history unless asked for the administrative changes.
+			->with(new AuditPageRequest(new AuditTrailCriteria(['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1', 'category' => 'domain'], null), 2, 0))
 			->willReturn(['results' => [$entry], 'nextCursor' => 2]);
 		$this->logService->expects($this->never())->method('countAllLogs');
 
@@ -802,6 +893,24 @@ class AuditTrailControllerTest extends TestCase {
 
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame(2, $response->getData()['data']['rows']);
+	}
+
+	/**
+	 * The audit page names its period dateFrom/dateTo; the export reads them as from/to.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+	 */
+	public function testAnExportReadsThePagesDateRange(): void {
+		$this->request->method('getParams')->willReturn(['schema' => '46', 'action' => 'update', 'dateFrom' => '2026-11-25T00:00:00.000Z', 'dateTo' => '2026-11-26T23:00:00.000Z']);
+		$this->request->method('getParam')->willReturnCallback(static fn ($key, $default = null) => ($key === 'format' ? 'csv' : $default));
+		$this->pageQuery->expects($this->once())->method('collect')
+			->with($this->callback(static fn ($criteria): bool => $criteria->filters === ['from' => '2026-11-25T00:00:00.000Z', 'to' => '2026-11-26T23:00:00.000Z', 'action' => 'update', 'schema' => '46']))
+			->willReturn(['results' => [], 'truncated' => false]);
+		$this->logService->method('exportRows')->willReturn(['content' => '', 'filename' => 'audit.csv', 'contentType' => 'text/csv']);
+
+		$this->assertSame(200, $this->controller->export()->getStatus());
 	}
 
 	/**

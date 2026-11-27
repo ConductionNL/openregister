@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -40,6 +41,8 @@ use ReflectionClass;
  * An empty key is keyed `(empty)`. Set UPDATE_GOLDEN=1 to rewrite the fixture.
  */
 class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private const FIXTURE = __DIR__ . '/fixtures/object-service-delete-objects-golden.json';
 
 	private const ARCHIVAL = ['x-openregister-archival' => ['retention' => ['default' => 'P10Y']]];
@@ -309,6 +312,7 @@ class ObjectServiceDeleteObjectsGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturnCallback(
 			static fn (IUser $given): array => $given->getUID() === 'root' ? ['admin'] : ['users']
 		);

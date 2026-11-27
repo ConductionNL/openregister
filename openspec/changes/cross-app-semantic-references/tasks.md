@@ -31,10 +31,11 @@
 
 ## 4. Discovery surface (OpenRegister)
 
-- [ ] 4.1 Extend the integrations OCS capability payload with `semanticProviders:
+- [x] 4.1 Extend the integrations OCS capability payload with `semanticProviders:
   [{ uri, register, schema, appId, available, reason }]` computed from
   resolvable schemas + provider availability.
   > second pass, not built: `IntegrationsCapability::getCapabilities()` runs whenever Nextcloud builds the capabilities (page loads included), and the provider list needs every schema (`SemanticTypeResolver` enumerates `SchemaMapper::findAll()` and walks `allOf`). It needs a cached list invalidated on schema and app changes before it can go there; `GET /api/schemas/resolve-by-implements` (4.2) already serves the on-demand lookup.
+  > third pass: built on a cached list. `SemanticProviderCatalogue` builds the rows (`uri, register, registerSlug, schema, schemaSlug, appId, available, reason`; `reason` is `app-disabled` or `app-not-installed`) from the schemas the user can see. It caches them per user in a distributed cache for an hour, and `SemanticProviderCacheListener` empties that cache on any schema, register, app-enable or app-disable event. `IntegrationsCapability` advertises the list as `semanticProviders` and falls back to `[]` when the list fails. Tests: `SemanticProviderCatalogueTest`, `SemanticProviderCacheListenerTest`, `IntegrationsCapabilityTest`.
 - [x] 4.2 Add `@NoAdminRequired` `SchemasController::resolveByImplements(uri)`
   returning the resolved `{register, schema}` or `null`. (verified: lib/Controller/SchemasController.php, appinfo/routes.php, tests/Unit/Controller/SchemasControllerTest.php)
 - [ ] 4.3 API test both surfaces (present provider, absent provider → null,
@@ -52,12 +53,14 @@
 
 ## 6. First adopter + docs
 
-- [ ] 6.1 shillinq `Payee`: set `configuration.jsonld.type =
+- [x] 6.1 shillinq `Payee`: set `configuration.jsonld.type =
   https://schema.org/Organization` (confirm/adjust).
-- [ ] 6.2 pipelinq `product`: add `buyCost` (number) and `vendor`
+  > confirmed on shillinq development (d288f9f14): `Payee` declares `x-schema-org: schema:Organization` and `configuration.implements: [ns#Vendor, schema.org/Organization]`, so the resolver finds it for both. No change needed.
+- [x] 6.2 pipelinq `product`: add `buyCost` (number) and `vendor`
   (`referenceSemanticType: https://schema.org/Organization`,
   `referenceSemanticApp: shillinq`). Verify: with shillinq → vendor picker
   lists Payees; without shillinq → vendor disabled + tooltip, product still
   editable.
+  > on pipelinq development (`register.d/92-product-supply-master.json`): `vendor` carries `referenceSemanticType: https://openregister.app/ns#Vendor` and `referenceSemanticApp: shillinq`. It uses the narrower ns#Vendor role, which Payee also implements, so it targets accounts-payable vendors rather than any organisation. The buy cost is the product's existing `cost` field ("cost to the organization per unit"), so no duplicate `buyCost` field was added. Checking the picker with and without shillinq needs 5.x and a live instance.
 - [x] 6.3 Document the pattern in OR schema-config docs; cross-link ADR-048.
   > `docs/Features/json-ld.md`, "Referencing a type another app provides".

@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\BulkRowRefusalsInterface;
-use OCA\OpenRegister\Service\Flow\FlowRunContext;
+use OCA\OpenRegister\Kernel\Contracts\Core\CurrentFlowRunInterface;
 use OCA\OpenRegister\Service\Object\SaveObjects\BulkObjectQuota;
 use OCA\OpenRegister\Service\PropertyRbacHandlerInterface;
 
@@ -47,14 +47,16 @@ final class BulkRowRules {
 	 * @param BulkRowRefusalsInterface|null $decisionTables  Applies the decision-table save rules to a bulk save.
 	 * @param PropertyRbacHandlerInterface|null    $propertyRbac    Applies property authorization per row, as SaveObject does.
 	 * @param BulkWriteEvents|null        $bulkWriteEvents Runs the save events per row where they are switched on.
-	 * @param FlowRunContext|null         $runContext      The ambient flow-run stack, so a lock a run took admits that run.
+	 * @param CurrentFlowRunInterface|null $runContext     Which flow run is writing, so a lock a run took admits that run.
 	 * @param BulkObjectQuota|null        $quota           Holds the bulk creates to a schema's per-organisation cap.
+	 *
+	 * @spec openspec/changes/functional-areas-depend-in-one-direction/specs/backend-modularity/spec.md#requirement-areas-reference-only-lower-areas
 	 */
 	public function __construct(
 		public readonly ?BulkRowRefusalsInterface $decisionTables = null,
 		public readonly ?PropertyRbacHandlerInterface $propertyRbac = null,
 		public readonly ?BulkWriteEvents $bulkWriteEvents = null,
-		public readonly ?FlowRunContext $runContext = null,
+		public readonly ?CurrentFlowRunInterface $runContext = null,
 		public readonly ?BulkObjectQuota $quota = null,
 	) {
 	}//end __construct()

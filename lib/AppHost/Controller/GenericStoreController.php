@@ -112,13 +112,14 @@ class GenericStoreController extends Controller {
 	 * making a network call, which is what lets the page fall back to the app's
 	 * built-in items (ADR-080 Decision 4).
 	 *
-	 * @return JSONResponse 200 with `{outcome, cards}`; 401 for anonymous.
+	 * @return JSONResponse 200 with `{outcome, cards, kinds, builtIn, installed}`; 401 for anonymous.
 	 *
 	 * @no-admin-idor-exempt Addresses no object of this app. The query and kind
 	 *   filter are forwarded to an EXTERNAL registry, so there is nothing of
 	 *   another tenant's to reach by guessing an identifier.
 	 *
 	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-leaf-app-must-declare-its-store-rather-than-implement-one
+	 * @spec openspec/changes/store-installed-in/specs/apphost-store-plane/spec.md#requirement-the-store-reports-where-each-item-is-installed
 	 */
 	#[NoAdminRequired]
 	public function search(): JSONResponse {
@@ -187,12 +188,16 @@ class GenericStoreController extends Controller {
 		// none of them: the search response carried `outcome`, `cards` and
 		// `kinds`, and no `builtIn` key at all. ADR-080 Decision 4 exists to
 		// stop precisely that blank surface.
+		// `installed` says where each item already is (slug to targets, ''
+		// for an install without target), so a card can read "Installed in"
+		// without a second request per card.
 		return new JSONResponse(
 			data: [
 				'outcome' => $result['outcome'],
 				'cards' => $result['cards'],
 				'kinds' => $kinds,
 				'builtIn' => $store->builtIn,
+				'installed' => $this->services->install->ledger->installedIn(appId: $this->appName),
 			],
 			statusCode: Http::STATUS_OK
 		);
@@ -300,8 +305,49 @@ class GenericStoreController extends Controller {
 			return $refusal;
 		}
 
-		return $this->installItem(store: $store, slug: $slug);
+		// Where the install goes: a world, an administration. Only a target
+		// the app declared is accepted; an undeclared one is refused rather
+		// than ignored, so nothing lands somewhere the caller did not ask for.
+		$target  = ($this->stringParam(name: 'target') ?? '');
+		$refusal = $this->targetRefusal(store: $store, target: $target);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->installItem(store: $store, slug: $slug, target: $target);
 	}//end install()
+
+	/**
+	 * The refusal for an install target this store cannot take, or null when it can.
+	 *
+	 * @param StoreManifest $store  The declared store block.
+	 * @param string        $target The requested target, '' for none.
+	 *
+	 * @return JSONResponse|null 400 for an undeclared or malformed target; null otherwise.
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	private function targetRefusal(StoreManifest $store, string $target): ?JSONResponse {
+		if ($target === '') {
+			return null;
+		}
+
+		if ($store->installTarget->isDeclared() === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'This store does not install into a target.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($store->installTarget->isWellFormed(target: $target) === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'Malformed install target.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return null;
+	}//end targetRefusal()
 
 	/**
 	 * The refusal for an install this caller may not run, or null when every gate passes.
@@ -363,12 +409,15 @@ class GenericStoreController extends Controller {
 	/**
 	 * Resolve and install one item through the catalogue that owns it.
 	 *
-	 * @param StoreManifest $store The declared store block.
-	 * @param string        $slug  The remote item slug.
+	 * @param StoreManifest $store  The declared store block.
+	 * @param string        $slug   The remote item slug.
+	 * @param string        $target The chosen install target, '' for none.
 	 *
 	 * @return JSONResponse 200 with the install report; 404 when unresolved.
+	 *
+	 * @spec openspec/changes/store-installed-in/specs/apphost-store-plane/spec.md#requirement-the-store-reports-where-each-item-is-installed
 	 */
-	private function installItem(StoreManifest $store, string $slug): JSONResponse {
+	private function installItem(StoreManifest $store, string $slug, string $target): JSONResponse {
 		$descriptor = $this->descriptor(store: $store);
 
 		$item = $this->resolveOrNull(descriptor: $descriptor, slug: $slug);
@@ -382,15 +431,36 @@ class GenericStoreController extends Controller {
 		// A configuration bundle is applied by the type that owns it, so that a
 		// set arrives as registers, schemas, flows and objects rather than as
 		// rows of whichever schema the plane happened to allow.
-		if ($descriptor->isFederated() === true) {
-			return new JSONResponse(data: $this->services->sources->catalog->install(ref: $item), statusCode: Http::STATUS_OK);
+		$report = $this->installReport(descriptor: $descriptor, store: $store, item: $item, target: $target);
+
+		// Only a whole install is recorded: a card that says "Installed in"
+		// for an item half of which was refused would say too much.
+		if (($report['success'] ?? false) === true) {
+			$this->services->install->ledger->record(appId: $this->appName, slug: $slug, target: $target);
 		}
 
-		return new JSONResponse(
-			data: $this->services->install->installer->install(store: $store, item: $item),
-			statusCode: Http::STATUS_OK
-		);
+		return new JSONResponse(data: $report, statusCode: Http::STATUS_OK);
 	}//end installItem()
+
+	/**
+	 * Install a resolved item through the catalogue or the installer that owns it.
+	 *
+	 * @param StoreDescriptor      $descriptor The calling app's store parameters.
+	 * @param StoreManifest        $store      The declared store block.
+	 * @param array<string, mixed> $item       The resolved item.
+	 * @param string               $target     The chosen install target, '' for none.
+	 *
+	 * @return array<string, mixed> The install report.
+	 *
+	 * @spec openspec/changes/store-install-target/specs/apphost-store-plane/spec.md#requirement-an-install-can-go-into-a-target-the-app-declares
+	 */
+	private function installReport(StoreDescriptor $descriptor, StoreManifest $store, array $item, string $target): array {
+		if ($descriptor->isFederated() === true) {
+			return $this->services->sources->catalog->install(ref: $item, stamp: $store->installTarget->stampFor(target: $target));
+		}
+
+		return $this->services->install->installer->install(store: $store, item: $item, target: $target);
+	}//end installReport()
 
 	/**
 	 * Resolve a slug, treating a failing catalogue as unresolved (logged).

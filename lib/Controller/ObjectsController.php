@@ -27,12 +27,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Controller\Support\RawRequestBody;
+use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Controller\Support\DraftVersionRead;
+use OCA\OpenRegister\Controller\Support\DraftKeysOnList;
+use DateTime;
+use DateTimeImmutable;
+use OCA\OpenRegister\Controller\Support\FormerSlugSignal;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
 use OCA\OpenRegister\Controller\Support\EmptyValueStripper;
+use OCA\OpenRegister\Controller\Support\SyncWatermark;
 use OCA\OpenRegister\Controller\Support\ObjectCountScope;
 use OCA\OpenRegister\Controller\Support\ObjectDeleteRoute;
 use OCA\OpenRegister\Controller\Support\ObjectGovernanceServices;
+use OCA\OpenRegister\Controller\Support\CopyRun;
 use OCA\OpenRegister\Controller\Support\ObjectCreate;
 use OCA\OpenRegister\Controller\Support\ObjectCreateControls;
 use OCA\OpenRegister\Controller\Support\ObjectReadOptions;
@@ -61,9 +70,11 @@ use OCA\OpenRegister\Controller\Support\WriteCaller;
 use OCA\OpenRegister\Controller\Support\StringTypedPatch;
 use OCA\OpenRegister\Controller\Support\RenderedObjectUuids;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -181,6 +192,36 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @var array<int, string>
 	 */
 	private const SUBMITTABLE_RESERVED_KEYS = ['@self', Schema::NOT_SUPPLIED_KEY];
+
+	/**
+	 * The most bytes of a request body read raw for its declared register/schema values.
+	 *
+	 * @var int
+	 */
+	private const RAW_BODY_MAX_BYTES = 16777216;
+
+	/**
+	 * Reads the request body raw; replaced in tests.
+	 *
+	 * @var RawRequestBody|null
+	 */
+	private ?RawRequestBody $rawRequestBody = null;
+
+	/**
+	 * The keys of a geo-search body that say where to search, not what to list.
+	 *
+	 * @var array<int, string>
+	 */
+	private const GEO_SEARCH_BODY_KEYS = ['geometry', 'property'];
+
+	/**
+	 * Request parameters the listing of the current call must not read as filters.
+	 *
+	 * Set by geoSearch() around its listing, empty otherwise.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $listingWithheldParams = [];
 
 	/**
 	 * Whether show() is already reading an object at the address it moved to.
@@ -366,6 +407,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @psalm-return   bool
 	 * @phpstan-return bool
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function isCurrentUserAdmin(): bool {
 		$user = $this->userSession->getUser();
@@ -373,8 +416,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return false;
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($user);
-		return in_array('admin', $userGroups);
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 	}//end isCurrentUserAdmin()
 
 	/**
@@ -692,7 +734,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectOperationsInterface $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
-		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas);
+		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas, magicMapper: $magicMapper);
 		if (empty($pairs) === true) {
 			return new JSONResponse(
 				data: ['message' => 'No valid magic-mapped register+schema combinations found', 'results' => [], 'total' => 0],
@@ -758,22 +800,27 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * Register::isMagicMappingEnabledForSchema() reads both the new and the legacy
 	 * magic-mapping configuration.
 	 *
-	 * @param array $registers Register IDs/slugs.
-	 * @param array $schemas   Schema IDs/slugs.
+	 * A pair counts when magic mapping is enabled for it, or when its table
+	 * already exists: objects are stored in a register+schema table whether or
+	 * not the register's configuration lists the schema, and the mapper reads an
+	 * existing table the same way. Requiring the configuration refused every
+	 * cross-table search over a register created through the API with a 404.
+	 *
+	 * @param array                    $registers   Register IDs/slugs.
+	 * @param array                    $schemas     Schema IDs/slugs.
+	 * @param MagicMapperInterface|null $magicMapper The mapper, asked whether a pair's table exists.
 	 *
 	 * @return array<int, array{register: Register, schema: Schema}> The pairs.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	private function crossTablePairs(array $registers, array $schemas): array {
+	private function crossTablePairs(array $registers, array $schemas, ?MagicMapperInterface $magicMapper=null): array {
 		$registerEntities = $this->crossTableEntities(ids: $registers, kind: 'register');
 		$schemaEntities   = $this->crossTableEntities(ids: $schemas, kind: 'schema');
 		$pairs            = [];
 		foreach ($registerEntities as $registerEntity) {
-			foreach ($schemaEntities as $schemaEntity) {
-				if ($registerEntity->isMagicMappingEnabledForSchema(
-					schemaId: $schemaEntity->getId(),
-					schemaSlug: $schemaEntity->getSlug()
-				) === true
-				) {
+			foreach ($this->crossTableSchemasOf(register: $registerEntity, schemaEntities: $schemaEntities) as $schemaEntity) {
+				if ($this->isCrossTablePair(register: $registerEntity, schema: $schemaEntity, magicMapper: $magicMapper) === true) {
 					$pairs[] = ['register' => $registerEntity, 'schema' => $schemaEntity];
 				}
 			}
@@ -781,6 +828,63 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $pairs;
 	}//end crossTablePairs()
+
+	/**
+	 * Whether one register+schema pair is searchable across tables: mapped, or its table exists.
+	 *
+	 * @param Register                  $register    The register.
+	 * @param Schema                    $schema      The schema.
+	 * @param MagicMapperInterface|null $magicMapper The mapper, asked whether the table exists.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function isCrossTablePair(Register $register, Schema $schema, ?MagicMapperInterface $magicMapper): bool {
+		if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
+			return true;
+		}
+
+		if ($magicMapper === null) {
+			return false;
+		}
+
+		try {
+			return $magicMapper->existsTableForRegisterSchema(register: $register, schema: $schema);
+		} catch (\Throwable $e) {
+			return false;
+		}
+	}//end isCrossTablePair()
+
+	/**
+	 * The schemas a cross-table search names, as seen from one register.
+	 *
+	 * A slug two registers share resolved globally to one of them; inside this
+	 * register it names this register's own schema, read once per register
+	 * and only for slugs. Ids, uuids and slugs the register does not carry
+	 * keep the schema resolved up front.
+	 *
+	 * @param Register              $register       The register.
+	 * @param array<string, Schema> $schemaEntities The schemas resolved up front, by the reference the search used.
+	 *
+	 * @return array<string, Schema> The schemas, by reference.
+	 *
+	 * @spec openspec/changes/register-scoped-schema-slug-resolution/specs/schema-slug-resolution/spec.md
+	 */
+	private function crossTableSchemasOf(Register $register, array $schemaEntities): array {
+		$scoped = [];
+		foreach ($schemaEntities as $ref => $schemaEntity) {
+			$ref = (string)$ref;
+			$own = null;
+			if (is_numeric($ref) === false && ($register->getSchemas() ?? []) !== []) {
+				$own = $this->services->store->schemaMapper->findBySlugInIds(slug: $ref, schemaIds: $register->getSchemas());
+			}
+
+			$scoped[$ref] = ($own ?? $schemaEntity);
+		}
+
+		return $scoped;
+	}//end crossTableSchemasOf()
 
 	/**
 	 * Resolve the registers or schemas of a cross-table search, skipping (and logging) invalid ones.
@@ -1178,11 +1282,12 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-list-responses-carry-a-server-side-sync-watermark-req-sync-004
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
@@ -1192,6 +1297,9 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		// per-request counts at all. Stamp + flush here so the same in-PHP
 		// counters that made the write numbers trustworthy cover reads too.
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.index.in');
+
+		// REQ-SYNC-004: taken before the query, so a write during the read is in the next run.
+		$watermark = new SyncWatermark();
 
 		$params = $this->request->getParams();
 
@@ -1203,7 +1311,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$urlPath = ['register' => $register, 'schema' => $schema];
 		$targets = $this->crossTableTargets(params: $params, urlPath: $urlPath);
 		if ($targets !== null) {
-			return $this->crossTableSearch(registers: $targets['registers'], schemas: $targets['schemas'], objectService: $objectService);
+			return $watermark->stamp(response: $this->crossTableSearch(registers: $targets['registers'], schemas: $targets['schemas'], objectService: $objectService));
 		}
 
 		try {
@@ -1224,10 +1332,13 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$listing = $this->buildListingScope(urlPath: $urlPath, resolved: $resolved);
 
 		if ($this->isServedFromMagicTable(resolved: $resolved) === true) {
-			return $this->indexFromMagicTable(listing: $listing, objectService: $objectService);
+			$response = $watermark->stamp(response: $this->indexFromMagicTable(listing: $listing, objectService: $objectService));
+		} else {
+			$response = $watermark->stamp(response: $this->indexFromObjectService(listing: $listing, objectService: $objectService));
 		}
 
-		return $this->indexFromObjectService(listing: $listing, objectService: $objectService);
+		// A schema named by a slug it has since given up still answers, and says where to go.
+		return FormerSlugSignal::apply(response: $response, headers: $this->formerSlugHeaders);
 	}//end index()
 
 	/**
@@ -1400,6 +1511,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$responseData = $this->buildMagicResponse(page: $page, listing: $listing);
 		$responseData = $this->addIgnoredFilterHint(responseData: $responseData, ignoredFilters: $magicMapper->getIgnoredFilters());
 		$responseData = $this->addMagicFacets(responseData: $responseData, listing: $listing);
+		$responseData = $this->withDraftKeys(result: $responseData, listing: $listing, objectService: $objectService);
 
 		return $this->magicListingResponse(responseData: $responseData, listing: $listing);
 	}//end indexFromMagicTable()
@@ -1442,6 +1554,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	/**
 	 * Build the search query of a listing and warn about filter keys the schema does not know.
 	 *
+	 * Parameters withheld for this call (a geo-search body's own keys) are not filters.
+	 *
 	 * @param array $listing The listing scope.
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
@@ -1450,10 +1564,11 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @return array<string, mixed> The search query.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
 	 */
 	private function buildListingQuery(array $listing, ObjectOperationsInterface $objectService): array {
 		$query = $objectService->buildSearchQuery(
-			requestParams: $this->request->getParams(),
+			requestParams: array_diff_key($this->request->getParams(), array_flip($this->listingWithheldParams)),
 			register: $listing['resolved']['register'],
 			schema: $listing['resolved']['schema']
 		);
@@ -1875,6 +1990,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		// Spatial post-filter for ?geo.bbox= / ?geo.near=&geo.radius= / ?geo.property=.
 		$result = $this->applyGeoQueryFilters(params: $listing['params'], result: $result);
+		$result = $this->withDraftKeys(result: $result, listing: $listing, objectService: $objectService);
 
 		// Content negotiation: a JSON-LD @graph over the already-rendered,
 		// RBAC-filtered result (json-ld-output).
@@ -1889,6 +2005,47 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return new JSONResponse(data: $result);
 	}//end indexFromObjectService()
+
+	/**
+	 * With `_drafts=true`, the keys of the drafts the caller may see on each row, in `@self.drafts`.
+	 *
+	 * The rows themselves are not changed, added or removed: drafts live in
+	 * their own table and never come back as objects.
+	 *
+	 * @param array                     $result        The listing body.
+	 * @param array                     $listing       The listing scope.
+	 * @param ObjectOperationsInterface $objectService Reads a row's live object under the caller's access.
+	 *
+	 * @psalm-param array<string, mixed> $result
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array<string, mixed> The listing body.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-drafts-never-appear-as-objects-in-lists-or-search
+	 */
+	private function withDraftKeys(array $result, array $listing, ObjectOperationsInterface $objectService): array {
+		$schemaEntity   = ($listing['resolved']['schemaEntity'] ?? null);
+		$registerEntity = ($listing['resolved']['registerEntity'] ?? null);
+		if (DraftKeysOnList::asked(params: $listing['params']) === false
+			|| ($schemaEntity instanceof Schema) === false
+			|| is_array($result['results'] ?? null) === false
+		) {
+			return $result;
+		}
+
+		$result['results'] = DraftKeysOnList::annotate(
+			results: $result['results'],
+			drafts: $this->container->get(DraftService::class),
+			schema: $schemaEntity,
+			caller: $this->userSession->getUser()?->getUID(),
+			load: fn (string $uuid): mixed => $objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: $registerEntity, schema: $schemaEntity, render: false, audit: false)
+			)
+		);
+
+		return $result;
+	}//end withDraftKeys()
 
 	/**
 	 * Batched object-count endpoint — POST /api/objects/counts.
@@ -2203,6 +2360,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 60, period: 60)]
@@ -2217,11 +2375,18 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
-		// Reuse the standard listing path, then post-filter.
-		return $this->geoFilteredListing(
-			listing: $this->index(register: $register, schema: $schema, objectService: $objectService),
-			filters: $filters
-		);
+		// Reuse the standard listing path, then post-filter. The body's own
+		// keys are not filters on the listing: a filter on a property the
+		// schema does not declare matches nothing, so `geometry` reaching the
+		// listing emptied every geo-search before the post-filter ran.
+		$this->listingWithheldParams = self::GEO_SEARCH_BODY_KEYS;
+		try {
+			$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+		} finally {
+			$this->listingWithheldParams = [];
+		}
+
+		return $this->geoFilteredListing(listing: $listing, filters: $filters);
 	}//end geoSearch()
 
 	/**
@@ -2645,8 +2810,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2955,7 +3120,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @return JSONResponse JSON response with the object or error
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2983,7 +3148,10 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		$services = $this->showServices(objectService: $objectService);
 
-		return $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services));
+		return FormerSlugSignal::apply(
+			response: $this->shownObject(show: new ObjectShow(id: $id, path: [$register, $schema], resolved: $resolved, services: $services)),
+			headers: $this->formerSlugHeaders
+		);
 	}//end show()
 
 	/**
@@ -3198,6 +3366,16 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 				return ($this->movedShow(show: $show, read: $read) ?? $this->absentObject(show: $show, read: $read));
 			}
 
+			$moved = $this->movedShowOfFound(show: $show, entity: $objectEntity, read: $read);
+			if ($moved !== null) {
+				return $moved;
+			}
+
+			$version = trim((string)$this->request->getParam('version', ''));
+			if (DraftVersionRead::namesADraft(version: $version) === true) {
+				return $this->draftShow(show: $show, read: $read, object: $objectEntity, version: $version);
+			}
+
 			return $this->renderedShow(shown: new ShownEntity(show: $show, entity: $objectEntity, extend: $read->extend), read: $read);
 		} catch (DoesNotExistException $exception) {
 			return ($this->movedShow(show: $show, read: $read) ?? new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404));
@@ -3207,6 +3385,47 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return $this->ambiguousIdentifierResponse(id: $show->id);
 		}
 	}//end shownObject()
+
+	/**
+	 * The object at a draft version: the draft's delta merged onto the live data, rendered the same way.
+	 *
+	 * A draft that does not exist, or that the caller may not see, answers 404
+	 * like a missing object, so the answer does not tell which drafts exist.
+	 *
+	 * @param ObjectShow        $show    The request.
+	 * @param ObjectReadOptions $read    The read options.
+	 * @param ObjectEntity      $object  The live object, already read under the caller's access.
+	 * @param string            $version The draft key.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/records-draft-versions/design.md
+	 */
+	private function draftShow(ObjectShow $show, ObjectReadOptions $read, ObjectEntity $object, string $version): JSONResponse {
+		$schema = ($show->resolved['schemaEntity'] ?? null);
+		$draft  = null;
+		if ($schema instanceof Schema) {
+			$draft = DraftVersionRead::of(
+				drafts: $this->container->get(DraftService::class),
+				object: $object,
+				schema: $schema,
+				key: $version,
+				caller: $this->userSession->getUser()?->getUID()
+			);
+		}
+
+		if ($draft === null) {
+			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		}
+
+		$response = $this->renderedShow(shown: new ShownEntity(show: $show, entity: $draft->entity, extend: $read->extend), read: $read);
+		$data     = $response->getData();
+		if (is_array($data) === true) {
+			$response->setData($draft->stamped(rendered: $data));
+		}
+
+		return $response;
+	}//end draftShow()
 
 	/**
 	 * Find the object without rendering it.
@@ -3297,6 +3516,41 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $this->withMovedTo(response: $response, movedTo: $to);
 	}//end movedShow()
+
+	/**
+	 * The object at its new address, when find() answered the old one with an object that lives elsewhere.
+	 *
+	 * The object find() answers resolves a uuid across every table, so the old address of a moved
+	 * object is not a miss: it comes back with the object from its new table.
+	 * Rendering that as if it lived here would answer the bookmark without
+	 * saying where the object went, and under the old address's scope. So an
+	 * object whose own register or schema is not the one asked for is checked
+	 * against the move record and, when it moved from here, read again through
+	 * show() at its new address, exactly as a miss would be. An object that
+	 * lives where it was asked for never reaches the lookup, so the read path
+	 * of every other object stays as it was.
+	 *
+	 * @param ObjectShow        $show   The object asked for and its resolved scope.
+	 * @param ObjectEntity      $entity The object find() answered.
+	 * @param ObjectReadOptions $read   The caller's scope.
+	 *
+	 * @return JSONResponse|null The object with `@self.movedTo`, or null when it lives here or did not move from here.
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-the-old-address-keeps-answering
+	 */
+	private function movedShowOfFound(ObjectShow $show, ObjectEntity $entity, ObjectReadOptions $read): ?JSONResponse {
+		if ($this->followingMove === true) {
+			return null;
+		}
+
+		$livesHere = (string)$entity->getRegister() === (string)($show->resolved['register'] ?? '')
+			&& (string)$entity->getSchema() === (string)($show->resolved['schema'] ?? '');
+		if ($livesHere === true) {
+			return null;
+		}
+
+		return $this->movedShow(show: $show, read: $read);
+	}//end movedShowOfFound()
 
 	/**
 	 * Name the new address on a found object, so the caller can update what it holds.
@@ -3601,13 +3855,15 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function create(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.create.in');
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
 			return new JSONResponse(data: ['message' => $e->getMessage()], statusCode: 404);
 		}
 
-		$object = $this->submittableBody(object: $this->interceptedBody(register: $register, schema: $schema));
+		$object = $this->submittableBody(object: $this->interceptedBody(register: $register, schema: $schema), schema: $resolved['schemaEntity'] ?? null);
 		$controls = new ObjectCreateControls(request: $this->request, caller: $this->writeCaller());
 		$create = new ObjectCreate(object: $object, resolved: $resolved, objectService: $objectService, controls: $controls);
 
@@ -3637,6 +3893,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 300, period: 60)]
 	public function validateSample(string $register, string $schema, ObjectOperationsInterface $objectService): JSONResponse {
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -3657,7 +3915,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return $refusal;
 		}
 
-		$sample = $this->submittableBody(object: $this->request->getParams());
+		$sample = $this->submittableBody(object: $this->request->getParams(), schema: $resolved['schemaEntity'] ?? null);
 		unset($sample['id']);
 		if ($objectService instanceof ObjectServiceInterface === false) {
 			return new JSONResponse(data: ['message' => 'Validation is not available.'], statusCode: 500);
@@ -3735,13 +3993,20 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	/**
 	 * The body without control parameters and server-managed fields.
 	 *
+	 * `register` and `schema` are routing words and are dropped, unless the
+	 * schema declares them as properties of its own: then the value the body
+	 * itself carried is kept as data (a form definition names the register and
+	 * schema it targets).
+	 *
 	 * @param array<string, mixed> $object The body.
+	 * @param mixed                $schema The schema written to, when known.
 	 *
 	 * @return array<string, mixed> What may be saved.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/specs/objects-crud/spec.md
 	 */
-	private function submittableBody(array $object): array {
+	private function submittableBody(array $object, mixed $schema = null): array {
 		// Filter out special parameters and reserved fields.
 		// @todo shouldn't this be part of the object service?
 		// Allow @self metadata to pass through for organization activation.
@@ -3760,8 +4025,96 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		// cannot be injected via the single-object create path.
 		$object = $this->sanitiseSelfMetadata(data: $object);
 
-		return $object;
+		return array_merge($object, $this->declaredRoutingWords(schema: $schema));
 	}//end submittableBody()
+
+	/**
+	 * The `register` and `schema` values the request body itself carried, for
+	 * the ones the schema declares as properties.
+	 *
+	 * Nextcloud merges a JSON body over the route's parameters, so the merged
+	 * parameters cannot tell a body's `register` from the route's; the raw
+	 * body can.
+	 *
+	 * @param mixed $schema The schema written to, when known.
+	 *
+	 * @return array<string, mixed> The declared routing words and their body values.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function declaredRoutingWords(mixed $schema): array {
+		if ($schema instanceof Schema === false) {
+			return [];
+		}
+
+		$declared = array_intersect(['register', 'schema'], array_keys($schema->getProperties() ?? []));
+		if ($declared === []) {
+			return [];
+		}
+
+		$raw = $this->rawBody();
+		$kept = [];
+		foreach ($declared as $key) {
+			if (array_key_exists($key, $raw) === true) {
+				$kept[$key] = $raw[$key];
+			}
+		}
+
+		return $kept;
+	}//end declaredRoutingWords()
+
+	/**
+	 * The decoded request body alone, without the route's or the query's parameters.
+	 *
+	 * @return array<string, mixed> The body, or [] when there is none or it cannot be read.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function rawBody(): array {
+		$method = strtolower((string)$this->request->getMethod());
+		if (in_array($method, ['post', 'put', 'patch'], true) === false) {
+			return [];
+		}
+
+		// Only a JSON body can carry a typed register or schema value. The request's
+		// own post/put/patch accessors answer the MERGED parameters, in which the
+		// route's register and schema win, so the body is decoded from the raw bytes.
+		if (preg_match('/^application\/(?:[\w.+-]+\+)?json\b/i', (string)$this->request->getHeader('Content-Type')) !== 1) {
+			return [];
+		}
+
+		$this->rawRequestBody ??= new RawRequestBody();
+		$body = json_decode($this->rawRequestBody->read(max: self::RAW_BODY_MAX_BYTES), true);
+		if (is_array($body) === false) {
+			return [];
+		}
+
+		return $body;
+	}//end rawBody()
+
+	/**
+	 * A route parameter as the URL gave it.
+	 *
+	 * Nextcloud hands a controller argument the merged request parameter, and a
+	 * JSON body merges over the route's: a body field `register` or `schema`
+	 * would otherwise move the write into the register and schema it names.
+	 *
+	 * @param string $name  The route parameter.
+	 * @param string $given The value the controller was handed.
+	 *
+	 * @return string The URL's value, or the given one when the request has no route parameters.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function routeParameter(string $name, string $given): string {
+		// The concrete request carries the route's parameters in urlParams.
+		$routed = $this->request->urlParams ?? null;
+		if (is_array($routed) === true && is_string($routed[$name] ?? null) === true && $routed[$name] !== '') {
+			return $routed[$name];
+		}
+
+		return $given;
+	}//end routeParameter()
 
 	/**
 	 * The refusal of an upsert that cannot run, or null.
@@ -4100,7 +4453,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @psalm-suppress NoValue
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -4110,6 +4463,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function update(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
 		\OCA\OpenRegister\Service\WritePhase::stamp('ctrl.update.in');
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
@@ -4138,7 +4493,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private function updateOf(ObjectTarget $target): ObjectUpdate {
 		return new ObjectUpdate(
 			target: $target,
-			object: $this->submittableBody(object: $this->request->getParams()),
+			object: $this->submittableBody(object: $this->request->getParams(), schema: $target->resolved['schemaEntity'] ?? null),
 			caller: $this->writeCaller()
 		);
 	}//end updateOf()
@@ -4344,8 +4699,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @PublicPage
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Existing suppression, kept.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
@@ -4353,6 +4708,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function patch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -4360,7 +4717,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		}
 
 		$target = new ObjectTarget(id: $id, resolved: $resolved, objectService: $objectService);
-		$patch = new ObjectUpdate(target: $target, object: $this->submittableBody(object: $this->request->getParams()), caller: $this->caller());
+		$body  = $this->submittableBody(object: $this->request->getParams(), schema: $resolved['schemaEntity'] ?? null);
+		$patch = new ObjectUpdate(target: $target, object: $body, caller: $this->caller());
 		$this->logPatchScope(patch: $patch);
 
 		try {
@@ -4531,6 +4889,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 30, period: 60)]
 	public function postPatch(string $register, string $schema, string $id, ObjectOperationsInterface $objectService): JSONResponse {
+		$register = $this->routeParameter(name: 'register', given: $register);
+		$schema   = $this->routeParameter(name: 'schema', given: $schema);
 		try {
 			$resolved = $this->resolveRegisterSchemaRef(ref: new RegisterSchemaRef(register: $register, schema: $schema), objectService: $objectService);
 		} catch (RegisterNotFoundException|SchemaNotFoundException $e) {
@@ -4538,7 +4898,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		}
 
 		$target = new ObjectTarget(id: $id, resolved: $resolved, objectService: $objectService);
-		$body = array_diff_key($this->submittableBody(object: $this->request->getParams()), ['id' => true]);
+		$body = array_diff_key($this->submittableBody(object: $this->request->getParams(), schema: $resolved['schemaEntity'] ?? null), ['id' => true]);
 		$patch = new ObjectUpdate(target: $target, object: $body, caller: $this->writeCaller());
 
 		try {
@@ -5408,9 +5768,15 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * body goes through the normal create path, so every create rule and
 	 * validation applies (a refused body writes nothing). The identity, the
 	 * `@self` metadata and platform-minted properties are never copied
-	 * ({@see \OCA\OpenRegister\Service\Object\CopyPayload}). Copying links
-	 * (`include`) is not offered yet and is refused with 422 rather than
-	 * silently left out.
+	 * ({@see \OCA\OpenRegister\Service\Object\CopyPayload}). With `include`
+	 * the copy also takes along the source's relation rows (`relationRows`) and
+	 * a place beside the source in array references to it (`incoming`), each
+	 * under the caller's own rights and reported per link
+	 * ({@see \OCA\OpenRegister\Service\Object\CopyObject}). The create and
+	 * the links share one transaction: a refused create leaves nothing behind.
+	 * With `files` the attached files are copied after that transaction
+	 * commits, each reported on its own. A link kind the copy does not know is
+	 * refused with 422 rather than silently left out.
 	 *
 	 * @param string                    $register      The register.
 	 * @param string                    $schema        The schema.
@@ -5461,29 +5827,145 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			schema: $resolved['schemaEntity']
 		);
 		$controls = new ObjectCreateControls(request: $this->request, caller: $this->caller());
-		$create  = new ObjectCreate(object: $body, resolved: $resolved, objectService: $objectService, controls: $controls);
-		$created = $this->createdResponse(create: $create);
+		$create   = new ObjectCreate(object: $body, resolved: $resolved, objectService: $objectService, controls: $controls);
+		$include  = $this->copyInclude();
+		if ($include === []) {
+			return $this->copyAnswer(created: $this->createdResponse(create: $create), links: []);
+		}
+
+		return $this->copyWithLinks(copy: new CopyRun(source: $source, create: $create, include: $include));
+	}//end copy()
+
+	/**
+	 * Create the copy and its links in one transaction.
+	 *
+	 * A refused create, or a failure while writing a link, rolls everything
+	 * back. A link refused for the caller's rights is reported and skipped,
+	 * not a rollback. Files are copied after the commit, each reported on its
+	 * own (design D-2).
+	 *
+	 * @param CopyRun $copy The source, the create and the link kinds.
+	 *
+	 * @return JSONResponse 201 with `{object, links}`, or the create's refusal.
+	 *
+	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
+	 */
+	private function copyWithLinks(CopyRun $copy): JSONResponse {
+		$db = $this->container->get(\OCP\IDBConnection::class);
+		$db->beginTransaction();
+		try {
+			$created = $this->createdResponse(create: $copy->create);
+			if ($created->getStatus() !== 201) {
+				$db->rollBack();
+				return $created;
+			}
+
+			$copied = $this->createdCopy(created: $created, create: $copy->create);
+			$links  = $this->container->get(\OCA\OpenRegister\Service\Object\CopyObject::class)->links(
+				source: $copy->source,
+				copy: $copied,
+				include: $copy->include,
+				objects: $copy->create->objectService
+			);
+			$db->commit();
+		} catch (\Throwable $e) {
+			$db->rollBack();
+			$this->logger->error(
+				message: '[ObjectsController] A copy with links failed and was rolled back',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
+			);
+			return new JSONResponse(data: ['error' => 'The copy could not be made; nothing was written.'], statusCode: 500);
+		}//end try
+
+		// Design D-2: files after the commit, each reported on its own; a
+		// failed file does not undo the committed copy.
+		if (in_array('files', $copy->include, true) === true) {
+			$links['files'] = $this->container->get(\OCA\OpenRegister\Kernel\Contracts\ObjectFileCopierInterface::class)->copy(source: $copy->source, copy: $copied);
+		}
+
+		return $this->copyAnswer(created: $created, links: $links);
+	}//end copyWithLinks()
+
+	/**
+	 * The new object behind a create answer.
+	 *
+	 * @param JSONResponse $created The 201 answer of the create.
+	 * @param ObjectCreate $create  The create.
+	 *
+	 * @return ObjectEntity The copy.
+	 *
+	 * @throws \RuntimeException When the copy cannot be read back.
+	 */
+	private function createdCopy(JSONResponse $created, ObjectCreate $create): ObjectEntity {
+		$data = (array) $created->getData();
+		$self = [];
+		if (is_array($data['@self'] ?? null) === true) {
+			$self = $data['@self'];
+		}
+
+		$uuid = (string) ($self['id'] ?? ($data['id'] ?? ''));
+		$copy = $create->objectService->find(
+			id: $uuid,
+			options: new ObjectFindOptions(register: $create->resolved['registerEntity']->getId(), schema: $create->resolved['schemaEntity']->getId()),
+			_rbac: false,
+			_multitenancy: false
+		);
+		if ($uuid === '' || $copy === null) {
+			throw new \RuntimeException('The copy could not be read back.');
+		}
+
+		return $copy;
+	}//end createdCopy()
+
+	/**
+	 * The copy's answer: the create's refusal, or 201 with the object and every link's outcome.
+	 *
+	 * @param JSONResponse                            $created The create's answer.
+	 * @param array<string, list<array<string, mixed>>> $links   The link outcomes per kind.
+	 *
+	 * @return JSONResponse
+	 */
+	private function copyAnswer(JSONResponse $created, array $links): JSONResponse {
 		if ($created->getStatus() !== 201) {
 			return $created;
 		}
 
 		return new JSONResponse(
-			data: ['object' => $created->getData(), 'links' => ['relationRows' => [], 'incoming' => [], 'files' => []]],
+			data: ['object' => $created->getData(), 'links' => array_merge(['relationRows' => [], 'incoming' => [], 'files' => []], $links)],
 			statusCode: 201
 		);
-	}//end copy()
+	}//end copyAnswer()
 
 	/**
-	 * The refusal of a copy request that asks for what a copy does not do yet.
+	 * The link kinds the request asks a copy to take along.
 	 *
-	 * @return JSONResponse|null 422 for links or an upsert key; null when the request may proceed.
+	 * @return array<int, string>
+	 */
+	private function copyInclude(): array {
+		$include = $this->request->getParam('include', []);
+		if (is_array($include) === false) {
+			return [];
+		}
+
+		return array_values(array_unique(array_filter($include, 'is_string')));
+	}//end copyInclude()
+
+	/**
+	 * The refusal of a copy request that asks for what a copy does not do.
+	 *
+	 * @return JSONResponse|null 422 for an unknown link kind or an upsert key; null when the request may proceed.
 	 *
 	 * @spec openspec/changes/records-copy-with-links/specs/objects-crud/spec.md#requirement-an-object-can-be-copied-with-the-links-the-caller-chooses
 	 */
 	private function copyRequestRefusal(): ?JSONResponse {
 		$include = $this->request->getParam('include', []);
-		if (is_array($include) === true && $include !== []) {
-			return new JSONResponse(data: ['error' => 'Copying links is not available yet; copy without include.'], statusCode: 422);
+		if (is_array($include) === false) {
+			return new JSONResponse(data: ['error' => 'include must be a list of relationRows, incoming or files.'], statusCode: 422);
+		}
+
+		$unknown = \OCA\OpenRegister\Service\Object\CopyObject::unknownKinds(include: $include);
+		if ($unknown !== []) {
+			return new JSONResponse(data: ['error' => 'Unknown link kind: '.implode(', ', $unknown).'.'], statusCode: 422);
 		}
 
 		if (trim((string) $this->request->getParam('_upsertOn', '')) !== '') {

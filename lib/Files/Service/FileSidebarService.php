@@ -29,6 +29,8 @@ namespace OCA\OpenRegister\Files\Service;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkSourceReaderInterface;
 use OCA\OpenRegister\Files\Db\EntityRelationMapperInterface;
+use OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling;
+use OCA\OpenRegister\Files\Service\TextExtraction\TextSearchedMarker;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapperInterface;
 use OCA\OpenRegister\Db\Register;
@@ -67,6 +69,7 @@ class FileSidebarService {
 		'anonymized' => false,
 		'anonymizedAt' => null,
 		'anonymizedFileId' => null,
+		'textSearched' => false,
 	];
 
 	/**
@@ -429,11 +432,15 @@ class FileSidebarService {
 	 *   anonymized: bool,
 	 *   anonymizedAt: string|null,
 	 *   anonymizedFileId: int|null,
+	 *   textSearched: bool,
+	 *   ceilingBytes?: int,
 	 *   archive?: array<string, mixed>
-	 * } extractionStatus is `partial` for an archive with a member that was not read.
+	 * } extractionStatus is `partial` for an archive with a member that was not read, and
+	 *   `skipped-too-large` (textSearched false, with the ceiling) for a file above the extraction ceiling.
 	 *
 	 * @spec openspec/specs/files-sidebar-tabs/spec.md
 	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-what-could-not-be-opened-is-reported-req-ams-003
+	 * @spec openspec/changes/large-file-handling/tasks.md#task-1-3
 	 */
 	public function getExtractionStatus(int $fileId): array {
 		// Get chunks for this file.
@@ -455,6 +462,16 @@ class FileSidebarService {
 			'riskLevel' => $this->riskLevelService->getRiskLevel($fileId), 'extractedAt' => $extractedAt, 'entities' => $entities,
 			'anonymized' => $this->anyAnonymized(entityRelations: $entityRelations), 'anonymizedAt' => null, 'anonymizedFileId' => null,
 		];
+
+		// A file above the extraction ceiling has its metadata chunk only: found
+		// by name and metadata, its content never read (REQ-LFH-001).
+		$status['textSearched'] = true;
+		$ceiling = TextSearchedMarker::skippedCeiling(chunks: $chunks);
+		if ($ceiling !== null) {
+			$status['extractionStatus'] = ExtractionCeiling::SKIPPED_TOO_LARGE;
+			$status['textSearched'] = false;
+			$status['ceilingBytes'] = $ceiling;
+		}
 
 		$archive = $this->archiveReport(chunks: $chunks);
 		if ($archive !== null) {

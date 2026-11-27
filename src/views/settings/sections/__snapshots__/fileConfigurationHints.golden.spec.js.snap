@@ -77,7 +77,8 @@ exports[`file configuration settings load golden loads empty 1`] = `
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
  "openAnonymiserPasswordSet": false,
- "entityPatternSets": null
+ "entityPatternSets": null,
+ "requireReview": null
 }",
   "fileTypes": [
     {
@@ -279,7 +280,8 @@ exports[`file configuration settings load golden loads known objects 1`] = `
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
  "openAnonymiserPasswordSet": false,
- "entityPatternSets": null
+ "entityPatternSets": null,
+ "requireReview": null
 }",
   "fileTypes": [
     {
@@ -475,7 +477,8 @@ exports[`file configuration settings load golden loads none 1`] = `
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
  "openAnonymiserPasswordSet": false,
- "entityPatternSets": null
+ "entityPatternSets": null,
+ "requireReview": null
 }",
   "fileTypes": [
     {
@@ -677,7 +680,8 @@ exports[`file configuration settings load golden loads objects and unknown ids 1
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
  "openAnonymiserPasswordSet": false,
- "entityPatternSets": null
+ "entityPatternSets": null,
+ "requireReview": null
 }",
   "fileTypes": [
     {
@@ -839,7 +843,9 @@ exports[`file configuration settings load golden loads objects and unknown ids 1
 
 exports[`file configuration settings load golden loads rejected 1`] = `
 {
-  "calls": [],
+  "calls": [
+    "loadObjectSettings",
+  ],
   "fileSettings": "{
  "extractionScope": {
   "id": "objects",
@@ -871,7 +877,8 @@ exports[`file configuration settings load golden loads rejected 1`] = `
  "openAnonymiserSource": "internal",
  "openAnonymiserUsername": "",
  "openAnonymiserPasswordSet": false,
- "entityPatternSets": null
+ "entityPatternSets": null,
+ "requireReview": null
 }",
   "fileTypes": [
     {
@@ -1059,7 +1066,7 @@ exports[`file configuration settings load golden loads strings 1`] = `
   "description": "Process during upload - direct link between file upload and parsing logic"
  },
  "includeInSearch": false,
- "maxFileSize": 5,
+ "maxFileSize": 100,
  "chunkSize": 50,
  "chunkOverlap": 200,
  "chunkingStrategy": "FIXED_SIZE",
@@ -1078,7 +1085,8 @@ exports[`file configuration settings load golden loads strings 1`] = `
  "openAnonymiserSource": "external",
  "openAnonymiserUsername": "u",
  "openAnonymiserPasswordSet": true,
- "entityPatternSets": null
+ "entityPatternSets": null,
+ "requireReview": null
 }",
   "fileTypes": [
     {

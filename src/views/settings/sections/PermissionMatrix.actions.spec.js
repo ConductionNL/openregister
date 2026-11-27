@@ -161,6 +161,15 @@ describe('PermissionMatrix group labels', () => {
 		expect(vm.getRegisterSchemas({ id: 3 })).toEqual([])
 	})
 
+	// REQ-RSS-001: the register store reads registers with `_extend[]=schemas`,
+	// so a register lists its schemas as objects; the matrix showed none of them.
+	it('lists the schemas of a register that lists them as objects', async () => {
+		const { vm } = await section()
+		const register = { id: 1, schemas: [{ id: 12, title: 'C' }, { id: '10', title: 'A' }] }
+		expect(vm.getRegisterSchemas(register).map((s) => s.id)).toEqual([10, 12])
+		expect(vm.getRegisterSchemas({ id: 4, schemas: [{ id: 98 }, null] })).toEqual([])
+	})
+
 	it('uses the schema authorization when it has one, else the register one', async () => {
 		const { vm } = await section()
 		const [register] = vm.registers

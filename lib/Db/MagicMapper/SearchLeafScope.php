@@ -57,6 +57,15 @@ final class SearchLeafScope {
 	public ?SearchFolding $folding = null;
 
 	/**
+	 * The text search configuration an operator-free term is also matched with
+	 * (stemmed, PostgreSQL only), or null for the substring match alone.
+	 *
+	 * @var string|null
+	 *
+	 */
+	public ?string $stemming = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Schema $schema     Schema for determining searchable columns

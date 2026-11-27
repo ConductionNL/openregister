@@ -48,5 +48,6 @@ final class WebhookLogFieldTypes {
 		'attempt' => 'integer',
 		'nextRetryAt' => 'datetime',
 		'created' => 'datetime',
+		'durationMs' => 'integer',
 	];
 }//end class

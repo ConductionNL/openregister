@@ -20,10 +20,13 @@
  * @see ADR-019 — Pluggable Integration Registry
  */
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
-import { registerLibraryTranslations } from './services/libraryTranslations.js'
+import { loadLibraryTranslationsWhenIdle } from './services/libraryTranslations.js'
 
-// Register nextcloud-vue's own catalogue before anything renders, so the
-// library's labels follow the reader's language on this page too.
-registerLibraryTranslations()
+// Register nextcloud-vue's own catalogue so the library's labels follow the
+// reader's language on this page too. Only the reader's language is fetched,
+// as a separate chunk, and only once the page has loaded and is idle: this
+// script runs on every Nextcloud page, and nothing on it shows a library label
+// before an integration is opened.
+loadLibraryTranslationsWhenIdle()
 
 ensureIntegrationRegistry()

@@ -222,4 +222,33 @@ class ObjectSearchResultFormatterGoldenTest extends TestCase {
 
 		$this->assertSame(['T', 'Nm', 'u1', 'u1', 'Unknown Object'], $titles);
 	}//end testTitleFallsBackFromTitleToNameToUuidToUnknown()
+
+	/**
+	 * A row carrying `@self.snippet` shows that passage as plain text, not the
+	 * excerpt of the first own value that holds the term (search-dutch-language-quality).
+	 *
+	 * @return void
+	 */
+	public function testTheSnippetIsTheSublineAsPlainText(): void {
+		$row = [
+			'bsn'         => 'term in a write-only value',
+			'toelichting' => 'A & B: the term',
+			'@self'       => ['snippet' => ['source' => 'property', 'property' => 'toelichting', 'text' => 'A &amp; B: the <mark>term</mark>']],
+		];
+
+		$entry = $this->formatter()->format($row, 'term')->jsonSerialize();
+
+		$this->assertSame('Open Register — A & B: the term', $entry['subline']);
+	}//end testTheSnippetIsTheSublineAsPlainText()
+
+	/**
+	 * Without a snippet the excerpt is as before.
+	 *
+	 * @return void
+	 */
+	public function testWithoutASnippetTheExcerptIsKept(): void {
+		$entry = $this->formatter()->format(['notes' => 'xx term'], 'term')->jsonSerialize();
+
+		$this->assertSame('Open Register — xx term', $entry['subline']);
+	}//end testWithoutASnippetTheExcerptIsKept()
 }//end class

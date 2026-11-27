@@ -128,6 +128,7 @@ Rules live on the schema under `configuration['x-openregister-notifications']`. 
 | `transition` | Object transitioned via the lifecycle state machine. Optional `trigger.action` filters to a specific action. |
 | `scheduled` | Periodic. Requires `trigger.intervalSec >= 60`. The 60s `ScheduledNotificationJob` iterates the schema, optionally narrowed by `trigger.filter` (flat equality, relative-date and inequality operators — see below), and dispatches **at most once per object per dedup fingerprint** until the watched fields change (see *Scheduled trigger filters & per-object dedup* below). |
 | `threshold` | Aggregation crossed a threshold. Requires `trigger.aggregation` (declared on the same schema), `trigger.op` ∈ `[gt, gte, lt, lte, eq, ne]`, and `trigger.value`. `AggregationThresholdListener` re-runs the aggregation on object-write events and dispatches once per below→above transition. |
+| `noteAdded` | A note was added to an object of the schema, by a user or through an access link. Optional `trigger.visibility` ∈ `[public, internal]` narrows to notes of that visibility; any other key is refused when the schema is saved. Templates can use `{{note.author}}` (the user's display name, or the link's label) and `{{note.excerpt}}` (the note as plain text, at most 140 characters). A delivery never reaches the note's author, and every recipient must be able to read the object: a recipient without read receives nothing. The trigger reaches accounts only, not parties or referenced addresses. |
 
 #### Recipient kinds
 
@@ -140,6 +141,46 @@ Rules live on the schema under `configuration['x-openregister-notifications']`. 
 | `object-acl` | ACL holders of the object for the configured `recipient.permission` ∈ `[read, manage]`. |
 | `expression` | Arbitrary resolver class (DI tag in `recipient.resolver`). Must implement `RecipientResolverInterface::resolve(ObjectEntity $object, array $context): string[]`. |
 | `watchers` | Whoever follows the object. Spelled `{"watchers": true}`, with no `kind`; anything but boolean true is refused when the schema is saved. Resolved at dispatch time, so a watcher who has lost read on the object receives nothing and is dropped from the list. |
+| `referrers` | The people behind the objects that point at this one. `recipient.register`, `recipient.schema` and `recipient.property` name where the referring objects live and which of their properties points back; optional `recipient.of` names a property of this object, and the referring objects are then those pointing at what it points to (at most 10). `recipient.recipients` is a nested block of any other kind (not `referrers`), resolved against each referring object. At most 200 referring objects are used; a rule that stops there records `referrers-truncated` with the count in its delivery history. Everyone reached must be able to read the triggering object, and placeholders render from the triggering object only. |
+
+Two rules from the fleet show both:
+
+```json
+{
+  "x-openregister-notifications": {
+    "new-comment": {
+      "trigger": { "type": "noteAdded", "visibility": "public" },
+      "recipients": [{ "watchers": true }],
+      "channels": ["nc-notification"],
+      "subject": "{{note.author}} commented on {{title}}: {{note.excerpt}}"
+    }
+  }
+}
+```
+
+A planninq task schema: whoever watches a task hears about a new public comment on it, except the person who wrote it.
+
+```json
+{
+  "x-openregister-notifications": {
+    "module-version-published": {
+      "trigger": { "type": "created" },
+      "recipients": [{
+        "kind": "referrers",
+        "of": "module",
+        "register": "softwarecatalogus",
+        "schema": "usage",
+        "property": "module",
+        "recipients": [{ "kind": "object-acl", "permission": "read" }]
+      }],
+      "channels": ["nc-notification"],
+      "subject": "A new version of {{module}} is available"
+    }
+  }
+}
+```
+
+A stackiq `moduleVersion` schema: when a supplier publishes a new version, the people who can read each `usage` of that module (the organisations using it) are told.
 
 ### Clearing, snoozing and archiving
 
@@ -273,6 +314,16 @@ Read them with `GET /api/automation-records`:
 | `limit`, `offset` | page; `limit` at most 500 (default 50), `offset` counts stored records |
 
 The response is `{ "results": [...], "limit": n, "offset": n }`, newest first. An admin sees every record; anyone else sees only records of objects they may read. An app in the same server reads the same way through `OCA\OpenRegister\Service\AutomationRecordService::find()`, under the current user.
+
+A consuming app that only wants to know what its automations did reads the same records, under the same access rule, through `GET /api/automation-outcomes`. It takes `keyPrefix` (e.g. `aut-7f3c`), `kind` (`notification` or `lifecycle`), `since`, `until`, `limit` and `offset`, and answers each record in one shape for both kinds:
+
+```json
+{ "kind": "notification", "key": "aut-7f3c-reminder", "at": "2026-11-24T09:30:00+00:00",
+  "subject": { "register": "7", "schema": "12", "id": "Z-2026-0042" },
+  "outcome": "sent", "reason": null, "recipients": 2 }
+```
+
+A lifecycle action that succeeded answers `outcome: done`; `failed`, `partial` and `skipped` are answered as stored. `reason` is the skip's gate or the failure's own text, at most 200 characters. `recipients` (notifications only) is the largest number of people any one channel addressed, so a person reached by mail and in-app counts once. No message body, recipient address or per-channel breakdown is returned.
 
 Records are kept 90 days, set by app config `automation_record_retention_days`, and pruned daily. The dedup log keeps its own, shorter window.
 

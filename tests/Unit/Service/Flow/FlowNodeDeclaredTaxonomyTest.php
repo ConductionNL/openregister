@@ -54,6 +54,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TransitionNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\CodeNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\EndNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode
@@ -63,6 +64,7 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\LoopNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\MapNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\MergeNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode
@@ -74,9 +76,12 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode
@@ -105,6 +110,8 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			// Ways in. An `event` is what BPMN calls a start, whatever fires it.
 			'TriggerObjectNode' => ['event', 'triggers'],
 			'TriggerManualNode' => ['event', 'triggers'],
+			'TriggerCalendarNode' => ['event', 'triggers'],
+			'TriggerWebhookNode' => ['event', 'triggers'],
 			'TriggerScheduleNode' => ['event', 'triggers'],
 
 			// People. `await-signal` is a receiveTask by kind and `human` by
@@ -121,9 +128,11 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			// register is the category's business, not the kind's.
 			'ObjectReadNode' => ['serviceTask', 'objects'],
 			'AuditTrailNode' => ['serviceTask', 'objects'],
+			'ExtendInputNode' => ['serviceTask', 'objects'],
 			'ObjectWriteNode' => ['serviceTask', 'objects'],
 			'LockObjectNode' => ['serviceTask', 'objects'],
 			'UnlockObjectNode' => ['serviceTask', 'objects'],
+			'TagObjectNode' => ['serviceTask', 'objects'],
 			'LoopNode' => ['serviceTask', 'objects'],
 
 			// Logic. Branches and joins are gateways; reshaping is a scriptTask.
@@ -136,6 +145,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'MapNode' => ['scriptTask', 'logic'],
 			'SetFieldsNode' => ['scriptTask', 'logic'],
 			'FlowStateNode' => ['scriptTask', 'logic'],
+			'CodeNode' => ['scriptTask', 'logic'],
 			'WaitNode' => ['event', 'logic'],
 			'EndNode' => ['event', 'logic'],
 			'SubFlowNode' => ['subProcess', 'logic'],
@@ -145,6 +155,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'SendEmailNode' => ['sendTask', 'messaging'],
 			'SendNotificationNode' => ['sendTask', 'messaging'],
 			'SendTalkMessageNode' => ['sendTask', 'messaging'],
+			'SurveyInviteNode' => ['sendTask', 'messaging'],
 		];
 	}//end expected()
 

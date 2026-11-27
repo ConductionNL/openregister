@@ -47,7 +47,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\AuditProcessContextInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\Audit\AdministrativeRetention;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
+use OCA\OpenRegister\Service\Audit\AuditCategory;
 use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
@@ -59,6 +61,8 @@ use OCA\OpenRegister\Service\Audit\PurposeGuardInterface;
 use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Service\Object\IntegrityAuditEntry;
 use OCA\OpenRegister\Db\AuditTrail\ActionLookupOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\DestructionQuery;
+use DateTimeImmutable;
 use OCA\OpenRegister\Db\AuditTrail\ActionScope;
 use OCA\OpenRegister\Db\AuditTrail\AuditedChange;
 use OCA\OpenRegister\Db\AuditTrail\RevertOptions;
@@ -588,6 +592,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		// that had touched everything on the instance.
 		'cause',
 		'cause_run',
+		// REQ-HSA-011: the list reads one category at a time. Absent from
+		// this allowlist the filter would be dropped and the administrative
+		// rows mixed into the record history.
+		'category',
 	];
 
 	/**
@@ -722,6 +730,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				continue;
 			}
 
+			if ($field === 'created' && is_array($value) === true && array_is_list($value) === false) {
+				self::applyCreatedRange(qb: $qb, bounds: $value);
+				continue;
+			}
+
 			if (is_array($value) === true) {
 				$this->applyListFilter(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value));
 				continue;
@@ -730,6 +743,31 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			$qb->andWhere($this->scalarFilterExpression(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value)));
 		}
 	}//end applyFindFilters()
+
+	/**
+	 * Bound the creation time: `created` as `['gte' => ..., 'lte' => ..., 'lt' => ...]`,
+	 * each a `Y-m-d H:i:s` datetime. Any other operator is refused rather than
+	 * dropped, because a dropped bound answers the whole trail.
+	 *
+	 * @param IQueryBuilder         $qb     The query being built.
+	 * @param array<string, mixed>  $bounds The operators and their datetimes.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When an operator other than gte, lte or lt is given.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+	 */
+	private static function applyCreatedRange(IQueryBuilder $qb, array $bounds): void {
+		$unknown = array_diff(array_keys($bounds), ['gte', 'lte', 'lt']);
+		if ($unknown !== []) {
+			throw new InvalidArgumentException('Unsupported audit trail filter operator for created: ' . implode(', ', $unknown));
+		}
+
+		foreach ($bounds as $operator => $datetime) {
+			$qb->andWhere($qb->expr()->$operator('created', $qb->createNamedParameter((string) $datetime, IQueryBuilder::PARAM_STR)));
+		}
+	}//end applyCreatedRange()
 
 	/**
 	 * The predicate for one scalar filter: a NULL check, an `action` prefix
@@ -930,6 +968,23 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end recordChange()
 
 	/**
+	 * Record a read of one object, naming the read rule that granted it when one did.
+	 *
+	 * @param ObjectEntity $object      The object read.
+	 * @param string|null  $ruleDigest  The SHA-256 of the granting rule's canonical JSON, or null.
+	 * @param string|null  $ruleVersion The schema version that rule belonged to, or null.
+	 *
+	 * @return AuditTrail The `read` entry.
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	public function recordRead(ObjectEntity $object, ?string $ruleDigest = null, ?string $ruleVersion = null): AuditTrail {
+		return $this->recordChange(
+			change: new AuditedChange(new: $object, action: 'read', ruleDigest: $ruleDigest, ruleVersion: $ruleVersion)
+		);
+	}//end recordRead()
+
+	/**
 	 * Fold an edit into the entry already written, when a window says to.
 	 *
 	 * Returns the amended entry, or null when the edit is its own entry. Null
@@ -1030,6 +1085,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @return AuditAggregationServiceInterface|null The service, or null.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AuditTrailCollaborators is the factory that builds the service from the app config.
+	 *
 	 * @spec openspec/specs/enhanced-audit-trail/spec.md
 	 */
 	private function windowAggregation(): AuditAggregationServiceInterface|null {
@@ -1093,6 +1150,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
 	 */
 	public function buildEntry(AuditedChange $change): AuditTrail {
 		$pair = ['old' => $change->old, 'new' => $change->new];
@@ -1111,8 +1169,13 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setObject($objectEntity->getId());
 		$auditTrail->setObjectUuid($objectEntity->getUuid());
 		$auditTrail->setAction($action);
+		// REQ-HSA-011: an object write is record history.
+		$auditTrail->setCategory(AuditCategory::DOMAIN);
 		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
 		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $change->cascadeContext));
+		// The rule that granted a read: set before the row is sealed, as the chain covers it.
+		$auditTrail->setRuleDigest($change->ruleDigest);
+		$auditTrail->setRuleVersion($change->ruleVersion);
 
 		$this->stampActorAndObject(auditTrail: $auditTrail, objectEntity: $objectEntity);
 		$this->stampAttributions(auditTrail: $auditTrail, objectEntity: $objectEntity);
@@ -1364,6 +1427,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * @param ObjectEntity $objectEntity The entity the row describes.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is the request-scoped frame a system operation opens.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -1696,7 +1761,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		$auditTrails = [];
 		foreach ($entries as $entry) {
-			$auditTrails[] = $this->auditTrailFromEntry(entry: $entry);
+			$auditTrails[] = $this->stampCategory(auditTrail: $this->auditTrailFromEntry(entry: $entry));
 		}
 
 		foreach (array_chunk($auditTrails, max(1, $chunkSize)) as $chunk) {
@@ -1705,6 +1770,72 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $auditTrails;
 	}//end insertAuditTrails()
+
+	/**
+	 * Insert one row, with its category and, for an administrative row, its retention.
+	 *
+	 * Every single-row writer reaches the table through here, so the category
+	 * is set wherever the row was built (REQ-HSA-011).
+	 *
+	 * @param Entity $entity The row.
+	 *
+	 * @return Entity The stored row.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs during insert
+	 * @throws InvalidArgumentException When the entity is not an audit row.
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
+	 */
+	public function insert(Entity $entity): Entity {
+		if ($entity instanceof AuditTrail === false) {
+			throw new InvalidArgumentException('The audit trail table holds AuditTrail rows only, got ' . $entity::class . '.');
+		}
+
+		return parent::insert(entity: $this->stampCategory(auditTrail: $entity));
+	}//end insert()
+
+	/**
+	 * Give a row its category, from its action unless a writer set one, and
+	 * give an administrative row the administrative retention.
+	 *
+	 * Before the INSERT, so the retention it sets is inside what the seal
+	 * sweep later hashes. The category itself is outside the canonical JSON.
+	 *
+	 * @param AuditTrail $auditTrail The row.
+	 *
+	 * @return AuditTrail The same row.
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
+	 */
+	public function stampCategory(AuditTrail $auditTrail): AuditTrail {
+		if (AuditCategory::isCategory(value: $auditTrail->getCategory()) === false) {
+			$auditTrail->setCategory(AuditCategory::forAction(action: $auditTrail->getAction()));
+		}
+
+		if ($auditTrail->getCategory() === AuditCategory::ADMINISTRATIVE) {
+			$this->administrativeRetention()->apply(row: $auditTrail);
+		}
+
+		return $auditTrail;
+	}//end stampCategory()
+
+	/**
+	 * The administrative retention, from the container; the default period without one.
+	 *
+	 * @return AdministrativeRetention
+	 */
+	private function administrativeRetention(): AdministrativeRetention {
+		try {
+			$retention = $this->container->get(AdministrativeRetention::class);
+			if ($retention instanceof AdministrativeRetention) {
+				return $retention;
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug('[AuditTrailMapper] Administrative retention unavailable, using the default: ' . $e->getMessage());
+		}
+
+		return new AdministrativeRetention();
+	}//end administrativeRetention()
 
 	/**
 	 * The row one insertAuditTrails() entry stands for.
@@ -2512,8 +2643,28 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 * that anything was ever there.
 	 *
 	 * @return bool True when the tombstone write succeeded.
+	 *
+	 * @spec openspec/changes/audit-trail-purge-by-age/specs/retention-management/spec.md#requirement-the-hourly-log-cleanup-job-deletes-audit-trail-entries-past-the-configured-retention
 	 */
 	public function clearLogs(): bool {
+		return $this->purgeExpiredLogs() > 0;
+	}//end clearLogs()
+
+	/**
+	 * Tombstone every audit-trail entry whose expiry has passed and count them.
+	 *
+	 * The write behind {@see clearLogs()}: only rows with a finite `expires`
+	 * in the past and no `purged_at` yet are touched, so a row retained
+	 * indefinitely (`expires IS NULL`) or younger than its expiry stays as it
+	 * is, and a repeated run counts zero.
+	 *
+	 * @return int The number of entries this run tombstoned.
+	 *
+	 * @throws \Exception Database operation exceptions
+	 *
+	 * @spec openspec/changes/audit-trail-purge-by-age/specs/retention-management/spec.md#requirement-the-hourly-log-cleanup-job-deletes-audit-trail-entries-past-the-configured-retention
+	 */
+	public function purgeExpiredLogs(): int {
 		try {
 			// Get the query builder for database operations.
 			$qb = $this->db->getQueryBuilder();
@@ -2545,15 +2696,12 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				->andWhere($qb->expr()->lt('expires', $qb->createFunction('NOW()')))
 				->andWhere($qb->expr()->isNull('purged_at'));
 
-			// Execute the query and get the number of affected rows.
-			$result = $qb->executeStatement();
-
-			// Return true if any rows were affected (i.e., any logs were tombstoned).
-			return $result > 0;
+			// The number of affected rows is the number of entries tombstoned.
+			return $qb->executeStatement();
 		} catch (\Exception $e) {
 			$this->rethrowLogged(failure: 'clear expired ' . self::TRAIL_NOUN . ' logs', exception: $e);
 		}//end try
-	}//end clearLogs()
+	}//end purgeExpiredLogs()
 
 	/**
 	 * Count the live rows of one object's trail within an action scope.
@@ -2607,6 +2755,146 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $this->findEntities(query: $qb);
 	}//end findObjectActions()
+
+	/**
+	 * The entries a delete wrote for the objects it acted on, by the uuid of the object that triggered it.
+	 *
+	 * @param string              $triggerObject The uuid of the object whose delete cascaded.
+	 * @param ActionLookupOptions $options       The actions to return (every action when empty) and the row cap.
+	 *
+	 * @return array<int, AuditTrail> The matching rows, oldest first.
+	 *
+	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md
+	 */
+	public function findTriggeredActions(string $triggerObject, ActionLookupOptions $options): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('trigger_object', $qb->createNamedParameter($triggerObject)))
+			->andWhere($qb->expr()->isNull('purged_at'))
+			->orderBy('id', 'ASC')
+			->setMaxResults($options->limit);
+
+		if ($options->actions !== []) {
+			$qb->andWhere(
+				$qb->expr()->in('action', $qb->createNamedParameter($options->actions, IQueryBuilder::PARAM_STR_ARRAY))
+			);
+		}
+
+		return $this->findEntities(query: $qb);
+	}//end findTriggeredActions()
+
+	/**
+	 * Destruction entries created since a moment, oldest first, one page.
+	 *
+	 * Ordered on `created` and then `id`, so consecutive pages neither repeat
+	 * nor skip an entry written in the same second.
+	 *
+	 * @param DestructionQuery $query The moment, register, schema, actor and page.
+	 *
+	 * @return array<int, AuditTrail> The matching destruction entries, oldest first.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function findDestructions(DestructionQuery $query): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->orderBy('created', 'ASC')
+			->addOrderBy('id', 'ASC')
+			->setFirstResult(max(0, $query->offset));
+
+		if ($query->limit !== null) {
+			$qb->setMaxResults(max(0, $query->limit));
+		}
+
+		$this->whereDestruction(qb: $qb, query: $query);
+
+		return $this->findEntities(query: $qb);
+	}//end findDestructions()
+
+	/**
+	 * How many destruction entries a query matches, ignoring its page.
+	 *
+	 * @param DestructionQuery $query The moment, register, schema and actor.
+	 *
+	 * @return int The number of matching destruction entries.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function countDestructions(DestructionQuery $query): int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('COUNT(*)'))
+			->from($this->getTableName());
+
+		$this->whereDestruction(qb: $qb, query: $query);
+
+		$result = $qb->executeQuery();
+		$count  = (int)$result->fetchOne();
+		$result->closeCursor();
+
+		return $count;
+	}//end countDestructions()
+
+	/**
+	 * When the oldest destruction entry still held was written, or null when none is held.
+	 *
+	 * @return DateTimeImmutable|null The oldest destruction entry's `created`.
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	public function oldestDestruction(): ?DateTimeImmutable {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select($qb->createFunction('MIN(created)'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('action', $qb->createNamedParameter(DestructionQuery::DESTRUCTION_ACTION)));
+
+		$result = $qb->executeQuery();
+		$oldest = $result->fetchOne();
+		$result->closeCursor();
+
+		if (is_string($oldest) === false || $oldest === '') {
+			return null;
+		}
+
+		try {
+			return new DateTimeImmutable($oldest, new DateTimeZone('UTC'));
+		} catch (Exception $e) {
+			return null;
+		}
+	}//end oldestDestruction()
+
+	/**
+	 * Restrict a query to the destruction entries a destruction query names.
+	 *
+	 * `created` is written in the server's UTC clock, so the moment is
+	 * compared in UTC whatever offset the caller gave it.
+	 *
+	 * @param IQueryBuilder    $qb    The query being built.
+	 * @param DestructionQuery $query The moment, register, schema and actor.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/incremental-sync-for-api-consumers/specs/incremental-sync/spec.md#requirement-destroyed-objects-are-reported-as-tombstones-req-sync-003
+	 */
+	private function whereDestruction(IQueryBuilder $qb, DestructionQuery $query): void {
+		$since = DateTime::createFromImmutable($query->since)->setTimezone(new DateTimeZone('UTC'));
+
+		$qb->where($qb->expr()->eq('action', $qb->createNamedParameter(DestructionQuery::DESTRUCTION_ACTION)))
+			->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+
+		if ($query->registerId !== null) {
+			$qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($query->registerId, IQueryBuilder::PARAM_INT)));
+		}
+
+		if ($query->schemaId !== null) {
+			$qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($query->schemaId, IQueryBuilder::PARAM_INT)));
+		}
+
+		if ($query->actor !== null) {
+			$qb->andWhere($qb->expr()->eq('user', $qb->createNamedParameter($query->actor)));
+		}
+	}//end whereDestruction()
 
 	/**
 	 * Tombstone the rows of one object's trail within an action scope.

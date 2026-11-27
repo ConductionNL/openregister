@@ -183,8 +183,6 @@ import SidebarStatsSection from '../SidebarStatsSection.vue'
 import StatisticsScopeFilter from '../StatisticsScopeFilter.vue'
 import formatBytes from '../../services/formatBytes.js'
 import { dashboardScope } from '../dashboardScope.js'
-// Ensure data is loaded
-dashboardStore.preload()
 
 const BREAKDOWN_COUNTS = ['invalid', 'deleted', 'locked']
 
@@ -257,6 +255,19 @@ export default {
 		},
 
 
+	},
+
+	/**
+	 * Load the register list when the sidebar is shown. The sidebar shows the
+	 * registers and their totals only: not the dashboard charts and statistics
+	 * preload() would add. Not at import: this module is in the main bundle,
+	 * so a module-level call sent GET /api/dashboard on every OpenRegister page.
+	 *
+	 * @spec openspec/specs/frontend-store-client-state/spec.md
+	 * @return {void}
+	 */
+	created() {
+		dashboardStore.preloadRegisters()
 	},
 
 	methods: {

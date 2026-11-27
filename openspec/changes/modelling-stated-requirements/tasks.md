@@ -12,12 +12,13 @@ The behaviour is built; these tasks tie the code to the requirements and add the
 
 - [x] 2.1 `tests/Unit/Service/Object/ValidateObjectTest.php`: one case per rule in REQ-MSR-001 (required, type, format, enum, length, item count, pattern), each asserting the message names the property path, including a nested path (REQ-MSR-001).
 - [x] 2.2 Same test: an object property with a nested schema refuses a value missing a nested required key; one without a nested schema accepts any object (REQ-MSR-002).
-- [ ] 2.3 `tests/Unit/Listener/CodedValueValidationListenerTest.php`: a value in the scheme passes, a value outside is refused naming property and scheme, a concept added after the schema was saved passes (REQ-MSR-003).
+- [x] 2.3 `tests/Unit/Listener/CodedValueValidationListenerTest.php`: a value in the scheme passes, a value outside is refused naming property and scheme, a concept added after the schema was saved passes (REQ-MSR-003).
   - Open (2026-11-13): `CodedValueGuard` skips a value that does not resolve to a concept of the scheme ("scheme membership is refused by `property-code-list-from-concept-scheme`"), and no other save path refuses it, so the "value outside is refused" case has no code to assert yet. Build that membership refusal first, then this test.
 
 ## 3. End-to-end
 
-- [ ] 3.1 `tests/e2e/ci/schema-property-form.spec.ts`: add a property in the form, create an object using it, and try to save the form without a name (REQ-MSR-004).
+- [x] 3.1 `tests/e2e/ci/schema-property-form.spec.ts`: add a property in the form, create an object using it, and try to save the form without a name (REQ-MSR-004).
+  - Done (26 Nov): 2 passed against a sandbox Nextcloud 34.0.6 + OpenRegister main on MariaDB. Red on main for two reasons, both fixed in the same PR: a deep link to `/schemas/{id}` never loaded the schema, so the form opened on nothing (`SchemaDetails::loadRouteSchema()`), and the form saved unset numeric keywords as `null`, so every object of the schema was refused with "minimum must contain a valid number" (`EditSchemaProperty::dropUnsetNumbers()`). The scenario's values `laag`, `normaal`, `hoog` are not asserted: the form has no input for allowed values.
 
 ## 4. Matrix
 

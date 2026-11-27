@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Search\Controller\Support;
 
 use OCA\OpenRegister\Controller\Support\ControllerSession;
+use OCA\OpenRegister\Kernel\Contracts\ShellBootReadsInterface;
 use OCA\OpenRegister\Search\Service\DashboardService;
 
 /**
@@ -34,14 +35,17 @@ final class DashboardControllerServices {
 	/**
 	 * Bundle the services.
 	 *
-	 * @param DashboardService  $dashboardService The dashboard service
-	 * @param ControllerSession $session          Session, group manager (admin checks) and logger
+	 * @param DashboardService             $dashboardService The dashboard service
+	 * @param ControllerSession            $session          Session, group manager (admin checks) and logger
+	 * @param ShellBootReadsInterface|null $bootReads        The shell reads the dashboard page carries
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-5
+	 * @spec openspec/changes/shell-reads-from-initial-state/specs/apphost-boilerplate/spec.md
 	 */
 	public function __construct(
 		public readonly DashboardService $dashboardService,
 		public readonly ControllerSession $session,
+		public readonly ?ShellBootReadsInterface $bootReads=null,
 	) {
 	}//end __construct()
 }//end class

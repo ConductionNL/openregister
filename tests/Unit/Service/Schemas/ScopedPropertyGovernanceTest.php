@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Schemas;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use DateTimeImmutable;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
@@ -51,6 +52,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  */
 class ScopedPropertyGovernanceTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * Governance with the given caller and configuration.
@@ -76,6 +79,8 @@ class ScopedPropertyGovernanceTest extends TestCase {
 		}
 
 		$groupManager = $this->createMock(IGroupManager::class);
+
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		$appConfig = $this->createMock(IAppConfig::class);

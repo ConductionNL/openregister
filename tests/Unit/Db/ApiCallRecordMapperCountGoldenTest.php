@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use DateTime;
+use OCA\OpenRegister\Db\ApiCallKey;
 use OCA\OpenRegister\Db\ApiCallRecordMapper;
 use OCA\OpenRegister\Service\ApiCaller\ApiCallRecorder;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
@@ -101,6 +102,57 @@ final class ApiCallRecordMapperCountGoldenTest extends TestCase {
 	}//end testALostInsertRaceIsRetriedAsAnIncrement()
 
 	/**
+	 * Several buffered calls are added by one increment, or counted by the insert.
+	 *
+	 * @return void
+	 */
+	public function testSeveralCallsAreCountedAtOnce(): void {
+		$this->outcomes = [1, 0, 1];
+		$mapper = $this->mapper();
+		$key    = new ApiCallKey(principal: 'leverancier', route: '/apps/openregister/api/objects/zaken/melding/{id}', method: 'GET', apiVersion: '1');
+		$moment = new DateTime('2026-03-04 05:06:07');
+
+		$this->assertTrue(condition: $mapper->count(key: $key, moment: $moment, calls: 5));
+		$this->assertTrue(condition: $mapper->count(key: $key, moment: $moment, calls: 3));
+
+		$this->assertSame(
+			expected: array_merge($this->incrementCalls(calls: 5), $this->incrementCalls(calls: 3), $this->insertCalls(calls: 3)),
+			actual: $this->calls
+		);
+	}//end testSeveralCallsAreCountedAtOnce()
+
+	/**
+	 * A count below one still counts the call that asked.
+	 *
+	 * @return void
+	 */
+	public function testACountBelowOneCountsOneCall(): void {
+		$this->outcomes = [1];
+
+		$this->assertTrue(
+			condition: $this->mapper()->count(
+				key: new ApiCallKey(principal: 'leverancier', route: '/apps/openregister/api/objects/zaken/melding/{id}', method: 'GET', apiVersion: '1'),
+				moment: new DateTime('2026-03-04 05:06:07'),
+				calls: 0
+			)
+		);
+
+		$this->assertSame(expected: $this->incrementCalls(), actual: $this->calls);
+	}//end testACountBelowOneCountsOneCall()
+
+	/**
+	 * The mapper over a recording query builder.
+	 *
+	 * @return ApiCallRecordMapper The mapper.
+	 */
+	private function mapper(): ApiCallRecordMapper {
+		$db = $this->createMock(originalClassName: IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->builder());
+
+		return new ApiCallRecordMapper(db: $db);
+	}//end mapper()
+
+	/**
 	 * Record one fixed call through the recorder.
 	 *
 	 * @return void
@@ -137,14 +189,17 @@ final class ApiCallRecordMapperCountGoldenTest extends TestCase {
 	/**
 	 * The calls one increment makes.
 	 *
+	 * @param int $calls The calls it adds.
+	 *
 	 * @return array<int, string> The calls.
 	 */
-	private function incrementCalls(): array {
+	private function incrementCalls(int $calls=1): array {
 		return [
 			'update(openregister_api_calls,)',
 			'getColumnName(call_count)',
-			'createFunction(`call_count` + 1)',
-			'set(call_count,FN[`call_count` + 1])',
+			'param('.$calls.',1)',
+			'createFunction(`call_count` + :param)',
+			'set(call_count,FN[`call_count` + :param])',
 			'param(2026-03-04T05:06:07,datetime)',
 			'set(last_seen,:param)',
 			'param(leverancier,2)',
@@ -172,16 +227,18 @@ final class ApiCallRecordMapperCountGoldenTest extends TestCase {
 	 * The method and version equal the entity defaults, so the entity does not
 	 * mark them updated and the insert leaves them to the column defaults.
 	 *
+	 * @param int $calls The calls the new row counts.
+	 *
 	 * @return array<int, string> The calls.
 	 */
-	private function insertCalls(): array {
+	private function insertCalls(int $calls=1): array {
 		return [
 			'insert(openregister_api_calls)',
 			'param(leverancier,2)',
 			'setValue(principal,:param)',
 			'param(/apps/openregister/api/objects/zaken/melding/{id},2)',
 			'setValue(route,:param)',
-			'param(1,1)',
+			'param('.$calls.',1)',
 			'setValue(call_count,:param)',
 			'param(2026-03-04T05:06:07,datetime)',
 			'setValue(first_seen,:param)',

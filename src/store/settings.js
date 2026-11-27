@@ -373,6 +373,34 @@ function api(path) {
 }
 
 /**
+ * GET requests in flight, by path, so sections that load at the same time
+ * share one request instead of each sending its own.
+ *
+ * @type {Map<string, Promise<object>>}
+ */
+const readsInFlight = new Map()
+
+/**
+ * GET an OpenRegister API path, or join the same GET already in flight.
+ *
+ * The admin settings page mounts its sections together, and two of them read
+ * GET /api/settings (flow and audit blocks) and two GET /api/files/stats in
+ * the same moment. A finished read is not reused: the next call asks again.
+ *
+ * @param {string} path The path below `/apps/openregister/api/`.
+ * @return {Promise<object>} The axios response.
+ * @spec openspec/specs/frontend-store-client-state/spec.md
+ */
+export function sharedGet(path) {
+	if (readsInFlight.has(path) === false) {
+		readsInFlight.set(path, axios.get(api(path)).finally(() => {
+			readsInFlight.delete(path)
+		}))
+	}
+	return readsInFlight.get(path)
+}
+
+/**
  * Whether an LLM settings patch only toggles `enabled`, which saves without a
  * success message.
  *
@@ -872,7 +900,7 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async loadFlowSettings() {
 			return readSettings(this, {
-				send: () => axios.get(api('settings')),
+				send: () => sharedGet('settings'),
 				apply: (data) => {
 					if (data.flow) {
 						merge(this, { flowOptions: data.flow })
@@ -916,7 +944,7 @@ export const useSettingsStore = defineStore('settings', {
 		 */
 		async loadAuditSettings() {
 			return readSettings(this, {
-				send: () => axios.get(api('settings')),
+				send: () => sharedGet('settings'),
 				apply: (data) => ({
 					readEventsVisibleTo: Array.isArray(data.audit?.readEventsVisibleTo)
 						? data.audit.readEventsVisibleTo
@@ -943,6 +971,45 @@ export const useSettingsStore = defineStore('settings', {
 				failed: (error) =>
 					t('openregister', 'Failed to update the read entry setting: {error}', {
 						error: error.message,
+					}),
+			})
+		},
+
+		/**
+		 * Read the load shedding thresholds in force, with their defaults and bounds.
+		 * Nothing is kept in the store: the section holds its own copy.
+		 *
+		 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+		 * @return {Promise<{values: object, defaults: object, bounds: object}|undefined>} The form.
+		 */
+		async loadLoadSheddingSettings() {
+			return readSettings(this, {
+				send: () => axios.get(api('settings/load-shedding')),
+				apply: (data) => ({
+					values: data.values || {},
+					defaults: data.defaults || {},
+					bounds: data.bounds || {},
+				}),
+				log: 'Failed to load the load shedding settings:',
+			})
+		},
+
+		/**
+		 * Store the load shedding thresholds and the database-pressure switch.
+		 *
+		 * @param {object} values The form values by field name.
+		 * @spec openspec/changes/operate-load-shedding/specs/load-shedding/spec.md
+		 * @return {Promise<object>} The stored form.
+		 */
+		async updateLoadSheddingSettings(values) {
+			return writeSettings(this, {
+				flag: 'saving',
+				send: () => axios.put(api('settings/load-shedding'), values),
+				done: t('openregister', 'Load shedding settings updated'),
+				log: 'Failed to update the load shedding settings:',
+				failed: (error) =>
+					t('openregister', 'Failed to update the load shedding settings: {error}', {
+						error: error.response?.data?.error || error.message,
 					}),
 			})
 		},
@@ -1125,7 +1192,7 @@ export const useSettingsStore = defineStore('settings', {
 		async getExtractionStats() {
 			return attempt(
 				async () => {
-					const response = await axios.get(api('files/stats'))
+					const response = await sharedGet('files/stats')
 					const stats = response.data.data || response.data
 					this.extractionStats = stats
 					return stats

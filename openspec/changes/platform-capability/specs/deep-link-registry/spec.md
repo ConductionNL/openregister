@@ -22,6 +22,7 @@ integrations.
 - **GIVEN** an app claiming a register and schema
 - **WHEN** the capabilities are read
 - **THEN** a block named for that app is present
+- @e2e exclude {needs a leaf app that registers deep links; the hermetic CI instance runs OpenRegister alone, so PlatformCapabilityTest covers it}
 
 ### Requirement: The capability block names no register and no secret, and agrees with the API answer (REQ-PCA-002)
 
@@ -41,4 +42,3 @@ differ.
 - **GIVEN** an upload limit
 - **WHEN** the capability block and the API capabilities endpoint are both read
 - **THEN** they report the same value
-- @e2e exclude {cross-surface assertion, covered by unit tests}

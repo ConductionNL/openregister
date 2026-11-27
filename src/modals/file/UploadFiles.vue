@@ -342,6 +342,16 @@ export default {
 
 	computed: {
 		/**
+		 * Whether the upload modal is the open modal.
+		 *
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
+		 * @return {boolean}
+		 */
+		isOpen() {
+			return navigationStore.modal === 'uploadFiles'
+		},
+
+		/**
 		 * @spec exclude Computed passthrough exposing objectStore.objectItem to the template; UI state helper.
 		 */
 		objectItem() {
@@ -382,6 +392,25 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Load the label choices when the modal opens. Not on mount: the
+		 * modal host mounts this component on every OpenRegister page, so a
+		 * mount-time read sent GET /api/tags on every page load.
+		 *
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
+		 * @param {boolean} open Whether the modal is open
+		 * @return {void}
+		 */
+		isOpen: {
+			handler(open) {
+				if (open) {
+					this.getAllTags()
+				}
+			},
+
+			immediate: true,
+		},
+
 		filesComputed: {
 			/**
 			 * @param {Array<File>|null} newFiles
@@ -409,9 +438,6 @@ export default {
 		},
 	},
 
-	mounted() {
-		this.getAllTags()
-	},
 
 	methods: {
 		/**

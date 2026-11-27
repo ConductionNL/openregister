@@ -20,6 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\SchemaMapper\SchemaDeclarationChecksEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -28,13 +29,20 @@ use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Event\PersonLinkedEvent;
+use OCA\OpenRegister\Event\PersonLinkUpdatedEvent;
+use OCA\OpenRegister\Event\PersonUnlinkedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Reference\ObjectTeamResourceProvider;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use OCP\Share\Events\BeforeShareCreatedEvent;
+use OCP\User\Events\PostLoginEvent;
 use OCP\User\Events\UserLoggedInEvent;
+use OCP\Authentication\Events\TokenInvalidatedEvent;
 
 /**
  * Subscribes the Core area's listeners, one public slot per position.
@@ -68,6 +76,66 @@ final class CoreListenerRegistrar {
 	public static function identityClaims(IRegistrationContext $context): void {
 		$context->registerEventListener(UserLoggedInEvent::class, IdentityClaimsLoginListener::class);
 	}//end identityClaims()
+
+	/**
+	 * A revoked personal token takes its grant with it (scoped-api-tokens 1.1c).
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function personalTokenGrantRevoked(IRegistrationContext $context): void {
+		$context->registerEventListener(TokenInvalidatedEvent::class, PersonalTokenGrantRevokedListener::class);
+	}//end personalTokenGrantRevoked()
+
+	/**
+	 * A service account signs in with its tokens only: any other sign-in is
+	 * cancelled (REQ-SAT-004). PostLoginEvent is the one event every sign-in
+	 * path dispatches, with whether a token was used.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function serviceAccountLogin(IRegistrationContext $context): void {
+		$context->registerEventListener(PostLoginEvent::class, ServiceAccountLoginListener::class);
+	}//end serviceAccountLogin()
+
+	/**
+	 * A share made from the platform's own sharing surface on an object's folder
+	 * passes the schema's opt-in and the permission mapping.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function platformShareRouting(IRegistrationContext $context): void {
+		$context->registerEventListener(BeforeShareCreatedEvent::class, PlatformShareRoutingListener::class);
+		// A share of an OpenRegister folder made by another user never carries re-share.
+		$context->registerEventListener(BeforeShareCreatedEvent::class, ObjectFolderReshareGuard::class);
+	}//end platformShareRouting()
+
+	/**
+	 * A grant to a slot follows whoever holds the role, so the change of
+	 * occupant, not the grant, is what goes on the trail (REQ-GSR-001).
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function slotOccupants(IRegistrationContext $context): void {
+		foreach ([PersonLinkedEvent::class, PersonLinkUpdatedEvent::class, PersonUnlinkedEvent::class] as $linkEvent) {
+			$context->registerEventListener($linkEvent, SlotOccupantAuditListener::class);
+		}
+	}//end slotOccupants()
 
 	/**
 	 * The generated identifier: issued on create, frozen on update.
@@ -168,6 +236,21 @@ final class CoreListenerRegistrar {
 	}//end uniqueConstraints()
 
 	/**
+	 * Objects of schemas declaring x-openregister-team-resources appear on their owning team's page;
+	 * the declaration's check runs inside the schema save, in its slot of SchemaDeclarationOrder.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the provider and the listener carry their own spec.
+	 */
+	public static function teamResources(IRegistrationContext $context): void {
+		$context->registerTeamResourceProvider(ObjectTeamResourceProvider::class);
+		$context->registerEventListener(SchemaDeclarationChecksEvent::class, TeamResourcesDeclarationCheckListener::class);
+	}//end teamResources()
+
+	/**
 	 * A schema's identity values do not change once an object exists.
 	 *
 	 * @param IRegistrationContext $context The registration context.
@@ -232,6 +315,21 @@ final class CoreListenerRegistrar {
 	public static function stateHistory(IRegistrationContext $context): void {
 		$context->registerEventListener(ObjectTransitionedEvent::class, StateHistoryProjectionListener::class);
 	}//end stateHistory()
+
+	/**
+	 * The semantic provider list the integrations capability advertises follows schemas, registers and apps.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function semanticProviders(IRegistrationContext $context): void {
+		foreach (SemanticProviderCacheListener::EVENTS as $semanticProviderEvent) {
+			$context->registerEventListener($semanticProviderEvent, SemanticProviderCacheListener::class);
+		}
+	}//end semanticProviders()
 
 	/**
 	 * The notes and tasks of a deleted object are cleaned up.

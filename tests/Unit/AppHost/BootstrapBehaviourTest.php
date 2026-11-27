@@ -69,7 +69,8 @@ class BootstrapBehaviourTest extends TestCase {
 			),
 			install: new GenericStoreInstall(
 				installer: $this->createMock(GenericStoreInstaller::class),
-				actionAuthorizer: $this->createMock(StoreActionAuthorizer::class)
+				actionAuthorizer: $this->createMock(originalClassName: StoreActionAuthorizer::class),
+				ledger: $this->createMock(originalClassName: \OCA\OpenRegister\AppHost\Store\StoreInstallLedger::class)
 			),
 			platform: new GenericStorePlatform(
 				userSession: $this->createMock(IUserSession::class),

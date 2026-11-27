@@ -54,6 +54,7 @@ use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
 use OCA\OpenRegister\Controller\Support\AccessLinkPlatform;
 use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
 use OCA\OpenRegister\Controller\Support\TrimmedRequestParam;
+use OCP\IURLGenerator;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
@@ -64,11 +65,15 @@ use OCA\OpenRegister\Service\Sharing\LinkAct;
 use OCA\OpenRegister\Service\Sharing\LinkFile;
 use OCA\OpenRegister\Service\Sharing\AccessLinkMintGuardInterface;
 use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Service\Sharing\AccessLinkSubjectLinks;
 use OCA\OpenRegister\Service\Sharing\AccessLinkTerms;
 use OCA\OpenRegister\Service\Sharing\AccessLinkUse;
+use OCA\OpenRegister\Service\Sharing\LinkJourneyGuard;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -126,6 +131,20 @@ class AccessLinkController extends Controller {
 	private readonly AccessLinkActsInterface $acts;
 
 	/**
+	 * Lists and revokes every link on a subject the caller may publish.
+	 *
+	 * @var AccessLinkSubjectLinks
+	 */
+	private readonly AccessLinkSubjectLinks $subjectLinks;
+
+	/**
+	 * Decides whether an `edit` link may open its journey; null refuses every `edit` link.
+	 *
+	 * @var LinkJourneyGuard|null
+	 */
+	private readonly ?LinkJourneyGuard $journeys;
+
+	/**
 	 * The current session, on the owner endpoints.
 	 *
 	 * @var IUserSession
@@ -138,6 +157,13 @@ class AccessLinkController extends Controller {
 	 * @var ObjectShareLinkThrottle
 	 */
 	private readonly ObjectShareLinkThrottle $rejections;
+
+	/**
+	 * Builds the holder's download address of a file link; null in legacy fixtures.
+	 *
+	 * @var IURLGenerator|null
+	 */
+	private readonly ?IURLGenerator $urls;
 
 	/**
 	 * PSR logger.
@@ -161,8 +187,11 @@ class AccessLinkController extends Controller {
 		$this->reader = $services->domain->reader;
 		$this->mintGuard = $services->domain->mintGuard;
 		$this->acts = $services->domain->acts;
+		$this->subjectLinks = $services->domain->subjectLinks;
+		$this->journeys = $services->domain->journeys;
 		$this->userSession = $services->platform->userSession;
 		$this->logger = $services->platform->logger;
+		$this->urls = $services->urls;
 		$this->rejections = self::rejectionCounter(platform: $services->platform);
 	}//end __construct()
 
@@ -214,8 +243,94 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(link: $link, use: $this->useOf(act: AccessLinkServiceInterface::ACT_READ, object: $object));
 
+		if (isset($body['file']) === true && is_array($body['file']) === true) {
+			$body['file'] = $this->holderFile(file: $body['file'], anchor: $anchor);
+		}
+
 		return new JSONResponse(array_merge(['link' => $link->publicDescriptor()], $body));
 	}//end open()
+
+	/**
+	 * GET /api/public/links/{anchor}/download
+	 *
+	 * Stream the file a file link names to its holder, who has no account.
+	 *
+	 * Admitted exactly as {@see open()} is (anchor, password, `read`), and a
+	 * link to anything but a file, a file the object does not carry or a
+	 * restricted file answers the same 404 as an unknown anchor. Every download
+	 * is recorded as a read of the link.
+	 *
+	 * @param string $anchor The random anchor from the URL.
+	 *
+	 * @return Response The file, 401 when a password is wanted, or 404.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
+	public function download(string $anchor): Response {
+		$act = $this->admitWithSubject(anchor: $anchor, capability: AccessLink::CAP_READ);
+		if ($act instanceof LinkAct === false) {
+			return $act;
+		}
+
+		$file = $this->reader->file(link: $act->link, object: $act->object);
+		if ($file === null) {
+			return $this->rejected();
+		}
+
+		try {
+			$stream = $file->fopen('rb');
+		} catch (Throwable $e) {
+			$this->logger->warning('[AccessLinkController] A linked file could not be opened: ' . $e->getMessage());
+			$stream = false;
+		}
+
+		if ($stream === false) {
+			return $this->rejected();
+		}
+
+		$this->links->recordUse(link: $act->link, use: $this->useOf(act: AccessLinkServiceInterface::ACT_READ, object: $act->object));
+
+		$mimeType = $file->getMimeType();
+		if ($mimeType === '') {
+			$mimeType = 'application/octet-stream';
+		}
+
+		$response = new StreamResponse($stream);
+		$response->addHeader('Content-Type', $mimeType);
+		$response->addHeader('Content-Disposition', 'attachment; filename="' . rawurlencode($file->getName()) . '"');
+		$response->addHeader('X-Content-Type-Options', 'nosniff');
+		$response->addHeader('Cache-Control', 'private, no-store');
+
+		return $response;
+	}//end download()
+
+	/**
+	 * A file descriptor as its holder can use it: downloaded through the link, not the account routes.
+	 *
+	 * The stored `downloadUrl` and `accessUrl` point at routes that need a
+	 * session, which a holder does not have; a link to them is a dead link.
+	 * The storage `path` names the instance's folders, which is nothing the
+	 * holder needs, so it is left out.
+	 *
+	 * @param array<string, mixed> $file   The file descriptor the reader served.
+	 * @param string               $anchor The link's anchor.
+	 *
+	 * @return array<string, mixed> The descriptor with the holder's download address.
+	 */
+	private function holderFile(array $file, string $anchor): array {
+		unset($file['path']);
+		$file['accessUrl'] = null;
+		$file['downloadUrl'] = null;
+		if ($this->urls !== null) {
+			$file['downloadUrl'] = $this->urls->linkToRoute('openregister.accessLink.download', ['anchor' => $anchor]);
+		}
+
+		return $file;
+	}//end holderFile()
 
 	/**
 	 * POST /api/public/links/{anchor}/comments
@@ -418,6 +533,11 @@ class AccessLinkController extends Controller {
 			return $this->notFound();
 		}
 
+		$refusal = $this->journeyRefusal(mintRequest: $mintRequest);
+		if ($refusal !== null) {
+			return $this->badRequest(message: $refusal);
+		}
+
 		return $this->minted(mintRequest: $mintRequest);
 	}//end mint()
 
@@ -444,6 +564,33 @@ class AccessLinkController extends Controller {
 	}//end mintRequestFor()
 
 	/**
+	 * Why an `edit` link over this object may not open the requested journey, or null.
+	 *
+	 * Asked only when the request names both `edit` and a journey on an object
+	 * link; any other combination is refused by the link service's own rules.
+	 *
+	 * @param LinkMintRequest $mintRequest What to mint
+	 *
+	 * @return string|null The refusal, or null
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/tasks.md#task-6-1
+	 */
+	private function journeyRefusal(LinkMintRequest $mintRequest): ?string {
+		$journey = trim((string)$mintRequest->terms->journey);
+		$names = array_map(static fn (string $name): string => strtolower(trim($name)), $mintRequest->terms->capabilities);
+		$edits = in_array(AccessLink::CAP_EDIT, $names, true);
+		if ($journey === '' || $edits === false || $mintRequest->subjectType !== AccessLink::SUBJECT_OBJECT) {
+			return null;
+		}
+
+		if ($this->journeys === null) {
+			return 'Links that change a record are not available.';
+		}
+
+		return $this->journeys->mintRefusal(objectUuid: trim($mintRequest->subjectId), journeyId: $journey);
+	}//end journeyRefusal()
+
+	/**
 	 * The terms the caller asks the new link to carry.
 	 *
 	 * @return AccessLinkTerms Capabilities, expiry, password and label
@@ -453,7 +600,8 @@ class AccessLinkController extends Controller {
 			capabilities: $this->capabilitiesParam(),
 			expiresAt: $this->stringParam(name: 'expiresAt'),
 			password: $this->stringParam(name: 'password'),
-			label: $this->stringParam(name: 'label')
+			label: $this->stringParam(name: 'label'),
+			journey: $this->stringParam(name: 'journey')
 		);
 	}//end requestedTerms()
 
@@ -477,11 +625,15 @@ class AccessLinkController extends Controller {
 	/**
 	 * GET /api/access-links
 	 *
-	 * Every link the calling principal minted, open or closed.
+	 * Every link the calling principal minted, open or closed. With
+	 * `subjectType` and `subjectId`, every link on that subject whoever minted
+	 * it, for a caller who may publish the subject; anybody else gets the same
+	 * 404 a mint for it would.
 	 *
-	 * @return JSONResponse The links.
+	 * @return JSONResponse The links, or 404.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
 	 */
 	#[NoAdminRequired]
 	public function index(): JSONResponse {
@@ -490,7 +642,18 @@ class AccessLinkController extends Controller {
 			return new JSONResponse(['results' => []]);
 		}
 
-		return new JSONResponse(['results' => $this->links->listForUser(userId: $user->getUID())]);
+		$subjectType = $this->stringParam(name: 'subjectType');
+		$subjectId = $this->stringParam(name: 'subjectId');
+		if ($subjectType === null || $subjectId === null) {
+			return new JSONResponse(['results' => $this->links->listForUser(userId: $user->getUID())]);
+		}
+
+		$rows = $this->subjectLinks->listOn(subjectType: $subjectType, subjectId: $subjectId, userId: $user->getUID());
+		if ($rows === null) {
+			return $this->notFound();
+		}
+
+		return new JSONResponse(['results' => $rows]);
 	}//end index()
 
 	/**
@@ -540,13 +703,16 @@ class AccessLinkController extends Controller {
 	 * DELETE /api/access-links/{id}
 	 *
 	 * Revoke one of the calling principal's own links. A link somebody else
-	 * minted is, to this caller, a link that does not exist.
+	 * minted is, to this caller, a link that does not exist, unless the request
+	 * names the link's subject in `subjectType` and `subjectId` and the caller
+	 * may publish that subject.
 	 *
 	 * @param int $id The link row id.
 	 *
 	 * @return JSONResponse Empty on success, or 404 when there is nothing to revoke.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-revoked-or-expired-link-answers-404-and-every-use-is-recorded-req-abl-003
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
 	 */
 	#[NoAdminRequired]
 	public function revoke(int $id): JSONResponse {
@@ -555,11 +721,17 @@ class AccessLinkController extends Controller {
 			return $this->notFound();
 		}
 
-		if ($this->links->revoke(id: $id, userId: $user->getUID()) === false) {
-			return $this->notFound();
+		if ($this->links->revoke(id: $id, userId: $user->getUID()) === true
+			|| $this->subjectLinks->revokeOn(
+				id: $id,
+				subjectType: (string)$this->stringParam(name: 'subjectType'),
+				subjectId: (string)$this->stringParam(name: 'subjectId')
+			) === true
+		) {
+			return new JSONResponse([], Http::STATUS_OK);
 		}
 
-		return new JSONResponse([], Http::STATUS_OK);
+		return $this->notFound();
 	}//end revoke()
 
 	/**

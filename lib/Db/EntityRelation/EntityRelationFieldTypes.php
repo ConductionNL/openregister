@@ -56,6 +56,17 @@ final class EntityRelationFieldTypes {
 		'decisionUuid' => 'string',
 		'page' => 'integer',
 		'box' => 'json',
+		'capacity' => 'string',
+		'capacitySource' => 'string',
+		'capacityApplied' => 'string',
+		'capacityConfirmedBy' => 'string',
+		'capacityConfirmedAt' => 'datetime',
+		'personMatch' => 'string',
+		'uncertain' => 'boolean',
+		'archiveMember' => 'string',
 		'createdAt' => 'datetime',
+		'redactionDecision' => 'string',
+		'decidedBy' => 'string',
+		'decidedAt' => 'datetime',
 	];
 }//end class

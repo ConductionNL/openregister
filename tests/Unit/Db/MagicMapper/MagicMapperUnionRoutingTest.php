@@ -196,5 +196,7 @@ class MagicMapperUnionRoutingTest extends TestCase {
 		$route = new \ReflectionMethod(MagicMapper::class, 'shouldUseUnionQuery');
 
 		$this->assertFalse($route->invoke($this->makeMapper(), ['_relations_contains' => 'u']));
+		// The `_registry` lens is an EXISTS only the sequential route builds (registry-subscriptions).
+		$this->assertFalse($route->invoke($this->makeMapper(), ['_registry' => ['state' => 'active']]));
 	}//end testARelationFilterTakesTheSequentialRoute()
 }//end class

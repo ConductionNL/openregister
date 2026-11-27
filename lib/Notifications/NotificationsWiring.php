@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Notifications;
 
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
+use OCA\OpenRegister\Kernel\Contracts\EntryClosureCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\NotificationPreferencesInterface;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Notifications\Db\NotificationHistoryMapperInterface;
@@ -33,6 +34,7 @@ use OCA\OpenRegister\Notifications\Db\ScheduledReportMapperInterface;
 use OCA\OpenRegister\Notifications\Db\WatcherMapper;
 use OCA\OpenRegister\Notifications\Db\WatcherMapperInterface;
 use OCA\OpenRegister\Notifications\Search\TimelineEntriesProvider;
+use OCA\OpenRegister\Notifications\Service\Timeline\EntryClosureService;
 use OCA\OpenRegister\Notifications\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSender;
 use OCA\OpenRegister\Notifications\Service\Notification\EmailSenderInterface;
@@ -56,6 +58,7 @@ use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Notifications\Service\Notification\OptOutAuthorityInterface;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Notifications\Service\Notification\RateLimiterInterface;
+use OCA\OpenRegister\Notifications\Service\Notification\RuleReachLedger;
 use OCA\OpenRegister\Notifications\Service\Notification\RuleReachRecorder;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSender;
 use OCA\OpenRegister\Notifications\Service\Notification\TalkSenderInterface;
@@ -117,6 +120,7 @@ final class NotificationsWiring {
 		ScheduledReportMapperInterface::class => ScheduledReportMapper::class,
 		NotificationAnnotationValidatorInterface::class => NotificationAnnotationValidator::class,
 		TaskTransitionNotifierInterface::class => TaskTransitionNotifier::class,
+		EntryClosureCheckInterface::class => EntryClosureService::class,
 	];
 
 	/**
@@ -172,6 +176,9 @@ final class NotificationsWiring {
 	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md#requirement-the-record-reaches-a-person-not-only-a-log-req-rrn-03
 	 */
 	private static function buildRuleReachRecorder(ContainerInterface $container): RuleReachRecorder {
-		return new RuleReachRecorder(logger: $container->get(LoggerInterface::class));
+		return new RuleReachRecorder(
+			logger: $container->get(LoggerInterface::class),
+			ledger: $container->get(RuleReachLedger::class)
+		);
 	}//end buildRuleReachRecorder()
 }//end class

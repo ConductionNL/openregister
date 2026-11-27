@@ -53,6 +53,12 @@
 			</NcActions>
 		</template>
 
+		<!-- Whether uploads are scanned for malware, and the fix when they cannot be -->
+		<MalwareScanStatus />
+
+		<!-- Where the bytes of managed files live (read-only) -->
+		<DocumentStoreStatus />
+
 		<!-- Section Description -->
 		<div class="section-description-full">
 			<p class="main-description">
@@ -169,7 +175,7 @@
 				<!-- First row: File size, chunking strategy, batch size -->
 				<div class="settings-group">
 					<div class="setting-item">
-						<label for="max-file-size">Maximum File Size (MB)</label>
+						<label for="max-file-size">Text Extraction Ceiling (MB)</label>
 						<input
 							id="max-file-size"
 							v-model.number="fileSettings.maxFileSize"
@@ -178,7 +184,7 @@
 							max="500"
 							@change="saveSettings" />
 						<p class="setting-description">
-							Maximum file size for text extraction (1-500 MB)
+							Files larger than this are not opened for text extraction (1-500 MB); they stay findable by name and metadata
 						</p>
 					</div>
 
@@ -305,6 +311,20 @@
 					<p class="setting-description">
 						Detect personal data (names, emails, phone numbers, IBAN,
 						BSN) in extracted text for GDPR compliance.
+					</p>
+				</div>
+
+				<!-- Review gate: anonymised output waits for a person's check -->
+				<div class="setting-item">
+					<NcCheckboxRadioSwitch
+						v-model="fileSettings.requireReview"
+						type="switch"
+						data-testid="require-review-switch"
+						@update:modelValue="saveSettings">
+						{{ t('openregister', 'Require a review before anonymised output is written') }}
+					</NcCheckboxRadioSwitch>
+					<p class="setting-description" data-testid="require-review-note">
+						{{ t('openregister', 'When on, an anonymised copy is only made once every detection is decided and the document is marked as checked. Unattended pipelines, such as the Woo pipeline of OpenCatalogi, then wait for officers to decide.') }}
 					</p>
 				</div>
 
@@ -450,6 +470,87 @@
 						v-if="openAnonymiserHint"
 						:hint="openAnonymiserHint"
 						:installLink="openAnonymiserInstallLink" />
+
+					<!-- What each backend is measured to find, and does with the text (anonymisation-discloses-itself) -->
+					<div
+						v-for="row in disclosureRows"
+						:key="'disclosure-' + row.name"
+						class="backend-disclosure"
+						:data-testid="'backend-disclosure-' + row.name">
+						<h4 class="backend-disclosure-title">
+							{{ row.label }}
+						</h4>
+						<template v-if="row.accuracy.state === 'measured'">
+							<p class="setting-description">
+								{{ t('openregister', 'Measured on {corpus} version {version} with {detector}, {date}', { corpus: row.accuracy.corpus, version: row.accuracy.corpusVersion, detector: row.accuracy.detector, date: row.accuracy.measuredAt }) }}
+							</p>
+							<table class="backend-accuracy">
+								<thead>
+									<tr>
+										<th scope="col">
+											{{ t('openregister', 'Entity type') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Precision') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Recall') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Examples') }}
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr v-for="figure in row.accuracy.types" :key="figure.type">
+										<td>{{ figure.type }}</td>
+										<td>{{ figure.precision }}</td>
+										<td>{{ figure.recall }}</td>
+										<td>{{ figure.support }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</template>
+						<p v-else class="setting-description" :data-testid="'not-measured-' + row.name">
+							{{ t('openregister', '{detector} is not measured.', { detector: row.accuracy.detector }) }}
+						</p>
+
+						<div class="backend-statement">
+							<label :for="'training-use-' + row.name">{{ t('openregister', 'Training use') }}</label>
+							<select
+								:id="'training-use-' + row.name"
+								:value="statementDraft(row).trainingUse"
+								:disabled="!row.editable"
+								@change="setStatementDraft(row, 'trainingUse', $event.target.value)">
+								<option v-for="use in trainingUses" :key="use" :value="use">
+									{{ trainingUseLabel(use) }}
+								</option>
+							</select>
+							<label :for="'retention-' + row.name">{{ t('openregister', 'Retention') }}</label>
+							<input
+								:id="'retention-' + row.name"
+								type="text"
+								:value="statementDraft(row).retention"
+								:disabled="!row.editable"
+								:aria-describedby="'retention-hint-' + row.name"
+								@input="setStatementDraft(row, 'retention', $event.target.value)">
+							<NcButton
+								v-if="row.editable"
+								variant="secondary"
+								:disabled="savingStatement === row.name"
+								@click="saveStatement(row)">
+								{{ t('openregister', 'Save statement') }}
+							</NcButton>
+						</div>
+						<p :id="'retention-hint-' + row.name" class="setting-description">
+							{{ row.editable
+								? t('openregister', 'Retention is none, unknown or an ISO 8601 duration such as P30D.')
+								: t('openregister', 'Stated by the product: the text is not used for training and not kept.') }}
+						</p>
+						<p v-if="statementErrors[row.name]" class="backend-statement-error" role="alert">
+							{{ statementErrors[row.name] }}
+						</p>
+					</div>
 				</div>
 
 				<!-- Presidio API Configuration -->
@@ -793,11 +894,14 @@ import SettingsCard from '../../../components/shared/SettingsCard.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import AnonymisationPipelineList from './AnonymisationPipelineList.vue'
 import ConnectionTestIcon from './ConnectionTestIcon.vue'
+import DocumentStoreStatus from './DocumentStoreStatus.vue'
 import LabeledSelect from './LabeledSelect.vue'
+import MalwareScanStatus from './MalwareScanStatus.vue'
 import OpenAnonymiserHint from './OpenAnonymiserHint.vue'
 import SettingsTextField from './SettingsTextField.vue'
 import { freshState } from '../../../services/initialState.js'
 import { useSettingsStore } from '../../../store/settings.js'
+import { disclosureRows, isRetention, statementsPayload, TRAINING_USES } from './anonymisationDisclosure.js'
 import { saveMessageMethods } from './saveMessage.js'
 
 /**
@@ -856,9 +960,40 @@ const SELECT_SETTINGS = [
 	['entityRecognitionMethod', 'entityRecognitionMethods', 0],
 ]
 
+// Bytes per MB: the ceiling is stored in bytes and shown in MB.
+const MEBIBYTE = 1048576
+
+/**
+ * The text extraction ceiling in MB, from the stored `textExtraction.maxBytes`,
+ * else the legacy `maxFileSizeMB`, else 100.
+ *
+ * @param {object} settings The stored file settings.
+ * @return {number} The ceiling in MB
+ * @spec openspec/changes/large-file-handling/tasks.md#task-1-5
+ */
+function ceilingMegabytes(settings) {
+	const maxBytes = Number(settings?.textExtraction?.maxBytes)
+	if (maxBytes > 0) {
+		return Math.round((maxBytes / MEBIBYTE) * 100) / 100
+	}
+	const legacy = Number(settings?.maxFileSizeMB)
+	return legacy > 0 ? legacy : 100
+}
+
+/**
+ * The text extraction settings to save: the ceiling in bytes.
+ *
+ * @param {number} megabytes The ceiling the form holds, in MB; anything but a positive number saves 100.
+ * @return {object} The `textExtraction` settings
+ * @spec openspec/changes/large-file-handling/tasks.md#task-1-5
+ */
+function ceilingField(megabytes) {
+	const value = Number(megabytes)
+	return { maxBytes: Math.round((value > 0 ? value : 100) * MEBIBYTE) }
+}
+
 // The plain file settings and the value each takes when the stored one is empty.
 const PLAIN_SETTING_DEFAULTS = [
-	['maxFileSize', 100],
 	['chunkSize', 1000],
 	['chunkOverlap', 200],
 	['chunkingStrategy', 'RECURSIVE_CHARACTER'],
@@ -913,8 +1048,35 @@ function applyPlainSettings(fileSettings, settings) {
 	for (const [field, fallback] of PLAIN_SETTING_DEFAULTS) {
 		fileSettings[field] = settings[field] || fallback
 	}
+	fileSettings.maxFileSize = ceilingMegabytes(settings)
 	fileSettings.openAnonymiserPasswordSet =
 		settings.openAnonymiserPasswordSet === true
+}
+
+/**
+ * Take over whether anonymised output waits for a person's check.
+ *
+ * @param {object} fileSettings The form's settings.
+ * @param {object} settings The stored file settings.
+ * @return {void}
+ */
+function applyRequireReview(fileSettings, settings) {
+	if (settings.anonymisation && typeof settings.anonymisation === 'object') {
+		fileSettings.requireReview = settings.anonymisation.requireReview === true
+	}
+}
+
+/**
+ * The review setting to save: only once the stored one was loaded, so a save
+ * before the load cannot switch the gate off.
+ *
+ * @param {object} settings The form state
+ * @return {object} The settings
+ */
+function anonymisationFields(settings) {
+	return typeof settings.requireReview === 'boolean'
+		? { anonymisation: { requireReview: settings.requireReview } }
+		: {}
 }
 
 /**
@@ -973,7 +1135,7 @@ function extractionFields(settings) {
 		textExtractor: settings.textExtractor?.id || 'llphant',
 		extractionMode: settings.extractionMode?.id || 'background',
 		includeInSearch: settings.includeInSearch,
-		maxFileSize: settings.maxFileSize,
+		textExtraction: ceilingField(settings.maxFileSize),
 		chunkSize: settings.chunkSize,
 		chunkOverlap: settings.chunkOverlap,
 		chunkingStrategy: settings.chunkingStrategy,
@@ -1113,6 +1275,8 @@ const INITIAL_STATE = {
 		openAnonymiserPasswordSet: false,
 		// Enabled jurisdiction pattern set codes; null until loaded.
 		entityPatternSets: null,
+		// null until the stored setting is loaded; see anonymisationFields().
+		requireReview: null,
 	},
 
 	// A newly typed OpenAnonymiser password, sent once and then cleared.
@@ -1121,6 +1285,10 @@ const INITIAL_STATE = {
 
 	// Resolved backend state from GET /api/admin/anonymisation/backend-state.
 	backendState: null,
+	// Unsaved training-use and retention edits per backend (anonymisation-discloses-itself).
+	statementDrafts: {},
+	statementErrors: {},
+	savingStatement: null,
 	// Last probe error code for the openanonymiser backend (drives the install hint).
 	openAnonymiserError: null,
 	// Method name currently being probed via the test-connection endpoint.
@@ -1273,6 +1441,8 @@ export default {
 		AlertCircleIcon,
 		AnonymisationPipelineList,
 		ConnectionTestIcon,
+		DocumentStoreStatus,
+		MalwareScanStatus,
 		DotsVertical,
 		LabeledSelect,
 		OpenAnonymiserHint,
@@ -1343,6 +1513,27 @@ export default {
 		showOpenAnonymiserConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
 			return methodId === 'openanonymiser'
+		},
+
+		/**
+		 * What the page says per backend: its measured accuracy for the current
+		 * detector version, and its training use and retention.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-precision-and-recall-are-measured-over-a-named-corpus-and-published-with-the-detector-version-req-adi-002
+		 */
+		disclosureRows() {
+			return disclosureRows(this.backendState, BACKEND_LABELS)
+		},
+
+		/**
+		 * The training-use values a statement can hold.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		trainingUses() {
+			return TRAINING_USES
 		},
 
 		/**
@@ -1438,18 +1629,97 @@ export default {
 	},
 
 	/**
-	 * Load settings and extraction stats on mount.
+	 * Load the section: settings, extraction stats and the backend state are
+	 * read side by side (they were four requests in a row); the state is
+	 * applied after the settings, because it resolves the recognition method
+	 * the settings set.
 	 *
-	 * @spec exclude UI plumbing — lifecycle hook delegating to loaders.
+	 * @spec openspec/specs/platform-administration-modals/spec.md
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
-		await this.loadSettings()
-		await this.loadExtractionStats()
-		await this.loadBackendState()
+		const backendState = Promise.resolve()
+			.then(() => this.settingsStore.getAnonymisationBackendState())
+			.catch((error) => {
+				// eslint-disable-next-line no-console
+				console.error('Failed to load anonymisation backend state:', error)
+				return null
+			})
+		await Promise.all([this.loadSettings(), this.loadExtractionStats()])
+		await this.loadBackendState(backendState)
 	},
 
 	methods: {
+		/**
+		 * A training-use value in words.
+		 *
+		 * @param {string} use excluded, permitted or unknown
+		 * @return {string}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		trainingUseLabel(use) {
+			const labels = {
+				excluded: t('openregister', 'Not used for training'),
+				permitted: t('openregister', 'May be used for training'),
+				unknown: t('openregister', 'Unknown'),
+			}
+			return labels[use] || use
+		},
+
+		/**
+		 * A backend's statement as being edited: the unsaved draft, else the stated one.
+		 *
+		 * @param {object} row A disclosure row.
+		 * @return {{trainingUse: string, retention: string}}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		statementDraft(row) {
+			return this.statementDrafts[row.name] || row.statement
+		},
+
+		/**
+		 * Change one field of a backend's draft statement.
+		 *
+		 * @param {object} row A disclosure row.
+		 * @param {string} field trainingUse or retention
+		 * @param {string} value The new value.
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		setStatementDraft(row, field, value) {
+			this.statementDrafts = { ...this.statementDrafts, [row.name]: { ...this.statementDraft(row), [field]: value } }
+		},
+
+		/**
+		 * Save a backend's training use and retention with the other stated ones;
+		 * a retention the server would not keep is refused here, before anything is sent.
+		 *
+		 * @param {object} row A disclosure row.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+		 */
+		async saveStatement(row) {
+			const draft = this.statementDraft(row)
+			if (!isRetention(draft.retention)) {
+				this.statementErrors = { ...this.statementErrors, [row.name]: t('openregister', 'Retention is none, unknown or an ISO 8601 duration such as P30D.') }
+				return
+			}
+			this.statementErrors = { ...this.statementErrors, [row.name]: '' }
+			this.savingStatement = row.name
+			try {
+				await this.settingsStore.saveFileSettings({
+					...this.fileSettingsPayload(),
+					anonymisation: { statements: statementsPayload(this.backendState, row.name, draft) },
+				})
+				const { [row.name]: saved, ...rest } = this.statementDrafts
+				this.statementDrafts = rest
+				await this.loadBackendState()
+			} catch {
+				this.statementErrors = { ...this.statementErrors, [row.name]: t('openregister', 'The statement could not be saved.') }
+			} finally {
+				this.savingStatement = null
+			}
+		},
+
 		/**
 		 * Store the chosen jurisdiction pattern sets and save.
 		 *
@@ -1473,15 +1743,17 @@ export default {
 		 */
 		async loadSettings() {
 			try {
+				// The object settings are their own read: send it beside this one.
+				const objectSettings = this.loadObjectSettings()
 				const settings = await this.settingsStore.getFileSettings()
 				if (settings) {
 					applySelectedOptions(this, settings)
 					applyPlainSettings(this.fileSettings, settings)
 					applyEnabledFileTypes(this.fileTypes, settings)
 					applyPatternSets(this.fileSettings, settings)
+					applyRequireReview(this.fileSettings, settings)
 				}
-				// Load object settings
-				await this.loadObjectSettings()
+				await objectSettings
 			} catch (error) {
 				console.error('Failed to load file settings:', error)
 			}
@@ -1513,11 +1785,12 @@ export default {
 		 * Load the resolved anonymisation backend state and capture any ExApp hint.
 		 *
 		 * @spec exclude UI plumbing — admin-settings load hydrating backend status.
+		 * @param {Promise<object|null>|null} pending A read already sent (on mount), else one is sent now.
 		 * @return {Promise<void>}
 		 */
-		async loadBackendState() {
+		async loadBackendState(pending = null) {
 			try {
-				const state = await this.settingsStore.getAnonymisationBackendState()
+				const state = await (pending ?? this.settingsStore.getAnonymisationBackendState())
 				this.backendState = state
 				this.openAnonymiserError = null
 				if (state) {
@@ -1702,6 +1975,7 @@ export default {
 				...recognitionFields(this.fileSettings),
 				...openAnonymiserFields(this.fileSettings),
 				...patternSetFields(this.fileSettings),
+				...anonymisationFields(this.fileSettings),
 				enabledFileTypes: this.fileTypes
 					.filter((ft) => ft.enabled)
 					.map((ft) => ft.extension),
@@ -2385,5 +2659,39 @@ export default {
 	.stat-card {
 		transition: none;
 	}
+}
+.backend-disclosure {
+	margin-top: 12px;
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+}
+
+.backend-disclosure-title {
+	margin: 0 0 4px;
+	font-weight: bold;
+}
+
+.backend-accuracy {
+	border-collapse: collapse;
+	margin: 4px 0 8px;
+}
+
+.backend-accuracy th,
+.backend-accuracy td {
+	padding: 2px 12px 2px 0;
+	text-align: start;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.backend-statement {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.backend-statement-error {
+	color: var(--color-error-text);
 }
 </style>

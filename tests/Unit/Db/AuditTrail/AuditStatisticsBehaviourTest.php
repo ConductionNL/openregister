@@ -223,8 +223,26 @@ class AuditStatisticsBehaviourTest extends TestCase {
 
 		$this->assertContains('#1 param :p1 = 2026-01-01, 2', $this->queryLog);
 		$this->assertContains('#1 andWhere(gte(created, :p1, NULL))', $this->queryLog);
-		$this->assertContains('#1 param :p2 = 2026-01-31, 2', $this->queryLog);
-		$this->assertContains('#1 andWhere(lte(created, :p2, NULL))', $this->queryLog);
+		$this->assertContains('#1 param :p2 = 2026-02-01, 2', $this->queryLog);
+		$this->assertContains('#1 andWhere(lt(created, :p2, NULL))', $this->queryLog);
+	}
+
+	/**
+	 * The end day is included: `created` carries a time, so the bound is the
+	 * start of the next day. A dashboard range up to today kept none of today's
+	 * events while the bound was `created <= today`.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/built-in-dashboards/spec.md#requirement-the-app-opens-on-a-dashboard-of-registers-counts-and-activity-req-ads-002
+	 */
+	public function testActionChartIncludesTheWholeEndDay(): void {
+		$scope = new AuditStatisticsScope();
+		$scope->till = new DateTime('2026-12-31 00:00:00', new DateTimeZone('UTC'));
+		$this->actions($this->db([[]]))->actionChart($scope);
+
+		$this->assertContains('#1 param :p1 = 2027-01-01, 2', $this->queryLog);
+		$this->assertContains('#1 andWhere(lt(created, :p1, NULL))', $this->queryLog);
+		$this->assertFalse($this->logHas('expr.lte'));
+		$this->assertSame('2026-12-31', $scope->till->format('Y-m-d'), 'the scope keeps the day it was given');
 	}
 
 	public function testActionChartIsEmptyWhenTheQueryFails(): void {

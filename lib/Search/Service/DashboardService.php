@@ -64,6 +64,22 @@ class DashboardService {
 	 */
 	private const EMPTY_CHART = ['labels' => [], 'series' => []];
 
+	/**
+	 * Whether one dashboard answer is being built, so the webhook log totals are read once for it.
+	 *
+	 * @var boolean
+	 */
+	private bool $buildingAnswer = false;
+
+	/**
+	 * The webhook log totals of the answer being built, once read.
+	 *
+	 * Every entry carries the same instance-wide count, which was read once per entry.
+	 *
+	 * @var array<string, int>|null
+	 */
+	private ?array $webhookLogTotalsMemo = null;
+
 
 	/**
 	 * Constructor for DashboardService
@@ -115,8 +131,17 @@ class DashboardService {
 	 * @return array<string, mixed>
 	 */
 	private function webhookLogTotals(): array {
+		if ($this->webhookLogTotalsMemo !== null) {
+			return $this->webhookLogTotalsMemo;
+		}
+
 		$webhookLogStats = $this->mappers->webhookLogMapper->getStatistics(webhookId: 0);
-		return ['total' => $webhookLogStats['total'] ?? 0, 'size' => 0];
+		$totals = ['total' => $webhookLogStats['total'] ?? 0, 'size' => 0];
+		if ($this->buildingAnswer === true) {
+			$this->webhookLogTotalsMemo = $totals;
+		}
+
+		return $totals;
 	}//end webhookLogTotals()
 
 	/**
@@ -172,10 +197,18 @@ class DashboardService {
 	 */
 	public function getRegistersWithSchemas(?int $registerId = null, ?int $schemaId = null): array {
 		try {
-			return $this->dashboardEntries(scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId));
+			// One count per register/schema pair for the whole answer: the totals,
+			// register and schema entries walk the same pairs.
+			$this->buildingAnswer = true;
+			return $this->mappers->catalog->tables()->rememberPairCounts(
+				work: fn (): array => $this->dashboardEntries(scope: new DashboardScope(registerId: $registerId, schemaId: $schemaId))
+			);
 		} catch (Exception $e) {
 			$this->logFailure(what: 'registers with schemas', error: $e);
 			throw new Exception('Failed to get registers with schemas: ' . $e->getMessage());
+		} finally {
+			$this->buildingAnswer = false;
+			$this->webhookLogTotalsMemo = null;
 		}
 	}//end getRegistersWithSchemas()
 

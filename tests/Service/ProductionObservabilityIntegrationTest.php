@@ -27,6 +27,7 @@ use OCA\OpenRegister\AppHost\Controller\GenericHealthController;
 use OCA\OpenRegister\AppHost\Controller\GenericMetricsController;
 use OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor;
 use OCA\OpenRegister\AppHost\Observability\ManifestLoader;
+use OCA\OpenRegister\AppHost\Observability\MetricsAccessGuard;
 use OCA\OpenRegister\AppHost\Observability\MetricsEngine;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -58,8 +59,21 @@ class ProductionObservabilityIntegrationTest extends TestCase {
 			'openregister',
 			$request,
 			\OC::$server->get(ManifestLoader::class),
-			\OC::$server->get(MetricsEngine::class)
+			\OC::$server->get(MetricsEngine::class),
+			$this->admittingGuard()
 		);
+	}
+
+	/**
+	 * These tests are about what is rendered; who is admitted is MetricsAccessGuardTest's.
+	 *
+	 * @return MetricsAccessGuard
+	 */
+	private function admittingGuard(): MetricsAccessGuard {
+		$guard = $this->createMock(MetricsAccessGuard::class);
+		$guard->method('decide')->willReturn(Http::STATUS_OK);
+
+		return $guard;
 	}
 
 	public function testHealthEndpointReturnsOkStructure(): void {

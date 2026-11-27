@@ -105,6 +105,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setConsumer(?string $consumer)
  * @method string|null getTriggerObject()
  * @method void setTriggerObject(?string $triggerObject)
+ * @method string|null getRuleDigest()
+ * @method void setRuleDigest(?string $ruleDigest)
+ * @method string|null getRuleVersion()
+ * @method void setRuleVersion(?string $ruleVersion)
+ * @method string|null getCategory()
+ * @method void setCategory(?string $category)
  * @method string|null getProcessingActivityId()
  * @method void setProcessingActivityId(?string $processingActivityId)
  * @method string|null getVersion()
@@ -510,6 +516,43 @@ class AuditTrail extends Entity implements JsonSerializable, AuditRecordInterfac
 	 * @spec openspec/changes/records-restore-with-cascade/specs/deletion-audit-trail/spec.md#requirement-the-cascade-evidence-is-findable-and-lasts-as-long-as-the-recovery-window
 	 */
 	protected ?string $triggerObject = null;
+
+	/**
+	 * The SHA-256 of the canonical JSON of the read rule that let the reader see the object.
+	 *
+	 * Set on a `read` entry only, and only when a rule mediated the read; null for an
+	 * administrator, the object's owner, a schema without read rules, and every entry
+	 * written before the column existed. Sealed when set; left out of the sealed form
+	 * when null, so older entries hash exactly as they did.
+	 *
+	 * @var string|null
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	protected ?string $ruleDigest = null;
+
+	/**
+	 * The schema version the rule in {@see $ruleDigest} belonged to.
+	 *
+	 * @var string|null
+	 *
+	 * @spec openspec/changes/read-audit-entries-name-the-rule/specs/audit-trail-immutable/spec.md#requirement-a-read-entry-names-the-access-rule-that-let-the-reader-see-the-object
+	 */
+	protected ?string $ruleVersion = null;
+
+	/**
+	 * Which history the row belongs to: `domain` or `administrative`
+	 * ({@see \OCA\OpenRegister\Service\Audit\AuditCategory}).
+	 *
+	 * ⚠️ DELIBERATELY OUTSIDE the canonical JSON, like `purpose` and
+	 * `consumer`: it is derived from the sealed `action`, and adding it to
+	 * jsonSerialize() would change the canonical form of every row ever
+	 * written. The migration backfills it by action without touching the
+	 * chain (history-schema-and-settings-edits-audited, REQ-HSA-011).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $category = null;
 
 	/**
 	 * Constructor for the AuditTrail class

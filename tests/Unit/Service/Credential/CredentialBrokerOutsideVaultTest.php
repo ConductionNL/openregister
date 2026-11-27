@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\Credential\VaultReference;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -45,6 +46,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\SaveActor;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
+use OCA\OpenRegister\Service\CauseFrame;
+use OCA\OpenRegister\Service\Credential\InjectableSecretRequest;
+use OCA\OpenRegister\Service\WriteCause;
 
 #[CoversClass(OutsideCustody::class)]
 #[CoversClass(CredentialBrokerService::class)]
@@ -56,6 +64,15 @@ use Psr\Log\LoggerInterface;
 #[UsesClass(CredentialPrincipals::class)]
 #[UsesClass(CredentialMint::class)]
 #[UsesClass(CredentialMintOptions::class)]
+#[UsesClass(ObjectEntity::class)]
+#[UsesClass(ObjectFindOptions::class)]
+#[UsesClass(ObjectFindTarget::class)]
+#[UsesClass(ObjectSaveOptions::class)]
+#[UsesClass(SaveActor::class)]
+#[UsesClass(SavePolicy::class)]
+#[UsesClass(CauseFrame::class)]
+#[UsesClass(InjectableSecretRequest::class)]
+#[UsesClass(WriteCause::class)]
 class CredentialBrokerOutsideVaultTest extends TestCase {
 
 	/**
@@ -229,7 +246,9 @@ class CredentialBrokerOutsideVaultTest extends TestCase {
 		$sources = new CredentialSources(objectService: $objectService, credentialStore: $this->store, catalogue: $catalogue);
 		$custody = null;
 		if ($withCustody === true) {
-			$custody = new OutsideCustody(sources: $sources, reader: new OutsideVaultReader(clientService: $clientService, logger: $logger), logger: $logger);
+			$clock = $this->createMock(ITimeFactory::class);
+			$clock->method('now')->willReturn(new \DateTimeImmutable('2026-11-26T10:00:00+00:00'));
+			$custody = new OutsideCustody(sources: $sources, reader: new OutsideVaultReader(clientService: $clientService, logger: $logger), logger: $logger, clock: $clock);
 		}
 
 		return new CredentialBrokerService(
@@ -289,7 +308,9 @@ class CredentialBrokerOutsideVaultTest extends TestCase {
 			[['GET', 'https://vault.example/v1/secret/data/integriq/zaaksysteem', ['X-Vault-Token' => self::VAULT_TOKEN, 'Accept' => 'application/json']]],
 			$this->vaultRequests()
 		);
-		$this->assertSame([], $this->saved);
+		$this->assertCount(1, $this->saved);
+		$this->assertSame('2026-11-26T10:00:00+00:00', $this->saved[0]['lastReadAt']);
+		$this->assertStringNotContainsString(self::VAULT_VALUE, (string)json_encode($this->saved));
 	}
 
 	public function testAnAppThatIsNotAllowedGetsNothingAndTheVaultIsNotContacted(): void {

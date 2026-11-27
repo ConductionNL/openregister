@@ -53,9 +53,13 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectExportRequest;
 
 /**
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtWriter
+ * @uses \OCA\OpenRegister\Service\Export\RecordPdfRows
  * @uses \OCA\OpenRegister\Service\Export\Odt\HtmlToOdt
  * @uses \OCA\OpenRegister\Service\Export\Odt\OdtTableBuilder
  * @uses \OCA\OpenRegister\Service\Export\Odt\VisibleText
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtLogo
+ * @uses \OCA\OpenRegister\Service\Export\Odt\OdtFont
+ * @uses \OCA\OpenRegister\Service\Export\DocumentStyleReader
  */
 class ExportServicePdfTest extends TestCase {
 
@@ -439,6 +443,57 @@ class ExportServicePdfTest extends TestCase {
 		$this->assertStringNotContainsString('nope', $html);
 	}
 
+	/**
+	 * One record exports with each readable field's label and value, and a field the user may not read stays out.
+	 *
+	 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-single-record-exports-as-a-pdf
+	 */
+	public function testARecordExportsItsReadableFieldsAndLeavesOutAHiddenOne(): void {
+		$schema = new Schema();
+		$schema->setSlug('zaak');
+		$schema->setProperties([
+			'omschrijving' => ['type' => 'string', 'title' => 'Omschrijving'],
+			'status' => ['type' => 'string', 'title' => 'Status'],
+			'bsn' => ['type' => 'string', 'title' => 'BSN'],
+			'intern' => ['type' => 'string', 'title' => 'Intern', 'visible' => false],
+		]);
+
+		$seen = [];
+		$this->propertyRbacHandler
+			->method('canReadProperty')
+			->willReturnCallback(static function (SchemaProperty $read, PropertyAccessRequest $request) use (&$seen): bool {
+				$seen[$read->name] = $request->object;
+				return $read->name !== 'bsn';
+			});
+
+		$object = $this->createObjectEntity('uuid-42', 'Z-2026-0042', ['omschrijving' => 'Bouwvergunning', 'status' => 'open', 'bsn' => '999999990', 'intern' => 'geheim']);
+
+		$pdf = $this->service->recordToPdf(object: $object, schema: $schema, currentUser: null);
+		$text = $this->convertedOdtText();
+
+		$this->assertSame('%PDF-1.7 converted', $pdf);
+		$this->assertStringContainsString('Z-2026-0042', $text);
+		$this->assertStringContainsString('Omschrijving', $text);
+		$this->assertStringContainsString('Bouwvergunning', $text);
+		$this->assertStringContainsString('Status', $text);
+		$this->assertStringContainsString('uuid-42', $text);
+		$this->assertStringNotContainsString('BSN', $text);
+		$this->assertStringNotContainsString('999999990', $text);
+		$this->assertStringNotContainsString('geheim', $text);
+		$this->assertSame('999999990', $seen['bsn']['bsn'], 'Conditional rules see the record itself.');
+	}
+
+	/**
+	 * Without an office server the record export is refused before anything renders.
+	 */
+	public function testARecordExportWithoutOfficeServerIsRefused(): void {
+		$this->converter->available = false;
+		$this->propertyRbacHandler->expects($this->never())->method('canReadProperty');
+
+		$this->expectException(OfficeServerRequiredException::class);
+		$this->service->recordToPdf(object: $this->createObjectEntity('u', 'n', []), schema: new Schema(), currentUser: null);
+	}
+
 	public function testBuildPdfSectionEscapesHtmlInCellValues(): void {
 		$schema = new Schema();
 		$schema->setSlug('test');
@@ -503,6 +558,22 @@ class ExportServicePdfTest extends TestCase {
 
 		$this->assertStringStartsWith('%PDF-', $pdf);
 	}//end testRenderRowsToPdfRendersRowsTheCallerFetched()
+
+	/**
+	 * Rows another component built through the table PDF port render as the same table would,
+	 * whole cells included, and the row cap still applies.
+	 */
+	public function testRenderRowsToPdfThroughThePortRendersTheTable(): void {
+		$long = str_repeat('lang ', 200);
+		$pdf  = $this->service->renderRowsToPdf(title: 'Journal: Zaak', columns: ['message' => 'Note'], rows: [['message' => $long]], wholeCells: true);
+
+		$this->assertSame('%PDF-1.7 converted', $pdf);
+		$this->assertStringContainsString('Journal: Zaak', $this->convertedOdtText());
+		$this->assertStringContainsString(trim($long), $this->convertedOdtText());
+
+		$this->expectException(ExportTooLargeException::class);
+		$this->service->renderRowsToPdf(title: 'T', columns: ['a' => 'A'], rows: array_fill(0, ExportService::MAX_PDF_EXPORT_ROWS + 1, ['a' => 'x']));
+	}//end testRenderRowsToPdfThroughThePortRendersTheTable()
 
 	/**
 	 * The row cap applies to rows handed in, before anything is rendered.
@@ -588,6 +659,96 @@ class ExportServicePdfTest extends TestCase {
 		$service->pdfFor(request: new ExportRequest(schema: $schema, currentUser: $user));
 
 		$this->assertStringContainsString('https://hilversum.nl/privacy', $this->convertedOdtPart(part: 'styles.xml'));
+	}
+
+	public function testTheProfilesLogoIsEmbeddedInThePageHeader(): void {
+		require_once __DIR__ . '/Export/Odt/OdtLogoTest.php';
+		$png = \OCA\OpenRegister\Tests\Unit\Service\Export\Odt\OdtLogoTest::png(width: 400, height: 100);
+		$profile = ['logo' => ['url' => '/apps/thematiq/document-style/asset/logo', 'mime' => 'image/png'], 'footer' => ['lines' => ['Gemeente Hilversum']]];
+		$reader = $this->createMock(DocumentStyleReader::class);
+		$reader->expects($this->once())->method('forUser')->with(null)->willReturn($profile);
+		$reader->expects($this->once())->method('logo')->with($profile)
+			->willReturn(\OCA\OpenRegister\Service\Export\Odt\OdtLogo::fromBytes(bytes: $png));
+		$service = new ExportService(
+			$this->registerMapper,
+			$this->groupManager,
+			$this->objectService,
+			$this->cacheHandler,
+			$this->propertyRbacHandler,
+			$this->converter,
+			null,
+			$reader
+		);
+
+		$service->renderTableToPdf(table: new RowsTable(title: 'Vergunningen', columns: ['naam' => 'Naam'], rows: [['naam' => 'A']]));
+
+		$this->assertSame($png, $this->convertedOdtPart(part: 'Pictures/logo.png'));
+		$styles = $this->convertedOdtPart(part: 'styles.xml');
+		$this->assertStringContainsString('<draw:image xlink:href="Pictures/logo.png"', $styles);
+		$this->assertStringContainsString('Gemeente Hilversum', $styles);
+	}
+
+	/**
+	 * The profile's fonts are embedded per role; a font that fails to load (WOFF2)
+	 * leaves its role on the default font and the export still succeeds
+	 * (export-pdf-house-style, task 2.2).
+	 */
+	public function testTheProfilesFontsAreEmbeddedAndAFontThatFailsToLoadFallsBack(): void {
+		require_once __DIR__ . '/Export/Stubs/ThematiqDocumentStyleService.php';
+		require_once __DIR__ . '/Export/Stubs/ThematiqFontService.php';
+		require_once __DIR__ . '/Export/Odt/OdtFontTest.php';
+		$ttf = \OCA\OpenRegister\Tests\Unit\Service\Export\Odt\OdtFontTest::sfnt();
+		$profile = ['fonts' => [
+			'heading' => ['family' => 'Gemeente Kop', 'url' => '/apps/thematiq/fonts/custom-kop.woff2'],
+			'body' => ['family' => 'Gemeente Tekst', 'url' => '/apps/thematiq/fonts/custom-tekst.woff2'],
+		]];
+		$styleService = new class($profile) {
+
+			public function __construct(private array $profile) {
+			}
+
+			public function forUser(?string $uid): array {
+				return $this->profile;
+			}
+		};
+		$fontService = new class(['custom-kop' => 'wOF2' . substr($ttf, 4), 'custom-tekst' => $ttf]) {
+
+			public function __construct(private array $stored) {
+			}
+
+			public function readFontBytes(string $id): ?string {
+				return ($this->stored[$id] ?? null);
+			}
+		};
+		$appManager = $this->createMock(\OCP\App\IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$container = $this->createMock(\Psr\Container\ContainerInterface::class);
+		$container->method('get')->willReturnCallback(static fn (string $id): ?object => match ($id) {
+			DocumentStyleReader::STYLE_SERVICE => $styleService,
+			DocumentStyleReader::FONT_SERVICE => $fontService,
+			default => null,
+		});
+		$service = new ExportService(
+			$this->registerMapper,
+			$this->groupManager,
+			$this->objectService,
+			$this->cacheHandler,
+			$this->propertyRbacHandler,
+			$this->converter,
+			null,
+			new DocumentStyleReader($appManager, $container, new \Psr\Log\NullLogger())
+		);
+
+		$pdf = $service->renderTableToPdf(table: new RowsTable(title: 'Vergunningen', columns: ['naam' => 'Naam'], rows: [['naam' => 'A']]));
+
+		$this->assertSame('%PDF-1.7 converted', $pdf);
+		$this->assertSame($ttf, $this->convertedOdtPart(part: 'Fonts/body.ttf'));
+		$this->assertSame('', $this->convertedOdtPart(part: 'Fonts/heading.ttf'));
+		$content = $this->convertedOdtPart(part: 'content.xml');
+		$this->assertStringContainsString('<style:font-face style:name="OR_BodyFont" svg:font-family="\'Gemeente Tekst\'">', $content);
+		$this->assertStringNotContainsString('OR_HeadingFont', $content);
+		$this->assertStringContainsString('<style:style style:name="OR_H1" style:family="paragraph"><style:paragraph-properties fo:margin-bottom="0.15cm"/><style:text-properties style:font-name="Liberation Sans"', $content);
+		$this->assertStringContainsString('<style:style style:name="OR_Cell" style:family="paragraph"><style:paragraph-properties/><style:text-properties style:font-name="OR_BodyFont"', $content);
 	}
 
 	public function testWithoutAProfileTheExportKeepsThePlainLayout(): void {

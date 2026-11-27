@@ -1,0 +1,720 @@
+{
+	"info": {
+		"name": "OpenRegister case-insensitive ordering",
+		"description": "openspec/changes/case-insensitive-ordering task 1.4: GET /api/objects/{register}/{schema}?_order[title]=asc over a seeded mixed-case fixture orders by the lower-cased value on every supported database (REQ-CIO-001). Seeds its own schema, register and records and removes them. Run: newman run tests/newman/openregister-case-insensitive-ordering.postman_collection.json --env-var base_url=<instance>",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "{{username}}",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "{{password}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "run",
+			"value": ""
+		},
+		{
+			"key": "schema_id",
+			"value": ""
+		},
+		{
+			"key": "register_id",
+			"value": ""
+		},
+		{
+			"key": "paged",
+			"value": "[]"
+		}
+	],
+	"item": [
+		{
+			"name": "Setup: a schema with a string title and an integer rank",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Date.now().toString(36)); }"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code).to.equal(201));",
+							"pm.collectionVariables.set('schema_id', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Case-insensitive ordering {{run}}\",\"slug\":\"cio-{{run}}\",\"properties\":{\"title\":{\"type\":\"string\"},\"rank\":{\"type\":\"integer\"}}}"
+				}
+			}
+		},
+		{
+			"name": "Setup: a register holding it",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code).to.equal(201));",
+							"pm.collectionVariables.set('register_id', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\":\"Case-insensitive ordering {{run}}\",\"slug\":\"cio-{{run}}\",\"schemas\":[{{schema_id}}]}"
+				}
+			}
+		},
+		{
+			"name": "Seed: banaan",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the record is created', () => pm.expect(pm.response.code).to.equal(201));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"banaan\", \"rank\": 10}"
+				}
+			}
+		},
+		{
+			"name": "Seed: Appel",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the record is created', () => pm.expect(pm.response.code).to.equal(201));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Appel\", \"rank\": 2}"
+				}
+			}
+		},
+		{
+			"name": "Seed: Cherry",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the record is created', () => pm.expect(pm.response.code).to.equal(201));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Cherry\", \"rank\": 9}"
+				}
+			}
+		},
+		{
+			"name": "Seed: aardbei",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the record is created', () => pm.expect(pm.response.code).to.equal(201));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"aardbei\", \"rank\": 30}"
+				}
+			}
+		},
+		{
+			"name": "Seed: appel",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the record is created', () => pm.expect(pm.response.code).to.equal(201));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}",
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"appel\", \"rank\": 4}"
+				}
+			}
+		},
+		{
+			"name": "Ascending by title ignores letter case",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const titles = pm.response.json().results.map((o) => o.title);",
+							"// Byte order would give Appel, Cherry, aardbei, appel, banaan.",
+							"const lower = titles.map((t) => t.toLowerCase());",
+							"pm.test('the lower-cased titles are in ascending order', () => pm.expect(lower).to.eql(['aardbei', 'appel', 'appel', 'banaan', 'cherry']));",
+							"pm.test('both spellings of appel sit together, between aardbei and banaan', () => pm.expect(titles.slice(1, 3).sort()).to.eql(['Appel', 'appel']));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_order%5Btitle%5D=asc"
+			}
+		},
+		{
+			"name": "Descending by title ignores letter case",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const titles = pm.response.json().results.map((o) => o.title);",
+							"pm.test('the lower-cased titles are in descending order', () => pm.expect(titles.map((t) => t.toLowerCase())).to.eql(['cherry', 'banaan', 'appel', 'appel', 'aardbei']));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_order%5Btitle%5D=desc"
+			}
+		},
+		{
+			"name": "A non-string property keeps native ordering",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"pm.test('rank orders as a number, not as text', () => pm.expect(pm.response.json().results.map((o) => o.rank)).to.eql([2, 4, 9, 10, 30]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_order%5Brank%5D=asc"
+			}
+		},
+		{
+			"name": "Paging by one, page 1",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.collectionVariables.set('paged', '[]');"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const page = pm.response.json().results;",
+							"pm.test('one record per page', () => pm.expect(page).to.have.lengthOf(1));",
+							"const seen = JSON.parse(pm.collectionVariables.get('paged') || '[]');",
+							"seen.push(page[0]['@self'].id + '|' + page[0].title);",
+							"pm.collectionVariables.set('paged', JSON.stringify(seen));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_order%5Btitle%5D=asc&_limit=1&_page=1"
+			}
+		},
+		{
+			"name": "Paging by one, page 2",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const page = pm.response.json().results;",
+							"pm.test('one record per page', () => pm.expect(page).to.have.lengthOf(1));",
+							"const seen = JSON.parse(pm.collectionVariables.get('paged') || '[]');",
+							"seen.push(page[0]['@self'].id + '|' + page[0].title);",
+							"pm.collectionVariables.set('paged', JSON.stringify(seen));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_order%5Btitle%5D=asc&_limit=1&_page=2"
+			}
+		},
+		{
+			"name": "Paging by one, page 3",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const page = pm.response.json().results;",
+							"pm.test('one record per page', () => pm.expect(page).to.have.lengthOf(1));",
+							"const seen = JSON.parse(pm.collectionVariables.get('paged') || '[]');",
+							"seen.push(page[0]['@self'].id + '|' + page[0].title);",
+							"pm.collectionVariables.set('paged', JSON.stringify(seen));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_order%5Btitle%5D=asc&_limit=1&_page=3"
+			}
+		},
+		{
+			"name": "Paging by one, page 4",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const page = pm.response.json().results;",
+							"pm.test('one record per page', () => pm.expect(page).to.have.lengthOf(1));",
+							"const seen = JSON.parse(pm.collectionVariables.get('paged') || '[]');",
+							"seen.push(page[0]['@self'].id + '|' + page[0].title);",
+							"pm.collectionVariables.set('paged', JSON.stringify(seen));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_order%5Btitle%5D=asc&_limit=1&_page=4"
+			}
+		},
+		{
+			"name": "Paging by one, page 5",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+							"const page = pm.response.json().results;",
+							"pm.test('one record per page', () => pm.expect(page).to.have.lengthOf(1));",
+							"const seen = JSON.parse(pm.collectionVariables.get('paged') || '[]');",
+							"seen.push(page[0]['@self'].id + '|' + page[0].title);",
+							"pm.collectionVariables.set('paged', JSON.stringify(seen));",
+							"pm.test('paging one at a time lists every record exactly once', () => pm.expect(new Set(seen.map((s) => s.split('|')[0])).size).to.equal(5));",
+							"pm.test('the paged order is the case-insensitive order', () => pm.expect(seen.map((s) => s.split('|')[1].toLowerCase())).to.eql(['aardbei', 'appel', 'appel', 'banaan', 'cherry']));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_order%5Btitle%5D=asc&_limit=1&_page=5"
+			}
+		},
+		{
+			"name": "Cleanup: the records",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const ids = pm.response.json().results.map((o) => o['@self'].id);",
+							"pm.test('the five seeded records are listed', () => pm.expect(ids).to.have.lengthOf(5));",
+							"const auth = 'Basic ' + btoa(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password'));",
+							"ids.forEach((id) => pm.sendRequest({",
+							"  url: pm.variables.replaceIn('{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}/') + id,",
+							"  method: 'DELETE',",
+							"  header: {'OCS-APIRequest': 'true', Accept: 'application/json', Authorization: auth},",
+							"}, (err, res) => pm.test('record ' + id + ' is removed', () => { pm.expect(err).to.equal(null); pm.expect(res.code).to.be.oneOf([200, 204]); })));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/objects/{{register_id}}/{{schema_id}}?_limit=50"
+			}
+		},
+		{
+			"name": "Cleanup: the register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+			}
+		},
+		{
+			"name": "Cleanup: the schema",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
+			}
+		}
+	]
+}

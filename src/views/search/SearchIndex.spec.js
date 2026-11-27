@@ -8,7 +8,9 @@
  */
 
 // Mock the store singletons the component imports so we can assert dispatches.
+import { reactive } from 'vue'
 import SearchIndex from './SearchIndex.vue'
+import { searchWithinArea as mockSearchWithinArea } from '../../services/geo/geoSearch.js'
 import {
 	navigationStore as mockNavigationStore,
 	objectStore as mockObjectStore,
@@ -71,6 +73,15 @@ jest.mock(
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
 )
 
+jest.mock('../object/MapView.vue', () => ({
+	__esModule: true,
+	default: { name: 'MapView', render: () => null },
+}))
+jest.mock('../../services/geo/geoSearch.js', () => ({
+	__esModule: true,
+	searchWithinArea: jest.fn(),
+}))
+
 const computedCall = (key, ctx) => SearchIndex.computed[key].call(ctx)
 const methodCall = (key, ctx, ...args) => SearchIndex.methods[key].call(ctx, ...args)
 
@@ -112,6 +123,13 @@ describe('SearchIndex — presentation dispatch (REQ-VIEW-PRES-05)', () => {
 	it('presentationType is "table" for a legacy view with no presentation block (REQ-VIEW-PRES-01)', () => {
 		const ctx = { activeView: { id: 'v1', name: 'Legacy view' } }
 		expect(computedCall('presentationType', ctx)).toBe('table')
+	})
+
+	it('presentationType reflects a tree view, and treeConfig its labelField and fields', () => {
+		const ctx = { activeView: { presentation: { viewType: 'tree', tree: { labelField: 'name', fields: ['code'] } } } }
+		expect(computedCall('presentationType', ctx)).toBe('tree')
+		expect(computedCall('treeConfig', ctx)).toEqual({ labelField: 'name', fields: ['code'] })
+		expect(computedCall('treeConfig', { activeView: null })).toEqual({})
 	})
 
 	it('presentationType reflects a kanban view', () => {
@@ -620,5 +638,129 @@ describe('SearchIndex — gallery presentation (records-gallery-view)', () => {
 		SearchIndex.watch.activeViewId.call(ctx, 'v9')
 		expect(ctx.requestGalleryCover).toHaveBeenCalledTimes(1)
 		expect(ctx.fetchKanbanBoard).not.toHaveBeenCalled()
+	})
+
+	it('a card opens its record without the cover it was given for display', () => {
+		Object.assign(mockObjectStore, { setObjectItem: jest.fn() })
+		const ctx = { activeView: { presentation: { viewType: 'gallery', gallery: { coverField: 'foto' } } }, normalizedObjects: [{ id: 'r1', foto: { id: 9 }, '@self': { id: 'r1', register: 1, schema: 2 } }], normalizedSchema: schema }
+		ctx.galleryConfig = computedCall('galleryConfig', ctx)
+		const [card] = computedCall('galleryObjects', ctx)
+
+		methodCall('handleRowClick', ctx, methodCall('recordOfCard', ctx, card))
+
+		expect(mockObjectStore.setObjectItem).toHaveBeenCalledWith({ id: 'r1', foto: { id: 9 }, '@self': { id: 'r1', register: 1, schema: 2 } })
+		expect(mockNavigationStore.setModal).toHaveBeenCalledWith('viewObject')
+	})
+})
+
+describe('SearchIndex — map presentation and area search (REQ-GEOMAP-002)', () => {
+	const POLYGON = { type: 'Polygon', coordinates: [[[5.1, 52.0], [5.2, 52.0], [5.2, 52.1], [5.1, 52.0]]] }
+	const geoSchema = { properties: { title: { type: 'string' }, location: { type: 'object', format: 'geo:point' } } }
+
+	beforeEach(() => {
+		mockSearchWithinArea.mockReset()
+		Object.assign(mockObjectStore, {
+			searchParams: { register: 'reg-1', schema: 'schema-1', _search: 'park', filters: { status: ['open'] } },
+		})
+	})
+
+	it('has no geometry property, and so no map toggle, for a schema without one', () => {
+		expect(computedCall('geoProperty', { normalizedSchema: { properties: { title: { type: 'string' } } } })).toBeNull()
+		expect(computedCall('geoProperty', { normalizedSchema: null })).toBeNull()
+	})
+
+	it('finds the geometry property by format or by type', () => {
+		expect(computedCall('geoProperty', { normalizedSchema: geoSchema })).toBe('location')
+		expect(computedCall('geoProperty', { normalizedSchema: { properties: { area: { type: 'geo:polygon' } } } })).toBe('area')
+	})
+
+	it('renders the map only when it was opened for a schema with a geometry property', () => {
+		expect(computedCall('presentationType', { mapOpen: true, geoProperty: 'location', activeView: null })).toBe('map')
+		expect(computedCall('presentationType', { mapOpen: true, geoProperty: null, activeView: null })).toBe('table')
+		expect(computedCall('presentationType', { mapOpen: false, geoProperty: 'location', activeView: null })).toBe('table')
+	})
+
+	it('sends a drawn polygon to geo-search with the active filters and shows only the records inside', async () => {
+		mockSearchWithinArea.mockResolvedValue([{ '@self': { id: 'r-1' }, title: 'Inside' }])
+		const ctx = { geoProperty: 'location', mapArea: null, mapAreaObjects: null, mapLoading: false, mapError: '' }
+
+		await methodCall('handleMapArea', ctx, POLYGON)
+
+		expect(mockSearchWithinArea).toHaveBeenCalledWith(mockObjectStore.searchParams, POLYGON, 'location')
+		expect(ctx.mapAreaObjects).toEqual([{ '@self': { id: 'r-1' }, title: 'Inside' }])
+		expect(ctx.mapLoading).toBe(false)
+		expect(computedCall('mapObjects', { ...ctx, normalizedObjects: [{ id: 'r-2' }] })).toEqual([{ '@self': { id: 'r-1' }, title: 'Inside', id: 'r-1' }])
+	})
+
+	it('shows the records inside a drawn area on a reactive component, whose mapArea reads back as a proxy', async () => {
+		mockSearchWithinArea.mockResolvedValue([{ '@self': { id: 'r-1' }, title: 'Inside' }])
+		const ctx = reactive({ geoProperty: 'location', mapArea: null, mapAreaObjects: null, mapLoading: false, mapError: '' })
+
+		await methodCall('handleMapArea', ctx, POLYGON)
+
+		expect(ctx.mapAreaObjects).toEqual([{ '@self': { id: 'r-1' }, title: 'Inside' }])
+	})
+
+	it('drops the answer for an area that was replaced while it was asked', async () => {
+		let answerFirst
+		mockSearchWithinArea.mockImplementationOnce(() => new Promise((resolve) => { answerFirst = resolve }))
+		mockSearchWithinArea.mockResolvedValueOnce([{ '@self': { id: 'r-2' }, title: 'Second' }])
+		const ctx = reactive({ geoProperty: 'location', mapArea: null, mapAreaObjects: null, mapLoading: false, mapError: '' })
+		const second = { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] }
+
+		const first = methodCall('handleMapArea', ctx, POLYGON)
+		await methodCall('handleMapArea', ctx, second)
+		answerFirst([{ '@self': { id: 'r-1' }, title: 'First' }])
+		await first
+
+		expect(ctx.mapAreaObjects).toEqual([{ '@self': { id: 'r-2' }, title: 'Second' }])
+	})
+
+	it('says so when geo-search fails, and shows no records rather than the whole list', async () => {
+		mockSearchWithinArea.mockRejectedValue(new Error('422'))
+		const ctx = { geoProperty: 'location', mapArea: null, mapAreaObjects: null, mapLoading: false, mapError: '' }
+
+		await methodCall('handleMapArea', ctx, POLYGON)
+
+		expect(ctx.mapError).toBe('The area search failed.')
+		expect(ctx.mapAreaObjects).toEqual([])
+	})
+
+	it('restores the unfiltered list when the drawing is cleared or the map is closed', () => {
+		const ctx = { mapOpen: true, mapArea: POLYGON, mapAreaObjects: [{ id: 'r-1' }], mapError: 'x' }
+		ctx.handleMapAreaCleared = () => methodCall('handleMapAreaCleared', ctx)
+
+		methodCall('handleMapAreaCleared', ctx)
+		expect(ctx.mapAreaObjects).toBeNull()
+		expect(computedCall('mapObjects', { ...ctx, normalizedObjects: [{ id: 'r-2' }] })).toEqual([{ id: 'r-2' }])
+
+		ctx.mapArea = POLYGON
+		methodCall('closeMap', ctx)
+		expect(ctx.mapOpen).toBe(false)
+		expect(ctx.mapArea).toBeNull()
+	})
+})
+
+describe('SearchIndex — column sort header (case-insensitive-ordering 1.4)', () => {
+	it('reads the sorted column back from the _order the search sends', () => {
+		mockObjectStore.searchParams = { register: 'r', schema: 's', _order: { title: 'desc' } }
+		expect(computedCall('headerSort', {})).toEqual({ sortKey: 'title', sortOrder: 'desc' })
+
+		mockObjectStore.searchParams = { register: 'r', schema: 's' }
+		expect(computedCall('headerSort', {})).toEqual({ sortKey: null, sortOrder: 'asc' })
+	})
+})
+
+describe('SearchIndex — the register the index page is given', () => {
+	it('is the searched register\'s id as a string, never the register object', () => {
+		Object.assign(mockObjectStore, { searchRegister: { id: 51, title: 'Zaken' }, searchParams: { register: 51 } })
+		expect(computedCall('searchRegisterId', {})).toBe('51')
+	})
+
+	it('falls back to the search scope, and to empty without either', () => {
+		Object.assign(mockObjectStore, { searchRegister: null, searchParams: { register: 7 } })
+		expect(computedCall('searchRegisterId', {})).toBe('7')
+		Object.assign(mockObjectStore, { searchRegister: null, searchParams: {} })
+		expect(computedCall('searchRegisterId', {})).toBe('')
 	})
 })

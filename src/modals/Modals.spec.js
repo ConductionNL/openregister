@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import Modals from './Modals.vue'
 import { navigationStore } from '../store/store.js'
 
@@ -31,6 +31,7 @@ jest.mock('./object/MergeObject.vue', () => ({ __esModule: true, default: { name
 jest.mock('./object/MigrationObject.vue', () => ({ __esModule: true, default: { name: 'MigrationObject', template: '<i class="MigrationObject" />' } }))
 jest.mock('./object/SaveRecordTemplate.vue', () => ({ __esModule: true, default: { name: 'SaveRecordTemplate', template: '<i class="SaveRecordTemplate" />' } }))
 jest.mock('./object/UploadObject.vue', () => ({ __esModule: true, default: { name: 'UploadObject', template: '<i class="UploadObject" />' } }))
+jest.mock('../dialogs/recordImport/RecordImportDialog.vue', () => ({ __esModule: true, default: { name: 'RecordImportDialog', template: '<i class="RecordImportDialog" />' } }))
 jest.mock('./object/ViewObject.vue', () => ({ __esModule: true, default: { name: 'ViewObject', template: '<i class="ViewObject" />' } }))
 jest.mock('./objectAuditTrail/ViewObjectAuditTrail.vue', () => ({ __esModule: true, default: { name: 'ViewObjectAuditTrail', template: '<i class="ViewObjectAuditTrail" />' } }))
 jest.mock('./organisation/DeleteOrganisation.vue', () => ({ __esModule: true, default: { name: 'DeleteOrganisation', template: '<i class="DeleteOrganisation" />' } }))
@@ -57,34 +58,34 @@ jest.mock('./webhook/ViewWebhookLog.vue', () => ({ __esModule: true, default: { 
 
 // Mounted regardless of the navigation state (they gate themselves).
 const ALWAYS = [
-	'ImportRegister',
 	'ExportRegister',
 	'PublishRegister',
 	'DeleteRegister',
 	'DeleteConfiguration',
-	'ImportConfiguration',
 	'ExportConfiguration',
 	'PublishConfiguration',
 	'PublishToGitlab',
 	'DeleteSchema',
-	'UploadSchema',
 	'DeleteSchemaProperty',
 	'EditSource',
 	'DeleteSource',
 	'DeleteObject',
 	'LockObject',
-	'ViewObject',
 	'UploadFiles',
-	'ViewSource',
 	'ViewConfiguration',
 ]
 
 // Mounted only while navigationStore[key] === value.
 const GATED = [
+	['ImportRegister', 'modal', 'importRegister'],
+	['ViewObject', 'modal', 'viewObject'],
+	['ViewSource', 'modal', 'viewSource'],
 	['EditConfiguration', 'modal', 'editConfiguration'],
+	['ImportConfiguration', 'modal', 'importConfiguration'],
 	['ExploreSchema', 'dialog', 'exploreSchema'],
 	['EditSchema', 'modal', 'editSchema'],
 	['ValidateSchema', 'dialog', 'validateSchema'],
+	['UploadSchema', 'modal', 'uploadSchema'],
 	['DeleteSchemaObjects', 'dialog', 'deleteSchemaObjects'],
 	['EditSchemaProperty', 'modal', 'editSchemaProperty'],
 	['MergeObject', 'modal', 'mergeObject'],
@@ -93,6 +94,7 @@ const GATED = [
 	['SaveRecordTemplate', 'dialog', 'saveRecordTemplate'],
 	['DownloadObject', 'modal', 'downloadObject'],
 	['UploadObject', 'modal', 'uploadObject'],
+	['RecordImportDialog', 'dialog', 'recordImport'],
 	['ViewObjectAuditTrail', 'modal', 'viewObjectAuditTrail'],
 	['MassDeleteObject', 'dialog', 'massDeleteObject'],
 	['MassValidateObjects', 'dialog', 'massValidateObjects'],
@@ -125,18 +127,34 @@ describe('Modals host', () => {
 		navigationStore.dialog = false
 	})
 
-	it('mounts only the self-gating modals when nothing is open', () => {
-		expect(rendered(mount(Modals)).sort()).toEqual([...ALWAYS].sort())
+	it('mounts only the self-gating modals when nothing is open', async () => {
+		const wrapper = mount(Modals)
+		await flushPromises()
+		expect(rendered(wrapper).sort()).toEqual([...ALWAYS].sort())
 	})
 
-	it.each(GATED)('mounts %s only while navigation %s is %s', (name, key, value) => {
+	it.each(GATED)('mounts %s only while navigation %s is %s', async (name, key, value) => {
 		navigationStore[key] = value
-		const extra = rendered(mount(Modals)).filter((n) => !ALWAYS.includes(n))
+		const wrapper = mount(Modals)
+		await flushPromises()
+		const extra = rendered(wrapper).filter((n) => !ALWAYS.includes(n))
 		expect(extra).toEqual([name])
 	})
 
-	it('does not mount a gated modal for the other navigation key', () => {
+	it('does not mount a gated modal for the other navigation key', async () => {
 		navigationStore.dialog = 'editSchema'
-		expect(rendered(mount(Modals))).not.toContain('EditSchema')
+		const wrapper = mount(Modals)
+		await flushPromises()
+		expect(rendered(wrapper)).not.toContain('EditSchema')
+	})
+
+	it('loads a gated modal only once it is opened', async () => {
+		const wrapper = mount(Modals)
+		await flushPromises()
+		expect(rendered(wrapper)).not.toContain('ViewObject')
+
+		navigationStore.modal = 'viewObject'
+		await flushPromises()
+		expect(rendered(wrapper)).toContain('ViewObject')
 	})
 })

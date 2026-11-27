@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Controller\Support\ObjectShow;
 use OCA\OpenRegister\Controller\Support\ShowServices;
@@ -86,6 +87,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Formats\UuidFormat
  */
 class ObjectsControllerShowGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 	private const FIXTURE = __DIR__ . '/fixtures/objects-show-golden.json';
 
 	/** @var array<string, mixed>|null */
@@ -242,6 +245,7 @@ class ObjectsControllerShowGoldenTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$groups = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groups);
 		$groups->method('getUserGroupIds')->willReturn((($setup['admin'] ?? false) === true) ? ['admin'] : ['staff']);
 
 		return ObjectsControllerFactory::create(

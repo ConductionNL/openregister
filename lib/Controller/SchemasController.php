@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\EntityChangesPage;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DeclarationRefusalInterface;
@@ -84,6 +85,7 @@ use OCA\OpenRegister\Service\SchemaImport\SchemaImportServiceInterface;
 use OCA\OpenRegister\Service\Schemas\ApprovalChainDeclarations;
 use OCA\OpenRegister\Service\Schemas\FacetResultCacheClearerInterface;
 use OCA\OpenRegister\Exception\UniqueHintException;
+use OCA\OpenRegister\Service\Schemas\IdentityBreachCounter;
 use OCA\OpenRegister\Service\Schemas\PropertyTitles;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
 use OCA\OpenRegister\Service\Schemas\SchemaCatalogue;
@@ -96,6 +98,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IRequest;
@@ -365,6 +368,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		// Get request parameters for filtering and searching.
@@ -635,6 +639,8 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			return $this->resolveSchemaInRegister(id: $id, registerParam: (string)$registerParam);
 		}
 
+		// No register in this request: GET /api/schemas/{id} without ?register= stays global (Decision 3);
+		// with it, resolveSchemaInRegister() ran first.
 		$schema = $this->schemaMapper->find(id: $id, _extend: [], _multitenancy: false);
 
 		// Leave evidence when a slug was ambiguous and nobody said which register they
@@ -765,6 +771,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show($id): JSONResponse {
 		try {
@@ -782,6 +789,31 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			return $this->showFailure(e: $e, id: $id);
 		}//end try
 	}//end show()
+
+	/**
+	 * The schema's edit history: its schema.created, schema.updated and
+	 * schema.deleted audit rows, newest first, with `_page` and `_limit`
+	 * (default 20, at most 100).
+	 *
+	 * Administrator only, by carrying no `NoAdminRequired`, as `GET /api/audit-trails`.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/audit-trail-immutable/spec.md#requirement-administrators-read-an-entitys-change-history
+	 */
+	public function changes(int $id): JSONResponse {
+		$page = (new EntityChangesPage(auditTrails: $this->auditTrailMapper))->read(
+			kind: 'schema',
+			id: $id,
+			params: $this->request->getParams()
+		);
+
+		return new JSONResponse(data: $page);
+	}//end changes()
 
 	/**
 	 * Log a failed schema read and answer with the generic error response.
@@ -1714,7 +1746,12 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			return $invalid;
 		}
 
-		$update = ['id' => $id, 'data' => $data, 'oldAuthorization' => $existingSchema->getAuthorization()];
+		$update = [
+			'id' => $id,
+			'data' => $data,
+			'oldAuthorization' => $existingSchema->getAuthorization(),
+			'oldConfiguration' => $existingSchema->getConfiguration(),
+		];
 		return $this->classifyAndWriteUpdate(existing: $existingSchema, update: $update);
 	}//end applyUpdate()
 
@@ -2028,6 +2065,13 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			$extra['flowWarnings'] = $flowWarnings;
 		}
 
+		// A newly declared identity that existing objects break is a warning
+		// beside the saved schema, with the count (modelling-composite-identity 1.2).
+		$identityWarning = $this->identityBreachWarning(schema: $updatedSchema, oldConfiguration: ($update['oldConfiguration'] ?? null));
+		if ($identityWarning !== null) {
+			$extra['identityWarnings'] = [$identityWarning];
+		}
+
 		if ($update['forms'] !== null && $update['forms']['affected'] !== []) {
 			return new JSONResponse(
 				data: array_merge(
@@ -2040,6 +2084,34 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 
 		return new JSONResponse(data: array_merge($updatedSchema->jsonSerialize(), $extra));
 	}//end writeSchemaUpdate()
+
+	/**
+	 * How many existing objects break a newly declared identity; a failure never fails the save.
+	 *
+	 * @param Schema     $schema           The updated schema
+	 * @param array|null $oldConfiguration The configuration before the update
+	 *
+	 * @return array{identity: string, breaches: int, capped: bool, message: string}|null The warning, or null
+	 *
+	 * @spec openspec/changes/modelling-composite-identity/tasks.md#task-1.2
+	 */
+	private function identityBreachWarning(Schema $schema, ?array $oldConfiguration): ?array {
+		try {
+			$counter = $this->container->get(IdentityBreachCounter::class);
+			if ($counter instanceof IdentityBreachCounter === false) {
+				return null;
+			}
+
+			return $counter->warningFor(schema: $schema, previousConfiguration: $oldConfiguration);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasController] The new identity could not be checked against the existing objects',
+				context: ['schema_id' => $schema->getId(), 'error' => $e->getMessage()]
+			);
+
+			return null;
+		}
+	}//end identityBreachWarning()
 
 	/**
 	 * The published flow triggers a declared rename leaves watching the old name; a failure never fails the save.
@@ -2342,8 +2414,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			// Return 409 Conflict for cascade protection (objects still attached).
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
 		} catch (\Exception $e) {
-			// Return 500 for other errors.
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Schema deletion failed');
 		}//end try
 	}//end destroy()
 
@@ -2969,8 +3040,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			// Return a 404 error if the target schema doesn't exist.
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			// Return a 500 error for other exceptions.
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Related schemas read failed');
 		}//end try
 	}//end related()
 
@@ -3013,6 +3083,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
 	 */
 	private function outgoingSchemas(int|string $id): array {
+		// Stays global: /api/schemas/{id}/related names no register, and a schema is not owned by one.
 		$targetSchema = $this->schemaMapper->find($id, _multitenancy: false);
 		$properties = $targetSchema->getProperties() ?? [];
 
@@ -3112,7 +3183,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Schema stats read failed');
 		}//end try
 	}//end stats()
 
@@ -3132,7 +3203,10 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 * @no-admin-idor-exempt Read-only index names of a shared schema *definition*'s storage table,
 	 * the same posture as stats(); exposes no object contents and no per-user data. No IDOR vector.
 	 *
-	 * @return JSONResponse `{results: [{register, indexes: [{name, property, column, kind, flag}]}]}`, 404 for an unknown schema
+	 * `textSearchIndex` says whether this instance can build a text-search index
+	 * at all, so the property editor can explain a disabled switch.
+	 *
+	 * @return JSONResponse `{results: [{register, indexes: [{name, property, column, kind, flag}]}], textSearchIndex: bool}`, 404 for an unknown schema
 	 *
 	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
 	 *
@@ -3141,6 +3215,8 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	public function indexes(int|string $id): JSONResponse {
 		try {
 			// Metadata-read bypass, as stats(): the schema definition is a catalogue read.
+			// Stays global: /api/schemas/{id}/indexes names no register; its registers are listed only after the
+			// schema is found.
 			$schema  = $this->schemaMapper->find($id, _multitenancy: false);
 			$results = [];
 			foreach ($this->registerMapper->getAllRegisterIdsWithSchema(schemaId: (int)$schema->getId()) as $registerId) {
@@ -3151,11 +3227,16 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 				];
 			}
 
-			return new JSONResponse(data: ['results' => $results]);
+			return new JSONResponse(
+				data: [
+					'results' => $results,
+					'textSearchIndex' => $this->objectEntityMapper->canBuildTextSearchIndex(),
+				]
+			);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
 		} catch (Exception $e) {
-			return $this->errorResponse(e: $e);
+			return $this->handleApiException(e: $e, context: 'Schema indexes read failed');
 		}//end try
 	}//end indexes()
 
@@ -3304,6 +3385,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
 	 *   (Requirement: Resolution is null-safe across installed schemas)
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function resolveByImplements(): JSONResponse {
 		$uri = (string)($this->request->getParam('uri', ''));
@@ -3736,6 +3818,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 		try {
 			// Metadata read: a schema's own declaration is catalogue data, scoped
 			// the same way the sibling `related` endpoint scopes it.
+			// Stays global: /api/schemas/{id}/list-presentation names no register.
 			$schema = $this->schemaMapper->find($id, _multitenancy: false);
 		} catch (\Throwable $e) {
 			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);

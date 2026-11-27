@@ -194,10 +194,10 @@
         "((in(t.title,:p1[{\"eq\":\"a\"},102])) OR t.title IS NULL)"
     ],
     "mysql array": [
-        "COALESCE(t.tags, '[]')::jsonb @> :p1[\"[\\\"x\\\"]\",2]"
+        "JSON_CONTAINS(COALESCE(t.tags, '[]'), :p1[\"[\\\"x\\\"]\",2])"
     ],
     "mysql array list": [
-        "composite(COALESCE(t.tags, '[]')::jsonb @> :p1[\"[\\\"x\\\"]\",2] | COALESCE(t.tags, '[]')::jsonb @> :p2[\"[\\\"y\\\"]\",2])"
+        "composite(JSON_CONTAINS(COALESCE(t.tags, '[]'), :p1[\"[\\\"x\\\"]\",2]) | JSON_CONTAINS(COALESCE(t.tags, '[]'), :p2[\"[\\\"y\\\"]\",2]))"
     ],
     "mysql array contains": [
         "JSON_CONTAINS(COALESCE(t.tags, '[]'), :p1[\"[{\\\"system\\\":\\\"decos\\\",\\\"identifier\\\":\\\"Z-1\\\",\\\"public\\\":true}]\",2])"

@@ -17,14 +17,12 @@ the answer SHALL be 422 with the validation errors.
 - **WHEN** the editor calls `POST /api/objects/contracten/contract/{id}/revert` with `{"version": "1.0.1"}`
 - **THEN** the record holds the values of 1.0.1 as a new version
 - **AND** the audit trail has an entry with action `revert` and `revertedToVersion` 1.0.1
-- @e2e exclude {specified only; task 3.1 adds tests/e2e/ci/revert-through-save.spec.ts}
 
 #### Scenario: a version the schema no longer accepts is not restored
 
 - **GIVEN** schema `contract` made `einddatum` required after version 1.0.1, which has no `einddatum`
 - **WHEN** the editor reverts to 1.0.1
 - **THEN** the answer is 422 naming `einddatum`, and the record is unchanged
-- @e2e exclude {specified only; covered by RevertHandlerTest in task 1.3}
 
 ### Requirement: A refused revert answers a fixed sentence
 

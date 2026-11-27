@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 257;
+	private const LISTENER_COUNT = 288;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -36,9 +36,34 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * Last changed when Search started contributing the widget declaration check: one
 	 * SearchDeclarationChecksListener registration appended to the SchemaDeclarationChecksEvent
 	 * listeners; every other registration is unchanged and in the same order. Then two
-	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent).
+	 * TaskAbsenceListener registrations (OutOfOfficeStartedEvent, OutOfOfficeEndedEvent). The platform
+	 * share provider then appended one PlatformShareRoutingListener registration on
+	 * BeforeShareCreatedEvent in AccessListenerRegistrar. Then the ServiceAccountLoginListener
+	 * (PostLoginEvent) was added (count 258 -> 259). The new-notes notification then added
+	 * one AnnotationNotificationListener registration on ObjectNoteAddedEvent (count 259 -> 260).
+	 * Then SlotOccupantAuditListener took the three person-link events in the Access slot
+	 * (grants-that-follow-a-slot-a-relation-or-a-reason, count 260 -> 263).
+	 * Then the Collaboration team resource provider registration (CoreListenerRegistrar::teamResources)
+	 * (count 263 -> 264). The deadline warning then appended one TaskDueSoonListener
+	 * registration on FlowTimerFiredEvent, after CaseItemTimerListener (264 -> 265).
+	 * Then the cross-app semantic reference listeners (8 registrations, count 265 -> 273).
+	 * Then three FlowCalendarIndexListener registrations after FlowTriggerListener on the object
+	 * created, updated and deleted events (273 -> 276).
+	 * The write validator then listens on ObjectCreatingEvent and ObjectUpdatingEvent (count 276 -> 278).
+	 * Then ObjectFolderReshareGuard on BeforeShareCreatedEvent, right after
+	 * PlatformShareRoutingListener in the same slot (count 278 -> 279).
+	 * Then the ChangeGateListener took the decided approval sequences too,
+	 * on TaskSequenceCompletedEvent after the ApprovalChainAdvanceListener and on the new
+	 * TaskSequenceRejectedEvent (279 -> 281).
+	 * Then one PersonalTokenGrantRevokedListener registration on TokenInvalidatedEvent in
+	 * AccessListenerRegistrar (scoped-api-tokens, 281 -> 282).
+	 * Then two JourneyValidationListener registrations (ObjectCreatingEvent, ObjectUpdatingEvent)
+	 * (count 282 -> 284).
+	 * Then EntityEditAuditListener also took the three organisation events
+	 * (history-schema-and-settings-edits-audited), after the register events (count 284 -> 287).
+	 * Then TalkAppScriptListener in FlowsListenerRegistrar (files-leaf-save-to-object, 287 -> 288).
 	 */
-	private const SEQUENCE_SHA256 = '5fa38e2f26d0895bfe07d6ce3c5f25e7356dd3b78d5cb9ded93745b27bf47b31';
+	private const SEQUENCE_SHA256 = '780881a193ff664033a9311356f6d78ba758a5653bf6a19650e3a8086ca713f8';
 
 	/**
 	 * The registration calls, in call order, with every argument.

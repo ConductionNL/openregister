@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
@@ -74,7 +75,10 @@ use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNodeInterface;
@@ -141,8 +145,8 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 
 	private function objects(): ObjectFlowNodes {
 		return new ObjectFlowNodes(
-			new ObjectChangeFlowNodes($this->node('objectWrite', ObjectWriteNodeInterface::class), $this->node('transition', TransitionNodeInterface::class)),
-			new ObjectLookupFlowNodes($this->node('linkObject', LinkObjectNodeInterface::class), $this->node('objectRead', ObjectReadNodeInterface::class), $this->node('auditTrail', AuditTrailNodeInterface::class)),
+			new ObjectChangeFlowNodes($this->node('objectWrite', ObjectWriteNodeInterface::class), $this->node('transition', TransitionNodeInterface::class), $this->node('tagObject', TagObjectNodeInterface::class)),
+			new ObjectLookupFlowNodes($this->node('linkObject', LinkObjectNodeInterface::class), $this->node('objectRead', ObjectReadNodeInterface::class), $this->node('auditTrail', AuditTrailNodeInterface::class), $this->node('extendInput', ExtendInputNodeInterface::class)),
 		);
 	}
 
@@ -158,6 +162,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 			$this->node('sendNotification', SendNotificationNodeInterface::class),
 			$this->node('sendEmail', SendEmailNodeInterface::class),
 			$this->node('sendTalkMessage', SendTalkMessageNodeInterface::class),
+			$this->node('surveyInvite', \OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface::class),
 		);
 	}
 
@@ -187,6 +192,8 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 			$this->node('triggerObject', TriggerObjectNodeInterface::class),
 			$this->node('triggerSchedule', TriggerScheduleNodeInterface::class),
 			$this->node('triggerManual', TriggerManualNodeInterface::class),
+			$this->node('triggerCalendar', TriggerCalendarNodeInterface::class),
+			$this->node('triggerWebhook', TriggerWebhookNodeInterface::class),
 		);
 	}
 
@@ -197,7 +204,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 
 	public function testMessagingListsNotificationEmailTalk(): void {
 		$nodes = $this->messaging()->nodes();
-		$this->assertSame($this->pick(['sendNotification', 'sendEmail', 'sendTalkMessage']), $nodes);
+		$this->assertSame($this->pick(['sendNotification', 'sendEmail', 'sendTalkMessage', 'surveyInvite']), $nodes);
 	}
 
 	public function testHumanTasksListUserTaskThenPortalTask(): void {
@@ -212,7 +219,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 
 	public function testTriggersListObjectScheduleManual(): void {
 		$nodes = $this->triggers()->nodes();
-		$this->assertSame($this->pick(['triggerObject', 'triggerSchedule', 'triggerManual']), $nodes);
+		$this->assertSame($this->pick(['triggerObject', 'triggerSchedule', 'triggerManual', 'triggerCalendar', 'triggerWebhook']), $nodes);
 	}
 
 	public function testActionsFlattenReshapingMessagingHumanThenLocks(): void {
@@ -224,7 +231,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 		$this->assertSame(
 			$this->pick([
 				'flowState', 'map', 'iterate', 'decisionTable',
-				'sendNotification', 'sendEmail', 'sendTalkMessage',
+				'sendNotification', 'sendEmail', 'sendTalkMessage', 'surveyInvite',
 				'userTask', 'portalTask',
 				'lockObject', 'unlockObject',
 			]),
@@ -236,7 +243,7 @@ class ActionAndBoundaryFlowNodeBundleOrderTest extends TestCase {
 		$boundary = new BoundaryFlowNodes($this->cases(), $this->triggers());
 
 		$this->assertSame(
-			$this->pick(['caseOpen', 'caseAdvance', 'triggerObject', 'triggerSchedule', 'triggerManual']),
+			$this->pick(['caseOpen', 'caseAdvance', 'triggerObject', 'triggerSchedule', 'triggerManual', 'triggerCalendar', 'triggerWebhook']),
 			$boundary->nodes()
 		);
 	}

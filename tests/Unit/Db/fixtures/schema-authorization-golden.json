@@ -25,10 +25,17 @@
         "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Conditional authorization 'match' for action 'read' in schema must be an array"
     },
     "validate unsupported operator": {
-        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization match for action 'read' in schema, property 'a' uses the unsupported operator '$regex'; supported are $eq, $ne, $in, $nin, $contains, $exists, $gt, $gte, $lt, $lte"
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization match for action 'read' in schema, property 'a' uses the unsupported operator '$regex'; supported are $eq, $ne, $in, $nin, $contains, $exists, $gt, $gte, $lt, $lte, $memberOf"
     },
     "validate in needs a list": {
         "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization match for action 'read' in schema, property 'a' needs a list as the '$in' operand"
+    },
+    "validate member of": true,
+    "validate member of no property": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization match for action 'read' in schema, property 'a' needs an object naming 'schema' and 'property' as the '$memberOf' operand"
+    },
+    "validate member of a list": {
+        "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization match for action 'read' in schema, property 'a' needs an object naming 'schema' and 'property' as the '$memberOf' operand"
     },
     "validate nin map": {
         "threw": "OCA\\OpenRegister\\Exception\\InvalidAuthorizationRuleException: Authorization match for action 'read' in schema, property 'a' needs a list as the '$nin' operand"

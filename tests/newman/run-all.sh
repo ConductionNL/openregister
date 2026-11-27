@@ -109,11 +109,13 @@ DOMAIN_ORDER=(
     "auth-matrix"
     "error-matrix"
     "files"
+    "file-text-read"
     "referential-integrity"
     "schema-migration"
     "flow-engine"
     "flow-subjects"
     "delegation"
+    "task-delegation-mandate"
     "register-descriptors"
     "working-calendars"
     "object-watchers"
@@ -121,8 +123,20 @@ DOMAIN_ORDER=(
     "duplicate-merge"
     "upsert-on-key"
     "draft-activation"
+    "object-grants"
     "anonymisation-disclosures"
+    "large-file-handling"
+    "organisation-audit"
+    "reviewer-decisions"
     "public-export"
+    "nlgov-conformance"
+    "reply-threading"
+    "licence-plate-detection"
+    "search-dutch-stemming"
+    "scheduled-messages"
+    "run-migration"
+    "lifecycle-side-moves"
+    "import-run-readback"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -139,12 +153,29 @@ declare -A DOMAIN_COLLECTIONS=(
     [auth-matrix]="$REPO_ROOT/tests/integration/openregister-auth-matrix.postman_collection.json"
     [error-matrix]="$REPO_ROOT/tests/integration/openregister-error-matrix.postman_collection.json"
     [files]="$REPO_ROOT/tests/integration/openregister-files-domain.postman_collection.json"
+    # A file's extracted text goes to whoever can open the file: the owner
+    # reads it (200), a stranger gets the same 404 as for an id that does not
+    # exist (search-file-text-and-vector-facade 4.1).
+    [file-text-read]="$REPO_ROOT/tests/integration/openregister-file-text-read.postman_collection.json"
     [agent-cms]="$REPO_ROOT/tests/newman/agent-cms-testing.postman_collection.json"
     [federation]="$REPO_ROOT/tests/federation/federation-tests.postman_collection.json"
     [schema-migration]="$REPO_ROOT/tests/integration/openregister-schema-migration.postman_collection.json"
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
     [flow-engine]="$REPO_ROOT/tests/integration/openregister-flow-engine.postman_collection.json"
+    # A task delegated under a mandate, and substituted for an absence set
+    # through Nextcloud's own out-of-office API
+    # (tasks-delegation-and-substitution 4.1).
+    [task-delegation-mandate]="$REPO_ROOT/tests/integration/openregister-task-delegation-mandate.postman_collection.json"
+    # A reviewer owns their decision on a relation on an object's file:
+    # one decides, a second is refused 403 decision-owned, the decision
+    # reads back (reviewer-owns-their-decisions 1.3).
+    [reviewer-decisions]="$REPO_ROOT/tests/integration/openregister-reviewer-decisions.postman_collection.json"
+    # Messages scheduled on an object: schedule, list, cancel by the author
+    # or one who may update the object, 403/409/404 refusals
+    # (send-at-on-the-messaging-leaf 3.2). Every sendAt is two days out, so
+    # no mail server is needed.
+    [scheduled-messages]="$REPO_ROOT/tests/integration/openregister-scheduled-messages.postman_collection.json"
     # A run's DECLARED subject set, and a task attached to one. Registered
     # here rather than left to a Playwright spec in tests/e2e/api-direct/,
     # for the same reason as `delegation` and `register-descriptors` below:
@@ -222,10 +253,40 @@ declare -A DOMAIN_COLLECTIONS=(
     # 422 with findings, 409, 404), and OCSMiddleware turns a 403 from an
     # OCSController into a 200 that no unit test of the controller can see.
     [draft-activation]="$REPO_ROOT/tests/integration/openregister-draft-activation.postman_collection.json"
+    # an-object-lists-its-grants-with-their-origin 4.4/4.5: /grants is 404 for a caller who cannot read the
+    # record, 403 for a reader, 200 for the owner; /permissions and /shares keep their answers.
+    [object-grants]="$REPO_ROOT/tests/integration/openregister-object-grants.postman_collection.json"
     # REQ-ADI-005/006: file disclosures (reader 200, non-reader 403) and the admin pipeline report.
     [anonymisation-disclosures]="$REPO_ROOT/tests/newman/openregister-anonymisation-disclosures.postman_collection.json"
+    # REQ-LFH-002/003: an upload in parts through the routes. HTTP-shaped: the raw
+    # part bodies, the out-of-order parts and the status between them only exist
+    # over the wire. Under tests/integration so gate-112 (newman-reach) sees it.
+    [large-file-handling]="$REPO_ROOT/tests/integration/openregister-large-file-handling.postman_collection.json"
+    [organisation-audit]="$REPO_ROOT/tests/newman/openregister-organisation-audit.postman_collection.json"
     # Anonymous export: 200 with paging headers for a public schema, 401 not-public, 406 for pdf.
     [public-export]="$REPO_ROOT/tests/integration/openregister-public-export.postman_collection.json"
+    # NLGov API design rules: the report is public (200 anonymous), the probe is administrator-only (403).
+    [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
+    # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
+    [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
+    # detection-dutch-licence-plates 4.1: a plate and a BSN detected by the nl pattern set, Dutch placeholders in
+    # the anonymised copy, and no detection with the set switched off. Saves and restores the whole file settings.
+    [licence-plate-detection]="$REPO_ROOT/tests/integration/openregister-licence-plate-detection.postman_collection.json"
+    # search-dutch-language-quality 1.5: _search=omgevingsvergunningen finds "Omgevingsvergunning bouwen" where the
+    # database stems Dutch (PostgreSQL), and nothing where it does not; the capability says which.
+    [search-dutch-stemming]="$REPO_ROOT/tests/integration/openregister-search-dutch-stemming.postman_collection.json"
+    # migrate-run-between-versions 4.1: a run parked at a user task is migrated to a version that renamed the
+    # step (422 without a mapping, a dry run that writes nothing, then the move), and its task completes there.
+    [run-migration]="$REPO_ROOT/tests/integration/openregister-run-migration.postman_collection.json"
+    # lifecycle-over-reference-field 3.2: a graph lifecycle's side moves (suspend freezes the graph, resume),
+    # the closing form (422 naming the missing result, one save and one audit entry), and a reopen offered to
+    # a manager only. HTTP-shaped: the moves are derived from status type objects in the case's own register,
+    # which unit tests mock, and that read found nothing on a real instance before it was scoped.
+    [lifecycle-side-moves]="$REPO_ROOT/tests/integration/openregister-lifecycle-side-moves.postman_collection.json"
+    # runs-recorded-and-causes-named 4.4: an import run read back after it finished: its header and counts,
+    # a written row naming its object, refused rows with their reasons, the failing rows as CSV, the created
+    # object's audit entry naming the run, and a retry naming the original. Uploads the two CSVs beside it.
+    [import-run-readback]="$REPO_ROOT/tests/integration/openregister-import-run-readback.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

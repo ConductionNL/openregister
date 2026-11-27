@@ -15,16 +15,19 @@
 
 ## 3. Response probe
 
-- [ ] 3.1 Add `lib/Service/Oas/NlGovResponseProbe.php` (at most five self-requests, 10 second timeout each, as the calling administrator) for version-header, transport/security-headers, date-time/timezone and problem-details at response level; store the result in `IAppConfig` under `nlgov_probe_{registerId}`. Verify: `tests/Unit/Service/Oas/NlGovResponseProbeTest.php` with a mocked `IClientService` asserts the request cap and that a digits-only `API-Version` fails the rule.
-- [ ] 3.2 Add the occ command `openregister:api:conformance {register} [--probe]` printing the report as a table or `--output=json`. Verify: `tests/Unit/Command/ApiConformanceCommandTest.php` asserts exit 0 and one line per rule.
+- [x] 3.1 Add `lib/Service/Oas/NlGovResponseProbe.php` (at most five self-requests, 10 second timeout each, as the calling administrator) for version-header, transport/security-headers, date-time/timezone and problem-details at response level; store the result in `IAppConfig` under `nlgov_probe_{registerId}`. Verify: `tests/Unit/Service/Oas/NlGovResponseProbeTest.php` with a mocked `IClientService` asserts the request cap and that a digits-only `API-Version` fails the rule.
+- [x] 3.2 Add the occ command `openregister:api:conformance {register} [--probe]` printing the report as a table or `--output=json`. Verify: `tests/Unit/Command/ApiConformanceCommandTest.php` asserts exit 0 and one line per rule.
 
 ## 4. Report API
 
-- [ ] 4.1 Add `OasController::conformance()`, `conformanceAll()` and `probe()` with routes `GET /api/registers/{id}/oas/conformance`, `GET /api/registers/oas/conformance` and `POST /api/registers/{id}/oas/conformance/probe`; the two reads are `#[PublicPage]` with `#[AnonRateLimit(limit: 30, period: 60)]`, the probe is administrator-only. Verify: `tests/Unit/Controller/OasControllerConformanceTest.php`; a Newman request in `tests/newman/` asserts 200 anonymous on the read and 403 for a non-admin on the probe; hydra gates route-auth and route-reachability pass.
+- [x] 4.1 Add `OasController::conformance()`, `conformanceAll()` and `probe()` with routes `GET /api/registers/{id}/oas/conformance`, `GET /api/registers/oas/conformance` and `POST /api/registers/{id}/oas/conformance/probe`; the two reads are `#[PublicPage]` with `#[AnonRateLimit(limit: 30, period: 60)]`, the probe is administrator-only. Verify: `tests/Unit/Controller/OasControllerConformanceTest.php`; a Newman request in `tests/newman/` asserts 200 anonymous on the read and 403 for a non-admin on the probe; hydra gates route-auth and route-reachability pass.
+
+  Built: `NlGovResponseProbe` (two requests per probe, cap 5, 10 s, no redirects, the caller's Authorization header passed on; session cookies are not, so a probe from the browser reads as anonymous for a non-public register), `NlGovConformanceReport` (one result per rule, counts per result, the probe folded in), `NlGovConformanceService`, `ApiConformanceCommand`, and the three `OasController` routes. Unit-verified in `NlGovResponseProbeTest`, `NlGovConformanceReportTest`, `ApiConformanceCommandTest` and `OasControllerConformanceTest`; the Newman collection `tests/newman/openregister-nlgov-conformance.postman_collection.json` is registered in `run-all.sh` and runs in CI, the hydra route gates were not run here.
 
 ## 5. Register list dialog
 
-- [ ] 5.1 Add `src/dialogs/register/NlGovConformanceDialog.vue` (NcDialog) and a "Check Dutch API design rules" row action in `src/views/register/RegistersIndex.vue`; the "Probe responses" button shows only for administrators. Verify: `src/dialogs/register/NlGovConformanceDialog.spec.js` renders a report fixture grouped by result.
+- [x] 5.1 Add `src/dialogs/register/NlGovConformanceDialog.vue` (NcDialog) and a "Check Dutch API design rules" row action in `src/views/register/RegistersIndex.vue`; the "Probe responses" button shows only for administrators. Verify: `src/dialogs/register/NlGovConformanceDialog.spec.js` renders a report fixture grouped by result.
+  - Built: the dialog reads `GET /api/registers/{id}/oas/conformance` and groups the rules fail, deviation, manual, not-probed, pass (empty groups left out, an unknown result last), with the findings and the declared deviation reason per rule; "Probe responses" shows only when `getCurrentUser().isAdmin` and posts to `/conformance/probe`, keeping the report when the probe fails. The row action sits after "Download API Specification" in `RegistersIndex.vue`. Strings in en, nl and de. Verified by `src/dialogs/register/NlGovConformanceDialog.spec.js` (a report fixture grouped by result, the probe, the hidden button for a non-administrator, both failures) and `RegistersIndex.actions.golden.spec.js` (the entry opens the dialog for the clicked register).
 
 ## 6. CI lint
 
@@ -32,8 +35,19 @@
 
 ## 7. Docs and end-to-end test
 
-- [ ] 7.1 Document the report, the marker, the probe, the occ command and each declared deviation with its reason in `docs/features/api-generation.md`. Verify: `npm run build` in `docs/` succeeds and the page names ruleset 2.2.1.
-- [ ] 7.2 Add `tests/e2e/ci/nl-api-design-rules.spec.ts`: an anonymous read of the report and the marker, an administrator probing from the register list dialog, and a non-administrator refused on the probe. Verify: the spec runs green in the Playwright CI project.
+- [x] 7.1 Document the report, the marker, the probe, the occ command and each declared deviation with its reason in `docs/features/api-generation.md`. Verify: `npm run build` in `docs/` succeeds and the page names ruleset 2.2.1.
+- [x] 7.2 Add `tests/e2e/ci/nl-api-design-rules.spec.ts`: an anonymous read of the report and the marker, an administrator probing from the register list dialog, and a non-administrator refused on the probe. Verify: the spec runs green in the Playwright CI project.
+  - Built: `tests/e2e/ci/nl-api-design-rules.spec.ts`, 5 tests, 1 file, tagged to seven scenarios. An anonymous integrator
+    reads every rule once with one of the five results, the counts adding up to the rules, the three response rules
+    `not-probed` and `/core/uri-version` a deviation naming `API-Version`; a register whose version is `1.0` fails
+    `/core/semver` on `info.version`; the marker carries `2.2.1`, `/core/http-methods` under pass and the deviation;
+    `e2e-other` is refused the probe with 403 and nothing is probed; an administrator switches the register list to the
+    table, chooses "Check Dutch API design rules", presses "Probe responses", and the dialog and a later read of the
+    report agree on the probed result and the probe time. 5 passed, three runs, sandbox Nextcloud 34 on PostgreSQL 16.
+  - The rule count is read from the report rather than written as 34: the catalogue holds 35 rules (its own test pins
+    35), so the spec's "34 entries" is out of date. The trailing-slash scenario stays a unit test: the generator writes
+    no such path.
+  - The action is in the table view's row menu only; the register cards' menu does not carry it.
 
 ## Acceptance
 

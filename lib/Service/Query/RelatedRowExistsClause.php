@@ -103,6 +103,16 @@ final class RelatedRowExistsClause {
 	private const NUMERIC_PATTERN = '^-?[0-9]+(\\.[0-9]+)?$';
 
 	/**
+	 * The identifier quote per engine: MariaDB reads a double-quoted name as a string literal.
+	 *
+	 * @var array<string, string>
+	 */
+	private const IDENTIFIER_QUOTES = [
+		self::ENGINE_POSTGRES => '"',
+		self::ENGINE_MARIADB  => '`',
+	];
+
+	/**
 	 * The guarded numeric comparison per engine: field expression (1), placeholder (2), number pattern (3), operator (4).
 	 *
 	 * @var array<string, string>
@@ -168,6 +178,52 @@ final class RelatedRowExistsClause {
 	}//end render()
 
 	/**
+	 * The conditions joining one related row to the outer row, without the block's own conditions.
+	 *
+	 * The join, the soft-delete exclusion and the related schema's access
+	 * predicate, exactly as the EXISTS clause carries them, for a query that
+	 * joins the related row instead of testing for it (a facet over a
+	 * referenced field groups by the related row's value).
+	 *
+	 * @param RelatedRowFilter   $filter   The filter naming the schema, the reference and its shape.
+	 * @param RelatedRowSubquery $subquery The related table, outer alias and access predicate.
+	 *
+	 * @return array{sql: string, parameters: array<string, mixed>} The ON condition and its parameters.
+	 *
+	 * @throws InvalidArgumentException When the access predicate is missing.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public function joinOn(RelatedRowFilter $filter, RelatedRowSubquery $subquery): array {
+		if (trim($subquery->inner->accessPredicate) === '') {
+			throw new InvalidArgumentException(
+				'A related-row join needs the access predicate for the related schema. '
+				. 'Without it rows the caller may not read would be counted.'
+			);
+		}
+
+		$clause = $this->rowConditions(filter: $filter, subquery: $subquery);
+
+		return ['sql' => implode(' AND ', $clause['where']), 'parameters' => $clause['parameters']];
+	}//end joinOn()
+
+	/**
+	 * The SQL expression of a field of the related row.
+	 *
+	 * @param RelatedRowSubquery $subquery The related table and its alias.
+	 * @param string             $field    The field.
+	 *
+	 * @return string The expression.
+	 *
+	 * @throws InvalidArgumentException When the field is not a column name.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	public function innerFieldExpression(RelatedRowSubquery $subquery, string $field): string {
+		return $this->fieldExpression(target: $subquery->target, field: $subquery->innerField(name: $field));
+	}//end innerFieldExpression()
+
+	/**
 	 * Every condition of the filter, in order, with their bindings.
 	 *
 	 * @param RelatedRowFilter   $filter   The parsed filter.
@@ -220,7 +276,7 @@ final class RelatedRowExistsClause {
 			// A magic table IS one schema, so naming it there would imply the
 			// table holds more than one.
 			$parameters[$inner->parameterPrefix . '_schema'] = $filter->schema;
-			$where[] = sprintf('%s."schema" = :%s_schema', $innerAlias, $inner->parameterPrefix);
+			$where[] = sprintf('%s.%s = :%s_schema', $innerAlias, $this->quoteIdentifier(name: 'schema', engine: $target->engine), $inner->parameterPrefix);
 		}
 
 		$where[] = $this->joinCondition(filter: $filter, subquery: $subquery);
@@ -468,7 +524,7 @@ final class RelatedRowExistsClause {
 	 */
 	private function fieldExpression(RelatedRowSqlTarget $target, RelatedRowField $field): string {
 		if ($target->storage === self::STORAGE_COLUMNS) {
-			return sprintf('%s.%s', $field->alias, $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $field->name)));
+			return sprintf('%s.%s', $field->alias, $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $field->name), engine: $target->engine));
 		}
 
 		if ($target->storage === self::STORAGE_JSON) {
@@ -514,6 +570,8 @@ final class RelatedRowExistsClause {
 	 *
 	 * Inverse (`_related`): the related row's property holds the object's uuid.
 	 * Forward (`_referenced`): the object's property holds the related row's uuid.
+	 * Forward through a list (`_ref` on a list property): the object's property
+	 * holds a JSON list of uuids, and the related row's uuid is in it.
 	 *
 	 * @param RelatedRowFilter   $filter   The parsed filter.
 	 * @param RelatedRowSubquery $subquery The engine, the storage shape, and the aliases of the object row and the related row.
@@ -525,6 +583,14 @@ final class RelatedRowExistsClause {
 	private function joinCondition(RelatedRowFilter $filter, RelatedRowSubquery $subquery): string {
 		$target = $subquery->target;
 		$uuid   = $this->metadataColumn(storage: $target->storage, name: 'uuid');
+
+		if ($filter->direction === RelatedRowFilter::DIRECTION_FORWARD && $filter->throughList === true) {
+			return $this->listContains(
+				target: $target,
+				outerField: $subquery->outerField(name: $filter->foreignKey),
+				innerUuid: $subquery->inner->alias . '.' . $uuid
+			);
+		}
 
 		if ($filter->direction === RelatedRowFilter::DIRECTION_FORWARD) {
 			return sprintf(
@@ -544,28 +610,103 @@ final class RelatedRowExistsClause {
 	}//end joinCondition()
 
 	/**
-	 * Quote a column name, refusing anything that is not one.
+	 * Whether the object's JSON list holds the related row's uuid, in the engine's own spelling.
+	 *
+	 * Postgres: jsonb containment of a one-element array, which matches a list
+	 * holding the uuid as one of its strings. MariaDB: `JSON_CONTAINS` with the
+	 * uuid quoted as a JSON string. A list in a magic-table column is read from
+	 * that JSON column; a list in the objects table from the `object` document.
+	 * A NULL or non-list value contains nothing, so its object does not match.
+	 *
+	 * @param RelatedRowSqlTarget $target     The engine and storage shape.
+	 * @param RelatedRowField     $outerField The object's list property.
+	 * @param string              $innerUuid  The related row's uuid column, with its alias.
+	 *
+	 * @return string The join condition.
+	 *
+	 * @throws InvalidArgumentException When the engine or storage is unknown.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
+	 */
+	private function listContains(RelatedRowSqlTarget $target, RelatedRowField $outerField, string $innerUuid): string {
+		$list = $this->listExpression(target: $target, field: $outerField);
+		if ($target->engine === self::ENGINE_POSTGRES) {
+			return sprintf('CAST(%s AS jsonb) @> jsonb_build_array(%s)', $list, $innerUuid);
+		}
+
+		if ($target->engine === self::ENGINE_MARIADB) {
+			return sprintf('JSON_CONTAINS(%s, JSON_QUOTE(%s))', $list, $innerUuid);
+		}
+
+		throw new InvalidArgumentException(
+			sprintf('No related-row SQL for engine \'%s\'.', $target->engine)
+		);
+	}//end listContains()
+
+	/**
+	 * A list property as JSON (not text), in whichever storage holds it.
+	 *
+	 * @param RelatedRowSqlTarget $target The engine and storage shape.
+	 * @param RelatedRowField     $field  The row's alias and the property name.
+	 *
+	 * @return string The SQL expression, yielding JSON.
+	 *
+	 * @throws InvalidArgumentException When the storage or engine is unknown.
+	 */
+	private function listExpression(RelatedRowSqlTarget $target, RelatedRowField $field): string {
+		if ($target->storage === self::STORAGE_COLUMNS) {
+			return $this->fieldExpression(target: $target, field: $field);
+		}
+
+		if ($target->storage !== self::STORAGE_JSON) {
+			throw new InvalidArgumentException(
+				sprintf('No related-row SQL for storage \'%s\'.', $target->storage)
+			);
+		}
+
+		$safe = str_replace("'", "''", $field->name);
+		if ($target->engine === self::ENGINE_POSTGRES) {
+			return sprintf("%s.object -> '%s'", $field->alias, $safe);
+		}
+
+		return sprintf("JSON_EXTRACT(%s.object, '$.%s')", $field->alias, str_replace('\\', '\\\\', $safe));
+	}//end listExpression()
+
+	/**
+	 * Quote a column name in the engine's own spelling, refusing anything that is not one.
 	 *
 	 * A magic-table property becomes a bare identifier in the SQL, not a bound
 	 * parameter, because no engine accepts a placeholder where a column goes.
 	 * So the name is checked rather than escaped: the parser produced it, but
 	 * "the parser produced it" is the reasoning behind most injection, and the
-	 * check costs nothing.
+	 * check costs nothing. Postgres quotes with double quotes; MariaDB with
+	 * backticks, because without ANSI_QUOTES it reads a double-quoted name as a
+	 * string literal and the clause fails to parse.
 	 *
-	 * @param string $name The column name.
+	 * @param string $name   The column name.
+	 * @param string $engine The database engine.
 	 *
 	 * @return string The quoted name.
 	 *
-	 * @throws InvalidArgumentException When the name is not a plain identifier.
+	 * @throws InvalidArgumentException When the name is not a plain identifier, or the engine is unknown.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
-	private function quoteIdentifier(string $name): string {
+	private function quoteIdentifier(string $name, string $engine): string {
 		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*\z/', $name) !== 1) {
 			throw new InvalidArgumentException(
 				sprintf('\'%s\' is not a column name a related-row filter may reference.', $name)
 			);
 		}
 
-		return '"' . $name . '"';
+		$quote = (self::IDENTIFIER_QUOTES[$engine] ?? null);
+		if ($quote === null) {
+			throw new InvalidArgumentException(
+				sprintf('No related-row SQL for engine \'%s\'.', $engine)
+			);
+		}
+
+		return $quote . $name . $quote;
 	}//end quoteIdentifier()
 
 	/**

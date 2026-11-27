@@ -189,6 +189,20 @@ final class TaskInboxCriteria {
 	public readonly bool $includeBlocked;
 
 	/**
+	 * Restrict to the tasks the runs of this flow raised.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $flowId;
+
+	/**
+	 * Restrict to the tasks of this flow node.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $nodeId;
+
+	/**
 	 * Whether open tasks sort before finished ones.
 	 *
 	 * @var bool
@@ -203,6 +217,8 @@ final class TaskInboxCriteria {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 *
+	 * @spec openspec/changes/flow-task-search-provider/specs/unified-search-provider/spec.md#requirement-nextcloud-search-finds-the-flow-tasks-a-user-may-see
 	 */
 	public function __construct(
 		TaskInboxAudience $audience,
@@ -227,6 +243,8 @@ final class TaskInboxCriteria {
 		$this->kind = $selection->filter->kind;
 		$this->term = $selection->filter->term;
 		$this->includeBlocked = $selection->anchor->includeBlocked;
+		$this->flowId = $selection->anchor->flowId;
+		$this->nodeId = $selection->anchor->nodeId;
 		$this->openFirst = $order->openFirst;
 
 	}//end __construct()

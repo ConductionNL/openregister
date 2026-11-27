@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\MappingMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
@@ -51,6 +52,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Service\Flow\FlowTaxonomyVocabulary
  * @uses   \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode
+ * @uses   \OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\FlowNodePresentation
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\LogicNodeBase
  * @uses   \OCA\OpenRegister\Service\Flow\Nodes\MapNode
@@ -59,7 +61,7 @@ use Psr\Log\LoggerInterface;
 class FlowNodeCatalogueParityNodesTest extends TestCase {
 
 	/**
-	 * A registry whose contribution event registers the real map and audit-trail nodes.
+	 * A registry whose contribution event registers the real map, audit-trail and extend-references nodes.
 	 *
 	 * @return FlowNodeRegistry The registry.
 	 */
@@ -72,6 +74,11 @@ class FlowNodeCatalogueParityNodesTest extends TestCase {
 		$nodes = [
 			new MapNode($l10n, $urls, $this->createMock(MappingService::class), $this->createMock(MappingMapperInterface::class)),
 			new AuditTrailNode(
+				objects: $this->createMock(ObjectOperationsInterface::class),
+				userManager: $this->createMock(IUserManager::class),
+				presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls)
+			),
+			new ExtendInputNode(
 				objects: $this->createMock(ObjectOperationsInterface::class),
 				userManager: $this->createMock(IUserManager::class),
 				presentation: new FlowNodePresentation(l10n: $l10n, urls: $urls)
@@ -124,6 +131,16 @@ class FlowNodeCatalogueParityNodesTest extends TestCase {
 			$this->assertSame('Read audit trail', $palette['openregister.audit-trail']['displayName']);
 			$this->assertSame('step', $palette['openregister.audit-trail']['role']);
 			$this->assertSame(['object', 'entry', 'output'], $palette['openregister.audit-trail']['configKeys']);
+		}
+	}
+
+	public function testTheExtendReferencesNodeIsOfferedInBothScopesWithItsConfigKey(): void {
+		foreach ([IManager::SCOPE_ADMIN, IManager::SCOPE_USER] as $scope) {
+			$palette = $this->palette(scope: $scope);
+			$this->assertArrayHasKey('openregister.extend-input', $palette, 'the authoring palette does not offer the extend-references node');
+			$this->assertSame('Extend references', $palette['openregister.extend-input']['displayName']);
+			$this->assertSame('step', $palette['openregister.extend-input']['role']);
+			$this->assertSame(['properties'], $palette['openregister.extend-input']['configKeys']);
 		}
 	}
 }

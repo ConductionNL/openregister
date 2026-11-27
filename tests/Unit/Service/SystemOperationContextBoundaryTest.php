@@ -51,7 +51,8 @@ class SystemOperationContextBoundaryTest extends TestCase {
 	 * boot or under webcron, seeding of shipped seed-data objects, and the
 	 * uniqueness check of ValidateObject, which only counts matching objects
 	 * (so a read or reveal rule cannot hide a duplicate) and returns no object
-	 * data. Adding
+	 * data, and the queued recalculation of dependants' destruction dates, a
+	 * background job that acts for nobody and only re-derives dates. Adding
 	 * an entry means asserting the same of the new caller.
 	 *
 	 * @var string[]
@@ -63,6 +64,10 @@ class SystemOperationContextBoundaryTest extends TestCase {
 		'lib/Repair/SeedVocabularyRegister.php',
 		'lib/Service/ExampleSet/ExampleSetStore.php',
 		'lib/Service/Object/ValidateObject.php',
+		'lib/BackgroundJob/RelatedRetentionRecalculationJob.php',
+		// Run only by occ openregister:redaction-policy:import-filinq (no user to act for): migrates
+		// filinq's always/never lists into the engine's term rules (redaction-policy-as-data).
+		'lib/Service/RedactionPolicy/FilinqPolicyImporter.php',
 	];
 
 	/**

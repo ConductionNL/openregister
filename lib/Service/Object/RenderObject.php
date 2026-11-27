@@ -41,10 +41,10 @@ use OCA\OpenRegister\Db\TranslationSlot;
 use OCA\OpenRegister\Formats\UuidFormat;
 use OCA\OpenRegister\Service\Calculation\CalculationPayload;
 use OCA\OpenRegister\Service\Deletion\RetentionClockService;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectUnreadMarkerInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectWatchMarkersInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\RunnableActionsInterface;
-use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
@@ -655,9 +655,14 @@ class RenderObject implements RenderObjectInterface {
 		}
 
 		$translations = $this->enrichers->translations->translationHandler;
-		$row->setObject(
-			$translations->resolveTranslationsForRender(objectData: $row->getObject(), scope: new TranslationScope(schema: $schema, register: $register))
-		);
+		$stored       = ($row->getObject() ?? []);
+		$resolved     = $translations->resolveTranslationsForRender(objectData: $stored, scope: new TranslationScope(schema: $schema, register: $register));
+		$row->setObject($resolved);
+
+		$name = $translations->translatedName(stored: $stored, resolved: $resolved, schema: $schema, name: $row->getName());
+		if ($name !== null) {
+			$row->setName($name);
+		}
 	}//end translateEntityRow()
 
 	/**
@@ -675,10 +680,23 @@ class RenderObject implements RenderObjectInterface {
 			return $row;
 		}
 
-		return $this->enrichers->translations->translationHandler->resolveTranslationsForRender(
+		$translations = $this->enrichers->translations->translationHandler;
+		$resolved     = $translations->resolveTranslationsForRender(
 			objectData: $row,
 			scope: new TranslationScope(schema: $schema, register: $this->arrayRowRegister(row: $row))
 		);
+
+		$stored = ($row['@self']['name'] ?? null);
+		if (is_string($stored) === false) {
+			$stored = null;
+		}
+
+		$name = $translations->translatedName(stored: $row, resolved: $resolved, schema: $schema, name: $stored);
+		if ($name !== null) {
+			$resolved['@self']['name'] = $name;
+		}
+
+		return $resolved;
 	}//end translateArrayRow()
 
 	/**
@@ -805,7 +823,8 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @param array $rows Result rows by reference, mutated in place.
 	 * @param bool $_rbac Whether this is a user-facing read (true) or system context (false).
-	 *                    Gates ONLY the authorization.read strip and decryption — never writeOnly.
+	 *                    Gates ONLY the authorization.read strip — never writeOnly. Decryption
+	 *                    follows the single-object read: skipped only in a system operation.
 	 *
 	 * @return void
 	 *
@@ -817,11 +836,16 @@ class RenderObject implements RenderObjectInterface {
 			return;
 		}
 
-		// The trusted-internal-read bypass applies to property `authorization.read` and to
-		// decryption ONLY. The writeOnly strip deliberately does not consult it.
+		// The trusted-internal-read bypass applies to property `authorization.read` ONLY.
+		// The writeOnly strip deliberately does not consult it.
 		$pass = new RowRedaction();
 		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		$pass->applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
+		// Decryption follows the single-object read (decryptRenderedProperties): every
+		// rendered read outside a system operation. `_rbac: false` here is an admin's
+		// list (ObjectsController), which reads the same object decrypted on its own.
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+		$pass->decrypt = (SystemOperationContext::isActive() === false);
 
 		foreach ($rows as &$row) {
 			$row = $this->redactedRow(pass: $pass, row: $row);
@@ -868,7 +892,7 @@ class RenderObject implements RenderObjectInterface {
 	}//end planRowRedaction()
 
 	/**
-	 * Decrypt a row's fields when the gated strips apply and the schema encrypts properties.
+	 * Decrypt a row's fields when the pass decrypts and the schema encrypts properties.
 	 *
 	 * Runs AFTER redaction: a field the strip removed is no longer a key, so
 	 * decryptInScope() (which only acts on keys still present) skips it,
@@ -882,8 +906,9 @@ class RenderObject implements RenderObjectInterface {
 	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	private function decryptRedactedRow(RowRedaction $pass, array $data): array {
-		if ($pass->doGated === true
+		if ($pass->decrypt === true
 			&& $this->runtime->extensions->fieldEncryptionHandler !== null
+			&& $pass->schema !== null
 			&& $pass->schema->hasEncryptedProperties() === true
 		) {
 			return $this->runtime->extensions->fieldEncryptionHandler->decryptInScope(
@@ -918,6 +943,8 @@ class RenderObject implements RenderObjectInterface {
 		$this->planRowRedaction(pass: $pass, schemaId: $row->getSchema());
 		if ($pass->doWriteOnly === true || $pass->doGated === true) {
 			$this->redactEntityObject(pass: $pass, row: $row);
+		} else if (is_array($row->getObject()) === true) {
+			$row->setObject($this->decryptRedactedRow(pass: $pass, data: $row->getObject()));
 		}
 
 		$this->maskEntityReveals(entity: $row, schema: $pass->schema);
@@ -972,7 +999,7 @@ class RenderObject implements RenderObjectInterface {
 
 		$this->planRowRedaction(pass: $pass, schemaId: $schemaId);
 		if ($pass->doWriteOnly === false && $pass->doGated === false) {
-			return $this->maskRowReveals(row: $row, schema: $pass->schema);
+			return $this->maskRowReveals(row: $this->decryptRedactedRow(pass: $pass, data: $row), schema: $pass->schema);
 		}
 
 		$row = $this->decryptRedactedRow(pass: $pass, data: $this->filteredArrayRow(pass: $pass, row: $row));
@@ -2078,13 +2105,14 @@ class RenderObject implements RenderObjectInterface {
 	 * @return array<int, array<string, mixed>> The readable records.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#requirement-every-openregister-file-path-honours-the-restriction-req-pfrr-003
+	 * @spec openspec/changes/functional-areas-depend-in-one-direction/specs/backend-modularity/spec.md#requirement-areas-reference-only-lower-areas
 	 */
 	private function withoutRestrictedFiles(array $fileRecords): array {
 		if ($this->runtime->container === null || $fileRecords === []) {
 			return $fileRecords;
 		}
 
-		$verdicts = $this->runtime->container->get(FileRestrictionGuardInterface::class)->readable(
+		$verdicts = $this->runtime->container->get(FileReadRestrictionInterface::class)->readable(
 			fileIds: array_map(static fn (array $record): int => (int)($record['fileid'] ?? 0), $fileRecords)
 		);
 
@@ -3162,6 +3190,15 @@ class RenderObject implements RenderObjectInterface {
 			objectData: $run->data,
 			scope: new TranslationScope(schema: $run->schema, register: $register)
 		);
+		$name      = $this->enrichers->translations->translationHandler->translatedName(
+			stored: $preResolveData,
+			resolved: $run->data,
+			schema: $run->schema,
+			name: $run->entity->getName()
+		);
+		if ($name !== null) {
+			$run->entity->setName($name);
+		}
 		if ($this->shouldAttachLanguageMeta() === false) {
 			return $run->data;
 		}
@@ -4498,7 +4535,8 @@ class RenderObject implements RenderObjectInterface {
 
 		$this->preloadExtendTargets(
 			entity: $run->entity,
-			uuids: $this->collectUuidsForExtend(objectData: $run->objectData, extend: $run->extend)
+			uuids: $this->collectUuidsForExtend(objectData: $run->objectData, extend: $run->extend),
+			extend: $run->extend
 		);
 	}//end preloadOwnExtendTargets()
 
@@ -4536,19 +4574,21 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @param ObjectEntity $entity The entity being extended; its register scopes the load.
 	 * @param array        $uuids  The identifiers to load.
+	 * @param array        $extend The extend list; the schemas its properties reference scope the load first.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function preloadExtendTargets(ObjectEntity $entity, array $uuids): void {
+	private function preloadExtendTargets(ObjectEntity $entity, array $uuids, array $extend = []): void {
 		if (empty($uuids) === true) {
 			return;
 		}
 
 		$preloadedObjects = $this->stores->mappers->objectCacheService->preloadObjects(
 			identifiers: $uuids,
-			registerId: $this->registerIdOf(entity: $entity)
+			registerId: $this->registerIdOf(entity: $entity),
+			schemaIds: $this->extendTargetSchemaIds(entities: [$entity], extend: $extend)
 		);
 		$this->cacheExtendTargets(objects: $preloadedObjects);
 
@@ -5225,7 +5265,7 @@ class RenderObject implements RenderObjectInterface {
 		);
 
 		if (empty($allUuidsToPreload) === false) {
-			$this->cachePreloadedObjects(entities: $entities, uuids: $allUuidsToPreload);
+			$this->cachePreloadedObjects(entities: $entities, uuids: $allUuidsToPreload, extend: $extend);
 		}
 
 		// Batch preload objects that REFERENCE our entities, so extending inverse
@@ -5238,15 +5278,17 @@ class RenderObject implements RenderObjectInterface {
 	 *
 	 * @param array $entities The page of entities, for the register they share.
 	 * @param array $uuids    The UUIDs to load.
+	 * @param array $extend   The extend list; the schemas its properties reference scope the load first.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
 	 */
-	private function cachePreloadedObjects(array $entities, array $uuids): void {
+	private function cachePreloadedObjects(array $entities, array $uuids, array $extend = []): void {
 		$preloadedObjects = $this->stores->mappers->objectCacheService->preloadObjects(
 			identifiers: $uuids,
-			registerId: $this->sharedRegisterIdOf(entities: $entities)
+			registerId: $this->sharedRegisterIdOf(entities: $entities),
+			schemaIds: $this->extendTargetSchemaIds(entities: $entities, extend: $extend)
 		);
 		$this->cacheExtendTargets(objects: $preloadedObjects);
 
@@ -5261,6 +5303,63 @@ class RenderObject implements RenderObjectInterface {
 			]
 		);
 	}//end cachePreloadedObjects()
+
+	/**
+	 * The schemas the extended properties of these entities reference through `$ref`.
+	 *
+	 * Lets a preload read one table per target schema instead of every table in
+	 * the register. Null when any extended property has no resolvable `$ref`
+	 * (or the extend is `all`), because its values could then live anywhere.
+	 *
+	 * @param array $entities The entities being extended.
+	 * @param array $extend   The extend list.
+	 *
+	 * @return list<int>|null The target schema ids, or null when they are not all known.
+	 *
+	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	private function extendTargetSchemaIds(array $entities, array $extend): ?array {
+		$properties = array_filter(
+			array_unique(array_map(fn ($key) => explode('.', (string)$key)[0], $extend)),
+			fn ($name) => str_starts_with($name, '@') === false
+		);
+		if ($properties === [] || in_array('all', $properties, true) === true) {
+			return null;
+		}
+
+		$targets = [];
+		foreach ($entities as $entity) {
+			$schema = null;
+			if ($entity instanceof ObjectEntity === true && $entity->getSchema() !== null) {
+				$schema = $this->getSchema(id: $entity->getSchema());
+			}
+
+			if ($schema === null) {
+				return null;
+			}
+
+			foreach ($properties as $name) {
+				$definition = ($schema->getProperties()[$name] ?? null);
+				$ref = null;
+				if (is_array($definition) === true) {
+					$ref = ($definition['$ref'] ?? ($definition['items']['$ref'] ?? null));
+				}
+
+				$target = null;
+				if (self::isSchemaRef(ref: $ref) === true) {
+					$target = $this->getSchema(id: $ref);
+				}
+
+				if ($target === null) {
+					return null;
+				}
+
+				$targets[$target->getId()] = true;
+			}
+		}//end foreach
+
+		return array_keys($targets);
+	}//end extendTargetSchemaIds()
 
 	/**
 	 * Batch-prefetch the lightweight @self.files ids of the whole page.

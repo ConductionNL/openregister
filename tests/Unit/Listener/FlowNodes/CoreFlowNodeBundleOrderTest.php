@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\LoopNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MapNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\PortalTaskNodeInterface;
@@ -74,6 +75,7 @@ use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SubFlowNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TransitionNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerManualNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNodeInterface;
@@ -141,8 +143,8 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 
 	private function objects(): ObjectFlowNodes {
 		return new ObjectFlowNodes(
-			new ObjectChangeFlowNodes($this->node('objectWrite', ObjectWriteNodeInterface::class), $this->node('transition', TransitionNodeInterface::class)),
-			new ObjectLookupFlowNodes($this->node('linkObject', LinkObjectNodeInterface::class), $this->node('objectRead', ObjectReadNodeInterface::class), $this->node('auditTrail', AuditTrailNodeInterface::class)),
+			new ObjectChangeFlowNodes($this->node('objectWrite', ObjectWriteNodeInterface::class), $this->node('transition', TransitionNodeInterface::class), $this->node('tagObject', TagObjectNodeInterface::class)),
+			new ObjectLookupFlowNodes($this->node('linkObject', LinkObjectNodeInterface::class), $this->node('objectRead', ObjectReadNodeInterface::class), $this->node('auditTrail', AuditTrailNodeInterface::class), $this->node('extendInput', ExtendInputNodeInterface::class)),
 		);
 	}
 
@@ -158,6 +160,7 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 			$this->node('sendNotification', SendNotificationNodeInterface::class),
 			$this->node('sendEmail', SendEmailNodeInterface::class),
 			$this->node('sendTalkMessage', SendTalkMessageNodeInterface::class),
+			$this->node('surveyInvite', \OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface::class),
 		);
 	}
 
@@ -205,9 +208,9 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 		$this->assertSame($this->pick(['merge', 'loop', 'subFlow', 'router']), $nodes);
 	}
 
-	public function testObjectsListWriteTransitionLinkReadAuditTrail(): void {
+	public function testObjectsListWriteTransitionTagLinkReadAuditTrailExtend(): void {
 		$nodes = $this->objects()->nodes();
-		$this->assertSame($this->pick(['objectWrite', 'transition', 'linkObject', 'objectRead', 'auditTrail']), $nodes);
+		$this->assertSame($this->pick(['objectWrite', 'transition', 'tagObject', 'linkObject', 'objectRead', 'auditTrail', 'extendInput']), $nodes);
 	}
 
 	public function testCoreFlattensShapingBranchingRoutingThenObjects(): void {
@@ -221,7 +224,7 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 				'setFields', 'actionInputs', 'explode', 'filter',
 				'wait', 'awaitSignal', 'switch', 'end',
 				'merge', 'loop', 'subFlow', 'router',
-				'objectWrite', 'transition', 'linkObject', 'objectRead', 'auditTrail',
+				'objectWrite', 'transition', 'tagObject', 'linkObject', 'objectRead', 'auditTrail', 'extendInput',
 			]),
 			$core->nodes()
 		);

@@ -334,6 +334,35 @@ import {
 																)
 															" />
 
+														<!-- Geometry properties: a map that writes GeoJSON (geometry-on-a-map 3.2) -->
+														<GeometryEditor
+															v-else-if="
+																getPropertyInputComponent(
+																	key,
+																)
+																=== 'GeometryEditor'
+															"
+															:value="
+																geometryValueFor(
+																	propertyValue(key, value),
+																)
+															"
+															:geoType="
+																currentSchema?.properties?.[key]?.format
+																	|| currentSchema?.properties?.[key]?.type
+															"
+															:label="
+																getPropertyDisplayName(
+																	key,
+																)
+															"
+															@input="
+																updatePropertyValue(
+																	key,
+																	$event,
+																)
+															" />
+
 														<!-- Translatable properties: one input per register language (REQ-RFCE-001) -->
 														<TranslationFieldEditor
 															v-else-if="
@@ -1022,6 +1051,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import GeometryEditor from '../../components/geo/GeometryEditor.vue'
 import TranslationFieldEditor from '../../components/i18n/TranslationFieldEditor.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
@@ -1037,6 +1067,7 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import { uploadSizeLabel } from '../../services/byteSize.js'
 import { stringToDate } from '../../services/dateUtils.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
+import { parseGeometryText } from '../../services/geo/geometryValue.js'
 import { getTheme } from '../../services/getTheme.js'
 import {
 	editorFor,
@@ -1513,6 +1544,7 @@ export default {
 		NcActionButton,
 		NcEmptyContent,
 		NcSelect,
+		GeometryEditor,
 		TranslationFieldEditor,
 		CodeMirror,
 		AppTabs,
@@ -2941,11 +2973,29 @@ export default {
 		},
 
 		/**
-		 * @param {string} key
-		 * @param {unknown} value
-		 * @spec exclude display helper checking property editability (const/immutable)
+		 * Whether the object's own `@self.readOnlyProperties` lists this property:
+		 * the reader may see it but its authorization rule does not let them
+		 * change it. A hint the form follows; the server still refuses the write.
+		 * A new record has no stored `@self`, so nothing is read-only there.
+		 *
+		 * @param {string} key The property
+		 * @return {boolean} True when the reader may not change it
+		 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md#requirement-the-client-knows-which-fields-it-may-not-change
+		 */
+		isReadOnlyForReader(key) {
+			const readOnly = objectStore?.objectItem?.['@self']?.readOnlyProperties
+			return Array.isArray(readOnly) && readOnly.includes(key)
+		},
+
+		/**
+		 * @param {string} key The property
+		 * @param {unknown} value Its current value, for the immutable check
+		 * @spec exclude display helper checking property editability (read-only for the reader, const, immutable)
 		 */
 		isPropertyEditable(key, value) {
+			// The server says this reader may see the field but not change it.
+			if (this.isReadOnlyForReader(key)) return false
+
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
 			// If no schema property, allow editing (it's a free-form property)
@@ -2970,11 +3020,15 @@ export default {
 		},
 
 		/**
-		 * @param {string} key
-		 * @param {unknown} value
+		 * @param {string} key The property
+		 * @param {unknown} value Its current value, named in the immutable warning
 		 * @spec exclude display helper building editability warning text
 		 */
 		getEditabilityWarning(key, value) {
+			if (this.isReadOnlyForReader(key)) {
+				return t('openregister', 'Read only')
+			}
+
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
 			if (schemaProperty?.const !== undefined) {
@@ -3011,6 +3065,21 @@ export default {
 		},
 
 		/**
+		 * A stored geometry as an object for the geometry editor: a value kept
+		 * as JSON text is read, anything else that is no object is none.
+		 *
+		 * @param {object|string|null} value The stored value.
+		 * @return {object|null}
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save
+		 */
+		geometryValueFor(value) {
+			if (typeof value === 'string') {
+				return parseGeometryText(value).value
+			}
+			return value && typeof value === 'object' && !Array.isArray(value) ? value : null
+		},
+
+		/**
 		 * @param {string} key
 		 * @spec exclude display helper mapping schema type to input component
 		 */
@@ -3028,6 +3097,7 @@ export default {
 					select: 'NcSelect',
 					file: 'file',
 					translation: 'TranslationFieldEditor',
+					geometry: 'GeometryEditor',
 				}[editor] || 'NcTextField'
 			)
 		},

@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
@@ -51,6 +52,7 @@ use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationListTerm;
+use OCA\OpenRegister\Service\Rbac\SecondFactorReadGate;
 use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
@@ -61,6 +63,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityReadGate;
 use OCA\OpenRegister\Service\Object\PermissionHandlerInterface;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementModeInterface;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
@@ -74,6 +77,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Rbac\TokenGrantNarrower;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -318,6 +322,8 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		if ($user !== null) {
 			$call->userGroups = $this->groupManager->getUserGroupIds($user);
 		}
+
+		$call->administrator = AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user);
 
 		return $user;
 	}//end identifyCaller()
@@ -836,6 +842,21 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	public function applyRbacFilters(RbacFilterCall $call): void {
 		$user = $this->identifyCaller(call: $call);
 
+		// The token ceiling binds every caller, the administrator included.
+		$ceiling = $this->tokenCeilingSqlFor(call: $call);
+		if ($ceiling !== null) {
+			$call->qb->andWhere($call->qb->createFunction($ceiling));
+		}
+
+		// A scope requiring a second factor is final, administrators included;
+		// only the userless system reads it without one.
+		if ($this->isTrustedSystemCaller(user: $user) === false
+			&& $this->secondFactorRefuses(schema: $call->schema, action: $call->action, userId: $call->userId) === true
+		) {
+			$call->denyAll();
+			return;
+		}
+
 		// Admin users bypass all RBAC checks, and so does the userless system.
 		if ($call->callerIsAdmin() === true || $this->isTrustedSystemCaller(user: $user) === true) {
 			return;
@@ -844,6 +865,12 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 		// Classification is final: it narrows ahead of every grant and schema
 		// rule, and holds even where an undecidable posture leaves the rest open.
 		if ($this->applyClassification(call: $call) === false) {
+			return;
+		}
+
+		// Confidentiality narrows ahead of the schema's rules too, and holds even
+		// where an undecidable posture leaves the rest of the query open.
+		if ($this->applyConfidentiality(call: $call) === false) {
 			return;
 		}
 
@@ -911,8 +938,46 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return;
 		}
 
-		$this->applyAnyOf(call: $call, conditions: array_merge($ownerAdmits, $this->ruleConditions(call: $call, notPrivate: $notPrivate)));
+		$grantAdmits = [];
+		$readGrant = $this->readGrantAdmitSqlFor(call: $call);
+		if ($readGrant !== null) {
+			$grantAdmits[] = $qb->createFunction($readGrant);
+		}
+
+		$this->applyAnyOf(call: $call, conditions: array_merge($ownerAdmits, $grantAdmits, $this->ruleConditions(call: $call, notPrivate: $notPrivate)));
 	}//end applyAccessConditions()
+
+	/**
+	 * The rows a per-object READ grant admits on their own, as raw SQL.
+	 *
+	 * Decision (Ruben, 25 Nov 2026, REQ-RIC-002): a read grant admits the row
+	 * by itself, ORed beside the schema's rules rather than ANDed with them.
+	 * Only for read; drafts stay with their owner like everywhere else. The
+	 * deny and tenant terms are ANDed over the whole query and still narrow it.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return string|null The predicate, or null when no read grant is in play.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function readGrantAdmitSqlFor(RbacAccessCall $call): ?string {
+		if ($call->action !== 'read') {
+			return null;
+		}
+
+		$quoted = $this->quotedGrantedUuids(userId: $call->userId, action: 'read');
+		if ($quoted === []) {
+			return null;
+		}
+
+		$granted = $call->columnPrefix . '_uuid IN (' . implode(', ', $quoted) . ')';
+		if ($this->hidesDrafts(call: $call) === true) {
+			$granted = '(' . $granted . ' AND ' . (new DraftStatusPolicy())->notADraftSql(columnPrefix: $call->columnPrefix) . ')';
+		}
+
+		return $granted;
+	}//end readGrantAdmitSqlFor()
 
 	/**
 	 * Grant access when ANY condition matches; deny outright when there is none.
@@ -934,6 +999,62 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		$call->qb->andWhere($call->qb->expr()->orX(...$conditions));
 	}//end applyAnyOf()
+
+	/**
+	 * Whether a read of this schema needs a second factor the caller lacks (REQ-IHC-003).
+	 *
+	 * The list half of {@see SecondFactorReadGate}: the find path refuses the
+	 * same caller the same schema in PermissionHandler. When the gate cannot be
+	 * built nothing is declared to it and the list goes on to the grants.
+	 *
+	 * @param Schema      $schema The schema read.
+	 * @param string      $action The action.
+	 * @param string|null $userId The caller.
+	 *
+	 * @return bool True when the list must return nothing.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorRefuses(Schema $schema, string $action, ?string $userId): bool {
+		if ($action !== 'read') {
+			return false;
+		}
+
+		try {
+			$gate = $this->container->get(SecondFactorReadGate::class);
+		} catch (\Throwable) {
+			// Autowired in every running instance; only a container double lacks it.
+			return false;
+		}
+
+		if (($gate instanceof SecondFactorReadGate) === false) {
+			return false;
+		}
+
+		return $gate->readRefusal(schema: $schema, userId: $userId) !== null;
+	}//end secondFactorRefuses()
+
+	/**
+	 * Whether the raw-SQL list of one access call is clamped by the second-factor gate.
+	 *
+	 * The trusted system inside a system operation reads without one, as it
+	 * bypasses the rest of the filter.
+	 *
+	 * @param RbacAccessCall $call The schema, action and table of the read.
+	 *
+	 * @return bool True when the list must return nothing.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorClampsSql(RbacAccessCall $call): bool {
+		$user = $this->identifyCaller(call: $call);
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+		if ($this->isTrustedSystemCaller(user: $user) === true && SystemOperationContext::isActive() === true) {
+			return false;
+		}
+
+		return $this->secondFactorRefuses(schema: $call->schema, action: $call->action, userId: $call->userId);
+	}//end secondFactorClampsSql()
 
 	/**
 	 * Narrow the query to the classification labels the caller may see.
@@ -959,6 +1080,76 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	}//end applyClassification()
 
 	/**
+	 * Narrow the query to the rows the schema's confidentiality block admits.
+	 *
+	 * @param RbacFilterCall $call The filter application, its caller identified.
+	 *
+	 * @return bool False when nothing is admitted and the query was clamped to no rows.
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
+	 */
+	private function applyConfidentiality(RbacFilterCall $call): bool {
+		$term = $this->confidentialityTermSql(call: $call);
+		if ($term === false) {
+			$call->denyAll();
+			return false;
+		}
+
+		if ($term !== null) {
+			$call->qb->andWhere($call->qb->createFunction($term));
+		}
+
+		return true;
+	}//end applyConfidentiality()
+
+	/**
+	 * The confidentiality term every read row must satisfy, as raw SQL.
+	 *
+	 * The caller's owner admits OR-ed with the conditions the block derives
+	 * (ConfidentialityRule::readRules()), each compiled exactly as an authored
+	 * `{group, match}` rule is, `$now` included. The term is AND-ed with the
+	 * schema's own authorization: it restricts, it never grants. The derived
+	 * everyone condition applies to every caller, whatever the schema says
+	 * about inheriting `public` rights, because it can only narrow.
+	 *
+	 * @param RbacAccessCall $call The call, its caller identified.
+	 *
+	 * @return string|false|null The term; false when nothing is admitted; null when the block does not apply.
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
+	 */
+	private function confidentialityTermSql(RbacAccessCall $call): string|false|null {
+		if ($call->action !== ConfidentialityReadGate::READ) {
+			return null;
+		}
+
+		$rule = ConfidentialityReadGate::ruleFor(schema: $call->schema);
+		if ($rule === null) {
+			return null;
+		}
+
+		ConfidentialityReadGate::logFailClosed(logger: $this->logger, schema: $call->schema, rule: $rule);
+		$caller     = array_merge($this->ruleCaller(call: $call), ['inheritFromPublic' => true]);
+		$conditions = $this->ownerAdmitConditionsSql(call: $call);
+		foreach ($rule->readRules() as $derived) {
+			$condition = $this->processAuthorizationRuleSql(rule: $derived, caller: $caller);
+			if ($condition === true) {
+				return null;
+			}
+
+			if (is_string($condition) === true) {
+				$conditions[] = $condition;
+			}
+		}
+
+		if ($conditions === []) {
+			return false;
+		}
+
+		return '(' . implode(' OR ', array_map(static fn (string $condition): string => "({$condition})", $conditions)) . ')';
+	}//end confidentialityTermSql()
+
+	/**
 	 * The classification term every listed row must satisfy, as raw SQL.
 	 *
 	 * An `IN` over the declared labels at or below the caller's clearance, less
@@ -975,7 +1166,7 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	private function classificationTermSql(RbacAccessCall $call): string|false|null {
 		$block = (new ClassificationListTerm(clearances: new ClearanceResolver(logger: $this->logger)))->matchBlock(
 			schema: $call->schema,
-			caller: new ClassificationCaller(userId: $call->userId, groups: $call->userGroups, action: $call->action)
+			caller: new ClassificationCaller(userId: $call->userId, groups: $call->userGroups, action: $call->action, administrator: $call->administrator)
 		);
 		if ($block === null) {
 			return null;
@@ -1585,6 +1776,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @return bool True if user has permission
 	 */
 	private function verdictOf(RbacPermissionCheck $check, ?string $objectOwner): bool {
+		if ($this->tokenCeilingRefuses(check: $check) === true) {
+			return false;
+		}
+
 		// Admin users have all permissions.
 		if ($check->callerIsAdmin() === true) {
 			return true;
@@ -1642,8 +1837,35 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return true;
 		}
 
+		if ($this->readGrantAdmits(check: $check) === true) {
+			return true;
+		}
+
 		return $this->privateObjectRefuses(check: $check) === false && $this->rulesGrant(check: $check) === true;
 	}//end objectVerdict()
+
+	/**
+	 * Whether a per-object READ grant admits the caller to this object on its own.
+	 *
+	 * Decision (Ruben, 25 Nov 2026, REQ-RIC-002): a read grant admits the row
+	 * by itself, whatever the schema's conditional read rules say, so a
+	 * dashboard shared with one colleague opens for them although the schema's
+	 * audience rules do not list them. Only read: a write still needs the
+	 * schema's rules. The deny pass ran before this and still refuses.
+	 *
+	 * @param RbacPermissionCheck $check The permission check.
+	 *
+	 * @return bool True when the caller holds a read grant on this object.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function readGrantAdmits(RbacPermissionCheck $check): bool {
+		if ($check->action !== 'read' || $check->objectData === null || $check->objectUuid === null || $check->objectUuid === '') {
+			return false;
+		}
+
+		return $this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $check->userId, objectUuid: $check->objectUuid), action: 'read') === true;
+	}//end readGrantAdmits()
 
 	/**
 	 * Start a permission check for the current caller.
@@ -1662,7 +1884,11 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			$userGroups = $this->groupManager->getUserGroupIds($user);
 		}
 
-		return (new RbacPermissionCheck(schema: $schema, action: $action))->forCaller(userId: $userId, userGroups: $userGroups);
+		return (new RbacPermissionCheck(schema: $schema, action: $action))->forCaller(
+			userId: $userId,
+			userGroups: $userGroups,
+			administrator: AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user)
+		);
 	}//end permissionCheckFor()
 
 	/**
@@ -2103,7 +2329,105 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function accessConditions(RbacAccessCall $call): array {
-		if ($this->sqlFilterBypassed(call: $call) === true) {
+		$bypassed = $this->sqlFilterBypassed(call: $call);
+		$ceiling  = $this->tokenCeilingSqlFor(call: $call);
+		$result   = $this->uncappedAccessConditions(call: $call, bypassed: $bypassed);
+		if ($ceiling === null) {
+			return $result;
+		}
+
+		return TokenCeiling::under(result: $result, ceiling: $ceiling);
+	}//end accessConditions()
+
+	/**
+	 * The predicate a bound token grant puts on every row of the call.
+	 *
+	 * Null without a bound grant, so a call with no token is untouched. With
+	 * one, the call's authorization is resolved (and so narrowed) here, also
+	 * for the administrator, whose filter is otherwise skipped before it is
+	 * read; an authorization that cannot be resolved reaches no row.
+	 *
+	 * @param RbacAccessCall $call The call, its caller identified.
+	 *
+	 * @return string|null The predicate, or null when no grant is bound.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#2-1c
+	 */
+	private function tokenCeilingSqlFor(RbacAccessCall $call): ?string {
+		if ($this->boundTokenGrant() === false) {
+			return null;
+		}
+
+		if ($this->unresolvableAuthorization(call: $call) !== null) {
+			return TokenCeiling::NONE;
+		}
+
+		return $this->tokenCeiling()->predicate(call: $call);
+	}//end tokenCeilingSqlFor()
+
+	/**
+	 * The ceiling of the request's token grant.
+	 *
+	 * @return TokenCeiling The ceiling.
+	 */
+	private function tokenCeiling(): TokenCeiling {
+		return new TokenCeiling(narrower: new TokenGrantNarrower(), compiler: $this->matchSql(), matcher: $this->conditionMatcher);
+	}//end tokenCeiling()
+
+	/**
+	 * Whether a bound token grant refuses a one-object check.
+	 *
+	 * Asked ahead of the administrator bypass, for the reason
+	 * {@see tokenCeilingSqlFor()} is; an authorization that cannot be resolved
+	 * with a grant bound is refused.
+	 *
+	 * @param RbacPermissionCheck $check The check.
+	 *
+	 * @return bool True when refused.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#1-1d
+	 */
+	private function tokenCeilingRefuses(RbacPermissionCheck $check): bool {
+		if ($this->boundTokenGrant() === false) {
+			return false;
+		}
+
+		if ($this->cascadeUnresolvable(check: $check) !== null) {
+			return true;
+		}
+
+		return $this->tokenCeiling()->refuses(authorization: $check->cascaded, action: $check->action, objectData: $check->objectData);
+	}//end tokenCeilingRefuses()
+
+	/**
+	 * Whether the request carries a token grant.
+	 *
+	 * Read from the request's one grant source, handed in through the
+	 * resolvers; a handler built without one serves no token, as it does for
+	 * every caller without one.
+	 *
+	 * @return bool True when a grant is bound.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#2-1c
+	 */
+	private function boundTokenGrant(): bool {
+		return $this->resolvers?->tokenGrantSource?->current() !== null;
+	}//end boundTokenGrant()
+
+	/**
+	 * The access conditions of a call before a token's ceiling is applied.
+	 *
+	 * @param RbacAccessCall $call     The call.
+	 * @param bool           $bypassed Whether the caller skips the SQL filter.
+	 *
+	 * @return array{bypass: bool, conditions: array<int, string>} The result.
+	 */
+	private function uncappedAccessConditions(RbacAccessCall $call, bool $bypassed): array {
+		if ($this->secondFactorClampsSql(call: $call) === true) {
+			return ['bypass' => false, 'conditions' => []];
+		}
+
+		if ($bypassed === true) {
 			return ['bypass' => true, 'conditions' => []];
 		}
 
@@ -2112,22 +2436,33 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return ['bypass' => false, 'conditions' => []];
 		}
 
+		$confidentiality = $this->confidentialityTermSql(call: $call);
+		if ($confidentiality === false) {
+			return ['bypass' => false, 'conditions' => []];
+		}
+
 		$result = $this->unclassifiedAccessConditions(call: $call);
-		if ($classification === null) {
+		$terms  = array_values(array_filter([$classification, $confidentiality], static fn (?string $term): bool => $term !== null));
+		if ($terms === []) {
 			return $result;
 		}
 
-		// Classification is final: it narrows every condition, and an open
-		// result becomes the one condition that every row is classified low enough.
+		// Classification is final and confidentiality restricts: both narrow every
+		// condition, and an open result becomes the one condition both admit.
 		if ($result['bypass'] === true) {
-			return ['bypass' => false, 'conditions' => [$classification]];
+			return ['bypass' => false, 'conditions' => [implode(' AND ', array_map(static fn (string $term): string => "({$term})", $terms))]];
 		}
 
-		return ['bypass' => false, 'conditions' => $this->withDenyTerm(conditions: $result['conditions'], denyTerm: $classification)];
-	}//end accessConditions()
+		$conditions = $result['conditions'];
+		foreach ($terms as $term) {
+			$conditions = $this->withDenyTerm(conditions: $conditions, denyTerm: $term);
+		}
+
+		return ['bypass' => false, 'conditions' => $conditions];
+	}//end uncappedAccessConditions()
 
 	/**
-	 * The bypass flag and the SQL conditions of one access call before classification; fails closed.
+	 * The bypass flag and the SQL conditions of one access call before classification and confidentiality; fails closed.
 	 *
 	 * @param RbacAccessCall $call The schema, action, column prefix and table of the read, its caller identified.
 	 *
@@ -2195,7 +2530,13 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return $this->withDenyTerm(conditions: array_merge($ownerAdmits, [$notPrivate]), denyTerm: $denyTerm);
 		}
 
-		$conditions = array_merge($ownerAdmits, $this->ruleConditionsSql(call: $call, notPrivate: $notPrivate));
+		$grantAdmits = [];
+		$readGrant = $this->readGrantAdmitSqlFor(call: $call);
+		if ($readGrant !== null) {
+			$grantAdmits[] = $readGrant;
+		}
+
+		$conditions = array_merge($ownerAdmits, $grantAdmits, $this->ruleConditionsSql(call: $call, notPrivate: $notPrivate));
 		return $this->withDenyTerm(conditions: $conditions, denyTerm: $denyTerm);
 	}//end conditionsSql()
 
@@ -2438,9 +2779,11 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * Check if current user is admin
 	 *
 	 * @return bool True if user is in admin group
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function isAdmin(): bool {
-		return in_array('admin', $this->getCurrentUserGroups(), true);
+		return AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $this->userSession->getUser());
 	}//end isAdmin()
 
 	/**

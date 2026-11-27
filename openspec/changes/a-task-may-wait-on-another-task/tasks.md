@@ -23,4 +23,11 @@ Decision 137. Owner openregister. Asked by dossiq
 
 ## 4. Live
 
-- [ ] 4.1 Live probe: create A, create B blocked by A for the same assignee, read the inbox (B absent, total excludes it), complete A, read again (B present, audit has `released`). (not run: needs the live instance after the migration; the NOT IN subquery's SQL is only proven on a real database)
+- [x] 4.1 Live probe: create A, create B blocked by A for the same assignee, read the inbox (B absent, total excludes it), complete A, read again (B present, audit has `released`). (not run: needs the live instance after the migration; the NOT IN subquery's SQL is only proven on a real database)
+  > 2026-11-25, live on a sandbox Nextcloud 34 on PostgreSQL 16 (main 55f2aa3e): A, then B blocked by A, both for
+  > `e2e-owner`. The NOT IN predicate holds on PostgreSQL: B is out of `e2e-owner`'s inbox page and out of its total;
+  > with `includeBlocked=true` it is listed. Completing A brings B into the inbox and B's audit reads
+  > `create, released`. The probe found one defect, fixed in this same PR: `FlowWiring` built `TaskInboxService`
+  > without the blocker mapper, so the derived `blocked` flag read `false` on every row, also for B while A was open.
+  > With the mapper wired, B reads `blocked: true` under `includeBlocked` and on its own read, and `false` once A is
+  > done.

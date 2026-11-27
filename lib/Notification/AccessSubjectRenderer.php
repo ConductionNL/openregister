@@ -56,6 +56,8 @@ class AccessSubjectRenderer extends SubjectRenderer {
 			'credential_relink_needed' => $this->credentialRelinkNeeded(notification: $notification, l: $l),
 			'audit_export_ready' => $this->auditExportReady(notification: $notification, l: $l),
 			'external_grant_lapsing' => $this->externalGrantLapsing(notification: $notification, l: $l),
+			'token_grant_lapsing' => $this->tokenGrantLapsing(notification: $notification, l: $l),
+			'break_glass_taken' => $this->breakGlassTaken(notification: $notification, l: $l),
 			default => null,
 		};
 	}//end render()
@@ -269,4 +271,61 @@ class AccessSubjectRenderer extends SubjectRenderer {
 
 		return $this->withAppIcon(notification: $notification);
 	}//end externalGrantLapsing()
+
+	/**
+	 * Render "emergency access was taken".
+	 *
+	 * WITHOUT THIS CASE THE ANNOUNCEMENT NEVER RENDERS, and an emergency grant
+	 * nobody hears of is the failure the declaration exists to prevent.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param IL10N         $l            The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md#requirement-emergency-self-granted-access-is-declared-bounded-and-announced-req-gsr-004
+	 */
+	private function breakGlassTaken(INotification $notification, IL10N $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+
+		$notification->setParsedSubject(
+			$l->t(
+				'%1$s took emergency access to "%2$s"',
+				[(string)($parameters['grantee'] ?? ''), (string)($parameters['objectTitle'] ?? '')]
+			)
+		);
+		$notification->setParsedMessage(
+			$l->t(
+				'Access: %1$s, until %2$s. Reason: %3$s',
+				[(string)($parameters['verbs'] ?? ''), (string)($parameters['until'] ?? ''), (string)($parameters['reason'] ?? '')]
+			)
+		);
+
+		return $this->withAppIcon(notification: $notification);
+	}//end breakGlassTaken()
+
+	/**
+	 * Render "your token lapses soon", naming the token and the date.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param IL10N $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-a-required-end-date-and-is-warned-before-it-lapses-req-sat-003
+	 */
+	private function tokenGrantLapsing(INotification $notification, IL10N $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$token      = (string)($parameters['token'] ?? '');
+
+		$notification->setParsedSubject($l->t('Your token "%1$s" ends in %2$s days', [$token, (string)($parameters['daysLeft'] ?? '')]));
+		$notification->setParsedMessage(
+			$l->t(
+				'The token "%1$s" stops working on %2$s. Renew it before then if the integration still needs it.',
+				[$token, (string)($parameters['endsAt'] ?? '')]
+			)
+		);
+
+		return $this->withAppIcon(notification: $notification);
+	}//end tokenGrantLapsing()
 }//end class

@@ -18,8 +18,10 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Add `tests/e2e/ci/flow-trigger-transition.spec.ts`: publish a flow on `object.transitioned` with `to: ["closed"]`, move a record to `closed` and to `open`, and assert one run. (live pass, decision 139)
-- [ ] 3.2 Newman: an update that changes an unwatched field queues no run; one that changes a watched field queues one. (live pass, decision 139)
+- [x] 3.1 Add `tests/e2e/ci/flow-trigger-transition.spec.ts`: publish a flow on `object.transitioned` with `to: ["closed"]`, move a record to `closed` and to `open`, and assert one run. (live pass, decision 139)
+      > 2026-11-25: 1 passed against a sandbox Nextcloud 34 on MariaDB. Close then reopen through `POST /api/objects/{id}/transition`: the `to: ["closed"]` flow ran once, a control flow on every transition of the schema ran twice (so the reopen did fire the event). Both flows run `sync`.
+- [x] 3.2 Newman: an update that changes an unwatched field queues no run; one that changes a watched field queues one. (live pass, decision 139)
+      > 2026-11-25: `tests/integration/openregister-flow-trigger-watched-fields.postman_collection.json`, 21 requests and 24 assertions green on the same instance: a `note` change queues no run of a flow watching `value`, a `value` change queues one whose context lists `changedFields: ["value"]`, the flow's own write-back of `note` queues no second run, and publishing a trigger that watches an unknown field is refused 409 `unknown-changed-field` naming it.
 - [x] 3.3 Document both filters in `docs/` beside the object trigger.
       > 2026-11-13: `docs/features/flows.md`, beside the object trigger.
 

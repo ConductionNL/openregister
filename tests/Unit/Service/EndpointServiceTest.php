@@ -2,6 +2,7 @@
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Mcp\Db\Agent;
 use OCA\OpenRegister\Mcp\Db\AgentMapper;
 use OCA\OpenRegister\Db\Endpoint;
@@ -86,6 +87,8 @@ class TestableEndpointService extends EndpointService {
 }
 
 class EndpointServiceTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * @var EndpointLogMapper&MockObject
@@ -119,6 +122,7 @@ class EndpointServiceTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->agentMapper = $this->createMock(AgentMapper::class);
 
 		$this->service = $this->buildService($this->agentMapper);

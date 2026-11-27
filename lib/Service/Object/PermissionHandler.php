@@ -30,9 +30,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Object;
 
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
+use OCA\OpenRegister\Service\Rbac\AuthorizationRuleEvaluator;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
+use OCA\OpenRegister\Service\Rbac\SecondFactorReadGate;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
@@ -40,6 +43,8 @@ use OCA\OpenRegister\Service\Rbac\ObjectClassification;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
+use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -53,6 +58,7 @@ use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Authorization\AuthorizationBlock;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Confidentiality\ConfidentialityReadGate;
 use OCA\OpenRegister\Service\Object\Permission\PermissionCallerServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionDataServices;
 use OCA\OpenRegister\Service\Object\Permission\PermissionGrantServices;
@@ -77,6 +83,9 @@ use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolverInterface;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogueInterface;
+use OCA\OpenRegister\Service\Rbac\PartyRoleSlotResolver;
+use OCA\OpenRegister\Service\Rbac\BreakGlassDeclaration;
+use OCA\OpenRegister\Service\Rbac\BreakGlassService;
 use OCA\OpenRegister\Service\Rbac\ProvenanceOptions;
 use OCA\OpenRegister\Service\Rbac\ProvenanceResolver;
 use OCA\OpenRegister\Service\Rbac\StagedDenial;
@@ -273,27 +282,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 	public const SCOPE_MCP = McpScope::SCOPE;
 
 	/**
-	 * Write actions that fail closed for anonymous callers.
-	 *
-	 * For an anonymous principal (no resolved Nextcloud user), these actions are
-	 * denied unless the schema's `authorization` explicitly grants the `public`
-	 * group the action. This closes the implicit default-open write hole (#1955)
-	 * while preserving schemas that opt in to public submissions. Object reads are
-	 * intentionally NOT listed here — read default-open is a separate policy
-	 * question and is unchanged by this constant.
-	 *
-	 * @var string[]
-	 */
-	private const ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS = [
-		'create',
-		'update',
-		'delete',
-		'destroy',
-		'addFiles',
-		'deleteFiles',
-	];
-
-	/**
 	 * Write actions affected by the `enforce_default_closed` opt-in flag.
 	 *
 	 * When `IAppConfig::getValueBool('openregister', 'enforce_default_closed')`
@@ -357,6 +345,21 @@ class PermissionHandler implements PermissionHandlerInterface {
 	}//end __construct()
 
 	/**
+	 * The shared reader of rule lists, the same one the entity plane asks.
+	 *
+	 * Built on demand rather than injected: it has no collaborators, and this
+	 * class is built by hand in many tests, so a new constructor argument
+	 * would be a fatal at each of those sites for no gain.
+	 *
+	 * @return AuthorizationRuleEvaluator The evaluator.
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
+	 */
+	private function ruleEvaluator(): AuthorizationRuleEvaluator {
+		return new AuthorizationRuleEvaluator();
+	}//end ruleEvaluator()
+
+	/**
 	 * The shared deny resolver.
 	 *
 	 * Nullable-with-default for the same reason as the scope resolver above: a
@@ -414,6 +417,32 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return null;
 		}
 	}//end objectGrants()
+
+	/**
+	 * Who occupies a party role on an object, for a grant to a slot.
+	 *
+	 * Resolved from the container when the bundle carries none, like the grant
+	 * resolver above. Unavailable means null, and a slot then grants nothing.
+	 *
+	 * @return PartyRoleSlotResolver|null The resolver, or null when unavailable.
+	 */
+	private function partyRoleSlots(): ?PartyRoleSlotResolver {
+		if ($this->rules->partyRoleSlots !== null) {
+			return $this->rules->partyRoleSlots;
+		}
+
+		try {
+			$resolved = $this->data->container->get(PartyRoleSlotResolver::class);
+			if (($resolved instanceof PartyRoleSlotResolver) === true) {
+				return $resolved;
+			}
+
+			return null;
+		} catch (\Throwable $e) {
+			// Fail CLOSED: nobody occupies a slot that cannot be read.
+			return null;
+		}
+	}//end partyRoleSlots()
 
 	/**
 	 * Check if current user has permission to perform action on schema
@@ -647,6 +676,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool True when the caller is refused every action on this object.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function draftIsKeptFromCaller(PermissionAsk $ask): bool {
 		if ($ask->object === null || $ask->object->isDraft() === false) {
@@ -659,7 +689,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 			subject: new DraftSubject(object: $ask->object, schema: $ask->schema),
 			caller: new DraftCaller(
 				userId: $subject,
-				isAdmin: in_array('admin', $this->groupsOf(userId: $subject), true),
+				isAdmin: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $subject),
 				commandLine: $this->isCommandLine()
 			)
 		);
@@ -897,7 +927,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		if ($this->classificationRefuses(ask: $ask) === true) {
+		if ($this->classificationRefuses(ask: $ask) === true
+			|| $this->confidentialityRefuses(ask: $ask) === true
+			|| $this->secondFactorRefusal(ask: $ask) !== null
+		) {
 			$this->lastRefusalFinal = true;
 			return false;
 		}
@@ -939,9 +972,85 @@ class PermissionHandler implements PermissionHandlerInterface {
 		return $gate->refusal(
 			schema: $ask->schema,
 			object: $ask->object,
-			caller: new ClassificationCaller(userId: $userId, groups: $this->groupsOf(userId: $userId), action: $ask->action)
+			caller: new ClassificationCaller(
+				userId: $userId,
+				groups: $this->groupsOf(userId: $userId),
+				action: $ask->action,
+				administrator: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $userId)
+			)
 		) !== null;
 	}//end classificationRefuses()
+
+	/**
+	 * Why a read of this schema's objects needs a second factor this caller lacks, or null.
+	 *
+	 * A schema or a register holding it may require a verified second factor
+	 * for reading (REQ-IHC-003). The refusal is final like classification:
+	 * no grant, administrator bypass or elevation re-opens it. It applies to a
+	 * read of one object and to a schema-level read alike, since it is about
+	 * the caller, not the object. A container that cannot supply the gate
+	 * (only a test double; the app container autowires it) declares nothing,
+	 * and the read goes on to the grants.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return string|null The refusal, naming the requirement and its scope.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorRefusal(PermissionAsk $ask): ?string {
+		if ($ask->action !== 'read') {
+			return null;
+		}
+
+		try {
+			$gate = $this->data->container->get(SecondFactorReadGate::class);
+		} catch (\Throwable) {
+			// Autowired in every running instance; only a container double lacks it.
+			return null;
+		}
+
+		if (($gate instanceof SecondFactorReadGate) === false) {
+			return null;
+		}
+
+		return $gate->readRefusal(schema: $ask->schema, userId: $this->callerId(userId: $ask->userId));
+	}//end secondFactorRefusal()
+
+	/**
+	 * Whether the schema's confidentiality block refuses this caller a read of this object.
+	 *
+	 * The block narrows, it never grants, so its refusal is final like the
+	 * classification one. Owner and administrator pass. Only an ask about one
+	 * object is checked; the list path compiles the same conditions into its query.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/confidentiality-classification-primitive/specs/confidentiality-classification/spec.md#requirement-read-access-to-a-classified-object-must-require-tier-clearance-or-a-met-release-condition
+	 */
+	private function confidentialityRefuses(PermissionAsk $ask): bool {
+		if ($ask->object === null
+			|| $ask->action !== ConfidentialityReadGate::READ
+			|| ConfidentialityReadGate::declares(schema: $ask->schema) === false
+		) {
+			return false;
+		}
+
+		$userId = $this->callerId(userId: $ask->userId);
+		$gate   = new ConfidentialityReadGate(matcher: $this->rules->conditionMatcher, logger: $this->data->logger);
+
+		return $gate->refuses(
+			schema: $ask->schema,
+			action: $ask->action,
+			envelope: $ask->object->getMatchEnvelope(),
+			userId: $userId,
+			groups: $this->groupsOf(userId: $userId),
+			owner: ($ask->objectOwner ?? $ask->object->getOwner()),
+			administrator: AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $userId)
+		);
+	}//end confidentialityRefuses()
 
 	/**
 	 * The chain after the deny pass: the private scope, the caller, the administrator bypass, derived groups, custom verbs and the grants.
@@ -951,15 +1060,32 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return bool True if the user has permission.
 	 *
 	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function grantVerdict(PermissionCheck $check): bool {
-		$verdict = ($this->privateScopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
+		// The token ceiling first: the private-scope admit, the read-grant admit,
+		// the caller verdict and the administrator bypass below all answer without
+		// the rules, and a grant the administrator escapes is not a ceiling (D-1, task 2.1b).
+		$ceiling = (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+			->onObject(data: $check->objectData, organisation: $check->objectOrganisation);
+		if ($this->tokenCeilingRefuses(request: $ceiling) === true) {
+			return false;
+		}
+
+		// The private scope answers first (it reads the session once, before the
+		// caller is resolved); only when it declines does a read grant admit on its own.
+		$privateVerdict = $this->privateScopeVerdict(check: $check);
+		if ($privateVerdict === null && $this->readGrantAdmits(check: $check) === true) {
+			return true;
+		}
+
+		$verdict = ($privateVerdict ?? $this->callerVerdict(check: $check));
 		if ($verdict !== null) {
 			return $verdict;
 		}
 
 		// Admin group always has all permissions.
-		if (in_array('admin', $check->userGroups) === true) {
+		if (AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $check->userId) === true) {
 			return true;
 		}
 
@@ -1152,16 +1278,69 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @param PermissionCheck $check The check
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
 	 */
 	private function anonymousVerdict(PermissionCheck $check): bool {
-		if (in_array(needle: $check->action, haystack: self::ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS, strict: true) === true
-			&& $this->publicGroupExplicitlyGranted(authorization: $check->authorization, action: $check->action) === false
-		) {
+		$evaluator = $this->ruleEvaluator();
+		if ($evaluator->refusesAnonymousWrite(authorization: $check->authorization, action: $check->action) === true) {
+			$this->recordAnonymousRefusal(evaluator: $evaluator, check: $check, failClosedWrite: true);
 			return false;
 		}
 
-		return $this->publicGrantForStranger(check: $check);
+		if ($this->publicGrantForStranger(check: $check) === true) {
+			return true;
+		}
+
+		$this->recordAnonymousRefusal(evaluator: $evaluator, check: $check, failClosedWrite: false);
+		return false;
 	}//end anonymousVerdict()
+
+	/**
+	 * Record an anonymous refusal on the object plane, once per schema and verb per request.
+	 *
+	 * Names the plane, the schema, the verb and the cause, so an operator reading a 403
+	 * can tell "no authorization block names this verb" (`no-rule`) from "a rule names
+	 * the verb and does not admit `public`" (`rule-refused`). `failClosedWrite` says the
+	 * anonymous write default (#1955) decided it rather than the read rules. A list that
+	 * refuses many rows records one line, keyed through the shared evaluator.
+	 *
+	 * @param AuthorizationRuleEvaluator $evaluator       The evaluator holding the per-request memory.
+	 * @param PermissionCheck            $check           The refused check.
+	 * @param bool                       $failClosedWrite Whether the anonymous write default refused it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-a-refusal-and-a-grant-must-both-be-observable
+	 */
+	private function recordAnonymousRefusal(AuthorizationRuleEvaluator $evaluator, PermissionCheck $check, bool $failClosedWrite): void {
+		$authorization = $check->authorization;
+		$declared = is_array($authorization) === true && $authorization !== [];
+		$cause = 'no-rule';
+		if (is_array($authorization) === true && empty($authorization[$check->action]) === false) {
+			$cause = 'rule-refused';
+		}
+
+		$schemaId = (string) $check->schema->getId();
+		if ($evaluator->firstRefusal(plane: 'object', entityType: 'schema:' . $schemaId, action: $check->action, cause: $cause) === false) {
+			return;
+		}
+
+		$this->data->logger->info(
+			message: '[PermissionHandler] Anonymous caller refused: to admit it, add the `public` group to the'
+				. ' schema\'s authorization for this verb',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'plane' => 'object',
+				'schemaId' => $schemaId,
+				'action' => $check->action,
+				'cause' => $cause,
+				'authorizationDeclared' => $declared,
+				'failClosedWrite' => $failClosedWrite,
+			]
+		);
+	}//end recordAnonymousRefusal()
 
 	/**
 	 * Whether the `public` group grants the action to a caller who is not a known user.
@@ -1311,6 +1490,20 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return true;
 		}
 
+		// A grant to a slot (REQ-GSR-001): whoever occupies the named party
+		// role on the object now. Asked last, after every principal, so it only
+		// ever adds an answer where the rules above said no.
+		if ($this->slotGrants(check: $check) === true) {
+			return true;
+		}
+
+		// Emergency access taken with a reason (REQ-GSR-004): only the verbs the
+		// schema declares, only while the take holds, every use audited. Asked
+		// after the slot for the same reason: it only ever adds an answer.
+		if ($this->breakGlassGrants(check: $check) === true) {
+			return true;
+		}
+
 		// The refusal names the rule that produced it (task 3.3).
 		$this->logRefusal(check: $check);
 
@@ -1333,6 +1526,153 @@ class PermissionHandler implements PermissionHandlerInterface {
 				->onObject(data: $check->objectData, organisation: $check->objectOrganisation)
 		);
 	}//end groupGrants()
+
+	/**
+	 * Whether a grant to a party role (a slot) on the object admits the caller.
+	 *
+	 * The grant names a role on the record instead of a principal, and the
+	 * occupant is read at this moment, never copied (design D-1): replacing the
+	 * occupant moves the access with no grant edited, and a vacant slot admits
+	 * nobody. Only the object's OWN block is honoured, because a slot is a
+	 * per-object grant and the list emitters filter on the schema's block alone;
+	 * a slot honoured on the schema would admit on a read what a list hides.
+	 *
+	 * Fail closed throughout: no object, no caller, a token ceiling that
+	 * refuses, an unreadable occupant or a malformed role all answer no. It runs
+	 * after the deny pass and the private scope, so a deny beats it and it never
+	 * reopens a private object.
+	 *
+	 * @param PermissionCheck $check The check, its caller and cascaded block resolved.
+	 *
+	 * @return bool True when the caller occupies a slot the object grants the action to.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md#requirement-a-grant-may-name-a-role-slot-on-the-record-rather-than-a-principal-req-gsr-001
+	 */
+	private function slotGrants(PermissionCheck $check): bool {
+		$entries = $this->objectSlotEntries(check: $check);
+		if ($entries === [] || $check->userId === null || $check->userId === '') {
+			return false;
+		}
+
+		$request = (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+			->forGroup(groupId: '', userGroup: null)
+			->forUser(userId: $check->userId, objectOwner: $check->objectOwner)
+			->onObject(data: $check->objectData, organisation: $check->objectOrganisation);
+		if ($this->tokenCeilingRefuses(request: $request) === true) {
+			return false;
+		}
+
+		$held = $this->slotsHeldBy(userId: $check->userId, object: $check->object);
+		if ($held === []) {
+			return false;
+		}
+
+		$reader = new GroupRuleEntries(conditionMatcher: $this->rules->conditionMatcher);
+		foreach ($entries as $entry) {
+			if ($reader->slotGrants(entry: $entry, request: $request, heldRoles: $held) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end slotGrants()
+
+	/**
+	 * Whether a break-glass grant the caller took on this object admits the action now.
+	 *
+	 * Fail closed: no object, no caller, a token ceiling that refuses, or an
+	 * unavailable service all answer no. Runs after the deny pass and the
+	 * private scope, so a deny still beats it.
+	 *
+	 * @param PermissionCheck $check The check.
+	 *
+	 * @return bool True when a current take of the caller carries the action.
+	 *
+	 * @spec openspec/changes/grants-that-follow-a-slot-a-relation-or-a-reason/specs/rbac-scopes/spec.md#requirement-emergency-self-granted-access-is-declared-bounded-and-announced-req-gsr-004
+	 */
+	private function breakGlassGrants(PermissionCheck $check): bool {
+		if ($check->object === null || $check->userId === null || $check->userId === '') {
+			return false;
+		}
+
+		// The cheap exit: a schema that declares no emergency access never reads the trail.
+		if (BreakGlassDeclaration::fromSchema(schema: $check->schema)?->grants(verb: $check->action) !== true) {
+			return false;
+		}
+
+		$request = (new GroupRuleRequest(authorization: $check->authorization, action: $check->action))
+			->forGroup(groupId: '', userGroup: null)
+			->forUser(userId: $check->userId, objectOwner: $check->objectOwner)
+			->onObject(data: $check->objectData, organisation: $check->objectOrganisation);
+		if ($this->tokenCeilingRefuses(request: $request) === true) {
+			return false;
+		}
+
+		return ($this->breakGlass()?->grants(
+			userId: $check->userId,
+			object: $check->object,
+			schema: $check->schema,
+			verb: $check->action
+		) === true);
+	}//end breakGlassGrants()
+
+	/**
+	 * The break-glass service, from the bundle or the container; null when unavailable.
+	 *
+	 * @return BreakGlassService|null The service.
+	 */
+	private function breakGlass(): ?BreakGlassService {
+		if ($this->rules->breakGlass !== null) {
+			return $this->rules->breakGlass;
+		}
+
+		try {
+			$resolved = $this->data->container->get(BreakGlassService::class);
+			if (($resolved instanceof BreakGlassService) === true) {
+				return $resolved;
+			}
+
+			return null;
+		} catch (\Throwable $e) {
+			// Fail CLOSED: an emergency grant that cannot be read admits nobody.
+			return null;
+		}
+	}//end breakGlass()
+
+	/**
+	 * The slot entries of the action's cascaded rule list, when the object's own block declares that action.
+	 *
+	 * Read from the cascaded list, so an ended (`until`) or out-of-area entry is
+	 * already gone and a token has already narrowed it.
+	 *
+	 * @param PermissionCheck $check The check.
+	 *
+	 * @return array<int, array> The slot entries, empty when the object declares none for the action.
+	 */
+	private function objectSlotEntries(PermissionCheck $check): array {
+		$own = $check->object?->getAuthorization();
+		if (is_array($own) === false || array_key_exists($check->action, $own) === false) {
+			return [];
+		}
+
+		return PartyRoleSlotResolver::slotEntriesOf(entries: ($check->authorization[$check->action] ?? null));
+	}//end objectSlotEntries()
+
+	/**
+	 * The party roles a user occupies on an object now; none without an object or a resolver.
+	 *
+	 * @param string|null       $userId The caller.
+	 * @param ObjectEntity|null $object The object.
+	 *
+	 * @return array<int, string> The roles held.
+	 */
+	private function slotsHeldBy(?string $userId, ?ObjectEntity $object): array {
+		if ($object === null) {
+			return [];
+		}
+
+		return ($this->partyRoleSlots()?->rolesHeldBy(userId: $userId, objectUuid: $object->getUuid()) ?? []);
+	}//end slotsHeldBy()
 
 	/**
 	 * Record a refusal with the rule behind it.
@@ -1534,7 +1874,18 @@ class PermissionHandler implements PermissionHandlerInterface {
 		$resolver = new ProvenanceResolver(denyResolver: $this->denyResolver(), principals: $principals);
 		$enforced = $this->denyEnforcementMode()->enforces();
 
-		return $resolver->forActions(actions: $request->actions, options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced));
+		// The slots the caller occupies on this object, read only when the
+		// object's own block names one: the answer then names the slot as the
+		// source of the grant (REQ-GSR-001).
+		$heldSlots = [];
+		if (PartyRoleSlotResolver::slotsNamedIn(block: $request->object?->getAuthorization()) !== []) {
+			$heldSlots = $this->slotsHeldBy(userId: $userId, object: $request->object);
+		}
+
+		return $resolver->forActions(
+			actions: $request->actions,
+			options: new ProvenanceOptions(blocks: $blocks, denials: $denials, enforced: $enforced, heldSlots: $heldSlots)
+		);
 	}//end provenanceFor()
 
 	/**
@@ -1669,6 +2020,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *         The denial that decided it, or null when no deny reaches this caller.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	public function denialFor(DenialQuestion $question, ?string $userId = null): ?array {
 		$resolver = $this->denyResolver();
@@ -1682,7 +2034,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$userId = $this->callerId(userId: $userId);
 		$userGroups = $this->groupsOf(userId: $userId);
-		if (in_array(needle: 'admin', haystack: $userGroups, strict: true) === true) {
+		if (AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $userId) === true) {
 			return null;
 		}
 
@@ -1690,6 +2042,66 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return $this->denialAnswer(question: $question->about(principals: $principals, object: $question->object));
 	}//end denialFor()
+
+	/**
+	 * The denial that removes a verb from a federated recipient on one object, or null.
+	 *
+	 * A federated recipient is a principal (design D-1 of
+	 * platform-cloud-federation-provider): the share is what grants it, and the
+	 * same cascade and the same deny pass that bind a local caller bind it too.
+	 * It is reached by the principal names it is handed (`remote:*` and
+	 * `remote:<cloud id>`), never by `public` or `authenticated`, which name
+	 * people at this instance, and it is never exempt as an administrator.
+	 *
+	 * The deny enforcement switch is honoured exactly as for a local caller:
+	 * `off` resolves nothing, `staging` records the denial and admits.
+	 *
+	 * FAIL CLOSED: a cascade that cannot be resolved answers a denial, as every
+	 * caller of {@see resolveAuthorization()} must.
+	 *
+	 * @param SchemaInterface       $schema     The object's schema.
+	 * @param ObjectEntityInterface $object     The object.
+	 * @param array<int, string>    $principals The recipient's principal names.
+	 * @param string                $action     The verb.
+	 *
+	 * @return array|null The denial, or null when the verb is not denied.
+	 *
+	 * @spec openspec/changes/platform-cloud-federation-provider/specs/federation/spec.md#requirement-an-object-is-shared-with-a-principal-at-another-instance-with-a-two-sided-lifecycle-req-pcf-001
+	 */
+	public function remoteRecipientDenial(SchemaInterface $schema, ObjectEntityInterface $object, array $principals, string $action): ?array {
+		if ($schema instanceof Schema === false || $object instanceof ObjectEntity === false) {
+			return ['rule' => null, 'principal' => (string)($principals[0] ?? ''), 'action' => $action, 'conditional' => false, 'unresolvable' => true];
+		}
+
+		try {
+			$authorization = $this->resolveAuthorization(schema: $schema, object: $object);
+		} catch (\Throwable $e) {
+			return ['rule' => null, 'principal' => (string)($principals[0] ?? ''), 'action' => $action, 'conditional' => false, 'unresolvable' => true];
+		}
+
+		$mode = $this->denyEnforcementMode();
+		if ($mode->resolves() === false || $this->denyResolver()->declaresAnyDeny(authorization: $authorization) === false) {
+			return null;
+		}
+
+		$denial = $this->denialAnswer(
+			question: (new DenialQuestion(authorization: $authorization, action: $action))->about(principals: array_values($principals), object: $object)
+		);
+		if ($denial === null || $mode->enforces() === true) {
+			return $denial;
+		}
+
+		$mode->record(
+			staged: new StagedDenial(
+				denial: $denial,
+				action: $action,
+				userId: (string)($principals[count($principals) - 1] ?? ''),
+				context: ['schemaId' => $schema->getId(), 'path' => 'federation']
+			)
+		);
+
+		return null;
+	}//end remoteRecipientDenial()
 
 	/**
 	 * The unconditional denial of the question, else the first conditional one that selects its object.
@@ -1807,6 +2219,32 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return false;
 	}//end privateScopeVerdict()
+
+	/**
+	 * Whether a per-object READ grant admits the caller to the check's object on its own.
+	 *
+	 * Decision (Ruben, 25 Nov 2026, REQ-RIC-002): a read grant admits the row
+	 * by itself, whatever the schema's conditional read rules say (the list
+	 * emitters OR the same grant beside the rules). Only read: a write stays
+	 * within the schema's rules (design D3b). The deny pass, the
+	 * classification and the confidentiality gates ran before this.
+	 *
+	 * @param PermissionCheck $check The check.
+	 *
+	 * @return bool True when the caller holds a read grant on the check's object.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function readGrantAdmits(PermissionCheck $check): bool {
+		$object = $check->object;
+		if ($object === null || $check->action !== 'read' || (string) $object->getUuid() === '') {
+			return false;
+		}
+
+		$lookup = new GrantLookup(userId: $this->callerId(userId: $check->userId), objectUuid: $object->getUuid());
+
+		return $this->objectGrants()?->isGranted(lookup: $lookup, action: 'read') === true;
+	}//end readGrantAdmits()
 
 	/**
 	 * The check's object when it is private, or null when the check is not gated.
@@ -2040,6 +2478,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 			->askedBy(userId: $options->userId, objectOwner: $options->objectOwner)
 			->about(object: $options->object, register: $options->register);
 		if ($this->permits(ask: $ask, _rbac: $_rbac) === false) {
+			$secondFactor = $this->secondFactorRefusal(ask: $ask);
+			if ($secondFactor !== null) {
+				throw new NotAuthorizedException(message: $secondFactor);
+			}
+
 			throw $this->notAuthorized(ask: $ask);
 		}
 	}//end checkPermission()
@@ -2157,6 +2600,8 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @return BulkCaller The caller.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the caller's posture, passed through.
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function bulkCaller(bool $rbac, bool $multitenancy): BulkCaller {
 		$user   = $this->caller->userSession->getUser();
@@ -2164,7 +2609,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		$caller->organisation       = $this->getActiveOrganisationForContext();
 		$caller->checksOrganisation = $this->organisationCheckApplies(multitenancy: $multitenancy, activeOrganisation: $caller->organisation);
-		$caller->isAdmin    = ($user !== null && in_array('admin', $this->caller->groupManager->getUserGroupIds($user), true) === true);
+		$caller->isAdmin    = AdministratorCheck::isAdministrator(groupManager: $this->caller->groupManager, user: $user);
 		$caller->checksRbac = ($rbac === true && $caller->userId !== null);
 
 		return $caller;
@@ -2353,9 +2798,41 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function tokenCeilingRefuses(GroupRuleRequest $request): bool {
-		return ($this->grants->derived->tokenGrantNarrower !== null
-			&& $this->grants->derived->tokenGrantNarrower->markerPermits(authorization: $request->authorization, action: $request->action) === false);
+		$narrower = $this->grants->derived->tokenGrantNarrower;
+		if ($narrower === null) {
+			return false;
+		}
+
+		return $narrower->markerPermits(authorization: $request->authorization, action: $request->action) === false
+			|| $this->tokenRowConditionRefuses(match: $narrower->markerMatch(authorization: $request->authorization), request: $request);
 	}//end tokenCeilingRefuses()
+
+	/**
+	 * Whether the grant's row condition refuses the object the question is about.
+	 *
+	 * Part of the ceiling, so it too runs ahead of the admin and owner
+	 * bypasses: a supplier's token reads the supplier's rows whoever holds it.
+	 * A question about no object (the schema as a whole) is answered by the
+	 * verbs alone; the rows a list returns are narrowed in SQL by the same
+	 * condition. A condition naming metadata no record carries meets no row.
+	 *
+	 * @param array<string, mixed>|null $match   The grant's row condition, null for none.
+	 * @param GroupRuleRequest          $request The question.
+	 *
+	 * @return bool True when the object falls outside the grant's rows.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#1-1d
+	 */
+	private function tokenRowConditionRefuses(?array $match, GroupRuleRequest $request): bool {
+		if ($match === null || $request->objectData === null) {
+			return false;
+		}
+
+		$envelope = $request->matchEnvelope();
+
+		return $this->rules->conditionMatcher->namesUnknownMetadata(match: $match, object: $envelope) === true
+			|| $this->rules->conditionMatcher->objectMatchesConditions(object: $envelope, match: $match) === false;
+	}//end tokenRowConditionRefuses()
 
 	/**
 	 * Whether the caller passes without the block being read: the admin group, or the object's owner.
@@ -2440,39 +2917,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 
 		return false;
 	}//end anyRuleEntryGrants()
-
-	/**
-	 * Determine whether the `public` group is EXPLICITLY granted an action.
-	 *
-	 * Unlike {@see hasGroupPermission()}, this does NOT treat a missing
-	 * `authorization` block or a missing action entry as a grant (the
-	 * default-open behaviour that {@see hasGroupPermission()} relies on for
-	 * authenticated users). It returns true only when the schema's
-	 * `authorization[$action]` list contains a `public` reference — either as a
-	 * bare string entry (`"public"`) or as a complex entry whose `group` is
-	 * `public` (with or without a `match` clause). This is the opt-in signal for
-	 * anonymous-write fail-closed scoping (#1955): the conditional `match`, if
-	 * present, is still evaluated downstream by {@see hasGroupPermission()}.
-	 *
-	 * @param array|null $authorization The schema's authorization array.
-	 * @param string $action The CRUD action being checked.
-	 *
-	 * @return bool True only when `public` is explicitly listed for the action.
-	 */
-	private function publicGroupExplicitlyGranted(?array $authorization, string $action): bool {
-		$rules = ($authorization[$action] ?? null);
-		if (is_array($rules) === false) {
-			return false;
-		}
-
-		foreach ($rules as $entry) {
-			if (self::entryNamesGroup(entry: $entry, group: 'public') === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end publicGroupExplicitlyGranted()
 
 	/**
 	 * Whether the `enforce_default_closed` opt-in flag is active.
@@ -2597,6 +3041,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *     and broadcast or skip push, depending on policy).
 	 *   - Authorization exists but object owner is known → always include the owner.
 	 *   - `public` group in the read list → empty array (caller should treat as broadcast).
+	 *   - `authenticated` in the read list → empty array (every signed-in user may read).
 	 *   - `admin` group in the read list → empty array (caller should treat as broadcast
 	 *     or resolve admin members separately).
 	 *
@@ -2760,16 +3205,24 @@ class PermissionHandler implements PermissionHandlerInterface {
 	}//end nonEmptyReadEntries()
 
 	/**
-	 * Whether a read group set admits everybody (`public`) or is admin-only (`admin`).
+	 * Whether a read group set admits everybody (`public`), every signed-in user
+	 * (`authenticated`) or is admin-only (`admin`).
+	 *
+	 * `authenticated` is a pseudo-group, not a Nextcloud group: resolved as one it
+	 * has no members, so the readable list would hold the owner alone and every
+	 * other reader would read as having lost access (a watcher would be dropped).
 	 *
 	 * @param array<int, string> $groupIds The read group ids.
 	 *
 	 * @return bool True when the set is a broadcast
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/tasks.md
 	 */
 	private function isBroadcastReadGroupSet(array $groupIds): bool {
-		return in_array('public', $groupIds, true) || in_array('admin', $groupIds, true);
+		return in_array('public', $groupIds, true)
+			|| in_array('authenticated', $groupIds, true)
+			|| in_array('admin', $groupIds, true);
 	}//end isBroadcastReadGroupSet()
 
 	/**
@@ -3435,24 +3888,6 @@ class PermissionHandler implements PermissionHandlerInterface {
 	private static function isMcpScopeEntry(mixed $entry): bool {
 		return McpScope::isScopeEntry(entry: $entry);
 	}//end isMcpScopeEntry()
-
-	/**
-	 * Whether a single authorization entry names the group, as a bare string or as `{"group": ...}`.
-	 *
-	 * @param mixed  $entry One entry from an action's rule list.
-	 * @param string $group The group.
-	 *
-	 * @return bool True when the entry names the group.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private static function entryNamesGroup(mixed $entry, string $group): bool {
-		if (is_array($entry) === true) {
-			return (($entry['group'] ?? null) === $group);
-		}
-
-		return ($entry === $group);
-	}//end entryNamesGroup()
 
 	/**
 	 * Resolve whether authenticated users inherit `public` group rights for a schema.

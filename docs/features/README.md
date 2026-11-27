@@ -53,12 +53,14 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Search, Filtering & Faceting | [search-and-faceting.md](search-and-faceting.md) | Core | Implemented | NL API Design Rules, PostgreSQL, Solr, Elasticsearch |
 | Access Control (RBAC) | [access-control.md](access-control.md) | Security | Implemented | OAuth2 scopes, ZGW Autorisaties, BIO |
 | Content Versioning & Audit Trail | [versioning-and-audit.md](versioning-and-audit.md) | Compliance | Implemented | Archiefwet, BIO, AVG |
+| Draft Versions | [draft-versions.md](draft-versions.md) | Core | Implemented | Named drafts beside the published record, promotion with conflict check, expiring site preview |
 | Breaking Schema Change Notice | [schema-change-notice.md](schema-change-notice.md) | Core | Implemented | Nextcloud notifications, HTTP Link header |
 | Data Import & Export | [data-import-export.md](data-import-export.md) | Integration | Implemented | CSV, Excel, JSON, XML, OpenAPI |
 | Event-Driven Architecture | [event-driven-architecture.md](event-driven-architecture.md) | Integration | Implemented | CloudEvents v1.0, PSR-14 |
 | Webhooks & Notifications | [webhooks-and-notifications.md](webhooks-and-notifications.md) | Integration | Implemented | CloudEvents, HMAC, VNG Notificaties |
 | Object Read State | [object-read-state.md](object-read-state.md) | Collaboration | Implemented | Per-user unread, tab badges, bell cleared by the work |
 | Favourites & Recently Opened | [favourites-and-recent.md](favourites-and-recent.md) | Collaboration | Implemented | Per-user star, view history, two index lenses |
+| Follow and Catch Up on Records | [follow-and-catch-up.md](follow-and-catch-up.md) | Collaboration | Implemented | Follow toggle, unread tab badges and the Following, Recent and Unread filters on OpenRegister's own screens |
 | BAG Address Lookup | [bag-address-lookup.md](bag-address-lookup.md) | Integration | Implemented | National BAG load, postcode + number lookup, public throttled endpoint |
 | Access Links | [access-links.md](access-links.md) | Collaboration | Implemented | Scoped, expiring link that opens one record without an account |
 | Expired Object Sweep | [expired-object-sweep.md](expired-object-sweep.md) | Data Modelling | Implemented | A schema opts in to `x-openregister.expiry`; a daily job deletes or anonymises expired objects, `occ openregister:expiry:sweep --dry-run` |
@@ -101,6 +103,7 @@ Fine-grained authorization at every level of the data hierarchy.
 Meeting Dutch government regulatory requirements.
 
 - [Content Versioning & Audit Trail](versioning-and-audit.md) — Immutable hash-chained audit log, semantic versioning, rollback
+- [Draft Versions](draft-versions.md) — Named drafts of a record, promotion with per-field conflict detection, and a preview link for the public website
 - [Breaking Schema Change Notice](schema-change-notice.md) — Who a breaking schema change affects, the notice they get, following a schema, the change header
 - [Archiving & Records Management](archiving.md) — Retention schedules, destruction workflows, MDTO XML, e-Depot transfer (SIP)
 - [DSAR Deadline Escalation & DPIA Detection](dsar-escalation-and-dpia.md) — Temporal deadline-reminder/escalation/breach sweep + GDPR art-35 DPIA pattern detection, policy-pack-driven (ADR-047)
@@ -113,6 +116,7 @@ Connecting OpenRegister to external systems and workflows.
 - [Webhooks & Notifications](webhooks-and-notifications.md) — CloudEvents delivery, HMAC signing, VNG Notificaties, retry
 - [Object Read State](object-read-state.md) — Per-user unread state, the unread filter, tab badges, snooze and archive
 - [Favourites & Recently Opened](favourites-and-recent.md) — Per-user star, view history, the `_favourite` and `_recent` lenses
+- [Follow and Catch Up on Records](follow-and-catch-up.md) — Follow, Mark as unread and tab badges on the record page; the Following, Recent and Unread filters on the Tables page
 - [BAG Address Lookup](bag-address-lookup.md): load the national BAG address set and find an address by postcode and house number
 - [Access Links](access-links.md): share one record with somebody who has no account, revocably and on the audit trail
 - [Expired Object Sweep](expired-object-sweep.md): delete or anonymise objects whose expiry has passed, skipping legal holds, with a dry run

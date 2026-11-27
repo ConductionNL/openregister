@@ -54,6 +54,25 @@ class IntegrationsCapability implements ICapability {
 	public const CONTRACT_VERSION = 1;
 
 	/**
+	 * Cache namespace of the per-reader provider rows.
+	 *
+	 * @var string
+	 */
+	public const CACHE_PREFIX = 'openregister-integrations-capability';
+
+	/**
+	 * How long one reader's provider rows are kept, in seconds.
+	 *
+	 * The key already changes when an app is enabled, disabled or updated,
+	 * or the reader's language or admin role changes; the lifetime bounds
+	 * what the key cannot see (a group change behind a group-restricted
+	 * app, the admin-only health status).
+	 *
+	 * @var int
+	 */
+	public const CACHE_TTL = 300;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IntegrationCatalogueInterface  $registry     Integration registry.
@@ -79,7 +98,7 @@ class IntegrationsCapability implements ICapability {
 	 * @return array<string,mixed>
 	 */
 	public function getCapabilities(): array {
-		$rows = $this->providerRows();
+		$registry = $this->registryRows();
 
 		return [
 			'openregister' => [
@@ -93,8 +112,8 @@ class IntegrationsCapability implements ICapability {
 					// IntegrationRegistry::listIds(). AI agents / clients that
 					// only need "what exists" read this without walking
 					// `providers`.
-					'registered' => $this->registry->listIds(),
-					'providers' => $rows,
+					'registered' => $registry['registered'],
+					'providers' => $registry['providers'],
 					// `leaves` — the cross-app leaf catalogue (ADR-066). A
 					// manifest app or admin UI discovers which leaves exist
 					// (id, label, requiredApp, surfaces, kinds, renderMode,
@@ -104,18 +123,112 @@ class IntegrationsCapability implements ICapability {
 					// registration — including the renderMode correlation — is
 					// keyed by the shared id.
 					'leaves' => $this->services->leafRegistry->describeForCapabilities(),
+					// `semanticProviders` — the installed schemas that provide a
+					// canonical semantic type (cross-app-semantic-references), so a
+					// form can bind a `referenceSemanticType` field without a
+					// round-trip. Cached per user; see SemanticProviderCatalogue.
+					'semanticProviders' => $this->semanticProviders(),
 				],
 			],
 		];
 	}//end getCapabilities()
 
 	/**
+	 * The registered ids and the reader's provider rows, from the cache when it holds them.
+	 *
+	 * Nextcloud renders the capabilities into every page, so without the cache
+	 * every page render builds all built-in providers (and their services) to
+	 * describe them.
+	 *
+	 * @return array{registered: list<string>, providers: array<int, array<string, mixed>>} The ids and the rows.
+	 *
+	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-21
+	 */
+	private function registryRows(): array {
+		$isAdmin = $this->currentUserIsAdmin();
+		$key     = $this->cacheKey(isAdmin: $isAdmin);
+
+		if ($key !== null) {
+			$cached = $this->services->cache?->get($key);
+			if (is_array($cached) === true
+				&& is_array($cached['registered'] ?? null) === true
+				&& is_array($cached['providers'] ?? null) === true
+			) {
+				return ['registered' => $cached['registered'], 'providers' => $cached['providers']];
+			}
+		}
+
+		$rows = [
+			'registered' => $this->registry->listIds(),
+			'providers' => $this->providerRows(isAdmin: $isAdmin),
+		];
+
+		if ($key !== null) {
+			$this->services->cache?->set($key, $rows, self::CACHE_TTL);
+		}
+
+		return $rows;
+	}//end registryRows()
+
+	/**
+	 * The cache key for this reader, or null when nothing is cached.
+	 *
+	 * The rows differ per reader (installed-for-user, admin fields), per
+	 * language (labels) and per set of enabled apps and their versions
+	 * (available, and which providers exist).
+	 *
+	 * @param bool $isAdmin Whether the reader is an admin.
+	 *
+	 * @return string|null The key.
+	 *
+	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-21
+	 */
+	private function cacheKey(bool $isAdmin): ?string {
+		if ($this->services->cache === null) {
+			return null;
+		}
+
+		try {
+			$apps     = $this->services->appManager->getAppInstalledVersions(onlyEnabled: true);
+			$language = $this->services->l10nFactory?->findLanguage('openregister') ?? '';
+		} catch (\Throwable) {
+			return null;
+		}
+
+		ksort($apps);
+		$userId = $this->userSession->getUser()?->getUID() ?? '';
+
+		return hash('xxh128', json_encode([$userId, $isAdmin, $language, $apps, self::CONTRACT_VERSION]));
+	}//end cacheKey()
+
+	/**
+	 * The semantic provider rows, empty when the catalogue is not wired.
+	 *
+	 * @return list<array<string, mixed>>
+	 *
+	 * @spec openspec/changes/cross-app-semantic-references/tasks.md#task-4.1
+	 */
+	private function semanticProviders(): array {
+		if ($this->services->semanticProviders === null) {
+			return [];
+		}
+
+		// The capabilities are built on every page load: a failing list must not take them down.
+		try {
+			return $this->services->semanticProviders->list();
+		} catch (\Throwable) {
+			return [];
+		}
+	}//end semanticProviders()
+
+	/**
 	 * The role-redacted descriptor of every registered provider.
+	 *
+	 * @param bool $isAdmin Whether the caller is admin.
 	 *
 	 * @return array<int, array<string, mixed>> One descriptor per provider
 	 */
-	private function providerRows(): array {
-		$isAdmin = $this->currentUserIsAdmin();
+	private function providerRows(bool $isAdmin): array {
 		$rows = [];
 
 		foreach ($this->registry->list() as $provider) {

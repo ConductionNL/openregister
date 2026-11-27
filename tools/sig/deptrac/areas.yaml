@@ -55,7 +55,7 @@ deptrac:
             - type: directory
               value: 'lib/Event/(AbstractAgentEvent|AbstractApplicationEvent|AbstractConfigurationEvent|AbstractConversationEvent|AbstractObjectEntityEvent|AbstractPreWriteObjectEvent|AbstractRegisterEvent|AbstractSchemaEvent|AbstractSourceEvent|AbstractViewEvent|AgentCreatedEvent|AgentDeletedEvent|AgentUpdatedEvent|AppWebhookEvents|ApplicationCreatedEvent|ApplicationDeletedEvent|ApplicationUpdatedEvent|ConfigurationCreatedEvent|ConfigurationDeletedEvent|ConfigurationUpdatedEvent|ConversationCreatedEvent|ConversationDeletedEvent|ConversationUpdatedEvent|DeepLinkCollectorInterface|DraftCreatedEvent|DraftDeletedEvent|DraftUpdatedEvent|FlowRunTerminalEvent|ObjectCreatedEvent|ObjectCreatingEvent|ObjectDeletedEvent|ObjectDeletingEvent|ObjectLockedEvent|ObjectRevertedEvent|ObjectTransitionedEvent|ObjectUnlockedEvent|ObjectUpdatedEvent|ObjectUpdatingEvent|ObjectsMergedEvent|PermissionVerb|PermissionsDeclaringEvent|RegisterCreatedEvent|RegisterDeletedEvent|RegisterUpdatedEvent|SchemaCreatedEvent|SchemaDeletedEvent|SchemaUpdatedEvent|SourceCreatedEvent|SourceDeletedEvent|SourceUpdatedEvent|ViewAlertCrossedEvent|ViewCreatedEvent|ViewDeletedEvent|ViewUpdatedEvent|WriteVetoState)[.]php$'
             - type: directory
-              value: 'lib/Exception/(AnalyzeRequestRejectedException|ArchivalImmutableException|AuthorizationUnresolvableException|CalendarDateKindException|ConditionGroupException|ConfidenceThresholdOutOfRangeException|CorrectionRefusedException|CustomValidationException|DatabaseErrorChain|DecisionConflictException|DraftAlreadyLeftException|DuplicateBlockedException|EncryptedFieldFilterException|ExplicitRevealQueryException|ExportTooLargeException|FlowRunRefused|FolderAccessDeniedException|HandoffException|HookStoppedException|InvalidNoteParentException|InvalidViewAlertException|LockedException|MergeDecisionException|MergeNotFullyReadableException|NoVtodoCalendarException|NotAuthorizedException|NotImplementedException|NoteEditForbiddenException|NoteLockedException|NoteWriteRefusedException|ObjectExistsException|ObjectStateMarker|ObjectStateWriteException|OfficeServerRequiredException|PropertyAlreadySetException|ReferentialIntegrityException|RegisterNotFoundException|RelatedRowFilterNotSupportedException|RuleRefusedException|SchemaNotInRegisterException|TaskAccessDeniedException|TaskConflictException|TaskValidationException|UniqueHintException|UnknownMaskFormException|UnknownMetadataFieldException|UnknownPatternSetException|ValidationException)[.]php$'
+              value: 'lib/Exception/(AnalyzeRequestRejectedException|ArchivalImmutableException|AuthorizationUnresolvableException|CalendarDateKindException|ConditionGroupException|ConfidenceThresholdOutOfRangeException|CorrectionRefusedException|CustomValidationException|DatabaseErrorChain|DecisionConflictException|DraftAlreadyLeftException|DuplicateBlockedException|EncryptedFieldFilterException|ExplicitRevealQueryException|ExportTooLargeException|FlowRunRefused|FolderAccessDeniedException|HandoffException|HookStoppedException|InvalidNoteParentException|InvalidViewAlertException|LockedException|MergeDecisionException|MergeNotFullyReadableException|NoVtodoCalendarException|NotAuthorizedException|NotImplementedException|NoteEditForbiddenException|NoteLockedException|NoteWriteRefusedException|ObjectExistsException|ObjectStateMarker|ObjectStateWriteException|OfficeServerRequiredException|PersonRegisterPurposeMissingException|PropertyAlreadySetException|ReferentialIntegrityException|RegisterNotFoundException|RelatedRowFilterNotSupportedException|RuleRefusedException|SchemaNotInRegisterException|TaskAccessDeniedException|TaskConflictException|TaskValidationException|UniqueHintException|UnknownMaskFormException|UnknownMetadataFieldException|UnknownPatternSetException|ValidationException)[.]php$'
             - type: directory
               value: 'lib/Formats/[^/]*$'
             - type: directory
@@ -64,6 +64,10 @@ deptrac:
               value: 'lib/Lifecycle/GuardResult[.]php$'
             - type: directory
               value: 'lib/Lifecycle/LifecycleGuardInterface[.]php$'
+            - type: directory
+              value: 'lib/Service/Anonymisation/OfficialsSource[.]php$'
+            - type: directory
+              value: 'lib/Service/Anonymisation/PersonRegisterSource[.]php$'
             - type: directory
               value: 'lib/Service/Lifecycle/TransitionActor[.]php$'
             - type: directory
@@ -4028,7 +4032,41 @@ deptrac:
         - type: directory
           value: 'lib/Service/(AuditCanonicalV1|AuditChainKey|AuditHashService|AuditHashServiceInterface|AuditQueryService|AuditQueryServiceInterface|AuditRechainInterface|AuditRetentionResolver|AuditRetentionResolverInterface|AuditSealInterface|AuthorizationAuditService|AvgComplianceService|AvgRetentionErasureRun|AvgRetentionService|CalculationRun|ComplianceServiceBindings|ComplianceServiceRegistrar|ContentScanService|DsarErasureRun|DsarGuards|DsarService|DsarServiceInterface|DsarStores|DsarSubjectQuery|LogObjectInTable|LogService|ProcessingLogService|ProcessingRead|ReadCaptureRun|RetentionClock|RetentionPass|RetentionRules|RetentionService|RetentionServiceInterface|RetentionStores|SchemaCascade|SchemaDeletionService|SchemaTeardownGuard|SearchPeriod|SearchTrailActivityInsights|SearchTrailNameEnricher|SearchTrailQueryConfig|SearchTrailService|SearchTrailServiceInterface|SearchTrailStatistics|SearchTrailUserAgentParser|TableDeletionRun|TableObjectRef|TenantKeyService|TmloService|UnclassifiedProcessing|WholeTableRows)[.]php$'
         - type: directory
-          value: 'lib/Service/Anonymisation/[^/]*$'
+          value: 'lib/Service/Anonymisation/AnonymisationBackendCollaborators[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/AnonymisationBackendPlatform[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/AnonymisationBackendService[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/AnonymisationBackendServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/AnonymiserCall[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/AnonymiserRequestInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/BackendInfo[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/BackendMethodsInterface[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/BackendState[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/ContentPipelineReport[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/DetectorVersion[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/DetectorVersionHistory[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/DetectorVersionReader[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/PipelineSteps[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/ProbeResult[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/ProbeResultCache[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/TextDisclosureRecorder[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/TextDisclosureSource[.]php$'
         - type: directory
           value: 'lib/Service/Archival/[^/]*$'
         - type: directory
@@ -4148,7 +4186,7 @@ deptrac:
         - type: directory
           value: 'lib/AppHost/Store/Source/[^/]*$'
         - type: directory
-          value: 'lib/BackgroundJob/(CalendarLinkBackfillRun|ConnectionSeamReportJob|ContextChatSubmissionJob|HandoffQueueDrainJob|IntegrationsJobHandlesInterface|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
+          value: 'lib/BackgroundJob/(BackfillEmailLinkMessageIdJob|CalendarLinkBackfillRun|ConnectionSeamReportJob|ContextChatSubmissionJob|HandoffQueueDrainJob|IntegrationsJobHandlesInterface|OAuth2TokenRefreshJob|SyncDataJob|WebhookDeliveryJob|WebhookRetryJob)[.]php$'
         - type: directory
           value: 'lib/BackgroundJob/Support/OAuth2TokenRefreshServices[.]php$'
         - type: directory
@@ -4410,6 +4448,8 @@ deptrac:
         - type: directory
           value: 'lib/Notifications/Db/MessageMapperInterface[.]php$'
         - type: directory
+          value: 'lib/Notifications/Service/EmailLinkMessageIdBackfill[.]php$'
+        - type: directory
           value: 'lib/Notifications/Service/EmailLinkRequest[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/EmailLinkedSchemas[.]php$'
@@ -4419,6 +4459,8 @@ deptrac:
           value: 'lib/Notifications/Service/EmailService[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/EmailServiceInterface[.]php$'
+        - type: directory
+          value: 'lib/Notifications/Service/OutboundMailLinkWriter[.]php$'
         - type: directory
           value: 'lib/Notifications/Service/ReplyThreadService[.]php$'
         - type: directory
@@ -4626,6 +4668,16 @@ deptrac:
         - type: directory
           value: 'lib/Service/(FileFolderServiceInterface|FileHandlerSupportInterface|FileReaderInterface|FileService|FileServiceInterface|FileWriterInterface)[.]php$'
         - type: directory
+          value: 'lib/Service/Anonymisation/CapacitySuggester[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/OfficialsDirectory[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/PersonRegisterMatcher[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/PersonRegisterRun[.]php$'
+        - type: directory
+          value: 'lib/Service/Anonymisation/RegisterNameReader[.]php$'
+        - type: directory
           value: 'lib/Service/File/AnonymiqRegionDetector[.]php$'
         - type: directory
           value: 'lib/Service/File/AntivirusScan[.]php$'
@@ -4755,6 +4807,8 @@ deptrac:
           value: 'lib/Service/File/UrlFileSource[.]php$'
         - type: directory
           value: 'lib/Service/File/UrlStreamOpener[.]php$'
+        - type: directory
+          value: 'lib/Service/Mail/[^/]*$'
         - type: directory
           value: 'lib/Service/Sharing/AccessLinkReaderFilters[.]php$'
         - type: directory
@@ -5387,8 +5441,6 @@ deptrac:
           value: 'lib/Service/Interaction/WatcherServiceInterface[.]php$'
         - type: directory
           value: 'lib/Service/Interaction/WatcherStore[.]php$'
-        - type: directory
-          value: 'lib/Service/Mail/[^/]*$'
         - type: directory
           value: 'lib/Service/Notification/AddressDeliveryServices[.]php$'
         - type: directory

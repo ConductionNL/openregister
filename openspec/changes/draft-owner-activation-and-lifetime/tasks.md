@@ -12,7 +12,8 @@
 - [x] 1.4 The server-filled excusals move to `DraftStatusPolicy::serverFilledExcusals()`, shared by the form submit and the activation
   - Test: DraftStatusPolicyTest, FormSubmitServiceTest (unchanged, still green)
 - [x] 1.5 Newman collection `tests/integration/openregister-draft-activation.postman_collection.json`, registered in `tests/newman/run-all.sh`: the delivered 403, 422, 409, 404 and 200 from a caller's side
-- [ ] 1.6 Live: run that collection against an instance (live pass, decision 139); CI's Newman job runs it on the PR
+- [x] 1.6 Live: run that collection against an instance (live pass, decision 139); CI's Newman job runs it on the PR
+  - Run 2026-11-25 on a sandbox Nextcloud 34.0.6 with MariaDB: 38 requests, 79 assertions, 0 failed (before and after the fix in 3.11). On SQLite the collection is red on `JSON_UNQUOTE`, a database the query layer does not serve, not a defect of this change
 
 ## 2. A schema sets a draft lifetime
 
@@ -35,7 +36,11 @@
   - Test: DraftExpiryTest
 - [x] 3.2 `DraftExpiryJob`, daily, declared in `appinfo/info.xml`; `info.xml` version bumped so the declaration is picked up
   - Test: DraftExpiryJobTest (finds the job from `appinfo/info.xml` and runs that class down to the delete; fails without the declaration)
-- [ ] 3.3 Live: on an instance, set `draftLifetimeDays` on a schema, age a draft, run `occ background-job:execute` for the job, and read the audit trail of the removed draft (live pass, decision 139)
+- [x] 3.3 Live: on an instance, set `draftLifetimeDays` on a schema, age a draft, run `occ background-job:execute` for the job, and read the audit trail of the removed draft (live pass, decision 139)
+  - Run 2026-11-25 (Nextcloud 34.0.6, MariaDB): a schema with `draftLifetimeDays: 1`, two drafts of a non-admin owner, one aged three days. First run: nothing removed, which is how 3.11 was found. With 3.11: `openregister:drafts:expired` reports 1 draft, `background-job:execute` removes the aged draft, keeps the fresh one, and the audit trail holds one `draft.removed` row by `job:DraftExpiryJob` with status, register, schema and owner, no content
+- [x] 3.11 `MagicSearchHandler`: a listed object carries its `_status`, so a search hit that is a draft answers `isDraft()` (found live in 3.3: every listed draft read as an ordinary object, so the sweep removed nothing and lists answered `@self.status` null where a single read answered `draft`)
+  - Spec ref: specs/form-destination/spec.md, "One background job MUST remove drafts past their schema's lifetime"
+  - Test: MagicSearchHandlerRowToEntityTest, case `status` (red without the fix)
 
 - [x] 3.4 `ObjectService::deleteObject()`: a stored draft passes the archival delete gate, and a draft's delete is permanent; nothing else passes
   - Spec ref: specs/form-destination/spec.md, "A draft MUST be deletable on every schema, and its delete MUST be permanent"

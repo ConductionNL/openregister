@@ -28,6 +28,8 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\TranslationMapper;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionGuard;
+use OCA\OpenRegister\Files\Service\File\FileRestrictionGuardInterface;
+use OCA\OpenRegister\Kernel\Contracts\Core\FileReadRestrictionInterface;
 use OCA\OpenRegister\Files\Service\File\FileRestrictionStore;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\LanguageService;
@@ -61,6 +63,13 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 	private const RESTRICTED = 42;
 
 	private const OPEN = 43;
+
+	/**
+	 * The ids the renderer asked the container for, in order.
+	 *
+	 * @var list<string>
+	 */
+	private array $requestedServices = [];
 
 	/**
 	 * A FileMapper record.
@@ -104,7 +113,12 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 			static fn (array $ids): array => array_combine($ids, array_map(static fn (int $id): bool => $id !== self::RESTRICTED, $ids))
 		);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturnCallback(static fn (string $id): object => $guard);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use ($guard): object {
+				$this->requestedServices[] = $id;
+				return $guard;
+			}
+		);
 
 		return new RenderObject(
 			stores: new \OCA\OpenRegister\Service\Object\RenderStores(
@@ -166,6 +180,21 @@ class FileRestrictionRenderAndLinkTest extends TestCase {
 
 		$this->assertSame([(string)self::OPEN], array_column($rendered->getFiles(), 'id'));
 	}//end testTheRenderedFilesLeaveTheRestrictedFileOut()
+
+	/**
+	 * The renderer asks the Core port for the verdict, not the Files guard by its own interface.
+	 *
+	 * @spec openspec/changes/functional-areas-depend-in-one-direction/specs/backend-modularity/spec.md#requirement-areas-reference-only-lower-areas
+	 */
+	public function testTheRendererAsksTheCoreFileRestrictionPort(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('c0ffee00-0000-4000-8000-000000000001');
+
+		$this->call($this->renderer(), 'renderFiles', [$object]);
+
+		$this->assertContains(FileReadRestrictionInterface::class, $this->requestedServices);
+		$this->assertNotContains(FileRestrictionGuardInterface::class, $this->requestedServices);
+	}//end testTheRendererAsksTheCoreFileRestrictionPort()
 
 	public function testTheLightweightFileIdsLeaveTheRestrictedFileOut(): void {
 		$object = new ObjectEntity();

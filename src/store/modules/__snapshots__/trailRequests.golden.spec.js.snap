@@ -21,6 +21,7 @@ exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) failure wi
     ],
   ],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -90,6 +91,7 @@ exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) failure wi
     ],
   ],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -159,6 +161,7 @@ exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) network fa
     ],
   ],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -232,6 +235,7 @@ exports[`trail store requests golden auditTrail.deleteAuditTrail([2]) ok 1`] = `
     "total": 5,
   },
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -298,6 +302,7 @@ exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]
     ],
   ],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -368,6 +373,7 @@ exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]
     ],
   ],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -438,6 +444,7 @@ exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]
     ],
   ],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -512,6 +519,7 @@ exports[`trail store requests golden auditTrail.deleteMultipleAuditTrails([[1,3]
     "total": 5,
   },
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -574,6 +582,7 @@ exports[`trail store requests golden auditTrail.fetchStatistics([]) failure with
     ],
   ],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -645,6 +654,7 @@ exports[`trail store requests golden auditTrail.fetchStatistics([]) failure with
     ],
   ],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -716,6 +726,7 @@ exports[`trail store requests golden auditTrail.fetchStatistics([]) network fail
     ],
   ],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -791,6 +802,7 @@ exports[`trail store requests golden auditTrail.fetchStatistics([]) ok 1`] = `
     "total": 5,
   },
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -852,6 +864,7 @@ exports[`trail store requests golden auditTrail.getActionDistribution([]) failur
   "requests": [],
   "returned": [],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -905,6 +918,7 @@ exports[`trail store requests golden auditTrail.getActionDistribution([]) failur
   "requests": [],
   "returned": [],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -958,6 +972,7 @@ exports[`trail store requests golden auditTrail.getActionDistribution([]) networ
   "requests": [],
   "returned": [],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -1011,6 +1026,7 @@ exports[`trail store requests golden auditTrail.getActionDistribution([]) ok 1`]
   "requests": [],
   "returned": [],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -1090,6 +1106,7 @@ exports[`trail store requests golden auditTrail.getStatistics([]) failure with e
     "update": 0,
   },
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -1171,6 +1188,7 @@ exports[`trail store requests golden auditTrail.getStatistics([]) failure withou
     "update": 0,
   },
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -1252,6 +1270,7 @@ exports[`trail store requests golden auditTrail.getStatistics([]) network failur
     "update": 0,
   },
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -1330,6 +1349,7 @@ exports[`trail store requests golden auditTrail.getStatistics([]) ok 1`] = `
     "update": 0,
   },
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -1391,6 +1411,7 @@ exports[`trail store requests golden auditTrail.getTopObjects([]) failure with e
   "requests": [],
   "returned": [],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -1444,6 +1465,7 @@ exports[`trail store requests golden auditTrail.getTopObjects([]) failure withou
   "requests": [],
   "returned": [],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -1497,6 +1519,7 @@ exports[`trail store requests golden auditTrail.getTopObjects([]) network failur
   "requests": [],
   "returned": [],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [
@@ -1550,6 +1573,7 @@ exports[`trail store requests golden auditTrail.getTopObjects([]) ok 1`] = `
   "requests": [],
   "returned": [],
   "state": {
+    "auditTrailCategory": "domain",
     "auditTrailFilters": {},
     "auditTrailItem": null,
     "auditTrailList": [

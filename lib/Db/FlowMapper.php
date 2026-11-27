@@ -306,6 +306,42 @@ class FlowMapper extends QBMapper implements FlowMapperInterface {
 	}//end findScheduled()
 
 	/**
+	 * The flows, enabled or not, whose graph holds a node of one type.
+	 *
+	 * A text match on the stored `nodes` JSON narrows the rows; the caller
+	 * still reads the node list itself, so a type named in another field
+	 * of a node never counts. The column is cast to text first: on
+	 * PostgreSQL `nodes` is `json`, which has no LIKE, and the failed
+	 * statement would abort the transaction the caller runs in.
+	 *
+	 * @param string $nodeType The node type, e.g. `openregister.trigger-calendar`.
+	 *
+	 * @return array<int, Flow>
+	 *
+	 * `nodes` is a json column. PostgreSQL has no LIKE on json, and its error
+	 * aborts the surrounding transaction: a flow run that wrote an object
+	 * (the calendar index listener calls this on every object write) then
+	 * failed on its next write. castColumn() casts it to text per platform first.
+	 *
+	 * @spec openspec/changes/flow-calendar-and-webhook-triggers/tasks.md#1-calendar-trigger
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md#requirement-swapping-the-store-is-proven-end-to-end-req-rds-005
+	 */
+	public function findWithNodeType(string $nodeType): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->like(
+					$qb->expr()->castColumn(column: 'nodes', type: IQueryBuilder::PARAM_STR),
+					$qb->createNamedParameter('%' . $this->db->escapeLikeParameter($nodeType) . '%')
+				)
+			);
+
+		return $this->findEntities(query: $qb);
+	}//end findWithNodeType()
+
+	/**
 	 * The ids of the flows one user owns.
 	 *
 	 * Feeds the run-history visibility rule: a caller sees the runs they
