@@ -13,7 +13,9 @@ import { navigationStore } from '../store/store.js'
 	<DeleteRegister />
 	<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
 	<DeleteConfiguration />
-	<ImportConfiguration />
+	<!-- Mounted only while open: on mount it reads the API token settings,
+		which every OpenRegister page paid for with the dialog closed. -->
+	<ImportConfiguration v-if="navigationStore.modal === 'importConfiguration'" />
 	<ExportConfiguration />
 	<PublishConfiguration />
 	<PublishToGitlab />
