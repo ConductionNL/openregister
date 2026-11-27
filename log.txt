@@ -5572,3 +5572,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T15:29:17Z integrator-20261127T115023-b15bb467 MERGED-TREE 6e77e5bcb6: 2 PRs, main now 7e4effd9e2 = tested tree
 2026-11-27T15:36:22Z session-20261127T152810-427895f9 cloud-or-reviewer-0..7: APPROVE #11379 dcd3e88d, #11380 9fdd08ae; #11305 skipped (conflicts with main, noted obsolete); every other open non-draft main PR already has a verdict at its head
 2026-11-27T15:51:18Z integrator-20261127T155017-3da46553 NORESULT tree 44a5914a6e: deps failed
+2026-11-27T15:57:27Z session-20261127T081459-e72c7826 live-launchpad-1: launchpad#2204 merged by Ruben (REVIEW-LAUNCHPAD 4-8 ticked). Open follow-up: e2e migration of the specs that drive the removed sidebar (dashboard-switcher.spec.ts + ~40 files), then delete DashboardSwitcherSidebar (openspec more-menu-favourites tasks 7-8).
