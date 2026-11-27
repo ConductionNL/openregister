@@ -203,3 +203,4 @@
 2026-11-27T09:00:45Z GREEN prs=11241,11246,11251,11256 main=bc2133f863 integrator-cloud (merged; main now 0745a707cd)
 2026-11-27T09:05:30Z RED prs=10156,11261,11266,11271 main=0745a707cd integrator-cloud (jest initial-data.golden.spec.js EditSource snapshot gains runAs/schedule; suspect #10156 (changes EditSource), rebuilt without it, #10156 back as single)
 2026-11-27T09:15:41Z GREEN prs=11261,11266,11271 main=0745a707cd integrator-cloud (merged; main now e422f05fc3)
+2026-11-27T09:20:12Z RED prs=10156 main=e422f05fc3 integrator-cloud (solo: jest initial-data.golden EditSource snapshot needs runAs/schedule; plus 1 PHPUnit failure; failed-solo)
