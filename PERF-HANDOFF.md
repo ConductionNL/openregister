@@ -2,6 +2,14 @@
 
 Budget (ADR-124): API <= 100 ms, page usable <= 300 ms warm. Every page is still over it. Nextcloud core alone costs ~480 ms of main thread, so take the items that remove whole round trips or megabytes first. One small PR per item, base development (nextcloud-vue: main). Builders of the named app own its items; the nextcloud-vue items belong to the launchpad builder (it has the most to gain), one per run.
 
+## Budget definition, CURRENT (perf-2, 27 Nov 2026, Ruben's 09:10 CET rule; implemented in nextcloud-vue#2416, released in 2.235.0)
+What the perf spec (`definePerformanceSpec`, hydra gate 124) now times and judges, per page, warm (one priming load, then the median of PERF_PAGE_RUNS loads in one browser context):
+- TOTAL = full page load, measured as before: from navigation until, for 100 ms, the document has loaded, the ready selector is visible, no fetch/XHR is in flight and no loading indicator shows.
+- FLOOR = the same measurement of the bare Nextcloud Dashboard (`/index.php/apps/dashboard/`, or PERF_FLOOR_PATH), taken in the same run on the same stack, once per run (shared across Playwright worker restarts through the project output dir). PERF_FLOOR_MS supplies a floor measured with every Conduction app disabled, which is the strict form of the rule. Without it, the floor is measured with the apps the run has enabled; OR no longer measurably raises the Dashboard.
+- FIRST USEFUL CONTENT = the largest contentful paint inside the page's ready root (main region), in ms from navigation start (page LCP if the main region has no LCP candidate; not judged without LCP support).
+- PASS when total - floor <= 150 ms AND first useful content <= 300 ms. Both targets scale with PERF_PAGE_BUDGET_MS / 300 (CI 1000: +500 ms and 1000 ms); the floor is not scaled. API requests <= 100 ms stay with Newman.
+- Each test reports `floor, total, total - floor, first useful content`. ADR-124 text update: hydra#795 (for Ruben).
+
 ## Budget definition (perf-1, 25 Nov 2026 13:55Z, from nextcloud-vue testing/performance.js and ADR-124)
 What is timed: a FULL page load. `measureLoad` calls `page.goto(url, { waitUntil: 'commit' })` and stops the clock when, for 100 ms in a row, the document has fired `load` (every bundle has run), the page's ready selector (default `main, [role="main"]`) is visible, no fetch/XHR is in flight (heartbeat and notify_push ignored) and no loading indicator is visible. Warm: one priming load first, in the same browser context (HTTP cache and V8 code cache warm, server caches warm), then the median of PERF_PAGE_RUNS (default 3) loads. Budget 300 ms (PERF_PAGE_BUDGET_MS; CI sets 1000). It is NOT in-app navigation: every measured load reboots Nextcloud core, every app script and OpenRegister's global scripts.
 Core floor, sandbox reference stack (nginx, php-fpm 8.4 + opcache, MariaDB 10.11, APCu, Redis locking; NC 34.0.6; 1920x1080; median of 5 warm loads; measured by perf-1 with the library's own measurePage):
