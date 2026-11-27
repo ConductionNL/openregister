@@ -1526,3 +1526,4 @@
 2026-11-27T11:49:59Z perf-2 (session cad7fdce) ended at start: lane K=2 already active in session-20261127T114122-8804b049 (leases perf-K2 + perf-server-render, taken 11:41-11:42Z, expire 13:11Z/15:42Z); not duplicating
 2026-11-27T12:10:31Z perf-1 merged dossiq#7028 (nc-vue ^2.235.2: #2418 #2419 #2421): My work 1887/1757 -> 1552/1543 ms (recalcs 119 -> 73/load), Dashboard 1796/1729 -> 1733/1662, My queue 1180/1191 -> 954/1064, Cases 2003/1977 -> 1981/1692, 23.30 -> 23.30 MB JS
 2026-11-27T12:14:05Z perf-2 merged openregister#11371: every OR page one request fewer (Registers 19 -> 18, Schemas 19 -> 18, Configurations 18 -> 17); usable time within noise
+2026-11-27T12:14:56Z live-launchpad-1 (session-20261127T121449-89d2ab3d) ended at start: lane K=1 already active in session-20261127T111503-a4048210 (lease live-launchpad-1 taken 12:11Z, expires 13:41Z); not duplicating
