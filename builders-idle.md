@@ -1532,3 +1532,4 @@
 2026-11-27T12:25:26Z live-thematiq-1 (session-20261127T122521-3ff05932) ended at start: lane K=1 already active in session-20261127T112536-ad5a922c (lease live-thematiq-1 taken 11:25Z, expires 12:55Z); not duplicating
 2026-11-27T12:34:17Z live-launchpad-2 merged launchpad#2237 (dashboard-reactions-ui 2/2 live, was 0/2 in shard 3/8: since #2190 the page carries the reactions read, spec now reads workspaceApiReads). Full run on 9cda792f so far: shard 1 318 passed 3 failed (401s, rerun pending), shard 2 311/311, shard 3 349 passed 2 failed (fixed by #2237).
 2026-11-27T12:38:16Z perf-2 merged openregister#11369: every page render (with #11291) core Dashboard 81-97 -> 68-80 ms server, launchpad Workspace page 1033-1069 -> 931-975 ms
+2026-11-27T12:39:34Z perf-K2 merged thematiq#2134: every NC page render (core Dashboard) 60.4 -> 57.6 ms server wall (workspace-icon stamps cached), JS unchanged
