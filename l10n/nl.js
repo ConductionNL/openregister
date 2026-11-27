@@ -167,6 +167,7 @@ OC.L10N.register(
     "Addresses" : "Adressen",
     "Admin" : "Beheerder",
     "Administration" : "Beheer",
+    "Administrative changes" : "Beheerwijzigingen",
     "Adopt" : "Overnemen",
     "Advanced" : "Geavanceerd",
     "Advanced (JSON)" : "Geavanceerd (JSON)",
@@ -2713,6 +2714,7 @@ OC.L10N.register(
     "Record a field-level redaction on this case. The redaction and its ground are logged in the case audit trail." : "Leg een redactie op veldniveau vast bij deze zaak. De redactie en de grond ervan worden vastgelegd in het auditspoor van de zaak.",
     "Record a proposed denial ground for this request. Drafting does not require a regulator reference; finalising the denial does." : "Leg een voorgestelde weigeringsgrond vast voor dit verzoek. Voor het opstellen is geen referentie van de toezichthouder nodig, voor het afronden van de weigering wel.",
     "Record a regulator reference" : "Referentie van de toezichthouder vastleggen",
+    "Record history" : "Recordgeschiedenis",
     "Record text is sent to this provider to be translated. I confirm this." : "De tekst van records wordt naar deze aanbieder gestuurd om te vertalen. Dat bevestig ik.",
     "Recorded ground" : "Vastgelegde grond",
     "Records" : "Records",
@@ -4071,6 +4073,7 @@ OC.L10N.register(
     "Whether this source is polled. A disabled source stays listed." : "Of deze bron gepolld wordt. Een uitgeschakelde bron blijft in de lijst staan.",
     "Whether this survey is being sent." : "Of deze enquête wordt verstuurd.",
     "Whether this value is defined by the product rather than by the organisation. A system-defined value may be retired by closing its validity window; it may not be deleted, because the code that switches on it does not stop existing when the row does." : "Of deze waarde door het product wordt gedefinieerd in plaats van door de organisatie. Een systeemgedefinieerde waarde mag uitgefaseerd worden door haar geldigheidsvenster te sluiten; ze mag niet verwijderd worden, omdat de code die erop schakelt niet ophoudt te bestaan wanneer de rij dat doet.",
+    "Which changes to show" : "Welke wijzigingen tonen",
     "Which objects, as a JSON query" : "Welke objecten, als een JSON-query",
     "Who answered. Absent entirely on an anonymous survey, not empty." : "Wie heeft geantwoord. Bij een anonieme enquête helemaal afwezig, niet leeg.",
     "Who approved the list, and when." : "Wie de lijst heeft goedgekeurd, en wanneer.",
@@ -4341,7 +4344,17 @@ OC.L10N.register(
     "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Regels waarvoor geen enkele ontvanger is gevonden, zodat er niets is verstuurd en niemand op de hoogte is gebracht. Voeg leden toe aan de groepen die ze noemen, of wijzig hun ontvangers.",
     "Times reached nobody: {count}. Last on {date}." : "Aantal keer zonder ontvanger: {count}. Laatst op {date}.",
     "Add a validation message" : "Een validatiemelding toevoegen",
-    "Validation messages" : "Validatiemeldingen"
+    "Validation messages" : "Validatiemeldingen",
+    "An export key encrypts an instance set, so the set opens only where that key is present. Keys belong to your active organisation." : "Een exportsleutel versleutelt een instantieset, zodat de set alleen opent waar die sleutel aanwezig is. Sleutels horen bij je actieve organisatie.",
+    "Could not load the export keys" : "De exportsleutels konden niet worden geladen",
+    "Create export key" : "Exportsleutel aanmaken",
+    "Delete this export key? A set encrypted with it can no longer be opened here." : "Deze exportsleutel verwijderen? Een set die ermee is versleuteld, kan hier dan niet meer worden geopend.",
+    "Export keys" : "Exportsleutels",
+    "No export keys yet" : "Nog geen exportsleutels",
+    "Recovery string" : "Herstelcode",
+    "Rotate" : "Roteren",
+    "Store this recovery string somewhere else now. It is shown only once, and without it a set encrypted with this key cannot be opened on another instance." : "Bewaar deze herstelcode nu ergens anders. Hij wordt maar één keer getoond, en zonder deze code kan een set die met deze sleutel is versleuteld niet op een andere instantie worden geopend.",
+    "The export key action failed" : "De actie op de exportsleutel is mislukt"
 },
 "nplurals=2; plural=(n != 1);"
 );

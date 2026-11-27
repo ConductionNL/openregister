@@ -135,6 +135,14 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 					{{ t('openregister', 'Rights') }}
 				</button>
 				<button
+					v-if="isAdmin"
+					class="tabButton"
+					:class="[{ active: activeTab === 'changes' }]"
+					@click="activeTab = 'changes'">
+					<History :size="16" />
+					{{ t('openregister', 'Changes') }}
+				</button>
+				<button
 					class="tabButton"
 					:class="[{ active: activeTab === 'indexes' }]"
 					@click="activeTab = 'indexes'">
@@ -162,6 +170,12 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 			<SchemaRightsTab
 				v-if="activeTab === 'rights'"
 				:schema="schemaStore.schemaItem" />
+
+			<!-- Changes Tab: who edited the schema, when and what (administrators only) -->
+			<EntityChangesList
+				v-if="activeTab === 'changes' && isAdmin"
+				kind="schemas"
+				:entityId="schemaStore.schemaItem.id" />
 
 			<!-- Indexes Tab: the database indexes on the schema's tables and the field setting behind each -->
 			<SchemaIndexesTab
@@ -247,6 +261,7 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 </template>
 
 <script>
+import { getCurrentUser } from '@nextcloud/auth'
 import {
 	NcActionButton,
 	NcActions,
@@ -262,12 +277,14 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import FileDocumentEditOutline from 'vue-material-design-icons/FileDocumentEditOutline.vue'
 import Gavel from 'vue-material-design-icons/Gavel.vue'
+import History from 'vue-material-design-icons/History.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import ShieldAccount from 'vue-material-design-icons/ShieldAccount.vue'
 import TableKey from 'vue-material-design-icons/TableKey.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import EntityChangesList from '../../components/audit/EntityChangesList.vue'
 import SchemaDraftBar from '../../components/schema/SchemaDraftBar.vue'
 import DetailChartGrid from '../register/DetailChartGrid.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
@@ -302,6 +319,7 @@ export default {
 		ChartBox,
 		Cog,
 		Gavel,
+		History,
 		ShieldAccount,
 		TableKey,
 		CalendarProviderTab,
@@ -310,6 +328,7 @@ export default {
 		SchemaRightsTab,
 		SchemaIndexesTab,
 		SchemaDraftBar,
+		EntityChangesList,
 	},
 
 	data() {
@@ -322,6 +341,16 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the signed-in user is an administrator: the edit history is theirs only.
+		 *
+		 * @spec openspec/changes/history-schema-and-settings-edits-audited/tasks.md#task-3-1
+		 * @return {boolean}
+		 */
+		isAdmin() {
+			return getCurrentUser()?.isAdmin === true
+		},
+
 		/**
 		 * Chart options for the Audit Trail Actions chart
 		 *

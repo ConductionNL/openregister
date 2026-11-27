@@ -78,6 +78,13 @@ class DashboardController extends Controller {
 	private readonly ControllerSession $session;
 
 	/**
+	 * The controller's collaborators, kept for the shell reads the page carries.
+	 *
+	 * @var DashboardControllerServices
+	 */
+	private readonly DashboardControllerServices $services;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                    $request  The current request.
@@ -88,6 +95,7 @@ class DashboardController extends Controller {
 
 		$this->dashboardService = $services->dashboardService;
 		$this->session          = $services->session;
+		$this->services         = $services;
 	}//end __construct()
 
 	/**
@@ -148,6 +156,8 @@ class DashboardController extends Controller {
 			params: []
 		);
 
+		// The shell's setup and walkthrough reads ride along with the page.
+		$this->services->bootReads?->provide();
 
 		// Return successful template response.
 		return $response;

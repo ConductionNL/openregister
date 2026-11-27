@@ -202,6 +202,61 @@ file=@register-config.yaml
 
 Idempotent: importing the same configuration twice produces the same result (no duplicates).
 
+## Encrypted Instance Sets
+
+An instance set, and the restorable copy written before a destruction, can be encrypted so that it opens only where its key is present. Nextcloud's own encryption is not used: it is keyed off the instance secret, and a set must open on another instance.
+
+### The format
+
+```
+ORSETENC1\n                    magic and format version
+{header JSON}\n                cleartext, authenticated
+[secretstream header, 24 bytes]
+[chunk][chunk]...[final chunk] 64 KiB of plaintext each
+```
+
+Each chunk is sealed with XChaCha20-Poly1305 (libsodium's `secretstream`, from PHP's `ext-sodium`, which Open Register requires). The last chunk carries the final tag, so a truncated file is refused as truncated and is never read as a shorter set. The header says only what a reader needs to start: `version`, `cipher` (`xchacha20poly1305-secretstream`), `chunkSize`, and either the passphrase parameters (`kdf: argon2id13`, `opslimit`, `memlimit`, `salt`) or the export key's fingerprint (`keyFingerprint`, the first 16 hex characters of the key's BLAKE2b hash). It names no instance, no counts and no dates, because anyone holding the file can read it. The header is authenticated with the first chunk, so a changed parameter or fingerprint makes the set fail.
+
+A set is checked to its final tag before anything is written from it. An altered file, a truncated file and a wrong key all give the same answer, "this file was changed or the key is wrong", naming no offset.
+
+### Two kinds of key
+
+- **Passphrase.** At least 12 characters, typed for one export or load, stretched with Argon2id at the moderate limits into a 32-byte key, and never stored. A background job never sees it: the request derives the key and hands the job a one-use key that is deleted when the job ends, and swept after 24 hours if the job died.
+- **Export key.** A random 32-byte key of one organisation, kept in the credential broker as an inject-only credential under the provider `openregister-export-key`. Only that organisation can use it.
+
+### Managing export keys
+
+Administrators manage the export keys of their active organisation in **Administration settings → Open Register → Export keys**, or through the API:
+
+| Route | What it does |
+| --- | --- |
+| `GET /api/export-keys` | The organisation's keys, newest first, as `{id, fingerprint, createdAt}` |
+| `POST /api/export-keys` | Create a key; `201` with `{id, fingerprint, recovery}` |
+| `POST /api/export-keys/{id}/rotate` | A new key for new sets; the old one stays for loading old sets. `201` with the new key's `recovery` and `previousId` |
+| `DELETE /api/export-keys/{id}` | Delete a key; sets encrypted with it can no longer be opened here |
+
+The routes are administrator-only and answer `409` when the caller has no active organisation. A key that is not in the organisation's own list answers `404`, whether it does not exist or belongs to another organisation. Creating, rotating, deleting and each use of a key write an audit row (`export.key-created`, `export.key-rotated`, `export.key-deleted`, `export.key-used`) that names the key's fingerprint and never the key.
+
+### Lost keys cannot be recovered
+
+There is no escrow. The recovery string (the key, base64url) is shown once, when the key is created or rotated, with `Cache-Control: no-store`; the list never carries it, and a reload shows the key by fingerprint and date only. Store it somewhere else: a set encrypted with a key whose recovery string is lost opens only on the instance that still holds the key, and a set encrypted with a forgotten passphrase does not open at all.
+
+### Encrypting the copy before a destruction
+
+The archival setting `destructionCopyEncryption` decides whether the copy written before a destruction is encrypted:
+
+| Value | Effect |
+| --- | --- |
+| `off` (default) | The copy is written as `<uuid>.json`, as before |
+| `when-key` | Encrypted with the organisation's newest usable export key when it has one, plain otherwise |
+| `required` | Encrypted, as `<uuid>.json.orsetenc`; without a usable export key nothing is destroyed and the run names the organisation whose key is missing |
+
+An unknown value reads as `required`. An encrypted copy is never also written in the clear, and the recorded destruction carries `copyKeyFingerprint`.
+
+### Field-encrypted values
+
+A property encrypted at field level is stored in an envelope only the source instance can open. A set carries such a value only inside encryption: an encrypted set holds the plaintext and the receiving instance re-encrypts it with its own key on load, and a plain set leaves the value out and lists the schema and property it left out. This applies to the instance set serialisation and load, which are being built under `import-preview-and-conflict-policy`.
+
 ## Import Summary Response
 
 ```json

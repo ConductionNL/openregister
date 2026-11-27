@@ -23,6 +23,7 @@
 namespace OCA\OpenRegister\Service\Settings;
 
 use Exception;
+use OCA\OpenRegister\Kernel\Contracts\AdministrativeRetentionPeriod;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\Audit\ReadEventVisibility;
 use OCA\OpenRegister\Service\Party\PartySearchService;
@@ -221,6 +222,8 @@ class ConfigurationSettingsHandler {
 				'readEventsVisibleTo' => ReadEventVisibility::groupsFrom(
 					raw: $this->appConfig->getValueString(AppIdentity::APP_ID, ReadEventVisibility::CONFIG_KEY, '[]')
 				),
+				// REQ-HSA-011: how long administrative audit rows are kept.
+				'administrativeRetention' => (new AdministrativeRetentionPeriod(appConfig: $this->appConfig))->period(),
 			],
 		];
 	}//end operationalSettings()
@@ -435,6 +438,9 @@ class ConfigurationSettingsHandler {
 	 * @return void
 	 */
 	private function storeSubmittedSections(array $data): void {
+		// Validated before anything is written, so a refused period leaves the whole save unstored.
+		$retention = $this->submittedAdministrativeRetention(audit: $data['audit'] ?? null);
+
 		if (($data['rbac'] ?? null) !== null) {
 			$this->storeSection(key: 'rbac', values: $data['rbac']);
 		}
@@ -442,6 +448,10 @@ class ConfigurationSettingsHandler {
 		$this->storePartyCap(party: $data['party'] ?? null);
 		$this->storeFlowSettings(flow: $data['flow'] ?? null);
 		$this->storeAuditSettings(audit: $data['audit'] ?? null);
+		if ($retention !== null) {
+			(new AdministrativeRetentionPeriod(appConfig: $this->appConfig))->store(period: $retention);
+		}
+
 		foreach (['multitenancy', 'retention'] as $key) {
 			if (($data[$key] ?? null) !== null) {
 				$this->storeSection(key: $key, values: $data[$key]);
@@ -496,6 +506,32 @@ class ConfigurationSettingsHandler {
 			$this->appConfig->setValueBool(AppIdentity::APP_ID, $key, (bool)($flow[$field] ?? $default));
 		}
 	}//end storeFlowSettings()
+
+	/**
+	 * The administrative audit retention a save carries, validated; null when it carries none.
+	 *
+	 * @param mixed $audit The submitted `audit` block.
+	 *
+	 * @return string|null The ISO 8601 duration to store.
+	 *
+	 * @throws \InvalidArgumentException When the period is not text or not an ISO 8601 duration.
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
+	 */
+	private function submittedAdministrativeRetention($audit): ?string {
+		if (is_array($audit) === false || array_key_exists('administrativeRetention', $audit) === false || $audit['administrativeRetention'] === null) {
+			return null;
+		}
+
+		if (is_string($audit['administrativeRetention']) === false) {
+			throw new \InvalidArgumentException('The administrative audit retention must be an ISO 8601 duration such as P10Y.');
+		}
+
+		$period = trim($audit['administrativeRetention']);
+		AdministrativeRetentionPeriod::interval(period: $period);
+
+		return $period;
+	}//end submittedAdministrativeRetention()
 
 	/**
 	 * Store which groups see who read a record, as a JSON list of group ids.

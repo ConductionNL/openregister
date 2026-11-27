@@ -126,6 +126,7 @@ DOMAIN_ORDER=(
     "object-grants"
     "portal-property"
     "anonymisation-disclosures"
+    "organisation-audit"
     "reviewer-decisions"
     "public-export"
     "nlgov-conformance"
@@ -260,6 +261,7 @@ declare -A DOMAIN_COLLECTIONS=(
     [portal-property]="$REPO_ROOT/tests/integration/openregister-portal-property.postman_collection.json"
     # REQ-ADI-005/006: file disclosures (reader 200, non-reader 403) and the admin pipeline report.
     [anonymisation-disclosures]="$REPO_ROOT/tests/newman/openregister-anonymisation-disclosures.postman_collection.json"
+    [organisation-audit]="$REPO_ROOT/tests/newman/openregister-organisation-audit.postman_collection.json"
     # Anonymous export: 200 with paging headers for a public schema, 401 not-public, 406 for pdf.
     [public-export]="$REPO_ROOT/tests/integration/openregister-public-export.postman_collection.json"
     # NLGov API design rules: the report is public (200 anonymous), the probe is administrator-only (403).

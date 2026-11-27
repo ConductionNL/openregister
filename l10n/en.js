@@ -159,6 +159,7 @@ OC.L10N.register(
     "Additional Information" : "Additional Information",
     "Addresses" : "Addresses",
     "Admin" : "Admin",
+    "Administrative changes" : "Administrative changes",
     "Adopt" : "Adopt",
     "Advanced" : "Advanced",
     "Advanced (JSON)" : "Advanced (JSON)",
@@ -2627,6 +2628,7 @@ OC.L10N.register(
     "Record a field-level redaction on this case. The redaction and its ground are logged in the case audit trail." : "Record a field-level redaction on this case. The redaction and its ground are logged in the case audit trail.",
     "Record a proposed denial ground for this request. Drafting does not require a regulator reference; finalising the denial does." : "Record a proposed denial ground for this request. Drafting does not require a regulator reference; finalising the denial does.",
     "Record a regulator reference" : "Record a regulator reference",
+    "Record history" : "Record history",
     "Record text is sent to this provider to be translated. I confirm this." : "Record text is sent to this provider to be translated. I confirm this.",
     "Recorded ground" : "Recorded ground",
     "Records" : "Records",
@@ -3935,6 +3937,7 @@ OC.L10N.register(
     "Whether this source is polled. A disabled source stays listed." : "Whether this source is polled. A disabled source stays listed.",
     "Whether this survey is being sent." : "Whether this survey is being sent.",
     "Whether this value is defined by the product rather than by the organisation. A system-defined value may be retired by closing its validity window; it may not be deleted, because the code that switches on it does not stop existing when the row does." : "Whether this value is defined by the product rather than by the organisation. A system-defined value may be retired by closing its validity window; it may not be deleted, because the code that switches on it does not stop existing when the row does.",
+    "Which changes to show" : "Which changes to show",
     "Which objects, as a JSON query" : "Which objects, as a JSON query",
     "Who answered. Absent entirely on an anonymous survey, not empty." : "Who answered. Absent entirely on an anonymous survey, not empty.",
     "Who approved the list, and when." : "Who approved the list, and when.",
@@ -4228,7 +4231,17 @@ OC.L10N.register(
     "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients.",
     "Times reached nobody: {count}. Last on {date}." : "Times reached nobody: {count}. Last on {date}.",
     "Add a validation message" : "Add a validation message",
-    "Validation messages" : "Validation messages"
+    "Validation messages" : "Validation messages",
+    "An export key encrypts an instance set, so the set opens only where that key is present. Keys belong to your active organisation." : "An export key encrypts an instance set, so the set opens only where that key is present. Keys belong to your active organisation.",
+    "Could not load the export keys" : "Could not load the export keys",
+    "Create export key" : "Create export key",
+    "Delete this export key? A set encrypted with it can no longer be opened here." : "Delete this export key? A set encrypted with it can no longer be opened here.",
+    "Export keys" : "Export keys",
+    "No export keys yet" : "No export keys yet",
+    "Recovery string" : "Recovery string",
+    "Rotate" : "Rotate",
+    "Store this recovery string somewhere else now. It is shown only once, and without it a set encrypted with this key cannot be opened on another instance." : "Store this recovery string somewhere else now. It is shown only once, and without it a set encrypted with this key cannot be opened on another instance.",
+    "The export key action failed" : "The export key action failed"
 },
 "nplurals=2; plural=(n != 1);"
 );
