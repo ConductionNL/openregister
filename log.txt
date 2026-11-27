@@ -5522,3 +5522,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T12:48:41Z precheck-20261127T122917-1773494e GREEN tree d8b9f5aeca on dev 99cfb73d4b prs 1 front=ok: Tests: 67962, Assertions: 242126, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
 2026-11-27T12:49:11Z session-20261127T113800-c746133c done-thematiq: merged thematiq #2133 (nc-vue 2.235.0: perf spec judges floor rule) #2137 (own-set delete dialog to TqEigenSets + compdiff rows TqEigenSets/TqLettertypen with seed.sh); e2e 571/577 (2 = perf spec under floor rule, 4 skipped) + Newman 182/182 on NC 34.0.6 PG16 nginx/php-fpm/APCu/Redis; compdiff full pass running
 2026-11-27T12:49:15Z precheck-20261127T122917-1773494e CONFLICT-DEV #11317 ade57c3e
+2026-11-27T12:49:36Z precheck-20261127T122917-1773494e CONFLICT-DEV #11148 199b32a5
