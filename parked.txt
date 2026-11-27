@@ -256,3 +256,4 @@ openregister#11346 a58931d1b48ec391e67384b4ae62ff7e9538a64c precheck-red alone o
 openregister#11077 e0f9d29a4dde3560a2294c76945c6290c2436650 auto-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#11374 fd2aec660ed9ab228f8ee875a643efc99f775241 precheck-red alone on main: FAIL src/dialogs/settings/clearDialogs.dom.golden.spec.js;FAIL src/modals/confirmDialogFrameUsers.dom.golden.spec.js;FAIL src/modals/exportUploadDialogs.dom.golden.spec.js
 openregister#11374 c77bcae002e6e7c8d017c137d1bbcb1e3291d8c4 auto-park: sbom: package-lock.json changed without sbom.cdx.json
+openregister#11349 d143ddd221b56d5619e19e353cab0ea94c8498e2 precheck-red alone on main: FAIL src/views/object/ObjectsList.spec.js
