@@ -191,3 +191,30 @@ describe('upload files golden', () => {
 		expect(String(ctx.error)).toBe('Error: plain')
 	})
 })
+
+describe('UploadFiles label choices', () => {
+	const { navigationStore } = jest.requireMock('../../store/store.js')
+
+	it('is open only while the upload modal is the open modal', () => {
+		navigationStore.modal = 'uploadFiles'
+		expect(UploadFiles.computed.isOpen()).toBe(true)
+		navigationStore.modal = 'viewSource'
+		expect(UploadFiles.computed.isOpen()).toBe(false)
+		navigationStore.modal = false
+		expect(UploadFiles.computed.isOpen()).toBe(false)
+	})
+
+	it('loads the tags when the modal opens, not while it is closed', () => {
+		const ctx = { getAllTags: jest.fn() }
+		const { handler, immediate } = UploadFiles.watch.isOpen
+		expect(immediate).toBe(true)
+		handler.call(ctx, false)
+		expect(ctx.getAllTags).not.toHaveBeenCalled()
+		handler.call(ctx, true)
+		expect(ctx.getAllTags).toHaveBeenCalledTimes(1)
+	})
+
+	it('sends no read when the closed modal mounts', () => {
+		expect(UploadFiles.mounted).toBeUndefined()
+	})
+})
