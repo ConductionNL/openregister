@@ -931,8 +931,46 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return;
 		}
 
-		$this->applyAnyOf(call: $call, conditions: array_merge($ownerAdmits, $this->ruleConditions(call: $call, notPrivate: $notPrivate)));
+		$grantAdmits = [];
+		$readGrant = $this->readGrantAdmitSqlFor(call: $call);
+		if ($readGrant !== null) {
+			$grantAdmits[] = $qb->createFunction($readGrant);
+		}
+
+		$this->applyAnyOf(call: $call, conditions: array_merge($ownerAdmits, $grantAdmits, $this->ruleConditions(call: $call, notPrivate: $notPrivate)));
 	}//end applyAccessConditions()
+
+	/**
+	 * The rows a per-object READ grant admits on their own, as raw SQL.
+	 *
+	 * Decision (Ruben, 25 Nov 2026, REQ-RIC-002): a read grant admits the row
+	 * by itself, ORed beside the schema's rules rather than ANDed with them.
+	 * Only for read; drafts stay with their owner like everywhere else. The
+	 * deny and tenant terms are ANDed over the whole query and still narrow it.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return string|null The predicate, or null when no read grant is in play.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function readGrantAdmitSqlFor(RbacAccessCall $call): ?string {
+		if ($call->action !== 'read') {
+			return null;
+		}
+
+		$quoted = $this->quotedGrantedUuids(userId: $call->userId, action: 'read');
+		if ($quoted === []) {
+			return null;
+		}
+
+		$granted = $call->columnPrefix . '_uuid IN (' . implode(', ', $quoted) . ')';
+		if ($this->hidesDrafts(call: $call) === true) {
+			$granted = '(' . $granted . ' AND ' . (new DraftStatusPolicy())->notADraftSql(columnPrefix: $call->columnPrefix) . ')';
+		}
+
+		return $granted;
+	}//end readGrantAdmitSqlFor()
 
 	/**
 	 * Grant access when ANY condition matches; deny outright when there is none.
@@ -1788,8 +1826,35 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return true;
 		}
 
+		if ($this->readGrantAdmits(check: $check) === true) {
+			return true;
+		}
+
 		return $this->privateObjectRefuses(check: $check) === false && $this->rulesGrant(check: $check) === true;
 	}//end objectVerdict()
+
+	/**
+	 * Whether a per-object READ grant admits the caller to this object on its own.
+	 *
+	 * Decision (Ruben, 25 Nov 2026, REQ-RIC-002): a read grant admits the row
+	 * by itself, whatever the schema's conditional read rules say, so a
+	 * dashboard shared with one colleague opens for them although the schema's
+	 * audience rules do not list them. Only read: a write still needs the
+	 * schema's rules. The deny pass ran before this and still refuses.
+	 *
+	 * @param RbacPermissionCheck $check The permission check.
+	 *
+	 * @return bool True when the caller holds a read grant on this object.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function readGrantAdmits(RbacPermissionCheck $check): bool {
+		if ($check->action !== 'read' || $check->objectData === null || $check->objectUuid === null || $check->objectUuid === '') {
+			return false;
+		}
+
+		return $this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $check->userId, objectUuid: $check->objectUuid), action: 'read') === true;
+	}//end readGrantAdmits()
 
 	/**
 	 * Start a permission check for the current caller.
@@ -2360,7 +2425,13 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return $this->withDenyTerm(conditions: array_merge($ownerAdmits, [$notPrivate]), denyTerm: $denyTerm);
 		}
 
-		$conditions = array_merge($ownerAdmits, $this->ruleConditionsSql(call: $call, notPrivate: $notPrivate));
+		$grantAdmits = [];
+		$readGrant = $this->readGrantAdmitSqlFor(call: $call);
+		if ($readGrant !== null) {
+			$grantAdmits[] = $readGrant;
+		}
+
+		$conditions = array_merge($ownerAdmits, $grantAdmits, $this->ruleConditionsSql(call: $call, notPrivate: $notPrivate));
 		return $this->withDenyTerm(conditions: $conditions, denyTerm: $denyTerm);
 	}//end conditionsSql()
 

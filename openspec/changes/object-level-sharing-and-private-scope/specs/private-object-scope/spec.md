@@ -39,6 +39,13 @@ schema would refuse, so it can never be used to widen.
 - **WHEN** a schema's rules would refuse a user an action, and a private object of that schema invites them for it
 - **THEN** the request is still denied
 
+#### Scenario: a read grant admits the object on its own
+
+- **WHEN** a user holds a per-object grant carrying `read` on an object, and the schema's read rules do not admit them
+- **THEN** the user may read that object, in a list and on its own
+- **AND** a deny that reaches the user still refuses it, the tenant edge, classification and confidentiality still narrow it, and a draft stays with its owner
+- **AND** a grant for any other action (update, delete) still admits only within the schema's rules
+
 ### Requirement: Owner and administrator admits are evaluated first and unconditionally
 
 The owner and administrator admit paths SHALL be evaluated BEFORE any scope or
