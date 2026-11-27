@@ -11,3 +11,12 @@ template-reaches-member.spec.ts:122               PR #2298 (same); template file
 start-page.spec.ts:44                             DEV (BOARD already reads 'container' after #2278 on development)
 # earlier this run, the 43 specs #2204 touched: 383 passed; widgets-canvas-search.spec.ts:283,309 read
 #   widget-picker-section-tiles that #2268 removed (app-link-tile-widget task 14, not fixed here)
+# shard 8/8 on development ffd6a2a6: 296 passed, 11 failed, 4 skipped, 1 did not run (28 min)
+tiles-form-board-sync.spec.ts:232                 DEV fixed in #2308 meanwhile
+tiles-icon-only-app-tiles.spec.ts:415             DEV fixed in #2310 meanwhile
+widgets-canvas-search.spec.ts:283,309             DEV fixed in #2305 meanwhile
+widgets-picker-board-sync.spec.ts:198,285         DEV fixed in #2301 meanwhile (4/4 live on its version)
+widgets-tile-type.spec.ts:44                      DEV fixed in #2302 meanwhile
+tiles-rendering.spec.ts:450, tiles-rendering-defects.spec.ts:145   OPEN: getByLabel('Name') resolves to 2 fields in the App or link tile form (strict mode); spec follows #2268's form
+widgets-nc-widget.spec.ts:276                     OPEN: placing an nc-widget now sends 3 item requests where the spec expects none (picker miniatures #2275/#2277/#2283?); not triaged
+widgets-picker-assistant.spec.ts:153              OPEN: no "Case system" in the assistant's proposal; not triaged
