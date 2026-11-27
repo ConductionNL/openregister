@@ -12,3 +12,10 @@ app-link-tile.spec.ts:74                 DRAFT/TILE: Files tick not disabled aft
 # shard 2/8 on development 400cc07b: 308 passed, 3 failed, 19 skipped (19 min)
 ci/manifest-grants.spec.ts:136           ENV: CI seed users absent; run 'bash apps/launchpad/tests/e2e/seed.sh' from the server root (OCC_CMD default 'php occ'); 1/1 after
 clock-weather-widgets.spec.ts:397,421    PR #2348 merged (submitClock adds and saves the draft) 6 passed / 10 skipped (own guards)
+# shard 3/8 on development 3b1931c6: 334 passed, 11 failed, 1 skipped (25 min)
+dashboard-config-modal-phone.spec.ts:73 x2   PR #2351 merged (overflow walk skips .hidden-visually screen-reader text) 2/2
+dashboard-store.spec.ts:238,296              PR #2355 merged (banner links to /settings/admin/launchpad#sharing; re-read reloads: same-URL goto with a #fragment loads nothing) 5/5
+dashboard-versioning.spec.ts x6              PR #2357 merged (REQ-VERS-001 removed by edit-mode-draft-and-save -> REQ-VERS-010/011: every save a version, first save keeps before-state) 22/22
+dashboard-view-analytics.spec.ts:1254        PR #2359 merged (same #fragment goto trap; leave the page first) 45/45
+# NOTE for every lane: since the admin page moved to /settings/admin/launchpad#<tab>, a second page.goto() to the same address is a
+#   fragment-only navigation (no reload, no new reads). Specs that 're-open' the admin page to re-read state must reload or leave first.
