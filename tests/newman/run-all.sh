@@ -127,6 +127,7 @@ DOMAIN_ORDER=(
     "public-export"
     "nlgov-conformance"
     "reply-threading"
+    "licence-plate-detection"
     "scheduled-messages"
     "run-migration"
     "lifecycle-side-moves"
@@ -250,6 +251,9 @@ declare -A DOMAIN_COLLECTIONS=(
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
     # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
     [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
+    # detection-dutch-licence-plates 4.1: a plate and a BSN detected by the nl pattern set, Dutch placeholders in
+    # the anonymised copy, and no detection with the set switched off. Saves and restores the whole file settings.
+    [licence-plate-detection]="$REPO_ROOT/tests/integration/openregister-licence-plate-detection.postman_collection.json"
     # migrate-run-between-versions 4.1: a run parked at a user task is migrated to a version that renamed the
     # step (422 without a mapping, a dry run that writes nothing, then the move), and its task completes there.
     [run-migration]="$REPO_ROOT/tests/integration/openregister-run-migration.postman_collection.json"
