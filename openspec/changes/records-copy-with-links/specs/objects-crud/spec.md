@@ -18,7 +18,6 @@ link with `copied` or `skipped` and a reason.
 - **WHEN** the editor calls `POST /api/objects/catalogus/module/{id}/copy` with `overrides: { "naam": "Zaaksysteem B" }` and `include: ["relationRows", "incoming"]`
 - **THEN** the answer is 201 with the new module "Zaaksysteem B" and a new uuid
 - **AND** the copy has both relation rows, suite "Basis" lists both modules, and "Zaaksysteem A" is unchanged
-- @e2e exclude {specified only; task 2.1 adds tests/e2e/ci/copy-with-links.spec.ts}
 
 #### Scenario: a link the editor may not write is reported, not forced
 
@@ -32,5 +31,4 @@ link with `copied` or `skipped` and a reason.
 
 - **GIVEN** a copy whose `overrides` violate the schema
 - **WHEN** the copy runs
-- **THEN** the answer is 422 with the validation errors, and no object, relation row or reference was written
-- @e2e exclude {specified only; covered by CopyObjectTest in task 1.1}
+- **THEN** the copy is refused exactly as the create path refuses the same body (400 with the validation errors, as every object create answers a schema validation), and no object, relation row or reference was written

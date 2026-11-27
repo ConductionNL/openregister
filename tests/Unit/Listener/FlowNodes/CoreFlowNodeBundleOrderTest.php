@@ -160,6 +160,7 @@ class CoreFlowNodeBundleOrderTest extends TestCase {
 			$this->node('sendNotification', SendNotificationNodeInterface::class),
 			$this->node('sendEmail', SendEmailNodeInterface::class),
 			$this->node('sendTalkMessage', SendTalkMessageNodeInterface::class),
+			$this->node('surveyInvite', \OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface::class),
 		);
 	}
 

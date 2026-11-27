@@ -126,10 +126,7 @@ class SharerFolderAccess {
 		$views = $this->viewsOn(folder: $folder, owner: $owner);
 		$this->endStaleViews(object: $object, views: $views);
 
-		// The view exists so its holder can share the object: core (Nextcloud 34)
-		// refuses a share unless the sharer's own view of the node carries the share
-		// bit, so the view holds the rights the user has plus that bit.
-		$viewRights = $this->viewRights(held: $held);
+		$viewRights = self::viewRights(held: $held);
 		foreach ($views as $view) {
 			if ($view->getSharedWith() === $uid) {
 				$this->keepRights(view: $view, held: $viewRights);
@@ -139,6 +136,26 @@ class SharerFolderAccess {
 
 		$this->openView(folder: $folder, owner: $owner, uid: $uid, held: $viewRights);
 	}//end ensureFor()
+
+	/**
+	 * The rights a sharer view carries: what the sharer holds, plus the re-share bit.
+	 *
+	 * Nextcloud 34 checks a share against the node as the SHARER reaches it
+	 * (files_sharing's RestrictInteractionListener): without the share bit on
+	 * the view, every share and link an owner makes of an object answered
+	 * "You are not allowed to share". The view exists only for a caller who
+	 * passed the manage-grants check, and the shares made through it still drop
+	 * the re-share bit, so a recipient cannot pass the object on.
+	 *
+	 * @param int $held The rights the sharer holds on the object's files.
+	 *
+	 * @return int The view's permission mask.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private static function viewRights(int $held): int {
+		return ($held | Constants::PERMISSION_SHARE);
+	}//end viewRights()
 
 	/**
 	 * End one user's view of an object's folder when that user may no longer share the object.
@@ -354,24 +371,6 @@ class SharerFolderAccess {
 			return false;
 		}
 	}//end isViewOn()
-
-	/**
-	 * The rights a sharer view carries: what its holder holds on the object's files, plus share.
-	 *
-	 * Core checks the sharer's own permissions on the node before it creates a
-	 * share (the RestrictInteractionEvent of Nextcloud 34); without the share bit
-	 * on the view, every grant by a non-owner is refused with "You are not allowed
-	 * to share". The grant itself never carries more than $held, see ensureFor().
-	 *
-	 * @param int $held The rights held on the object's files.
-	 *
-	 * @return int The view's rights.
-	 *
-	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
-	 */
-	private function viewRights(int $held): int {
-		return $held | Constants::PERMISSION_SHARE;
-	}//end viewRights()
 
 	/**
 	 * Bring an existing view to the rights its holder holds now.

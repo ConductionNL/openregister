@@ -64,6 +64,9 @@ use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\PublishedDigestReader;
+use OCA\OpenRegister\Service\File\PublishedDownloadGuard;
+use OCA\OpenRegister\Service\File\PublishedFileChangedException;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FetchedFile;
 use OCA\OpenRegister\Service\File\UrlFetchRefused;
@@ -72,8 +75,10 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -232,6 +237,20 @@ class FilesController extends Controller {
 	private readonly ?FileRestrictionGuard $fileRestrictions;
 
 	/**
+	 * The seal of a published file, for its verify endpoint.
+	 *
+	 * @var PublishedDigestReader|null
+	 */
+	private readonly ?PublishedDigestReader $publishedDigests;
+
+	/**
+	 * Checks a published file against its seal before a download serves it.
+	 *
+	 * @var PublishedDownloadGuard|null
+	 */
+	private readonly ?PublishedDownloadGuard $publishedDownloads;
+
+	/**
 	 * Fetches a file to create from a URL (files-create-from-url).
 	 *
 	 * @var ?UrlFileSource
@@ -269,6 +288,8 @@ class FilesController extends Controller {
 		$this->fileWriteGuard = $services->guards->fileWriteGuard;
 		$this->fileRestrictions = $services->guards->fileRestrictions;
 		$this->moveGuard = $services->guards->moveGuard;
+		$this->publishedDigests = $services->guards->publishedDigests;
+		$this->publishedDownloads = $services->guards->publishedDownloads;
 
 		// Store dependencies for use in controller methods.
 		$this->fileService = $services->store->fileService;
@@ -1246,6 +1267,11 @@ class FilesController extends Controller {
 	/**
 	 * Add a new file to an object
 	 *
+	 * BUG-RATE-1 (#11359): without a user limit Nextcloud applies the anon limit of 30 a
+	 * minute to signed-in users, which refused an editor adding 91 documents in OpenCatalogi.
+	 * The user limit is unreachable on purpose, as decided in the #11359 review; RBAC and the
+	 * upload size bound signed-in users. Do not tighten it to the anon value.
+	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The ID of the object
@@ -1261,6 +1287,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: PHP_INT_MAX, period: 60)]
 	public function create(string $register, string $schema, string $id): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
@@ -1454,6 +1481,11 @@ class FilesController extends Controller {
 	 * whether to create a new file or update an existing one. Perfect for synchronization
 	 * scenarios where you want to "upsert" files.
 	 *
+	 * BUG-RATE-1 (#11359): without a user limit Nextcloud applies the anon limit of 30 a
+	 * minute to signed-in users, which refused an editor adding 91 documents in OpenCatalogi.
+	 * The user limit is unreachable on purpose, as decided in the #11359 review; RBAC and the
+	 * upload size bound signed-in users. Do not tighten it to the anon value.
+	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The ID of the object to save the file to
@@ -1471,6 +1503,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: PHP_INT_MAX, period: 60)]
 	public function save(string $register, string $schema, string $id): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
@@ -1552,6 +1585,11 @@ class FilesController extends Controller {
 	 *  - 207 + {results, rejected, summary} — some stored, the refused ones named;
 	 *  - 400 + {error, rejected} — nothing could be stored.
 	 *
+	 * BUG-RATE-1 (#11359): without a user limit Nextcloud applies the anon limit of 30 a
+	 * minute to signed-in users, which refused an editor adding 91 documents in OpenCatalogi.
+	 * The user limit is unreachable on purpose, as decided in the #11359 review; RBAC and the
+	 * upload size bound signed-in users. Do not tighten it to the anon value.
+	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The ID of the object to retrieve files for
@@ -1570,6 +1608,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: PHP_INT_MAX, period: 60)]
 	public function createMultipart(string $register, string $schema, string $id): JSONResponse {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before accepting uploads.
@@ -2007,7 +2046,7 @@ class FilesController extends Controller {
 	 *
 	 * @phpstan-return JSONResponse|\OCP\AppFramework\Http\StreamResponse
 	 *
-	 * @psalm-return JSONResponse<404|500, array{error: string},
+	 * @psalm-return JSONResponse<403|404|409|500, array{error: string},
 	 *     array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200,
 	 *     array<never, never>>
 	 *
@@ -2026,6 +2065,11 @@ class FilesController extends Controller {
 
 		try {
 			return $this->streamById(fileId: $fileId);
+		} catch (PublishedFileChangedException $e) {
+			return new JSONResponse(
+				data: ['error' => $this->translate(text: 'This file changed after it was published and is not served')],
+				statusCode: 409
+			);
 		} catch (FileActionRefusal | NotFoundException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
 		} catch (Exception $e) {
@@ -2035,15 +2079,84 @@ class FilesController extends Controller {
 	}//end downloadById()
 
 	/**
+	 * Whether a published file's bytes still match the digest sealed when it was published (REQ-PFD-002).
+	 *
+	 * Answers `{recorded, current, verdict: identical|changed, auditRow: {uuid, hash, previousHash}}`
+	 * to anyone who may read the file, by the same checks as a download by id:
+	 * an anonymous caller only for a published file, a signed-in caller by the
+	 * object's read rule and the file's restriction. A file that is not
+	 * published has no seal to verify and answers 404.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return JSONResponse The verdict, or the refusal.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	#[PublicPage]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function verifyDigest(int $fileId): JSONResponse {
+		if ($this->callerMayFetch(fileId: $fileId) === false) {
+			return new JSONResponse(
+				data: ['error' => $this->translate(text: 'File not available for anonymous access')],
+				statusCode: 403
+			);
+		}
+
+		try {
+			return $this->digestVerdict(fileId: $fileId);
+		} catch (FileActionRefusal | NotFoundException $e) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
+		} catch (Exception $e) {
+			return $this->errorResponse(e: $e);
+		}
+	}//end verifyDigest()
+
+	/**
+	 * The verdict for a file the caller may read, or 404 when it is not published.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return JSONResponse The verdict.
+	 *
+	 * @throws FileActionRefusal When there is no such file for this caller.
+	 * @throws Exception When the file cannot be read.
+	 */
+	private function digestVerdict(int $fileId): JSONResponse {
+		$file = $this->fileService->getFileById($fileId);
+		if ($file === null) {
+			throw new FileActionRefusal(message: 'File not found', code: 404);
+		}
+
+		$this->downloadableFileObject(file: $file);
+
+		$answer = $this->publishedDigests?->verify(file: $file);
+		if ($answer === null) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'This file is not published')], statusCode: 404);
+		}
+
+		return new JSONResponse(data: $answer);
+	}//end digestVerdict()
+
+	/**
 	 * Stream a file by id, once its object rule and restriction allow the caller.
 	 *
 	 * @param int $fileId The file id.
 	 *
 	 * @return \OCP\AppFramework\Http\StreamResponse The stream.
 	 *
+	 * A published file is checked against its seal first (REQ-PFD-002): when
+	 * it matches, the response carries `Repr-Digest`; when it does not, it is
+	 * not served.
+	 *
 	 * @throws FileActionRefusal When there is no such file for this caller.
+	 * @throws PublishedFileChangedException When a published file no longer matches its seal.
 	 * @throws NotFoundException When the storage no longer holds the file.
 	 * @throws Exception When the file service fails.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
 	 */
 	private function streamById(int $fileId): \OCP\AppFramework\Http\StreamResponse {
 		$file = $this->fileService->getFileById($fileId);
@@ -2051,10 +2164,18 @@ class FilesController extends Controller {
 			throw new FileActionRefusal(message: 'File not found', code: 404);
 		}
 
-		// Record download (counter + audit). Best-effort.
-		$this->recordDownloadEvent(file: $file, object: $this->downloadableFileObject(file: $file));
+		$object = $this->downloadableFileObject(file: $file);
+		$reprDigest = $this->publishedDownloads?->reprDigestFor(file: $file, object: $object);
 
-		return $this->fileService->streamFile($file);
+		// Record download (counter + audit). Best-effort.
+		$this->recordDownloadEvent(file: $file, object: $object);
+
+		$response = $this->fileService->streamFile($file);
+		if ($reprDigest !== null) {
+			$response->addHeader('Repr-Digest', $reprDigest);
+		}
+
+		return $response;
 	}//end streamById()
 
 	/**

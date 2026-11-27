@@ -141,6 +141,14 @@ class ContentSearchHandler {
 	private array $matchedFileIds = [];
 
 	/**
+	 * The archive member a chunk-found owner was found through, by owner uuid,
+	 * for a hit in a member of a zip attachment.
+	 *
+	 * @var array<string, string>
+	 */
+	private array $matchedMembers = [];
+
+	/**
 	 * Constructor for ContentSearchHandler.
 	 *
 	 * @param ChunkMapperInterface $chunkMapper Chunk store mapper (keyword search over body text).
@@ -515,12 +523,14 @@ class ContentSearchHandler {
 	}//end resolveCandidates()
 
 	/**
-	 * Remember which file a chunk-found owner was found through.
+	 * Remember which file, and which archive member, a chunk-found owner was found through.
 	 *
 	 * @param array             $hit   The chunk hit.
 	 * @param ObjectEntity|null $owner The resolved owner, null when it could not be resolved.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
 	 */
 	private function rememberMatchedFile(array $hit, ?ObjectEntity $owner): void {
 		$uuid = $owner?->getUuid();
@@ -529,6 +539,10 @@ class ContentSearchHandler {
 		}
 
 		$this->matchedFileIds[$uuid] = (int)($hit['entity_id'] ?? 0);
+		$member = ($hit['metadata']['member'] ?? null);
+		if (is_string($member) === true && $member !== '') {
+			$this->matchedMembers[$uuid] = $member;
+		}
 	}//end rememberMatchedFile()
 
 	/**
@@ -536,13 +550,16 @@ class ContentSearchHandler {
 	 *
 	 * The name only: no text from the file reaches the row. A row found
 	 * through the object's own text, or a file whose name cannot be read,
-	 * gets nothing.
+	 * gets nothing. Beside the name go the file's id (`matchedFileId`) and,
+	 * when the matching text is in a member of a zip attachment, that
+	 * member's path inside the archive (`matchedMember`).
 	 *
 	 * @param ObjectEntity[] $rows The chunk-only rows of this page.
 	 *
 	 * @return ObjectEntity[] The same rows.
 	 *
 	 * @spec openspec/changes/tables-bulk-jobs-and-file-search/design.md
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
 	 */
 	private function withMatchedFiles(array $rows): array {
 		foreach ($rows as $row) {
@@ -563,6 +580,8 @@ class ContentSearchHandler {
 
 			if (is_string($name) === true && $name !== '') {
 				$row->setMatchedFile($name);
+				$row->setMatchedFileId($fileId);
+				$row->setMatchedMember($this->matchedMembers[(string)$row->getUuid()] ?? null);
 			}
 		}
 

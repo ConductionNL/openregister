@@ -859,6 +859,26 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?string $matchedFile = null;
 
 	/**
+	 * The id of the attached file whose text matched a content search.
+	 *
+	 * Transient, set beside matchedFile. Exposed in @self as `matchedFileId`.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $matchedFileId = null;
+
+	/**
+	 * The path of the archive member whose text matched a content search.
+	 *
+	 * Transient, set only when the matching chunk belongs to a member of a zip
+	 * attachment; matchedFile then names the archive. Exposed in @self as
+	 * `matchedMember`; a path inside the archive, never text from it.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $matchedMember = null;
+
+	/**
 	 * What the reader may do with this object, as `{"update": bool, "<declared action>": bool}`.
 	 *
 	 * Transient, populated by the render layer only when the request asks for
@@ -1315,6 +1335,36 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setMatchedFile(?string $matchedFile): void {
 		$this->matchedFile = $matchedFile;
 	}//end setMatchedFile()
+
+	/**
+	 * Write the id of the file whose text matched a content search.
+	 *
+	 * Write-only, like setMatchedFile(). Surfaced in the @self envelope as `matchedFileId`.
+	 *
+	 * @param int|null $matchedFileId The file id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	public function setMatchedFileId(?int $matchedFileId): void {
+		$this->matchedFileId = $matchedFileId;
+	}//end setMatchedFileId()
+
+	/**
+	 * Write the path of the archive member whose text matched a content search.
+	 *
+	 * Write-only, like setMatchedFile(). Surfaced in the @self envelope as `matchedMember`.
+	 *
+	 * @param string|null $matchedMember The member path inside the archive.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	public function setMatchedMember(?string $matchedMember): void {
+		$this->matchedMember = $matchedMember;
+	}//end setMatchedMember()
 
 	/**
 	 * Write what the reader may do with this object.
@@ -1876,6 +1926,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'key'                     => $this->identityKey,
 			'confidentiality'         => $this->confidentiality,
 			'matchedFile'             => $this->matchedFile,
+			'matchedFileId'           => $this->matchedFileId,
+			'matchedMember'           => $this->matchedMember,
 		];
 	}//end renderedFields()
 

@@ -318,7 +318,11 @@
         "dropped": []
     },
     "save linkedTypes invalid": {
-        "kept": null,
+        "kept": {
+            "linkedTypes": [
+                "mail"
+            ]
+        },
         "dropped": [
             "linkedTypes"
         ]

@@ -103,6 +103,8 @@ final class CoreListenerRegistrar {
 	 */
 	public static function platformShareRouting(IRegistrationContext $context): void {
 		$context->registerEventListener(BeforeShareCreatedEvent::class, PlatformShareRoutingListener::class);
+		// A share of an OpenRegister folder made by another user never carries re-share.
+		$context->registerEventListener(BeforeShareCreatedEvent::class, ObjectFolderReshareGuard::class);
 	}//end platformShareRouting()
 
 	/**
@@ -299,6 +301,21 @@ final class CoreListenerRegistrar {
 	public static function stateHistory(IRegistrationContext $context): void {
 		$context->registerEventListener(ObjectTransitionedEvent::class, StateHistoryProjectionListener::class);
 	}//end stateHistory()
+
+	/**
+	 * The semantic provider list the integrations capability advertises follows schemas, registers and apps.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function semanticProviders(IRegistrationContext $context): void {
+		foreach (SemanticProviderCacheListener::EVENTS as $semanticProviderEvent) {
+			$context->registerEventListener($semanticProviderEvent, SemanticProviderCacheListener::class);
+		}
+	}//end semanticProviders()
 
 	/**
 	 * The notes and tasks of a deleted object are cleaned up.

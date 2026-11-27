@@ -8,7 +8,8 @@
 ## 2. Enforcement
 
 - [x] 2.1 `RequiredWhenListener` on create and update with collected refusals and fail-soft schema reads, registered beside `DependentValueListener`. Verify: `tests/Unit/Listener/RequiredWhenListenerTest.php` with real `ObjectCreatingEvent` and `ObjectUpdatingEvent` instances.
-- [ ] 2.2 Newman: a create with `requestType: "Klacht"` and no `complaintCategory` answers 422 naming the property; with the category it answers 201.
+- [x] 2.2 Newman: a create with `requestType: "Klacht"` and no `complaintCategory` answers 422 naming the property; with the category it answers 201.
+  - Done (25 Nov): `tests/newman/openregister-required-when.postman_collection.json`, 11 requests and 16 assertions, 0 failed, against a sandbox Nextcloud 34 + OpenRegister main on MariaDB 10.11. It also covers an update that drops the category (422), another request type that needs no category (201), and a schema whose condition names an undeclared field (422 naming it).
 
 ## 3. Docs
 

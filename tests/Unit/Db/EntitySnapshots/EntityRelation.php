@@ -36,7 +36,11 @@ return array (
     'capacityConfirmedAt' => 'datetime',
     'personMatch' => 'string',
     'uncertain' => 'boolean',
+    'archiveMember' => 'string',
     'createdAt' => 'datetime',
+    'redactionDecision' => 'string',
+    'decidedBy' => 'string',
+    'decidedAt' => 'datetime',
   ),
   'empty' => 
   array (
@@ -69,7 +73,11 @@ return array (
     'capacityConfirmedAt' => NULL,
     'personMatch' => NULL,
     'uncertain' => NULL,
+    'archiveMember' => NULL,
     'createdAt' => NULL,
+    'redactionDecision' => 'undecided',
+    'decidedBy' => NULL,
+    'decidedAt' => NULL,
   ),
   'filled' => 
   array (
@@ -108,7 +116,11 @@ return array (
     'capacityConfirmedAt' => '2026-01-02T03:04:05+00:00',
     'personMatch' => 'personMatch-v',
     'uncertain' => true,
+    'archiveMember' => 'archiveMember-v',
     'createdAt' => '2026-01-02T03:04:05+00:00',
+    'redactionDecision' => 'redactionDecision-v',
+    'decidedBy' => 'decidedBy-v',
+    'decidedAt' => '2026-01-02T03:04:05+00:00',
   ),
   'filledUpdated' => 
   array (
@@ -141,7 +153,11 @@ return array (
     26 => 'capacityConfirmedAt',
     27 => 'personMatch',
     28 => 'uncertain',
-    29 => 'createdAt',
+    29 => 'archiveMember',
+    30 => 'createdAt',
+    31 => 'redactionDecision',
+    32 => 'decidedBy',
+    33 => 'decidedAt',
   ),
   'refused' => 
   array (

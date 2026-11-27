@@ -12,12 +12,13 @@
 
 ## 3. Page
 
-- [ ] 3.1 Add `src/views/operations/QueryConsoleSection.vue` to `OperationsConsoleIndex.vue`: query and variables editors on `vue-codemirror6`, run, result table with row count, truncation and duration, raw JSON toggle, and the two downloads (design D-5). Verify: `src/views/operations/QueryConsoleSection.spec.js` renders a fixture result, shows the truncation notice at 1,000 rows, and calls the export route with `format=csv`.
+- [x] 3.1 Add `src/views/operations/QueryConsoleSection.vue` to `OperationsConsoleIndex.vue`: query and variables editors on `vue-codemirror6`, run, result table with row count, truncation and duration, raw JSON toggle, and the two downloads (design D-5). Verify: `src/views/operations/QueryConsoleSection.spec.js` renders a fixture result, shows the truncation notice at 1,000 rows, and calls the export route with `format=csv`.
 
 ## 4. Docs and end-to-end test
 
-- [ ] 4.1 Document the console, the caps, the audit rows and why it is GraphQL and not SQL (design D-1) in a new `docs/features/query-console.md`, linked from `docs/sidebars.js`. Verify: `npm run build` in `docs/` succeeds.
-- [ ] 4.2 Add `tests/e2e/ci/query-console.spec.ts`: an administrator runs a `groupBy` query on the operations page, downloads CSV, and finds the `query.run` and `query.export` rows; a mutation is refused; a non-administrator gets 403 on `POST /api/operations/query`. Verify: the spec runs green in the Playwright CI project.
+- [x] 4.1 Document the console, the caps, the audit rows and why it is GraphQL and not SQL (design D-1) in a new `docs/features/query-console.md`, linked from `docs/sidebars.js`. Verify: `npm run build` in `docs/` succeeds.
+- [x] 4.2 Add `tests/e2e/ci/query-console.spec.ts`: an administrator runs a `groupBy` query on the operations page, downloads CSV, and finds the `query.run` and `query.export` rows; a mutation is refused; a non-administrator gets 403 on `POST /api/operations/query`. Verify: the spec runs green in the Playwright CI project.
+  - 2026-11-25: 3 passed against a sandbox Nextcloud 34 on MariaDB (php -S). A `groupBy` answer asked without its edges had no list to download (422); the export and the page now take a `groupBy` connection's `groups` buckets as its first list (`AdminQueryExportGroupsTest`).
 
 ## Acceptance
 

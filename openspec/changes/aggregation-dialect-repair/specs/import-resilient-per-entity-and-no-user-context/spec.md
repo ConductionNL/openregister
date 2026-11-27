@@ -1,14 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Seed-data `$ref` properties MUST resolve to the target UUID, not the raw seed slug
-`ImportHandler::importSeedDataObjects()` MUST resolve a seed object's `$ref`-typed property value
-(scalar or array-of-`$ref`) to the target object's UUID before persisting the seed object, when the
-authored value is a slug rather than an already-resolved UUID. Resolution MUST first check the
-schemas/objects already imported in the current run (the same slug-keyed maps used elsewhere in
-`importFromJson()`), falling back to a database lookup scoped to the target schema when not found
-in-run. A `$ref` value that cannot be resolved MUST be left as-authored and MUST log a warning
-naming the property and the unresolved slug — it MUST NOT abort the seed object's import (per-entity
-resilience, unchanged).
+`ImportHandler::importSeedDataObjects()` MUST resolve a seed object's `$ref` property value (scalar
+or array) authored as a slug to the target object's UUID before persisting, looking first in the
+objects imported in the current run and then in the database, scoped to the target schema. An
+unresolvable value MUST be kept as authored with a warning naming the property and the slug, and
+MUST NOT abort the seed object's import.
 
 #### Scenario: A seed object's $ref slug resolves to a UUID
 - **GIVEN** seed data for schema `motie` includes an object with property `amends: "motie-duurzaamheid-2025"`

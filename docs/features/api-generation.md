@@ -223,6 +223,8 @@ Open Register checks its generated documents against the NLGov REST API Design R
 
 The caller's `Authorization` header is passed on, so the probe reads no more than the caller may. The last result is kept per register and read by the report.
 
+**On the register list.** The row menu of a register has **Check Dutch API design rules**, which opens the report in a dialog: the rules grouped by result (failed first, then deviations, rules to check by hand, response rules not probed yet, and passed last), each with its findings and, for a declared deviation, its reason. An administrator also sees **Probe responses**, which runs the probe above and shows the report that includes it.
+
 **The occ command.** `occ openregister:api:conformance <register> [--probe] [--output=json]` prints the same report, one line per rule, for CI and operators.
 
 **Declared deviations.** The rule catalogue (`lib/Service/Oas/NlGovRuleCatalogue.php`) is the only place a deviation is declared; there is no setting to add one.

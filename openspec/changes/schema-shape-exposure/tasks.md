@@ -48,7 +48,19 @@
     same test that polices facets and aggregations now polices them. Their
     allowlist entries were REMOVED rather than reworded: an entry that excuses a
     path which now asks is a stale exception waiting to excuse a regression.
-- [ ] 3.2 An e2e over the three principals.
-  - NOT WRITTEN. It needs three real sessions against a live instance, and there
-    is no Playwright runner on this build host, so it would be written and never
-    run. Named rather than half-done.
+- [x] 3.2 An e2e over the three principals.
+  - 2026-11-25: `tests/e2e/ci/schema-shape-exposure.spec.ts`, three tests, green
+    on a sandbox Nextcloud 34 with MariaDB (3 passed). The register's document
+    is read by an administrator (every property, the full `required`, the
+    example), the seeded colleague in the group one property is readable by
+    (that property, `required` without the other, a withheld count of 1) and an
+    anonymous client (neither, a count of 2). Absence is asserted over the WHOLE
+    serialised document, not the described schema alone.
+  - 🔴 AND THAT IS WHAT FOUND THE LEAK THE UNIT TESTS COULD NOT. The list
+    operation publishes one query parameter per property, "Filter results by
+    <name>", and `propertyFilterParameters()` never asked: every withheld name
+    was printed in the paths section of the document that had just withheld it
+    from the schema. The unit tests read `enrichSchema()` only. Fixed by asking
+    the same `mayDescribe()` of the same annotator for each filter parameter;
+    `SchemaShapeExposureTest` +2 (the governed filter is red on main). The e2e's
+    colleague test is red on main and green with the fix.

@@ -863,8 +863,9 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 	 * office server converts it to PDF.
 	 *
 	 * The requesting user's house style, when thematiq offers one, colours the
-	 * table header, adds the footer lines and puts the logo in the page header;
-	 * without one the layout is the plain one, and a profile that cannot be
+	 * table header, adds the footer lines, puts the logo in the page header and
+	 * embeds its heading and body fonts where they can be embedded (a role whose
+	 * font cannot be keeps the default font); without one the layout is the plain one, and a profile that cannot be
 	 * read never fails the export.
 	 *
 	 * @param string[]    $sections Escaped HTML fragments, one per schema section.
@@ -885,9 +886,12 @@ class ExportService implements ObjectExporterInterface, TablePdfRendererInterfac
 		$odt = (new OdtWriter())->fromHtml(
 			html: implode('', $sections),
 			landscape: true,
-			houseStyle: OdtHouseStyle::withLogo(
-				style: OdtHouseStyle::fromProfile(profile: $profile),
-				logo: $this->documentStyle?->logo(profile: $profile)
+			houseStyle: OdtHouseStyle::withFonts(
+				style: OdtHouseStyle::withLogo(
+					style: OdtHouseStyle::fromProfile(profile: $profile),
+					logo: $this->documentStyle?->logo(profile: $profile)
+				),
+				fonts: ($this->documentStyle?->fonts(profile: $profile) ?? [])
 			)
 		);
 

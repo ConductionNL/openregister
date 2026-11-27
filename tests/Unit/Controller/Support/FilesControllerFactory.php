@@ -33,6 +33,7 @@ final class FilesControllerFactory {
 	 * @param ?AttachNodeHandler $attachNodeHandler Constructor argument.
 	 * @param ?FileWriteGuard $fileWriteGuard Constructor argument.
 	 * @param ?FileRestrictionGuard $fileRestrictions Constructor argument.
+	 * @param ?PublishedDigestReader $publishedDigests Constructor argument.
 	 *
 	 * @return array<int, mixed>
 	 */
@@ -52,6 +53,8 @@ final class FilesControllerFactory {
 		?\OCA\OpenRegister\Files\Service\File\AttachNodeHandler $attachNodeHandler = null,
 		?\OCA\OpenRegister\Service\Object\FileWriteGuard $fileWriteGuard = null,
 		?\OCA\OpenRegister\Files\Service\File\FileRestrictionGuard $fileRestrictions = null,
+		?\OCA\OpenRegister\Service\File\PublishedDigestReader $publishedDigests = null,
+		?\OCA\OpenRegister\Service\File\PublishedDownloadGuard $publishedDownloads = null,
 	): array {
 		return [
 			$request,
@@ -73,6 +76,8 @@ final class FilesControllerFactory {
 					fileWriteGuard: $fileWriteGuard,
 					fileRestrictions: $fileRestrictions,
 					fileAuditHandler: $fileAuditHandler,
+					publishedDigests: $publishedDigests,
+					publishedDownloads: $publishedDownloads,
 				),
 				editing: new \OCA\OpenRegister\Files\Controller\Support\FileEditing(
 					officeSessionService: $officeSessionService,

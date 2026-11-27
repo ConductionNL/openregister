@@ -54,7 +54,7 @@ class RegistryInboundUpdateGoldenTest extends TestCase {
 		$applied = $this->row(uuid: 'applied');
 
 		$mapper = $this->createMock(RegistrySubscriptionMapper::class);
-		$mapper->method('findActiveByIdentity')->willReturnCallback(
+		$mapper->method('findLiveByIdentity')->willReturnCallback(
 			function (string $registry, string $identityValue) use ($refused, $failing, $applied): array {
 				self::assertSame('brp', $registry);
 				self::assertSame('999990019', $identityValue);

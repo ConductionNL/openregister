@@ -31,6 +31,7 @@
 ## 3. Tests
 
 - [ ] 3.1 `tests/e2e/ci/scheduled-message.spec.ts`: schedule from an object, list it, cancel it.
-- [ ] 3.2 Unit tests for the e-mail channel; Newman for the routes. Unit tests for the e-mail channel are in (2026-11-14): `MessageDispatchEmailTest` (14), `MessageIdMinterTest` (8), the Message-ID cases in `MessageDispatchProviderTest`, and the audit in `ScheduledMessageAuditTest` and `ScheduledMessageSweepTest`. Newman is left (a running instance). **The
+- [x] 3.2 Unit tests for the e-mail channel; Newman for the routes. Unit tests for the e-mail channel are in (2026-11-14): `MessageDispatchEmailTest` (14), `MessageIdMinterTest` (8), the Message-ID cases in `MessageDispatchProviderTest`, and the audit in `ScheduledMessageAuditTest` and `ScheduledMessageSweepTest`. Newman is left (a running instance). **The
       claim, the retries and the guards are tested**:
       `tests/Unit/Service/Notification/ScheduledMessagePolicyTest.php` (16).
+  - Newman done: `tests/integration/openregister-scheduled-messages.postman_collection.json`, registered as `scheduled-messages` in `tests/newman/run-all.sh`; 27 requests, 39 assertions, 0 failed against a live Nextcloud 34 on PostgreSQL (schedule 202, past and unparseable sendAt 400, list for a reader, cancel 403 for a reader on another's message, 200 for the author and for one who may update, 409 again, 404 unknown id, 404 to list or schedule on an unreadable object).

@@ -1,12 +1,10 @@
 ## ADDED Requirements
 
 ### Requirement: The named-annotation aggregation surface MUST validate filter/groupBy fields against the schema that owns them
-`AggregationAnnotationValidator::validate()` MUST resolve a `filter`/`where`/`groupBy.field`
-reference against the schema that actually declares that field — the target schema when the
-aggregation addresses a related schema (whether via an explicit `from` key or via a field reached
-through the declaring schema's own relation/reference declarations), and the declaring schema's own
-`properties` otherwise. A field that lives on a related schema MUST NOT be rejected as unknown
-merely because it is absent from the declaring schema's own `properties`.
+`AggregationAnnotationValidator::validate()` MUST resolve each `filter`/`where`/`groupBy.field`
+reference against the schema that declares the field: the related schema when the aggregation
+addresses one (an explicit `from`, or a field reached through the declaring schema's relations),
+otherwise the declaring schema. A field on a related schema MUST NOT be rejected as unknown.
 
 #### Scenario: A filter field on a related schema is accepted
 - **GIVEN** schema `meeting` declares an aggregation referencing a filter field that lives on a

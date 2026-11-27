@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\ViewInterface;
 use Throwable;
 
 /**
@@ -164,8 +165,46 @@ class AccessLinkMintGuard implements AccessLinkMintGuardInterface {
 			return false;
 		}
 
+		// THE VIEW MUST REACH THE CALLER, AS IT MUST TO BE READ. Resolving it
+		// under RBAC and multitenancy keeps other organisations out, but inside
+		// one organisation a private view of somebody else still resolved, so a
+		// caller who is answered 404 on the view itself could publish it and
+		// list its links. The views endpoint's own rule decides: owned, shared
+		// with one of the caller's groups, public, or an administrator.
+		if ($this->viewReaches(view: $view) === false) {
+			return false;
+		}
+
 		return $this->mayReadEverythingTheViewNames(viewQuery: $view->getQuery());
 	}//end mayPublishView()
+
+	/**
+	 * Whether the view reaches the caller under the views endpoint's read rule.
+	 *
+	 * A failed check is a refusal. Without a reach check (a construction that
+	 * does not pass one) the resolved view stands, as before.
+	 *
+	 * @param ViewInterface $view The resolved view.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/access-links-managed-per-subject/specs/public-access-links/spec.md#requirement-whoever-may-publish-a-subject-sees-and-revokes-every-link-on-it-req-abl-005
+	 */
+	private function viewReaches(ViewInterface $view): bool {
+		$reach = $this->viewReaders->reach;
+		if ($reach === null) {
+			return true;
+		}
+
+		try {
+			$uid = $reach->currentUid();
+
+			return $uid !== '' && $reach->reaches(view: $view->jsonSerialize(), reach: $reach->reachOf(userId: $uid));
+		} catch (Throwable $failed) {
+			unset($failed);
+			return false;
+		}
+	}//end viewReaches()
 
 	/**
 	 * Whether the caller may read every register and schema the view's query names.

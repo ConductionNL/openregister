@@ -80,7 +80,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setProperties(?array $properties)
  * @method array|null getArchive()
  * @method void setArchive(?array $archive)
- * @method array|null getFacets()
+ * @method array<string, mixed>|null getFacets()
  * @method void setFacets(?array $facets)
  * @method string|null getSource()
  * @method void setSource(?string $source)
@@ -808,10 +808,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * Exactly the set OperatorEvaluator and MagicRbacHandler both evaluate; a
 	 * schema naming any other `$` operator in a match is refused at save.
+	 * `$memberOf` is resolved by ConditionMatcher into a `$in` over the caller's
+	 * membership set before either evaluates it (access-follows-membership).
 	 *
 	 * @var string[]
 	 */
-	public const MATCH_OPERATORS = ['$eq', '$ne', '$in', '$nin', '$contains', '$exists', '$gt', '$gte', '$lt', '$lte'];
+	public const MATCH_OPERATORS = ['$eq', '$ne', '$in', '$nin', '$contains', '$exists', '$gt', '$gte', '$lt', '$lte', '$memberOf'];
 
 	/**
 	 * The list-surface annotation: declared columns and search fields.
@@ -872,6 +874,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string
 	 */
 	public const BREAK_GLASS_ANNOTATION = 'x-openregister-break-glass';
+
+	/**
+	 * The second-factor annotation: reading this schema's objects requires a verified second factor (REQ-IHC-003).
+	 *
+	 * @var string
+	 */
+	public const SECOND_FACTOR_ANNOTATION = 'x-openregister-second-factor';
 
 	/**
 	 * The property keys whose falsy value is a real one.
@@ -1166,8 +1175,10 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 */
 	public function hydrate(array $object, ?PropertyValidatorHandlerInterface $validator = null): static {
 		$object = $this->withExactKeysOnly(
-			object: $this->foldTopLevelExportable(
-				object: $this->foldTopLevelAnnotations(object: self::withHydrateDefaults(object: $object))
+			object: $this->foldTopLevelVocabularies(
+				object: $this->foldTopLevelExportable(
+					object: $this->foldTopLevelAnnotations(object: self::withHydrateDefaults(object: $object))
+				)
 			)
 		);
 
@@ -1957,6 +1968,48 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return $object;
 	}//end foldTopLevelExportable()
+
+	/**
+	 * Fold a top-level `linkRoles` and `partyKinds` into the configuration.
+	 *
+	 * Both are read from `configuration` only, and the entity has no field for
+	 * either, so a schema body declaring them at the top level, as
+	 * docs/Features/parties.md shows, saved with neither and in silence: every
+	 * role was then accepted and no kind was declared. They are folded the way
+	 * `exportable` is; an explicit `configuration` entry wins. The configuration
+	 * validator then checks them as if they had been written there.
+	 *
+	 * @param array<string, mixed> $object The hydrate input.
+	 *
+	 * @return array<string, mixed> The input with the vocabularies in its configuration.
+	 *
+	 * @spec openspec/specs/party-model/spec.md
+	 */
+	private function foldTopLevelVocabularies(array $object): array {
+		$present = array_values(array_filter(['linkRoles', 'partyKinds'], static fn (string $key): bool => array_key_exists($key, $object) === true));
+		if ($present === []) {
+			return $object;
+		}
+
+		$config = ($object['configuration'] ?? $this->configuration ?? []);
+		if (is_string($config) === true) {
+			$config = json_decode($config, true);
+		}
+
+		foreach ($present as $key) {
+			$value = $object[$key];
+			unset($object[$key]);
+			if (is_array($config) === true && array_key_exists($key, $config) === false) {
+				$config[$key] = $value;
+			}
+		}
+
+		if (is_array($config) === true) {
+			$object['configuration'] = $config;
+		}
+
+		return $object;
+	}//end foldTopLevelVocabularies()
 
 	/**
 	 * Dropped `x-openregister-*` annotation keys collected during the most

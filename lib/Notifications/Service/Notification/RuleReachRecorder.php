@@ -21,6 +21,12 @@
  * and `report()` hands back the whole set so a caller can surface it somewhere a
  * person actually looks.
  *
+ * The counts also go to a `RuleReachLedger`, which outlives this process, so the
+ * administrator's notification settings read them from another request. The
+ * ledger is written on a rule's first occurrence and again each time its count
+ * doubles, and once more when the recorder is released: a storm of four hundred
+ * costs nine writes, not four hundred.
+ *
  * ⚠️ IT DOES NOT REDIRECT THE MESSAGE. A fallback recipient — administrators,
  * say — was the obvious alternative and is the wrong one. It would mail every
  * misconfigured rule to the same people until they stop reading any of it, and
@@ -67,12 +73,34 @@ class RuleReachRecorder {
 	private array $reachedNobody = [];
 
 	/**
+	 * Counts not yet written to the ledger, per rule.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $unwritten = [];
+
+	/**
 	 * Wire the recorder.
 	 *
-	 * @param LoggerInterface $logger Where the one line per rule goes.
+	 * @param LoggerInterface  $logger Where the one line per rule goes.
+	 * @param ?RuleReachLedger $ledger Where the counts outlive this process; none keeps them in memory only.
 	 */
-	public function __construct(private readonly LoggerInterface $logger) {
+	public function __construct(
+		private readonly LoggerInterface $logger,
+		private readonly ?RuleReachLedger $ledger = null,
+	) {
 	}//end __construct()
+
+	/**
+	 * Write what is still unwritten when the recorder is released.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md#requirement-the-record-reaches-a-person-not-only-a-log-req-rrn-03
+	 */
+	public function __destruct() {
+		$this->flush();
+	}//end __destruct()
 
 	/**
 	 * Note that this rule reached nobody for one object.
@@ -89,6 +117,7 @@ class RuleReachRecorder {
 
 		$seen = ($this->reachedNobody[$rule] ?? 0);
 		$this->reachedNobody[$rule] = ($seen + 1);
+		$this->persistOnDoubling(rule: $rule, count: ($seen + 1));
 
 		if ($seen > 0) {
 			// Already said for this rule in this run. Counting continues; the
@@ -136,8 +165,72 @@ class RuleReachRecorder {
 	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md
 	 */
 	public function reachedSomebody(string $ruleId): void {
-		unset($ruleId);
+		$rule = self::ruleName(ruleId: $ruleId);
+		if (isset($this->reachedNobody[$rule]) === true) {
+			// It reached nobody earlier in this same run: the record stands.
+			return;
+		}
+
+		try {
+			$this->ledger?->forget(rule: $rule);
+		} catch (\Throwable $error) {
+			$this->logger->debug(self::MARKER.': could not clear the record', ['rule' => $rule, 'error' => $error->getMessage()]);
+		}
 	}//end reachedSomebody()
+
+	/**
+	 * Write every count not yet written to the ledger.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md#requirement-the-record-reaches-a-person-not-only-a-log-req-rrn-03
+	 */
+	public function flush(): void {
+		if ($this->ledger === null || $this->unwritten === []) {
+			return;
+		}
+
+		$counts = array_intersect_key($this->reachedNobody, $this->unwritten);
+		$this->unwritten = [];
+		$this->write(counts: $counts);
+	}//end flush()
+
+	/**
+	 * Write the rule's count now when it is a power of two, else mark it unwritten.
+	 *
+	 * @param string $rule  The rule.
+	 * @param int    $count Its count in this run.
+	 *
+	 * @return void
+	 */
+	private function persistOnDoubling(string $rule, int $count): void {
+		if ($this->ledger === null) {
+			return;
+		}
+
+		if (($count & ($count - 1)) !== 0) {
+			$this->unwritten[$rule] = true;
+			return;
+		}
+
+		unset($this->unwritten[$rule]);
+		$this->write(counts: [$rule => $count]);
+	}//end persistOnDoubling()
+
+	/**
+	 * Hand counts to the ledger; a failing store never fails the dispatch.
+	 *
+	 * @param array<string, int> $counts Occurrences per rule.
+	 *
+	 * @return void
+	 */
+	private function write(array $counts): void {
+		try {
+			$this->ledger?->record(counts: $counts, now: time());
+		} catch (\Throwable $error) {
+			$this->logger->debug(self::MARKER.': could not store the record', ['error' => $error->getMessage()]);
+		}
+	}//end write()
 
 	/**
 	 * Every rule that reached nobody this run, with how often.
@@ -146,19 +239,9 @@ class RuleReachRecorder {
 	 * finding that exists only in a log file is findable by whoever already
 	 * suspects it.
 	 *
-	 * 🔴 THIS METHOD HAS NO CALLER. Since task 3.1 of
-	 * `openspec/changes/a-rule-that-reaches-nobody-says-so` the recorder is one
-	 * shared service per container (NotificationsWiring), so the aggregate no
-	 * longer dies with a dispatcher instance; but it still lives only as long as
-	 * the process that dispatched, and nothing reads it. A settings page served
-	 * by another request would see an empty report, so putting this on a screen
-	 * (task 3.2) needs the counts persisted first, which is the decision task 3.3
-	 * leaves open.
-	 *
-	 * What is real today is the one warning line per rule per run, which an
-	 * administrator finds only by searching for `self::MARKER`, which means
-	 * only if they already suspect the problem. Do not read the tests on this
-	 * class as evidence that an operator is being told.
+	 * This is the report of THIS process only. The administrator's settings
+	 * page reads `RuleReachLedger::report()`, which the counts are written to
+	 * and which outlives the request that dispatched.
 	 *
 	 * @return array<string, mixed> The report.
 	 *
@@ -189,6 +272,7 @@ class RuleReachRecorder {
 	 * @spec openspec/changes/a-rule-that-reaches-nobody-says-so/specs/notificatie-engine/spec.md
 	 */
 	public function reset(): void {
+		$this->flush();
 		$this->reachedNobody = [];
 	}//end reset()
 }//end class
