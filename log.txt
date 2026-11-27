@@ -5425,3 +5425,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T10:05:17Z integrator-20261127T080455-44feeeb6 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T10:06:05Z integrator-20261127T080455-44feeeb6 MERGED-TREE 555223b330: 4 PRs, main now 41bcdd4ee4 = tested tree
+2026-11-27T10:10:19Z session-20261127T065717-a65e47fd perf-1 run done: merged nextcloud-vue #2411 #2412 #2413 #2415 and dossiq #7027; floor findings + deployment decision queued; leases released
