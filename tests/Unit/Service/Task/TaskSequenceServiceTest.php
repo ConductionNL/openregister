@@ -294,7 +294,8 @@ class TaskSequenceServiceTest extends TestCase {
 			}
 		);
 		$this->tasks->expects(self::never())->method('enable');
-		$this->dispatcher->expects(self::never())->method('dispatchTyped');
+		// The rejection is announced once, so a held change can be discarded.
+		$this->dispatcher->expects(self::once())->method('dispatchTyped')->with(self::isInstanceOf(\OCA\OpenRegister\Event\TaskSequenceRejectedEvent::class));
 
 		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, 'rejected'));
 
@@ -511,7 +512,8 @@ class TaskSequenceServiceTest extends TestCase {
 		$this->recordTerminations();
 
 		$this->tasks->expects(self::never())->method('enable');
-		$this->dispatcher->expects(self::never())->method('dispatchTyped');
+		// The rejection is announced once, so a held change can be discarded.
+		$this->dispatcher->expects(self::once())->method('dispatchTyped')->with(self::isInstanceOf(\OCA\OpenRegister\Event\TaskSequenceRejectedEvent::class));
 
 		$this->service->onTaskTerminal(task: $this->positionTask(1, Task::STATE_COMPLETED, 'rejected'));
 

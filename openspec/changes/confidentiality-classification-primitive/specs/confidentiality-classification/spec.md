@@ -8,12 +8,10 @@ row-level-security evaluation chain instead of app-hand-rolled access checks.
 
 ### Requirement: Schemas MUST be able to declare a confidentiality classification via `x-openregister-confidentiality`
 A schema MUST be able to declare `x-openregister-confidentiality` with a non-empty ordered `tiers`
-array (least → most restrictive), a `tierProperty` naming a declared schema property, and a
-`clearance` map from tier name to a required RBAC group. `tierProperty` MUST name a property already
-declared under the schema's `properties`. Every tier key in `clearance` MUST be a member of `tiers`.
-A tier not present in `clearance` MUST inherit the requirement of the next-less-restrictive tier
-that does declare one; the first (least restrictive) tier in `tiers` MUST require no clearance when
-absent from `clearance`.
+list (least to most restrictive), a `tierProperty` naming a declared schema property, and a
+`clearance` map from tier to required RBAC group whose every key is in `tiers`. A tier absent from
+`clearance` MUST inherit the requirement of the nearest less restrictive tier that declares one; the
+least restrictive tier, when absent, requires none.
 
 #### Scenario: Valid annotation is accepted
 - **GIVEN** a schema `besluit` with property `confidentialityTier` (string) and
@@ -62,14 +60,15 @@ date-time`.
 
 ### Requirement: Read access to a classified object MUST require tier clearance or a met release condition
 For a schema declaring `x-openregister-confidentiality`, a read of an object MUST be denied unless
-at least one of the following holds: (a) the caller's group satisfies the effective clearance
-requirement for the object's tier (read from `tierProperty`, defaulting to the least-restrictive
-tier when unset or not a member of `tiers`), (b) a `releaseAtProperty` is declared and the object's
-value for it is present and less-than-or-equal-to the current time, or (c) the caller is the
-object's owner or an admin (existing owner/admin bypass, unchanged). This rule MUST be evaluated at
-the SQL query level for list/search access (via the same mechanism `row-field-level-security`'s
-authored conditional rules use), not as post-fetch PHP filtering, and MUST be combined with OR
-against any authored `authorization.read` rules the schema also declares.
+(a) the caller's group meets the effective clearance for the object's tier, (b) a declared
+`releaseAtProperty` holds a value at or before now, or (c) the caller is the owner or an admin
+(unchanged bypass). Lists and searches MUST evaluate this in the SQL query, and it MUST be ORed with
+the schema's authored `authorization.read` rules.
+
+#### Scenario: An unset or unknown tier reads as the least restrictive tier
+- **GIVEN** a `besluit` object whose `tierProperty` value is unset, or is not one of `tiers`
+- **WHEN** a caller reads it
+- **THEN** its tier MUST be the least restrictive tier in `tiers`
 
 #### Scenario: Read denied below clearance and before release
 - **GIVEN** schema `besluit` as in the valid-annotation scenario, and object `besluit-1` with
@@ -114,13 +113,18 @@ against any authored `authorization.read` rules the schema also declares.
 - **AND** the pagination `total` MUST reflect 3, not 10, and no post-fetch PHP filtering MUST be
   used to reach that count
 
+
+#### Scenario: The query-level rule joins the authored read rules
+- **GIVEN** the `besluit` schema also declares an authored `authorization.read` rule
+- **WHEN** a caller lists `besluit` objects
+- **THEN** the classification rule MUST be applied through the same query-level mechanism `row-field-level-security`'s conditional rules use
+- **AND** an object MUST be listed when either the classification rule or an authored read rule admits it
+
 ### Requirement: A malformed confidentiality annotation MUST fail closed, not silently permit access
-Unlike other advisory `x-openregister-*` annotations (quality, dedup, survivorship), a schema whose
-`x-openregister-confidentiality` fails validation MUST NOT be treated as "no confidentiality rule
-applied" (which would leave the schema's objects fully readable). It MUST instead be treated as "read
-denied by default for every object carrying a non-empty `tierProperty` value" until the annotation is
-corrected, and the validation failure MUST be logged at `error` level naming the schema and the
-specific defect — not merely `warning` level as the other advisory annotations use.
+Unlike the other advisory `x-openregister-*` annotations, a schema whose
+`x-openregister-confidentiality` fails validation MUST NOT be read as having no rule. Every object
+with a non-empty `tierProperty` value MUST be read-denied until the annotation is corrected, and the
+failure MUST be logged at `error` level, not `warning`, naming the schema and the defect.
 
 #### Scenario: An invalid annotation denies read rather than granting it
 - **GIVEN** a schema declares `x-openregister-confidentiality` with a `clearance` key not present in
@@ -136,12 +140,11 @@ specific defect — not merely `warning` level as the other advisory annotations
 - **THEN** this capability MUST NOT alter the read outcome in any way
 
 ### Requirement: The resolved classification MUST be exposed on render as `@self.confidentiality`
-When a schema declares `x-openregister-confidentiality`, a rendered object accessible to the caller
-MUST include `@self.confidentiality` containing the object's resolved `tier`, `ground` (the raw value
-of `groundProperty` when declared), `releaseAt` (the raw value of `releaseAtProperty` when declared),
-and a computed `released` boolean (true when a release condition is declared and met). This mirror
-MUST be present for every caller who can see the object (there is no read-restriction on the mirror
-itself beyond the object-level read gate already enforced).
+When a schema declares `x-openregister-confidentiality`, a rendered object MUST include
+`@self.confidentiality` with the resolved `tier`, the raw `ground` and `releaseAt` values of the
+declared properties, and a `released` boolean (true when a declared release condition is met). The
+mirror MUST be present for every caller who can see the object, with no restriction beyond the
+object-level read gate.
 
 #### Scenario: Render mirror reflects an unreleased classified object
 - **GIVEN** object `besluit-1` (tier `confidential`, ground `"Gemeentewet art. 25"`, no release set)

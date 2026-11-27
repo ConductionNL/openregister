@@ -27,6 +27,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Controller\Support\DraftVersionRead;
+use OCA\OpenRegister\Controller\Support\DraftKeysOnList;
+use DateTime;
+use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Support\FormerSlugSignal;
 use OCA\OpenRegister\Controller\Support\ConflictTrail;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
@@ -68,6 +73,7 @@ use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectPresenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
@@ -697,7 +703,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectOperationsInterface $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapperInterface::class);
-		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas);
+		$pairs       = $this->crossTablePairs(registers: $registers, schemas: $schemas, magicMapper: $magicMapper);
 		if (empty($pairs) === true) {
 			return new JSONResponse(
 				data: ['message' => 'No valid magic-mapped register+schema combinations found', 'results' => [], 'total' => 0],
@@ -763,22 +769,27 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * Register::isMagicMappingEnabledForSchema() reads both the new and the legacy
 	 * magic-mapping configuration.
 	 *
-	 * @param array $registers Register IDs/slugs.
-	 * @param array $schemas   Schema IDs/slugs.
+	 * A pair counts when magic mapping is enabled for it, or when its table
+	 * already exists: objects are stored in a register+schema table whether or
+	 * not the register's configuration lists the schema, and the mapper reads an
+	 * existing table the same way. Requiring the configuration refused every
+	 * cross-table search over a register created through the API with a 404.
+	 *
+	 * @param array                    $registers   Register IDs/slugs.
+	 * @param array                    $schemas     Schema IDs/slugs.
+	 * @param MagicMapperInterface|null $magicMapper The mapper, asked whether a pair's table exists.
 	 *
 	 * @return array<int, array{register: Register, schema: Schema}> The pairs.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	private function crossTablePairs(array $registers, array $schemas): array {
+	private function crossTablePairs(array $registers, array $schemas, ?MagicMapperInterface $magicMapper=null): array {
 		$registerEntities = $this->crossTableEntities(ids: $registers, kind: 'register');
 		$schemaEntities   = $this->crossTableEntities(ids: $schemas, kind: 'schema');
 		$pairs            = [];
 		foreach ($registerEntities as $registerEntity) {
 			foreach ($this->crossTableSchemasOf(register: $registerEntity, schemaEntities: $schemaEntities) as $schemaEntity) {
-				if ($registerEntity->isMagicMappingEnabledForSchema(
-					schemaId: $schemaEntity->getId(),
-					schemaSlug: $schemaEntity->getSlug()
-				) === true
-				) {
+				if ($this->isCrossTablePair(register: $registerEntity, schema: $schemaEntity, magicMapper: $magicMapper) === true) {
 					$pairs[] = ['register' => $registerEntity, 'schema' => $schemaEntity];
 				}
 			}
@@ -786,6 +797,33 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return $pairs;
 	}//end crossTablePairs()
+
+	/**
+	 * Whether one register+schema pair is searchable across tables: mapped, or its table exists.
+	 *
+	 * @param Register                  $register    The register.
+	 * @param Schema                    $schema      The schema.
+	 * @param MagicMapperInterface|null $magicMapper The mapper, asked whether the table exists.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	private function isCrossTablePair(Register $register, Schema $schema, ?MagicMapperInterface $magicMapper): bool {
+		if ($register->isMagicMappingEnabledForSchema(schemaId: $schema->getId(), schemaSlug: $schema->getSlug()) === true) {
+			return true;
+		}
+
+		if ($magicMapper === null) {
+			return false;
+		}
+
+		try {
+			return $magicMapper->existsTableForRegisterSchema(register: $register, schema: $schema);
+		} catch (\Throwable $e) {
+			return false;
+		}
+	}//end isCrossTablePair()
 
 	/**
 	 * The schemas a cross-table search names, as seen from one register.
@@ -1442,6 +1480,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 		$responseData = $this->buildMagicResponse(page: $page, listing: $listing);
 		$responseData = $this->addIgnoredFilterHint(responseData: $responseData, ignoredFilters: $magicMapper->getIgnoredFilters());
 		$responseData = $this->addMagicFacets(responseData: $responseData, listing: $listing);
+		$responseData = $this->withDraftKeys(result: $responseData, listing: $listing, objectService: $objectService);
 
 		return $this->magicListingResponse(responseData: $responseData, listing: $listing);
 	}//end indexFromMagicTable()
@@ -1917,6 +1956,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		// Spatial post-filter for ?geo.bbox= / ?geo.near=&geo.radius= / ?geo.property=.
 		$result = $this->applyGeoQueryFilters(params: $listing['params'], result: $result);
+		$result = $this->withDraftKeys(result: $result, listing: $listing, objectService: $objectService);
 
 		// Content negotiation: a JSON-LD @graph over the already-rendered,
 		// RBAC-filtered result (json-ld-output).
@@ -1931,6 +1971,47 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 
 		return new JSONResponse(data: $result);
 	}//end indexFromObjectService()
+
+	/**
+	 * With `_drafts=true`, the keys of the drafts the caller may see on each row, in `@self.drafts`.
+	 *
+	 * The rows themselves are not changed, added or removed: drafts live in
+	 * their own table and never come back as objects.
+	 *
+	 * @param array                     $result        The listing body.
+	 * @param array                     $listing       The listing scope.
+	 * @param ObjectOperationsInterface $objectService Reads a row's live object under the caller's access.
+	 *
+	 * @psalm-param array<string, mixed> $result
+	 * @psalm-param array<string, mixed> $listing
+	 *
+	 * @return array<string, mixed> The listing body.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-drafts-never-appear-as-objects-in-lists-or-search
+	 */
+	private function withDraftKeys(array $result, array $listing, ObjectOperationsInterface $objectService): array {
+		$schemaEntity   = ($listing['resolved']['schemaEntity'] ?? null);
+		$registerEntity = ($listing['resolved']['registerEntity'] ?? null);
+		if (DraftKeysOnList::asked(params: $listing['params']) === false
+			|| ($schemaEntity instanceof Schema) === false
+			|| is_array($result['results'] ?? null) === false
+		) {
+			return $result;
+		}
+
+		$result['results'] = DraftKeysOnList::annotate(
+			results: $result['results'],
+			drafts: $this->container->get(DraftService::class),
+			schema: $schemaEntity,
+			caller: $this->userSession->getUser()?->getUID(),
+			load: fn (string $uuid): mixed => $objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: $registerEntity, schema: $schemaEntity, render: false, audit: false)
+			)
+		);
+
+		return $result;
+	}//end withDraftKeys()
 
 	/**
 	 * Batched object-count endpoint — POST /api/objects/counts.
@@ -3248,6 +3329,11 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 				return $moved;
 			}
 
+			$version = trim((string)$this->request->getParam('version', ''));
+			if (DraftVersionRead::namesADraft(version: $version) === true) {
+				return $this->draftShow(show: $show, read: $read, object: $objectEntity, version: $version);
+			}
+
 			return $this->renderedShow(shown: new ShownEntity(show: $show, entity: $objectEntity, extend: $read->extend), read: $read);
 		} catch (DoesNotExistException $exception) {
 			return ($this->movedShow(show: $show, read: $read) ?? new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404));
@@ -3257,6 +3343,47 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return $this->ambiguousIdentifierResponse(id: $show->id);
 		}
 	}//end shownObject()
+
+	/**
+	 * The object at a draft version: the draft's delta merged onto the live data, rendered the same way.
+	 *
+	 * A draft that does not exist, or that the caller may not see, answers 404
+	 * like a missing object, so the answer does not tell which drafts exist.
+	 *
+	 * @param ObjectShow        $show    The request.
+	 * @param ObjectReadOptions $read    The read options.
+	 * @param ObjectEntity      $object  The live object, already read under the caller's access.
+	 * @param string            $version The draft key.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/records-draft-versions/design.md
+	 */
+	private function draftShow(ObjectShow $show, ObjectReadOptions $read, ObjectEntity $object, string $version): JSONResponse {
+		$schema = ($show->resolved['schemaEntity'] ?? null);
+		$draft  = null;
+		if ($schema instanceof Schema) {
+			$draft = DraftVersionRead::of(
+				drafts: $this->container->get(DraftService::class),
+				object: $object,
+				schema: $schema,
+				key: $version,
+				caller: $this->userSession->getUser()?->getUID()
+			);
+		}
+
+		if ($draft === null) {
+			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		}
+
+		$response = $this->renderedShow(shown: new ShownEntity(show: $show, entity: $draft->entity, extend: $read->extend), read: $read);
+		$data     = $response->getData();
+		if (is_array($data) === true) {
+			$response->setData($draft->stamped(rendered: $data));
+		}
+
+		return $response;
+	}//end draftShow()
 
 	/**
 	 * Find the object without rendering it.

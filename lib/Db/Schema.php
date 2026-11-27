@@ -80,7 +80,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setProperties(?array $properties)
  * @method array|null getArchive()
  * @method void setArchive(?array $archive)
- * @method array|null getFacets()
+ * @method array<string, mixed>|null getFacets()
  * @method void setFacets(?array $facets)
  * @method string|null getSource()
  * @method void setSource(?string $source)
@@ -874,6 +874,13 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string
 	 */
 	public const BREAK_GLASS_ANNOTATION = 'x-openregister-break-glass';
+
+	/**
+	 * The second-factor annotation: reading this schema's objects requires a verified second factor (REQ-IHC-003).
+	 *
+	 * @var string
+	 */
+	public const SECOND_FACTOR_ANNOTATION = 'x-openregister-second-factor';
 
 	/**
 	 * The property keys whose falsy value is a real one.
@@ -1690,6 +1697,25 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	public function getObjectSource(): ?array {
 		return (new ObjectSourceDeclaration())->declared(configuration: $this->getConfiguration());
 	}//end getObjectSource()
+
+	/**
+	 * The schema's preview URL template, when it declares one.
+	 *
+	 * Validated when the configuration is set ({@see Schema\PreviewUrlTemplate}),
+	 * so a value read here uses only the known placeholders.
+	 *
+	 * @return string|null The template, or null.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function getPreviewUrl(): ?string {
+		$template = ($this->getConfiguration()[Schema\PreviewUrlTemplate::KEY] ?? null);
+		if (is_string($template) === false || $template === '') {
+			return null;
+		}
+
+		return $template;
+	}//end getPreviewUrl()
 
 	/**
 	 * Get the lens declarations from the schema configuration.
