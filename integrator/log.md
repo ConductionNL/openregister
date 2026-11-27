@@ -220,3 +220,4 @@
 2026-11-27T11:24:03Z RED prs=11346 main=c2f01e11e5 integrator-cloud (solo: SystemOperationContextBoundaryTest pins runAsSystem callers, FilinqPolicyImporter not in ALLOWED; failed-solo)
 2026-11-27T12:13:53Z NORESULT prs=11352,11353,11371,11372 main=c2f01e11e5 integrator-cloud (deps failed: container PHP 8.3.6 < psalm's ~8.3.16; retried with COMPOSER_IGNORE_PLATFORM_REQ=php-64bit,php)
 2026-11-27T12:13:57Z GREEN prs=11352,11353,11371,11372 main=c2f01e11e5 integrator-cloud (merged; main now fb25d44783)
+2026-11-27T12:25:49Z GREEN prs=11354,11373 main=fb25d44783 integrator-cloud (merged; main now 99cfb73d4b)
