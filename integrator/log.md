@@ -225,3 +225,4 @@
 2026-11-27T12:43:35Z AUTOPARK prs=11077 main=2d1be742bb integrator-cloud (sbom: package-lock.json changed without sbom.cdx.json)
 2026-11-27T13:06:47Z GREEN prs=10260,11350 main=2d1be742bb integrator-cloud (merged; main now 4c5375eed4)
 2026-11-27T13:11:55Z RED prs=11346,11374 main=4c5375eed4 integrator-cloud (4 jest suites fail to run; suspect #11374 changes package.json/package-lock.json, rebuilt without it)
+2026-11-27T13:22:35Z GREEN prs=11346 main=4c5375eed4 integrator-cloud (merged; main now 63718e5e55)
