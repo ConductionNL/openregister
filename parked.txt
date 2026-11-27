@@ -251,3 +251,4 @@ openregister#11077 275f33b0bbbdb346c04eb6c712c37b8caaecb3b1 auto-park: sbom: pac
 openregister#11077 e32a4be4aff0eabc5e1d932f37882b20dd70ec18 auto-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#11307 7066661e7171d738d723ae55db0b0d0addc4dfa4 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Architecture\ComponentDependencyRulesTest::testNoComponentEdgeBeyondTheBaseline
 openregister#11274 ffdf54e0cc71f2dff69c0387e50a76884034dfac precheck-red alone on main: Unit\Middleware\MaintenanceModeMiddlewareTest::testEveryOperationsRouteStaysReachable
+openregister#11077 59018b38ff0dd20e810448f693252799f65f8b3c auto-park: sbom: package-lock.json changed without sbom.cdx.json
