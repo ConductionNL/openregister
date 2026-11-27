@@ -5466,3 +5466,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T11:05:34Z integrator-20261127T080455-44feeeb6 MERGED-TREE f9f6efd6b5: 4 PRs, main now 3405cc7b52 = tested tree
 2026-11-27T11:06:40Z session-20261127T100828-1cd2c27a done-launchpad merged nextcloud-vue#2417 (pixel: people widget showSearch + board ruled rows, compdiff-proven by inject on LpVandaag); launchpad seed branch cloud/done-launchpad-people-board-rows waits for the release
+2026-11-27T11:10:12Z integrator-20261127T080455-44feeeb6 RED tree 43673c204a prs 4 front=ok: Tests: 67963, Assertions: 242013, Errors: 5, Failures: 1, Warnings: 1, Deprecations: 4, PH; first failures: OCA\OpenRegister\Tests\Unit\Service\SystemOperationContextBoundaryTest::testTheCallSiteSetIsPinned
