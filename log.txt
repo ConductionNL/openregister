@@ -5563,3 +5563,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T14:48:13Z integrator-20261127T115023-b15bb467 MERGED-TREE a420e8cd75: 2 PRs, main now b15abef5a0 = tested tree
 2026-11-27T15:02:40Z integrator-20261127T115023-b15bb467 RED tree 39cb55795f prs 1 front=red: Tests: 68290, Assertions: 243346, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Depreca; first failures: FAIL src/services/initial-data.golden.spec.js
 2026-11-27T15:15:18Z integrator-20261127T115023-b15bb467 GREEN tree fbd2bd86b1 on dev b15abef5a0 prs 1 front=ok: Tests: 68180, Assertions: 242913, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
+2026-11-27T15:15:37Z integrator-20261127T115023-b15bb467 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
