@@ -7,8 +7,8 @@ Tooling: design-system 601dd11 compdiff, boards rebuilt with build.py --only (Lp
 |---|---|---|---|
 | LpVandaag (1920) | 51 | 29 | launchpad#2224 #2232 #2236, nextcloud-vue#2417 (2.235.0) |
 | LpIntranet | 51 | 32 | same |
-| LpManagement | 24 | 24 | (no regression) |
-| LpBeheer* (7 boards) | tabCount 16 vs 12 drawn | 12 tabs | launchpad#2210 (decision (b) 09:40Z) |
+| LpManagement | 24 | 17 | launchpad#2238 (status report, spend analytics inset) |
+| LpBeheer* (7 boards) | tabCount 16 vs 12 drawn, 2 rows | 12 tabs on one row in Dutch | launchpad#2210 (decision (b) 09:40Z), #2240 (nl.js lacked 40 strings nl.json has, e.g. 'Rollen en rechten') |
 
 Fixed: admin tab strip 16 -> 12 (#2210); people lists ruled as drawn + showSearch (nc-vue #2417 + seed); text and people widgets on the card inset (#2224); markdown table in a text card (#2232, table 9 -> 4 flags); announcement frame for placements that ask for confirmation (#2236, Woo card 10 -> 4).
 
@@ -22,3 +22,5 @@ Remaining (with reason), for the next pixel run:
 - LpManagement: chart cards content inset 27 vs 19 and header separators (CnChartWidget / stat cards inside launchpad's --nc-dashboard card), page header, filter card missing (cross-widget filter not seeded on that board).
 - Root cause worth a library change: launchpad's cards are CnWidgetWrapper chrome="nc-dashboard" outside .cn-dashboard-page, so nextcloud-vue's board-look card rules (all scoped .cn-dashboard-page / :not(--nc-dashboard)) never apply; marking the workspace .cn-dashboard-page measured -4/-3 flags but over-pads some cards, stripping --nc-dashboard measured +40 (worse). Per-widget launchpad rules (as in #2224/#2232) are the working lever.
 - 19 Lp boards still not measured (need routes/steps), LpWerkplek pairs only 3/25 components on demo-werkplek (route/state to check).
+
+Also this run: LpDashboardInstellingen not measurable yet: compdiff's read-only run times out entering edit mode (the dialog sits behind it); own-look-fields task 6 left open with that reason. Intranetmenu's 14px content inset source not found in 15 min (left). LpBeheer* boards: tab strip matches (12, one row); their card content differs widely (most drawn cards 'missing on live') and needs a pass per tab.
