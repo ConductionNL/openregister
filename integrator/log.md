@@ -193,3 +193,4 @@
 2026-11-26T01:14:26Z GREEN prs=11285,11318,11332 main=32f02f2ec8 integrator-cloud (merged; main now 8b3332a0dd)
 2026-11-26T01:25:53Z GREEN prs=11264,11295,11338 main=8b3332a0dd integrator-cloud (merged; main now 53cc7d3aa0)
 2026-11-26T01:37:59Z GREEN prs=11294,11320 main=53cc7d3aa0 integrator-cloud (merged; main now d50af8842c)
+2026-11-27T05:22:20Z NORESULT prs=10533,11324,11329,11339,11344 main=1abff0ac85 integrator-cloud (suite green, maintainability floor PASS; checker floor NO RESULT: adrvalidator cannot fetch static.developer.overheid.nl, proxy 403 in Default env; nothing merged; #11304 build-conflict)
