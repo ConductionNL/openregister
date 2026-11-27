@@ -13,7 +13,8 @@
 - [x] 2.3 Table rendering of the same nodes and edges, reachable by keyboard. Verify: axe check in the same e2e passes.
 - [x] 2.4 SVG download. Verify: e2e asserts the file starts with `<svg`.
 
-- [ ] 2.5 `tests/e2e/schema-diagram.spec.ts`: open a register, click through to a schema, move a node and reload, axe on the table, assert the download starts with `<svg`. The Verify lines of 2.1–2.4. (live pass: needs a running instance)
+- [x] 2.5 `tests/e2e/schema-diagram.spec.ts`: open a register, click through to a schema, move a node and reload, axe on the table, assert the download starts with `<svg`. The Verify lines of 2.1–2.4. (live pass: needs a running instance)
+  - Built (2026-11-25) as `tests/e2e/ci/schema-diagram.spec.ts`, so the CI project runs it: two schemas, one linking the other; the line and the table row, axe on the table (no violations), the table link opens the linked schema; a box dragged and the layout saved, still on its side after a reload; the download is `register-<id>-model.svg` and starts with `<svg`. Live on a sandbox Nextcloud 34 with PostgreSQL 16: 3 passed, twice. Red first on the app: `CnDetailPage` renders its default slot only when there is no statistics table, and the register page has one, so its charts, the Cards / Diagram switch and the schema cards never rendered on a running instance. `RegisterDetail.vue` now puts that body in the footer slot; the mount spec's stub renders slots the way `CnDetailPage` does, and a new test fails on the old layout.
 
 ### What the second pass built (2.1–2.4, 3.1)
 

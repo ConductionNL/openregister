@@ -1164,7 +1164,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Access links (access-by-link-not-by-account). A scoped, expiring link
         // that opens one object, view or file for somebody with no account. The
-        // three `/api/public/links/` endpoints carry no session: the link row is
+        // four `/api/public/links/` endpoints carry no session: the link row is
         // the whole access decision, and it resolves a principal that is the
         // link itself. An unknown, revoked, switched-off or expired anchor all
         // answer the same 404. The four owner endpoints mint, list, switch off
@@ -1186,6 +1186,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'verb' => 'POST',
             'requirements' => ['anchor' => '[A-Za-z0-9]+'],
         ],
+        // The file a file link names, streamed to its holder (access-by-link 7.7).
+        ['name' => 'accessLink#download', 'url' => '/api/public/links/{anchor}/download', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
         // The page a holder lands on (#4061): renders what the link opens for a
         // person, reading the holder endpoints above; it decides nothing itself.
         ['name' => 'accessLinkPage#show', 'url' => '/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
@@ -1500,6 +1502,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'operationsMaintenance#maintenance', 'url' => '/api/operations/maintenance', 'verb' => 'DELETE', 'postfix' => 'leave'],
         ['name' => 'operationsMaintenance#supportBundle', 'url' => '/api/operations/support-bundle', 'verb' => 'GET'],
         ['name' => 'operationsMaintenance#facts', 'url' => '/api/operations/facts', 'verb' => 'GET'],
+        ['name' => 'operationsReindex#reindex', 'url' => '/api/operations/reindex', 'verb' => 'POST'],
         ['name' => 'operationsQuery#run', 'url' => '/api/operations/query', 'verb' => 'POST'],
         ['name' => 'operationsQuery#export', 'url' => '/api/operations/query/export', 'verb' => 'POST'],
         // Dependency breakers (operate-load-shedding D-7): administrator-only.
@@ -2176,6 +2179,14 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
 		// Scoped API tokens: the calling principal and the grant its token carries.
 		['name' => 'whoami#show', 'url' => '/api/whoami', 'verb' => 'GET'],
+		// Scoped API tokens: the grant on the caller's own personal tokens (app passwords).
+		// The grant editor on the account page: the caller's granted tokens, naming an app password, and the preview on one object.
+		['name' => 'personalTokenGrants#index', 'url' => '/api/tokens/grants', 'verb' => 'GET'],
+		['name' => 'personalTokenGrants#resolve', 'url' => '/api/tokens/grants/resolve', 'verb' => 'POST'],
+		['name' => 'personalTokenGrants#preview', 'url' => '/api/tokens/grants/preview', 'verb' => 'POST'],
+		['name' => 'personalTokenGrants#show', 'url' => '/api/tokens/{tokenId}/grant', 'verb' => 'GET', 'requirements' => ['tokenId' => '\\d+']],
+		['name' => 'personalTokenGrants#update', 'url' => '/api/tokens/{tokenId}/grant', 'verb' => 'PUT', 'requirements' => ['tokenId' => '\\d+']],
+		['name' => 'personalTokenGrants#destroy', 'url' => '/api/tokens/{tokenId}/grant', 'verb' => 'DELETE', 'requirements' => ['tokenId' => '\\d+']],
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
 		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],

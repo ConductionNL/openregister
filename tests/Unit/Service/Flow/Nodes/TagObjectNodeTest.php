@@ -280,6 +280,44 @@ class TagObjectNodeTest extends TestCase {
 		$this->fire(items: self::items(['uuid' => 'lead-1']), config: ['operation' => 'add', 'tag' => 'Large deal'], context: ['runAs' => 'disabled']);
 	}//end testADisabledIdentityIsRefused()
 
+	public function testAnObjectTriggersItemIsTaggedThroughItsEnvelope(): void {
+		$this->tags->method('hasObjectTag')->willReturn(false);
+		$added = [];
+		$this->tags->expects($this->once())->method('addObjectTag')->willReturnCallback(
+			static function (string $objectUuid, string $tagName, ?string $color = null) use (&$added): void {
+				$added[] = [$objectUuid, $tagName];
+			}
+		);
+
+		$this->fire(
+			items: self::items(['id' => 'lead-1', 'value' => 25000, '@self' => ['id' => 'lead-1', 'register' => '3', 'schema' => '9']]),
+			config: ['operation' => 'add', 'tag' => 'Large deal']
+		);
+
+		$this->assertSame([['lead-1', 'Large deal']], $added);
+	}//end testAnObjectTriggersItemIsTaggedThroughItsEnvelope()
+
+	public function testAnItemsOwnUuidWinsOverItsEnvelope(): void {
+		$this->tags->method('hasObjectTag')->willReturn(false);
+		$added = [];
+		$this->tags->expects($this->once())->method('addObjectTag')->willReturnCallback(
+			static function (string $objectUuid) use (&$added): void {
+				$added[] = $objectUuid;
+			}
+		);
+
+		$this->fire(items: self::items(['uuid' => 'lead-1', '@self' => ['id' => 'other']]), config: ['operation' => 'add', 'tag' => 'Large deal']);
+
+		$this->assertSame(['lead-1'], $added);
+	}//end testAnItemsOwnUuidWinsOverItsEnvelope()
+
+	public function testAnEnvelopeWithoutAnIdNamesNoObject(): void {
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Item 0 names no object to tag');
+
+		$this->fire(items: self::items(['name' => 'x', '@self' => ['name' => 'x']]), config: ['operation' => 'add', 'tag' => 'Large deal']);
+	}//end testAnEnvelopeWithoutAnIdNamesNoObject()
+
 	public function testAnItemWithoutObjectFailsTheStep(): void {
 		$this->expectException(RuntimeException::class);
 		$this->expectExceptionMessage('Item 0 names no object to tag');

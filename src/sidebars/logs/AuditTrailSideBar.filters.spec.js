@@ -204,6 +204,20 @@ describe('AuditTrailSideBar filters', () => {
 		expect(auditTrailStore.refreshAuditTrailList).toHaveBeenCalledTimes(1)
 	})
 
+	// REQ-ADS-001: the date range reaches the server as text it can read.
+	it('sends the date range as ISO 8601 text', () => {
+		auditTrailStore.auditTrailFilters = {}
+		const vm = sidebar({
+			dateFrom: new Date('2026-11-25T08:00:00.000Z'),
+			dateTo: new Date('2026-11-26T17:30:00.000Z'),
+		})
+		vm.applyFiltersToStore()
+		expect(auditTrailStore.setAuditTrailFilters).toHaveBeenCalledWith({
+			dateFrom: '2026-11-25T08:00:00.000Z',
+			dateTo: '2026-11-26T17:30:00.000Z',
+		})
+	})
+
 	it('clears every filter and the scope', () => {
 		const vm = sidebar({ selectedActions: [{ value: 'x' }], objectFilter: 'o', showOnlyWithChanges: true })
 		vm.clearAllFilters()

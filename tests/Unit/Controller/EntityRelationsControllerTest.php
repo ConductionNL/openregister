@@ -234,6 +234,96 @@ class EntityRelationsControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 	}//end testReturns403WhenFileNotPresentInUserFolder()
 
+	/**
+	 * A file of an object follows the object's update rule: the reviewer finds no copy in their own home.
+	 *
+	 * Every object file lives in the openregister account's home, so the
+	 * user-folder check alone refused every reviewer of an object's file.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md
+	 */
+	public function testAnObjectsFileIsDecidedByWhoMayUpdateTheObject(): void {
+		$relation = new EntityRelation();
+		$relation->setId(42);
+		$relation->setFileId(7);
+		$this->userSession->method('getUser')->willReturn($this->user);
+		$this->mapper->method('find')->willReturn($relation);
+		$this->mapper->method('updateDecisionMetadata')->willReturn($relation);
+		$this->request->method('getParams')->willReturn(['bases' => ['5.1.2e']]);
+
+		$object = new \OCA\OpenRegister\Db\ObjectEntity();
+		$object->setOwner('bob');
+		$object->setSchema('12');
+		$schema = $this->createMock(\OCA\OpenRegister\Db\Schema::class);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->permissionHandler->expects($this->once())->method('hasPermission')->willReturn(true);
+
+		$controller = $this->controllerOverAnObjectsFile(object: $object);
+		$response = $controller->update(42);
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testAnObjectsFileIsDecidedByWhoMayUpdateTheObject()
+
+	/**
+	 * A file that belongs to no object is still refused when the reviewer has no copy of it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md
+	 */
+	public function testAFileOfNoObjectIsStillRefused(): void {
+		$relation = new EntityRelation();
+		$relation->setFileId(7);
+		$this->userSession->method('getUser')->willReturn($this->user);
+		$this->mapper->method('find')->willReturn($relation);
+		$this->permissionHandler->expects($this->never())->method('hasPermission');
+
+		$response = $this->controllerOverAnObjectsFile(object: null)->update(42);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+	}//end testAFileOfNoObjectIsStillRefused()
+
+	/**
+	 * A controller whose reviewer has no copy of file 7, which sits in the openregister home and belongs to `$object`.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity|null $object The owning object, or null for none.
+	 *
+	 * @return EntityRelationsController
+	 */
+	private function controllerOverAnObjectsFile(?\OCA\OpenRegister\Db\ObjectEntity $object): EntityRelationsController {
+		$own = $this->createMock(Folder::class);
+		$own->method('getById')->willReturn([]);
+		$managedFile = $this->createMock(File::class);
+		$openRegisterHome = $this->createMock(Folder::class);
+		$openRegisterHome->method('getFirstNodeById')->with(7)->willReturn($managedFile);
+		$this->rootFolder->method('getUserFolder')->willReturnCallback(
+			static fn (string $uid): Folder => ($uid === 'openregister' ? $openRegisterHome : $own)
+		);
+		$lookup = $this->createMock(ManagedFileOwnerLookup::class);
+		$lookup->method('find')->with($managedFile)->willReturn($object);
+		$owners = new \OCA\OpenRegister\Service\Decision\ReviewPolicyFileOwners(rootFolder: $this->rootFolder, owners: $lookup);
+
+		return EntityRelationsControllerFactory::create(
+			'openregister',
+			$this->request,
+			$this->mapper,
+			$this->userSession,
+			$this->rootFolder,
+			$this->permissionHandler,
+			$this->magicMapper,
+			$this->schemaMapper,
+			$this->registerMapper,
+			$this->emailLinkMapper,
+			$this->logger,
+			$this->relationDecisions,
+			$this->visibleAsIs(),
+			$this->createMock(IGroupManager::class),
+			$owners
+		);
+	}//end controllerOverAnObjectsFile()
+
 	public function testReturns400WhenMapperRaisesValidationException(): void {
 		$relation = new EntityRelation();
 		$relation->setFileId(7);

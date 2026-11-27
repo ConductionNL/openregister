@@ -34,6 +34,41 @@
 			</p>
 		</div>
 
+		<div class="tokens-section--scoped">
+			<h3>{{ t('openregister', 'Scoped app passwords') }}</h3>
+			<NcButton data-action="scope" @click="openGrant(null)">
+				{{ t('openregister', 'Scope an app password') }}
+			</NcButton>
+			<ul class="tokens-section__granted-list">
+				<li
+					v-for="granted in grantedTokens"
+					:key="granted.tokenId"
+					class="tokens-section__granted"
+					:data-granted="granted.tokenId">
+					<div class="tokens-section__info">
+						<strong>{{ granted.label || `${t('openregister', 'App password')} ${granted.tokenId}` }}</strong>
+						<span v-if="granted.grant" class="tokens-section__preview">{{ (granted.grant.verbs || []).join(', ') }}</span>
+						<span v-if="granted.grant && granted.grant.expiresAt" class="tokens-section__expires">
+							{{ t('openregister', 'Expires') }}:
+							{{ formatDate(granted.grant.expiresAt) }}
+						</span>
+					</div>
+					<NcButton @click="openGrant(granted)">
+						{{ t('openregister', 'Edit') }}
+					</NcButton>
+				</li>
+			</ul>
+			<p v-if="grantedTokens.length === 0">
+				{{ t('openregister', 'No app password carries a grant yet.') }}
+			</p>
+		</div>
+
+		<TokenGrantModal
+			v-if="grantModalOpen"
+			:granted="grantTarget"
+			@close="grantModalOpen = false"
+			@saved="grantSaved" />
+
 		<CreateTokenModal
 			v-if="showCreateModal"
 			:tokenName="newTokenName"
@@ -61,11 +96,12 @@ import { NcButton } from '@nextcloud/vue'
 import SectionStatus from '../../../components/shared/SectionStatus.vue'
 import CreatedTokenModal from '../../../modals/account/CreatedTokenModal.vue'
 import CreateTokenModal from '../../../modals/account/CreateTokenModal.vue'
+import TokenGrantModal from '../../../modals/account/TokenGrantModal.vue'
 import { sectionStatus } from '../../../composables/sectionStatus.js'
 
 export default {
 	name: 'TokensSection',
-	components: { NcButton, CreateTokenModal, CreatedTokenModal, SectionStatus },
+	components: { NcButton, CreateTokenModal, CreatedTokenModal, SectionStatus, TokenGrantModal },
 
 	mixins: [sectionStatus],
 
@@ -77,11 +113,15 @@ export default {
 			newTokenName: '',
 			newTokenExpires: '',
 			createdToken: null,
+			grantedTokens: [],
+			grantModalOpen: false,
+			grantTarget: null,
 		}
 	},
 
 	mounted() {
 		this.loadTokens()
+		this.loadGrantedTokens()
 	},
 
 	methods: {
@@ -105,6 +145,46 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Load the signed-in user's app passwords that carry a grant.
+		 *
+		 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-or-consumer-may-carry-a-grant-narrower-than-its-user
+		 * @return {Promise<void>}
+		 */
+		async loadGrantedTokens() {
+			try {
+				const { data } = await axios.get(generateUrl('/apps/openregister/api/tokens/grants'))
+				this.grantedTokens = data?.results || []
+			} catch {
+				this.grantedTokens = []
+			}
+		},
+
+		/**
+		 * Open the grant editor for a granted token, or to find one by its password.
+		 *
+		 * @spec exclude UI plumbing — opens the grant modal.
+		 * @param {object|null} granted - the granted token, or null
+		 * @return {void}
+		 */
+		openGrant(granted) {
+			this.grantTarget = granted
+			this.grantModalOpen = true
+		},
+
+		/**
+		 * Close the grant editor after a save or removal and reload the list.
+		 *
+		 * @spec exclude UI plumbing — status line and list refresh.
+		 * @param {string} message - what happened
+		 * @return {Promise<void>}
+		 */
+		async grantSaved(message) {
+			this.grantModalOpen = false
+			this.setStatus(message)
+			await this.loadGrantedTokens()
 		},
 
 		/**
@@ -207,6 +287,24 @@ export default {
 @include section-field-label;
 
 @include section-error-rules;
+
+.tokens-section--scoped {
+	margin-top: 24px;
+}
+
+.tokens-section__granted-list {
+	list-style: none;
+	padding: 0;
+	margin-top: 16px;
+}
+
+.tokens-section__granted {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--color-border-dark);
+}
 
 .tokens-section__list {
 	list-style: none;

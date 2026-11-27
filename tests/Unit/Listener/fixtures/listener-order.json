@@ -352,6 +352,9 @@
 		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener"
 	],
+	"OCP\\Authentication\\Events\\TokenInvalidatedEvent": [
+		"OCA\\OpenRegister\\Listener\\PersonalTokenGrantRevokedListener"
+	],
 	"OCP\\Calendar\\Events\\CalendarObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\TaskVtodoWriteBackListener"
 	],

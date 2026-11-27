@@ -157,7 +157,7 @@ class ObjectPermissionsController extends Controller {
 	 *
 	 * @return JSONResponse The history.
 	 *
-	 * @SuppressWarnings(PHPMD.ShortVariable)
+	 * @SuppressWarnings(PHPMD.ShortVariable) Existing suppression, kept.
 	 * Reason: `at` is the query parameter's name, and Nextcloud binds a request
 	 *         parameter to the method argument that shares it. Renaming the
 	 *         argument renames the endpoint's contract.

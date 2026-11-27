@@ -53,6 +53,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUnpublishedAt(?DateTime $unpublishedAt)
  * @method string|null getAuditTrailUuid()
  * @method void setAuditTrailUuid(?string $auditTrailUuid)
+ * @method DateTime|null getMismatchAt()
+ * @method void setMismatchAt(?DateTime $mismatchAt)
+ * @method string|null getMismatchSha256()
+ * @method void setMismatchSha256(?string $mismatchSha256)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
@@ -126,6 +130,23 @@ class FileDigest extends Entity implements JsonSerializable {
 	protected ?string $auditTrailUuid = null;
 
 	/**
+	 * When the file was first found not to match this record, or null while it matches.
+	 *
+	 * Kept on the record so a read-only probe can list the published files whose
+	 * bytes changed, which the audit row alone (a JSON payload) does not allow.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $mismatchAt = null;
+
+	/**
+	 * The digest the file had when it was found changed, '' when it was gone or unreadable.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $mismatchSha256 = null;
+
+	/**
 	 * Constructor: registers the field types.
 	 */
 	public function __construct() {
@@ -138,6 +159,8 @@ class FileDigest extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'publishedAt', type: 'datetime');
 		$this->addType(fieldName: 'unpublishedAt', type: 'datetime');
 		$this->addType(fieldName: 'auditTrailUuid', type: 'string');
+		$this->addType(fieldName: 'mismatchAt', type: 'datetime');
+		$this->addType(fieldName: 'mismatchSha256', type: 'string');
 
 	}//end __construct()
 

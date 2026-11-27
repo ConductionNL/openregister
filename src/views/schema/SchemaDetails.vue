@@ -361,12 +361,14 @@ export default {
 	},
 
 	/**
-	 * Lifecycle hook: load chart data and schema stats on mount.
+	 * Lifecycle hook: load the schema the URL names, then chart data and schema stats.
 	 *
 	 * @spec exclude UI plumbing — view-mount data fetch for display only
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
+		await this.loadRouteSchema()
+
 		// Fetch dashboard data if not already loaded
 		if (
 			!dashboardStore.chartData
@@ -382,6 +384,30 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Load the schema `/schemas/:id` names when the store holds another one or none.
+		 *
+		 * A deep link, a reload or a bookmark opens this page with nothing
+		 * selected in the store, and every tab reads its schema from there, so
+		 * without this the page renders empty: no title, and a Rights tab that
+		 * offers to declare a matrix the schema already has. A schema that cannot
+		 * be read leaves the page as it was.
+		 *
+		 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md#requirement-an-admin-edits-the-matrix-as-a-grid-with-a-per-user-preview
+		 * @return {Promise<void>}
+		 */
+		async loadRouteSchema() {
+			const routeId = this.$route?.params?.id
+			if (!routeId || String(schemaStore.schemaItem?.id ?? '') === String(routeId)) {
+				return
+			}
+			try {
+				await schemaStore.getSchema(routeId, { setItem: true })
+			} catch {
+				// getSchema() logs the failure; the page keeps what it had.
+			}
+		},
+
 		/**
 		 * Open the schema editor, publishing directly or saving to the draft.
 		 *

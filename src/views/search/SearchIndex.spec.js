@@ -8,6 +8,7 @@
  */
 
 // Mock the store singletons the component imports so we can assert dispatches.
+import { reactive } from 'vue'
 import SearchIndex from './SearchIndex.vue'
 import { searchWithinArea as mockSearchWithinArea } from '../../services/geo/geoSearch.js'
 import {
@@ -691,6 +692,30 @@ describe('SearchIndex — map presentation and area search (REQ-GEOMAP-002)', ()
 		expect(computedCall('mapObjects', { ...ctx, normalizedObjects: [{ id: 'r-2' }] })).toEqual([{ '@self': { id: 'r-1' }, title: 'Inside', id: 'r-1' }])
 	})
 
+	it('shows the records inside a drawn area on a reactive component, whose mapArea reads back as a proxy', async () => {
+		mockSearchWithinArea.mockResolvedValue([{ '@self': { id: 'r-1' }, title: 'Inside' }])
+		const ctx = reactive({ geoProperty: 'location', mapArea: null, mapAreaObjects: null, mapLoading: false, mapError: '' })
+
+		await methodCall('handleMapArea', ctx, POLYGON)
+
+		expect(ctx.mapAreaObjects).toEqual([{ '@self': { id: 'r-1' }, title: 'Inside' }])
+	})
+
+	it('drops the answer for an area that was replaced while it was asked', async () => {
+		let answerFirst
+		mockSearchWithinArea.mockImplementationOnce(() => new Promise((resolve) => { answerFirst = resolve }))
+		mockSearchWithinArea.mockResolvedValueOnce([{ '@self': { id: 'r-2' }, title: 'Second' }])
+		const ctx = reactive({ geoProperty: 'location', mapArea: null, mapAreaObjects: null, mapLoading: false, mapError: '' })
+		const second = { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] }
+
+		const first = methodCall('handleMapArea', ctx, POLYGON)
+		await methodCall('handleMapArea', ctx, second)
+		answerFirst([{ '@self': { id: 'r-1' }, title: 'First' }])
+		await first
+
+		expect(ctx.mapAreaObjects).toEqual([{ '@self': { id: 'r-2' }, title: 'Second' }])
+	})
+
 	it('says so when geo-search fails, and shows no records rather than the whole list', async () => {
 		mockSearchWithinArea.mockRejectedValue(new Error('422'))
 		const ctx = { geoProperty: 'location', mapArea: null, mapAreaObjects: null, mapLoading: false, mapError: '' }
@@ -723,5 +748,19 @@ describe('SearchIndex — column sort header (case-insensitive-ordering 1.4)', (
 
 		mockObjectStore.searchParams = { register: 'r', schema: 's' }
 		expect(computedCall('headerSort', {})).toEqual({ sortKey: null, sortOrder: 'asc' })
+	})
+})
+
+describe('SearchIndex — the register the index page is given', () => {
+	it('is the searched register\'s id as a string, never the register object', () => {
+		Object.assign(mockObjectStore, { searchRegister: { id: 51, title: 'Zaken' }, searchParams: { register: 51 } })
+		expect(computedCall('searchRegisterId', {})).toBe('51')
+	})
+
+	it('falls back to the search scope, and to empty without either', () => {
+		Object.assign(mockObjectStore, { searchRegister: null, searchParams: { register: 7 } })
+		expect(computedCall('searchRegisterId', {})).toBe('7')
+		Object.assign(mockObjectStore, { searchRegister: null, searchParams: {} })
+		expect(computedCall('searchRegisterId', {})).toBe('')
 	})
 })
