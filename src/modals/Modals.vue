@@ -24,7 +24,9 @@ import { navigationStore } from '../store/store.js'
 	<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 	<ValidateSchema v-if="navigationStore.dialog === 'validateSchema'" />
 	<DeleteSchemaObjects v-if="navigationStore.dialog === 'deleteSchemaObjects'" />
-	<UploadSchema />
+	<!-- Mounted only while open: its dialog is gated on the same key, and it
+		carries the code editor (vue-codemirror6), which no page needs at load. -->
+	<UploadSchema v-if="navigationStore.modal === 'uploadSchema'" />
 	<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
 	<DeleteSchemaProperty />
 	<EditSource />
@@ -77,7 +79,6 @@ import ExportRegister from './register/ExportRegister.vue'
 import PublishRegister from './register/PublishRegister.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
 import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
-import UploadSchema from './schema/UploadSchema.vue'
 import DeleteSource from './source/DeleteSource.vue'
 import EditSource from './source/EditSource.vue'
 // The modals below open on demand (each is mounted only while its navigation
@@ -112,6 +113,7 @@ const DeleteSchemaObjects = defineAsyncComponent(() => import('./schema/DeleteSc
 const EditSchema = defineAsyncComponent(() => import('./schema/EditSchema.vue'))
 const EditSchemaProperty = defineAsyncComponent(() => import('./schema/EditSchemaProperty.vue'))
 const ExploreSchema = defineAsyncComponent(() => import('./schema/ExploreSchema.vue'))
+const UploadSchema = defineAsyncComponent(() => import('./schema/UploadSchema.vue'))
 const ValidateSchema = defineAsyncComponent(() => import('./schema/ValidateSchema.vue'))
 const ViewSource = defineAsyncComponent(() => import('./source/ViewSource.vue'))
 const EditWebhook = defineAsyncComponent(() => import('./webhook/EditWebhook.vue'))
