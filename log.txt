@@ -5579,3 +5579,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T16:11:59Z integrator-20261127T155017-3da46553 MERGED-TREE 44a5914a6e: 3 PRs, main now 4be455ccbd = tested tree
 2026-11-27T16:33:39Z session-20261127T162824-f352ce30 cloud-or-reviewer-0..7: APPROVE 5968 11146 10156 11191 11349 (fast path, main merges only); BLOCK 10526 (main merge dropped its info.xml job + repair step); 11305 conflicts with main 4be455cc (no verdict); others ledgered at head
 2026-11-27T16:37:39Z integrator-20261127T155017-3da46553 RED tree b3393802c9 prs 2 front=red: Tests: 68370, Assertions: 243741, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Not; first failures: FAIL src/services/initial-data.golden.spec.js
+2026-11-27T16:47:08Z integrator-20261127T155017-3da46553 GREEN tree e49e3d3f4c on dev 4be455ccbd prs 1 front=skip: Tests: 68248, Assertions: 243222, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
