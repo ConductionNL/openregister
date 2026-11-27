@@ -33,6 +33,7 @@ use OCP\Collaboration\Reference\IReference;
 use OCP\Collaboration\Reference\ISearchableReferenceProvider;
 use OCP\IL10N;
 use OCP\IURLGenerator;
+use Psr\Container\ContainerInterface;
 
 /**
  * Reference provider for OpenRegister objects.
@@ -53,12 +54,25 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	IPublicReferenceProvider {
 
 	/**
+	 * The preview formatter once built.
+	 *
+	 * @var ObjectPreviewFormatterInterface|null
+	 */
+	private ?ObjectPreviewFormatterInterface $formatter = null;
+
+	/**
 	 * Constructor for ObjectReferenceProvider.
 	 *
-	 * @param IURLGenerator                   $urlGenerator The URL generator
-	 * @param IL10N                           $l10n         The localization service
-	 * @param ObjectPreviewFormatterInterface $formatter    Shared preview-formatting/URL-parsing service
-	 * @param string|null                     $userId       The current user ID (null for public/anonymous access)
+	 * Nextcloud's reference manager constructs every reference provider when a
+	 * page renders references (Files, Text, Talk) just to list the discoverable
+	 * ones. The formatter pulls in the object and schema mappers (MagicMapper
+	 * and its handlers), so it is resolved when a reference is actually parsed
+	 * or resolved, not in the constructor.
+	 *
+	 * @param IURLGenerator      $urlGenerator The URL generator
+	 * @param IL10N              $l10n         The localization service
+	 * @param ContainerInterface $container   Builds the preview-formatting/URL-parsing service on first use
+	 * @param string|null        $userId      The current user ID (null for public/anonymous access)
 	 *
 	 * @return void
 	 *
@@ -67,10 +81,21 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	public function __construct(
 		private readonly IURLGenerator $urlGenerator,
 		private readonly IL10N $l10n,
-		private readonly ObjectPreviewFormatterInterface $formatter,
+		private readonly ContainerInterface $container,
 		private readonly ?string $userId,
 	) {
 	}//end __construct()
+
+	/**
+	 * The preview formatter, built on first use.
+	 *
+	 * @return ObjectPreviewFormatterInterface The formatter.
+	 *
+	 * @spec openspec/specs/deep-link-registry/spec.md
+	 */
+	private function formatter(): ObjectPreviewFormatterInterface {
+		return $this->formatter ??= $this->container->get(ObjectPreviewFormatterInterface::class);
+	}//end formatter()
 
 	/**
 	 * Returns the unique identifier for this reference provider.
@@ -144,7 +169,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	public function matchReference(string $referenceText): bool {
-		return $this->formatter->parseReference(referenceText: $referenceText) !== null;
+		return $this->formatter()->parseReference(referenceText: $referenceText) !== null;
 	}//end matchReference()
 
 	/**
@@ -160,7 +185,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	public function resolveReference(string $referenceText): ?IReference {
-		return $this->formatter->buildReference(referenceText: $referenceText);
+		return $this->formatter()->buildReference(referenceText: $referenceText);
 	}//end resolveReference()
 
 	/**
@@ -173,7 +198,7 @@ class ObjectReferenceProvider extends ADiscoverableReferenceProvider implements
 	 * @spec openspec/specs/deep-link-registry/spec.md
 	 */
 	public function getCachePrefix(string $referenceId): string {
-		return $this->formatter->resolveCachePrefix(referenceText: $referenceId);
+		return $this->formatter()->resolveCachePrefix(referenceText: $referenceId);
 	}//end getCachePrefix()
 
 	/**

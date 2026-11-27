@@ -43,11 +43,13 @@ class SchemaCatalogTest extends TestCase {
 	}//end testExposesTheMappersItWasBuiltWith()
 
 	/**
-	 * The interface is bound to the class in DbRegistrar.
+	 * The container hands out the lazy catalogue for the interface (DbRegistrar):
+	 * a consumer that never reaches a mapper does not build it. SchemaCatalog
+	 * stays for code that holds the three mappers already.
 	 *
 	 * @return void
 	 */
 	public function testTheInterfaceIsBoundInDbRegistrar(): void {
-		$this->assertSame(SchemaCatalog::class, DbRegistrar::BINDINGS[SchemaCatalogInterface::class]);
+		$this->assertSame(\OCA\OpenRegister\Db\LazySchemaCatalog::class, DbRegistrar::BINDINGS[SchemaCatalogInterface::class]);
 	}//end testTheInterfaceIsBoundInDbRegistrar()
 }//end class

@@ -4667,8 +4667,8 @@
       "type": "library",
       "name": "nextcloud-vue",
       "group": "@conduction",
-      "version": "2.234.4",
-      "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.234.4",
+      "version": "2.239.0",
+      "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.239.0",
       "licenses": [
         {
           "license": {
@@ -4676,15 +4676,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.234.4",
+      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.239.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.234.4.tgz",
+          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.239.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "9c4473368bc4d22fe139898f319ee51ecc96c3ab919cdf468b04e415d3e32bc1c9b4d10adeaa251c205b4c39fc4ae223841a3e697cd9e1692c53a8d6aeab7a64"
+              "content": "c4bd6d067e5423d2c78b0d14d9425f8e4efc6aae42dc5a9774a73eb4bdbb376da2e335b4830807a310bccf561bcb45ed28ba0d564bae56e00069ab47bcb5bbe8"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4702,7 +4702,7 @@
           "name": "dialogs",
           "group": "@nextcloud",
           "version": "7.6.0",
-          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.234.4|@nextcloud/dialogs@7.6.0",
+          "bom-ref": "openregister@1.0.0|@conduction/nextcloud-vue@2.239.0|@nextcloud/dialogs@7.6.0",
           "licenses": [
             {
               "license": {
