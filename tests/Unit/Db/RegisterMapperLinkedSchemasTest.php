@@ -111,6 +111,8 @@ final class RegisterMapperLinkedSchemasTest extends TestCase {
 	 * @return RegisterMapper&MockObject The mapper.
 	 */
 	/**
+	 * @return void
+	 *
 	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
 	 */
 	public function testAHeldRegisterGivesItsSchemasWithoutBeingReadAgain(): void {

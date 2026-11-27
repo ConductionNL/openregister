@@ -9,6 +9,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
@@ -44,12 +47,32 @@ use Psr\Log\LoggerInterface;
  */
 class MagicMapperStatisticsTableMemoTest extends TestCase {
 
+	/**
+	 * The database double.
+	 *
+	 * @var IDBConnection&MockObject
+	 */
 	private IDBConnection&MockObject $db;
 
+	/**
+	 * The schema mapper double.
+	 *
+	 * @var SchemaMapper&MockObject
+	 */
 	private SchemaMapper&MockObject $schemaMapper;
 
+	/**
+	 * The register mapper double.
+	 *
+	 * @var RegisterMapper&MockObject
+	 */
 	private RegisterMapper&MockObject $registerMapper;
 
+	/**
+	 * The logger double.
+	 *
+	 * @var LoggerInterface&MockObject
+	 */
 	private LoggerInterface&MockObject $logger;
 
 	protected function setUp(): void {
@@ -63,7 +86,8 @@ class MagicMapperStatisticsTableMemoTest extends TestCase {
 	public function testACountRemembersTheListedTablesAsExisting(): void {
 		$mapper = $this->makeMapper();
 		$handler = (new \ReflectionProperty(MagicMapper::class, 'statisticsHandler'))->getValue($mapper);
-		(new \ReflectionProperty(MagicStatisticsHandler::class, 'magicTablesCache'))->setValue($handler, ['openregister_table_1_10', 'openregister_table_2_10']);
+		$listed = ['openregister_table_1_10', 'openregister_table_2_10'];
+		(new \ReflectionProperty(MagicStatisticsHandler::class, 'magicTablesCache'))->setValue($handler, $listed);
 		$callback = (new \ReflectionProperty(MagicStatisticsHandler::class, 'countCallback'))->getValue($handler);
 
 		$register = new Register();
@@ -77,7 +101,7 @@ class MagicMapperStatisticsTableMemoTest extends TestCase {
 		}
 
 		$memo = (new \ReflectionProperty(MagicMapper::class, 'tableExistsMemo'))->getValue($mapper);
-		$this->assertSame(['openregister_table_1_10' => true, 'openregister_table_2_10' => true], array_intersect_key($memo, ['openregister_table_1_10' => 1, 'openregister_table_2_10' => 1]));
+		$this->assertSame(array_fill_keys($listed, true), array_intersect_key($memo, array_flip($listed)));
 		$this->assertTrue($mapper->checkTableExistsInDatabase('openregister_table_2_10'), 'a listed table is known to exist without a query');
 	}
 

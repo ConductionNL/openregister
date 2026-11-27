@@ -64,7 +64,12 @@ class AuditTrailStatisticsPerPairTest extends TestCase {
 
 		return new AuditTrailMapper(
 			$db,
-			new AuditTrailMapperServices($this->createMock(ContainerInterface::class), new NullLogger(), $this->createMock(IUserSession::class), $this->createMock(IRequest::class))
+			new AuditTrailMapperServices(
+				$this->createMock(ContainerInterface::class),
+				new NullLogger(),
+				$this->createMock(IUserSession::class),
+				$this->createMock(IRequest::class)
+			)
 		);
 	}//end mapper()
 }//end class

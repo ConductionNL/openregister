@@ -42,6 +42,11 @@ class MagicStatisticsHandlerPairWalkTest extends TestCase {
 	 */
 	private RegisterMapper $registerMapper;
 
+	/**
+	 * The handler under test.
+	 *
+	 * @var MagicStatisticsHandler
+	 */
 	private MagicStatisticsHandler $handler;
 
 	/**

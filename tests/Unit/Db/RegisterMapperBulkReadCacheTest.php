@@ -75,7 +75,11 @@ class RegisterMapperBulkReadCacheTest extends TestCase {
 
 		return new RegisterMapper(
 			db: $db,
-			tenancy: new TenancyServices($this->createMock(OrganisationMapper::class), $this->createMock(IUserSession::class), $this->createMock(IGroupManager::class)),
+			tenancy: new TenancyServices(
+				$this->createMock(OrganisationMapper::class),
+				$this->createMock(IUserSession::class),
+				$this->createMock(IGroupManager::class)
+			),
 			appConfig: $this->createMock(IAppConfig::class),
 			services: new RegisterMapperServices(
 				schemaMapper: $this->createMock(SchemaMapper::class),
