@@ -5366,3 +5366,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T04:58:52Z integrator-20261127T045745-570ae7da NORESULT tree 6680640335: deps failed
 2026-11-27T05:21:38Z integrator-20261127T045745-570ae7da NORESULT tree 6680640335: checker floor not measured (exit 2)
 2026-11-27T05:28:55Z session-20261127T052855-ffe9ca35 b-thematiq: merged thematiq#2078 (sync-tokens: halving retry + 25-min budget + Xdebug off; local 12m43s -> 4m57s, same outcome). Next: kvk set PR.
+2026-11-27T05:30:52Z session-20261127T052800-73d77282 cloud-or-reviewer-0..7: idle; only unreviewed heads (10515, 11274, 11305, 11314, 11326) conflict with main 1abff0ac; no verdicts written
