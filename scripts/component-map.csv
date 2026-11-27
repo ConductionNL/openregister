@@ -1175,6 +1175,7 @@ Files/Db/AnonymisationLog.php,64,Files,Files,Files/Db/AnonymisationLog.php,0,,Fi
 Files/Db/AnonymisationLogMapper.php,45,Files,Files,Files/Db/AnonymisationLogMapper.php,0,,Files
 Files/Db/Chunk.php,76,Files,Files,Files/Db/Chunk.php,7,,Files
 Files/Db/ChunkMapper.php,292,Files,Files,Files/Db/ChunkMapper.php,14,59,Files
+Files/Db/ChunkRelationCarryOver.php,,Files,,,,,Files
 Files/Db/DetectionMethod.php,11,Files,Files,Files/Db/DetectionMethod.php,0,,Files
 Files/Db/EntityRelationMapperInterface.php,28,Files,Files,Files/Db/EntityRelationMapperInterface.php,0,,Files
 Files/Db/File.php,66,Files,Files,Files/Db/File.php,0,336,Files
@@ -5202,4 +5203,12 @@ Migration/Version1Date20261124210000.php,,Migration,,,,,Compliance
 Contract/FileTextReaderInterface.php,53,Contract,Contract,Contract/FileTextReaderInterface.php,0,,Kernel
 Files/Service/TextExtraction/FileTextReader.php,119,Files,Files,Files/Service/TextExtraction/FileTextReader.php,0,,Files
 Kernel/Contracts/DefaultOrganisationInterface.php,,Kernel,,,,,Kernel
+Service/Operations/ReindexSelection.php,,Service,,,,,Core
+Service/Operations/ReindexRefusedException.php,,Service,,,,,Core
+Service/Operations/ReindexProgress.php,,Service,,,,,Core
+Kernel/Contracts/JobRunProgressInterface.php,,Kernel,,,,,Kernel
+Service/Operations/ReindexSelectionService.php,,Service,,,,,Core
+Service/Operations/ReindexSelectionServiceInterface.php,,Service,,,,,Core
+BackgroundJob/ReindexSelectionJob.php,,BackgroundJob,,,,,Core
+Controller/OperationsReindexController.php,,Controller,,,,,Core
 Repair/PrepareAuditSealing.php,,Repair,,,,,Compliance

@@ -105,31 +105,6 @@ class ViewsController extends Controller {
 	}//end __construct()
 
 	/**
-	 * The view behind an id, resolved as the caller's own.
-	 *
-	 * `ViewService::find()` takes the owner and refuses anything else with a
-	 * `DoesNotExistException`, which every endpoint here answers as a 404.
-	 * That is the per-object predicate for a view: a caller who does not own
-	 * it gets the same answer as one asking for a view that does not exist,
-	 * so no endpoint can be used to discover which view ids exist.
-	 *
-	 * Named rather than inlined at five call sites, so the predicate is one
-	 * thing a reader can find and one thing a change has to go through.
-	 *
-	 * @param string $id     The view id.
-	 * @param string $userId The caller.
-	 *
-	 * @return View The view.
-	 *
-	 * @throws DoesNotExistException When the view is not this caller's.
-	 *
-	 * @spec openspec/specs/saved-search-views/spec.md
-	 */
-	private function requireOwnedView(string $id, string $userId): View {
-		return $this->viewService->find(id: $id, owner: $userId);
-	}//end requireOwnedView()
-
-	/**
 	 * The view behind an id when it reaches this caller (owned, shared with a
 	 * group, public, or admin); anything else is the 404 of a missing view.
 	 *
@@ -143,10 +118,16 @@ class ViewsController extends Controller {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	private function requireReachableView(string $id, string $userId): View {
-		$view = $this->viewService->findById(id: $id);
-		if ($this->viewers->reaches(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)) === false) {
+		$view  = $this->viewService->findById(id: $id);
+		$reach = $this->viewers->reachOf(userId: $userId);
+		if ($this->viewers->reaches(view: $view->jsonSerialize(), reach: $reach) === false) {
 			throw new DoesNotExistException('View not found or access denied');
 		}
+
+		// The access the caller holds, as each row of the list carries it
+		// (`@self.access`), so a member opening a view shared with them
+		// read-only is told so.
+		$view->setAccess($this->viewers->accessOf(view: $view->jsonSerialize(), reach: $reach));
 
 		return $view;
 	}//end requireReachableView()
@@ -397,7 +378,10 @@ class ViewsController extends Controller {
 				return $this->unauthenticated();
 			}
 
-			$view = $this->requireOwnedView(id: $id, userId: $userId);
+			// A view shared with the caller's group (or public) is read by
+			// them as the list already lists it; only writes stay with
+			// whoever the view reaches for writing.
+			$view = $this->requireReachableView(id: $id, userId: $userId);
 
 			return new JSONResponse(
 				data: [
@@ -753,7 +737,7 @@ class ViewsController extends Controller {
 				return $this->unauthenticated();
 			}
 
-			$view = $this->requireOwnedView(id: $id, userId: $userId);
+			$view = $this->requireReachableView(id: $id, userId: $userId);
 			$board = $this->viewPresentationService->getKanbanBoard(
 				view: $view,
 				requestParams: $this->request->getParams()
@@ -829,7 +813,7 @@ class ViewsController extends Controller {
 		}
 
 		return $this->calendarObjectsOf(
-			view: $this->requireOwnedView(id: $id, userId: $userId),
+			view: $this->requireReachableView(id: $id, userId: $userId),
 			range: new CalendarRange(start: $rangeStart, end: $rangeEnd)
 		);
 	}//end calendarRangeFor()

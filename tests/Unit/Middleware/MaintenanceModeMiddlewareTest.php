@@ -93,11 +93,13 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	 * administer the instance. The admin query console runs GraphQL over the
 	 * registers, which is what the mode closes, and it is not needed to leave
 	 * the mode; its controller lives in Core, outside the Configuration
-	 * component that owns MaintenanceReachableInterface.
+	 * component that owns MaintenanceReachableInterface. The reindex writes
+	 * the search index, and the mode holds writes. In routes.php order.
 	 *
 	 * @var list<string>
 	 */
 	private const CLOSED_OPERATIONS_ROUTES = [
+		'operationsReindex#reindex',
 		'operationsQuery#run',
 		'operationsQuery#export',
 	];
@@ -146,7 +148,7 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 		foreach ($closed as $name => [$class, $method]) {
 			$this->assertNotNull(
 				$this->refusalOf($this->middleware(true), $class, $method),
-				$name.' reads register data and must stay closed while the mode holds.'
+				$name.' reads or writes register data and must stay closed while the mode holds.'
 			);
 		}
 

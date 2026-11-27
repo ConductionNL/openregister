@@ -242,12 +242,16 @@ final class ObjectSourceWiring {
 	}//end build()
 
 	/**
-	 * Register the built-in object-source providers with the shared
-	 * ObjectSourceRegistry.
+	 * Install the loader that adds the built-in object-source providers to the
+	 * shared ObjectSourceRegistry.
 	 *
-	 * Runs in boot() (post-registration) because addProvider() needs the
-	 * registry instance. Guarded so one absent provider never takes the app
-	 * down — a failing provider simply won't serve its bound schemas.
+	 * Runs in boot() (post-registration) because it needs the registry
+	 * instance. boot() runs on every Nextcloud request, so the providers are
+	 * not built here: the loader runs on the registry's first read, and a
+	 * request that never reads it constructs none of them (building the
+	 * thirteen, the flow task service among them, cost ~20 ms per request).
+	 * Each provider is added independently so one absent provider never blocks
+	 * the others: a failing provider simply won't serve its bound schemas.
 	 *
 	 * @param mixed $server Server container (passed in from boot()).
 	 *
@@ -262,9 +266,24 @@ final class ObjectSourceWiring {
 			return;
 		}
 
-		// Register each built-in provider independently so one absent provider
-		// never blocks the others — a failing provider simply won't serve its
-		// bound schemas.
+		$registry->addLoader(
+			static function (ObjectSourceRegistry $registry) use ($server): void {
+				self::addBuiltinProviders(server: $server, registry: $registry);
+			}
+		);
+	}//end boot()
+
+	/**
+	 * Add every built-in provider to the registry, in order, skipping one that fails to resolve.
+	 *
+	 * @param mixed                $server   Server container (passed in from boot()).
+	 * @param ObjectSourceRegistry $registry The registry to add them to.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-source-providers/tasks.md#5-caldav-vtodo-provider
+	 */
+	private static function addBuiltinProviders($server, ObjectSourceRegistry $registry): void {
 		foreach (self::BUILTIN_PROVIDERS as $providerClass) {
 			try {
 				$registry->addProvider($server->get($providerClass));
@@ -272,7 +291,7 @@ final class ObjectSourceWiring {
 				self::warnUnregistered(server: $server, message: '[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
 			}
 		}
-	}//end boot()
+	}//end addBuiltinProviders()
 
 	/**
 	 * Log that a built-in provider could not be registered, when a logger can be resolved.
