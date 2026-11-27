@@ -1,0 +1,13 @@
+# launchpad e2e-red re-triage, b-launchpad 2026-11-27 ~10:05Z
+# Own sandbox reference stack: NC 34.0.6 (nextcloud-releases tarball), nginx + php-fpm 8.3 static 8 + opcache, MariaDB, APCu, Redis; OpenRegister main; launchpad development 2c24a4e (+ #2203 comments only).
+# Input: every file:line of e2e-red/launchpad-2026-11-25.txt. Lines moved since 25 Nov, so only 71 of the 203 locations still name a test; the rest ran nothing (their files changed; take them from a fresh full run).
+# Pass 1 (2 workers): 40 passed, 7 skipped, 24 failed; most failures were 503s while role-feature-permissions-upgrade held maintenance mode. Pass 2 (the 23 failures, 1 worker):
+STILL RED (app or spec):
+  tests/e2e/ci/manifest-grants.spec.ts:119   manifest returned 401 {"message":""} for the recipient (after OR #11203 merged)
+  tests/e2e/dashboard-acknowledgements.spec.ts:738   contentVersion is not a published version of this announcement (400, expected 200)
+  tests/e2e/files-widget-access.spec.ts:201   waitForResponse timeout 30 s
+SANDBOX ONLY (not app reds):
+  tests/e2e/embedded-analytics.spec.ts:538   embed SDK not built in this sandbox (npm run build:embed-sdk)
+  tests/e2e/integrations-page.spec.ts:178   integriq not installed in this sandbox
+  tests/e2e/or-absent.spec.ts:217   refuses a non-rig instance by design
+NOW GREEN (were red on 25 Nov): admin-roles-enforcement:489 admin-templates-distribution:574 dashboard-view-analytics-jobs:197 effective-default-marker:146 launchpad-adopt-or-abstractions:121 quicklinks-widget-form:365 quicklinks-widget-interaction:168 responsive-grid-breakpoints:207 runtime-shell:854 scheduled-exports-delivery:380 scheduled-exports:224 sharing-tab-embed-and-conversation:97 shipped-template-update:125 template-reaches-member:122 text-display-widget-markdown:350 text-display-widget:350 tile-launch-types:111 visibility-dialog:148 divider-widget-discovery (both), plus the 40 that passed in pass 1.
