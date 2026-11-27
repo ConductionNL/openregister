@@ -213,6 +213,19 @@ class TimelineEntriesControllerTest extends TestCase {
 		$this->assertArrayHasKey('channel', $response->getData()['errors']);
 	}
 
+	public function testAnEntryOnARecordClosedToNewEntriesIs409NamingTheClosure(): void {
+		$this->objectResolves();
+		$this->request->method('getParams')->willReturn(['message' => 'x']);
+		$this->writer->method('write')->willThrowException(
+			new \OCA\OpenRegister\Exception\EntriesClosedException(closure: ['by' => 'behandelaar', 'at' => '2026-11-25T10:00:00+00:00', 'reason' => 'beroep'])
+		);
+
+		$response = $this->controller->create('zaken', 'zaak', 'case-1');
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame(['closed', 'behandelaar', 'beroep'], [$response->getData()['state'], $response->getData()['by'], $response->getData()['reason']]);
+	}
+
 	public function testAReaderCannotPin(): void {
 		$this->objectResolves();
 		$this->entries->method('get')->willReturn($this->entry());
