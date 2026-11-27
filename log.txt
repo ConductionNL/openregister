@@ -5419,3 +5419,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T09:55:25Z integrator-20261127T080455-44feeeb6 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T09:56:11Z integrator-20261127T080455-44feeeb6 MERGED-TREE 4c746fdc36: 4 PRs, main now 43712f6170 = tested tree
+2026-11-27T09:59:34Z session-20261127T075733-f6501a17 perf-2 run ends (~3h): merged launchpad#2190 (Workspace 8 -> 3 requests, usable within noise); openregister #11372 ready (global script 552 -> 215 KB, Dashboard LCP -30..-70 ms); #11369 refreshed with main (#11291 merged 09:44Z); decisions queued: drop recommendations/weather_status/related_resources (Dashboard -160..-270 ms), OR /api/v1 route duplicates (~3 ms/request)
