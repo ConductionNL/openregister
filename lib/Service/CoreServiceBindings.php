@@ -396,6 +396,7 @@ final class CoreServiceBindings {
 		// The one shared TokenGrantSource (registered in RbacWiring): the alias resolves to that instance.
 		CurrentTokenGrantInterface::class => TokenGrantSource::class,
 		PersonalTokenGrantBinderInterface::class => PersonalTokenGrantBinder::class,
+		\OCA\OpenRegister\Kernel\Contracts\DraftPreviewInterface::class => \OCA\OpenRegister\Service\Object\DraftService::class,
 		ObjectActivityAuditInterface::class => ObjectActivityAudit::class,
 		\OCA\OpenRegister\Kernel\Contracts\OperatorActionAuditInterface::class => \OCA\OpenRegister\Service\Audit\OperatorActionAudit::class,
 		MandateEvidenceInterface::class => MandateEvidence::class,
