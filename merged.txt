@@ -3344,3 +3344,4 @@
 11341 28c6e5d237cc51727954bb4c0d6db82011efa699 87d723d97a5ed2153c2c43b3f89bb779a5dcab54 50f7dc346eb968a3c5120bdf5bc2a05fd4df4ab6 2026-11-27T11:05:20Z
 11342 1a9a9b5015ee72ec7d113bda4f76a65c0b04098d 3405cc7b5238b00c1e48a69fb65f500f3b632107 ef6e4cd933dc15b5c94d628d95b539998941febe 2026-11-27T11:05:31Z
 2026-11-27T11:08:36Z thematiq#2123 done-thematiq pixel: TqEmailDocumenten 8->4 (remove pill, example mail)
+2026-11-27T11:13:42Z thematiq#2125 done-thematiq pixel: TqLogboek 5->1 (log pill families)
