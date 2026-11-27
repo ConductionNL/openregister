@@ -156,7 +156,8 @@ final class AuditTrailStatistics {
 
 			$result = $qb->executeQuery();
 			while (($row = $result->fetch()) !== false) {
-				$totals[(string) $row['register']][(string) ($row['schema'] ?? '')] = ['total' => (int) ($row['total'] ?? 0), 'size' => (int) ($row['size'] ?? 0)];
+				$schema = (string) ($row['schema'] ?? '');
+				$totals[(string) $row['register']][$schema] = ['total' => (int) ($row['total'] ?? 0), 'size' => (int) ($row['size'] ?? 0)];
 			}
 
 			$result->closeCursor();

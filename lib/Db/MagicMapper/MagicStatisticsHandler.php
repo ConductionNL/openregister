@@ -232,8 +232,8 @@ class MagicStatisticsHandler {
 	/**
 	 * Load the registers of the given pairs that are not cached yet, in one query.
 	 *
-	 * findRegisterCached() read them one by one (one query per register of a
-	 * pair walk). The rows are those find() returns with RBAC and multi-tenancy
+	 * Before, findRegisterCached() read them one by one (one query per register
+	 * of a pair walk). The rows are those find() returns with RBAC and multi-tenancy
 	 * off; a register the bulk read misses is still read on its own later.
 	 *
 	 * @param array<int, array{registerId: int|string, schemaId: int|string}> $pairs The register/schema pairs.
