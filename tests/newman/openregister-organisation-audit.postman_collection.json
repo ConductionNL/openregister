@@ -1,0 +1,222 @@
+{
+ "info": {
+  "name": "OpenRegister: organisation edits on the administrative audit trail",
+  "description": "REQ-HSA-010 and REQ-HSA-011 (openspec/changes/history-schema-and-settings-edits-audited, task 5.2). An administrator renames an organisation through the API, and the rename is read back as one organisation.updated row from GET /api/audit-trails?category=administrative; the default (domain) list does not carry it.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{username}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{password}}",
+    "type": "string"
+   }
+  ]
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "http://localhost:8080"
+  },
+  {
+   "key": "username",
+   "value": "admin"
+  },
+  {
+   "key": "password",
+   "value": "admin"
+  },
+  {
+   "key": "run",
+   "value": ""
+  },
+  {
+   "key": "orgUuid",
+   "value": ""
+  }
+ ],
+ "item": [
+  {
+   "name": "00 setup",
+   "item": [
+    {
+     "name": "Create an organisation",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('the organisation is created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+         "const body = pm.response.json();",
+         "const uuid = (body.organisation || body).uuid;",
+         "pm.test('it has a uuid', () => pm.expect(uuid).to.be.a('string').and.not.empty);",
+         "pm.collectionVariables.set('orgUuid', uuid);"
+        ]
+       }
+      },
+      {
+       "listen": "prerequest",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "if (!pm.collectionVariables.get('run')) { pm.collectionVariables.set('run', Math.random().toString(36).slice(2, 10)); }"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "OCS-APIRequest",
+        "value": "true"
+       }
+      ],
+      "url": "{{base_url}}/index.php/apps/openregister/api/organisations",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n \"name\": \"Audit door {{run}}\",\n \"description\": \"Newman organisation audit\"\n}"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "01 rename",
+   "item": [
+    {
+     "name": "Rename the organisation",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('the rename is saved', () => pm.expect(pm.response.code).to.equal(200));",
+         "pm.test('the new name is returned', () => pm.expect(pm.response.json().name).to.equal('Audit door renamed ' + pm.collectionVariables.get('run')));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "PUT",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "OCS-APIRequest",
+        "value": "true"
+       }
+      ],
+      "url": "{{base_url}}/index.php/apps/openregister/api/organisations/{{orgUuid}}",
+      "body": {
+       "mode": "raw",
+       "raw": "{\n \"name\": \"Audit door renamed {{run}}\"\n}"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "02 read the trail",
+   "item": [
+    {
+     "name": "The administrative trail holds one rename row",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('the administrator may read administrative rows', () => pm.expect(pm.response.code).to.equal(200));",
+         "const rows = (pm.response.json().results || []).filter((row) => JSON.stringify(row).includes(pm.collectionVariables.get('orgUuid')));",
+         "pm.test('exactly one row for this organisation', () => pm.expect(rows.length).to.equal(1));",
+         "const fields = ((rows[0] || {}).changed || {}).fields || [];",
+         "const name = fields.find((field) => field.path === 'name') || {};",
+         "pm.test('the row carries the old and the new name', () => {",
+         "  pm.expect(name.old).to.equal('Audit door ' + pm.collectionVariables.get('run'));",
+         "  pm.expect(name.new).to.equal('Audit door renamed ' + pm.collectionVariables.get('run'));",
+         "});",
+         "pm.test('the row is administrative', () => pm.expect(rows[0].category).to.equal('administrative'));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "OCS-APIRequest",
+        "value": "true"
+       }
+      ],
+      "url": "{{base_url}}/index.php/apps/openregister/api/audit-trails?category=administrative&action=organisation.updated&_limit=200"
+     }
+    },
+    {
+     "name": "The default (domain) trail does not",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('status is 200', () => pm.expect(pm.response.code).to.equal(200));",
+         "const rows = (pm.response.json().results || []).filter((row) => JSON.stringify(row).includes(pm.collectionVariables.get('orgUuid')));",
+         "pm.test('no administrative row in the default list', () => pm.expect(rows.length).to.equal(0));"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Accept",
+        "value": "application/json"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "OCS-APIRequest",
+        "value": "true"
+       }
+      ],
+      "url": "{{base_url}}/index.php/apps/openregister/api/audit-trails?action=organisation.updated&_limit=200"
+     }
+    }
+   ]
+  }
+ ]
+}
