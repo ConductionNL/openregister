@@ -213,6 +213,7 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 		$manager = $this->createStub(IUserManager::class);
 		$manager->method('get')->willReturnCallback(static fn (string $uid): ?IUser => ($users[$uid] ?? null));
 		$groups = $this->createStub(IGroupManager::class);
+		$groups->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => in_array('admin', (self::GROUPS[$uid] ?? []), true));
 		$groups->method('getUserGroupIds')->willReturnCallback(static fn (IUser $user): array => self::GROUPS[$user->getUID()]);
 		$editors = $this->createStub(IGroup::class);
 		$editors->method('getUsers')->willReturn([$users['alice'], $users['bob']]);
@@ -491,6 +492,30 @@ class PermissionHandlerDecisionFlowGoldenTest extends TestCase {
 		$open = $this->newHandler(['block' => ['update' => ['editors']]]);
 		$this->assertSame([], $open->getReadableByUsers($object), 'no read rule is still no targeted list');
 	}//end testAnOwnerOnlyReadTargetsTheOwnerAlone()
+
+	/**
+	 * A read open to every signed-in user has no targeted list, like `public`; a named group still targets.
+	 *
+	 * `authenticated` is not a Nextcloud group. Resolved as one it had no members, so the
+	 * list held the owner alone and a watcher who could read the object was dropped as
+	 * having lost read on the first notification.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/tasks.md
+	 */
+	public function testAnAuthenticatedReadIsABroadcastNotTheOwnerAlone(): void {
+		$object = $this->bulkObject('r', ['owner' => 'carol', 'schema' => '5']);
+
+		$authenticated = $this->newHandler(['block' => ['read' => ['authenticated']]]);
+		$this->assertSame([], $authenticated->getReadableByUsers($object));
+
+		$withGroup = $this->newHandler(['block' => ['read' => ['editors', 'authenticated']]]);
+		$this->assertSame([], $withGroup->getReadableByUsers($object), 'authenticated beside a group still admits every signed-in user');
+
+		$group = $this->newHandler(['block' => ['read' => ['editors']]]);
+		$this->assertSame(['alice', 'bob', 'carol'], $group->getReadableByUsers($object), 'control: a named group still targets its members and the owner');
+	}//end testAnAuthenticatedReadIsABroadcastNotTheOwnerAlone()
 
 	/**
 	 * Every case.

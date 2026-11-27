@@ -20,7 +20,9 @@
 
 namespace OCA\OpenRegister\Db\Tenancy;
 
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IUser;
 
 /**
  * The read-scoping half of MultiTenancyTrait, behind applyOrganisationFilter().
@@ -120,14 +122,15 @@ trait OrganisationFilterTrait {
 	 * @param mixed $user The user object
 	 *
 	 * @return bool True if user is admin
+	 *
+	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function isUserAdmin(mixed $user): bool {
 		if ($user === null || isset($this->groupManager) === false) {
 			return false;
 		}
 
-		$userGroups = $this->groupManager->getUserGroupIds($user);
-		return in_array('admin', $userGroups);
+		return ($user instanceof IUser && AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user) === true);
 	}//end isUserAdmin()
 
 	/**

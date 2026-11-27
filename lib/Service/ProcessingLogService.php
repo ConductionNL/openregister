@@ -398,6 +398,8 @@ class ProcessingLogService {
 	 * @param callable $loader Returns the raw configuration array or null.
 	 *
 	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/dsar-finds-records-by-declared-subject-id/specs/gdpr-data-subject-rights/spec.md#requirement-discovery-also-finds-records-through-schema-declared-subject-id-fields
 	 */
 	private function readAnnotation(callable $loader): ?array {
 		return (new ProcessingAnnotationReader())->read(config: $loader());

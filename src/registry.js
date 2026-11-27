@@ -58,6 +58,7 @@ export default {
 	Dashboard: page(() => import('./views/dashboard/DashboardIndex.vue')),
 	RegistersIndex: page(() => import('./views/register/RegistersIndex.vue')),
 	RegisterDetail: page(() => import('./views/register/RegisterDetail.vue')),
+	RegisterApi: page(() => import('./views/register/RegisterApi.vue')),
 	SchemasIndex: page(() => import('./views/schema/SchemasIndex.vue')),
 	SchemaDetails: page(() => import('./views/schema/SchemaDetails.vue')),
 	SourcesIndex: page(() => import('./views/source/SourcesIndex.vue')),

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Files\Service\File\DocumentRedactionServices;
 use OCA\OpenRegister\Files\Service\File\OfficeDocumentSanitizer;
 use OCA\OpenRegister\Files\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use PHPUnit\Framework\TestCase;
@@ -67,6 +68,13 @@ final class RedactionSettingsPortTest extends TestCase {
 		$this->assertSame(0.5, FileSettingsHandler::DEFAULT_CONFIDENCE_THRESHOLD);
 	}
 
+	public function testTheOriginalRetentionKeysAreOnThePortAndReachTheHandler(): void {
+		$this->assertSame('originalRetention', RedactionSettingsInterface::ORIGINAL_RETENTION_KEY);
+		$this->assertSame('keep', RedactionSettingsInterface::ORIGINAL_RETENTION_KEEP);
+		$this->assertSame(RedactionSettingsInterface::ORIGINAL_RETENTION_KEY, FileSettingsHandler::ORIGINAL_RETENTION_KEY);
+		$this->assertSame(RedactionSettingsInterface::ORIGINAL_RETENTION_KEEP, FileSettingsHandler::ORIGINAL_RETENTION_KEEP);
+	}
+
 	public function testTheRedactionBagCarriesWhateverAnswersThePort(): void {
 		$settings = new class implements RedactionSettingsInterface {
 			public function confidenceThreshold(): float {
@@ -75,6 +83,34 @@ final class RedactionSettingsPortTest extends TestCase {
 
 			public function maskForms(): array {
 				return ['PERSON' => ['form' => 'initials']];
+			}
+
+			public function requireReview(): bool {
+				return false;
+			}
+
+			public function originalRetention(): string {
+				return RedactionSettingsInterface::ORIGINAL_RETENTION_KEEP;
+			}
+
+			public function capacityPolicy(): CapacityPolicy {
+				return CapacityPolicy::fromStored(stored: null);
+			}
+
+			public function officialsSource(): ?array {
+				return null;
+			}
+
+			public function personRegister(): ?array {
+				return null;
+			}
+
+			public function personRegisterBoost(): float {
+				return 0.0;
+			}
+
+			public function placeRegister(): ?array {
+				return null;
 			}
 		};
 

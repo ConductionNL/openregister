@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaCatalog;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 use OCA\OpenRegister\Listener\RelatedRetentionRecalculationListener;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
 use OCA\OpenRegister\Service\Archival\DependantRetentionIndex;
@@ -47,6 +48,7 @@ use OCA\OpenRegister\Service\RetentionRules;
 use OCA\OpenRegister\Service\RetentionService;
 use OCA\OpenRegister\Service\RetentionStores;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
@@ -149,8 +151,22 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 			new RelatedRetentionLookup(new SchemaCatalog($this->registerMapper, $this->schemaMapper, $this->objectMapper)),
 			new RelatedRetentionRules($this->index, $calculator, $retention),
 			$logger,
+			$this->systemScope(),
 		);
 	}//end setUp()
+
+	/**
+	 * An object port whose system scope is the real one.
+	 *
+	 * @return ObjectOperationsInterface The port.
+	 */
+	private function systemScope(): ObjectOperationsInterface {
+		$objects = $this->createMock(ObjectOperationsInterface::class);
+		$objects->method('runAsSystem')->willReturnCallback(
+			static fn (callable $operation): mixed => SystemOperationContext::run($operation)
+		);
+		return $objects;
+	}//end systemScope()
 
 	/**
 	 * A contact person of the client, created before the client had an end date.
@@ -230,6 +246,54 @@ class RelatedRetentionRecalculationJobTest extends TestCase {
 		$this->assertSame(['k1' => ['2028-10-01', 'alice'], 'k2' => ['2028-10-01', 'alice']], $stored);
 		$this->assertArrayNotHasKey('archiefactiedatum', $other->getRetention());
 	}//end testAClientsEndDateRecalculatesItsTwoContactPersons()
+
+	/**
+	 * The lookup and the store run as the system, and the scope ends with the job.
+	 *
+	 * A web or AJAX cron request has no user and is not a trusted caller, so
+	 * without the scope the relation lookup kept only rows without an
+	 * organisation (seen live on Nextcloud 34: the contact kept its old date).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/archival-frozen-refuses-delete-and-dates-follow/specs/retention-management/spec.md#requirement-the-destruction-date-follows-its-source-date-under-every-method
+	 */
+	public function testTheDependantsAreReadAndStoredAsTheSystem(): void {
+		$client = new ObjectEntity();
+		$client->setUuid(self::CLIENT);
+		$client->setSchema('7');
+		$client->setObject(['name' => 'Bakkerij Jansen', 'relationshipEndedAt' => '2026-10-01']);
+
+		$register = new Register();
+		$register->setId(3);
+		$this->registerMapper->method('getAllRegisterIdsWithSchema')->with(8)->willReturn([3]);
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$contact = $this->contact(uuid: 'k1', client: self::CLIENT);
+		$rows    = [self::CLIENT => $client, 'k1' => $contact];
+		$this->objectMapper->method('find')->willReturnCallback(
+			static fn (string $identifier): ObjectEntity => $rows[$identifier]
+		);
+
+		$scopes = [];
+		$this->objectMapper->method('findByRelationBatchInSchema')->willReturnCallback(
+			function () use (&$scopes, $contact): array {
+				$scopes['lookup'] = SystemOperationContext::isActive();
+				return [$this->slim(row: $contact)];
+			}
+		);
+		$this->objectMapper->method('update')->willReturnCallback(
+			static function (ObjectEntity $entity) use (&$scopes): ObjectEntity {
+				$scopes['store'] = SystemOperationContext::isActive();
+				return $entity;
+			}
+		);
+
+		$this->assertFalse(SystemOperationContext::isActive());
+		$this->assertSame(1, $this->job->recalculateDependantsOf(uuid: self::CLIENT));
+		$this->assertSame(['lookup' => true, 'store' => true], $scopes);
+		$this->assertFalse(SystemOperationContext::isActive());
+	}//end testTheDependantsAreReadAndStoredAsTheSystem()
 
 	/**
 	 * A dependant that cannot be stored is logged and skipped; the others still follow.

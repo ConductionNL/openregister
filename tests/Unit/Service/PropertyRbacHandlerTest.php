@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Service\PropertyAccessRequest;
 use OCA\OpenRegister\Service\PropertyWriteCheck;
 use OCA\OpenRegister\Service\SchemaProperty;
@@ -19,6 +20,8 @@ use Psr\Log\LoggerInterface;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 
 class PropertyRbacHandlerTest extends TestCase {
+	use AdminFollowsGroups;
+
 	use BuildsStateFieldRuleResolver;
 
 	private PropertyRbacHandler $handler;
@@ -30,6 +33,7 @@ class PropertyRbacHandlerTest extends TestCase {
 	protected function setUp(): void {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->conditionMatcher = $this->createMock(ConditionMatcher::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
@@ -315,6 +319,30 @@ class PropertyRbacHandlerTest extends TestCase {
 
 		$result = $this->handler->stripWriteOnlyProperties($schema, $object);
 		$this->assertSame($object, $result);
+	}
+
+	public function testWriteOnlyStripsTheDotPathMirrorBeneathIt(): void {
+		// The relations mirror (@self.relations) is keyed by dot-path. A secret
+		// nested in a write-only object property is mirrored under
+		// `authorizationConfiguration.publicKey`; the bare-name strip left it in.
+		$schema = $this->createSchema([
+			'name' => ['type' => 'string'],
+			'authorizationConfiguration' => ['type' => 'object', 'writeOnly' => true],
+			'authorizationType' => ['type' => 'string'],
+		]);
+		$relations = [
+			'name' => 'consumer',
+			'authorizationConfiguration.publicKey' => 'hs256-secret',
+			'authorizationConfiguration' => 'flat',
+			'authorizationType' => 'jwt',
+			'authorizationConfigurationNote.x' => 'not beneath the root',
+		];
+
+		$result = $this->handler->stripWriteOnlyProperties($schema, $relations);
+		$this->assertSame(
+			['name' => 'consumer', 'authorizationType' => 'jwt', 'authorizationConfigurationNote.x' => 'not beneath the root'],
+			$result
+		);
 	}
 
 	public function testWriteOnlyPropertyRemainsWritable(): void {

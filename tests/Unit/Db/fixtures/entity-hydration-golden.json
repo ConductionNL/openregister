@@ -165,7 +165,9 @@
                 "flowStep": 7,
                 "purpose": "text-purpose",
                 "consumer": "text-consumer",
-                "triggerObject": "text-triggerObject"
+                "triggerObject": "text-triggerObject",
+                "ruleDigest": "text-ruleDigest",
+                "ruleVersion": "text-ruleVersion"
             },
             "updated": [
                 "id",
@@ -206,7 +208,9 @@
                 "flowStep",
                 "purpose",
                 "consumer",
-                "triggerObject"
+                "triggerObject",
+                "ruleDigest",
+                "ruleVersion"
             ]
         },
         "filled json": {
@@ -256,7 +260,9 @@
                 "flowStep": 7,
                 "purpose": "text-purpose",
                 "consumer": "text-consumer",
-                "triggerObject": "text-triggerObject"
+                "triggerObject": "text-triggerObject",
+                "ruleDigest": "text-ruleDigest",
+                "ruleVersion": "text-ruleVersion"
             },
             "updated": [
                 "id",
@@ -299,7 +305,9 @@
                 "flowStep",
                 "purpose",
                 "consumer",
-                "triggerObject"
+                "triggerObject",
+                "ruleDigest",
+                "ruleVersion"
             ]
         }
     },

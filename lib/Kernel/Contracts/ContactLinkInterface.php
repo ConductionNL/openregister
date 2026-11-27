@@ -46,6 +46,9 @@ use JsonSerializable;
  * @method string|null getMetadata()
  * @method string getLinkedBy()
  * @method DateTime getLinkedAt()
+ * @method string|null getUserId()
+ * @method DateTime|null getValidFrom()
+ * @method DateTime|null getValidUntil()
  */
 interface ContactLinkInterface extends JsonSerializable {
 }//end interface

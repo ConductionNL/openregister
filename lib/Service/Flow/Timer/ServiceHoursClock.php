@@ -56,14 +56,14 @@ class ServiceHoursClock {
 	 * windows deciding the hours. Its `due()` and `elapsed()` are the two
 	 * halves of one measurement and always run on the same frame.
 	 *
-	 * @param WorkingCalendar $calendar The calendar deciding the days.
+	 * @param WorkingCalendarInterface $calendar The calendar deciding the days.
 	 * @param ServiceHours    $windows  Its declared windows.
 	 *
 	 * @return ServiceHoursFrame The frame.
 	 *
 	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
-	public function frame(WorkingCalendar $calendar, ServiceHours $windows): ServiceHoursFrame {
+	public function frame(WorkingCalendarInterface $calendar, ServiceHours $windows): ServiceHoursFrame {
 		return new ServiceHoursFrame(calendar: $calendar, windows: $windows);
 	}//end frame()
 
@@ -75,14 +75,14 @@ class ServiceHoursClock {
 	 * windows it applied, because the alternative is a support ticket that
 	 * nobody can answer without a debugger.
 	 *
-	 * @param WorkingCalendar $calendar The calendar that decided it.
+	 * @param WorkingCalendarInterface $calendar The calendar that decided it.
 	 * @param ServiceHours    $windows  The windows applied.
 	 *
 	 * @return array<string, mixed> The diagnostic.
 	 *
 	 * @spec openspec/changes/service-hours-and-repeating-reminders/specs/flow-business-timers/spec.md
 	 */
-	public function diagnostic(WorkingCalendar $calendar, ServiceHours $windows): array {
+	public function diagnostic(WorkingCalendarInterface $calendar, ServiceHours $windows): array {
 		return [
 			'calendar' => $calendar->getSlug(),
 			'timezone' => $calendar->getTimezone(),

@@ -152,7 +152,9 @@ class ImportHandler {
 	/**
 	 * Per schema id, the uuid of every seed object this seed pass stored or found, by its slug.
 	 *
-	 * @var array<string, array<string, string>>
+	 * Keys are int when the id or slug is numeric: PHP turns a numeric-string key into an int.
+	 *
+	 * @var array<int|string, array<int|string, string>>
 	 */
 	private array $seedObjectUuids = [];
 
@@ -245,7 +247,7 @@ class ImportHandler {
 	 *
 	 * @var ShippedRegisterBaseline
 	 */
-	private ShippedRegisterBaseline $shippedRegisterBaseline;
+	private ShippedRegisterBaseline $registerBaseline;
 
 	/**
 	 * Creates and updates the Configuration of an app import.
@@ -461,7 +463,7 @@ class ImportHandler {
 		$this->relatedItems = new SeedRelatedItems(logger: $logger);
 		$this->duplicates = new ImportDuplicates(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, logger: $logger);
 		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $schemaSteps->shippedGuard, logger: $logger);
-		$this->shippedRegisterBaseline = new ShippedRegisterBaseline(guard: $schemaSteps->shippedGuard);
+		$this->registerBaseline = new ShippedRegisterBaseline(guard: $schemaSteps->shippedGuard);
 		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $this->configurationMapper, logger: $logger);
 		$this->schemaShape = new ImportedSchemaShape(validator: $schemaSteps->shapeValidator, logger: $logger);
 		$this->rejectedSchemas = new RejectedSchemaReport(logger: $logger);
@@ -969,7 +971,7 @@ class ImportHandler {
 			$existingRegister = $this->findRegisterForImport(data: $data, options: $options);
 			if ($existingRegister === null) {
 				$created = $this->createImportedRegister(data: $data, options: $options);
-				$this->shippedRegisterBaseline->record(data: $data, options: $options);
+				$this->registerBaseline->record(data: $data, options: $options);
 
 				return $created;
 			}
@@ -1028,7 +1030,7 @@ class ImportHandler {
 			$existingRegister = $this->registerMapper->updateFromArray(id: $existingRegister->getId(), object: $data);
 			$this->stampImportProvenance(register: $existingRegister, options: $options);
 			$updated = $this->registerMapper->update($existingRegister);
-			$this->shippedRegisterBaseline->record(data: $data, options: $options);
+			$this->registerBaseline->record(data: $data, options: $options);
 
 			return $updated;
 		} catch (Exception $e) {
@@ -1395,10 +1397,16 @@ class ImportHandler {
 	 * and scoping to the register's list alone made every later import create
 	 * a twin (dossiq, 29 Sep: 17 slugs twice).
 	 *
+	 * A schema of the register renamed since answers to its former slug, after
+	 * the current slugs, so an app update that still ships the old slug updates
+	 * the renamed schema and creates nothing.
+	 *
 	 * @param ImportedSchemaLookup $lookup            The schema data and the importing application id.
 	 * @param array                $registerSchemaIds Pre-import schema ids of the target register(s).
 	 *
 	 * @return Schema|null The schema already in scope, or null (create a new one).
+	 *
+	 * @spec openspec/changes/modelling-rename-without-loss/specs/schema-migration/spec.md
 	 */
 	private function resolveSchemaWithinRegisterScope(ImportedSchemaLookup $lookup, array $registerSchemaIds): ?Schema {
 		$data = $lookup->data;
@@ -1406,6 +1414,13 @@ class ImportHandler {
 		$existingSchema = $this->schemaMapper->findBySlugInIds(slug: $data['slug'], schemaIds: $registerSchemaIds);
 		if ($existingSchema !== null) {
 			return $existingSchema;
+		}
+
+		// A schema renamed since the app last shipped it answers to its former
+		// slug, so the update finds it instead of creating the old one again.
+		$renamed = $this->schemaMapper->findByFormerSlugInIds(slug: (string)$data['slug'], schemaIds: $registerSchemaIds);
+		if ($renamed !== null) {
+			return $renamed;
 		}
 
 		$orphan = $this->findOwnUnlinkedSchema(slug: (string)$data['slug'], appId: $appId);
@@ -6037,12 +6052,17 @@ class ImportHandler {
 	 * so running a configuration again never duplicates its seed data; one
 	 * that more than one stored object answers to is skipped.
 	 *
+	 * The stored ENTITY goes into `$result['objects']`, as at every other
+	 * append site: one shape lets every reader of the import result (the
+	 * configuration's id list, the import summary) take the list as it is.
+	 *
 	 * @param SeedImport     $seed   The seed pass, positioned on the schema.
 	 * @param SeedDataObject $object The seed object.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/a-configuration-import-500s-on-a-descriptor-with-objects/tasks.md#3.1
 	 */
 	private function storeSeedObject(SeedImport $seed, SeedDataObject $object): void {
 		$object->identifier = ($object->data['uuid']
@@ -6064,7 +6084,7 @@ class ImportHandler {
 					'object_id' => $existingObject->getId(),
 				]
 			);
-			$seed->result['objects'][] = $existingObject->getId();
+			$seed->result['objects'][] = $existingObject;
 			$this->noteSeedObjectUuid(object: $object, uuid: (string)$existingObject->getUuid());
 			return;
 		}
@@ -6153,7 +6173,8 @@ class ImportHandler {
 	 * Insert a new seed object through the routing mapper (else the object entity mapper), then its related items.
 	 *
 	 * Seed objects are written by the mapper directly: they are simple and
-	 * need none of ObjectService's cascading or validation.
+	 * need none of ObjectService's cascading or validation. The created entity,
+	 * not its id, is recorded in `$result['objects']`.
 	 *
 	 * @param SeedImport     $seed   The seed pass, positioned on the schema.
 	 * @param SeedDataObject $object The seed object.
@@ -6161,10 +6182,11 @@ class ImportHandler {
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 * @spec openspec/changes/a-configuration-import-500s-on-a-descriptor-with-objects/tasks.md#3.1
 	 */
 	private function insertSeedObject(SeedImport $seed, SeedDataObject $object): void {
 		$createdObject = ($this->routingMapper ?? $this->objectEntityMapper)->insert($this->newSeedEntity(object: $object));
-		$seed->result['objects'][] = $createdObject->getId();
+		$seed->result['objects'][] = $createdObject;
 		$this->noteSeedObjectUuid(object: $object, uuid: (string)$createdObject->getUuid());
 		$this->logger->debug(
 			message: '[ImportHandler] Seed object imported',
@@ -6213,7 +6235,8 @@ class ImportHandler {
 		$objectEntity->setUuid($object->data['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122());
 		$objectEntity->setSchema($object->schema->getId());
 		$objectEntity->setRegister($object->registerId);
-		$objectEntity->setObject($this->withSeedReferencesResolved(object: $object, data: $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema)));
+		$seedData = $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema);
+		$objectEntity->setObject($this->withSeedReferencesResolved(object: $object, data: $seedData));
 		$this->applySeedSlug(entity: $objectEntity, object: $object);
 		$now = new DateTime();
 		$objectEntity->setCreated($now);

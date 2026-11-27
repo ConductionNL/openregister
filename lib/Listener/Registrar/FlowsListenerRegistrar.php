@@ -27,9 +27,11 @@ use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskSequenceRejectedEvent;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
+use OCA\OpenRegister\Listener\ChangeGateListener;
 use OCA\OpenRegister\Listener\BulkActionRegistrationListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
@@ -39,7 +41,6 @@ use OCA\OpenRegister\Listener\FlowNodeRegistrationListener;
 use OCA\OpenRegister\Listener\FlowOversightRegistrationListener;
 use OCA\OpenRegister\Listener\FlowTriggerListener;
 use OCA\OpenRegister\Listener\FrozenNodeWriteListener;
-use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Listener\IntegrationGlobalScriptListener;
 use OCA\OpenRegister\Listener\LeafScriptListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
@@ -231,6 +232,11 @@ final class FlowsListenerRegistrar {
 		// A completed task sequence advances the approval chain it belongs to.
 		$context->registerEventListener(TaskSequenceCompletedEvent::class, ApprovalChainAdvanceListener::class);
 
+		// A decided approval of a held change applies it (`onApprove: applyChange`)
+		// or, on rejection, discards it (records-change-held-for-approval 3.2).
+		$context->registerEventListener(TaskSequenceCompletedEvent::class, ChangeGateListener::class);
+		$context->registerEventListener(TaskSequenceRejectedEvent::class, ChangeGateListener::class);
+
 		// A saved view's count alert: the sweep decides when it fires, this
 		// listener tells the people it names, on the channels it declares.
 		$context->registerEventListener(ViewAlertCrossedEvent::class, ViewAlertCrossedListener::class);
@@ -244,9 +250,8 @@ final class FlowsListenerRegistrar {
 			$context->registerEventListener(\OCP\WorkflowEngine\Events\RegisterOperationsEvent::class, FlowEngineRegistrationListener::class);
 		}
 
-		// Queue-mode handoff drain on app enable: a provider may have appeared.
-		// The schema-save triggers stay in ListenerRegistrar.
-		$context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
+		// The queue-mode handoff drain on app enable is registered in ListenerRegistrar,
+		// next to its schema-save triggers: AppEnableEvent has listeners of more than one component.
 	}//end registerAppIntegrationListeners()
 
 	/**

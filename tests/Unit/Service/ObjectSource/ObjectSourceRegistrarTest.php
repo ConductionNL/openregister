@@ -97,7 +97,7 @@ class ObjectSourceRegistrarTest extends TestCase {
 	}//end testEveryFactoryBuildsItsService()
 
 	/**
-	 * boot() adds every built-in provider to the registry, in order, and skips one that fails to resolve.
+	 * boot() resolves no provider; the loader it installs adds every built-in provider, in order, and skips one that fails to resolve.
 	 *
 	 * @return void
 	 */
@@ -132,7 +132,17 @@ class ObjectSourceRegistrarTest extends TestCase {
 			$this->stringContains(string: 'DeckObjectSourceProvider')
 		);
 
+		$loader = null;
+		$registry->expects($this->once())->method('addLoader')->willReturnCallback(
+			function (callable $installed) use (&$loader): void {
+				$loader = $installed;
+			}
+		);
+
 		ObjectSourceRegistrar::boot(server: $server);
+		$this->assertSame(expected: [], actual: $asked, message: 'boot() resolves no provider.');
+
+		$loader($registry);
 
 		$this->assertSame(
 			expected: [
@@ -183,6 +193,11 @@ class ObjectSourceRegistrarTest extends TestCase {
 		);
 
 		$registry->expects($this->exactly(12))->method('addProvider')->with($provider);
+		$registry->method('addLoader')->willReturnCallback(
+			function (callable $loader) use ($registry): void {
+				$loader($registry);
+			}
+		);
 
 		ObjectSourceRegistrar::boot(server: $server);
 	}//end testBootSkipsAFailingProviderWithoutALogger()

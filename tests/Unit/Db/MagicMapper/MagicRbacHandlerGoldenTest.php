@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\MagicMapper\AliasedRows;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -90,6 +91,8 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class MagicRbacHandlerGoldenTest extends TestCase {
+	use AdminFollowsGroups;
+
 	use RecordingQueryBuilderTrait;
 
 	private const FIXTURE = __DIR__ . '/fixtures/rbac-handler-golden.json';
@@ -315,6 +318,7 @@ class MagicRbacHandlerGoldenTest extends TestCase {
 	private function handler(?string $uid, array $groups, string $platform, string $mode): MagicRbacHandler {
 		$userSession = $this->createMock(IUserSession::class);
 		$groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		if ($uid !== null && $uid !== '@anonymous') {
 			$user = $this->createMock(IUser::class);
 			$user->method('getUID')->willReturn($uid);

@@ -9,7 +9,20 @@
       bucket of an `interval` series (0 for count and sum, labelled `2026-01`; the last twelve buckets without `from`/`to`)
       and filters rows with `having[<metric>][gt|gte|lt|lte|eq|ne]=<n>` after aggregating; RBAC stays in the runner.
       Pinned in `AggregationControllerReportTest`, `AggregateReportEnvelopeTest` and `AggregateReportPeriodsTest`.
-- [ ] Implement: The system MUST support configurable report templates
+- [x] Implement: The system MUST support configurable report templates
+      DONE: templates are objects of the `report-templates` schema in the `report-templates` register
+      (`lib/Settings/report_templates_register.json`, imported by the `ImportReportTemplatesRegister` repair step).
+      A template names `dataSource` (register, schema, filters), `dateField` (the date property a period narrows,
+      `_created` when empty), `sections`, `formats` and `branding.organisation`. A section is `total` (one number),
+      `grouped` (count, sum, avg, min or max per value of `groupBy`, every key in `rows` present with 0) or `series`
+      (a count per `interval` bucket, every bucket present); a section may name its own register, schema, filters and
+      date property, and `compareWithPreviousYear` adds it again one year earlier. `POST /api/reports/generate`
+      (`{templateId, dateRange: {from, to}}` or `{templateId, year}`, `format` pdf by default, also ods, xlsx, csv,
+      html) loads the template with the caller's rights, counts every section with them (a section the caller may
+      not read is a 403 for the whole report, never a report with a section left out) and renders it through the
+      existing report writers. Pinned in `ReportTemplateGeneratorTest`, `ReportTemplateControllerTest` and
+      `ImportReportTemplatesRegisterTest`. Not in this slice: a Nextcloud Files target path, logo branding and
+      the summary section types of custom calculated metrics (median, share within a term).
 - [ ] Implement: The system MUST support scheduled report generation
 - [x] Implement: The system MUST support export in CSV, Excel, PDF, and ODS formats
       ODS DONE: `format=ods` on `GET /api/objects/{register}/{schema}/export` writes the Excel export's
@@ -50,7 +63,18 @@
       5-minute default TTL (the cache keeps the 60 s the aggregations-backend-native spec set; changing it is a
       decision for that spec) and caching template report files, which waits on report templates.
 - [ ] Implement: The system MUST support WOO transparency reporting
-- [ ] Implement: The system MUST support audit report generation
+- [x] Implement: The system MUST support audit report generation
+      DONE: `GET /api/reports/audit` (`AuditReportController`, administrators only through the in-body administrator check:
+      401 without a user, 403 for anyone else, before anything is read) takes `register` (slug or id; unknown is a
+      404), `userId`, `from`, `to` (a date-only `to` covers the whole day; a bad date is a 400) and `format` (xlsx by
+      default, ods, csv; anything else is a 400). `AuditReport` reads the trail through the audit page query's
+      `collect()` (the audit page's own filters and period, up to 50,000 entries, and says when it was cut) and lists
+      one row per entry, newest first: timestamp, action, object UUID, object name, user ID, IP address and the names
+      of the changed fields (never their values). The summary (total, entries per action, the ten most active
+      objects) is counted from the same rows, so it always agrees with the list and honours the user filter, which
+      `DashboardService`'s statistics do not take. `AuditReportFile` writes an "Audit trail" and a "Summary" sheet
+      (CSV carries the entries only), and keeps a value that starts like a formula as text. Pinned in
+      `AuditReportTest`, `AuditReportFileTest` and `AuditReportControllerTest`.
 - [ ] Implement: The system MUST enforce multi-tenant reporting isolation
 - [ ] Implement: The system MUST provide an OData v4 endpoint for external BI tool integration
 - [ ] Implement: The system MUST support API access for external BI tools beyond OData

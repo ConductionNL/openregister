@@ -22,6 +22,7 @@ namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStore;
 use OCA\OpenRegister\AppHost\Scheduling\ScheduleFlowStoreInterface;
+use OCA\OpenRegister\Contract\ObjectTaskReaderInterface;
 use OCA\OpenRegister\Db\FlowLinkMapperInterface;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\FacetWeekNumberingInterface;
@@ -52,6 +53,7 @@ use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\FlowLinkPlatform;
 use OCA\OpenRegister\Service\FlowLinkService;
+use OCA\OpenRegister\Service\Task\ObjectTaskReader;
 use OCA\OpenRegister\Service\ContactMatchingService;
 use OCA\OpenRegister\Kernel\Contracts\Core\UserCalendarEventsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Integrations\TaskGaugeInterface;
@@ -67,6 +69,7 @@ use OCA\OpenRegister\Kernel\Contracts\Integrations\ObjectDateEventsSourceInterfa
 use OCA\OpenRegister\Search\FlowTasksProvider;
 use OCA\OpenRegister\Kernel\Contracts\Core\PublicationRefusalInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaFormDependentsInterface;
+use OCA\OpenRegister\Kernel\Contracts\FlowNamingDocumentsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\SchemaRenameWarningsInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\NotificationRunRecorderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Notifications\ObjectWatchersInterface;
@@ -86,10 +89,16 @@ use OCA\OpenRegister\Service\Flow\Nodes\CodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\CodeNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LockObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SurveyInviteNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNode;
 use OCA\OpenRegister\Service\Flow\Nodes\TagObjectNodeInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TriggerWebhookNodeInterface;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKinds;
 use OCA\OpenRegister\Service\Flow\Principal\PrincipalKindsInterface;
 use OCA\OpenRegister\Service\Flow\Timer\CalendarRecompute;
@@ -173,6 +182,7 @@ final class FlowWiring {
 		ObjectWatchersInterface::class => WatcherService::class,
 		NotificationRunRecorderInterface::class => AutomationRecordWriter::class,
 		SchemaRenameWarningsInterface::class => FlowTriggerRenameCheck::class,
+		FlowNamingDocumentsInterface::class => FlowNamingDocuments::class,
 		SchemaFormDependentsInterface::class => FormDependentsCheck::class,
 		ApprovalPositionFormCheckInterface::class => ApprovalPositionFormGuard::class,
 		BuiltInToolProvidersInterface::class => FlowBuiltInToolProviders::class,
@@ -181,10 +191,13 @@ final class FlowWiring {
 		PublicationRefusalInterface::class => PartyIndicatorGuard::class,
 		FlowRunSignalInterface::class => FlowRunSignalService::class,
 		LockObjectNodeInterface::class => LockObjectNode::class,
+		TriggerWebhookNodeInterface::class => TriggerWebhookNode::class,
 		CodeNodeInterface::class => CodeNode::class,
 		CodeRunnerClientInterface::class => CodeRunnerClient::class,
 		TagObjectNodeInterface::class => TagObjectNode::class,
+		SurveyInviteNodeInterface::class => SurveyInviteNode::class,
 		AuditTrailNodeInterface::class => AuditTrailNode::class,
+		ExtendInputNodeInterface::class => ExtendInputNode::class,
 		PrincipalKindsInterface::class => PrincipalKinds::class,
 		CalendarRecomputeInterface::class => CalendarRecompute::class,
 		FacetWeekNumberingInterface::class => FacetWeekNumbering::class,
@@ -208,6 +221,11 @@ final class FlowWiring {
 		UnreadCountsInterface::class => UnreadCountCalculator::class,
 		SaveBoundaryInterface::class => AutoTransitionPass::class,
 		ElevationAttributionInterface::class => ObjectActionElevationAttribution::class,
+		\OCA\OpenRegister\Kernel\Contracts\BusinessTimeInterface::class => \OCA\OpenRegister\Service\Flow\Timer\BusinessTime::class,
+		\OCA\OpenRegister\Kernel\Contracts\SaveWarningsInterface::class => \OCA\OpenRegister\Service\Rules\SaveWarnings::class,
+		\OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNodeInterface::class => \OCA\OpenRegister\Service\Flow\Nodes\TriggerCalendarNode::class,
+		// The published read of the tasks on an object (lib/Contract), for consuming apps.
+		ObjectTaskReaderInterface::class => ObjectTaskReader::class,
 	];
 
 	/**
@@ -445,6 +463,9 @@ final class FlowWiring {
 	 * @param ContainerInterface $container The container.
 	 *
 	 * @return TaskInboxService
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 *       (the blocker mapper answers the derived `blocked` flag of each row)
 	 */
 	private static function buildTaskInboxService(ContainerInterface $container): TaskInboxService {
 			return new TaskInboxService(
@@ -455,6 +476,10 @@ final class FlowWiring {
 				// Reads a located task's subject from its own table instead
 				// of searching every magic table for it.
 				locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class),
+				// Answers which blockers are still open, for the derived
+				// `blocked` flag (a-task-may-wait-on-another-task 2.1).
+				// Without it every row read blocked: false.
+				blockers: $container->get(\OCA\OpenRegister\Db\TaskBlockerMapperInterface::class),
 				// The per-row `can` list (record-tasks-tab D-4), asked of the
 				// same authorization service every verb's endpoint asks.
 				verbs: $container->get(\OCA\OpenRegister\Service\Task\TaskVerbList::class),

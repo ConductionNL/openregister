@@ -3,7 +3,8 @@
 ## 1. Move
 
 - [x] 1.1 `MoveObject` handler: RBAC on both sides, target validation with generated properties kept, transactional row move, pointer row in the source, `moved` audit entry.
-- [ ] 1.2 Route `POST .../move`; timers superseded with reason `moved`; presence and locks carried.
+- [x] 1.2 Route `POST .../move`; timers superseded with reason `moved`; presence and locks carried.
+      The route is `objects#move`. Presence and locks are keyed on the uuid, so they come along (D-1), and a locked object is refused before the move. Timers are keyed on the uuid too, except for the one thing a schema decides: a timer whose working calendar was named by the record type it was armed on (`WorkingCalendarScope::SCOPE_RECORD_TYPE`). After a completed move `MoveObject` calls `FlowTimerControlInterface::recalendarForSubject()`. An armed timer of that kind is superseded with reason `moved` onto the calendar the target schema names (falling back to the unit or instance calendar when it names none), keeping its anchor, running segment and consumed time, so the deadline is re-projected. A suspended one is pointed at the new calendar in place, since resume measures against it. A failure is logged and does not undo the move. Tests: `FlowTimerRecalendarTest` (7) and `MoveObjectTest` (+3).
 
 ## 2. Addresses
 
@@ -12,7 +13,9 @@
 
 ## 3. Tests
 
-- [ ] 3.1 `tests/e2e/ci/object-move.spec.ts`: move an object, open it at the old address, read the number.
+- [x] 3.1 `tests/e2e/ci/object-move.spec.ts`: move an object, open it at the old address, read the number.
+      2026-11-25: two tests, green on a sandbox Nextcloud 34 with MariaDB (2 passed). An object with a generated number, a create entry and a relation row is moved to a second schema declaring the same number; at the new address it keeps the number, its history holds `create` and `moved`, and the row points at the new schema. At the old address it answers 200 with the number and `@self.movedTo`.
+      🔴 THE OLD ADDRESS WAS NOT A MISS, AND THE E2E IS WHAT FOUND IT. `find()` resolves a uuid across every table, so the old URL came back 200 with the object from its new table and no `@self.movedTo`: the bookmark opened, and was never told to update. `MovedObjectLookup` was only asked on a miss, and the unit tests drove a mocked miss. Fixed in `ObjectsController::movedShowOfFound()`: an object whose own register or schema is not the one asked for is checked against the move record and, when it moved from here, read again through show() at its new address, as a miss would be; an object that lives where it was asked for never reaches the lookup. Tests: `ObjectsControllerMovedAddressTest` (+3; removing the call turns two red), and the e2e's second test is red on main and green with the fix.
 - [x] 3.2 Unit tests: identity kept, refusal, pointer, deep-link rewrite; Newman for the route.
 
 ## What was built
@@ -52,9 +55,8 @@ a date.
   entry is what says where it went.
 - **1.2's timers, presence and locks.** All three are keyed on the uuid, which
   does not change, so they follow the object without being touched — that is
-  design D-1 and it is why the list in the spec reads as "kept" rather than
-  "migrated". Timers superseded with reason `moved` would only matter if a
-  timer were bound to the schema, and none is.
+  design D-1. The one exception, a timer whose calendar was named by its
+  record type, was built later: see 1.2 above.
 - **2.2, relation deep-link rewriting**, was built in the second pass, once
   the old address answered (2.1): see 2.2 above.
 - **3.1, the e2e, and the Newman request of 3.2.** Both need a live instance.

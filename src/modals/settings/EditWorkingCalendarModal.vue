@@ -270,6 +270,11 @@
 					</li>
 				</ul>
 			</section>
+
+			<TermDiagnosticPanel
+				:key="(calendar && calendar.slug) || 'new'"
+				:definitionOf="toDefinition"
+				:initialSla="initialSla" />
 		</div>
 
 		<template #actions>
@@ -299,6 +304,7 @@ import Calendar from 'vue-material-design-icons/Calendar.vue'
 import CloseCancelButton from '../../components/shared/CloseCancelButton.vue'
 import SaveButton from '../../components/shared/SaveButton.vue'
 import CalendarRowButton from './CalendarRowButton.vue'
+import TermDiagnosticPanel from './TermDiagnosticPanel.vue'
 
 /**
  * Edits one working calendar and previews what its rules mean in a year.
@@ -432,6 +438,7 @@ export default {
 		NcSelect,
 		NcTextField,
 		SaveButton,
+		TermDiagnosticPanel,
 	},
 
 	props: {
@@ -441,6 +448,14 @@ export default {
 		},
 
 		calendar: {
+			type: Object,
+			default: null,
+		},
+
+		/**
+		 * A term the "Try a date" panel starts from, e.g. from a deep link.
+		 */
+		initialSla: {
 			type: Object,
 			default: null,
 		},

@@ -80,6 +80,7 @@ class FlowMapperQueryGoldenTest extends TestCase {
 	private function mapper(): RecordingFlowMapper {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->queryBuilder());
+		$db->method('escapeLikeParameter')->willReturnCallback(static fn (string $value): string => addcslashes($value, '\\_%'));
 
 		return new RecordingFlowMapper($db);
 	}//end mapper()
@@ -138,6 +139,17 @@ class FlowMapperQueryGoldenTest extends TestCase {
 				$this->composites[spl_object_id($composite)] = 'orX(' . implode(' | ', $args) . ')';
 				return $composite;
 			}
+		);
+
+		$expr->method('castColumn')->willReturnCallback(
+			function ($column, $type): IQueryFunction {
+				$cast = $this->createMock(IQueryFunction::class);
+				$this->composites[spl_object_id($cast)] = 'castColumn(' . self::show($column) . ', ' . self::show($type) . ')';
+				return $cast;
+			}
+		);
+		$expr->method('like')->willReturnCallback(
+			fn ($column, $pattern): string => 'like(' . $this->showArgs(args: [$column, $pattern]) . ')'
 		);
 
 		$func = $this->createMock(IFunctionBuilder::class);
@@ -246,6 +258,25 @@ class FlowMapperQueryGoldenTest extends TestCase {
 			$this->recorded()
 		);
 	}//end testACountScopesLikeTheListingAndReadsTheTotal()
+
+	/**
+	 * A node-type read matches the node list as text, so PostgreSQL's json column takes a LIKE.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md#requirement-swapping-the-store-is-proven-end-to-end-req-rds-005
+	 */
+	public function testANodeTypeReadCastsTheNodeListToTextBeforeTheMatch(): void {
+		$this->mapper()->findWithNodeType(nodeType: 'openregister.trigger_calendar');
+
+		$this->assertSame(
+			[
+				"from(openregister_flows)",
+				"where(like(castColumn('nodes', 2), :'%openregister.trigger\\\\_calendar%'/2))",
+			],
+			$this->recorded()
+		);
+	}//end testANodeTypeReadCastsTheNodeListToTextBeforeTheMatch()
 
 	/**
 	 * A bare trigger read filters on the trigger and on enabled only.

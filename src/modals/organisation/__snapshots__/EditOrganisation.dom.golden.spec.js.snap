@@ -201,6 +201,13 @@ exports[`EditOrganisation markup renders a stored organisation 1`] = `
                                       <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">grant_manage</span></td>
+                                    <td class="right-description">Manage the grants on records the group does not own</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Grant Manage" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
                                 </tbody>
                               </table>
                             </div>
@@ -378,6 +385,13 @@ exports[`EditOrganisation markup renders an error 1`] = `
                                       <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">grant_manage</span></td>
+                                    <td class="right-description">Manage the grants on records the group does not own</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Grant Manage" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
                                 </tbody>
                               </table>
                             </div>
@@ -553,6 +567,13 @@ exports[`EditOrganisation markup renders create another 1`] = `
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
                                       <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">grant_manage</span></td>
+                                    <td class="right-description">Manage the grants on records the group does not own</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Grant Manage" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -744,6 +765,13 @@ exports[`EditOrganisation markup renders loading 1`] = `
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
                                       <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">grant_manage</span></td>
+                                    <td class="right-description">Manage the grants on records the group does not own</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Grant Manage" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -1040,6 +1068,13 @@ exports[`EditOrganisation markup renders loading users 1`] = `
                                       <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">grant_manage</span></td>
+                                    <td class="right-description">Manage the grants on records the group does not own</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Grant Manage" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
                                 </tbody>
                               </table>
                             </div>
@@ -1208,6 +1243,13 @@ exports[`EditOrganisation markup renders no members 1`] = `
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
                                       <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">grant_manage</span></td>
+                                    <td class="right-description">Manage the grants on records the group does not own</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Grant Manage" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -1399,6 +1441,13 @@ exports[`EditOrganisation markup renders removing a user 1`] = `
                                     <td class="right-description">Use Large Language Model features</td>
                                     <td class="right-groups">
                                       <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">grant_manage</span></td>
+                                    <td class="right-description">Manage the grants on records the group does not own</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Grant Manage" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -1618,6 +1667,13 @@ exports[`EditOrganisation markup renders the empty create form 1`] = `
                                       <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Llm Use" options="[{&quot;id&quot;:&quot;*&quot;,&quot;name&quot;:&quot;Everyone&quot;},{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
                                     </td>
                                   </tr>
+                                  <tr>
+                                    <td class="right-name"><span class="right-badge">grant_manage</span></td>
+                                    <td class="right-description">Manage the grants on records the group does not own</td>
+                                    <td class="right-groups">
+                                      <x-ncselect modelvalue="[]" inputlabel="Selected Special Rights Grant Manage" options="[{&quot;id&quot;:&quot;admin&quot;,&quot;name&quot;:&quot;Admins&quot;,&quot;userCount&quot;:2},{&quot;id&quot;:&quot;staff&quot;,&quot;name&quot;:&quot;Staff&quot;,&quot;userCount&quot;:9}]" label="name" trackby="id" multiple="true" placeholder="Select groups..." data-on="onUpdate:modelValue"></x-ncselect>
+                                    </td>
+                                  </tr>
                                 </tbody>
                               </table>
                             </div>
@@ -1691,6 +1747,7 @@ exports[`EditOrganisation quota updateUserQuota creates a missing quota 1`] = `
 exports[`EditOrganisation special rights loads the rights a stored organisation grants 1`] = `
 {
   "agent_use": [],
+  "grant_manage": [],
   "llm_use": [],
 }
 `;
@@ -1738,6 +1795,10 @@ exports[`EditOrganisation special rights passes each permission table on to the 
 exports[`EditOrganisation special rights passes each select of the table on to its right 1`] = `
 {
   "agent_use": [
+    "admin",
+    "staff",
+  ],
+  "grant_manage": [
     "admin",
     "staff",
   ],

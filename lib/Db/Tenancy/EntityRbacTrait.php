@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Db\Tenancy;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
+use OCA\OpenRegister\Service\Rbac\AuthorizationRuleEvaluator;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -54,7 +55,9 @@ trait EntityRbacTrait {
 	 * Check if the current user has permission to perform an action.
 	 *
 	 * Admins always have all permissions. Without a session user the caller is
-	 * a trusted system operation or is denied (isTrustedSystemCaller()).
+	 * a trusted system operation (isTrustedSystemCaller()), or is admitted only
+	 * where the organisation's authorization names `public` for the entity type
+	 * and action (publicPolicyAllows()); otherwise it is denied.
 	 *
 	 * @param string $action     The action to check (create, read, update, delete)
 	 * @param string $entityType The type of entity (e.g., 'schema', 'register', 'configuration')
@@ -62,6 +65,7 @@ trait EntityRbacTrait {
 	 * @return bool True if user has permission, false otherwise
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-an-entity-may-declare-anonymous-access-and-it-must-be-honoured
 	 */
 	protected function hasRbacPermission(string $action, string $entityType): bool {
 		if ($this->isCurrentUserAdmin() === true) {
@@ -69,7 +73,8 @@ trait EntityRbacTrait {
 		}
 
 		if ($this->getCurrentUserId() === null) {
-			return $this->isTrustedSystemCaller();
+			return $this->isTrustedSystemCaller() === true
+				|| $this->publicPolicyAllows(action: $action, entityType: $entityType) === true;
 		}
 
 		return $this->organisationPolicyAllows(action: $action, entityType: $entityType);
@@ -95,6 +100,82 @@ trait EntityRbacTrait {
 		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
 		return SystemOperationContext::isActive() === true;
 	}//end isTrustedSystemCaller()
+
+	/**
+	 * Whether the organisation's authorization explicitly admits an anonymous caller.
+	 *
+	 * The same groups the object plane evaluates: a rule naming `public` for
+	 * this entity type and action admits a caller with no session. Absence is
+	 * refusal, unlike for a signed-in user: no organisation, no rule, an empty
+	 * rule, a rule without `public` (the `*` wildcard included) and the
+	 * enforcement flag being off all leave the anonymous caller refused, so no
+	 * entity that declares nothing gains access. The fail-closed write rule
+	 * holds by construction: only an explicit `public` grant admits a write.
+	 *
+	 * A refusal is recorded once per (entity type, action, cause) per request,
+	 * naming the plane, whether any rule existed, and the remedy.
+	 *
+	 * @param string $action     The action to check
+	 * @param string $entityType The type of entity
+	 *
+	 * @return bool True when `public` is granted the action.
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-an-entity-may-declare-anonymous-access-and-it-must-be-honoured
+	 */
+	private function publicPolicyAllows(string $action, string $entityType): bool {
+		$organisation = $this->policyOrganisation();
+		$rule = null;
+		if ($organisation !== null) {
+			$rule = ($organisation->getAuthorization()[$entityType][$action] ?? null);
+		}
+
+		$evaluator = $this->entityRuleEvaluator();
+		if ($evaluator->admitsAnonymous(rules: $rule) === true) {
+			return true;
+		}
+
+		$this->recordAnonymousRefusal(evaluator: $evaluator, action: $action, entityType: $entityType, ruleExists: empty($rule) === false);
+		return false;
+	}//end publicPolicyAllows()
+
+	/**
+	 * Record an anonymous refusal on the entity plane, once per kind per request.
+	 *
+	 * @param AuthorizationRuleEvaluator $evaluator  The evaluator holding the per-request memory.
+	 * @param string                     $action     The action refused.
+	 * @param string                     $entityType The entity type.
+	 * @param bool                       $ruleExists Whether the organisation declared any rule for it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-a-refusal-and-a-grant-must-both-be-observable
+	 */
+	private function recordAnonymousRefusal(AuthorizationRuleEvaluator $evaluator, string $action, string $entityType, bool $ruleExists): void {
+		$cause = 'no-rule';
+		if ($ruleExists === true) {
+			$cause = 'rule-refused';
+		}
+
+		if (isset($this->logger) === false
+			|| $evaluator->firstRefusal(plane: 'entity', entityType: $entityType, action: $action, cause: $cause) === false
+		) {
+			return;
+		}
+
+		$this->logger->info(
+			message: '[EntityRbac] Anonymous caller refused: to admit it, add the `public` group to the'
+				. ' organisation\'s authorization for this entity type and action',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'plane' => 'entity',
+				'entityType' => $entityType,
+				'action' => $action,
+				'cause' => $cause,
+				'authorizationDeclared' => $ruleExists,
+			]
+		);
+	}//end recordAnonymousRefusal()
 
 	/**
 	 * Whether the active organisation's authorization config lets the session user act.
@@ -202,20 +283,32 @@ trait EntityRbacTrait {
 	/**
 	 * Whether any of the user's groups, or the wildcard, is allowed.
 	 *
+	 * Delegated to the evaluator both planes share.
+	 *
 	 * @param array $userGroups    The user's group ids.
 	 * @param mixed $allowedGroups The allowed group ids.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
 	 */
 	private function groupsGrant(array $userGroups, mixed $allowedGroups): bool {
-		foreach ($userGroups as $groupId) {
-			if (in_array($groupId, $allowedGroups) === true) {
-				return true;
-			}
-		}
-
-		return in_array('*', $allowedGroups) === true;
+		return $this->entityRuleEvaluator()->anyGroupAllowed(userGroups: $userGroups, allowedGroups: $allowedGroups);
 	}//end groupsGrant()
+
+	/**
+	 * The shared reader of rule lists, the same one the object plane asks.
+	 *
+	 * A trait cannot be injected into, and the evaluator has no collaborators,
+	 * so a fresh one is equivalent to a shared one.
+	 *
+	 * @return AuthorizationRuleEvaluator The evaluator.
+	 *
+	 * @spec openspec/changes/consolidate-permission-handling/specs/consolidate-permission-handling/spec.md#requirement-one-evaluator-decides-anonymous-access-on-both-planes
+	 */
+	private function entityRuleEvaluator(): AuthorizationRuleEvaluator {
+		return new AuthorizationRuleEvaluator();
+	}//end entityRuleEvaluator()
 
 	/**
 	 * Verify RBAC permission and throw exception if denied.

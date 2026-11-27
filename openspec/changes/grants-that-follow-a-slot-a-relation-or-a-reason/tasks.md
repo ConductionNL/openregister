@@ -4,37 +4,71 @@
 > size L and covers four grant kinds, one verb and one flag. Delivered: the
 > `assign` verb in the governed vocabulary (3.1, 3.3) and the grant that does
 > not travel (5.1, 5.2, 6.4), which is the half `rbac-inherits-to-children`
-> left open and the one an access review cannot finish without.
+> left open and the one an access review cannot finish without, and the grant
+> to a slot (1.1 to 1.4, and the slot half of 6.1), and break glass (4.1 to
+> 4.5, 6.3).
 >
 > NOT delivered, and each for a reason rather than for lack of time:
+> the relationship grant (2.x) and the break-glass e2e (6.5), below. The
+> notes on the other items record how they were delivered.
 >
-> - **The slot grant (1.x)** hangs on a typed party role on an object, which is
->   `party-roles-beyond-the-requester` REQ-PRM-001. That change is still a
->   proposal on this branch, so there is no slot to grant to. Building a second
->   notion of a role slot here is precisely the parallel model ADR-022 refuses.
+> - **The slot grant (1.x), delivered**: in the third pass, now that
+>   `party-roles-beyond-the-requester` is archived and the slot exists. A
+>   per-object grant names a party role in the object's own `_authorization`
+>   (`{"partyRole": "behandelaar"}` in an action's rule list), and
+>   `PermissionHandler` admits whoever occupies that role on the object at the
+>   moment of evaluation (`PartyRoleSlotResolver`, over the existing link rows:
+>   a user link, inside its period). Nothing is copied onto a person. Left
+>   deliberately narrow, and each narrowing fails closed: a slot written on the
+>   schema or register is not honoured (the schema validator refuses it and the
+>   list emitters filter on the schema block, so honouring it on a read alone
+>   would let a read and a list disagree); a slot does not reopen a `private`
+>   object; a party without an account or a CardDAV contact holds the role but
+>   never the access; a slot never travels to descendants. List visibility
+>   through a slot, a schema-level slot and an object-level `/api/scopes`
+>   read are follow-ups.
 > - **The relationship grant (2.x)** hangs on the party relationship record of
 >   `relations-that-travel-and-what-they-expose` REQ-RTE-003, unbuilt for the
 >   same reason. A grant with no record to hang on and no period to read has
 >   nothing to be dated by, and a relationship grant that does not expire is
 >   the failure the row is about.
-> - **Break glass (4.x)** is its own feature: a schema declaration, a bounded
->   self-granted record, an expiry, a notification at the moment it is taken,
->   and every read under it audited as made under it. It touches the chained
->   audit trail, which is the one structure in this app that cannot be
->   corrected afterwards. It deserves a change of its own rather than the tail
->   of one.
+> - **Break glass (4.x), delivered** in the fourth pass. A schema declares
+>   `x-openregister-break-glass` in its configuration (verbs, an ISO-8601
+>   `maxDuration`, the `notify` users/groups, optionally the `groups` that may
+>   take it); `manage` is refused, a recipient is required, and a malformed
+>   declaration is refused at save and offers nothing at runtime.
+>   `POST /api/objects/{register}/{schema}/{id}/break-glass` with a `reason`
+>   takes it: the take IS one sealed row of the chained audit trail
+>   (`break_glass.taken`, carrying grantee, verbs, period and reason), so
+>   nothing is written onto the record and the grant cannot be edited. The one
+>   evaluator reads it after the deny pass and the slot, only for the declared
+>   verbs and only while the take holds; every use is a `break_glass.used` row.
+>   Taking it again while it holds is refused unless the app setting
+>   `break_glass_run_limit` (ISO-8601) allows the run to grow, and then only to
+>   the first take plus that limit. Narrow on purpose: a single record (list
+>   visibility does not follow), and the scopes read does not yet name break
+>   glass as a source.
 > - **3.2, the reassignment gate**: delivered in the second pass for
 >   openregister's own path, `ObjectOwnershipService::assign`. dossiq's
 >   `CaseAccessGuard`-shaped coordinator check is dossiq's to move.
-> - **Since then**: `party-roles-beyond-the-requester` has been archived, so
->   the slot of 1.x exists now; the grant on it is still to be built.
+> - **Since then**: `party-roles-beyond-the-requester` has been archived, and
+>   the slot grant of 1.x is built on it (third pass). The relationship grant
+>   (2.x) stays blocked: the relationship validation and period reading of
+>   `relations-that-travel-and-what-they-expose` is not built in openregister,
+>   and the party relationship schema is pipelinq's. Fourth pass: still
+>   blocked, and on one more missing piece. A relationship grant must tell
+>   which Nextcloud account IS the party at the granting end, and openregister
+>   has no account-to-party identity: a party link names a party object or an
+>   account, never both, and pipelinq's `relationship` names two contact or
+>   client objects. Inventing that mapping here would be the parallel model
+>   ADR-022 refuses.
 
 ## 1. A grant to a slot
 
-- [ ] 1.1 A per-object grant may name a party role on the record instead of a principal.
-- [ ] 1.2 Resolution reads the current occupant at evaluation time; an empty slot grants nothing.
-- [ ] 1.3 Replacing the occupant moves the access with no grant edited, and is audited.
-- [ ] 1.4 The scopes read names the slot as the source of the grant.
+- [x] 1.1 A per-object grant may name a party role on the record instead of a principal. (`{"partyRole": "<role>"}` in an action's rule list of the object's own `_authorization`; optional `match` read as a user override's is. Honoured on the object's own block only.)
+- [x] 1.2 Resolution reads the current occupant at evaluation time; an empty slot grants nothing. (`PartyRoleSlotResolver::rolesHeldBy()`, read on every question, never memoised; a missing slot, a vacant one, a malformed role value, an occupant outside the link's period, an unreadable link table or no resolver all grant nothing. Asked after every principal and after the deny pass, so it only adds where the rules said no and a deny still wins.)
+- [x] 1.3 Replacing the occupant moves the access with no grant edited, and is audited. (`SlotOccupantAuditListener` on the person-link events writes `party.slot-occupant-changed` through `AuditTrailMapper::recordObjectEvent`, the existing chained path, when a user's link on an object whose own block names a slot is added, changed or removed; the trail's structure is untouched.)
+- [x] 1.4 The scopes read names the slot as the source of the grant. (`PermissionHandler::provenanceFor()` with an object: `source: slot`, `slot: <role>`, `declaredAt: object`, beside the existing provenance; other records keep their shape. `/api/scopes` itself is schema-level and passes no object, so it cannot name a slot yet.)
 
 ## 2. A grant from a relationship
 
@@ -51,11 +85,11 @@
 
 ## 4. Break glass
 
-- [ ] 4.1 A schema declares whether emergency self-granted access is available, the verbs it may grant and its maximum duration.
-- [ ] 4.2 Taking it requires a reason and grants exactly the declared verbs for the declared period.
-- [ ] 4.3 The grant expires by itself and cannot be extended by taking it again beyond an administered limit.
-- [ ] 4.4 Taking it notifies a declared recipient at that moment, and writes the reason to the chained audit trail.
-- [ ] 4.5 Every read made under the grant is audited as made under it.
+- [x] 4.1 A schema declares whether emergency self-granted access is available, the verbs it may grant and its maximum duration.
+- [x] 4.2 Taking it requires a reason and grants exactly the declared verbs for the declared period.
+- [x] 4.3 The grant expires by itself and cannot be extended by taking it again beyond an administered limit.
+- [x] 4.4 Taking it notifies a declared recipient at that moment, and writes the reason to the chained audit trail.
+- [x] 4.5 Every read made under the grant is audited as made under it.
 
 ## 5. A grant that does not travel
 
@@ -64,9 +98,9 @@
 
 ## 6. Tests
 
-- [ ] 6.1 Unit tests for the slot resolution, the empty slot, the occupant change and the relationship period.
+- [ ] 6.1 Unit tests for the slot resolution, the empty slot, the occupant change and the relationship period. (Slot half done: `tests/Unit/Service/Rbac/SlotGrantResolutionTest.php`, `tests/Unit/Service/Rbac/PartyRoleSlotResolverTest.php`, `tests/Unit/Listener/SlotOccupantAuditListenerTest.php`. The relationship period waits on 2.x.)
 - [x] 6.2 Unit tests for `assign` granted alone and for the reassignment refusal without it. (tests/Unit/Service/Rbac/ObjectOwnershipAssignVerbTest.php)
-- [ ] 6.3 Unit tests with a clock fixture for the break-glass expiry and the extension limit.
+- [x] 6.3 Unit tests with a clock fixture for the break-glass expiry and the extension limit. (`tests/Unit/Service/Rbac/BreakGlassPolicyTest.php`, `BreakGlassServiceTest.php`, `BreakGlassResolutionTest.php`, `BreakGlassDeclarationTest.php`, `tests/Unit/Controller/BreakGlassControllerTest.php`)
 - [x] 6.4 Unit tests for the not-inheritable grant against the ancestor resolution.
-- [ ] 6.5 An e2e over break glass taken with a reason, used, and expired.
+- [ ] 6.5 An e2e over break glass taken with a reason, used, and expired. (Left: needs a live instance.)
 - [x] 6.6 Deduplication check (ADR-012) recorded in the PR body.

@@ -71,8 +71,30 @@ use OCP\AppFramework\Db\Entity;
  * @method void setPage(?int $page)
  * @method array|null getBox()
  * @method void setBox(?array $box)
+ * @method string|null getCapacity()
+ * @method void setCapacity(?string $capacity)
+ * @method string|null getCapacitySource()
+ * @method void setCapacitySource(?string $capacitySource)
+ * @method string|null getCapacityApplied()
+ * @method void setCapacityApplied(?string $capacityApplied)
+ * @method string|null getCapacityConfirmedBy()
+ * @method void setCapacityConfirmedBy(?string $capacityConfirmedBy)
+ * @method DateTime|null getCapacityConfirmedAt()
+ * @method void setCapacityConfirmedAt(?DateTime $capacityConfirmedAt)
+ * @method string|null getPersonMatch()
+ * @method void setPersonMatch(?string $personMatch)
+ * @method bool|null getUncertain()
+ * @method void setUncertain(?bool $uncertain)
+ * @method string|null getArchiveMember()
+ * @method void setArchiveMember(?string $archiveMember)
  * @method string|null getDecisionUuid()
  * @method void setDecisionUuid(?string $decisionUuid)
+ * @method string getRedactionDecision()
+ * @method void setRedactionDecision(string $redactionDecision)
+ * @method string|null getDecidedBy()
+ * @method void setDecidedBy(?string $decidedBy)
+ * @method DateTime|null getDecidedAt()
+ * @method void setDecidedAt(?DateTime $decidedAt)
  * @method DateTime getCreatedAt()
  * @method void setCreatedAt(DateTime $createdAt)
  *
@@ -81,6 +103,29 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.TooManyFields)
  */
 class EntityRelation extends Entity implements JsonSerializable, EntityRelationInterface {
+
+	/**
+	 * Nobody decided yet.
+	 */
+	public const DECISION_UNDECIDED = 'undecided';
+
+	/**
+	 * The value is redacted.
+	 */
+	public const DECISION_REDACT = 'redact';
+
+	/**
+	 * The value is released.
+	 */
+	public const DECISION_RELEASE = 'release';
+
+	/**
+	 * Every redaction decision.
+	 *
+	 * @var list<string>
+	 */
+	public const DECISIONS = [self::DECISION_UNDECIDED, self::DECISION_REDACT, self::DECISION_RELEASE];
+
 
 	/**
 	 * Entity ID.
@@ -253,11 +298,91 @@ class EntityRelation extends Entity implements JsonSerializable, EntityRelationI
 	protected ?array $box = null;
 
 	/**
+	 * The capacity suggested for a detected person (public-office, professional, private, unknown); null when not a person.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $capacity = null;
+
+	/**
+	 * Where the suggested capacity came from (officials-register, role-words, none).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $capacitySource = null;
+
+	/**
+	 * The capacity a reviewer confirmed; null while the suggestion is unconfirmed.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $capacityApplied = null;
+
+	/**
+	 * The user id of the reviewer who confirmed the capacity.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $capacityConfirmedBy = null;
+
+	/**
+	 * When the capacity was confirmed.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $capacityConfirmedAt = null;
+
+	/**
+	 * The persons register a detected person matched (its label, never a record id); null when none matched (REQ-DKP-003).
+	 *
+	 * @var string|null
+	 */
+	protected ?string $personMatch = null;
+
+	/**
+	 * Whether a detected person also reads as a street or place name (REQ-DKP-003); the occurrence is kept for the reviewer.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $uncertain = null;
+
+	/**
+	 * The path of the archive member the entity was found in, null outside an archive.
+	 *
+	 * Copied from the chunk's `positionReference.member` when the relation is stored,
+	 * so a relation names the file inside a zip without a join to its chunk.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $archiveMember = null;
+
+	/**
 	 * Created at timestamp.
 	 *
 	 * @var DateTime|null
 	 */
 	protected ?DateTime $createdAt = null;
+
+	/**
+	 * The redaction decision: `undecided`, `redact` or `release` (PATCH key `decision`).
+	 *
+	 * @var string
+	 */
+	protected string $redactionDecision = self::DECISION_UNDECIDED;
+
+	/**
+	 * The UID of the person who took the redaction decision, null when nobody did.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $decidedBy = null;
+
+	/**
+	 * When the redaction decision was taken.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $decidedAt = null;
 
 	/**
 	 * Constructor.
@@ -281,8 +406,9 @@ class EntityRelation extends Entity implements JsonSerializable, EntityRelationI
 	 *     context: null|string, anonymized: bool,
 	 *     anonymizedValue: null|string, bases: array|null,
 	 *     skipAnonymization: bool, decision: null|string,
-	 *     page: int|null, box: array|null,
- *     createdAt: null|string}
+	 *     page: int|null, box: array|null, archiveMember: null|string,
+ *     createdAt: null|string, redactionDecision: string,
+ *     decidedBy: null|string, decidedAt: null|string}
 	 */
 	public function jsonSerialize(): array {
 		return (new TypedFieldsJson())->renamed(json: (new TypedFieldsJson())->serialise(fieldTypes: $this->getFieldTypes(), values: get_object_vars($this)), names: ['decisionUuid' => 'decision']);

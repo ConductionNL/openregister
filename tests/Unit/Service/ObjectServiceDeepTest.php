@@ -415,6 +415,31 @@ class ObjectServiceDeepTest extends TestCase {
 
 	}//end testPrepareFindAllConfigSetsSchema()
 
+	/**
+	 * Test scalarFilter reads the register or schema scope from the flat
+	 * filter first and from a filter nested under `@self` next, the shape
+	 * consuming apps send (`['@self' => ['register' => …, 'schema' => …]]`).
+	 * Without the nested read such a findAll() ran unscoped and found nothing.
+	 *
+	 * @return void
+	 */
+	public function testScalarFilterReadsTheNestedSelfScope(): void {
+		$method = new \ReflectionMethod(ObjectService::class, 'scalarFilter');
+
+		$nested = ['filters' => ['@self' => ['register' => '28', 'schema' => '706'], 'transaction' => 't-1']];
+		$this->assertSame('28', $method->invoke($this->service, $nested, 'register'));
+		$this->assertSame('706', $method->invoke($this->service, $nested, 'schema'));
+
+		$both = ['filters' => ['register' => 'flat', '@self' => ['register' => 'nested']]];
+		$this->assertSame('flat', $method->invoke($this->service, $both, 'register'));
+
+		$this->assertNull($method->invoke($this->service, ['filters' => ['@self' => ['register' => ['a', 'b']]]], 'register'));
+		$this->assertNull($method->invoke($this->service, ['filters' => ['@self' => ['owner' => 'alice']]], 'register'));
+		$this->assertNull($method->invoke($this->service, ['filters' => ['@self' => 'scalar']], 'register'));
+		$this->assertNull($method->invoke($this->service, [], 'schema'));
+
+	}//end testScalarFilterReadsTheNestedSelfScope()
+
 	// =========================================================================
 	// extractUuidAndNormalizeObject (private)
 	// =========================================================================

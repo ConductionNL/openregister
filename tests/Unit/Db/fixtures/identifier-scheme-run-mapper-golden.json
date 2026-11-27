@@ -1,0 +1,63 @@
+{
+    "by id found": {
+        "result": {
+            "id": 4,
+            "sequence": "case",
+            "registerId": 3,
+            "schemaId": 9,
+            "property": "identifier",
+            "previousFormat": "{year}-{seq:4}",
+            "state": "running",
+            "total": 10,
+            "processed": 2,
+            "rewritten": 2,
+            "skipped": 0,
+            "failed": 0,
+            "startedBy": "admin",
+            "started": null,
+            "finished": null,
+            "lastError": null
+        },
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_id_scheme_runs, NULL)",
+            "#1 param :p1 = 4, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "by id missing": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_id_scheme_runs, NULL)",
+            "#1 param :p1 = 5, 1",
+            "#1 expr.eq(id, :p1, NULL)",
+            "#1 where(eq(id, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "running found": {
+        "result": 4,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_id_scheme_runs, NULL)",
+            "#1 param :p1 = case, 2",
+            "#1 expr.eq(active_sequence, :p1, NULL)",
+            "#1 where(eq(active_sequence, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    },
+    "running none": {
+        "result": null,
+        "queries": [
+            "#1 select(*)",
+            "#1 from(openregister_id_scheme_runs, NULL)",
+            "#1 param :p1 = letter, 2",
+            "#1 expr.eq(active_sequence, :p1, NULL)",
+            "#1 where(eq(active_sequence, :p1, NULL))",
+            "#1 executeQuery()"
+        ]
+    }
+}

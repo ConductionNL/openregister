@@ -6,46 +6,29 @@
  *
  * @spec exclude Unit test of the client-side Bookmarks integration.
  */
-const mockLibrary = {}
-jest.mock('@conduction/nextcloud-vue', () => mockLibrary)
+const mockTab = { name: 'CnBookmarksTab' }
+const mockCard = { name: 'CnBookmarksCard' }
+jest.mock('@conduction/nextcloud-vue/dist/esm/integrations/builtin/bookmarks.js', () => ({
+	bookmarksIntegration: { tab: mockTab, widget: mockCard },
+}))
 jest.mock('@nextcloud/l10n', () => ({ t: (app, text) => `${app}:${text}` }))
 
 /**
- * A registry that records registrations.
+ * A registry stub.
  *
- * @param {boolean} hasBookmarks Whether bookmarks is already registered
- * @return {object} The registry
+ * @param {boolean} hasBookmarks Whether bookmarks is already registered.
+ * @return {object} The stub.
  */
 function registry(hasBookmarks = false) {
 	return { register: jest.fn(), has: jest.fn(() => hasBookmarks) }
 }
 
-/**
- * Let the dynamic import settle.
- *
- * @return {Promise<void>}
- */
-function settle() {
-	return new Promise((resolve) => setTimeout(resolve, 0))
-}
-
-let registerBookmarksIntegration
-
-beforeEach(() => {
-	for (const key of Object.keys(mockLibrary)) delete mockLibrary[key]
-	// Fresh per test: the import() interop caches the namespace it saw first.
-	jest.resetModules()
-	registerBookmarksIntegration = require('./bookmarks.js').registerBookmarksIntegration
-})
+const { bookmarksDescriptor, registerBookmarksIntegration } = require('./bookmarks.js')
 
 describe('registerBookmarksIntegration', () => {
-	it('registers the dedicated bookmarks tab and card', async () => {
-		mockLibrary.CnBookmarksTab = { name: 'Tab' }
-		mockLibrary.CnBookmarksCard = { name: 'Card' }
-		mockLibrary.CnIntegrationTab = { name: 'GenericTab' }
+	it('registers the dedicated bookmarks tab and card at once', () => {
 		const r = registry()
 		registerBookmarksIntegration(r)
-		await settle()
 		expect(r.has).toHaveBeenCalledWith('bookmarks')
 		expect(r.register).toHaveBeenCalledWith({
 			id: 'bookmarks',
@@ -55,40 +38,30 @@ describe('registerBookmarksIntegration', () => {
 			requiredApp: 'bookmarks',
 			storage: 'link-table',
 			referenceType: 'bookmarks',
-			tab: mockLibrary.CnBookmarksTab,
-			widget: mockLibrary.CnBookmarksCard,
+			tab: mockTab,
+			widget: mockCard,
 			defaultSize: { w: 4, h: 3 },
 		})
 	})
 
-	it('falls back to the generic integration tab and card', async () => {
-		mockLibrary.CnIntegrationTab = { name: 'GenericTab' }
-		mockLibrary.CnIntegrationCard = { name: 'GenericCard' }
-		const r = { register: jest.fn() }
-		registerBookmarksIntegration(r)
-		await settle()
-		expect(r.register.mock.calls[0][0]).toEqual(
-			expect.objectContaining({
-				tab: mockLibrary.CnIntegrationTab,
-				widget: mockLibrary.CnIntegrationCard,
-			}),
-		)
+	it('takes other components when given', () => {
+		const tab = { name: 'Tab' }
+		const widget = { name: 'Card' }
+		expect(bookmarksDescriptor({ tab, widget })).toEqual(expect.objectContaining({ tab, widget }))
 	})
 
-	it('registers nothing twice, or into something that is not a registry', async () => {
+	it('registers nothing twice, or into something that is not a registry', () => {
 		const r = registry(true)
 		registerBookmarksIntegration(r)
 		registerBookmarksIntegration(null)
 		registerBookmarksIntegration({ register: 'no' })
-		await settle()
 		expect(r.register).not.toHaveBeenCalled()
 	})
 
-	it('logs a registration that fails', async () => {
+	it('logs a registration that fails', () => {
 		const error = jest.spyOn(console, 'error').mockImplementation(() => {})
 		const r = { register: jest.fn(() => { throw new Error('full') }) }
 		registerBookmarksIntegration(r)
-		await settle()
 		expect(error).toHaveBeenCalledWith(
 			'[bookmarks] failed to register bookmarks integration',
 			expect.any(Error),

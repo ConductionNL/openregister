@@ -200,7 +200,8 @@ class ImageRedactionService {
 	 *
 	 * Nothing is written unless every region was burned. For a DOCX or ODT the
 	 * region's `page` is the 1-based position of the image among the document's
-	 * media parts, and only those parts are replaced.
+	 * media parts, and only those parts are replaced. For a PDF it is the 1-based
+	 * page, whose one image XObject is replaced by the burned raster.
 	 *
 	 * @param File              $file    The image.
 	 * @param list<ImageRegion> $regions The decided regions.
@@ -213,8 +214,8 @@ class ImageRedactionService {
 	 */
 	public function redactImage(File $file, array $regions): File {
 		$mimeType = (string)$file->getMimeType();
-		if (OfficeMediaBurner::handles(mimeType: $mimeType) === true) {
-			$burned = $this->burnOfficeMedia(bytes: (string)$file->getContent(), mimeType: $mimeType, regions: $regions, fileName: $file->getName());
+		if ($this->burnsEmbeddedImages(mimeType: $mimeType) === true) {
+			$burned = $this->burnEmbeddedImages(bytes: (string)$file->getContent(), mimeType: $mimeType, regions: $regions, fileName: $file->getName());
 			return $this->writeSibling(file: $file, bytes: $burned);
 		}
 
@@ -253,6 +254,50 @@ class ImageRedactionService {
 
 		return $media->burn(bytes: $bytes, mimeType: $mimeType, regions: $regions, fileName: $fileName);
 	}//end burnOfficeMedia()
+
+	/**
+	 * Whether a type is a document whose embedded images this seam burns: DOCX, ODT or PDF.
+	 *
+	 * @param string $mimeType The type.
+	 *
+	 * @return bool True when the images inside such a file are burned.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 */
+	public function burnsEmbeddedImages(string $mimeType): bool {
+		return OfficeMediaBurner::handles(mimeType: $mimeType) === true || $mimeType === ImageBurner::PDF_TYPE;
+	}//end burnsEmbeddedImages()
+
+	/**
+	 * Burn the regions into the images inside a document's bytes.
+	 *
+	 * The text path writes the `_anonymized` document first; this burns the
+	 * decided image regions into that output, so text and images come out of one
+	 * call. A DOCX or ODT goes through its media parts, a PDF through the image
+	 * XObject of each addressed page. Nothing is returned unless every region was burned.
+	 *
+	 * @param string            $bytes    The document, after its text was replaced.
+	 * @param string            $mimeType Its type (DOCX, ODT or PDF).
+	 * @param list<ImageRegion> $regions  The decided regions.
+	 * @param string            $fileName The source name, for the refusal.
+	 *
+	 * @throws ImageRegionNotBurnableException When the type has no images this seam burns, or a region cannot be burned.
+	 *
+	 * @return string The document with the affected images replaced.
+	 *
+	 * @spec openspec/changes/anonymisation-image-seam/specs/image-anonymisation/spec.md#requirement-every-redaction-path-reaches-the-seam-req-ais-004
+	 */
+	public function burnEmbeddedImages(string $bytes, string $mimeType, array $regions, string $fileName): string {
+		if ($mimeType === ImageBurner::PDF_TYPE) {
+			return $this->burner->burnPdfPages(bytes: $bytes, regions: $regions, fileName: $fileName);
+		}
+
+		if (OfficeMediaBurner::handles(mimeType: $mimeType) === false) {
+			throw new ImageRegionNotBurnableException(fileName: $fileName, reason: sprintf('%s files hold no images this seam burns.', $mimeType));
+		}
+
+		return $this->burnOfficeMedia(bytes: $bytes, mimeType: $mimeType, regions: $regions, fileName: $fileName);
+	}//end burnEmbeddedImages()
 
 	/**
 	 * Write the `_anonymized` sibling, overwriting an earlier one.

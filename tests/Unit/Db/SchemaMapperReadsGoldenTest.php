@@ -98,6 +98,12 @@ class SchemaMapperReadsGoldenTest extends TestCase {
 				[[], [self::ROW + ['former_slugs' => '["seven"]'], self::TWIN + ['former_slugs' => '["sevens"]']]],
 				static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 10)),
 			],
+			'former slug in ids hit' => [
+				[[self::TWIN + ['former_slugs' => '["sevens"]'], self::ROW + ['former_slugs' => '["old","seven"]']]],
+				static fn (SchemaMapper $mapper) => $mapper->findByFormerSlugInIds('seven', [7, 9]),
+			],
+			'former slug in ids miss' => [[[self::TWIN + ['former_slugs' => '["sevens"]']]], static fn (SchemaMapper $mapper) => $mapper->findByFormerSlugInIds('seven', [9])],
+			'former slug in ids empty set' => [[], static fn (SchemaMapper $mapper) => $mapper->findByFormerSlugInIds('seven', ['x', 0])],
 			'slug none, former slug miss' => [[[], []], static fn (SchemaMapper $mapper) => $mapper->findBySlug('seven', new ListQuery(limit: 10), _multitenancy: false)],
 			'all defaults' => [[[self::ROW, self::TWIN]], static fn (SchemaMapper $mapper) => $mapper->findAll()],
 			'all without tenancy' => [[[self::ROW]], static fn (SchemaMapper $mapper) => $mapper->findAll(_multitenancy: false)],

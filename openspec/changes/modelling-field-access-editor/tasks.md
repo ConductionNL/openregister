@@ -14,7 +14,8 @@
 ## 3. Consumers and docs
 
 - [ ] 3.1 buildiq issue to embed the component in its field editor (buildiq change, linked here).
-- [ ] 3.2 `docs/` section on field access with a salary example.
+- [x] 3.2 `docs/` section on field access with a salary example.
+  - `docs/features/organisation-roles.md` (Level 3: Property Authorization): "Example: a salary field" (read for `hr` and `payroll`, update for `payroll`, a table of what each reader sees, is told and may write, and why both actions must be declared) and "What the client is told" (`@self.readOnlyProperties`, the 403 body naming the properties).
 
 Acceptance:
 - A property without `authorization` renders, saves and reads exactly as before.

@@ -27,6 +27,8 @@ namespace OCA\OpenRegister\Files\Controller;
 use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Service\File\DocumentStoreMoveGuard;
+use OCA\OpenRegister\Service\File\DocumentStoreMoving;
 use OCA\OpenRegister\Service\File\FileBatchRequest;
 use OCA\OpenRegister\Files\Controller\Support\FileAccessCheck;
 use OCA\OpenRegister\Files\Controller\Support\FileActionRefusal;
@@ -35,6 +37,7 @@ use OCA\OpenRegister\Files\Controller\Support\FileObjectRoute;
 use OCA\OpenRegister\Files\Controller\Support\FileTransfer;
 use OCA\OpenRegister\Files\Controller\Support\FilesControllerServices;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Event\FileAddedEvent;
 use OCA\OpenRegister\Event\FileCopiedEvent;
 use OCA\OpenRegister\Event\FileLockedEvent;
 use OCA\OpenRegister\Event\FileMovedEvent;
@@ -61,6 +64,9 @@ use OCA\OpenRegister\Files\Service\Integration\ChatTranscriptRequest;
 use OCA\OpenRegister\Files\Service\Integration\TalkChatExporter;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Service\File\FileTarget;
+use OCA\OpenRegister\Service\File\PublishedDigestReader;
+use OCA\OpenRegister\Service\File\PublishedDownloadGuard;
+use OCA\OpenRegister\Service\File\PublishedFileChangedException;
 use OCA\OpenRegister\Service\File\FileUpload;
 use OCA\OpenRegister\Service\File\FetchedFile;
 use OCA\OpenRegister\Service\File\UrlFetchRefused;
@@ -69,8 +75,10 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -215,11 +223,32 @@ class FilesController extends Controller {
 	private readonly ?FileWriteGuardInterface $fileWriteGuard;
 
 	/**
+	 * Holds uploads off a register whose documents are being moved; null when absent.
+	 *
+	 * @var DocumentStoreMoveGuard|null
+	 */
+	private readonly ?DocumentStoreMoveGuard $moveGuard;
+
+	/**
 	 * The file restrictions.
 	 *
 	 * @var ?FileRestrictionGuard
 	 */
 	private readonly ?FileRestrictionGuard $fileRestrictions;
+
+	/**
+	 * The seal of a published file, for its verify endpoint.
+	 *
+	 * @var PublishedDigestReader|null
+	 */
+	private readonly ?PublishedDigestReader $publishedDigests;
+
+	/**
+	 * Checks a published file against its seal before a download serves it.
+	 *
+	 * @var PublishedDownloadGuard|null
+	 */
+	private readonly ?PublishedDownloadGuard $publishedDownloads;
 
 	/**
 	 * Fetches a file to create from a URL (files-create-from-url).
@@ -258,6 +287,9 @@ class FilesController extends Controller {
 		$this->attachNodeHandler = $services->editing->attachNodeHandler;
 		$this->fileWriteGuard = $services->guards->fileWriteGuard;
 		$this->fileRestrictions = $services->guards->fileRestrictions;
+		$this->moveGuard = $services->guards->moveGuard;
+		$this->publishedDigests = $services->guards->publishedDigests;
+		$this->publishedDownloads = $services->guards->publishedDownloads;
 
 		// Store dependencies for use in controller methods.
 		$this->fileService = $services->store->fileService;
@@ -713,6 +745,11 @@ class FilesController extends Controller {
 	 * @return JSONResponse|null The answer, or null for any other failure.
 	 */
 	private function refusalAnswer(Exception $e): ?JSONResponse {
+		if ($e instanceof DocumentStoreMoving) {
+			// REQ-RDS-004: the register's documents are moving; nothing was written.
+			return new JSONResponse(data: ['error' => DocumentStoreMoving::ERROR], statusCode: DocumentStoreMoving::STATUS);
+		}
+
 		if ($e instanceof FileActionRefusal) {
 			return new JSONResponse(data: ['error' => $this->translate(text: $e->getMessage())], statusCode: $e->getCode());
 		}
@@ -744,6 +781,26 @@ class FilesController extends Controller {
 	private function actionFailed(Exception $e, int $status = 400): JSONResponse {
 		return ($this->refusalAnswer(e: $e) ?? new JSONResponse(data: ['error' => $e->getMessage()], statusCode: $status));
 	}//end actionFailed()
+
+	/**
+	 * The routed object, refused while its register's documents are being moved.
+	 *
+	 * Every upload path takes its object here; a read takes routedObject() and
+	 * is never held off.
+	 *
+	 * @param string $id The object id from the route.
+	 *
+	 * @return ObjectEntity The object.
+	 *
+	 * @throws DocumentStoreMoving When the object's register is being moved.
+	 *
+	 * @spec openspec/changes/register-document-store/specs/file-actions/spec.md
+	 */
+	private function writableObject(string $id): ObjectEntity {
+		$object = $this->routedObject(id: $id);
+		$this->moveGuard?->assertNotMoving(registerId: $object->getRegister());
+		return $object;
+	}//end writableObject()
 
 	/**
 	 * Answer a failed action where a missing object answers 404, not its message.
@@ -1210,6 +1267,11 @@ class FilesController extends Controller {
 	/**
 	 * Add a new file to an object
 	 *
+	 * BUG-RATE-1 (#11359): without a user limit Nextcloud applies the anon limit of 30 a
+	 * minute to signed-in users, which refused an editor adding 91 documents in OpenCatalogi.
+	 * The user limit is unreachable on purpose, as decided in the #11359 review; RBAC and the
+	 * upload size bound signed-in users. Do not tighten it to the anon value.
+	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The ID of the object
@@ -1225,6 +1287,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: PHP_INT_MAX, period: 60)]
 	public function create(string $register, string $schema, string $id): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
@@ -1232,7 +1295,7 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before adding files.
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
-			return $this->addPostedFile(object: $this->routedObject(id: $id));
+			return $this->addPostedFile(object: $this->writableObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
 		}
@@ -1269,9 +1332,41 @@ class FilesController extends Controller {
 				tags: $tags
 			)
 		);
+		$this->dispatchFileAdded(object: $object, file: $file);
 
 		return new JSONResponse(data: $this->fileService->formatFile($file));
 	}//end addPostedFile()
+
+	/**
+	 * Tell listeners a file was added to the object, after it is stored.
+	 *
+	 * A listener that throws does not fail the add: the file is already in the
+	 * object's folder, so a listener handles and logs its own failures.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param File         $file   The added file.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-file-added-event/specs/file-actions/spec.md#requirement-adding-a-file-to-an-object-dispatches-an-event-req-ofae-001
+	 */
+	private function dispatchFileAdded(ObjectEntity $object, File $file): void {
+		$event = new FileAddedEvent(
+			objectUuid: (string)$object->getUuid(),
+			fileId: (int)$file->getId(),
+			data: [
+				'fileName' => $file->getName(),
+				'register' => $object->getRegister(),
+				'schema'   => $object->getSchema(),
+			]
+		);
+
+		try {
+			$this->eventDispatcher->dispatchTyped($event);
+		} catch (\Throwable) {
+			// This controller has no logger; a listener logs its own failure, and the add stands.
+		}
+	}//end dispatchFileAdded()
 
 	/**
 	 * Fetch the bytes at a URL and add them as a file, with where they came from.
@@ -1301,6 +1396,7 @@ class FilesController extends Controller {
 			upload: new FileUpload(fileName: $fileName, content: $fetched->stream(), share: $share, tags: $tags)
 		);
 		$this->urlFileSource->remember(fileId: (int)$file->getId(), fetched: $fetched);
+		$this->dispatchFileAdded(object: $object, file: $file);
 		$this->fileAuditHandler?->logFileAction(object: $object, fileId: (int)$file->getId(), action: 'file.fetched', data: $fetched->metadata());
 
 		return new JSONResponse(data: $this->withProvenance(formatted: $this->fileService->formatFile($file), fetched: $fetched));
@@ -1385,6 +1481,11 @@ class FilesController extends Controller {
 	 * whether to create a new file or update an existing one. Perfect for synchronization
 	 * scenarios where you want to "upsert" files.
 	 *
+	 * BUG-RATE-1 (#11359): without a user limit Nextcloud applies the anon limit of 30 a
+	 * minute to signed-in users, which refused an editor adding 91 documents in OpenCatalogi.
+	 * The user limit is unreachable on purpose, as decided in the #11359 review; RBAC and the
+	 * upload size bound signed-in users. Do not tighten it to the anon value.
+	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The ID of the object to save the file to
@@ -1402,6 +1503,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: PHP_INT_MAX, period: 60)]
 	public function save(string $register, string $schema, string $id): JSONResponse {
 		// Set the schema and register to the object service (forces a check if the are valid).
 		$this->setObjectContext(register: $register, schema: $schema);
@@ -1409,7 +1511,7 @@ class FilesController extends Controller {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before saving files.
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
-			return $this->savePostedFile(object: $this->routedObject(id: $id));
+			return $this->savePostedFile(object: $this->writableObject(id: $id));
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
 		}
@@ -1483,6 +1585,11 @@ class FilesController extends Controller {
 	 *  - 207 + {results, rejected, summary} — some stored, the refused ones named;
 	 *  - 400 + {error, rejected} — nothing could be stored.
 	 *
+	 * BUG-RATE-1 (#11359): without a user limit Nextcloud applies the anon limit of 30 a
+	 * minute to signed-in users, which refused an editor adding 91 documents in OpenCatalogi.
+	 * The user limit is unreachable on purpose, as decided in the #11359 review; RBAC and the
+	 * upload size bound signed-in users. Do not tighten it to the anon value.
+	 *
 	 * @param string $register The register slug or identifier
 	 * @param string $schema The schema slug or identifier
 	 * @param string $id The ID of the object to retrieve files for
@@ -1501,12 +1608,13 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 */
 	#[AnonRateLimit(limit: 30, period: 60)]
+	#[UserRateLimit(limit: PHP_INT_MAX, period: 60)]
 	public function createMultipart(string $register, string $schema, string $id): JSONResponse {
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before accepting uploads.
 			$this->ensureObjectAccess(check: new FileAccessCheck(route: new FileObjectRoute(register: $register, schema: $schema, id: $id)));
 			$this->setObjectContext(register: $register, schema: $schema);
-			return $this->storeUploads(object: $this->routedObject(id: $id));
+			return $this->storeUploads(object: $this->writableObject(id: $id));
 		} catch (Exception $e) {
 			return $this->actionFailed(e: $e);
 		}
@@ -1786,10 +1894,13 @@ class FilesController extends Controller {
 			throw new Exception('Failed to read uploaded file content for: ' . $fileName);
 		}
 
-		return $this->fileService->addFile(
+		$stored = $this->fileService->addFile(
 			target: new FileTarget(object: $object),
 			upload: new FileUpload(fileName: $fileName, content: $content, share: $file['share'], tags: $file['tags'])
 		);
+		$this->dispatchFileAdded(object: $object, file: $stored);
+
+		return $stored;
 	}//end storeUpload()
 
 	/**
@@ -1846,7 +1957,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: enforce object-level RBAC before mutating files.
 			$route = new FileObjectRoute(register: $register, schema: $schema, id: $id);
 			$this->ensureObjectAccess(check: (new FileAccessCheck(route: $route))->onFile(fileId: $fileId));
-			$this->routedFile(object: $this->routedObject(id: $id), fileId: $fileId);
+			$this->routedFile(object: $this->writableObject(id: $id), fileId: $fileId);
 			return $this->updateFromRequest(fileId: $fileId);
 		} catch (Exception $e) {
 			return $this->objectActionFailed(e: $e);
@@ -1935,7 +2046,7 @@ class FilesController extends Controller {
 	 *
 	 * @phpstan-return JSONResponse|\OCP\AppFramework\Http\StreamResponse
 	 *
-	 * @psalm-return JSONResponse<404|500, array{error: string},
+	 * @psalm-return JSONResponse<403|404|409|500, array{error: string},
 	 *     array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200,
 	 *     array<never, never>>
 	 *
@@ -1954,6 +2065,11 @@ class FilesController extends Controller {
 
 		try {
 			return $this->streamById(fileId: $fileId);
+		} catch (PublishedFileChangedException $e) {
+			return new JSONResponse(
+				data: ['error' => $this->translate(text: 'This file changed after it was published and is not served')],
+				statusCode: 409
+			);
 		} catch (FileActionRefusal | NotFoundException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
 		} catch (Exception $e) {
@@ -1963,15 +2079,84 @@ class FilesController extends Controller {
 	}//end downloadById()
 
 	/**
+	 * Whether a published file's bytes still match the digest sealed when it was published (REQ-PFD-002).
+	 *
+	 * Answers `{recorded, current, verdict: identical|changed, auditRow: {uuid, hash, previousHash}}`
+	 * to anyone who may read the file, by the same checks as a download by id:
+	 * an anonymous caller only for a published file, a signed-in caller by the
+	 * object's read rule and the file's restriction. A file that is not
+	 * published has no seal to verify and answers 404.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return JSONResponse The verdict, or the refusal.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	#[PublicPage]
+	#[AnonRateLimit(limit: 30, period: 60)]
+	public function verifyDigest(int $fileId): JSONResponse {
+		if ($this->callerMayFetch(fileId: $fileId) === false) {
+			return new JSONResponse(
+				data: ['error' => $this->translate(text: 'File not available for anonymous access')],
+				statusCode: 403
+			);
+		}
+
+		try {
+			return $this->digestVerdict(fileId: $fileId);
+		} catch (FileActionRefusal | NotFoundException $e) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
+		} catch (Exception $e) {
+			return $this->errorResponse(e: $e);
+		}
+	}//end verifyDigest()
+
+	/**
+	 * The verdict for a file the caller may read, or 404 when it is not published.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return JSONResponse The verdict.
+	 *
+	 * @throws FileActionRefusal When there is no such file for this caller.
+	 * @throws Exception When the file cannot be read.
+	 */
+	private function digestVerdict(int $fileId): JSONResponse {
+		$file = $this->fileService->getFileById($fileId);
+		if ($file === null) {
+			throw new FileActionRefusal(message: 'File not found', code: 404);
+		}
+
+		$this->downloadableFileObject(file: $file);
+
+		$answer = $this->publishedDigests?->verify(file: $file);
+		if ($answer === null) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'This file is not published')], statusCode: 404);
+		}
+
+		return new JSONResponse(data: $answer);
+	}//end digestVerdict()
+
+	/**
 	 * Stream a file by id, once its object rule and restriction allow the caller.
 	 *
 	 * @param int $fileId The file id.
 	 *
 	 * @return \OCP\AppFramework\Http\StreamResponse The stream.
 	 *
+	 * A published file is checked against its seal first (REQ-PFD-002): when
+	 * it matches, the response carries `Repr-Digest`; when it does not, it is
+	 * not served.
+	 *
 	 * @throws FileActionRefusal When there is no such file for this caller.
+	 * @throws PublishedFileChangedException When a published file no longer matches its seal.
 	 * @throws NotFoundException When the storage no longer holds the file.
 	 * @throws Exception When the file service fails.
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
 	 */
 	private function streamById(int $fileId): \OCP\AppFramework\Http\StreamResponse {
 		$file = $this->fileService->getFileById($fileId);
@@ -1979,10 +2164,18 @@ class FilesController extends Controller {
 			throw new FileActionRefusal(message: 'File not found', code: 404);
 		}
 
-		// Record download (counter + audit). Best-effort.
-		$this->recordDownloadEvent(file: $file, object: $this->downloadableFileObject(file: $file));
+		$object = $this->downloadableFileObject(file: $file);
+		$reprDigest = $this->publishedDownloads?->reprDigestFor(file: $file, object: $object);
 
-		return $this->fileService->streamFile($file);
+		// Record download (counter + audit). Best-effort.
+		$this->recordDownloadEvent(file: $file, object: $object);
+
+		$response = $this->fileService->streamFile($file);
+		if ($reprDigest !== null) {
+			$response->addHeader('Repr-Digest', $reprDigest);
+		}
+
+		return $response;
 	}//end streamById()
 
 	/**

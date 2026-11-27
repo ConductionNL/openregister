@@ -242,6 +242,16 @@ export default {
 
 	computed: {
 		/**
+		 * Whether this dialog is the open modal.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
+		isOpen() {
+			return navigationStore.modal === this.modalName
+		},
+
+		/**
 		 * @spec exclude UI state helper — enables the publish button when repo/branch/path are set.
 		 */
 		canPublish() {
@@ -277,6 +287,21 @@ export default {
 
 	watch: {
 		/**
+		 * Load what the dialog shows when it opens.
+		 *
+		 * @param {boolean} open Whether the dialog is open
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
+		isOpen: {
+			immediate: true,
+			handler(open) {
+				if (open) {
+					this.onOpen()
+				}
+			},
+		},
+
+		/**
 		 * @param {string|object|null} newValue The selected repository
 		 * @spec exclude UI watcher — reloads branches when the selected repository changes.
 		 */
@@ -296,22 +321,29 @@ export default {
 		},
 	},
 
-	/**
-	 * @spec exclude Vue lifecycle hook — loads repositories and sets the default commit message and path.
-	 */
-	async mounted() {
-		await this.loadRepositories()
-
-		if (this.entity) {
-			this.commitMessage = `${this.copy.commitPrefix}${this.entity.title}`
-			if (!this.filePath && this.defaultFilePath) {
-				this.filePath = this.defaultFilePath
-			}
-		}
-	},
-
 	methods: {
 		t,
+
+		/**
+		 * Load the repositories and set the default commit message and path.
+		 *
+		 * Runs when the dialog opens, not when the component mounts: the
+		 * component mounts with the page (its `v-if` sits inside it), and two
+		 * of them (register and configuration publishing) sit on every page,
+		 * so loading on mount asked the GitHub proxy twice on every page load.
+		 *
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
+		async onOpen() {
+			await this.loadRepositories()
+
+			if (this.entity) {
+				this.commitMessage = `${this.copy.commitPrefix}${this.entity.title}`
+				if (!this.filePath && this.defaultFilePath) {
+					this.filePath = this.defaultFilePath
+				}
+			}
+		},
 
 		/**
 		 * @spec openspec/specs/entity-management-modals/spec.md

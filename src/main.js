@@ -303,6 +303,17 @@ routes.push({
 	props: true,
 })
 
+// Workflow progress: /flows/:id/progress (tasks-progress-report). How a
+// flow's work is going per step, from GET /api/flows/{id}/progress, linked
+// from the flow sidebar. A route here, not a manifest page, for the same
+// gate-69 reason as the overview above.
+routes.push({
+	name: 'flow-progress',
+	path: '/flows/:id/progress',
+	component: () => import('./views/flows/FlowProgress.vue'),
+	props: true,
+})
+
 const router = createRouter({
 	history: createWebHistory(routerBase()),
 	routes,

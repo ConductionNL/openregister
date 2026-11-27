@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Contract\RegisterSchemaSlugs;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Formats\UuidFormat;
+use OCA\OpenRegister\Kernel\Contracts\AdministratorCheck;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMigration;
 use OCA\OpenRegister\Service\Object\PermissionCheckOptions;
 use OCA\OpenRegister\Service\Rbac\MaskedWrite;
@@ -69,6 +70,7 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
+use OCA\OpenRegister\Service\Search\SearchSnippetAttacher;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\DraftCaller;
@@ -2287,6 +2289,12 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
     {
         $value = ($config['filters'][$key] ?? null);
         if (is_array($value) === true || empty($value) === true) {
+            // Consuming apps scope a findAll() under `@self` (pipelinq's POS
+            // line lookups); without this read it ran unscoped and matched nothing.
+            $value = ($config['filters']['@self'][$key] ?? null);
+        }
+
+        if (is_array($value) === true || empty($value) === true) {
             return null;
         }
 
@@ -3436,6 +3444,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the row is a draft kept from the caller.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
      */
     private function refuseSomebodyElsesDraft(ObjectEntity $stored): void
     {
@@ -3444,7 +3453,7 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
             subject: new DraftSubject(object: $stored, schema: $this->currentSchema),
             caller: new DraftCaller(
                 userId: $user?->getUID(),
-                isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+                isAdmin: AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user)
             )
         );
         if ($kept === true) {
@@ -4905,12 +4914,13 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * @return DraftCaller Their user id, and whether they are an administrator.
      *
      * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
      */
     private function draftCaller(?IUser $user): DraftCaller
     {
         return new DraftCaller(
             userId: $user?->getUID(),
-            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+            isAdmin: AdministratorCheck::isAdministrator(groupManager: $this->groupManager, user: $user)
         );
     }//end draftCaller()
 
@@ -5222,14 +5232,16 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      * callers (the controller layer, OpenCatalogi, softwarecatalog) get a
      * one-method-call upgrade path.
      *
-     * Multi-tenancy honours the same `_multitenancy` flag every other
-     * lookup uses — when true (default), slug resolution and the
-     * downstream object search are both scoped to the caller's
-     * organisation. A slug that exists in another organisation but not
-     * the caller's MUST throw `DoesNotExistException` (the mappers do
-     * this via the standard organisation filter).
+     * Multi-tenancy: the objects are scoped by the same `_multitenancy`
+     * flag every other lookup uses. The register slug is looked up in the
+     * caller's organisation first, and only when that organisation has no
+     * register with the slug, across organisations: an app's register is
+     * configuration stamped with the organisation that imported it (the
+     * Default Organisation on a fresh install), and slugs are unique per
+     * organisation, so the caller's own register always wins over an older
+     * foreign one with the same slug.
      *
-     * @param RegisterSchemaSlugs $target        The register and schema slugs (both must exist in caller's org).
+     * @param RegisterSchemaSlugs $target        The register and schema slugs.
      * @param array               $filters       Additional filters merged into the @self block.
      *                                           Direct keys like 'status' are merged at the top
      *                                           level.
@@ -5242,9 +5254,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return \OCA\OpenRegister\Db\ObjectEntity[]|int Same shape as searchObjects.
      *
-     * @throws OcpDoesNotExistException If either slug fails to resolve in the caller's
-     *                                  organisation. The exception message identifies
-     *                                  which slug (register vs schema) failed.
+     * @throws OcpDoesNotExistException If either slug fails to resolve. The exception
+     *                                  message identifies which slug (register vs
+     *                                  schema) failed.
      * @throws \OCP\DB\Exception        If a database error occurs.
      *
      * @psalm-return int<0, max>|list<\OCA\OpenRegister\Db\ObjectEntity>
@@ -5281,17 +5293,47 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
      *
      * @return Register The register.
      *
-     * @throws OcpDoesNotExistException When the slug is missing or belongs to a foreign organisation.
+     * @throws OcpDoesNotExistException When the slug is missing.
      *
      * @spec openspec/specs/zoeken-filteren/spec.md
      */
     private function registerForSlugSearch(string $slug, AccessFlags $access): Register
     {
-        // Resolve register slug → numeric ID via the existing mapper find()
-        // which already accepts slug strings and applies the standard
-        // organisation filter. Throws DoesNotExistException if the slug is
-        // missing or belongs to a foreign organisation — same contract as
-        // every other lookup in OR.
+        // The caller's own register first: slugs are unique per organisation,
+        // and find() takes the oldest row, so an unscoped lookup alone could
+        // resolve an older foreign register with the same slug.
+        $register = $this->findRegisterBySlug(slug: $slug, access: $access);
+        if ($register !== null || $access->multitenancy === false) {
+            return $register ?? throw new OcpDoesNotExistException(
+                'searchObjectsBySlug: register slug not found: '.$slug
+            );
+        }
+
+        // Then across organisations. The register is configuration, not
+        // tenant data: an app's register is stamped with the organisation
+        // that was active when it was imported (the Default Organisation on
+        // a fresh install), so a scoped lookup alone refused every slug search
+        // by a user of any other organisation, while the same search by
+        // numeric ID went through. The objects stay scoped: the caller's
+        // multitenancy flag still reaches searchObjects().
+        return $this->findRegisterBySlug(
+            slug: $slug,
+            access: new AccessFlags(rbac: $access->rbac, multitenancy: false)
+        ) ?? throw new OcpDoesNotExistException('searchObjectsBySlug: register slug not found: '.$slug);
+    }//end registerForSlugSearch()
+
+    /**
+     * Find a register by slug under the given access flags, or null.
+     *
+     * @param string      $slug   The register slug.
+     * @param AccessFlags $access Whether RBAC and multitenancy apply.
+     *
+     * @return Register|null The register, or null when none matches.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     */
+    private function findRegisterBySlug(string $slug, AccessFlags $access): ?Register
+    {
         try {
             return $this->registerMapper->find(
                 id: $slug,
@@ -5299,11 +5341,9 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
                 _multitenancy: $access->multitenancy
             );
         } catch (OcpDoesNotExistException $e) {
-            throw new OcpDoesNotExistException(
-                'searchObjectsBySlug: register slug not found in caller organisation: '.$slug
-            );
+            return null;
         }
-    }//end registerForSlugSearch()
+    }//end findRegisterBySlug()
 
     /**
      * Find the schema of a slug search inside its register.
@@ -5598,6 +5638,11 @@ class ObjectService implements ObjectOperationsInterface, ObjectServiceInterface
         $result['@self']['deleted'] = $options->deleted;
 
         $result = $this->extendSearchResult(result: $result, query: $query);
+        // `_snippet=true` adds `@self.snippet` to each row (search-dutch-language-quality
+        // REQ-SDL-002); without it the result is returned untouched.
+        if (SearchSnippetAttacher::asked(query: $query) === true) {
+            $result = (new SearchSnippetAttacher(schemas: $this->schemaMapper))->attach(result: $result, query: $query);
+        }
 
         (new SearchTrailRecorder(
             searchQueryHandler: $this->searchQueryHandler,

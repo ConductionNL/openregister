@@ -18,7 +18,7 @@
 						:menuName="t('openregister', 'Actions')">
 						<template #icon>
 							<LockOutline
-								v-if="objectStore.objectItem.locked"
+								v-if="lockInfo"
 								:size="20" />
 							<DotsHorizontal v-else :size="20" />
 						</template>
@@ -31,7 +31,7 @@
 							Edit
 						</NcActionButton>
 						<NcActionButton
-							v-if="!objectStore.objectItem.locked"
+							v-if="!lockInfo"
 							closeAfterClick
 							@click="navigationStore.setModal('lockObject')">
 							<template #icon>
@@ -40,10 +40,10 @@
 							Lock
 						</NcActionButton>
 						<NcActionButton
-							v-if="objectStore.objectItem.locked"
+							v-if="lockInfo"
 							closeAfterClick
 							@click="
-								objectStore.unlockObject(objectStore.objectItem.id)
+								unlockRecord()
 							">
 							<template #icon>
 								<LockOpenOutline :size="20" />
@@ -68,6 +68,24 @@
 							Open Folder
 						</NcActionButton>
 						<NcActionButton
+							v-if="canTranslateObject"
+							closeAfterClick
+							@click="openTranslate">
+							<template #icon>
+								<Translate :size="20" />
+							</template>
+							{{ t('openregister', 'Translate') }}
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							data-testid="object-export-pdf"
+							@click="exportPdf">
+							<template #icon>
+								<FilePdfBox :size="20" />
+							</template>
+							{{ t('openregister', 'Export {name}', { name: 'PDF' }) }}
+						</NcActionButton>
+						<NcActionButton
 							v-if="followToggle"
 							closeAfterClick
 							@click="markUnread">
@@ -80,22 +98,22 @@
 				</div>
 
 				<NcNoteCard
-					v-if="objectStore.objectItem.locked"
+					v-if="lockInfo"
 					type="warning"
 					:showClose="false">
 					<template #icon>
 						<LockOutline :size="20" />
 					</template>
-					This object is locked by {{ objectStore.objectItem.locked.user }}
+					This object is locked by {{ lockInfo.user }}
 					{{
-						objectStore.objectItem.locked.process
-							? `for process "${objectStore.objectItem.locked.process}"`
+						lockInfo.process
+							? `for process "${lockInfo.process}"`
 							: ''
 					}}
 					until
 					{{
 						new Date(
-							objectStore.objectItem.locked.expiration,
+							lockInfo.expiration,
 						).toLocaleString()
 					}}
 				</NcNoteCard>
@@ -612,6 +630,20 @@
 								No audit trails found
 							</div>
 						</AppTab>
+						<!--
+							Drafts (records-draft-versions 5.1, 5.2): named drafts of
+							this object beside the published version. Edit, compare,
+							preview, promote and discard; a promotion replaces the
+							published object shown here.
+						-->
+						<AppTab v-if="relationContext" :title="t('openregister', 'Drafts')">
+							<DraftsTab
+								:register="relationContext.register"
+								:schema="relationContext.schema"
+								:objectId="relationContext.id"
+								:published="objectStore.objectItem"
+								@promoted="objectStore.setObjectItem($event)" />
+						</AppTab>
 					</AppTabs>
 				</div>
 			</div>
@@ -629,6 +661,7 @@ import {
 	CnTasksTab,
 	useIntegrationRegistry,
 } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { showError } from '@nextcloud/dialogs'
 import { translate as t } from '@nextcloud/l10n'
@@ -648,14 +681,17 @@ import EmailMarkAsUnread from 'vue-material-design-icons/EmailMarkAsUnread.vue'
 import ExclamationThick from 'vue-material-design-icons/ExclamationThick.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FileOutline from 'vue-material-design-icons/FileOutline.vue'
+import FilePdfBox from 'vue-material-design-icons/FilePdfBox.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionOutline.vue'
+import Translate from 'vue-material-design-icons/Translate.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import ObjectAccessLinks from '../../components/access-links/ObjectAccessLinks.vue'
+import DraftsTab from '../../components/object-drafts/DraftsTab.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
@@ -668,6 +704,7 @@ import ObjectRelationItem from './ObjectRelationItem.vue'
 import * as nextcloudFiles from '../../composables/nextcloudFiles.js'
 import { navigationStore, objectStore, schemaStore } from '../../store/store.js'
 import { flowRunsOf } from './objectFlowRuns.js'
+import { canTranslate, registerLanguages, translatableProperties, withTranslations } from './objectTranslation.js'
 import {
 	fetchRecordCan,
 	followProps,
@@ -677,6 +714,7 @@ import {
 	sendReadState,
 	unreadBadges,
 } from './recordFollow.js'
+import { downloadRecordPdf } from './recordPdf.js'
 
 /**
  * Register the live target's object type with the store, once.
@@ -767,6 +805,7 @@ export default {
 		DotsHorizontal,
 		EmailMarkAsUnread,
 		Pencil,
+		Translate,
 		TrashCanOutline,
 		TimelineQuestionOutline,
 		Eye,
@@ -774,6 +813,7 @@ export default {
 		LockOpenOutline,
 		FolderOutline,
 		FileOutline,
+		FilePdfBox,
 		ExclamationThick,
 		OpenInNew,
 		EmailsTab,
@@ -782,6 +822,7 @@ export default {
 		DeckTab,
 		RelationsTab,
 		ReferencedByTab,
+		DraftsTab,
 		CnIntegrationWidget,
 		CnObjectAccessTab,
 		CnObjectMetadataWidget,
@@ -838,10 +879,40 @@ export default {
 			followContext: { id: null, notifies: null, can: null },
 			// Open flow tasks on this record, for the Tasks tab badge; null until known.
 			openTaskCount: null,
+			// The register's languages and the schema's translatable properties, for the Translate action.
+			translation: { key: '', languages: [], translatable: [] },
 		}
 	},
 
 	computed: {
+		/**
+		 * The register and schema the Translate action is judged on, as one key.
+		 *
+		 * @return {string} `<register>-<schema>`, or '' without a record.
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 */
+		translationKey() {
+			const ctx = this.relationContext
+			return ctx ? `${ctx.register}-${ctx.schema}` : ''
+		},
+
+		/**
+		 * Whether the Translate action is shown: an administrator, on a schema
+		 * with a translatable property in a register with more than one language.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 */
+		canTranslateObject() {
+			return this.translation.key !== ''
+				&& this.translation.key === this.translationKey
+				&& canTranslate({
+					isAdmin: getCurrentUser()?.isAdmin === true,
+					languages: this.translation.languages,
+					translatable: this.translation.translatable,
+				})
+		},
+
 		/**
 		 * The flow runs that changed this object, from its loaded audit rows.
 		 *
@@ -875,6 +946,21 @@ export default {
 		 */
 		unreadBadges() {
 			return unreadBadges(objectStore?.objectItem)
+		},
+
+		/**
+		 * The lock on the open record, or null when it is not locked.
+		 *
+		 * The object API answers the lock in the record's `@self` block; the
+		 * bare `locked` key is read too for an item handed in flattened.
+		 *
+		 * @return {object|null} `{ user, process, expiration, ... }`, or null
+		 * @spec openspec/changes/capability-rows-closing-round/tasks.md
+		 */
+		lockInfo() {
+			const item = objectStore?.objectItem
+			const lock = item?.['@self']?.locked ?? item?.locked ?? null
+			return lock !== null && typeof lock === 'object' && !Array.isArray(lock) ? lock : null
 		},
 
 		/**
@@ -950,6 +1036,21 @@ export default {
 	},
 
 	watch: {
+		translationKey: {
+			/**
+			 * Read the register's languages and the schema's properties when the
+			 * record changes register or schema.
+			 *
+			 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+			 * @return {void}
+			 */
+			handler() {
+				this.loadTranslationFacts()
+			},
+
+			immediate: true,
+		},
+
 		'pagination.files.currentPage': {
 			/**
 			 * Reload files when the files page changes.
@@ -1037,6 +1138,98 @@ export default {
 
 	methods: {
 		/**
+		 * Release the lock on the open record, and show it released.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/capability-rows-closing-round/tasks.md
+		 */
+		async unlockRecord() {
+			const ctx = this.relationContext
+			if (ctx === null) {
+				return
+			}
+
+			await axios.post(generateUrl(`/apps/openregister/api/objects/${encodeURIComponent(ctx.register)}/${encodeURIComponent(ctx.schema)}/${encodeURIComponent(ctx.id)}/unlock`))
+			const item = objectStore.objectItem
+			objectStore.setObjectItem({ ...item, locked: null, '@self': { ...(item['@self'] || {}), locked: null } })
+		},
+
+		/**
+		 * Read what the Translate action needs, for administrators only: the
+		 * register's languages and the schema's translatable properties. A
+		 * failed read leaves the action hidden.
+		 *
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async loadTranslationFacts() {
+			const key = this.translationKey
+			const ctx = this.relationContext
+			this.translation = { key: '', languages: [], translatable: [] }
+			if (!ctx || getCurrentUser()?.isAdmin !== true) {
+				return
+			}
+			try {
+				const [register, schema] = await Promise.all([
+					axios.get(generateUrl(`/apps/openregister/api/registers/${encodeURIComponent(ctx.register)}`)),
+					axios.get(generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(ctx.schema)}`)),
+				])
+				if (this.translationKey === key) {
+					this.translation = {
+						key,
+						languages: registerLanguages(register.data),
+						translatable: translatableProperties(schema.data),
+					}
+				}
+			} catch {
+				// The action stays hidden; the page works without it.
+				this.translation = { key: '', languages: [], translatable: [] }
+			}
+		},
+
+		/**
+		 * Open the Translate dialog for this record.
+		 *
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 * @return {void}
+		 */
+		openTranslate() {
+			const target = this.liveTarget()
+			if (!target) {
+				return
+			}
+			navigationStore.setTransferData({
+				uuid: target.uuid,
+				languages: this.translation.languages,
+				onTranslated: (result) => this.saveTranslations(result),
+			})
+			navigationStore.setDialog('bulkTranslate')
+		},
+
+		/**
+		 * Save the translated values on the record, as the bulk-translate
+		 * contract asks the caller to, and show the saved record.
+		 *
+		 * @param {object} result The bulk-translate answer.
+		 * @spec openspec/changes/ai-translation-with-a-glossary/tasks.md
+		 * @return {Promise<void>}
+		 */
+		async saveTranslations(result) {
+			const target = this.liveTarget()
+			const updated = withTranslations(objectStore.objectItem, result)
+			if (!target || !updated) {
+				return
+			}
+			registerLiveType(target)
+			const saved = await objectStore.saveObject(target.type, updated)
+			if (saved) {
+				objectStore.setObjectItem(saved)
+				return
+			}
+			showError(t('openregister', 'The translations could not be saved on the object.'))
+		},
+
+		/**
 		 * Mark the shown record read once its data has rendered, once per
 		 * record (design D-3). A page without a record (a failed load) sends
 		 * nothing.
@@ -1053,6 +1246,25 @@ export default {
 			this.readMarkedFor = address.id
 			await this.$nextTick()
 			await sendReadState(address, 'PUT')
+		},
+
+		/**
+		 * "Export PDF": download the record's readable fields as a PDF in the
+		 * house style; a refusal is shown, not downloaded.
+		 *
+		 * @spec openspec/changes/export-pdf-house-style/specs/export-pdf-format/spec.md#requirement-a-single-record-exports-as-a-pdf
+		 * @return {Promise<void>}
+		 */
+		async exportPdf() {
+			const address = recordAddress(objectStore?.objectItem)
+			if (address === null) {
+				return
+			}
+
+			const result = await downloadRecordPdf(address)
+			if (result.ok === false) {
+				showError(t('openregister', 'Export failed: {error}', { error: result.message }))
+			}
 		},
 
 		/**

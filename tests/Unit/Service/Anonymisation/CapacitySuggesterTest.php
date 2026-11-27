@@ -23,13 +23,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Anonymisation;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\CapacitySuggester;
 use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Anonymisation\CapacitySuggester
- * @covers \OCA\OpenRegister\Service\Anonymisation\CapacityPolicy
+ * @covers \OCA\OpenRegister\Kernel\Contracts\CapacityPolicy
  */
 class CapacitySuggesterTest extends TestCase {
 

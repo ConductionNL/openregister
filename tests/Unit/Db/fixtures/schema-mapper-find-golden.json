@@ -46,7 +46,8 @@
         "cacheKeys": [
             "7:1",
             "uuid-seven:1",
-            "seven-slug:1"
+            "seven-slug:1",
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -80,7 +81,8 @@
         "cacheKeys": [
             "7:1",
             "uuid-seven:1",
-            "seven-slug:1"
+            "seven-slug:1",
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -156,7 +158,8 @@
         "cacheKeys": [
             "7:1",
             "uuid-seven:1",
-            "seven-slug:1"
+            "seven-slug:1",
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",
@@ -190,7 +193,8 @@
         "cacheKeys": [
             "7:1",
             "uuid-seven:1",
-            "seven-slug:1"
+            "seven-slug:1",
+            "7:0"
         ],
         "queries": [
             "#1 select(*)",

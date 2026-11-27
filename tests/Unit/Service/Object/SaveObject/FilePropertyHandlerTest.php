@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use OCA\OpenRegister\Service\File\UrlFileFetcher;
 
 /**
  * Stream wrapper standing in for `http://` so the URL-fetch path can be tested
@@ -171,7 +172,8 @@ class FilePropertyHandlerTest extends TestCase {
 
 		$this->handler = new FilePropertyHandler(
 			$this->logger,
-			$this->fileService
+			$this->fileService,
+			urlFetcher: new UrlFileFetcher(opener: new WrapperStreamOpener())
 		);
 	}
 
@@ -2618,6 +2620,47 @@ class FilePropertyHandlerTest extends TestCase {
 		$schema->method('getProperties')->willReturn([]);
 
 		$this->assertFalse($this->handler->isFileInSchema($schema, 'document'));
+	}
+
+	/**
+	 * The property path fetches through the shared fetcher, not strict and without a size
+	 * ceiling, and reports any refusal other than the address guard as before
+	 * (files-create-from-url 1.1: no behaviour change on that path).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/files-create-from-url/specs/file-actions/spec.md
+	 */
+	public function testTheFetchGoesThroughTheSharedFetcher(): void {
+		$fetcher = $this->createMock(UrlFileFetcher::class);
+		$fetcher->expects($this->exactly(2))
+			->method('fetch')
+			->with('http://93.184.216.34/a.pdf', PHP_INT_MAX, false)
+			->willReturnOnConsecutiveCalls(
+				'%PDF-1.4 bytes',
+				$this->throwException(new \OCA\OpenRegister\Service\File\UrlFetchRefused(reason: 'status', message: 'The URL answered with status 404.'))
+			);
+		$handler = new FilePropertyHandler($this->logger, $this->fileService, urlFetcher: $fetcher);
+		$method = new ReflectionMethod($handler, 'fetchFileFromUrl');
+
+		$this->assertSame('%PDF-1.4 bytes', $method->invoke($handler, 'http://93.184.216.34/a.pdf'));
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('Unable to fetch file from URL: http://93.184.216.34/a.pdf');
+		$method->invoke($handler, 'http://93.184.216.34/a.pdf');
+	}
+
+	/**
+	 * Without an injected shared fetch the handler still runs the SEC-SVC-2 guard first.
+	 *
+	 * @return void
+	 */
+	public function testWithoutASharedFetcherALoopbackAddressIsStillRefused(): void {
+		$handler = new FilePropertyHandler($this->logger, $this->fileService);
+		$method  = new ReflectionMethod($handler, 'fetchFileFromUrl');
+
+		$this->expectException(InvalidArgumentException::class);
+		$method->invoke($handler, 'http://127.0.0.1/a.pdf');
 	}
 
 	/**

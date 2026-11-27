@@ -34,11 +34,13 @@ final class ProvenanceOptions {
 	 * @param array<string, mixed>      $blocks   Keys: object, schema, register, roleDefinitions.
 	 * @param array<string, array|null> $denials  The denial per action, where there is one.
 	 * @param bool                      $enforced Whether a denial changes an answer yet.
+	 * @param array<int, string>        $heldSlots The party roles the caller occupies on the object, for a grant to a slot.
 	 */
 	public function __construct(
 		public readonly array $blocks = [],
 		public readonly array $denials = [],
 		public readonly bool $enforced = true,
+		public readonly array $heldSlots = [],
 	) {
 	}//end __construct()
 }//end class

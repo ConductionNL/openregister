@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
+use DateTime;
 use DateTimeInterface;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -37,6 +38,15 @@ use OCP\IDBConnection;
 class FlowRunStepMapper extends QBMapper implements FlowRunStepMapperInterface {
 
 	use SelectByColumnTrait;
+	use StoredMomentTrait;
+
+	/**
+	 * The table that holds flow runs, read to bound a step aggregate to a window.
+	 *
+	 * @var string
+	 */
+	private const RUNS_TABLE = 'openregister_flow_runs';
+
 	/**
 	 * Constructor.
 	 *
@@ -161,4 +171,144 @@ class FlowRunStepMapper extends QBMapper implements FlowRunStepMapperInterface {
 
 		return (int)$qb->executeStatement();
 	}//end deleteOlderThan()
+
+	/**
+	 * Per node of one flow: executions, failures and the average duration of
+	 * the successful ones, over the runs the window counts.
+	 *
+	 * One grouped query on (flow_id, ...) with the window's runs as a subquery,
+	 * whatever the number of runs.
+	 *
+	 * @param string   $flowId       The flow.
+	 * @param string   $organisation Count only this organisation's runs.
+	 * @param DateTime $from         Runs created from this moment.
+	 * @param DateTime $to           Runs created up to this moment.
+	 *
+	 * @return array<string, array{executions: int, failed: int, averageMs: float|null}> Keyed by node id.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-flow-reports-its-progress-per-step
+	 */
+	public function aggregatesByNode(string $flowId, string $organisation, DateTime $from, DateTime $to): array {
+
+		$qb = $this->db->getQueryBuilder();
+		$status = $this->quoted(identifier: 'status');
+		$failed = $qb->createNamedParameter(FlowRunStep::STATUS_FAILED);
+		$succeeded = $qb->createNamedParameter(FlowRunStep::STATUS_OK);
+		$failures = sprintf('SUM(CASE WHEN %s = %s THEN 1 ELSE 0 END)', $status, $failed);
+		$average = sprintf('AVG(CASE WHEN %s = %s THEN %s END)', $status, $succeeded, $this->quoted(identifier: 'duration_ms'));
+		$qb->select('node_id')
+			->selectAlias($qb->func()->count('id'), 'executions')
+			->selectAlias($qb->createFunction($failures), 'failed')
+			->selectAlias($qb->createFunction($average), 'average_ms')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)))
+			->andWhere(
+				$qb->expr()->in(
+					'run_uuid',
+					$qb->createFunction($this->windowRunsSql(qb: $qb, scope: [$flowId, $organisation], between: [$from, $to], status: null))
+				)
+			)
+			->groupBy('node_id');
+
+		$aggregates = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			$average = null;
+			if (($row['average_ms'] ?? null) !== null) {
+				$average = (float)$row['average_ms'];
+			}
+
+			$aggregates[(string)$row['node_id']] = [
+				'executions' => (int)$row['executions'],
+				'failed' => (int)($row['failed'] ?? 0),
+				'averageMs' => $average,
+			];
+		}
+
+		$result->closeCursor();
+
+		return $aggregates;
+	}//end aggregatesByNode()
+
+	/**
+	 * The last moment a step of each completed run of the window finished.
+	 *
+	 * A run whose steps retention already pruned is absent, so the caller
+	 * counts it as duration unknown rather than averaging it as zero.
+	 *
+	 * @param string   $flowId       The flow.
+	 * @param string   $organisation Count only this organisation's runs.
+	 * @param DateTime $from         Runs created from this moment.
+	 * @param DateTime $to           Runs created up to this moment.
+	 *
+	 * @return array<string, DateTime> Last finish keyed by run uuid.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-flow-reports-its-progress-per-step
+	 */
+	public function lastFinishedByRun(string $flowId, string $organisation, DateTime $from, DateTime $to): array {
+
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('run_uuid')
+			->selectAlias($qb->func()->max('finished'), 'last_finished')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)))
+			->andWhere(
+				$qb->expr()->in(
+					'run_uuid',
+					$qb->createFunction(
+						$this->windowRunsSql(qb: $qb, scope: [$flowId, $organisation], between: [$from, $to], status: FlowRun::STATUS_COMPLETED)
+					)
+				)
+			)
+			->groupBy('run_uuid');
+
+		$finished = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			$moment = $this->storedMoment(value: $row['last_finished'] ?? null);
+			if ($moment !== null) {
+				$finished[(string)$row['run_uuid']] = $moment;
+			}
+		}
+
+		$result->closeCursor();
+
+		return $finished;
+	}//end lastFinishedByRun()
+
+	/**
+	 * The uuids of the window's runs, as subquery SQL bound on the outer query.
+	 *
+	 * @param IQueryBuilder                   $qb      The outer query, which carries the parameters.
+	 * @param array{0: string, 1: string}     $scope   The flow and the organisation.
+	 * @param array{0: DateTime, 1: DateTime} $between The window's first and last moment.
+	 * @param string|null                     $status  Only runs in this status, or null for every run.
+	 *
+	 * @return string The subquery.
+	 */
+	private function windowRunsSql(IQueryBuilder $qb, array $scope, array $between, ?string $status): string {
+		$runs = $this->db->getQueryBuilder();
+		$runs->select('progressrun.uuid')
+			->from(self::RUNS_TABLE, 'progressrun')
+			->where($runs->expr()->eq('progressrun.flow_id', $qb->createNamedParameter($scope[0])))
+			->andWhere($runs->expr()->eq('progressrun.organisation', $qb->createNamedParameter($scope[1])))
+			->andWhere($runs->expr()->gte('progressrun.created', $qb->createNamedParameter($between[0], IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($runs->expr()->lte('progressrun.created', $qb->createNamedParameter($between[1], IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		if ($status !== null) {
+			$runs->andWhere($runs->expr()->eq('progressrun.status', $qb->createNamedParameter($status)));
+		}
+
+		return $runs->getSQL();
+	}//end windowRunsSql()
+
+	/**
+	 * A column name quoted for the connected platform, for use inside a raw function.
+	 *
+	 * @param string $identifier The column.
+	 *
+	 * @return string The quoted column.
+	 */
+	private function quoted(string $identifier): string {
+		return $this->db->getDatabasePlatform()->quoteIdentifier($identifier);
+	}//end quoted()
 }//end class

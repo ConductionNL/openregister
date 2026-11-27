@@ -63,6 +63,14 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	public const CONTRACT_VERSION = 1;
 
 	/**
+	 * The files-only scope; the same value as Search\SearchScopes::FILES (restated:
+	 * Capabilities is Platform and may not name the Search component, ADR-013).
+	 *
+	 * @var string
+	 */
+	private const FILES_SCOPE = 'files';
+
+	/**
 	 * The unified search provider the scopes are for.
 	 *
 	 * @var string
@@ -75,6 +83,13 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	 * @var string
 	 */
 	public const FILTER = 'scopes';
+
+	/**
+	 * The provider filter one provider identity travels in.
+	 *
+	 * @var string
+	 */
+	public const PROVIDER_FILTER = 'provider';
 
 	/**
 	 * Constructor.
@@ -100,23 +115,52 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	 * @inheritDoc
 	 *
 	 * @return array{openregister: array{search: array{
-	 *     contractVersion: int, provider: string, filter: string, scopes: array<int, array<string, string>>
+	 *     contractVersion: int, provider: string, filter: string, scopes: array<int, array<string, string>>,
+	 *     providerFilter: string, providers: array<int, array{id: string, name: string, order: int}>
 	 * }}}
 	 *
 	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
+	 * @spec openspec/changes/platform-search-provider/specs/unified-search-provider/spec.md#requirement-a-claiming-app-has-its-own-search-provider-identity-req-psp-001
 	 */
 	public function getCapabilities(): array {
+		$readable = $this->readableRows();
+
 		return [
 			'openregister' => [
 				'search' => [
 					'contractVersion' => self::CONTRACT_VERSION,
 					'provider' => self::PROVIDER_ID,
 					'filter' => self::FILTER,
-					'scopes' => $this->availableScopes(),
+					'scopes' => $this->availableScopes(rows: $readable),
+					'providerFilter' => self::PROVIDER_FILTER,
+					// The identities owning a schema the reader may read, for the
+					// same reason an app scope is offered only then.
+					'providers' => $this->scopes->providers(rows: $readable),
 				],
 			],
 		];
 	}//end getCapabilities()
+
+	/**
+	 * The described schemas the current user may read; nobody signed in reads none.
+	 *
+	 * @return array<int, array<string, mixed>> The readable rows of the scope catalog.
+	 */
+	private function readableRows(): array {
+		$userId = $this->userSession->getUser()?->getUID();
+		if ($userId === null) {
+			return [];
+		}
+
+		$readable = [];
+		foreach ($this->scopes->describe() as $row) {
+			if ($this->mayRead(row: $row, userId: $userId) === true) {
+				$readable[] = $row;
+			}
+		}
+
+		return $readable;
+	}//end readableRows()
 
 	/**
 	 * The scopes of the schemas the current user may read: apps, then registers, then schemas.
@@ -125,20 +169,13 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 	 * slug used in two registers is one `schema:` scope, because the provider
 	 * reads it as one.
 	 *
+	 * @param array<int, array<string, mixed>> $rows The readable rows.
+	 *
 	 * @return array<int, array<string, string>> The scopes, each with its `id`, `type`, `value` and `label`.
 	 */
-	private function availableScopes(): array {
-		$userId = $this->userSession->getUser()?->getUID();
-		if ($userId === null) {
-			return [];
-		}
-
+	private function availableScopes(array $rows): array {
 		$found = ['app' => [], 'register' => [], 'schema' => []];
-		foreach ($this->scopes->describe() as $row) {
-			if ($this->mayRead(row: $row, userId: $userId) === false) {
-				continue;
-			}
-
+		foreach ($rows as $row) {
 			foreach ($row['apps'] as $app) {
 				$found['app'][$app] = ($found['app'][$app] ?? self::scope(type: 'app', value: $app, label: $app));
 			}
@@ -154,11 +191,18 @@ class SearchScopesCapability implements ICapability, IInitialStateExcludedCapabi
 			}
 		}//end foreach
 
-		return array_merge(
+		$offered = array_merge(
 			self::sorted(scopes: $found['app']),
 			self::sorted(scopes: $found['register']),
 			self::sorted(scopes: $found['schema'])
 		);
+
+		// `files` keeps only file hits, so it is offered once there is something readable to keep them from.
+		if ($offered !== []) {
+			$offered[] = ['id' => self::FILES_SCOPE, 'type' => self::FILES_SCOPE, 'value' => self::FILES_SCOPE, 'label' => self::FILES_SCOPE];
+		}
+
+		return $offered;
 	}//end availableScopes()
 
 	/**

@@ -44,6 +44,10 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
+use OCA\OpenRegister\Exception\GrantExceedsGranterException;
+use OCA\OpenRegister\Service\Authorization\AddedGrants;
+use OCA\OpenRegister\Service\Authorization\GrantCeiling;
+use OCA\OpenRegister\Service\Authorization\GrantedRight;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Kernel\Contracts\Core\AppImportJobOwnersInterface;
@@ -662,8 +666,110 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 			return new JSONResponse(data: ['error' => 'User does not have permission to manage this register'], statusCode: 403);
 		}
 
+		$refusal = $this->grantCeilingRefusal(existing: $existingRegister, document: $update->data);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		return $this->updateResponse(update: $update, existing: $existingRegister);
 	}//end update()
+
+	/**
+	 * Refuse a register authorization edit that gives an action the editor does not hold.
+	 *
+	 * A register's block decides every schema of the register that writes no
+	 * block of its own, so an action the edit adds is judged against each of
+	 * those schemas: the editor must hold it on all of them. Only what the edit
+	 * adds is judged, so a manager can still save a register whose block
+	 * already names rights they lack. With no schema to judge against, the
+	 * grant cannot be shown to be within the editor's rights and is refused.
+	 * Nothing is stored on refusal.
+	 *
+	 * @param Register             $existing The register as stored.
+	 * @param array<string, mixed> $document The incoming register.
+	 *
+	 * @return JSONResponse|null A 403 naming every excess right, or null when the write may go on.
+	 *
+	 * @spec openspec/changes/rights-administration-hardening/specs/rbac-scopes/spec.md#requirement-nobody-grants-a-right-they-do-not-hold-req-rah-002
+	 */
+	private function grantCeilingRefusal(Register $existing, array $document): ?JSONResponse {
+		if (array_key_exists('authorization', $document) === false) {
+			return null;
+		}
+
+		$actions = (new AddedGrants())->between(old: $existing->getAuthorization(), new: $document['authorization']);
+		if ($actions === [] || $this->isCurrentUserAdmin() === true) {
+			return null;
+		}
+
+		try {
+			$this->assertWithinCeiling(actions: $actions, schemas: $this->schemasDecidedBy(register: $existing), register: $existing);
+		} catch (GrantExceedsGranterException $refusal) {
+			return new JSONResponse(data: $refusal->body(), statusCode: 403);
+		}
+
+		return null;
+	}//end grantCeilingRefusal()
+
+	/**
+	 * Throw unless the editor holds every added action on every schema the register decides.
+	 *
+	 * @param array<int, string> $actions  The added actions.
+	 * @param array<int, Schema> $schemas  The schemas the register's block decides.
+	 * @param Register           $register The register, named in a refusal.
+	 *
+	 * @return void
+	 *
+	 * @throws GrantExceedsGranterException When an action is beyond the editor's rights.
+	 */
+	private function assertWithinCeiling(array $actions, array $schemas, Register $register): void {
+		$granter = $this->userSession->getUser();
+		$ceiling = $this->container->get(GrantCeiling::class);
+		if ($granter === null || $schemas === [] || $ceiling instanceof GrantCeiling === false) {
+			// Nobody to hold the rights, nothing to hold them on, or no check to ask: refused, never stored on a guess.
+			throw new GrantExceedsGranterException(
+				excess: array_map(
+					static fn (string $action): array => ['register' => $register->getSlug(), 'schema' => null, 'action' => $action],
+					$actions
+				)
+			);
+		}
+
+		$grants = [];
+		foreach ($schemas as $schema) {
+			foreach ($actions as $action) {
+				$grants[] = new GrantedRight(schema: $schema, action: $action);
+			}
+		}
+
+		$ceiling->assertWithin(granter: $granter, grants: $grants);
+	}//end assertWithinCeiling()
+
+	/**
+	 * The schemas of a register that write no block of their own, so the register's block decides them.
+	 *
+	 * Read without RBAC or tenancy: a schema the editor cannot see is still one
+	 * the grant would reach, and leaving it out would let the grant through
+	 * unjudged there.
+	 *
+	 * @param Register $register The register.
+	 *
+	 * @return array<int, Schema> The schemas.
+	 */
+	private function schemasDecidedBy(Register $register): array {
+		$ids = array_values(array_filter(($register->getSchemas() ?? []), static fn (mixed $id): bool => is_int($id) === true || is_string($id) === true));
+		if ($ids === []) {
+			return [];
+		}
+
+		return array_values(
+			array_filter(
+				$this->schemaMapper->findMultiple(ids: $ids, _rbac: false, _multitenancy: false),
+				static fn (mixed $schema): bool => $schema instanceof Schema
+					&& (is_array($schema->getAuthorization()) === false || $schema->getAuthorization() === [])
+			)
+		);
+	}//end schemasDecidedBy()
 
 	/**
 	 * Save an update the caller may make and answer with the result.

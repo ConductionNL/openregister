@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCA\OpenRegister\Service\Credential\CredentialStore;
+use OCA\OpenRegister\Service\Credential\DeclaredProviderResolver;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogueInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
 
@@ -40,6 +41,7 @@ final class CredentialVault {
 	 * @param CredentialStore         $credentialStore Secret store leaf (vault).
 	 * @param ProviderCatalogueInterface $catalogue       Read-only provider catalogue (validation).
 	 * @param CredentialBrokerService $broker          The guarded outbound broker.
+	 * @param DeclaredProviderResolver|null $declared  Admission of app-declared providers; null admits none.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
@@ -48,6 +50,7 @@ final class CredentialVault {
 		public readonly CredentialStore $credentialStore,
 		public readonly ProviderCatalogueInterface $catalogue,
 		public readonly CredentialBrokerService $broker,
+		public readonly ?DeclaredProviderResolver $declared = null,
 	) {
 	}//end __construct()
 }//end class

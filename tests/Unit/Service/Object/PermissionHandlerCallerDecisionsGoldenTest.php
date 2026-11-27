@@ -123,6 +123,7 @@ class PermissionHandlerCallerDecisionsGoldenTest extends TestCase {
 		$manager = $this->createStub(IUserManager::class);
 		$manager->method('get')->willReturnCallback(static fn (string $uid): ?IUser => ($users[$uid] ?? null));
 		$groups = $this->createStub(IGroupManager::class);
+		$groups->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => in_array('admin', (self::GROUPS[$uid] ?? []), true));
 		$groups->method('getUserGroupIds')->willReturnCallback(static fn (IUser $user): array => self::GROUPS[$user->getUID()]);
 
 		$matcher = $this->createStub(ConditionMatcher::class);

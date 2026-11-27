@@ -92,4 +92,66 @@ final class RequestIdentityMapTest extends TestCase {
 		$this->assertSame([], $map->keys());
 		$this->assertNull($map->get(7, true));
 	}//end testClearDropsEverything()
+
+	public function testAFullListIsHandedOutAsCopiesInOrder(): void {
+		$map = new RequestIdentityMap();
+		$seven = self::schema(7, 'u7', 'seven');
+		$eight = self::schema(8, 'u8', 'eight');
+
+		$map->rememberAll(false, [7 => $seven, 8 => $eight]);
+		$first = $map->all(false);
+		$first[0]->setSlug('changed');
+		$second = $map->all(false);
+
+		$this->assertSame([7, 8], array_map(static fn ($schema) => $schema->getId(), $second));
+		$this->assertSame('seven', $second[0]->getSlug());
+		$this->assertNotSame($seven, $second[0]);
+		$this->assertNotSame($first[0], $second[0]);
+		$seven->setSlug('changed after');
+		$this->assertSame('seven', $map->all(false)[0]->getSlug());
+	}//end testAFullListIsHandedOutAsCopiesInOrder()
+
+	public function testAFullListIsKeptPerOrganisationScope(): void {
+		$map = new RequestIdentityMap();
+		$map->rememberAll(true, [self::schema(7, null, 'seven')]);
+
+		$this->assertNull($map->all(false));
+		$this->assertCount(1, $map->all(true));
+		$map->rememberAll(false, []);
+		$this->assertSame([], $map->all(false));
+	}//end testAFullListIsKeptPerOrganisationScope()
+
+	public function testForgettingAnyEntityDropsTheFullLists(): void {
+		$map = new RequestIdentityMap();
+		$map->remember(self::schema(8, null, null), true, [8]);
+		$map->rememberAll(true, [self::schema(7, null, null)]);
+
+		$map->forget(99);
+
+		$this->assertNull($map->all(true));
+		$this->assertNotNull($map->get(8, true));
+	}//end testForgettingAnyEntityDropsTheFullLists()
+
+	public function testForgetAllKeepsTheEntriesFoundByIdentifier(): void {
+		$map = new RequestIdentityMap();
+		$seven = self::schema(7, null, null);
+		$map->remember($seven, true, [7]);
+		$map->rememberAll(true, [$seven]);
+		$map->rememberAll(false, [$seven]);
+
+		$map->forgetAll();
+
+		$this->assertNull($map->all(true));
+		$this->assertNull($map->all(false));
+		$this->assertSame($seven, $map->get(7, true));
+	}//end testForgetAllKeepsTheEntriesFoundByIdentifier()
+
+	public function testClearDropsTheFullListsToo(): void {
+		$map = new RequestIdentityMap();
+		$map->rememberAll(true, [self::schema(7, null, null)]);
+
+		$map->clear();
+
+		$this->assertNull($map->all(true));
+	}//end testClearDropsTheFullListsToo()
 }//end class

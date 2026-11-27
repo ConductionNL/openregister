@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\Schema\ObjectSourceDeclaration;
 use OCA\OpenRegister\Db\Schema\PresentationAnnotations;
 use OCA\OpenRegister\Db\Schema\FacetBlockStamp;
 use OCA\OpenRegister\Db\Schema\PropertyFacetBlock;
+use OCA\OpenRegister\Exception\ObjectSourceQueryRefusedException;
 use OCP\IURLGenerator;
 use stdClass;
 use OCA\OpenRegister\Db\Schema\SchemaFieldTypes;
@@ -79,7 +80,7 @@ use OCA\OpenRegister\Db\Schema\TopLevelAnnotationFold;
  * @method void setProperties(?array $properties)
  * @method array|null getArchive()
  * @method void setArchive(?array $archive)
- * @method array|null getFacets()
+ * @method array<string, mixed>|null getFacets()
  * @method void setFacets(?array $facets)
  * @method string|null getSource()
  * @method void setSource(?string $source)
@@ -807,10 +808,12 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *
 	 * Exactly the set OperatorEvaluator and MagicRbacHandler both evaluate; a
 	 * schema naming any other `$` operator in a match is refused at save.
+	 * `$memberOf` is resolved by ConditionMatcher into a `$in` over the caller's
+	 * membership set before either evaluates it (access-follows-membership).
 	 *
 	 * @var string[]
 	 */
-	public const MATCH_OPERATORS = ['$eq', '$ne', '$in', '$nin', '$contains', '$exists', '$gt', '$gte', '$lt', '$lte'];
+	public const MATCH_OPERATORS = ['$eq', '$ne', '$in', '$nin', '$contains', '$exists', '$gt', '$gte', '$lt', '$lte', '$memberOf'];
 
 	/**
 	 * The list-surface annotation: declared columns and search fields.
@@ -864,6 +867,20 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 * @var string
 	 */
 	public const CONFIDENTIALITY_ANNOTATION = 'x-openregister-confidentiality';
+
+	/**
+	 * The break-glass annotation: whether emergency self-granted access is offered, and on what terms.
+	 *
+	 * @var string
+	 */
+	public const BREAK_GLASS_ANNOTATION = 'x-openregister-break-glass';
+
+	/**
+	 * The second-factor annotation: reading this schema's objects requires a verified second factor (REQ-IHC-003).
+	 *
+	 * @var string
+	 */
+	public const SECOND_FACTOR_ANNOTATION = 'x-openregister-second-factor';
 
 	/**
 	 * The property keys whose falsy value is a real one.
@@ -1158,8 +1175,10 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 */
 	public function hydrate(array $object, ?PropertyValidatorHandlerInterface $validator = null): static {
 		$object = $this->withExactKeysOnly(
-			object: $this->foldTopLevelExportable(
-				object: $this->foldTopLevelAnnotations(object: self::withHydrateDefaults(object: $object))
+			object: $this->foldTopLevelVocabularies(
+				object: $this->foldTopLevelExportable(
+					object: $this->foldTopLevelAnnotations(object: self::withHydrateDefaults(object: $object))
+				)
 			)
 		);
 
@@ -1257,13 +1276,21 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	/**
 	 * Set the configuration through its validation; invalid input becomes null.
 	 *
+	 * A refused object-source query is re-thrown instead: the whole save fails
+	 * and the stored configuration stays, rather than the schema silently
+	 * losing its object source.
+	 *
 	 * @param mixed $value The configuration, or its JSON text.
+	 *
+	 * @throws ObjectSourceQueryRefusedException When the object source's query is not a single read.
 	 *
 	 * @return void
 	 */
 	private function hydrateConfiguration(mixed $value): void {
 		try {
 			$this->setConfiguration(configuration: self::decodedConfiguration(value: $value));
+		} catch (ObjectSourceQueryRefusedException $refusal) {
+			throw $refusal;
 		} catch (\Exception $exception) {
 			$this->configuration = null;
 			$this->markFieldUpdated(attribute: 'configuration');
@@ -1672,6 +1699,25 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end getObjectSource()
 
 	/**
+	 * The schema's preview URL template, when it declares one.
+	 *
+	 * Validated when the configuration is set ({@see Schema\PreviewUrlTemplate}),
+	 * so a value read here uses only the known placeholders.
+	 *
+	 * @return string|null The template, or null.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function getPreviewUrl(): ?string {
+		$template = ($this->getConfiguration()[Schema\PreviewUrlTemplate::KEY] ?? null);
+		if (is_string($template) === false || $template === '') {
+			return null;
+		}
+
+		return $template;
+	}//end getPreviewUrl()
+
+	/**
 	 * Get the lens declarations from the schema configuration.
 	 *
 	 * A lens is a property that shows a referenced record's own field, live: it
@@ -1779,6 +1825,7 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	 *   toggle on the attachment upload dialog. true seeds the toggle on; absent
 	 *   or false keeps it off. Users can always override per upload.
 	 *   See: ConductionNL/opencatalogi#577
+	 * - 'mailObjectName': (string) What one item is called in the Mail panel's sentences
 	 * - 'mailObjectTemplate': (array) Field map used by the Mail-sidebar
 	 *   "create from email" action. Keys are schema property names, string
 	 *   values may contain {{subject}}/{{sender}}/{{senderName}}/{{date}}/
@@ -1940,6 +1987,48 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 
 		return $object;
 	}//end foldTopLevelExportable()
+
+	/**
+	 * Fold a top-level `linkRoles` and `partyKinds` into the configuration.
+	 *
+	 * Both are read from `configuration` only, and the entity has no field for
+	 * either, so a schema body declaring them at the top level, as
+	 * docs/Features/parties.md shows, saved with neither and in silence: every
+	 * role was then accepted and no kind was declared. They are folded the way
+	 * `exportable` is; an explicit `configuration` entry wins. The configuration
+	 * validator then checks them as if they had been written there.
+	 *
+	 * @param array<string, mixed> $object The hydrate input.
+	 *
+	 * @return array<string, mixed> The input with the vocabularies in its configuration.
+	 *
+	 * @spec openspec/specs/party-model/spec.md
+	 */
+	private function foldTopLevelVocabularies(array $object): array {
+		$present = array_values(array_filter(['linkRoles', 'partyKinds'], static fn (string $key): bool => array_key_exists($key, $object) === true));
+		if ($present === []) {
+			return $object;
+		}
+
+		$config = ($object['configuration'] ?? $this->configuration ?? []);
+		if (is_string($config) === true) {
+			$config = json_decode($config, true);
+		}
+
+		foreach ($present as $key) {
+			$value = $object[$key];
+			unset($object[$key]);
+			if (is_array($config) === true && array_key_exists($key, $config) === false) {
+				$config[$key] = $value;
+			}
+		}
+
+		if (is_array($config) === true) {
+			$object['configuration'] = $config;
+		}
+
+		return $object;
+	}//end foldTopLevelVocabularies()
 
 	/**
 	 * Dropped `x-openregister-*` annotation keys collected during the most

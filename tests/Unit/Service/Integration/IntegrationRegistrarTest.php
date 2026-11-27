@@ -93,6 +93,7 @@ class IntegrationRegistrarTest extends TestCase {
 				'OCA\OpenRegister\Service\Schema\SchemaMigrationService',
 				'OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider',
 				'OCA\OpenRegister\Contract\EmailLinkReaderInterface',
+				'OCA\OpenRegister\Contract\ReplyThreadResolutionInterface',
 				'OCA\OpenRegister\Service\Credential\CredentialStore',
 				'OCA\OpenRegister\Service\Sync\SourceFetcherRegistry',
 				'OCA\OpenRegister\Controller\IntegrationsController',
@@ -103,6 +104,14 @@ class IntegrationRegistrarTest extends TestCase {
 		$this->assertSame(
 			expected: [
 				['event' => 'OCA\OpenRegister\Event\ObjectWriteRequestEvent', 'listener' => 'OCA\OpenRegister\Listener\WebhookRequestInterceptionListener'],
+				['event' => 'OCP\User\Events\BeforeUserDeletedEvent', 'listener' => 'OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener'],
+				['event' => 'OCP\User\Events\UserChangedEvent', 'listener' => 'OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectCreatedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectUpdatedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectMovedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectRestoredEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectChangedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectDeletedEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectDeletedListener'],
+				['event' => 'OCP\Calendar\Events\CalendarObjectMovedToTrashEvent', 'listener' => 'OCA\OpenRegister\Listener\CalendarObjectDeletedListener'],
 			],
 			actual: $context->listeners
 		);
@@ -138,7 +147,7 @@ class IntegrationRegistrarTest extends TestCase {
 	}//end testEveryFactoryBuildsItsService()
 
 	/**
-	 * boot() adds every built-in provider in order and logs and skips one that fails to resolve.
+	 * boot() installs a loader that adds every built-in provider in order and logs and skips one that fails to resolve.
 	 *
 	 * @return void
 	 */
@@ -170,8 +179,17 @@ class IntegrationRegistrarTest extends TestCase {
 
 		$registry->expects($this->exactly(26))->method('addProvider')->with($provider);
 		$logger->expects($this->once())->method('warning');
+		$loader = null;
+		$registry->method('setBuiltinLoader')->willReturnCallback(
+			static function (callable $installed) use (&$loader): void {
+				$loader = $installed;
+			}
+		);
 
 		IntegrationRegistrar::boot(server: $server);
+		$this->assertSame(expected: [], actual: $asked, message: 'boot() resolves no provider.');
+		$this->assertIsCallable(actual: $loader);
+		$loader();
 
 		$this->assertCount(expectedCount: 27, haystack: $asked);
 		$this->assertSame(expected: 'OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider', actual: $asked[0]);
@@ -239,6 +257,12 @@ class IntegrationRegistrarTest extends TestCase {
 				[\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry::class, $registry],
 				[\OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider::class, $provider],
 			]
+		);
+		// The provider is added by the loader bootObjectSources() installs, on the registry's first read.
+		$registry->expects($this->once())->method('addLoader')->willReturnCallback(
+			static function (callable $loader) use ($registry): void {
+				$loader($registry);
+			}
 		);
 
 		IntegrationRegistrar::bootObjectSources(server: $server);

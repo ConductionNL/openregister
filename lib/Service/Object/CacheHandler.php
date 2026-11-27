@@ -281,6 +281,29 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	}//end openDistributedCaches()
 
 	/**
+	 * Count lookups of one cache for the metrics endpoint; counting never fails a lookup.
+	 *
+	 * @param string $cache The cache (`object`, `name`).
+	 * @param bool   $hit   Whether the lookups were answered from the cache.
+	 * @param int    $count The number of lookups; nothing is counted below 1.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/production-observability/specs/production-observability/spec.md#requirement-performance-baseline-metrics
+	 */
+	private function countLookups(string $cache, bool $hit, int $count=1): void {
+		if ($count < 1 || $this->runtime->metrics === null) {
+			return;
+		}
+
+		try {
+			$this->runtime->metrics->recordCacheLookup(cache: $cache, hit: $hit, count: $count);
+		} catch (\Throwable $e) {
+			return;
+		}
+	}//end countLookups()
+
+	/**
 	 * Get the MagicMapper lazily to break circular dependency.
 	 *
 	 * @return MagicMapperInterface The unified object mapper.
@@ -327,11 +350,13 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		// Check cache first.
 		if (($this->objectCache[$key] ?? null) !== null) {
 			$this->stats['hits']++;
+			$this->countLookups(cache: 'object', hit: true);
 			return $this->objectCache[$key];
 		}
 
 		// Cache miss - load from database (RBAC + multitenancy enforced by find()).
 		$this->stats['misses']++;
+		$this->countLookups(cache: 'object', hit: false);
 
 		try {
 			$object = $this->getObjectMapper()->find($identifier);
@@ -856,9 +881,12 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 * first and only the ones not found there in every table. A reference
 	 * nearly always points into its own register, and one lookup across every
 	 * magic table is a UNION over all of them (1.7k tables: 1.5-3.6 s).
+	 * With schemas, the identifiers are looked up in those schemas' tables
+	 * before that: one table per schema instead of one per schema in the register.
 	 *
 	 * @param array $identifiers Array of object IDs/UUIDs to preload
 	 * @param int|null $registerId The register to look in first, or null for every table.
+	 * @param list<int>|null $schemaIds The schemas the objects belong to, looked in before the register; null when unknown.
 	 *
 	 * @return ObjectEntity[]
 	 *
@@ -872,7 +900,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	public function preloadObjects(array $identifiers, ?int $registerId = null): array {
+	public function preloadObjects(array $identifiers, ?int $registerId = null, ?array $schemaIds = null): array {
 		if (empty($identifiers) === true) {
 			return [];
 		}
@@ -886,7 +914,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 			return array_filter(array_map(fn ($id) => $this->cachedObject(identifier: $id), $identifiers), fn ($obj) => $obj !== null);
 		}
 
-		return $this->bulkLoadObjects(identifiers: array_values($identifiersToLoad), registerId: $registerId);
+		return $this->bulkLoadObjects(identifiers: array_values($identifiersToLoad), registerId: $registerId, schemaIds: $schemaIds);
 	}//end preloadObjects()
 
 	/**
@@ -907,14 +935,15 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	 *
 	 * @param array<int|string> $identifiers The identifiers to load.
 	 * @param int|null          $registerId  The register to look in first.
+	 * @param list<int>|null    $schemaIds   The schemas to look in before the register.
 	 *
 	 * @return ObjectEntity[] The objects found.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function bulkLoadObjects(array $identifiers, ?int $registerId): array {
+	private function bulkLoadObjects(array $identifiers, ?int $registerId, ?array $schemaIds = null): array {
 		try {
-			$objects = $this->findForPreload(identifiers: $identifiers, registerId: $registerId);
+			$objects = $this->findForPreload(identifiers: $identifiers, registerId: $registerId, schemaIds: $schemaIds);
 			array_walk($objects, fn (ObjectEntity $object) => $this->cacheObject(object: $object));
 			$this->stats['preloads'] += count($objects);
 			return $objects;
@@ -928,38 +957,65 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	}//end bulkLoadObjects()
 
 	/**
-	 * Load objects by identifier, from one register's tables first when given.
+	 * Load objects by identifier: from the given schemas' tables first, then one register's tables, then every table.
 	 *
 	 * @param array<int|string> $identifiers The identifiers to load.
-	 * @param int|null $registerId The register to look in first.
+	 * @param int|null          $registerId  The register to look in first.
+	 * @param list<int>|null    $schemaIds   The schemas to look in before the register.
 	 *
 	 * @return ObjectEntity[] The objects found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function findForPreload(array $identifiers, ?int $registerId): array {
+	private function findForPreload(array $identifiers, ?int $registerId, ?array $schemaIds = null): array {
 		$mapper = $this->getObjectMapper();
+		if ($schemaIds !== null && $schemaIds !== []) {
+			$objects = $mapper->findMultipleAcrossAllMagicTables(uuids: $identifiers, schemaIdScope: $schemaIds);
+			$missing = self::notFound(identifiers: $identifiers, objects: $objects);
+			if ($missing === []) {
+				return $objects;
+			}
+
+			return array_merge($objects, $this->findForPreload(identifiers: $missing, registerId: $registerId));
+		}
+
 		if ($registerId === null) {
 			return $mapper->findMultiple($identifiers);
 		}
 
 		$objects = $mapper->findMultipleAcrossAllMagicTables(uuids: $identifiers, registerIdScope: $registerId);
-		$found = [];
-		foreach ($objects as $object) {
-			$found[(string)$object->getUuid()] = true;
-			$found[(string)$object->getId()] = true;
-		}
-
-		$missing = array_values(
-			array_filter(
-				$identifiers,
-				fn ($id) => isset($found[(string)$id]) === false
-			)
-		);
+		$missing = self::notFound(identifiers: $identifiers, objects: $objects);
 		if ($missing === []) {
 			return $objects;
 		}
 
 		return array_merge($objects, $mapper->findMultiple($missing));
 	}//end findForPreload()
+
+	/**
+	 * The identifiers that none of the objects answers to, by UUID or id.
+	 *
+	 * @param array<int|string> $identifiers The identifiers looked up.
+	 * @param ObjectEntity[]    $objects     The objects found.
+	 *
+	 * @return array<int|string> The identifiers not found.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private static function notFound(array $identifiers, array $objects): array {
+		$found = [];
+		foreach ($objects as $object) {
+			$found[(string)$object->getUuid()] = true;
+			$found[(string)$object->getId()] = true;
+		}
+
+		return array_values(
+			array_filter(
+				$identifiers,
+				fn ($id) => isset($found[(string)$id]) === false
+			)
+		);
+	}//end notFound()
 
 	/**
 	 * Cache an object with memory management
@@ -1647,6 +1703,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		}
 
 		$this->stats['name_misses']++;
+		$this->countLookups(cache: 'name', hit: false);
 
 		return $this->loadSingleName(identifier: $identifier);
 	}//end getSingleObjectName()
@@ -1698,6 +1755,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 	private function cachedSingleName(string $key): ?array {
 		if (($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {
 			$this->stats['name_hits']++;
+			$this->countLookups(cache: 'name', hit: true);
 			return ['name' => ($this->visibleNames(candidates: [$key => $this->nameCache[$key]])[$key] ?? null)];
 		}
 
@@ -1726,6 +1784,7 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 
 			$this->rememberName(key: $key, entry: new CachedName(name: $envelope['n'], organisation: $envelope['o'], source: $envelope['s']));
 			$this->stats['name_hits']++;
+			$this->countLookups(cache: 'name', hit: true);
 			return ['name' => ($this->visibleNames(candidates: [$key => $envelope['n']])[$key] ?? null)];
 		} catch (\Exception $e) {
 			$this->runtime->logger->warning(
@@ -1879,6 +1938,8 @@ class CacheHandler implements CacheHandlerInterface, ObjectNameCacheInterface {
 		// database can establish it.
 		$run = $this->collectCachedNames(identifiers: $identifiers);
 		$this->collectDistributedNames(run: $run);
+		$this->countLookups(cache: 'name', hit: true, count: (count($identifiers) - count($run->missing)));
+		$this->countLookups(cache: 'name', hit: false, count: count($run->missing));
 
 		if (empty($run->missing) === false) {
 			$this->loadNamesFromDatabase(run: $run);

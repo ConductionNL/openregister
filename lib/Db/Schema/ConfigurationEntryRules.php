@@ -31,6 +31,8 @@ use OCA\OpenRegister\Db\Schema;
 final class ConfigurationEntryRules {
 	// `objectSlugField` was missing here, so every save and import dropped it
 	// and object slugs could not be switched on outside the database (#4037).
+	// `mailObjectName` is what one item is called in the Mail panel's sentences
+	// ("New work queue item from this mail"), when the schema title names the collection.
 	// `workingCalendar` is read by RecordTypeCalendars (working-calendar-admin
 	// REQ-WCA-005): the calendar slug the schema's terms and week numbers follow.
 	// Off this list it was dropped on save, so no record type could name one.
@@ -40,6 +42,7 @@ final class ConfigurationEntryRules {
 		'objectSummaryField',
 		'objectImageField',
 		'objectSlugField',
+		'mailObjectName',
 		'workingCalendar',
 	];
 	// `exportable` opts the schema into nextcloud-vue's native Export menu
@@ -261,6 +264,10 @@ final class ConfigurationEntryRules {
 			return [$this->validateVocabularyValue(key: $key, value: $value)];
 		}
 
+		if ($key === PreviewUrlTemplate::KEY) {
+			return $this->previewUrlEntry(value: $value);
+		}
+
 		if ($key === Schema::WRITEONLY_PATHS_ANNOTATION) {
 			return [(new WriteOnlyPathsDeclaration())->validateWriteOnlyPathsValue(value: $value, properties: $this->properties)];
 		}
@@ -284,6 +291,26 @@ final class ConfigurationEntryRules {
 
 		return [$this->values->validateDraftLifetimeValue(value: $value)];
 	}//end draftLifetimeEntry()
+
+	/**
+	 * The `previewUrl` template to store, as a one-element list; empty when none is declared.
+	 *
+	 * @param mixed $value Raw value for the key.
+	 *
+	 * @throws \InvalidArgumentException If the value is not a usable URL template.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	private function previewUrlEntry(mixed $value): array {
+		$template = PreviewUrlTemplate::validated(value: $value);
+		if ($template === null) {
+			return [];
+		}
+
+		return [$template];
+	}//end previewUrlEntry()
 
 	/**
 	 * Validate `linkRoles` or `partyKinds`.

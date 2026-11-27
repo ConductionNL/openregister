@@ -20,7 +20,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration;
 
+use OCA\OpenRegister\Kernel\Contracts\RequestMetricsInterface;
+use OCA\OpenRegister\Service\Observability\RequestMetricsRecorder;
 use OCA\OpenRegister\Contract\EmailLinkReaderInterface;
+use OCA\OpenRegister\Contract\ReplyThreadResolutionInterface;
 use OCA\OpenRegister\Contract\ToolInvocationRecorderInterface;
 use OCA\OpenRegister\Controller\IntegrationControllersRegistrar;
 use OCA\OpenRegister\Db\Integration\IntegrationIdIndexInterface;
@@ -31,7 +34,9 @@ use OCA\OpenRegister\Kernel\Contracts\Notifications\ScheduledMessageDeliveryInte
 use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
+use OCA\OpenRegister\Kernel\Contracts\OutboundMailLinkRecorderInterface;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
+use OCA\OpenRegister\Service\CalendarEvent\CalendarLinkListenerRegistrar;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationRecorder;
 use OCA\OpenRegister\Service\Consumer\AccountConsumerLookup;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
@@ -41,6 +46,8 @@ use OCA\OpenRegister\Service\Credential\CredentialStoreResolver;
 use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Notifications\Service\EmailService;
 use OCA\OpenRegister\Notifications\Service\EmailServiceInterface;
+use OCA\OpenRegister\Notifications\Service\OutboundMailLinkWriter;
+use OCA\OpenRegister\Notifications\Service\ReplyThreadService;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatter;
 use OCA\OpenRegister\Notifications\Service\Webhook\CloudEventFormatterInterface;
 use OCA\OpenRegister\Notifications\Service\Webhook\WebhookInterceptionCache;
@@ -110,6 +117,7 @@ final class IntegrationWiring {
 	 * @var array<class-string, class-string>
 	 */
 	public const BINDINGS = [
+		\OCA\OpenRegister\Kernel\Contracts\IntegrationPromotionRowsInterface::class => PromotionIntegrationRows::class,
 		AccountConsumerInterface::class => AccountConsumerLookup::class,
 		AppDeepLinksInterface::class => DeepLinkRegistryService::class,
 		CloudEventFormatterInterface::class => CloudEventFormatter::class,
@@ -117,6 +125,7 @@ final class IntegrationWiring {
 		\OCA\OpenRegister\Kernel\Contracts\ConnectionStatusReportInterface::class => ConnectionReporter::class,
 		CredentialSecretReaderInterface::class => CredentialStore::class,
 		EmailServiceInterface::class => EmailService::class,
+		OutboundMailLinkRecorderInterface::class => OutboundMailLinkWriter::class,
 		IntegrationCatalogueInterface::class => IntegrationRegistry::class,
 		IntegrationIdIndexInterface::class => IntegrationRegistry::class,
 		ExternalRegisterLookupInterface::class => ExternalRegisterLookup::class,
@@ -131,6 +140,7 @@ final class IntegrationWiring {
 		ToolInvocationRecorderInterface::class => ToolInvocationRecorder::class,
 		ToolReachLevels::class => ToolReachResolver::class,
 		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
+		RequestMetricsInterface::class => RequestMetricsRecorder::class,
 	];
 
 	/**
@@ -228,6 +238,11 @@ final class IntegrationWiring {
 		self::registerSeams(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
 		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
+		// A removed or disabled person's owned webhooks are disabled, kept for review.
+		$context->registerEventListener(\OCP\User\Events\BeforeUserDeletedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
+		$context->registerEventListener(\OCP\User\Events\UserChangedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
+		// Inbound calendar changes refresh the link rows (calendar-leaf-inbound, REQ-CAL-INB-001).
+		CalendarLinkListenerRegistrar::register(context: $context);
 		foreach (self::BINDINGS as $contract => $service) {
 			$context->registerServiceAlias($contract, $service);
 		}
@@ -333,7 +348,7 @@ final class IntegrationWiring {
 	}//end registerBuiltinIntegrationProviders()
 
 	/**
-	 * Register the integration seams that need a factory: the published email-link read, the credential store and the source-fetcher registry.
+	 * Register the integration seams that need a factory: the published email-link read, the reply-thread resolve, the credential store and the source-fetcher registry.
 	 *
 	 * Each is integration work, so this area binds it rather than Core's
 	 * ServiceRegistrar, which only names Core classes.
@@ -350,6 +365,14 @@ final class IntegrationWiring {
 			EmailLinkReaderInterface::class,
 			static function (ContainerInterface $c) {
 				return $c->get(EmailLinkService::class);
+			}
+		);
+
+		// The granted resolve of a reply's headers (ADR-099), for a mail intake.
+		$context->registerService(
+			ReplyThreadResolutionInterface::class,
+			static function (ContainerInterface $c) {
+				return $c->get(ReplyThreadService::class);
 			}
 		);
 
@@ -387,13 +410,13 @@ final class IntegrationWiring {
 	}//end buildSourceFetcherRegistry()
 
 	/**
-	 * Resolve every BuiltinProviders/* class and register it with the
-	 * shared IntegrationRegistry.
+	 * Install the loader that resolves every built-in provider and adds it
+	 * to the shared IntegrationRegistry on the registry's first read.
 	 *
 	 * Kept separate from the DI registration in register() because
-	 * addProvider() needs the registry instance — i.e. it has to run after
-	 * the container has fully bootstrapped. `boot()` is the canonical
-	 * post-registration hook for that.
+	 * addProvider() needs the registry instance. The providers are built
+	 * lazily because boot() runs on every Nextcloud request and most of
+	 * those never read the registry.
 	 *
 	 * @param mixed $server Server container (passed in from boot()).
 	 *
@@ -412,7 +435,11 @@ final class IntegrationWiring {
 			return;
 		}
 
-		self::addBuiltinProviders(server: $server, registry: $integrationRegistry);
+		$integrationRegistry->setBuiltinLoader(
+			static function () use ($server, $integrationRegistry): void {
+				self::addBuiltinProviders(server: $server, registry: $integrationRegistry);
+			}
+		);
 	}//end boot()
 
 	/**
@@ -463,8 +490,10 @@ final class IntegrationWiring {
 	 * Add this component's object-source providers to the shared ObjectSourceRegistry.
 	 *
 	 * Runs in boot() after ObjectSourceRegistrar::boot(), so these providers follow
-	 * the built-in ones in the registry. Guarded like that step: without a registry
-	 * nothing is added, and a provider that cannot be resolved is logged and skipped.
+	 * the built-in ones in the registry. Like that step it installs a loader that
+	 * runs on the registry's first read, so boot() builds no provider. Guarded:
+	 * without a registry nothing is added, and a provider that cannot be resolved
+	 * is logged and skipped.
 	 *
 	 * @param mixed $server Server container (passed in from boot()).
 	 *
@@ -479,13 +508,17 @@ final class IntegrationWiring {
 			return;
 		}
 
-		foreach (self::OBJECT_SOURCE_PROVIDERS as $providerClass) {
-			try {
-				$registry->addProvider($server->get($providerClass));
-			} catch (\Throwable $e) {
-				self::bootLogger(server: $server)?->warning('[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
+		$registry->addLoader(
+			static function (ObjectSourceRegistry $registry) use ($server): void {
+				foreach (self::OBJECT_SOURCE_PROVIDERS as $providerClass) {
+					try {
+						$registry->addProvider($server->get($providerClass));
+					} catch (\Throwable $e) {
+						self::bootLogger(server: $server)?->warning('[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
+					}
+				}
 			}
-		}
+		);
 	}//end bootObjectSources()
 
 	/**

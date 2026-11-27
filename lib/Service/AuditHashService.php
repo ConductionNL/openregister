@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Service\Audit\AuditResealInterface;
+use OCA\OpenRegister\Service\Audit\AuditSealWindowInterface;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -83,12 +84,19 @@ use RuntimeException;
  *     entriesVerified: int,
  *     skippedNullHashes: int,
  *     purgedTombstones: int,
- *     unkeyedEntries: int
+ *     unkeyedEntries: int,
+ *     unsealedAfterCutover: int
  * }
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
-class AuditHashService implements AuditHashServiceInterface, AuditSealInterface, AuditRechainInterface, AuditResealInterface {
+class AuditHashService implements
+	AuditHashServiceInterface,
+	AuditSealInterface,
+	AuditRechainInterface,
+	AuditResealInterface,
+	AuditSealWindowInterface
+{
 	/**
 	 * The genesis seed used for the first entry in the hash chain.
 	 *
@@ -204,6 +212,19 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	private const STALE_SEAL_LOCK_SECONDS = 900;
 
 	/**
+	 * App-config key holding the hash-chain cutover marker: the first audit id
+	 * written after the cutover migration ran.
+	 *
+	 * A row below it with no hash predates the cutover and is legacy; a row at or
+	 * past it with no hash should have been sealed by the current code, so it
+	 * fails verification. Absent (0): no cutover recorded, every unsealed row is
+	 * legacy, as before. Written once by Version1Date20261124193002.
+	 *
+	 * @var string
+	 */
+	public const SEAL_CUTOVER_KEY = 'audit_seal_cutover_id';
+
+	/**
 	 * A chain walk before its first window; `from` and `to` go in front.
 	 *
 	 * @var array<string, mixed>
@@ -216,6 +237,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		'skippedNullHashes' => 0,
 		'purgedTombstones' => 0,
 		'unkeyedEntries' => 0,
+		'unsealedAfterCutover' => 0,
 	];
 
 	/**
@@ -233,6 +255,13 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @var boolean
 	 */
 	private bool $holdsSealLock = false;
+
+	/**
+	 * The cutover marker once read: false before the first read, null when none is recorded.
+	 *
+	 * @var int|null|false
+	 */
+	private int|null|false $sealCutover = false;
 
 	/**
 	 * Constructor for AuditHashService.
@@ -400,6 +429,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 * @return int Number of rows sealed.
 	 *
 	 * @spec openspec/specs/audit-hash-chain/spec.md
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md#requirement-the-seal-pass-shall-never-re-hash-an-already-sealed-row
 	 */
 	public function sealRows(array $ids): int {
 		$ids = self::positiveIds(ids: $ids);
@@ -1535,6 +1565,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *     unkeyedEntries: int,
 	 *     keyedFrom: int|null,
 	 *     keyBoundaryIntact: bool,
+	 *     unsealedAfterCutover: int,
+	 *     sealCutoverId: int|null,
 	 *     range?: array{from: int, to: int}
 	 * }
 	 *
@@ -1632,8 +1664,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		$storedHash = ($row['hash'] ?? null);
 
 		if ($storedHash === null || $storedHash === '') {
-			$walk['skippedNullHashes']++;
-			return $walk;
+			return $this->countUnsealedRow(walk: $walk, id: (int)$row['id']);
 		}
 
 		if (($row['purged_at'] ?? null) !== null) {
@@ -1644,6 +1675,53 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 
 		return $this->verifySealedRow(walk: $walk, row: $row);
 	}//end verifyChainRow()
+
+	/**
+	 * Count a row without a hash: legacy before the cutover marker, a failure after it.
+	 *
+	 * Neither kind is a chain link, so the walk's previous hash stays where it is.
+	 * A post-cutover row is not a tamper break (nothing stored disagrees), so the
+	 * walk carries on and the report counts every such row.
+	 *
+	 * @param ChainWalk $walk The walk so far.
+	 * @param int       $id   The unsealed row's id.
+	 *
+	 * @return ChainWalk
+	 *
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md#requirement-verification-shall-distinguish-legacy-unsealed-rows-from-unsealed-rows-written-after-the-cutover
+	 */
+	private function countUnsealedRow(array $walk, int $id): array {
+		$cutover = $this->sealCutoverId();
+		if ($cutover !== null && $id >= $cutover) {
+			$walk['unsealedAfterCutover']++;
+			return $walk;
+		}
+
+		$walk['skippedNullHashes']++;
+
+		return $walk;
+	}//end countUnsealedRow()
+
+	/**
+	 * The first audit id written after the hash-chain cutover, or null when none is recorded.
+	 *
+	 * Read once per service instance: the marker is written by a migration and never moves.
+	 *
+	 * @return int|null
+	 *
+	 * @spec openspec/changes/audit-seal-backlog-repair/specs/audit-hash-chain/spec.md#requirement-verification-shall-distinguish-legacy-unsealed-rows-from-unsealed-rows-written-after-the-cutover
+	 */
+	private function sealCutoverId(): ?int {
+		if ($this->sealCutover === false) {
+			$marker = $this->appConfig->getValueInt('openregister', self::SEAL_CUTOVER_KEY, 0);
+			$this->sealCutover = null;
+			if ($marker > 0) {
+				$this->sealCutover = $marker;
+			}
+		}
+
+		return $this->sealCutover;
+	}//end sealCutoverId()
 
 	/**
 	 * Re-hash a sealed row over the walk's previous hash and compare.
@@ -1747,6 +1825,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 	 *     unkeyedEntries: int,
 	 *     keyedFrom: int|null,
 	 *     keyBoundaryIntact: bool,
+	 *     unsealedAfterCutover: int,
+	 *     sealCutoverId: int|null,
 	 *     range?: array{from: int|null, to: int|null}
 	 * }
 	 */
@@ -1754,7 +1834,7 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 		$brokenAt = $walk['brokenAt'];
 		$boundaryIntact = ($this->chainKey?->boundaryIntact() ?? true);
 		$response = [
-			'valid' => ($brokenAt === null && $boundaryIntact === true),
+			'valid' => ($brokenAt === null && $boundaryIntact === true && $walk['unsealedAfterCutover'] === 0),
 			'entriesVerified' => $walk['entriesVerified'],
 			'brokenAt' => $brokenAt,
 			'skippedNullHashes' => $walk['skippedNullHashes'],
@@ -1762,6 +1842,8 @@ class AuditHashService implements AuditHashServiceInterface, AuditSealInterface,
 			'unkeyedEntries' => $walk['unkeyedEntries'],
 			'keyedFrom' => $this->chainKey?->keyedFrom(),
 			'keyBoundaryIntact' => $boundaryIntact,
+			'unsealedAfterCutover' => $walk['unsealedAfterCutover'],
+			'sealCutoverId' => $this->sealCutoverId(),
 		];
 
 		return self::withRange(response: $response, walk: $walk);

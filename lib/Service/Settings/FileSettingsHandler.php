@@ -22,15 +22,21 @@
 
 namespace OCA\OpenRegister\Service\Settings;
 
+use DateInterval;
 use Exception;
 use InvalidArgumentException;
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Kernel\Contracts\AnonymisationMethodsInterface;
+use OCA\OpenRegister\Kernel\Contracts\BackendStatement;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
+use OCA\OpenRegister\Service\Anonymisation\PersonRegisterSource;
 use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
+use OCA\OpenRegister\Exception\PersonRegisterPurposeMissingException;
 use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
 use OCA\OpenRegister\Files\Service\File\MaskForm;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicyReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
@@ -38,6 +44,7 @@ use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
 use OCP\IAppConfig;
 use RuntimeException;
+use Throwable;
 
 /**
  * Handler for file management settings operations.
@@ -58,7 +65,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/archive-members-are-searchable/specs
  */
-class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface {
+class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface, CapacityPolicyReaderInterface {
 
 	/**
 	 * App config key holding the OpenAnonymiser password.
@@ -93,6 +100,11 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 	 * @var string
 	 */
 	public const MASK_FORMS_KEY = 'maskForms';
+
+	/**
+	 * The anonymisation setting that makes output wait for a person's check.
+	 */
+	public const REQUIRE_REVIEW_KEY = 'requireReview';
 
 	/**
 	 * The file settings returned when none are stored, and the default of every key on update.
@@ -136,6 +148,9 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 			'confidenceThreshold' => self::DEFAULT_CONFIDENCE_THRESHOLD,
 			'capacityPolicy' => CapacityPolicy::DEFAULT,
 			'officialsSource' => null,
+			'personRegister' => null,
+			'personRegisterBoost' => PersonRegisterSource::DEFAULT_BOOST,
+			'placeRegister' => null,
 		],
 		ArchiveBounds::SETTINGS_KEY => ArchiveBounds::DEFAULTS,
 	];
@@ -274,6 +289,9 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 		} catch (UnknownMaskFormException $e) {
 			// A refused mask form, answered as 400 naming the entity type.
 			throw $e;
+		} catch (PersonRegisterPurposeMissingException $e) {
+			// A persons register without a purpose, answered as 400 (REQ-DKP-003).
+			throw $e;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
@@ -374,9 +392,102 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 
 		$settings['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($settings['capacityPolicy'] ?? null))->rules();
 		$settings['officialsSource'] = OfficialsSource::normalise(value: ($settings['officialsSource'] ?? null));
+		$settings['personRegister'] = PersonRegisterSource::personRegister(value: ($settings['personRegister'] ?? null));
+		$settings['personRegisterBoost'] = PersonRegisterSource::boost(value: ($settings['personRegisterBoost'] ?? null));
+		$settings['placeRegister'] = PersonRegisterSource::placeRegister(value: ($settings['placeRegister'] ?? null));
+		if (array_key_exists(self::REQUIRE_REVIEW_KEY, $settings) === true) {
+			$settings[self::REQUIRE_REVIEW_KEY] = ($settings[self::REQUIRE_REVIEW_KEY] === true);
+		}
+
+		if (array_key_exists(self::ORIGINAL_RETENTION_KEY, $settings) === true) {
+			$settings[self::ORIGINAL_RETENTION_KEY] = self::normaliseRetention(value: $settings[self::ORIGINAL_RETENTION_KEY]);
+		}
+
+		if (array_key_exists(BackendStatement::SETTINGS_KEY, $settings) === true) {
+			$settings[BackendStatement::SETTINGS_KEY] = self::statedBackends(statements: $settings[BackendStatement::SETTINGS_KEY]);
+		}
 
 		return $settings;
 	}//end readableAnonymisation()
+
+	/**
+	 * Whether anonymised output waits for a person's check of every detection.
+	 *
+	 * Off unless an administrator switched it on: only `true` turns it on.
+	 *
+	 * @return bool True when review is required.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/tasks.md#task-2.3
+	 */
+	public function requireReview(): bool {
+		return (($this->storedAnonymisation()[self::REQUIRE_REVIEW_KEY] ?? false) === true);
+	}//end requireReview()
+
+	/**
+	 * How long an unredacted original is kept after its redacted copy is
+	 * published: `keep` (the default, nothing is deleted) or an ISO 8601
+	 * duration such as `P90D`.
+	 *
+	 * @return string The retention.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
+	 */
+	public function originalRetention(): string {
+		return self::normaliseRetention(value: ($this->storedAnonymisation()[self::ORIGINAL_RETENTION_KEY] ?? null));
+	}//end originalRetention()
+
+	/**
+	 * A retention as stored: an ISO 8601 duration that reads, else `keep`,
+	 * so a value that cannot be read never deletes anything.
+	 *
+	 * @param mixed $value The submitted or stored value.
+	 *
+	 * @return string `keep` or the duration.
+	 *
+	 * @spec openspec/changes/redaction-release-safeguards/specs/redaction-output-guarantee/spec.md#requirement-the-unredacted-originals-custody-is-stated-and-its-deletion-scheduled-req-rrs-005
+	 */
+	public static function normaliseRetention(mixed $value): string {
+		if (is_string($value) === false || preg_match('/^P(?!$)(\d+Y)?(\d+M)?(\d+W)?(\d+D)?(T(?=\d)(\d+H)?(\d+M)?(\d+S)?)?$/', $value) !== 1) {
+			return self::ORIGINAL_RETENTION_KEEP;
+		}
+
+		try {
+			new DateInterval($value);
+		} catch (Throwable $unreadable) {
+			return self::ORIGINAL_RETENTION_KEEP;
+		}
+
+		return $value;
+	}//end normaliseRetention()
+
+	/**
+	 * The administrators' statements, per backend an administrator can state.
+	 *
+	 * The pattern backend is always the product's and is never stored. An
+	 * OpenAnonymiser statement is kept for when the source is external.
+	 *
+	 * @param mixed $statements The stored or submitted statements.
+	 *
+	 * @return array<string, array{trainingUse: string, retention: string}>
+	 *
+	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-training-use-and-retention-are-stated-per-backend-req-adi-003
+	 */
+	private static function statedBackends(mixed $statements): array {
+		if (is_array($statements) === false) {
+			return [];
+		}
+
+		$stated = [];
+		foreach (AnonymisationMethodsInterface::METHODS as $backend) {
+			if ($backend === AnonymisationMethodsInterface::METHOD_REGEX || array_key_exists($backend, $statements) === false) {
+				continue;
+			}
+
+			$stated[$backend] = BackendStatement::stated(stored: $statements[$backend])->toStored();
+		}
+
+		return $stated;
+	}//end statedBackends()
 
 	/**
 	 * The organisation's capacity policy (REQ-DKP-001): the stored one, else the shipped default.
@@ -399,6 +510,39 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 	public function officialsSource(): ?array {
 		return OfficialsSource::normalise(value: $this->storedAnonymisation()['officialsSource'] ?? null);
 	}//end officialsSource()
+
+	/**
+	 * The persons register a person detection is matched against, or null when none is configured (REQ-DKP-003).
+	 *
+	 * @return array<string, string>|null The source and its purpose.
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.1
+	 */
+	public function personRegister(): ?array {
+		return PersonRegisterSource::personRegister(value: $this->storedAnonymisation()['personRegister'] ?? null);
+	}//end personRegister()
+
+	/**
+	 * The confidence a persons register match adds (REQ-DKP-003), default 0.2.
+	 *
+	 * @return float
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.1
+	 */
+	public function personRegisterBoost(): float {
+		return PersonRegisterSource::boost(value: $this->storedAnonymisation()['personRegisterBoost'] ?? null);
+	}//end personRegisterBoost()
+
+	/**
+	 * The street or place register a person detection is checked against, or null when none is configured (REQ-DKP-003).
+	 *
+	 * @return array<string, string>|null
+	 *
+	 * @spec openspec/changes/detection-knows-the-person/tasks.md#task-3.1
+	 */
+	public function placeRegister(): ?array {
+		return PersonRegisterSource::placeRegister(value: $this->storedAnonymisation()['placeRegister'] ?? null);
+	}//end placeRegister()
 
 	/**
 	 * The stored anonymisation settings, as stored.
@@ -424,6 +568,7 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 	 *
 	 * @throws ConfidenceThresholdOutOfRangeException When the threshold is not a number between 0 and 1.
 	 * @throws UnknownMaskFormException                When a mask form is unknown or its n is below 1.
+	 * @throws PersonRegisterPurposeMissingException   When a persons register is named without a purpose.
 	 *
 	 * @spec openspec/changes/anonymisation-discloses-itself/specs/anonymisation-disclosure/spec.md#requirement-the-confidence-threshold-is-an-organisation-setting-req-adi-007
 	 * @spec openspec/changes/anonymisation-placeholder-id-scope/specs/entity-relation-grondslagen/spec.md#requirement-a-detection-may-be-masked-in-part-with-the-form-set-per-entity-type-req-pis-010
@@ -449,9 +594,35 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 		// A save that does not name the capacity policy or the officials
 		// source keeps the stored ones (REQ-DKP-001); what is kept is
 		// normalised, so an unknown capacity or decision never reaches a run.
-		$submitted += array_intersect_key($this->storedAnonymisation(), ['capacityPolicy' => true, 'officialsSource' => true]);
+		$kept       = [
+			'capacityPolicy'               => true,
+			'officialsSource'              => true,
+			'personRegister'               => true,
+			'personRegisterBoost'          => true,
+			'placeRegister'                => true,
+			self::REQUIRE_REVIEW_KEY       => true,
+			self::ORIGINAL_RETENTION_KEY   => true,
+			BackendStatement::SETTINGS_KEY => true,
+		];
+		$submitted += array_intersect_key($this->storedAnonymisation(), $kept);
+		if (array_key_exists(self::REQUIRE_REVIEW_KEY, $submitted) === true) {
+			$submitted[self::REQUIRE_REVIEW_KEY] = ($submitted[self::REQUIRE_REVIEW_KEY] === true);
+		}
+
+		if (array_key_exists(self::ORIGINAL_RETENTION_KEY, $submitted) === true) {
+			$submitted[self::ORIGINAL_RETENTION_KEY] = self::normaliseRetention(value: $submitted[self::ORIGINAL_RETENTION_KEY]);
+		}
 		$submitted['capacityPolicy'] = CapacityPolicy::fromStored(stored: ($submitted['capacityPolicy'] ?? null))->rules();
 		$submitted['officialsSource'] = OfficialsSource::normalise(value: ($submitted['officialsSource'] ?? null));
+		$submitted['personRegister'] = PersonRegisterSource::submittedPersonRegister(value: ($submitted['personRegister'] ?? null));
+		$submitted['personRegisterBoost'] = PersonRegisterSource::boost(value: ($submitted['personRegisterBoost'] ?? null));
+		$submitted['placeRegister'] = PersonRegisterSource::placeRegister(value: ($submitted['placeRegister'] ?? null));
+		// Training use and retention per backend (REQ-ADI-003): kept when a save
+		// does not name them; the product's own statements are never stored.
+		$submitted[BackendStatement::SETTINGS_KEY] = self::statedBackends(statements: ($submitted[BackendStatement::SETTINGS_KEY] ?? null));
+		if ($submitted[BackendStatement::SETTINGS_KEY] === []) {
+			unset($submitted[BackendStatement::SETTINGS_KEY]);
+		}
 
 		if (self::isThreshold(value: $submitted['confidenceThreshold']) === false) {
 			throw new ConfidenceThresholdOutOfRangeException(message: 'anonymisation.confidenceThreshold must be a number between 0 and 1');

@@ -58,12 +58,18 @@
 		<!-- Who sees who read a record: read entries on the audit trail -->
 		<ReadEventVisibilityConfiguration />
 
+		<!-- Action rights: who may author flows and put powerful steps in them -->
+		<ActionRights />
+
 		<!-- Audit hash-chain health: seal coverage + on-demand verification -->
 		<LogIntegrity />
 		<RegisterDescriptors />
 
 		<!-- Push Notifications Status Section -->
 		<PushNotificationsConfiguration :pushStatus="pushStatus" />
+
+		<!-- Notification rules that reached nobody -->
+		<NotificationRuleReach />
 
 		<!-- LLM Configuration Section -->
 		<LlmConfiguration />
@@ -85,6 +91,9 @@
 		<!-- Federated configuration sharing: sources, trusted keys, publish/install groups -->
 		<FederatedTrustConfiguration />
 
+		<!-- Credential providers other apps declare: review, approve, reject, revoke -->
+		<DeclaredCredentialProviders />
+
 		<!-- Dialogs -->
 		<Dialogs />
 	</CnAdminSettingsShell>
@@ -96,8 +105,10 @@ import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import { mapStores } from 'pinia'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Dialogs from '../../dialogs/Dialogs.vue'
+import ActionRights from './sections/ActionRights.vue'
 import ApiTokenConfiguration from './sections/ApiTokenConfiguration.vue'
 import CacheManagement from './sections/CacheManagement.vue'
+import DeclaredCredentialProviders from './sections/DeclaredCredentialProviders.vue'
 import EdepotHostKeyConfiguration from './sections/EdepotHostKeyConfiguration.vue'
 import FederatedTrustConfiguration from './sections/FederatedTrustConfiguration.vue'
 import FileConfiguration from './sections/FileConfiguration.vue'
@@ -106,6 +117,7 @@ import LlmConfiguration from './sections/LlmConfiguration.vue'
 import LoadSheddingConfiguration from './sections/LoadSheddingConfiguration.vue'
 import LogIntegrity from './sections/LogIntegrity.vue'
 import MultitenancyConfiguration from './sections/MultitenancyConfiguration.vue'
+import NotificationRuleReach from './sections/NotificationRuleReach.vue'
 import OrganisationConfiguration from './sections/OrganisationConfiguration.vue'
 import PermissionMatrix from './sections/PermissionMatrix.vue'
 import PushNotificationsConfiguration from './sections/PushNotificationsConfiguration.vue'
@@ -143,8 +155,10 @@ export default {
 		RegisterDescriptors,
 		RetentionConfiguration,
 		ReadEventVisibilityConfiguration,
+		ActionRights,
 		LogIntegrity,
 		PushNotificationsConfiguration,
+		NotificationRuleReach,
 		LlmConfiguration,
 		TranslationConfiguration,
 		LoadSheddingConfiguration,
@@ -152,6 +166,7 @@ export default {
 		ApiTokenConfiguration,
 		EdepotHostKeyConfiguration,
 		FederatedTrustConfiguration,
+		DeclaredCredentialProviders,
 		Dialogs,
 	},
 

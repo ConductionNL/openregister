@@ -24,9 +24,13 @@
       field, the setting that asked for it (or "not a field setting" for a
       hand-made one) and its name. Spec: `SchemaIndexesTab.spec.js`. The e2e
       above is left for a live run.
-- [ ] 2.3 Translations for the 11 new interface strings beyond `en`, `nl` and
+- [x] 2.3 Translations for the 11 new interface strings beyond `en`, `nl` and
       `de` (added with this pass); every other finished locale is one key
       short of parity per string until then.
+      > Done: the other 34 locales carry all 11 strings, written through
+      > `scripts/l10n/apply.js` (11 new, 0 replaced, 0 cognates per locale).
+      > `test:l10n:parity` counts 11 fewer missing keys per locale and nothing
+      > else changes; `l10n:runtime fr` passes.
 
 ## 3. Docs
 

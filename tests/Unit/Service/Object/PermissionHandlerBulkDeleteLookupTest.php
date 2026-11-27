@@ -35,6 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -52,6 +53,8 @@ use Psr\Log\LoggerInterface;
  * Locks the lookup the bulk-delete permission filter uses to resolve its candidates.
  */
 class PermissionHandlerBulkDeleteLookupTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	/**
 	 * Build a PermissionHandler over a supplied object mapper.
@@ -217,6 +220,7 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('no organisation service'));

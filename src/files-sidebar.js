@@ -8,21 +8,75 @@
  * @license EUPL-1.2
  */
 
-import { translatePlural as n, translate as t } from '@nextcloud/l10n'
-import { createApp, h, reactive } from 'vue'
-import ExtractionTab from './components/files-sidebar/ExtractionTab.vue'
-import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
-import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
-import { registerLibraryTranslations } from './services/libraryTranslations.js'
+import { translate as t } from '@nextcloud/l10n'
+import { registerAttachAction } from './files/attachAction.js'
 
-// Register nextcloud-vue's own catalogue before anything renders, so the
-// library's labels follow the reader's language on this page too.
-registerLibraryTranslations()
+/**
+ * The integration registry bootstrap and the library translations, loaded once,
+ * the first time a tab renders. This entry runs on every page with a Files
+ * sidebar (Files, and every app page that embeds it), so none of the tabs'
+ * code (several megabytes) is fetched until a tab is opened. The entry is built
+ * self-contained (webpack.config.js), so it does not pull OpenRegister's vendor
+ * chunk onto the page either: Vue itself comes with the tab (tabApp.js).
+ *
+ * @type {Promise<void>|null}
+ */
+let prepared = null
 
-// Bootstrap the integration registry on the files-sidebar bundle so any
-// tab component that uses useIntegrationRegistry() sees the same populated
-// singleton main.js produced on a non-Files page. Idempotent. See ADR-019.
-ensureIntegrationRegistry()
+/**
+ * Load and run the shared setup the tabs need, once.
+ *
+ * @return {Promise<void>}
+ */
+function prepare() {
+	if (prepared === null) {
+		prepared = Promise.all([
+			import(/* webpackChunkName: "files-sidebar-app" */ './integrations/bootstrap.js'),
+			import(/* webpackChunkName: "files-sidebar-app" */ './services/libraryTranslations.js'),
+		]).then(([{ ensureIntegrationRegistry }, { registerLibraryTranslations }]) => {
+			registerLibraryTranslations()
+			ensureIntegrationRegistry()
+		})
+	}
+	return prepared
+}
+
+/**
+ * The register objects tab's component, with the shared setup run first.
+ *
+ * @return {Promise<object>}
+ */
+function RegisterObjectsTab() {
+	return prepare()
+		.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/RegisterObjectsTab.vue'))
+		.then((module) => module.default)
+}
+
+/**
+ * The extraction tab's component, with the shared setup run first.
+ *
+ * @return {Promise<object>}
+ */
+function ExtractionTab() {
+	return prepare()
+		.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/ExtractionTab.vue'))
+		.then((module) => module.default)
+}
+
+/**
+ * The conversation tab's component, with the shared setup run first.
+ *
+ * @return {Promise<object>}
+ */
+function MailThreadTab() {
+	return prepare()
+		.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/MailThreadTab.vue'))
+		.then((module) => module.default)
+}
+
+// The Files action "Add to object" (files-leaf-save-to-object). Registered at
+// load, before Files renders its file list, as Files expects of an action.
+registerAttachAction()
 
 // MDI icon SVG paths (inline to avoid icon library dependency).
 // database-outline
@@ -33,50 +87,42 @@ const databaseOutlineIcon =
 const textBoxSearchOutlineIcon =
 	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.5 12C18 12 20 14 20 16.5C20 17.38 19.75 18.21 19.31 18.9L22.39 22L21 23.39L17.88 20.32C17.19 20.75 16.37 21 15.5 21C13 21 11 19 11 16.5C11 14 13 12 15.5 12M15.5 14C14.12 14 13 15.12 13 16.5C13 17.88 14.12 19 15.5 19C16.88 19 18 17.88 18 16.5C18 15.12 16.88 14 15.5 14M5 3H19C20.11 3 21 3.89 21 5V13.03C20.5 12.23 19.81 11.54 19 11V5H5V19H9.5C9.81 19.75 10.26 20.42 10.81 21H5C3.89 21 3 20.11 3 19V5C3 3.89 3.89 3 5 3M7 7H17V9H7V7M7 11H12.03C11.23 11.5 10.54 12.19 10 13H7V11M7 15H9.17C9.06 15.5 9 16 9 16.5V17H7V15Z" /></svg>'
 
+// email-multiple-outline
+const emailMultipleOutlineIcon =
+	'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 3H7C5.9 3 5 3.9 5 5V15C5 16.1 5.9 17 7 17H21C22.1 17 23 16.1 23 15V5C23 3.9 22.1 3 21 3M21 15H7V7L14 11L21 7V15M14 9L7 5H21L14 9M3 19H19V21H3C1.9 21 1 20.1 1 19V8H3V19Z" /></svg>'
+
 /**
  * A Files sidebar tab that renders a Vue component for the file shown.
  *
  * The app and its props are kept on the sidebar's element, under
- * `_<slot>App` and `_<slot>Props`.
+ * `_<slot>App` and `_<slot>Props`. Vue and the component load on the first
+ * mount (tabApp.js); a destroy or a second mount before they arrive wins.
  *
- * @param {{id: string, name: string, icon: string, component: object, slot: string}} tab The tab
+ * @param {{id: string, name: string, icon: string, component: function(): Promise<object>, slot: string, enabled?: function(object): boolean}} tab The tab
  * @return {object} The Files sidebar tab
  */
 function vueTab(tab) {
 	const appKey = `_${tab.slot}App`
 	const propsKey = `_${tab.slot}Props`
+	const turnKey = `_${tab.slot}Turn`
 	return new OCA.Files.Sidebar.Tab({
 		id: tab.id,
 		name: tab.name,
 		icon: tab.icon,
 
-		// Vue 3: `createApp(Component, rootProps).mount(el)` replaces
-		// `Vue.extend()` + `new View({ propsData }).$mount(el)`.
-		//
-		// The root props object is kept `reactive` and stashed on the element so
-		// `update()` can still push a new fileId into the live instance. Vue 2
-		// allowed `vm.fileId = …` directly on the instance; Vue 3 root props are
-		// read-only on the component, so the mutation has to happen on the
-		// reactive object the app was created with.
-		//
-		// ⚠️ `$mount(el)` REPLACED `el`; Vue 3's `mount(el)` renders INSIDE it.
-		// That is the correct behaviour here — the Files sidebar owns `el`.
-		mount(el, fileInfo) {
-			if (el[appKey]) {
-				el[appKey].unmount()
-			}
-
-			el[propsKey] = reactive({ fileId: fileInfo.id })
-			// Rendered through a root render function: `createApp(Comp, props)`
-			// copies a reactive props object, so `update()` would never reach it.
-			el[appKey] = createApp({
-				render: () => h(tab.component, el[propsKey]),
+		// ⚠️ Vue 3's `mount(el)` renders INSIDE `el`; the Files sidebar owns `el`.
+		async mount(el, fileInfo) {
+			const turn = (el[turnKey] || 0) + 1
+			el[turnKey] = turn
+			el[propsKey] = { fileId: fileInfo.id }
+			const { mountTabApp } = await import(/* webpackChunkName: "files-sidebar-app" */ './files-sidebar/tabApp.js')
+			await mountTabApp({
+				el,
+				appKey,
+				propsKey,
+				load: tab.component,
+				isCurrent: () => el[turnKey] === turn,
 			})
-			// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
-			// reached every instance on the page. Vue 3's `app.mixin()` is
-			// per-app — each entry bundle must install `t`/`n` itself.
-			el[appKey].mixin({ methods: { t, n } })
-			el[appKey].mount(el)
 		},
 
 		async update(el, fileInfo) {
@@ -86,15 +132,16 @@ function vueTab(tab) {
 		},
 
 		destroy(el) {
+			el[turnKey] = (el[turnKey] || 0) + 1
 			if (el[appKey]) {
 				el[appKey].unmount()
-				el[appKey] = null
-				el[propsKey] = null
 			}
+			el[appKey] = null
+			el[propsKey] = null
 		},
 
 		enabled(fileInfo) {
-			return !!fileInfo
+			return !!fileInfo && (!tab.enabled || tab.enabled(fileInfo))
 		},
 	})
 }
@@ -130,6 +177,33 @@ function extractionTab() {
 }
 
 /**
+ * Whether a file is a collected mail.
+ *
+ * @param {object} fileInfo The file shown
+ * @return {boolean} True for an `.eml` file
+ */
+function isMail(fileInfo) {
+	return /\.eml$/i.test(fileInfo.name || '')
+}
+
+/**
+ * The tab showing the conversation a collected mail belongs to.
+ *
+ * @return {object} The Files sidebar tab
+ * @spec openspec/changes/reply-threading-by-headers/specs/integration-email/spec.md#requirement-a-message-is-read-with-the-messages-around-it-req-rth-011
+ */
+function mailThreadTab() {
+	return vueTab({
+		id: 'openregister-conversation',
+		name: t('openregister', 'Conversation'),
+		icon: emailMultipleOutlineIcon,
+		component: MailThreadTab,
+		slot: 'mailThread',
+		enabled: isMail,
+	})
+}
+
+/**
  * Register the OpenRegister sidebar tabs in the Files app.
  *
  * Uses the OCA.Files.Sidebar.registerTab() API following the mount/update/destroy
@@ -147,4 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	// Extraction & Metadata Tab
 	OCA.Files.Sidebar.registerTab(extractionTab())
+
+	// Conversation Tab, for collected `.eml` files only
+	OCA.Files.Sidebar.registerTab(mailThreadTab())
 })

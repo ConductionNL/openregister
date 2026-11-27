@@ -662,4 +662,32 @@ interface FlowRunMapperInterface {
 	 * @return FlowRun The stored entity.
 	 */
 	public function insertOrUpdate(Entity $entity): Entity;
+
+	/**
+	 * Per flow, how many of its runs created in the window ended in each status.
+	 *
+	 * @param array<int, string> $flowIds      The flows to count.
+	 * @param string             $organisation Count only this organisation's runs.
+	 * @param DateTime           $from         Runs created from this moment.
+	 * @param DateTime           $to           Runs created up to this moment.
+	 *
+	 * @return array<string, array<string, int>> Run counts by status, keyed by flow id.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-flow-reports-its-progress-per-step
+	 */
+	public function countByStatusInWindow(array $flowIds, string $organisation, DateTime $from, DateTime $to): array;
+
+	/**
+	 * When each completed run of the window was created, by run uuid.
+	 *
+	 * @param string   $flowId       The flow.
+	 * @param string   $organisation Count only this organisation's runs.
+	 * @param DateTime $from         Runs created from this moment.
+	 * @param DateTime $to           Runs created up to this moment.
+	 *
+	 * @return array<string, DateTime> Creation moment keyed by run uuid.
+	 *
+	 * @spec openspec/changes/tasks-progress-report/specs/flow-progress-report/spec.md#requirement-a-flow-reports-its-progress-per-step
+	 */
+	public function completedRunStartsInWindow(string $flowId, string $organisation, DateTime $from, DateTime $to): array;
 }//end interface

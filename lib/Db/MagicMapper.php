@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Db;
 
 use OCA\OpenRegister\Service\Schemas\SchemaRefInRegister;
 use OCA\OpenRegister\Db\MagicMapper\DeletedFilter;
+use OCA\OpenRegister\Db\MagicMapper\RegistryLens;
 use OCA\OpenRegister\Db\MagicMapper\ObjectEventDeferral;
 use OCA\OpenRegister\Db\MagicMapper\BulkUpsertCommand;
 use OCA\OpenRegister\Db\MagicMapper\RbacAccessCall;
@@ -61,6 +62,7 @@ use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
 use OCA\OpenRegister\Db\MagicMapper\MagicDroppedProperties;
 use OCA\OpenRegister\Db\MagicMapper\MagicFlaggedEncryption;
+use OCA\OpenRegister\Db\MagicMapper\MagicSharePrincipals;
 use OCA\OpenRegister\Db\MagicMapper\MagicPropertyColumns;
 use OCA\OpenRegister\Db\MagicMapper\MagicRowMetadata;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnSql;
@@ -140,6 +142,7 @@ use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectLookupFailedException;
 use OCA\OpenRegister\Service\DateTimeNormalizerInterface;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
+use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverterInterface;
 use OCA\OpenRegister\Service\OrganisationContext;
@@ -634,6 +637,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private readonly IAppConfig $appConfig;
 
 	/**
+	 * The text search configuration `_search` stems with; null on a mapper
+	 * assembled without its constructor, which then builds no stemmed-match index.
+	 *
+	 * @var TextSearchConfiguration|null
+	 */
+	private ?TextSearchConfiguration $textSearch = null;
+
+	/**
 	 * Event dispatcher for audit trail events.
 	 *
 	 * @var IEventDispatcher
@@ -673,6 +684,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$this->userManager     = $identity->userManager;
 		$this->config          = $runtime->config;
 		$this->appConfig       = $runtime->appConfig;
+		$this->textSearch      = new TextSearchConfiguration(db: $db, appConfig: $runtime->appConfig);
 		$this->eventDispatcher = $runtime->eventDispatcher;
 		$this->logger          = $runtime->logger;
 
@@ -795,9 +807,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * The search handler gets the request's language state, so a translatable
 	 * property sorts by the value the response shows
-	 * (order-filters-and-notification-links), and the request's reveal state:
+	 * (order-filters-and-notification-links), the request's reveal state:
 	 * filtering or sorting on an explicit-reveal property is refused unless the
-	 * code is trusted (property-explicit-reveal).
+	 * code is trusted (property-explicit-reveal), and the text search
+	 * configuration `_search` also stems with on PostgreSQL
+	 * (search-dutch-language-quality).
 	 *
 	 * @return void
 	 */
@@ -816,7 +830,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			metadataColumns: $this->metadataColumnHealer,
 			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitRevealInterface::class),
 			appConfig: $this->appConfig,
-			searchProfile: $this->container->get(PropertySearchProfileInterface::class)
+			searchProfile: $this->container->get(PropertySearchProfileInterface::class),
+			textSearch: $this->textSearch
 		);
 	}//end initializeSearchHandler()
 
@@ -1492,8 +1507,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return 0;
 		}
 
-		$tableName = $target->tableName;
-
 		$result = $this->runCountQuery(query: $query, target: $target);
 		if (is_int($result) === false) {
 			throw new RuntimeException('The count query did not answer with a number.');
@@ -1906,6 +1919,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param array $query Search query parameters.
 	 *
 	 * @return bool True if UNION ALL can be used.
+	 *
+	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-subscription-state-and-freshness-are-query-lenses
 	 */
 	private function shouldUseUnionQuery(array $query): bool {
 		// Don't use UNION for aggregations (not supported). `_facets` does not count:
@@ -1919,9 +1934,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
 		// refuses them, which on this route would end in an uncaught exception
 		// (HTTP 500), so a query carrying either takes the sequential path.
-		// `_relations_contains` has no raw-SQL twin either: a union would answer
-		// without the filter.
-		$builderOnly = ['_related', '_referenced', '_ref', '_element', '_relations_contains'];
+		// `_relations_contains` and the `_registry` lens have no raw-SQL twin
+		// either: a union would answer without the filter.
+		$builderOnly = ['_related', '_referenced', '_ref', '_element', '_relations_contains', RegistryLens::KEY];
 		if (array_intersect($builderOnly, array_keys($query)) !== []) {
 			return false;
 		}
@@ -2512,7 +2527,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			foreach ($properties as $propertyName => $propertyConfig) {
-				if (in_array($propertyName, MagicSchemaColumns::CONFIGURATION_FIELDS, true) === true) {
+				if (MagicSchemaColumns::isConfigurationEntry(name: $propertyName, config: $propertyConfig) === true) {
 					continue;
 				}
 
@@ -2554,7 +2569,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			foreach ($properties as $propertyName => $propertyConfig) {
-				if (is_array($propertyConfig) === false || in_array($propertyName, MagicSchemaColumns::CONFIGURATION_FIELDS, true) === true) {
+				if (is_array($propertyConfig) === false || MagicSchemaColumns::isConfigurationEntry(name: $propertyName, config: $propertyConfig) === true) {
 					continue;
 				}
 
@@ -3079,22 +3094,38 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function createTableIndexes(string $tableName, Schema $schema): void {
 		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
-		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer = new MagicTableIndexer(
+			db: $this->db,
+			logger: $this->logger,
+			trgm: $this->trgmProbe(),
+			textSearchConfig: $this->textSearch?->active()
+		);
 		$indexer->create(run: $run, schema: $schema);
 	}//end createTableIndexes()
 
 	/**
 	 * Create the indexes of a table created just now; on MariaDB the standard ones go in one statement.
 	 *
+	 * The indexer gets the text search configuration here too, as on a sync: without it a new
+	 * table had no stemmed `_tsv_idx` GIN index until its schema was next synced, and every
+	 * `_search` on it scanned the whole table for the stemmed arm.
+	 *
 	 * @param string $tableName The table name
 	 * @param Schema $schema    The schema for index analysis
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
 	 */
 	private function createNewTableIndexes(string $tableName, Schema $schema): void {
 		$run = new MagicTableIndexRun(tableName: $tableName, fullTableName: $this->getFullTableName(tableName: $tableName));
 		$run->indexesAtOnce = ($this->db->getDatabasePlatform() instanceof MariaDBPlatform);
-		$indexer = new MagicTableIndexer(db: $this->db, logger: $this->logger, trgm: $this->trgmProbe());
+		$indexer = new MagicTableIndexer(
+			db: $this->db,
+			logger: $this->logger,
+			trgm: $this->trgmProbe(),
+			textSearchConfig: $this->textSearch?->active()
+		);
 		$indexer->create(run: $run, schema: $schema);
 	}//end createNewTableIndexes()
 
@@ -3328,6 +3359,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// An encrypted property is written only as an envelope, whichever path
 		// got here (see MagicFlaggedEncryption).
+		// A share list's derived principal lists are recomputed, whichever path
+		// got here (see MagicSharePrincipals); before encryption, on plaintext.
+		$data = (new MagicSharePrincipals(container: $this->container))->forObject(data: $data, schema: $schema);
 		$data = (new MagicFlaggedEncryption(container: $this->container))->forObject(data: $data, schema: $schema);
 
 		$rowMetadata = new MagicRowMetadata(container: $this->container);
@@ -5850,9 +5884,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * This method efficiently searches all magic tables for multiple UUIDs in batch.
 	 * It's optimized for performance by searching all UUIDs in each table with a single query.
 	 *
-	 * @param array    $uuids           Array of UUIDs to search for.
-	 * @param bool     $includeDeleted  Whether to include soft-deleted objects.
-	 * @param int|null $registerIdScope Only look in this register's tables (null: every table).
+	 * @param array          $uuids           Array of UUIDs to search for.
+	 * @param bool           $includeDeleted  Whether to include soft-deleted objects.
+	 * @param int|null       $registerIdScope Only look in this register's tables (null: every table).
+	 * @param list<int>|null $schemaIdScope   Only look in these schemas' tables, in any register (null: every schema).
 	 *
 	 * @return ObjectEntity[] Array of found objects (may be fewer than requested if some not found).
 	 */
@@ -5860,8 +5895,13 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		array $uuids,
 		bool $includeDeleted = false,
 		?int $registerIdScope = null,
+		?array $schemaIdScope = null,
 	): array {
-		return $this->findMultipleAcross(lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted), registerIdScope: $registerIdScope);
+		return $this->findMultipleAcross(
+			lookup: new UuidBatchLookup(uuids: $uuids, includeDeleted: $includeDeleted),
+			registerIdScope: $registerIdScope,
+			schemaIdScope: $schemaIdScope
+		);
 	}//end findMultipleAcrossAllMagicTables()
 
 	/**
@@ -5869,11 +5909,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @param UuidBatchLookup $lookup          The uuids and whether soft-deleted rows count.
 	 * @param int|null        $registerIdScope Restrict the scan to one register's tables.
+	 * @param list<int>|null  $schemaIdScope   Restrict the scan to these schemas' tables.
 	 *
 	 * @return array The found objects.
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
-	public function findMultipleAcross(UuidBatchLookup $lookup, ?int $registerIdScope=null): array {
+	public function findMultipleAcross(UuidBatchLookup $lookup, ?int $registerIdScope=null, ?array $schemaIdScope=null): array {
 		$uuids          = $lookup->uuids;
 		$includeDeleted = $lookup->includeDeleted;
 
@@ -5885,6 +5926,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$scan = new MagicCrossTableScan(label: 'findMultipleAcrossAllMagicTables');
 		$scan->includeDeleted = $includeDeleted;
 		$scan->registerIdScope = $registerIdScope;
+		$scan->schemaIdScope = $schemaIdScope;
 		$scan->predicate = '_uuid IN (' . implode(',', array_fill(0, count($uuids), '?')) . ')';
 		$scan->parameters = $uuids;
 
@@ -6515,11 +6557,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			}
 
 			$registerId = (int)$matches[1];
-			if ($scan->registerIdScope !== null && $registerId !== $scan->registerIdScope) {
+			$schemaId = (int)$matches[2];
+			if (($scan->registerIdScope !== null && $registerId !== $scan->registerIdScope)
+				|| ($scan->schemaIdScope !== null && in_array($schemaId, $scan->schemaIdScope, true) === false)
+			) {
 				continue;
 			}
 
-			$scan->tables[$fullTableName] = ['registerId' => $registerId, 'schemaId' => (int)$matches[2]];
+			$scan->tables[$fullTableName] = ['registerId' => $registerId, 'schemaId' => $schemaId];
 		}
 	}//end listCrossTableScanTables()
 
@@ -6647,12 +6692,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	public function findAllInRegisterSchemaTable(RegisterSchema $table, ListQuery $listing=new ListQuery(limit: ListQuery::UNBOUNDED)): array {
-		$register = $table->register;
-		$schema   = $table->schema;
-		$limit    = $listing->limitOrNull();
-		$offset   = $listing->offset;
-		$filters  = $listing->filters;
-		$sort     = $listing->sort;
+		$limit   = $listing->limitOrNull();
+		$offset  = $listing->offset;
+		$filters = $listing->filters;
+		$sort    = $listing->sort;
 
 		$query = [];
 
@@ -8264,7 +8307,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// The bulk path never went through SaveObject's encryption step. An
 		// encrypted property used to have no column, so bulk dropped its value;
 		// now that it has one, encrypt here so it can only ever hold an envelope.
-		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
+		// Nor through the share endpoints: recompute the derived principal lists here too.
+		$objects = (new MagicSharePrincipals(container: $this->container))->forRows(objects: $command->objects, schema: $schema);
+		$objects = (new MagicFlaggedEncryption(container: $this->container))->forRows(objects: $objects, schema: $schema);
 
 		try {
 			return $this->bulkHandler->upsert(

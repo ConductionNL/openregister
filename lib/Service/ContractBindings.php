@@ -35,6 +35,7 @@ use OCA\OpenRegister\Kernel\Contracts\ObjectExporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\ScheduledReportsInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaExplorationInterface;
+use OCA\OpenRegister\Kernel\Contracts\TablePdfRendererInterface;
 use OCA\OpenRegister\Kernel\Contracts\VocabularyImporterInterface;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineEntries;
 use OCA\OpenRegister\Notifications\Service\ExampleSet\ExampleSetTimelineRowsInterface;
@@ -142,6 +143,7 @@ use OCA\OpenRegister\Kernel\Contracts\Processes\TranslationProjectionInterface;
 use OCA\OpenRegister\Kernel\Contracts\Processes\WholeSetExportActionInterface;
 use OCA\OpenRegister\BulkAction\ExportWholeSetAction;
 use OCA\OpenRegister\Kernel\Contracts\Processes\ObjectWriteCacheFollowerInterface;
+use OCA\OpenRegister\Kernel\Contracts\ObjectWriteValidatorInterface;
 use OCA\OpenRegister\Listener\RedactionPolicyCacheListener;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateService;
 use OCA\OpenRegister\Service\RecordTemplate\RecordTemplateStoreInterface;
@@ -184,6 +186,7 @@ final class ContractBindings {
 		OdtWriterInterface::class => OdtWriter::class,
 		HtmlPdfConverterInterface::class => OfficeHtmlPdfConverter::class,
 		ObjectWriteCacheFollowerInterface::class => RedactionPolicyCacheListener::class,
+		ObjectWriteValidatorInterface::class => \OCA\OpenRegister\Listener\DetectionPatternValidationListener::class,
 		DeclaredWebhookInstallerInterface::class => NotificationsAnnotationInstaller::class,
 		TranslationProjectionInterface::class => TranslationProjectionService::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\SourceLanguagesInterface::class => TranslationProjectionService::class,
@@ -191,8 +194,10 @@ final class ContractBindings {
 		AppSettingsInterface::class => SettingsService::class,
 		ArchivalSettingsReaderInterface::class => ObjectRetentionHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\Compliance\ArchivalSettingsInterface::class => ObjectRetentionHandler::class,
+		\OCA\OpenRegister\Kernel\Contracts\ExportKeySealersInterface::class => \OCA\OpenRegister\Service\Exchange\ExportKeySealers::class,
 		\OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
 		\OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
+		\OCA\OpenRegister\Kernel\Contracts\CapacityPolicyReaderInterface::class => \OCA\OpenRegister\Service\Settings\FileSettingsHandler::class,
 		TranslationBindingInterface::class => TranslationBindingDescription::class,
 		\OCA\OpenRegister\Service\AuthenticationTokenFetcherInterface::class => \OCA\OpenRegister\Service\AuthenticationService::class,
 		\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface::class => \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class,
@@ -204,6 +209,7 @@ final class ContractBindings {
 		ConfigurationKeyRegistryInterface::class => ConfigurationKeyRegistry::class,
 		DeploymentPreviewServiceInterface::class => DeploymentPreviewService::class,
 		DeploymentServiceInterface::class => DeploymentService::class,
+		\OCA\OpenRegister\Kernel\Contracts\PromotionLandingInterface::class => \OCA\OpenRegister\Service\ConfigurationDeployment\PromotionLanding::class,
 		\OCA\OpenRegister\Service\Connection\ConnectionReporterInterface::class => \OCA\OpenRegister\Service\Connection\ConnectionReporter::class,
 		BrpPersonProviderInterface::class => BrpPersonProvider::class,
 		CaseTokenServiceInterface::class => CaseTokenService::class,
@@ -328,6 +334,7 @@ final class ContractBindings {
 		SharedSchemaDedupeServiceInterface::class => SharedSchemaDedupeService::class,
 		SourceRowReaderInterface::class => SourceRowReader::class,
 		SupportBundleServiceInterface::class => SupportBundleService::class,
+		TablePdfRendererInterface::class => ExportService::class,
 		TalkLinkServiceInterface::class => TalkLinkService::class,
 		TimeTrackerLinkServiceInterface::class => TimeTrackerLinkService::class,
 		VocabularyImporterInterface::class => VocabularyImportService::class,

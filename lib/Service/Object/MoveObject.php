@@ -50,6 +50,10 @@ use OCA\OpenRegister\Db\RegisterSchema;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectLeavingEvent;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
+use OCA\OpenRegister\Kernel\Contracts\FlowTimerControlInterface;
+use OCA\OpenRegister\Kernel\Contracts\TimerChange;
+use OCA\OpenRegister\Kernel\Contracts\TimerSubjectRef;
+use Psr\Container\ContainerInterface;
 use Opis\JsonSchema\ValidationResult;
 use Throwable;
 
@@ -66,6 +70,20 @@ use Throwable;
  * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
  */
 class MoveObject implements MoveObjectInterface {
+
+	/**
+	 * The timer subject type of an object.
+	 *
+	 * @var string
+	 */
+	private const TIMER_SUBJECT_TYPE = 'object';
+
+	/**
+	 * The reason a moved object's timers are superseded with.
+	 *
+	 * @var string
+	 */
+	public const TIMER_REASON = 'moved';
 
 	/**
 	 * What a move is called in the audit trail.
@@ -96,11 +114,18 @@ class MoveObject implements MoveObjectInterface {
 	 *                                            values other records hold.
 	 * @param ObjectValidatorInterface        $validator Validation against a schema.
 	 * @param RelationAddressRewriteInterface $relations The relation rows that store the object's address.
+	 * @param ContainerInterface|null        $container Supplies the FlowTimerControlInterface that moves the
+	 *                                                  object's timers onto the calendar its new schema names.
+	 *                                                  Looked up on first use: the timer service reaches
+	 *                                                  ObjectService, which builds this class, so taking it
+	 *                                                  in the constructor closed a DI loop and the app could
+	 *                                                  not be enabled.
 	 */
 	public function __construct(
 		private readonly ObjectChangeRecording $recording,
 		private readonly ObjectValidatorInterface $validator,
 		private readonly RelationAddressRewriteInterface $relations,
+		private readonly ?ContainerInterface $container=null,
 	) {
 		$this->objects = $recording->objects;
 	}//end __construct()
@@ -239,10 +264,12 @@ class MoveObject implements MoveObjectInterface {
 	 * @return array The answer
 	 *
 	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
 	 */
 	private function completeMove(ObjectMove $move): array {
 		$stranded = $this->removeFromSource(move: $move) === false;
 		$this->rewriteRelations(move: $move);
+		$this->recalendarTimers(move: $move);
 		$this->record(move: $move, stranded: $stranded);
 
 		$errors = [];
@@ -413,6 +440,57 @@ class MoveObject implements MoveObjectInterface {
 			);
 		}
 	}//end rewriteRelations()
+
+	/**
+	 * The timer control, when the container offers one.
+	 *
+	 * @return FlowTimerControlInterface|null The timer control.
+	 */
+	private function timers(): ?FlowTimerControlInterface {
+		if ($this->container === null || $this->container->has(FlowTimerControlInterface::class) === false) {
+			return null;
+		}
+
+		return $this->container->get(FlowTimerControlInterface::class);
+	}//end timers()
+
+	/**
+	 * Move the object's timers onto the calendar its new schema names.
+	 *
+	 * Timers are keyed on the uuid, so they follow the object without being
+	 * touched (design D-1), except for one thing a schema decides: a timer
+	 * whose working calendar was named by the record type it was armed on.
+	 * That timer is superseded with reason `moved` and re-projected on the
+	 * target's calendar. Like the relation rewrite, a failure is logged and
+	 * does not undo the move: the object has moved, and a deadline that still
+	 * measures on the old calendar is a wrong date, not a lost record.
+	 *
+	 * @param ObjectMove $move The completed move.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md#requirement-an-object-can-move-between-registers-and-schemas-without-changing-identity
+	 */
+	private function recalendarTimers(ObjectMove $move): void {
+		$timers = $this->timers();
+		if ($timers === null) {
+			return;
+		}
+
+		$uuid = (string)$move->object->getUuid();
+		try {
+			$timers->recalendarForSubject(
+				subject: new TimerSubjectRef(type: self::TIMER_SUBJECT_TYPE, uuid: $uuid),
+				recordType: (string)$move->target->schema->getId(),
+				change: new TimerChange(reason: self::TIMER_REASON, actor: $move->actor)
+			);
+		} catch (Throwable $e) {
+			$this->recording->logger->warning(
+				message: '[MoveObject] the timers of ' . $uuid . ' still measure on the calendar of the schema it moved from: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'from' => $move->source->ids(), 'to' => $move->target->ids()]
+			);
+		}
+	}//end recalendarTimers()
 
 	/**
 	 * Give the object the slug it may hold in the target (#4037).

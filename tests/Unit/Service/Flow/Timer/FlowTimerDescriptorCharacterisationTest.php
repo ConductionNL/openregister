@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Timer;
 
+use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Tests\Unit\Support\OneServiceContainer;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
@@ -109,7 +111,7 @@ final class FlowTimerDescriptorCharacterisationTest extends TestCase {
 			}
 		};
 
-		return new FlowTimerDefinitionStore(objects: $objects, appManager: $appManager, logger: $logger);
+		return new FlowTimerDefinitionStore(container: new OneServiceContainer(ObjectOperationsInterface::class, $objects), appManager: $appManager, logger: $logger);
 	}//end store()
 
 	/**

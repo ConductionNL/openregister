@@ -158,7 +158,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 	// ── applyInboundUpdate ──
 
 	public function testApplyInboundUpdateWithNoMatchesAppliesNothing(): void {
-		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([]);
+		$this->subscriptionMapper->method('findLiveByIdentity')->willReturn([]);
 		$this->updateTargetGuard->expects($this->never())->method('evaluate');
 
 		$result = $this->service->applyInboundUpdate(new InboundUpdate(new RegistryIdentity('brp', '999990019'), ['address' => 'Dam 1'], 'evt-1'));
@@ -177,7 +177,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$row->setIdentityValue('999990019');
 		$row->setState(RegistrySubscription::STATE_ACTIVE);
 
-		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([$row]);
+		$this->subscriptionMapper->method('findLiveByIdentity')->willReturn([$row]);
 		$this->updateTargetGuard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
 
 		// Argument correctness is checked inside these callbacks, reading
@@ -233,7 +233,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$row->setIdentityValue('999990019');
 		$row->setState(RegistrySubscription::STATE_ACTIVE);
 
-		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([$row]);
+		$this->subscriptionMapper->method('findLiveByIdentity')->willReturn([$row]);
 		$this->updateTargetGuard->method('evaluate')->willReturn(['allowed' => false, 'rejected' => ['notes']]);
 
 		$this->objectService->expects($this->never())->method('saveObject');
@@ -256,7 +256,7 @@ class RegistrySubscriptionServiceTest extends TestCase {
 		$row->setIdentityValue('999990019');
 		$row->setState(RegistrySubscription::STATE_ACTIVE);
 
-		$this->subscriptionMapper->method('findActiveByIdentity')->willReturn([$row]);
+		$this->subscriptionMapper->method('findLiveByIdentity')->willReturn([$row]);
 		$this->updateTargetGuard->method('evaluate')->willReturn(['allowed' => true, 'rejected' => []]);
 
 		$this->objectService->expects($this->never())->method('saveObject');

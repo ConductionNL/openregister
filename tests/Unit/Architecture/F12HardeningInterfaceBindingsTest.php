@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Architecture;
 
 use OCA\OpenRegister\Service\ComplianceServiceBindings;
+use OCA\OpenRegister\Kernel\Contracts\AddressAllowlistsInterface;
 use OCA\OpenRegister\Service\Hardening\AllowedOriginsInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningFloorsInterface;
 use OCA\OpenRegister\Service\Hardening\HardeningPolicy;
@@ -53,6 +54,7 @@ final class F12HardeningInterfaceBindingsTest extends TestCase {
 	 */
 	private const BINDINGS = [
 		AllowedOriginsInterface::class => [HardeningPolicy::class, ComplianceServiceBindings::class],
+		AddressAllowlistsInterface::class => [HardeningPolicy::class, ComplianceServiceBindings::class],
 		HardeningFloorsInterface::class => [HardeningPolicy::class, ComplianceServiceBindings::class],
 	];
 

@@ -10,7 +10,7 @@ import {
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-across-registers-global-search
  */
 import { translate as t } from '@nextcloud/l10n'
-import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
+import { NcActionButton, NcActions, NcAppContent, NcButton } from '@nextcloud/vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
@@ -19,13 +19,17 @@ import Merge from 'vue-material-design-icons/Merge.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import EditableCell from '../../components/tables/EditableCell.vue'
+import MapView from '../object/MapView.vue'
 import RecordsTreeView from './RecordsTreeView.vue'
 import {
+	recordOfCard as cardRecord,
 	cardSize,
 	galleryCardFields,
 	galleryCards,
 	gallerySchema,
 } from '../../services/galleryCards.js'
+import { searchWithinArea } from '../../services/geo/geoSearch.js'
+import { geoPropertyOf } from '../../services/geo/mapData.js'
 import { copyRows } from '../../services/objectCopy.js'
 import { isInlineEditable } from '../../services/propertyEditor.js'
 import {
@@ -37,6 +41,7 @@ import {
 } from '../../store/store.js'
 import { inheritedProperties } from './inheritedProperties.js'
 import { lensSearchParams, TABLE_LENSES } from './personalLensQuery.js'
+import { headerSortOf, orderParams } from './searchSort.js'
 
 /**
  * Normalize list so each row has top-level id for CnIndexPage rowKey.
@@ -107,6 +112,8 @@ export default {
 		Pencil,
 		TrashCanOutline,
 		EditableCell,
+		MapView,
+		NcButton,
 		RecordsTreeView,
 	},
 
@@ -131,10 +138,29 @@ export default {
 			// (REQ-VIEW-CAL-04), refetched on CnObjectCalendar's `range-change`.
 			calendarObjects: [],
 			calendarLoading: false,
+			// Map presentation (geometry-on-a-map REQ-GEOMAP-002): open on
+			// request for a schema with a geometry property; `mapArea` is the
+			// drawn polygon and `mapAreaObjects` the records geo-search found
+			// inside it (null while no area is drawn).
+			mapOpen: false,
+			mapArea: null,
+			mapAreaObjects: null,
+			mapLoading: false,
+			mapError: '',
 		}
 	},
 
 	computed: {
+		/**
+		 * The column header state, read back from the search's `_order`.
+		 *
+		 * @return {{sortKey: string|null, sortOrder: string}} The header state.
+		 * @spec openspec/changes/case-insensitive-ordering/specs/case-insensitive-ordering/spec.md
+		 */
+		headerSort() {
+			return headerSortOf(objectStore.searchParams)
+		},
+
 		/**
 		 * The columns a reader with update rights may edit in their cell:
 		 * scalar text, numbers and choice lists of the searched schema.
@@ -275,7 +301,31 @@ export default {
 		 * @return {string}
 		 */
 		presentationType() {
+			if (this.mapOpen && this.geoProperty !== null) {
+				return 'map'
+			}
 			return this.activeView?.presentation?.viewType || 'table'
+		},
+
+		/**
+		 * The searched schema's geometry property, or null when it has none.
+		 * The map is offered only for a schema that has one.
+		 *
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+		 * @return {string|null}
+		 */
+		geoProperty() {
+			return geoPropertyOf(this.normalizedSchema)
+		},
+
+		/**
+		 * The records the map shows: those inside the drawn area, else the list's.
+		 *
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+		 * @return {Array<object>}
+		 */
+		mapObjects() {
+			return this.mapAreaObjects !== null ? normalizeObjects(this.mapAreaObjects) : this.normalizedObjects
 		},
 
 		/**
@@ -399,6 +449,18 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * A schema without a geometry property has no map.
+		 *
+		 * @param {string|null} newVal The geometry property.
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+		 */
+		geoProperty(newVal) {
+			if (newVal === null) {
+				this.closeMap()
+			}
+		},
+
 		'navigationStore.modal': function (newVal, oldVal) {
 			if (oldVal === 'viewObject' && !newVal && this.isAddingNewObject) {
 				this.isAddingNewObject = false
@@ -442,6 +504,63 @@ export default {
 
 	methods: {
 		t,
+
+		/**
+		 * Show the records on the map.
+		 *
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+		 */
+		openMap() {
+			this.mapOpen = true
+		},
+
+		/**
+		 * Back to the list; a drawn area is dropped with the map.
+		 *
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+		 */
+		closeMap() {
+			this.mapOpen = false
+			this.handleMapAreaCleared()
+		},
+
+		/**
+		 * An area was drawn: ask geo-search for the records inside it, with
+		 * the list's active filters.
+		 *
+		 * @param {object} area The GeoJSON Polygon or MultiPolygon.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+		 */
+		async handleMapArea(area) {
+			this.mapArea = area
+			this.mapLoading = true
+			this.mapError = ''
+			try {
+				const results = await searchWithinArea(objectStore.searchParams, area, this.geoProperty)
+				if (this.mapArea === area) {
+					this.mapAreaObjects = results
+				}
+			} catch {
+				if (this.mapArea === area) {
+					this.mapAreaObjects = []
+					this.mapError = t('openregister', 'The area search failed.')
+				}
+			} finally {
+				this.mapLoading = false
+			}
+		},
+
+		/**
+		 * The area was removed: the map shows the whole list again.
+		 *
+		 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
+		 */
+		handleMapAreaCleared() {
+			this.mapArea = null
+			this.mapAreaObjects = null
+			this.mapError = ''
+		},
 
 		/**
 		 * Ask the list for the reader's update right on each row
@@ -521,6 +640,9 @@ export default {
 		/**
 		 * Apply a sort change and re-run the search.
 		 *
+		 * The sort goes out as `_order`, the parameter the object list reads;
+		 * any other name is read as a property filter and empties the list.
+		 *
 		 * @param {object} root0 The sort event payload.
 		 * @param {string} root0.key The sort column key.
 		 * @param {string} root0.order The sort order.
@@ -528,7 +650,7 @@ export default {
 		 * @return {void}
 		 */
 		handleSort({ key, order }) {
-			objectStore.updateSearchParams({ sortKey: key, sortOrder: order })
+			objectStore.updateSearchParams(orderParams(key, order))
 			objectStore.refetchSearchCollection()
 		},
 
@@ -578,6 +700,17 @@ export default {
 		 */
 		handleSelect(ids) {
 			objectStore.setSelectedObjects(ids)
+		},
+
+		/**
+		 * The record behind a gallery card, without the cover it was given for display.
+		 *
+		 * @param {object} card The card.
+		 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-the-search-page-renders-a-gallery-view-as-cards
+		 * @return {object}
+		 */
+		recordOfCard(card) {
+			return cardRecord(card)
 		},
 
 		/**
@@ -886,8 +1019,8 @@ export default {
 			"
 			:selectable="hasSelectedRegisters && hasSelectedSchemas"
 			:selectedIds="selectedIdsForPage"
-			:sortKey="objectStore.searchParams.sortKey"
-			:sortOrder="objectStore.searchParams.sortOrder"
+			:sortKey="headerSort.sortKey"
+			:sortOrder="headerSort.sortOrder"
 			:showTitle="false"
 			:showMassImport="false"
 			:showMassExport="false"
@@ -911,6 +1044,11 @@ export default {
 			@pageChanged="handlePageChanged"
 			@pageSizeChanged="handlePageSizeChanged"
 			@select="handleSelect">
+			<template v-if="geoProperty !== null" #header-actions>
+				<NcButton data-testid="search-open-map" @click="openMap">
+					{{ t('openregister', 'Show on map') }}
+				</NcButton>
+			</template>
 			<template
 				v-for="column in inlineEditableColumns"
 				:key="column"
@@ -979,6 +1117,27 @@ export default {
 			</template>
 		</CnIndexPage>
 
+		<div
+			v-else-if="presentationType === 'map'"
+			class="search-map"
+			data-testid="search-map">
+			<div class="search-map__toolbar">
+				<NcButton data-testid="search-close-map" @click="closeMap">
+					{{ t('openregister', 'Table') }}
+				</NcButton>
+			</div>
+			<p v-if="mapError" class="search-map__error" role="alert">
+				{{ mapError }}
+			</p>
+			<MapView
+				:objects="mapObjects"
+				:geoProperty="geoProperty"
+				drawable
+				@area="handleMapArea"
+				@areaCleared="handleMapAreaCleared"
+				@objectClick="handleRowClick" />
+		</div>
+
 		<CnObjectKanban
 			v-else-if="presentationType === 'kanban'"
 			:key="`kanban-${activeViewId}`"
@@ -1028,34 +1187,34 @@ export default {
 				:cardFields="galleryFields"
 				:loading="objectStore.searchLoading"
 				rowKey="id"
-				@click="handleRowClick">
+				@click="(card) => handleRowClick(recordOfCard(card))">
 				<template #card-actions="{ object }">
 					<NcActions>
-						<NcActionButton closeAfterClick @click="handleRowClick(object)">
+						<NcActionButton closeAfterClick @click="handleRowClick(recordOfCard(object))">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							{{ t('openregister', 'Edit') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleMergeRow(object)">
+						<NcActionButton closeAfterClick @click="handleMergeRow(recordOfCard(object))">
 							<template #icon>
 								<Merge :size="20" />
 							</template>
 							{{ t('openregister', 'Merge') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleCopyRow(object)">
+						<NcActionButton closeAfterClick @click="handleCopyRow(recordOfCard(object))">
 							<template #icon>
 								<ContentCopy :size="20" />
 							</template>
 							{{ t('openregister', 'Copy') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleSaveAsTemplateRow(object)">
+						<NcActionButton closeAfterClick @click="handleSaveAsTemplateRow(recordOfCard(object))">
 							<template #icon>
 								<FileDocumentPlusOutline :size="20" />
 							</template>
 							{{ t('openregister', 'Save as template') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleDeleteRow(object)">
+						<NcActionButton closeAfterClick @click="handleDeleteRow(recordOfCard(object))">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>
@@ -1077,6 +1236,20 @@ export default {
 </template>
 
 <style scoped>
+.search-map {
+	padding: calc(var(--default-grid-baseline) * 4);
+}
+
+.search-map__toolbar {
+	display: flex;
+	justify-content: flex-end;
+	margin-block-end: calc(var(--default-grid-baseline) * 2);
+}
+
+.search-map__error {
+	color: var(--color-error-text);
+}
+
 /* The view's card size sets the grid's column width (records-gallery-view). */
 .search-gallery--small {
 	--cn-card-grid-min: 160px;

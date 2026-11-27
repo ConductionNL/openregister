@@ -206,6 +206,33 @@ class ExtendingFormDeclarationTest extends TestCase {
 	}
 
 	/**
+	 * `sort`, `group` and `placeholder` are accepted and forward no key.
+	 *
+	 * A case type's question carries where it sits on the form, the heading
+	 * it sits under and its input's example text. Refusing a role by name
+	 * rejects the whole consuming schema at import, so an app could not map
+	 * them at all.
+	 *
+	 * @spec openspec/specs/runtime-schema-api/spec.md
+	 *
+	 * @return void
+	 */
+	public function testTheLayoutFormRolesAreAcceptedAndNotForwarded(): void {
+		$declaration = $this->shippedForm();
+		$forwarded = count($this->declarations->forwards(annotation: $declaration));
+		$declaration['map']['sort'] = 'order';
+		$declaration['map']['group'] = 'group';
+		$declaration['map']['placeholder'] = 'placeholder';
+
+		$this->assertSame(expected: [], actual: $this->declarations->validate(annotation: $declaration));
+		$forwards = $this->declarations->forwards(annotation: $declaration);
+		foreach (['sort', 'group', 'placeholder'] as $role) {
+			$this->assertNotContains(needle: $role, haystack: $forwards);
+		}
+		$this->assertSame(expected: $forwarded, actual: count($forwards));
+	}
+
+	/**
 	 * Every role the shipped consumer reads is accepted.
 	 *
 	 * Taken from `@conduction/nextcloud-vue` 2.79.0

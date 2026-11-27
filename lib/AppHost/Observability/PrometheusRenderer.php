@@ -70,8 +70,8 @@ class PrometheusRenderer {
 	 */
 	private function familyLines(string $metricName, MetricSample $sample): array {
 		$metricType = 'gauge';
-		if ($sample->type === 'counter') {
-			$metricType = 'counter';
+		if (in_array($sample->type, ['counter', 'histogram'], true) === true) {
+			$metricType = $sample->type;
 		}
 
 		$lines   = [];
@@ -81,12 +81,37 @@ class PrometheusRenderer {
 		foreach ($sample->samples as $point) {
 			$labels  = $point['labels'];
 			$value   = $point['value'];
-			$lines[] = $metricName . $this->renderLabels(labels: $labels) . ' ' . $this->renderValue(value: $value);
+			$suffix  = $this->pointSuffix(metricType: $metricType, point: $point);
+			$lines[] = $metricName . $suffix . $this->renderLabels(labels: $labels) . ' ' . $this->renderValue(value: $value);
 		}
 
 		$lines[] = '';
 		return $lines;
 	}//end familyLines()
+
+	/**
+	 * The series suffix of one point of a family.
+	 *
+	 * A histogram family is three series: `_bucket` (one point per `le`
+	 * boundary), `_sum` and `_count`. A histogram point names its series in
+	 * an optional `suffix` key; any other value, and any suffix on a gauge or
+	 * counter point, is ignored, so a point can never rename its family.
+	 *
+	 * @param string              $metricType The rendered TYPE of the family.
+	 * @param array<string,mixed> $point      One point.
+	 *
+	 * @return string The suffix, or an empty string.
+	 *
+	 * @spec openspec/changes/production-observability
+	 */
+	private function pointSuffix(string $metricType, array $point): string {
+		$suffix = $point['suffix'] ?? '';
+		if ($metricType !== 'histogram' || in_array($suffix, ['_bucket', '_sum', '_count'], true) === false) {
+			return '';
+		}
+
+		return $suffix;
+	}//end pointSuffix()
 
 	/**
 	 * Sanitise the app id into a Prometheus-safe metric prefix `[a-z0-9_]`.

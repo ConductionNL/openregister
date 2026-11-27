@@ -174,7 +174,9 @@ class EntityPlaneAnonymousPinTest extends TestCase {
 
 	/**
 	 * The decision has exactly three ways to answer: an administrator, the
-	 * trusted-caller check for no session user, and the organisation policy.
+	 * caller without a session user (trusted system caller, or an explicit
+	 * `public` grant in the organisation's authorization, task 3), and the
+	 * organisation policy.
 	 */
 	public function testTheDecisionHasExactlyThreeAnswers(): void {
 		$tokens = self::bodyTokens(method: 'hasRbacPermission');
@@ -186,7 +188,7 @@ class EntityPlaneAnonymousPinTest extends TestCase {
 			}
 		}
 
-		$this->assertSame(['isCurrentUserAdmin', 'getCurrentUserId', 'isTrustedSystemCaller', 'organisationPolicyAllows'], $called);
+		$this->assertSame(['isCurrentUserAdmin', 'getCurrentUserId', 'isTrustedSystemCaller', 'publicPolicyAllows', 'organisationPolicyAllows'], $called);
 		$this->assertCount(3, array_filter($tokens, static fn (mixed $token): bool => is_array($token) === true && $token[0] === T_RETURN));
 	}//end testTheDecisionHasExactlyThreeAnswers()
 

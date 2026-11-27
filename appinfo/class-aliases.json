@@ -396,6 +396,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Controller\\NotificationRuleReachController": {
+			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationRuleReachController",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Controller\\NotificationSubscriptionsController": {
 			"class": "OCA\\OpenRegister\\Notifications\\Controller\\NotificationSubscriptionsController",
 			"eager": false,
@@ -1011,6 +1016,11 @@
 			"eager": false,
 			"service": true
 		},
+		"OCA\\OpenRegister\\Controller\\ReportTemplateController": {
+			"class": "OCA\\OpenRegister\\Search\\Controller\\ReportTemplateController",
+			"eager": false,
+			"service": true
+		},
 		"OCA\\OpenRegister\\Controller\\CrossRegisterReportController": {
 			"class": "OCA\\OpenRegister\\Search\\Controller\\CrossRegisterReportController",
 			"eager": false,
@@ -1078,6 +1088,11 @@
 		},
 		"OCA\\OpenRegister\\Command\\MoveObjectFilesCommand": {
 			"class": "OCA\\OpenRegister\\Files\\Command\\MoveObjectFilesCommand",
+			"eager": false,
+			"service": true
+		},
+		"OCA\\OpenRegister\\Controller\\AttachTargetsController": {
+			"class": "OCA\\OpenRegister\\Files\\Controller\\AttachTargetsController",
 			"eager": false,
 			"service": true
 		},

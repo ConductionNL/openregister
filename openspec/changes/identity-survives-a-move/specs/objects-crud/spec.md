@@ -16,7 +16,6 @@ errors. The move SHALL write one `moved` audit entry naming both addresses.
 - **GIVEN** an object with generated identifier `2026-0042`, six audit entries and two relations
 - **WHEN** it is moved to another schema declaring the same generated property
 - **THEN** it keeps `2026-0042`, has seven audit entries and both relations resolve
-- @e2e exclude {proposal only; task 3.1 adds tests/e2e/ci/object-move.spec.ts when the endpoint ships}
 
 #### Scenario: a target that does not fit refuses the move
 
@@ -43,4 +42,3 @@ records carrying the old deep link SHALL be rewritten.
 - **GIVEN** a moved object and its old URL
 - **WHEN** the old URL is requested
 - **THEN** the object is returned with `@self.movedTo`
-- @e2e exclude {resolver, covered by unit tests}

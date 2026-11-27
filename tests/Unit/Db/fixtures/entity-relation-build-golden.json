@@ -25,7 +25,18 @@
             "decision": null,
             "page": null,
             "box": null,
-            "createdAt": "2026-01-02T03:04:05+00:00"
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
+            "archiveMember": null,
+            "createdAt": "2026-01-02T03:04:05+00:00",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -68,7 +79,18 @@
             "decision": null,
             "page": null,
             "box": null,
-            "createdAt": "now"
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -99,7 +121,18 @@
             "decision": null,
             "page": null,
             "box": null,
-            "createdAt": "now"
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -130,7 +163,18 @@
             "decision": null,
             "page": null,
             "box": null,
-            "createdAt": "now"
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -161,7 +205,18 @@
             "decision": null,
             "page": null,
             "box": null,
-            "createdAt": "now"
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -192,7 +247,18 @@
             "decision": null,
             "page": null,
             "box": null,
-            "createdAt": "now"
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",
@@ -223,7 +289,18 @@
             "decision": null,
             "page": null,
             "box": null,
-            "createdAt": "now"
+            "capacity": null,
+            "capacitySource": null,
+            "capacityApplied": null,
+            "capacityConfirmedBy": null,
+            "capacityConfirmedAt": null,
+            "personMatch": null,
+            "uncertain": null,
+            "archiveMember": null,
+            "createdAt": "now",
+            "redactionDecision": "undecided",
+            "decidedBy": null,
+            "decidedAt": null
         },
         "updated": [
             "entityId",

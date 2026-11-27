@@ -26,6 +26,7 @@ use OCA\OpenRegister\Kernel\Contracts\ChunkMapperInterface;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCA\OpenRegister\Service\Search\TextSearchConfiguration;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -61,10 +62,16 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	/**
 	 * Constructor.
 	 *
-	 * @param IDBConnection $db Database connection.
-	 * @param LoggerInterface|null $logger PSR-3 logger (nullable for BC with existing constructions).
+	 * @param IDBConnection                $db         Database connection.
+	 * @param LoggerInterface|null         $logger     PSR-3 logger (nullable for BC with existing constructions).
+	 * @param TextSearchConfiguration|null $textSearch The configuration ranked keyword search also stems with
+	 *                                                 on PostgreSQL; none keeps the `simple` match alone.
 	 */
-	public function __construct(IDBConnection $db, ?LoggerInterface $logger = null) {
+	public function __construct(
+		IDBConnection $db,
+		?LoggerInterface $logger = null,
+		private readonly ?TextSearchConfiguration $textSearch = null,
+	) {
 		parent::__construct(db: $db, tableName: 'openregister_chunks', entityClass: Chunk::class);
 		$this->logger = $logger ?? new NullLogger();
 	}//end __construct()
@@ -495,7 +502,21 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	 */
 	private function searchByKeywordRanked(KeywordChunkSearch $search): array {
 		$tsVector = "to_tsvector('simple', text_content)";
-		$where = [$tsVector . " @@ plainto_tsquery('simple', :query)"];
+		$match    = $tsVector . " @@ plainto_tsquery('simple', :query)";
+		$rank     = 'ts_rank(' . $tsVector . ", plainto_tsquery('simple', :query))";
+		$stemmed  = $this->stemmingConfiguration();
+		if ($stemmed !== null) {
+			// The stemmed arm (search-dutch-language-quality REQ-SDL-001): an
+			// inflected form finds its base and the reverse. The configuration
+			// is an identifier TextSearchConfiguration vouched for, inlined so
+			// the functional GIN index of Version1Date20261121150000 serves it.
+			$dutchVector = "to_tsvector('" . $stemmed . "', text_content)";
+			$dutchQuery  = "plainto_tsquery('" . $stemmed . "', :query)";
+			$match       = '(' . $match . ' OR ' . $dutchVector . ' @@ ' . $dutchQuery . ')';
+			$rank        = 'GREATEST(' . $rank . ', ts_rank(' . $dutchVector . ', ' . $dutchQuery . '))';
+		}
+
+		$where = [$match];
 		$params = ['query' => $search->query];
 
 		if ($search->sourceType() !== null) {
@@ -503,8 +524,8 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 			$params['sourceType'] = $search->sourceType();
 		}
 
-		$sql = 'SELECT id, source_type, source_id, text_content, chunk_index, '
-			. 'ts_rank(' . $tsVector . ", plainto_tsquery('simple', :query)) AS score "
+		$sql = 'SELECT id, source_type, source_id, text_content, chunk_index, position_reference, '
+			. $rank . ' AS score '
 			. 'FROM *PREFIX*openregister_chunks '
 			. 'WHERE ' . implode(' AND ', $where) . ' '
 			. 'ORDER BY score DESC '
@@ -535,24 +556,78 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 	}//end searchByKeywordRanked()
 
 	/**
+	 * The configuration the stemmed arm uses, or null when there is none or it is `simple` already.
+	 *
+	 * @return string|null The configuration name.
+	 *
+	 * @spec openspec/changes/search-dutch-language-quality/specs/zoeken-filteren/spec.md
+	 */
+	private function stemmingConfiguration(): ?string {
+		$config = $this->textSearch?->active();
+		if ($config === null || $config === 'simple') {
+			return null;
+		}
+
+		return $config;
+	}//end stemmingConfiguration()
+
+	/**
 	 * Shape one chunk row as a keyword-search hit.
+	 *
+	 * A chunk of an archive member carries the member's path in `metadata.member`,
+	 * so a hit can say which file inside the archive matched; any other chunk has
+	 * empty metadata.
 	 *
 	 * @param array $row   The chunk row.
 	 * @param float $score The hit's score.
 	 *
 	 * @return array{entity_type: string, entity_id: string, score: float,
 	 *               chunk_text: string|null, chunk_index: int, metadata: array}
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
 	 */
 	private static function keywordHit(array $row, float $score): array {
+		$metadata = [];
+		$member = self::memberOf(positionReference: ($row['position_reference'] ?? null));
+		if ($member !== null) {
+			$metadata['member'] = $member;
+		}
+
 		return [
 			'entity_type' => (string)($row['source_type'] ?? 'file'),
 			'entity_id' => (string)$row['source_id'],
 			'score' => $score,
 			'chunk_text' => $row['text_content'],
 			'chunk_index' => (int)$row['chunk_index'],
-			'metadata' => [],
+			'metadata' => $metadata,
 		];
 	}//end keywordHit()
+
+	/**
+	 * The archive member path a chunk's stored position reference names, or null.
+	 *
+	 * @param mixed $positionReference The `position_reference` column: JSON text, an array or null.
+	 *
+	 * @return string|null The member path, or null for a chunk that is not an archive member's.
+	 *
+	 * @spec openspec/changes/archive-members-are-searchable/specs/text-extraction/spec.md#requirement-each-member-is-extracted-and-searchable-on-its-own-req-ams-002
+	 */
+	private static function memberOf(mixed $positionReference): ?string {
+		if (is_string($positionReference) === true) {
+			$positionReference = json_decode($positionReference, true);
+		}
+
+		$member = null;
+		if (is_array($positionReference) === true) {
+			$member = ($positionReference['member'] ?? null);
+		}
+
+		if (is_string($member) === false || $member === '') {
+			return null;
+		}
+
+		return $member;
+	}//end memberOf()
 
 	/**
 	 * Unranked `LIKE` fallback for platforms without a `tsvector` index (e.g. MariaDB).
@@ -574,7 +649,7 @@ class ChunkMapper extends QBMapper implements ChunkMapperInterface, ChunkIndexOv
 		$qb = $this->db->getQueryBuilder();
 		$searchPattern = '%' . $this->db->escapeLikeParameter($search->query) . '%';
 
-		$qb->select('id', 'source_type', 'source_id', 'text_content', 'chunk_index')
+		$qb->select('id', 'source_type', 'source_id', 'text_content', 'chunk_index', 'position_reference')
 			->from($this->getTableName())
 			->where(
 				$qb->expr()->iLike(

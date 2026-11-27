@@ -15,7 +15,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Settings;
 
-use OCA\OpenRegister\Service\Anonymisation\CapacityPolicy;
+use OCA\OpenRegister\Kernel\Contracts\CapacityPolicy;
 use OCA\OpenRegister\Service\Anonymisation\OfficialsSource;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\IAppConfig;

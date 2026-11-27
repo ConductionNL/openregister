@@ -44,6 +44,13 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Credential\DeclaredProviderApprovals
  * @uses   \OCA\OpenRegister\Service\Credential\DeclarationValidator
  * @uses   \OCA\OpenRegister\Service\Credential\ProviderCatalogue
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkBatchDefaults
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SaveActor
+ * @uses \OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy
  */
 class DeclaredProviderResolverTest extends TestCase {
 
@@ -352,5 +359,125 @@ class DeclaredProviderResolverTest extends TestCase {
 		$this->decisions[0]['providerIdentifier'] = 'alpha:codeberg-legacy';
 
 		$this->assertSame('pending', $this->resolver()->resolve('alpha:codeberg')['status']);
+	}
+
+	public function testTheListingNamesEveryValidDeclarationWithItsOriginAndStatusOnly(): void {
+		$approved = $this->codeberg('beta');
+		$this->declare('alpha', ['alpha:codeberg' => $this->codeberg('alpha')]);
+		$this->declare('beta', ['beta:codeberg' => $approved]);
+		$this->decide($approved, 'approved', '2026-11-01T10:00:00+00:00');
+		$bad = $this->codeberg('gamma');
+		$bad['inject_only'] = true;
+		$this->declare('gamma', ['gamma:codeberg' => $bad]);
+
+		$this->assertSame(
+			[
+				['identifier' => 'alpha:codeberg', 'title' => 'Codeberg', 'origin' => 'alpha', 'status' => 'pending'],
+				['identifier' => 'beta:codeberg', 'title' => 'Codeberg', 'origin' => 'beta', 'status' => 'admitted'],
+			],
+			$this->resolver()->listing()
+		);
+	}
+
+	public function testTheListingIsEmptyWhenNoAppDeclares(): void {
+		$this->installed = ['openregister'];
+
+		$this->assertSame([], $this->resolver()->listing());
+	}
+
+	public function testTheDeclaringAppIsReadFromTheIdentifierEvenWhenTheAppIsGone(): void {
+		$resolver = $this->resolver();
+
+		$this->assertSame('alpha', $resolver->declaringApp('alpha:codeberg'));
+		$this->assertSame('alpha', $resolver->declaringApp('alpha:code:berg'));
+		$this->assertSame('', $resolver->declaringApp('github'));
+	}
+
+	public function testTheReviewNamesTheHostAndEveryRuleOfAPendingDeclaration(): void {
+		$this->declare('alpha', ['alpha:codeberg' => $this->codeberg('alpha', [
+			['method' => 'GET', 'pathPattern' => '/repos/*'],
+			['method' => 'POST', 'pathPattern' => '/repos/*/issues'],
+		])]);
+
+		$this->assertSame(
+			[
+				[
+					'identifier'   => 'alpha:codeberg',
+					'title'        => 'Codeberg',
+					'origin'       => 'alpha',
+					'status'       => 'pending',
+					'lane'         => 'approval',
+					'autoAdmitted' => false,
+					'host'         => 'codeberg.org',
+					'baseUrl'      => 'https://codeberg.org/api/v1',
+					'allowRules'   => [
+						['method' => 'GET', 'pathPattern' => '/repos/*'],
+						['method' => 'POST', 'pathPattern' => '/repos/*/issues'],
+					],
+					'reason'       => '',
+				],
+			],
+			$this->resolver()->review()
+		);
+	}
+
+	public function testTheReviewMarksANarrowingDeclarationAsAdmittedByItself(): void {
+		$this->declare('alpha', ['alpha:github-read' => [
+			'identifier' => 'alpha:github-read',
+			'title' => 'GitHub, read only',
+			'extends' => 'github',
+			'baseUrl' => 'https://api.github.com',
+			'authScheme' => ['header' => 'Authorization', 'template' => 'token {secret}'],
+			'allowRules' => [['method' => 'GET', 'pathPattern' => '/repos/*']],
+		]]);
+
+		$row = $this->resolver()->review()[0];
+
+		$this->assertSame(['admitted', 'narrowing', true, 'api.github.com'], [$row['status'], $row['lane'], $row['autoAdmitted'], $row['host']]);
+	}
+
+	public function testTheReviewShowsAnApprovedDeclarationAsAdmittedButNotByItself(): void {
+		$entry = $this->codeberg('alpha');
+		$this->declare('alpha', ['alpha:codeberg' => $entry]);
+		$this->decide($entry, 'approved', '2026-11-01T10:00:00+00:00');
+
+		$row = $this->resolver()->review()[0];
+
+		$this->assertSame(['admitted', 'approval', false], [$row['status'], $row['lane'], $row['autoAdmitted']]);
+	}
+
+	public function testTheReviewListsAnInvalidDeclarationWithItsReasonAndNoLane(): void {
+		$bad = $this->codeberg('alpha');
+		$bad['identifier'] = 'alpha:cli';
+		$bad['inject_only'] = true;
+		$this->declare('alpha', ['alpha:cli' => $bad]);
+
+		$row = $this->resolver()->review()[0];
+
+		$this->assertSame('invalid', $row['status']);
+		$this->assertSame('', $row['lane']);
+		$this->assertFalse($row['autoAdmitted']);
+		$this->assertSame('codeberg.org', $row['host']);
+		$this->assertStringContainsString('inject_only', $row['reason']);
+	}
+
+	public function testTheReviewKeepsOnlyRulesItCanRead(): void {
+		$entry = $this->codeberg('alpha');
+		$entry['allowRules'] = [['method' => 'GET', 'pathPattern' => '/repos/*'], 'GET /admin', ['method' => 'GET']];
+		$entry['title'] = '';
+		unset($entry['baseUrl']);
+		$this->declare('alpha', ['alpha:codeberg' => $entry]);
+
+		$row = $this->resolver()->review()[0];
+
+		$this->assertSame([['method' => 'GET', 'pathPattern' => '/repos/*']], $row['allowRules']);
+		$this->assertSame('alpha:codeberg', $row['title']);
+		$this->assertSame(['', ''], [$row['host'], $row['baseUrl']]);
+	}
+
+	public function testTheReviewIsEmptyWhenNoAppDeclares(): void {
+		$this->installed = ['openregister'];
+
+		$this->assertSame([], $this->resolver()->review());
 	}
 }

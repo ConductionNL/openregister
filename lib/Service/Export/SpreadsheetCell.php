@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Export;
 
+use OCA\OpenRegister\Kernel\Contracts\CsvCell;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -41,8 +42,6 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
  */
 final class SpreadsheetCell {
 
-	private const FORMULA_LEADS = ['=', '+', '-', '@', "\t", "\r"];
-
 	/**
 	 * The CSV-safe form of one value.
 	 *
@@ -53,15 +52,7 @@ final class SpreadsheetCell {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public static function csvValue(mixed $value): mixed {
-		if (is_string($value) === false || $value === '' || is_numeric($value) === true) {
-			return $value;
-		}
-
-		if (in_array($value[0], self::FORMULA_LEADS, true) === true) {
-			return "'" . $value;
-		}
-
-		return $value;
+		return CsvCell::value(value: $value);
 	}//end csvValue()
 
 	/**
@@ -74,7 +65,7 @@ final class SpreadsheetCell {
 	 * @spec openspec/specs/data-import-export/spec.md
 	 */
 	public static function csvRow(array $row): array {
-		return array_map(static fn (mixed $value): mixed => self::csvValue(value: $value), $row);
+		return CsvCell::row(row: $row);
 	}//end csvRow()
 
 	/**

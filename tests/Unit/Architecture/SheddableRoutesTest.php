@@ -55,6 +55,7 @@ class SheddableRoutesTest extends TestCase {
 		'OCA\\OpenRegister\\Search\\Controller\\AggregationController::timeseries',
 		'OCA\\OpenRegister\\Search\\Controller\\AggregationController::value',
 		'OCA\\OpenRegister\\Search\\Controller\\GraphQLController::execute',
+		'OCA\\OpenRegister\\Search\\Controller\\ReportTemplateController::generate',
 		'OCA\\OpenRegister\\Search\\Controller\\ReportsController::preview',
 		'OCA\\OpenRegister\\Search\\Controller\\ReportsController::render',
 	];

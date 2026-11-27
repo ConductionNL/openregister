@@ -15,7 +15,6 @@ stored authorization block SHALL NOT be rewritten.
 - **WHEN** Anna lists `GET /api/objects/{register}/verzoek`
 - **THEN** the list holds Anna's record and not Bram's
 - **AND** `GET` on Bram's record answers 403 or 404 for Anna, as any unreadable object does
-- @e2e exclude {specified only; task 3.1 adds tests/e2e/ci/access-own-records.spec.ts}
 
 ### Requirement: A condition scope admits rows whose field matches
 

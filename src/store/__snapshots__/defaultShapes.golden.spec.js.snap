@@ -450,6 +450,22 @@ exports[`default shapes golden registers every page as an async component 1`] = 
     ],
   ],
   [
+    "RegisterApi",
+    [
+      "kind",
+      "component",
+    ],
+    "page",
+    "object",
+    [
+      "__asyncHydrate",
+      "__asyncLoader",
+      "__asyncResolved",
+      "name",
+      "setup",
+    ],
+  ],
+  [
     "SchemasIndex",
     [
       "kind",

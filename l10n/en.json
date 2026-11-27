@@ -1,5 +1,15 @@
 {
     "translations": {
+        "OpenRegister operations": "OpenRegister operations",
+        "Only administrators see the OpenRegister operations figures.": "Only administrators see the OpenRegister operations figures.",
+        "Server errors in the last %s minutes": "Server errors in the last %s minutes",
+        "no requests": "no requests",
+        "Average response time in the last %s minutes": "Average response time in the last %s minutes",
+        "No OpenRegister figures are available yet.": "No OpenRegister figures are available yet.",
+        "OpenRegister error rate is over its alert threshold": "OpenRegister error rate is over its alert threshold",
+        "%1$s%% of the requests in the last %2$s minutes failed with a server error; the threshold is %3$s%%.": "%1$s%% of the requests in the last %2$s minutes failed with a server error; the threshold is %3$s%%.",
+        "OpenRegister response time is over its alert threshold": "OpenRegister response time is over its alert threshold",
+        "The 95th percentile response time in the last %1$s minutes was %2$s ms; the threshold is %3$s ms.": "The 95th percentile response time in the last %1$s minutes was %2$s ms; the threshold is %3$s ms.",
         "LICENSE_PLATE": "LICENSE_PLATE",
         "Marketplace": "Marketplace",
         "%1$s %2$s created": "%1$s %2$s created",
@@ -10,6 +20,8 @@
         "{schema} {title} deleted": "{schema} {title} deleted",
         "Object \"%1$s\" created": "Object \"%1$s\" created",
         "Object \"%1$s\" updated": "Object \"%1$s\" updated",
+        "New note on \"%1$s\"": "New note on \"%1$s\"",
+        "New note on \"%1$s\" in register \"%2$s\"": "New note on \"%1$s\" in register \"%2$s\"",
         "Object \"%1$s\" assigned to you": "Object \"%1$s\" assigned to you",
         "3": "3",
         "30": "30",
@@ -891,6 +903,7 @@
         "File name is required": "File name is required",
         "File name is required (use \"name\" or \"filename\")": "File name is required (use \"name\" or \"filename\")",
         "File not available for anonymous access": "File not available for anonymous access",
+        "This file changed after it was published and is not served": "This file changed after it was published and is not served",
         "File not found": "File not found",
         "File settings saved successfully": "File settings saved successfully",
         "File settings updated successfully": "File settings updated successfully",
@@ -3497,7 +3510,43 @@
         "Connected to": "Connected to",
         "Drop an attachment here to add it": "Drop an attachment here to add it",
         "Number or words": "Number or words",
-        "New {name} from this mail": "New {name} from this mail"
+        "New {name} from this mail": "New {name} from this mail",
+        "Fields marked * are required. The new {name} is connected to this mail.": "Fields marked * are required. The new {name} is connected to this mail.",
+        "(optional)": "(optional)",
+        "Create and connect": "Create and connect",
+        "No {name} matches “{term}”.": "No {name} matches “{term}”.",
+        "Not connected to anything yet.": "Not connected to anything yet.",
+        "Connecting": "Connecting",
+        "Connected to {name} #{number}": "Connected to {name} #{number}",
+        "Undo": "Undo",
+        "Add to {name}": "Add to {name}",
+        "_%n connection_::_%n connections_": [
+            "%n connection",
+            "%n connections"
+        ],
+        "Search for {value}": "Search for {value}",
+        "sender": "sender",
+        "person": "person",
+        "address": "address",
+        "email address": "email address",
+        "phone number": "phone number",
+        "link": "link",
+        "other": "other",
+        "connected to {name} #{number}": "connected to {name} #{number}",
+        "connected to {name}": "connected to {name}",
+        "_%n message_::_%n messages_": [
+            "%n message",
+            "%n messages"
+        ],
+        "Scheduled report \"%s\"": "Scheduled report \"%s\"",
+        "all schemas": "all schemas",
+        "Source: %1$s / %2$s.": "Source: %1$s / %2$s.",
+        "Schedule: %s.": "Schedule: %s.",
+        "The export (%1$s) exceeds the %2$sMB email attachment limit and was not attached. It has been saved to your Nextcloud Files at %3$s%4$s instead.": "The export (%1$s) exceeds the %2$sMB email attachment limit and was not attached. It has been saved to your Nextcloud Files at %3$s%4$s instead.",
+        "_Your scheduled report \"%s\" ran and delivered %n row._::_Your scheduled report \"%s\" ran and delivered %n rows._": [
+            "Your scheduled report \"%s\" ran and delivered %n row.",
+            "Your scheduled report \"%s\" ran and delivered %n rows."
+        ]
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -41,14 +41,13 @@ use Closure;
 use OCP\DB\Types;
 use OCP\DB\ISchemaWrapper;
 use OCP\Migration\IOutput;
-use OCP\Migration\SimpleMigrationStep;
 
 /**
  * Add flow_run / flow_node / flow_step to openregister_audit_trails.
  *
  * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
  */
-class Version1Date20260828120000 extends SimpleMigrationStep {
+class Version1Date20260828120000 extends TargetedMigrationStep {
 	/**
 	 * Add the attribution columns and the run index.
 	 *
@@ -60,7 +59,7 @@ class Version1Date20260828120000 extends SimpleMigrationStep {
 	 *
 	 * @spec openspec/changes/flow-object-attribution/specs/flow-object-attribution/spec.md
 	 */
-	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
+	protected function changeTargetedSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
 		 * @var ISchemaWrapper $schema
 		 */
@@ -118,5 +117,5 @@ class Version1Date20260828120000 extends SimpleMigrationStep {
 		$output->info('Added flow_run / flow_node / flow_step and idx_audit_flow_run to openregister_audit_trails');
 
 		return $schema;
-	}//end changeSchema()
+	}//end changeTargetedSchema()
 }//end class

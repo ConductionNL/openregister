@@ -1,0 +1,1157 @@
+{
+	"info": {
+		"name": "OpenRegister — object actions",
+		"description": "object-actions-declared-and-run task 6.2: the five routes. A schema declares `publish` (inputs, a `when`, an `object-write` step, offered on the bulk surface) and `close` (bound to the lifecycle transition `sluiten`, which needs `reden`); its authorization grants both to admin only. Covered: the list with availability and reason, the refusal order on a run (404 unknown, 403 no right before 409, 409 `action-precondition-unmet` before 422, 422 invalid inputs, 422 a body the engine refuses), a completed run and its write, the history newest first, the bulk surface and a run on a selection. Every action entry carries `name` and `description`: without them `DeclaredActions` does not count the key as declared and the authorization block may not grant it.\n\nCreates its own reader, register, schema and objects and deletes them. Requests send no cookies: Nextcloud prefers a session cookie over the Basic header, so a jar would run the reader's request as the administrator.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && given !== '') {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"if (!pm.collectionVariables.get('stamp')) {",
+					"    pm.collectionVariables.set('stamp', 'oact' + Date.now().toString(36));",
+					"}",
+					"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'));",
+					"pm.collectionVariables.set('readerToken', Buffer.from(pm.collectionVariables.get('stamp') + '-reader:' + pm.collectionVariables.get('readerPassword')).toString('base64'));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "readerPassword",
+			"value": "Oact-Reader-Pass-2026"
+		},
+		{
+			"key": "stamp",
+			"value": ""
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "readerToken",
+			"value": ""
+		},
+		{
+			"key": "register",
+			"value": ""
+		},
+		{
+			"key": "schema",
+			"value": ""
+		},
+		{
+			"key": "a",
+			"value": ""
+		},
+		{
+			"key": "b",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 — setup",
+			"item": [
+				{
+					"name": "create the reader",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('reader created', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userid\": \"{{stamp}}-reader\",\n  \"password\": \"{{readerPassword}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('register', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}\",\n  \"title\": \"{{stamp}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create the schema with two declared actions",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('schema', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-besluit\",\n  \"title\": \"{{stamp}} besluit\",\n  \"properties\": {\n    \"titel\": {\n      \"type\": \"string\"\n    },\n    \"status\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"open\",\n        \"decided\",\n        \"closed\"\n      ]\n    },\n    \"publicatiedatum\": {\n      \"type\": \"string\"\n    },\n    \"reden\": {\n      \"type\": \"string\"\n    }\n  },\n  \"configuration\": {\n    \"x-openregister-action\": {\n      \"publish\": {\n        \"name\": \"Publish\",\n        \"description\": \"Make the decision public from a date.\",\n        \"label\": {\n          \"nl\": \"Publiceren\",\n          \"en\": \"Publish\"\n        },\n        \"surfaces\": [\n          \"header\",\n          \"row\",\n          \"bulk\"\n        ],\n        \"inputs\": {\n          \"type\": \"object\",\n          \"required\": [\n            \"from\"\n          ],\n          \"properties\": {\n            \"from\": {\n              \"type\": \"string\",\n              \"format\": \"date\",\n              \"title\": \"Public from\"\n            }\n          }\n        },\n        \"when\": {\n          \"==\": [\n            {\n              \"var\": \"object.status\"\n            },\n            \"decided\"\n          ]\n        },\n        \"whenMessage\": {\n          \"en\": \"Only a decided decision can be published.\",\n          \"nl\": \"Alleen een vastgesteld besluit kan worden gepubliceerd.\"\n        },\n        \"steps\": [\n          {\n            \"id\": \"date\",\n            \"type\": \"openregister.object-write\",\n            \"config\": {\n              \"register\": {{register}},\n              \"schema\": \"{{stamp}}-besluit\",\n              \"operation\": \"update\",\n              \"match\": [\n                {\n                  \"property\": \"titel\",\n                  \"value\": \"{{ titel }}\"\n                }\n              ],\n              \"fields\": {\n                \"publicatiedatum\": \"{{inputs.from}}\"\n              }\n            }\n          }\n        ]\n      },\n      \"close\": {\n        \"name\": \"Close\",\n        \"description\": \"Close the decision.\",\n        \"label\": \"Close\",\n        \"transition\": \"sluiten\"\n      }\n    }\n  },\n  \"x-openregister-lifecycle\": {\n    \"field\": \"status\",\n    \"initial\": \"open\",\n    \"transitions\": {\n      \"besluiten\": {\n        \"from\": [\n          \"open\"\n        ],\n        \"to\": \"decided\"\n      },\n      \"sluiten\": {\n        \"from\": [\n          \"decided\"\n        ],\n        \"to\": \"closed\",\n        \"inputs\": [\n          {\n            \"field\": \"reden\",\n            \"required\": true\n          }\n        ]\n      }\n    }\n  },\n  \"authorization\": {\n    \"read\": [\n      \"authenticated\"\n    ],\n    \"create\": [\n      \"admin\"\n    ],\n    \"update\": [\n      \"admin\"\n    ],\n    \"delete\": [\n      \"admin\"\n    ],\n    \"publish\": [\n      \"admin\"\n    ],\n    \"close\": [\n      \"admin\"\n    ]\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "link schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema linked', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"slug\": \"{{stamp}}\", \"title\": \"{{stamp}}\", \"schemas\": [{{schema}}]}"
+						}
+					}
+				},
+				{
+					"name": "create decision A",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('a', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titel\": \"{{stamp}} A\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create decision B",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('b', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titel\": \"{{stamp}} B\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 — the five routes",
+			"item": [
+				{
+					"name": "list: publish is unavailable with its reason, besluiten is available",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const actions = pm.response.json().actions",
+									"const byKey = Object.fromEntries(actions.map(a => [a.key, a]))",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('publish is listed, unavailable, with the whenMessage', () => {",
+									"    pm.expect(byKey.publish.available).to.eql(false)",
+									"    pm.expect(byKey.publish.reason).to.include('decided')",
+									"})",
+									"pm.test('the lifecycle move besluiten is listed and available', () => pm.expect(byKey.besluiten.available).to.eql(true))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}/actions"
+					}
+				},
+				{
+					"name": "an unknown action is 404",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 404', () => pm.response.to.have.status(404))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}/actions/{{stamp}}-nope",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"inputs\": {}\n}"
+						}
+					}
+				},
+				{
+					"name": "no right comes before an unmet precondition: 403",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 403', () => pm.response.to.have.status(403))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{readerToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}/actions/publish",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"inputs\": {}\n}"
+						}
+					}
+				},
+				{
+					"name": "an unmet precondition comes before invalid inputs: 409",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 409', () => pm.response.to.have.status(409))",
+									"pm.test('the code and the declared message', () => {",
+									"    pm.expect(pm.response.json().error).to.eql('action-precondition-unmet')",
+									"    pm.expect(pm.response.text()).to.include('decided')",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}/actions/publish",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"inputs\": {}\n}"
+						}
+					}
+				},
+				{
+					"name": "besluiten moves A to decided",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}/actions/besluiten",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"inputs\": {}\n}"
+						}
+					}
+				},
+				{
+					"name": "invalid inputs: 422 naming the field",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 422', () => pm.response.to.have.status(422))",
+									"pm.test('names the missing input', () => pm.expect(pm.response.text()).to.include('from'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}/actions/publish",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"inputs\": {}\n}"
+						}
+					}
+				},
+				{
+					"name": "publish runs",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('the run completed', () => pm.expect(pm.response.json().outcome).to.eql('completed'))",
+									"pm.test('it links its run', () => pm.expect(pm.response.json().links.run).to.match(/^\\/api\\/flow-runs\\//))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}/actions/publish",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"inputs\": {\n    \"from\": \"2026-12-01\"\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "the step wrote the date",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('publicatiedatum is set', () => pm.expect(pm.response.json().publicatiedatum).to.eql('2026-12-01'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}"
+					}
+				},
+				{
+					"name": "a body the engine refuses: 422 with its message",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 422', () => pm.response.to.have.status(422))",
+									"pm.test('the transition is refused for its missing input', () => pm.expect(pm.response.text()).to.include('reden'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}/actions/close",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"inputs\": {}\n}"
+						}
+					}
+				},
+				{
+					"name": "history: the runs, newest first",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const runs = pm.response.json().results",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('publish after besluiten, newest first', () => {",
+									"    const ran = runs.filter(r => r.outcome === 'completed').map(r => r.action)",
+									"    pm.expect(ran.slice(0, 2)).to.eql(['publish', 'besluiten'])",
+									"})",
+									"pm.test('the publish run names its change', () => pm.expect(runs.find(r => r.action === 'publish' && r.outcome === 'completed').changes.length).to.be.above(0))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}/actions/history"
+					}
+				},
+				{
+					"name": "selection: publish is offered on the bulk surface",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('publish is offered, close is not', () => {",
+									"    const keys = pm.response.json().actions.map(a => a.key)",
+									"    pm.expect(keys).to.include('publish')",
+									"    pm.expect(keys).to.not.include('close')",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/object-actions/{{register}}/{{schema}}"
+					}
+				},
+				{
+					"name": "besluiten moves B to decided",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{b}}/actions/besluiten",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"inputs\": {}\n}"
+						}
+					}
+				},
+				{
+					"name": "publish runs on a selection",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('one succeeded, none failed', () => pm.expect(pm.response.json().summary).to.eql({ succeeded: 1, failed: 0 }))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/object-actions/{{register}}/{{schema}}/publish",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"ids\": [\"{{b}}\"], \"inputs\": {\"from\": \"2027-01-15\"}}"
+						}
+					}
+				},
+				{
+					"name": "the selection run wrote B's date",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('publicatiedatum is set', () => pm.expect(pm.response.json().publicatiedatum).to.eql('2027-01-15'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{b}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "99 — teardown",
+			"item": [
+				{
+					"name": "delete A",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{a}}"
+					}
+				},
+				{
+					"name": "delete B",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{b}}"
+					}
+				},
+				{
+					"name": "delete the schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schema}}"
+					}
+				},
+				{
+					"name": "delete the register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}"
+					}
+				},
+				{
+					"name": "delete the reader",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('reader deleted', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users/{{stamp}}-reader?format=json"
+					}
+				}
+			]
+		}
+	]
+}

@@ -162,13 +162,19 @@ class FlowTimerEntitiesTest extends TestCase {
 		$timer->setUuid('t-1');
 		$event = new FlowTimerFiredEvent(
 			timer: $timer,
-			firing: new TimerFiring(kind: FlowTimerFiredEvent::KIND_RUNG, transition: 'escalation:preBreach:7:calendarDays', rungKey: 'preBreach:7:calendarDays'),
+			firing: new TimerFiring(
+				kind: FlowTimerFiredEvent::KIND_RUNG,
+				transition: 'escalation:preBreach:7:calendarDays',
+				rungKey: 'preBreach:7:calendarDays',
+				rungTrigger: 'preBreach'
+			),
 			notice: new EscalationNotice(recipients: [['type' => 'group', 'id' => 'g', 'role' => 'handler']], priority: 'medium', message: 'termijn-7d'),
 		);
 		self::assertSame($timer, $event->getTimer());
 		self::assertSame('rung', $event->getKind());
 		self::assertSame('escalation:preBreach:7:calendarDays', $event->getTransition());
 		self::assertSame('preBreach:7:calendarDays', $event->getRungKey());
+		self::assertSame(expected: 'preBreach', actual: $event->getRungTrigger());
 		self::assertSame('g', $event->getRecipients()[0]['id']);
 		self::assertSame('medium', $event->getPriority());
 		self::assertSame('termijn-7d', $event->getMessage());
@@ -181,6 +187,7 @@ class FlowTimerEntitiesTest extends TestCase {
 		);
 		self::assertSame('expiry', $event->getKind());
 		self::assertNull($event->getRungKey());
+		self::assertNull(actual: $event->getRungTrigger());
 		self::assertSame([], $event->getRecipients());
 		self::assertNull($event->getPriority());
 		self::assertNull($event->getMessage());

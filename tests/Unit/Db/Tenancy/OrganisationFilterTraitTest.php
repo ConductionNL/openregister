@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Db\Tenancy;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\Tenancy\OrganisationFilterTrait;
 use OCA\OpenRegister\Db\Tenancy\TenancyIdentityTrait;
@@ -125,6 +126,8 @@ final class OrganisationFilterHost {
  * @uses   \OCA\OpenRegister\Service\TenantLogRedactor
  */
 final class OrganisationFilterTraitTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private const ORG = 'aaaaaaaa-0000-0000-0000-000000000001';
 
@@ -210,6 +213,8 @@ final class OrganisationFilterTraitTest extends TestCase {
 		);
 
 		$groupManager = $this->createMock(IGroupManager::class);
+
+		$this->adminFollowsGroups(groupManager: $groupManager);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
 
 		$deps = ['userSession' => $session, 'organisationMapper' => $organisations, 'appConfig' => $appConfig, 'groupManager' => $groupManager];

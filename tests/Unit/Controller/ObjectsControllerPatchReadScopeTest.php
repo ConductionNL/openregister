@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Support\AdminFollowsGroups;
 use OCA\OpenRegister\Controller\ObjectsController;
 use OCA\OpenRegister\Tests\Unit\Controller\Support\ObjectsControllerFactory;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -82,6 +83,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses \OCA\OpenRegister\Kernel\Contracts\Value\BulkSaveOptions
  */
 class ObjectsControllerPatchReadScopeTest extends TestCase {
+	use AdminFollowsGroups;
+
 
 	private IRequest&MockObject $request;
 	private ObjectService&MockObject $objectService;
@@ -115,6 +118,7 @@ class ObjectsControllerPatchReadScopeTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 
+		$this->adminFollowsGroups(groupManager: $this->groupManager);
 		$this->stored = new ObjectEntity();
 		$this->stored->setUuid('uuid-b');
 		$this->stored->setRegister('1');
