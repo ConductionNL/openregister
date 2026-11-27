@@ -18,6 +18,7 @@ use OCA\OpenRegister\Capabilities\IntegrationsCapabilityServices;
 use OCA\OpenRegister\Capabilities\PlatformCapability;
 use OCA\OpenRegister\Capabilities\SearchCapability;
 use OCA\OpenRegister\Capabilities\SearchScopesCapability;
+use OCA\OpenRegister\Capabilities\SearchScopesCapabilityOnDemand;
 use OCA\OpenRegister\Capabilities\UrnCapability;
 use OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -50,8 +51,8 @@ class CapabilityRegistrarTest extends TestCase {
 
 		CapabilityRegistrar::register(context: $context);
 
-		$this->assertSame(expected: [UrnCapability::class, IntegrationsCapability::class, PlatformCapability::class, SearchScopesCapability::class, AuthorizationCapability::class, SearchCapability::class], actual: $capabilities);
-		$this->assertSame(expected: [IntegrationsCapability::class], actual: array_keys($factories));
+		$this->assertSame(expected: [UrnCapability::class, IntegrationsCapability::class, PlatformCapability::class, SearchScopesCapabilityOnDemand::class, AuthorizationCapability::class, SearchCapability::class], actual: $capabilities);
+		$this->assertSame(expected: [IntegrationsCapability::class, SearchScopesCapabilityOnDemand::class], actual: array_keys($factories));
 
 		$container = $this->createMock(originalClassName: IAppContainer::class);
 		$container->method('get')->willReturnCallback(
@@ -62,6 +63,32 @@ class CapabilityRegistrarTest extends TestCase {
 			actual: $factories[IntegrationsCapability::class]($container)
 		);
 	}//end testRegistersTheCapabilitiesInOrder()
+
+	/**
+	 * The search scopes capability Nextcloud constructs on every page render is the
+	 * on-demand wrapper: building it resolves nothing from the container.
+	 *
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
+	 *
+	 * @return void
+	 */
+	public function testTheSearchScopesCapabilityIsBuiltWithoutItsDependencies(): void {
+		$factories = [];
+		$context = $this->createMock(originalClassName: IRegistrationContext::class);
+		$context->method('registerService')->willReturnCallback(
+			static function (string $name, callable $factory) use (&$factories): void {
+				$factories[$name] = $factory;
+			}
+		);
+		CapabilityRegistrar::register(context: $context);
+
+		$container = $this->createMock(originalClassName: IAppContainer::class);
+		$container->expects($this->never())->method('get');
+		$capability = $factories[SearchScopesCapabilityOnDemand::class]($container);
+
+		$this->assertInstanceOf(expected: SearchScopesCapabilityOnDemand::class, actual: $capability);
+		$this->assertInstanceOf(expected: \OCP\Capabilities\IInitialStateExcludedCapability::class, actual: $capability);
+	}//end testTheSearchScopesCapabilityIsBuiltWithoutItsDependencies()
 
 	/**
 	 * The integrations capability is built with the container's semantic provider port (the Core catalogue),
