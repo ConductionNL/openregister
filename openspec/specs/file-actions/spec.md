@@ -1074,3 +1074,23 @@ The `file.downloaded` audit row SHALL carry the file's name in its data (`fileNa
 
 - **WHEN** a reader opens "Medisch verslag.pdf" on a case
 - **THEN** the case's audit trail has a `file.downloaded` row whose `changed.data.fileName` is "Medisch verslag.pdf"
+
+### Requirement: Adding files rate limits anonymous callers and not signed-in users (REQ-FARL-001)
+
+The endpoints that add files to an object (`FilesController::create`, `save` and `createMultipart`) SHALL limit an
+anonymous caller to 30 requests a minute. A signed-in user SHALL have a user limit of their own that a batch upload
+cannot reach, so only their rights on the object and the upload size bound them. Without a user limit Nextcloud
+applies the anonymous limit to signed-in users as well, per IP (BUG-RATE-1).
+
+#### Scenario: An anonymous caller is limited to 30 a minute
+- **GIVEN** a caller without a Nextcloud session
+- **WHEN** it sends more than 30 requests to add files within a minute
+- **THEN** each request the object does not allow is refused (403)
+- **AND** every request after the 30th gets 429 Too Many Requests
+- @e2e exclude {rate-limit attributes, covered by PHPUnit in FileAddingPostureTest}
+
+#### Scenario: A signed-in user adds a large batch
+- **GIVEN** a signed-in user who may add files to an object
+- **WHEN** they add 91 documents within a minute, as an editor adding a publication's documents in OpenCatalogi
+- **THEN** every document is added and none gets 429
+- @e2e exclude {rate-limit attributes, covered by PHPUnit in FileAddingPostureTest}
