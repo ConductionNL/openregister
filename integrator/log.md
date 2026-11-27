@@ -217,3 +217,4 @@
 2026-11-27T11:05:38Z GREEN prs=11336,11337,11341,11342 main=2bb26b5dd0 integrator-cloud (merged; main now 3405cc7b52)
 2026-11-27T11:10:36Z RED prs=11343,11346,11347,11348 main=3405cc7b52 integrator-cloud (SystemOperationContextBoundaryTest: new runAsSystem caller FilinqPolicyImporter; suspect #11346, rebuilt without it)
 2026-11-27T11:20:30Z GREEN prs=11343,11347,11348 main=3405cc7b52 integrator-cloud (merged; main now c2f01e11e5)
+2026-11-27T11:24:03Z RED prs=11346 main=c2f01e11e5 integrator-cloud (solo: SystemOperationContextBoundaryTest pins runAsSystem callers, FilinqPolicyImporter not in ALLOWED; failed-solo)
