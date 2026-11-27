@@ -11,3 +11,8 @@
 # integrations-page x4 ENVIRONMENT: needs integriq installed; with integriq development adf5c4d enabled 4/4 green, no change.
 # image-widget-clickthrough:73 SANDBOX: popup to example.com lands on chrome-error (no outbound route).
 # sandbox note: NC from the git tag needs apps/viewer (nextcloud/viewer stable34) or occ upgrade fails after enabling a new app.
+# shard 2/8 (07:12Z, same sandbox + integriq): 290 passed, 2 failed, 29 skipped (16.6 min)
+[chromium] › tests/e2e/ci/manifest-grants.spec.ts:119:6 › object grants surface a shared dashboard in the manifest › the recipient sees exactly the granted dashboard, and loses it on revoke
+[chromium] › tests/e2e/ci/public-share-view-count.spec.ts:93:5 › three renders from one IP inside a minute count once, and lastViewedAt follows the latest
+# triage: manifest-grants = known OpenRegister object-share bug (lease e2e-launchpad-manifest-grants, other lane).
+# public-share-view-count ENVIRONMENT: dedupe needs a distributed cache (PublicShareMapper falls back to always-count); with memcache.distributed APCu 1/1 green, no change.
