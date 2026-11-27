@@ -521,10 +521,10 @@
       ]
     },
     {
-      "bom-ref": "guzzlehttp/guzzle-7.16.5.0",
+      "bom-ref": "guzzlehttp/guzzle-7.17.0.0",
       "type": "library",
       "name": "guzzle",
-      "version": "7.16.5",
+      "version": "7.17.0",
       "group": "guzzlehttp",
       "description": "Guzzle is a PHP HTTP client library",
       "author": "Graham Campbell, Michael Dowling, Jeremy Lindblom, George Mponos, Tobias Nyholm, Márk Sági-Kazár, Tobias Schultze",
@@ -535,17 +535,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/guzzlehttp/guzzle@7.16.5",
+      "purl": "pkg:composer/guzzlehttp/guzzle@7.17.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/guzzle/guzzle/zipball/b0605f32e77a13cf98bc5e75b1d71877b6814e17",
-          "comment": "dist reference: b0605f32e77a13cf98bc5e75b1d71877b6814e17"
+          "url": "https://api.github.com/repos/guzzle/guzzle/zipball/f61ba5ea0a55032a55ddbb72cab7d307c1043654",
+          "comment": "dist reference: f61ba5ea0a55032a55ddbb72cab7d307c1043654"
         },
         {
           "type": "vcs",
           "url": "https://github.com/guzzle/guzzle.git",
-          "comment": "source reference: b0605f32e77a13cf98bc5e75b1d71877b6814e17"
+          "comment": "source reference: f61ba5ea0a55032a55ddbb72cab7d307c1043654"
         },
         {
           "type": "issue-tracker",
@@ -554,18 +554,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/guzzle/guzzle/tree/7.16.5",
+          "url": "https://github.com/guzzle/guzzle/tree/7.17.0",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "b0605f32e77a13cf98bc5e75b1d71877b6814e17"
+          "value": "f61ba5ea0a55032a55ddbb72cab7d307c1043654"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "b0605f32e77a13cf98bc5e75b1d71877b6814e17"
+          "value": "f61ba5ea0a55032a55ddbb72cab7d307c1043654"
         },
         {
           "name": "cdx:composer:package:type",
@@ -627,10 +627,10 @@
       ]
     },
     {
-      "bom-ref": "guzzlehttp/psr7-2.13.5.0",
+      "bom-ref": "guzzlehttp/psr7-2.13.6.0",
       "type": "library",
       "name": "psr7",
-      "version": "2.13.5",
+      "version": "2.13.6",
       "group": "guzzlehttp",
       "description": "PSR-7 message implementation that also provides common utility methods",
       "author": "Graham Campbell, Michael Dowling, George Mponos, Tobias Nyholm, Márk Sági-Kazár, Tobias Schultze, Márk Sági-Kazár",
@@ -641,17 +641,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/guzzlehttp/psr7@2.13.5",
+      "purl": "pkg:composer/guzzlehttp/psr7@2.13.6",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/guzzle/psr7/zipball/5aa00c5418afbe3f435910af0e98cb03d659c49d",
-          "comment": "dist reference: 5aa00c5418afbe3f435910af0e98cb03d659c49d"
+          "url": "https://api.github.com/repos/guzzle/psr7/zipball/2bd3dccf56e99cdacf74b1ad5e06a08a5a7739f2",
+          "comment": "dist reference: 2bd3dccf56e99cdacf74b1ad5e06a08a5a7739f2"
         },
         {
           "type": "vcs",
           "url": "https://github.com/guzzle/psr7.git",
-          "comment": "source reference: 5aa00c5418afbe3f435910af0e98cb03d659c49d"
+          "comment": "source reference: 2bd3dccf56e99cdacf74b1ad5e06a08a5a7739f2"
         },
         {
           "type": "issue-tracker",
@@ -660,18 +660,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/guzzle/psr7/tree/2.13.5",
+          "url": "https://github.com/guzzle/psr7/tree/2.13.6",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "5aa00c5418afbe3f435910af0e98cb03d659c49d"
+          "value": "2bd3dccf56e99cdacf74b1ad5e06a08a5a7739f2"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "5aa00c5418afbe3f435910af0e98cb03d659c49d"
+          "value": "2bd3dccf56e99cdacf74b1ad5e06a08a5a7739f2"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3337,10 +3337,10 @@
       ]
     },
     {
-      "bom-ref": "symfony/yaml-7.4.23.0",
+      "bom-ref": "symfony/yaml-7.4.24.0",
       "type": "library",
       "name": "yaml",
-      "version": "v7.4.23",
+      "version": "v7.4.24",
       "group": "symfony",
       "description": "Loads and dumps YAML files",
       "author": "Fabien Potencier, Symfony Community",
@@ -3351,17 +3351,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/symfony/yaml@v7.4.23",
+      "purl": "pkg:composer/symfony/yaml@v7.4.24",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/symfony/yaml/zipball/1e601207ffe627a2e621faa9d661f1d32dcf1cec",
-          "comment": "dist reference: 1e601207ffe627a2e621faa9d661f1d32dcf1cec"
+          "url": "https://api.github.com/repos/symfony/yaml/zipball/f97f59f67644c715788d1bde4d81186e48ee1dbf",
+          "comment": "dist reference: f97f59f67644c715788d1bde4d81186e48ee1dbf"
         },
         {
           "type": "vcs",
           "url": "https://github.com/symfony/yaml.git",
-          "comment": "source reference: 1e601207ffe627a2e621faa9d661f1d32dcf1cec"
+          "comment": "source reference: f97f59f67644c715788d1bde4d81186e48ee1dbf"
         },
         {
           "type": "website",
@@ -3370,18 +3370,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/symfony/yaml/tree/v7.4.23",
+          "url": "https://github.com/symfony/yaml/tree/v7.4.24",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "1e601207ffe627a2e621faa9d661f1d32dcf1cec"
+          "value": "f97f59f67644c715788d1bde4d81186e48ee1dbf"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "1e601207ffe627a2e621faa9d661f1d32dcf1cec"
+          "value": "f97f59f67644c715788d1bde4d81186e48ee1dbf"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3443,10 +3443,10 @@
       ]
     },
     {
-      "bom-ref": "twig/twig-3.30.0.0",
+      "bom-ref": "twig/twig-3.31.1.0",
       "type": "library",
       "name": "twig",
-      "version": "v3.30.0",
+      "version": "v3.31.1",
       "group": "twig",
       "description": "Twig, the flexible, fast, and secure template language for PHP",
       "author": "Fabien Potencier, Twig Team, Armin Ronacher",
@@ -3457,17 +3457,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/twig/twig@v3.30.0",
+      "purl": "pkg:composer/twig/twig@v3.31.1",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/twigphp/Twig/zipball/8c737079b726af72ff8ef3c595be9f6a810ea1ef",
-          "comment": "dist reference: 8c737079b726af72ff8ef3c595be9f6a810ea1ef"
+          "url": "https://api.github.com/repos/twigphp/Twig/zipball/6f6ec372231b53d1d564567a78beb8844cafa132",
+          "comment": "dist reference: 6f6ec372231b53d1d564567a78beb8844cafa132"
         },
         {
           "type": "vcs",
           "url": "https://github.com/twigphp/Twig.git",
-          "comment": "source reference: 8c737079b726af72ff8ef3c595be9f6a810ea1ef"
+          "comment": "source reference: 6f6ec372231b53d1d564567a78beb8844cafa132"
         },
         {
           "type": "website",
@@ -3481,18 +3481,18 @@
         },
         {
           "type": "vcs",
-          "url": "https://github.com/twigphp/Twig/tree/v3.30.0",
+          "url": "https://github.com/twigphp/Twig/tree/v3.31.1",
           "comment": "as detected from Composer manifest 'support.source'"
         }
       ],
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "8c737079b726af72ff8ef3c595be9f6a810ea1ef"
+          "value": "6f6ec372231b53d1d564567a78beb8844cafa132"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "8c737079b726af72ff8ef3c595be9f6a810ea1ef"
+          "value": "6f6ec372231b53d1d564567a78beb8844cafa132"
         },
         {
           "name": "cdx:composer:package:type",
@@ -32059,10 +32059,10 @@
       ]
     },
     {
-      "ref": "guzzlehttp/guzzle-7.16.5.0",
+      "ref": "guzzlehttp/guzzle-7.17.0.0",
       "dependsOn": [
         "guzzlehttp/promises-2.6.2.0",
-        "guzzlehttp/psr7-2.13.5.0",
+        "guzzlehttp/psr7-2.13.6.0",
         "psr/http-client-1.0.3.0",
         "symfony/deprecation-contracts-3.8.1.0",
         "symfony/polyfill-php80-1.43.0.0"
@@ -32075,7 +32075,7 @@
       ]
     },
     {
-      "ref": "guzzlehttp/psr7-2.13.5.0",
+      "ref": "guzzlehttp/psr7-2.13.6.0",
       "dependsOn": [
         "psr/http-factory-1.1.0.0",
         "psr/http-message-2.0.0.0",
@@ -32314,7 +32314,7 @@
       ]
     },
     {
-      "ref": "symfony/yaml-7.4.23.0",
+      "ref": "symfony/yaml-7.4.24.0",
       "dependsOn": [
         "symfony/deprecation-contracts-3.8.1.0",
         "symfony/polyfill-ctype-1.37.0.0"
@@ -32323,8 +32323,8 @@
     {
       "ref": "theodo-group/llphant-1.10.12.0",
       "dependsOn": [
-        "guzzlehttp/guzzle-7.16.5.0",
-        "guzzlehttp/psr7-2.13.5.0",
+        "guzzlehttp/guzzle-7.17.0.0",
+        "guzzlehttp/psr7-2.13.6.0",
         "openai-php/client-0.19.2.0",
         "php-http/multipart-stream-builder-1.4.2.0",
         "psr/http-client-1.0.3.0",
@@ -32335,7 +32335,7 @@
       ]
     },
     {
-      "ref": "twig/twig-3.30.0.0",
+      "ref": "twig/twig-3.31.1.0",
       "dependsOn": [
         "symfony/deprecation-contracts-3.8.1.0",
         "symfony/polyfill-ctype-1.37.0.0",
@@ -32363,7 +32363,7 @@
     {
       "ref": "zbateson/mail-mime-parser-3.0.9.0",
       "dependsOn": [
-        "guzzlehttp/psr7-2.13.5.0",
+        "guzzlehttp/psr7-2.13.6.0",
         "php-di/php-di-7.1.1.0",
         "psr/log-3.0.2.0",
         "zbateson/mb-wrapper-2.0.1.0",
@@ -32380,7 +32380,7 @@
     {
       "ref": "zbateson/stream-decorators-2.1.1.0",
       "dependsOn": [
-        "guzzlehttp/psr7-2.13.5.0",
+        "guzzlehttp/psr7-2.13.6.0",
         "zbateson/mb-wrapper-2.0.1.0"
       ]
     },
@@ -32391,7 +32391,7 @@
         "ddn/sapp-dev-feat/chained-filter-text-replace",
         "dragonmantank/cron-expression-3.6.1.0",
         "elasticsearch/elasticsearch-9.5.0.0",
-        "guzzlehttp/guzzle-7.16.5.0",
+        "guzzlehttp/guzzle-7.17.0.0",
         "jwadhams/json-logic-php-1.5.1.0",
         "minishlink/web-push-11.0.0.0",
         "opis/json-schema-2.6.2.0",
@@ -32404,9 +32404,9 @@
         "symfony/process-6.4.49.0",
         "symfony/uid-6.4.32.0",
         "symfony/workflow-6.4.37.0",
-        "symfony/yaml-7.4.23.0",
+        "symfony/yaml-7.4.24.0",
         "theodo-group/llphant-1.10.12.0",
-        "twig/twig-3.30.0.0",
+        "twig/twig-3.31.1.0",
         "web-token/jwt-library-4.2.8.0",
         "webonyx/graphql-php-15.39.0.0",
         "zbateson/mail-mime-parser-3.0.9.0"
