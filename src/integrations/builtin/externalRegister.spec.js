@@ -8,6 +8,9 @@
  */
 jest.mock('@nextcloud/l10n', () => ({ t: (app, text) => `${app}:${text}` }))
 jest.mock('./ExternalRegisterCard.vue', () => ({ name: 'ExternalRegisterCard' }))
+jest.mock('@conduction/nextcloud-vue/dist/esm/utils/lazyComponent.js', () => ({
+	lazyComponent: (loader, name) => ({ name: `Lazy${name}`, loader }),
+}))
 
 let mod
 
@@ -26,10 +29,17 @@ describe('registerExternalRegisterIntegration', () => {
 			label: 'openregister:External register',
 			icon: 'DatabaseOutline',
 			group: 'data',
-			tab: { name: 'ExternalRegisterCard' },
-			widget: { name: 'ExternalRegisterCard' },
+			tab: expect.objectContaining({ name: 'LazyExternalRegisterCard' }),
+			widget: expect.objectContaining({ name: 'LazyExternalRegisterCard' }),
 			defaultSize: { w: 4, h: 3 },
 		})
+	})
+
+	it('loads its own card only when the card first renders', async () => {
+		const descriptor = mod.externalRegisterDescriptor()
+		expect(descriptor.tab).toBe(descriptor.widget)
+		const loaded = await descriptor.tab.loader()
+		expect(loaded.name ?? loaded.default?.name).toBe('ExternalRegisterCard')
 	})
 
 	it('prefers the library card when it ships one', () => {
