@@ -149,6 +149,31 @@
             "out.warning Flow register import skipped: importer down"
         ]
     },
+    "ImportFormsRegister": {
+        "missing": [
+            "name Import OpenRegister forms register (forms register + form and journey schemas)",
+            "appPath openregister",
+            "out.warning Forms register descriptor not found: <app>/lib/Settings/forms_register.json"
+        ],
+        "broken": [
+            "name Import OpenRegister forms register (forms register + form and journey schemas)",
+            "appPath openregister",
+            "out.warning Forms register descriptor is not valid JSON: <app>/lib/Settings/forms_register.json"
+        ],
+        "good": [
+            "name Import OpenRegister forms register (forms register + form and journey schemas)",
+            "appPath openregister",
+            "import openregister {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "out.info Forms register imported (forms register + form and journey)"
+        ],
+        "failing": [
+            "name Import OpenRegister forms register (forms register + form and journey schemas)",
+            "appPath openregister",
+            "import openregister {\"x-openregister\":{\"app\":\"t\"},\"n\":1} 1.0.0 false",
+            "log.warning [ImportFormsRegister] import failed: importer down",
+            "out.warning Forms register import skipped: importer down"
+        ]
+    },
     "ImportMergeOperationRegister": {
         "missing": [
             "name Import OpenRegister merge-operation register (merge audit + reversal snapshots)",

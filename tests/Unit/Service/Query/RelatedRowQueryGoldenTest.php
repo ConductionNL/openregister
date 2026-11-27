@@ -209,10 +209,10 @@ class RelatedRowQueryGoldenTest extends TestCase {
 			'pgsql json forward' => ['pgsql', 'json', 'forward', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0."schema" = :p0_schema AND r0.uuid = t.object ->> \'caseRef\' AND r0.deleted IS NULL AND (r0.o = 1) AND r0.object ->> \'pd\' = :p0_c0 AND (CASE WHEN r0.object ->> \'v\' ~ \'^-?[0-9]+(\\.[0-9]+)?$\' THEN (r0.object ->> \'v\')::numeric >= :p0_c1 ELSE FALSE END) AND r0.object ->> \'d\' < :p0_c2 AND r0.object ->> \'n\' != :p0_c3 AND r0.object ->> \'o\'\'k\' IN (:p0_c4_0, :p0_c4_1) AND 1 = 0 AND r0.object ->> \'arr\' > :p0_c6 AND (CASE WHEN r0.object ->> \'neg\' ~ \'^-?[0-9]+(\\.[0-9]+)?$\' THEN (r0.object ->> \'neg\')::numeric <= :p0_c7 ELSE FALSE END))'],
 			'pgsql columns inverse' => ['pgsql', 'columns', 'inverse', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0."case_ref" = t._uuid AND r0._deleted IS NULL AND (r0.o = 1) AND r0."pd" = :p0_c0 AND r0."v" >= :p0_c1 AND r0."d" < :p0_c2 AND r0."n" != :p0_c3 AND 1 = 0 AND r0."arr" > :p0_c5 AND r0."neg" <= :p0_c6)'],
 			'pgsql columns forward' => ['pgsql', 'columns', 'forward', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0._uuid = t."case_ref" AND r0._deleted IS NULL AND (r0.o = 1) AND r0."pd" = :p0_c0 AND r0."v" >= :p0_c1 AND r0."d" < :p0_c2 AND r0."n" != :p0_c3 AND 1 = 0 AND r0."arr" > :p0_c5 AND r0."neg" <= :p0_c6)'],
-			'mysql json inverse' => ['mysql', 'json', 'inverse', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0."schema" = :p0_schema AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.caseRef\')) = t.uuid AND r0.deleted IS NULL AND (r0.o = 1) AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.pd\')) = :p0_c0 AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.v\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.v\')) AS DECIMAL(65,30)) >= :p0_c1 ELSE FALSE END) AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.d\')) < :p0_c2 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.n\')) != :p0_c3 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.o\'\'k\')) IN (:p0_c4_0, :p0_c4_1) AND 1 = 0 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.arr\')) > :p0_c6 AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.neg\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.neg\')) AS DECIMAL(65,30)) <= :p0_c7 ELSE FALSE END))'],
-			'mysql json forward' => ['mysql', 'json', 'forward', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0."schema" = :p0_schema AND r0.uuid = JSON_UNQUOTE(JSON_EXTRACT(t.object, \'$.caseRef\')) AND r0.deleted IS NULL AND (r0.o = 1) AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.pd\')) = :p0_c0 AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.v\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.v\')) AS DECIMAL(65,30)) >= :p0_c1 ELSE FALSE END) AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.d\')) < :p0_c2 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.n\')) != :p0_c3 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.o\'\'k\')) IN (:p0_c4_0, :p0_c4_1) AND 1 = 0 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.arr\')) > :p0_c6 AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.neg\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.neg\')) AS DECIMAL(65,30)) <= :p0_c7 ELSE FALSE END))'],
-			'mysql columns inverse' => ['mysql', 'columns', 'inverse', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0."case_ref" = t._uuid AND r0._deleted IS NULL AND (r0.o = 1) AND r0."pd" = :p0_c0 AND r0."v" >= :p0_c1 AND r0."d" < :p0_c2 AND r0."n" != :p0_c3 AND 1 = 0 AND r0."arr" > :p0_c5 AND r0."neg" <= :p0_c6)'],
-			'mysql columns forward' => ['mysql', 'columns', 'forward', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0._uuid = t."case_ref" AND r0._deleted IS NULL AND (r0.o = 1) AND r0."pd" = :p0_c0 AND r0."v" >= :p0_c1 AND r0."d" < :p0_c2 AND r0."n" != :p0_c3 AND 1 = 0 AND r0."arr" > :p0_c5 AND r0."neg" <= :p0_c6)'],
+			'mysql json inverse' => ['mysql', 'json', 'inverse', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0.`schema` = :p0_schema AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.caseRef\')) = t.uuid AND r0.deleted IS NULL AND (r0.o = 1) AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.pd\')) = :p0_c0 AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.v\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.v\')) AS DECIMAL(65,30)) >= :p0_c1 ELSE FALSE END) AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.d\')) < :p0_c2 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.n\')) != :p0_c3 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.o\'\'k\')) IN (:p0_c4_0, :p0_c4_1) AND 1 = 0 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.arr\')) > :p0_c6 AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.neg\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.neg\')) AS DECIMAL(65,30)) <= :p0_c7 ELSE FALSE END))'],
+			'mysql json forward' => ['mysql', 'json', 'forward', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0.`schema` = :p0_schema AND r0.uuid = JSON_UNQUOTE(JSON_EXTRACT(t.object, \'$.caseRef\')) AND r0.deleted IS NULL AND (r0.o = 1) AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.pd\')) = :p0_c0 AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.v\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.v\')) AS DECIMAL(65,30)) >= :p0_c1 ELSE FALSE END) AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.d\')) < :p0_c2 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.n\')) != :p0_c3 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.o\'\'k\')) IN (:p0_c4_0, :p0_c4_1) AND 1 = 0 AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.arr\')) > :p0_c6 AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.neg\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.neg\')) AS DECIMAL(65,30)) <= :p0_c7 ELSE FALSE END))'],
+			'mysql columns inverse' => ['mysql', 'columns', 'inverse', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0.`case_ref` = t._uuid AND r0._deleted IS NULL AND (r0.o = 1) AND r0.`pd` = :p0_c0 AND r0.`v` >= :p0_c1 AND r0.`d` < :p0_c2 AND r0.`n` != :p0_c3 AND 1 = 0 AND r0.`arr` > :p0_c5 AND r0.`neg` <= :p0_c6)'],
+			'mysql columns forward' => ['mysql', 'columns', 'forward', 'EXISTS (SELECT 1 FROM tbl r0 WHERE r0._uuid = t.`case_ref` AND r0._deleted IS NULL AND (r0.o = 1) AND r0.`pd` = :p0_c0 AND r0.`v` >= :p0_c1 AND r0.`d` < :p0_c2 AND r0.`n` != :p0_c3 AND 1 = 0 AND r0.`arr` > :p0_c5 AND r0.`neg` <= :p0_c6)'],
 		];
 	}//end clauses()
 
@@ -365,20 +365,27 @@ class RelatedRowQueryGoldenTest extends TestCase {
 	}//end testTheClauseRefusesWithTheExactMessage()
 
 	/**
-	 * A typed column renders plainly even on an engine the JSON path does not know.
+	 * A typed column is quoted in the engine's own spelling, so an unknown engine is refused rather than guessed.
+	 *
+	 * MariaDB reads a double-quoted name as a string literal unless ANSI_QUOTES is on,
+	 * so the Postgres spelling there was a clause that never parsed.
 	 *
 	 * @return void
 	 */
-	public function testAColumnComparisonNeedsNoEngine(): void {
-		$rendered = (new RelatedRowExistsClause())->render(
+	public function testAColumnComparisonIsQuotedPerEngine(): void {
+		$render = static fn (string $engine): string => (new RelatedRowExistsClause())->render(
 			filter: new RelatedRowFilter('cp', 'k', [['field' => 'v', 'operator' => 'gte', 'value' => '1']]),
-			subquery: new RelatedRowSubquery(target: new RelatedRowSqlTarget(engine: 'oracle', table: 'tbl', outerAlias: 't', storage: 'columns'),
+			subquery: new RelatedRowSubquery(target: new RelatedRowSqlTarget(engine: $engine, table: 'tbl', outerAlias: 't', storage: 'columns'),
 			inner: new RelatedRowInnerRow(alias: 'r0', accessPredicate: 'x', parameterPrefix: 'p'))
-		);
+		)['sql'];
 
-		$this->assertSame('EXISTS (SELECT 1 FROM tbl r0 WHERE r0."k" = t._uuid AND r0._deleted IS NULL AND (x) AND r0."v" >= :p_c0)', $rendered['sql']);
-		$this->assertSame(['p_c0' => '1'], $rendered['parameters']);
-	}//end testAColumnComparisonNeedsNoEngine()
+		$this->assertSame('EXISTS (SELECT 1 FROM tbl r0 WHERE r0."k" = t._uuid AND r0._deleted IS NULL AND (x) AND r0."v" >= :p_c0)', $render('pgsql'));
+		$this->assertSame('EXISTS (SELECT 1 FROM tbl r0 WHERE r0.`k` = t._uuid AND r0._deleted IS NULL AND (x) AND r0.`v` >= :p_c0)', $render('mysql'));
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("No related-row SQL for engine 'oracle'.");
+		$render('oracle');
+	}//end testAColumnComparisonIsQuotedPerEngine()
 
 	/**
 	 * A schema with two properties.
@@ -540,8 +547,8 @@ class RelatedRowQueryGoldenTest extends TestCase {
 				'rbac rel0 read openregister_table_1_2',
 				'setParameter rel0_org0="org-a"',
 				'setParameter rel0_c0="100"',
-				'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_2 rel0 WHERE rel0."case" = t._uuid AND rel0._deleted IS NULL AND '
-				. "((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.\"value\" >= :rel0_c0)",
+				'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_2 rel0 WHERE rel0.`case` = t._uuid AND rel0._deleted IS NULL AND '
+				. "((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.`value` >= :rel0_c0)",
 				'andWhere',
 				'findBySlug gone',
 				'tableName 3',
@@ -556,8 +563,8 @@ class RelatedRowQueryGoldenTest extends TestCase {
 				'rbac rel2 read openregister_table_1_4',
 				'setParameter rel2_org0="org-a"',
 				'setParameter rel2_c0="c-1"',
-				'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_4 rel2 WHERE rel2._uuid = t."ref" AND rel2._deleted IS NULL AND '
-				. "((rel2._owner = 'alice') AND rel2._organisation IN (:rel2_org0)) AND rel2.\"case\" = :rel2_c0)",
+				'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_4 rel2 WHERE rel2._uuid = t.`ref` AND rel2._deleted IS NULL AND '
+				. "((rel2._owner = 'alice') AND rel2._organisation IN (:rel2_org0)) AND rel2.`case` = :rel2_c0)",
 				'andWhere',
 			],
 			$log

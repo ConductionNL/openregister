@@ -178,7 +178,7 @@ class BookmarkLinksController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Existing suppression, kept.
 	 *
 	 * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
 	 */

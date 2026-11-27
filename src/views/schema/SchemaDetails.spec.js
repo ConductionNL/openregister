@@ -46,6 +46,7 @@ jest.mock('../../store/store.js', () => ({
 		setSchemaPropertyKey: jest.fn(),
 		downloadSchema: jest.fn(),
 		getSchemaStats: jest.fn(),
+		getSchema: jest.fn(),
 	},
 }))
 
@@ -77,10 +78,12 @@ const SCHEMA = { id: 12, title: 'Person', description: 'A natural person' }
 /**
  * Mount the page and let its mount-time loads finish.
  *
+ * @param {object} [route] The current route, when the page is opened by URL
  * @return {Promise<object>} The wrapper
  */
-async function mountPage() {
-	const wrapper = mount(SchemaDetails)
+async function mountPage(route = undefined) {
+	const options = route ? { global: { config: { globalProperties: { $route: route } } } } : {}
+	const wrapper = mount(SchemaDetails, options)
 	await flushPromises()
 	return wrapper
 }
@@ -379,5 +382,51 @@ describe('SchemaDetails property selection', () => {
 		wrapper.vm.setActiveProperty('name')
 
 		expect(schemaStore.setSchemaPropertyKey).toHaveBeenCalledWith(null)
+	})
+})
+
+describe('SchemaDetails opened by URL', () => {
+	it('loads the schema the URL names when the store holds none', async () => {
+		schemaStore.schemaItem = {}
+		schemaStore.getSchema.mockImplementation(async (id) => {
+			schemaStore.schemaItem = { ...SCHEMA, id: Number(id) }
+			return schemaStore.schemaItem
+		})
+
+		const wrapper = await mountPage({ params: { id: '12' } })
+
+		expect(schemaStore.getSchema).toHaveBeenCalledWith('12', { setItem: true })
+		expect(schemaStore.getSchemaStats).toHaveBeenCalledWith(12)
+		expect(wrapper.vm.$options.name ?? 'SchemaDetails').toBeTruthy()
+	})
+
+	it('loads the schema the URL names when the store holds another one', async () => {
+		schemaStore.schemaItem = { id: 7, title: 'Other' }
+		schemaStore.getSchema.mockResolvedValue({ ...SCHEMA })
+
+		await mountPage({ params: { id: '12' } })
+
+		expect(schemaStore.getSchema).toHaveBeenCalledWith('12', { setItem: true })
+	})
+
+	it('does not reload the schema the store already holds', async () => {
+		await mountPage({ params: { id: '12' } })
+
+		expect(schemaStore.getSchema).not.toHaveBeenCalled()
+	})
+
+	it('keeps the page as it was when the schema cannot be read', async () => {
+		schemaStore.getSchema.mockRejectedValue(new Error('404'))
+		schemaStore.schemaItem = { id: 7, title: 'Other' }
+
+		const wrapper = await mountPage({ params: { id: '12' } })
+
+		expect(wrapper.find('h2.pageHeader').text()).toBe('Other')
+	})
+
+	it('asks nothing without a route', async () => {
+		await mountPage()
+
+		expect(schemaStore.getSchema).not.toHaveBeenCalled()
 	})
 })

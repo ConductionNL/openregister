@@ -56,6 +56,13 @@ interface AccessLinkServiceInterface {
 	public const ACT_UPLOAD = 'accesslink.upload';
 
 	/**
+	 * The audit action written when a link changes its object through its journey.
+	 *
+	 * @var string
+	 */
+	public const ACT_EDIT = 'accesslink.edit';
+
+	/**
 	 * The brute-force throttler action of the access-link surface.
 	 *
 	 * Owned here, beside the surface it throttles; the hardening report reads

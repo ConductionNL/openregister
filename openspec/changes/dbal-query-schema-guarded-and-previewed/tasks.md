@@ -12,7 +12,8 @@
 ## 3. Spec, proof and docs
 
 - [ ] 3.1 Add the query-backed requirement to `openspec/specs/dbal-virtual-registers/spec.md` at archive time.
-- [ ] 3.2 Newman against the test database: preview a join, save it as a schema, list its objects.
+- [x] 3.2 Newman against the test database: preview a join, save it as a schema, list its objects.
+  - 2026-11-25: `tests/integration/openregister-query-backed-schema.postman_collection.json`, 16 requests and 23 assertions green on a sandbox Nextcloud 34 against the permits fixture (`tests/fixtures/dbal/build-permits-sqlite.php`, path passed as `permits_db_path`): the preview of a permits-to-types join answers the typed columns and both rows; an `UPDATE` is refused 400 naming the rule; a missing table answers 502 with `TableNotFoundException` and not the database's message; a non-administrator's preview is 403; the join saved as a schema lists both rows with `total` 2, filters on the joined `type` column and reads one object.
 - [x] 3.3 Document query-backed schemas, the guard and the read-only connection advice in `docs/`.
 
 Acceptance:

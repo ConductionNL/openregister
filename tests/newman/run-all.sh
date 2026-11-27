@@ -109,6 +109,7 @@ DOMAIN_ORDER=(
     "auth-matrix"
     "error-matrix"
     "files"
+    "file-text-read"
     "referential-integrity"
     "schema-migration"
     "flow-engine"
@@ -125,9 +126,12 @@ DOMAIN_ORDER=(
     "object-grants"
     "anonymisation-disclosures"
     "organisation-audit"
+    "reviewer-decisions"
     "public-export"
     "nlgov-conformance"
     "reply-threading"
+    "licence-plate-detection"
+    "search-dutch-stemming"
     "scheduled-messages"
     "run-migration"
     "lifecycle-side-moves"
@@ -148,6 +152,10 @@ declare -A DOMAIN_COLLECTIONS=(
     [auth-matrix]="$REPO_ROOT/tests/integration/openregister-auth-matrix.postman_collection.json"
     [error-matrix]="$REPO_ROOT/tests/integration/openregister-error-matrix.postman_collection.json"
     [files]="$REPO_ROOT/tests/integration/openregister-files-domain.postman_collection.json"
+    # A file's extracted text goes to whoever can open the file: the owner
+    # reads it (200), a stranger gets the same 404 as for an id that does not
+    # exist (search-file-text-and-vector-facade 4.1).
+    [file-text-read]="$REPO_ROOT/tests/integration/openregister-file-text-read.postman_collection.json"
     [agent-cms]="$REPO_ROOT/tests/newman/agent-cms-testing.postman_collection.json"
     [federation]="$REPO_ROOT/tests/federation/federation-tests.postman_collection.json"
     [schema-migration]="$REPO_ROOT/tests/integration/openregister-schema-migration.postman_collection.json"
@@ -158,6 +166,10 @@ declare -A DOMAIN_COLLECTIONS=(
     # through Nextcloud's own out-of-office API
     # (tasks-delegation-and-substitution 4.1).
     [task-delegation-mandate]="$REPO_ROOT/tests/integration/openregister-task-delegation-mandate.postman_collection.json"
+    # A reviewer owns their decision on a relation on an object's file:
+    # one decides, a second is refused 403 decision-owned, the decision
+    # reads back (reviewer-owns-their-decisions 1.3).
+    [reviewer-decisions]="$REPO_ROOT/tests/integration/openregister-reviewer-decisions.postman_collection.json"
     # Messages scheduled on an object: schedule, list, cancel by the author
     # or one who may update the object, 403/409/404 refusals
     # (send-at-on-the-messaging-leaf 3.2). Every sendAt is two days out, so
@@ -252,6 +264,12 @@ declare -A DOMAIN_COLLECTIONS=(
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
     # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
     [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
+    # detection-dutch-licence-plates 4.1: a plate and a BSN detected by the nl pattern set, Dutch placeholders in
+    # the anonymised copy, and no detection with the set switched off. Saves and restores the whole file settings.
+    [licence-plate-detection]="$REPO_ROOT/tests/integration/openregister-licence-plate-detection.postman_collection.json"
+    # search-dutch-language-quality 1.5: _search=omgevingsvergunningen finds "Omgevingsvergunning bouwen" where the
+    # database stems Dutch (PostgreSQL), and nothing where it does not; the capability says which.
+    [search-dutch-stemming]="$REPO_ROOT/tests/integration/openregister-search-dutch-stemming.postman_collection.json"
     # migrate-run-between-versions 4.1: a run parked at a user task is migrated to a version that renamed the
     # step (422 without a mapping, a dry run that writes nothing, then the move), and its task completes there.
     [run-migration]="$REPO_ROOT/tests/integration/openregister-run-migration.postman_collection.json"

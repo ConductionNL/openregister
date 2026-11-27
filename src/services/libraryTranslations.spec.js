@@ -145,3 +145,46 @@ describe('LIBRARY_CATALOGUES', () => {
 		expect(Object.keys(LIBRARY_CATALOGUES).sort()).toEqual(shipped)
 	})
 })
+
+describe('loadLibraryTranslationsWhenIdle', () => {
+	const fakeWindow = (readyState, idle = true) => {
+		const listeners = {}
+		return {
+			document: { readyState },
+			addEventListener: jest.fn((name, fn) => { listeners[name] = fn }),
+			requestIdleCallback: idle ? jest.fn((fn) => fn()) : undefined,
+			setTimeout: jest.fn((fn) => fn()),
+			fire: (name) => listeners[name]?.(),
+		}
+	}
+
+	it('waits for the page to load, then loads in idle time', () => {
+		const { loadLibraryTranslationsWhenIdle } = require('./libraryTranslations.js')
+		const win = fakeWindow('interactive')
+		const loadNow = jest.fn()
+		loadLibraryTranslationsWhenIdle(win, loadNow)
+		expect(loadNow).not.toHaveBeenCalled()
+		expect(win.addEventListener).toHaveBeenCalledWith('load', expect.any(Function), { once: true })
+		win.fire('load')
+		expect(win.requestIdleCallback).toHaveBeenCalledWith(expect.any(Function), { timeout: 2000 })
+		expect(loadNow).toHaveBeenCalledTimes(1)
+	})
+
+	it('loads in idle time at once when the page has already loaded', () => {
+		const { loadLibraryTranslationsWhenIdle } = require('./libraryTranslations.js')
+		const win = fakeWindow('complete')
+		const loadNow = jest.fn()
+		loadLibraryTranslationsWhenIdle(win, loadNow)
+		expect(win.addEventListener).not.toHaveBeenCalled()
+		expect(loadNow).toHaveBeenCalledTimes(1)
+	})
+
+	it('falls back to a timeout without requestIdleCallback', () => {
+		const { loadLibraryTranslationsWhenIdle } = require('./libraryTranslations.js')
+		const win = fakeWindow('complete', false)
+		const loadNow = jest.fn()
+		loadLibraryTranslationsWhenIdle(win, loadNow)
+		expect(win.setTimeout).toHaveBeenCalledWith(expect.any(Function), 0)
+		expect(loadNow).toHaveBeenCalledTimes(1)
+	})
+})

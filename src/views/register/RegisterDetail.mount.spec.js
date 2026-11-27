@@ -30,7 +30,11 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 				slots.actions ? h('x-actions', slots.actions()) : null,
 				h('x-error-actions', slots['error-actions']()),
 				slots['stats-rows'] ? h('table', h('tbody', slots['stats-rows']())) : null,
-				h('x-body', slots.default()),
+				// As CnDetailPage does: the default slot only without a statistics
+				// table, the footer always. A stub that rendered every slot hid a page
+				// whose whole body was default-slot content beside its statistics.
+				!slots['stats-rows'] && slots.default ? h('x-body', slots.default()) : null,
+				slots.footer ? h('x-footer', slots.footer()) : null,
 			])
 		},
 	},
@@ -356,6 +360,15 @@ describe('RegisterDetail mounted', () => {
 
 		await cards.trigger('click')
 		expect(wrapper.find('x-RegisterModelDiagram').exists()).toBe(false)
+		expect(wrapper.findAll('.card')).toHaveLength(2)
+	})
+
+	it('renders its schemas and the view switch beside the statistics table', async () => {
+		registerStore.getRegisterStats.mockResolvedValue({ objects: { total: 1 }, files: {}, logs: {}, schemas: 2 })
+		const wrapper = await mounted({ id: 4, title: 'Zaken', schemas: SCHEMAS })
+
+		expect(wrapper.find('tbody tr').exists()).toBe(true)
+		expect(wrapper.find('[data-testid="schema-view-diagram"]').exists()).toBe(true)
 		expect(wrapper.findAll('.card')).toHaveLength(2)
 	})
 })

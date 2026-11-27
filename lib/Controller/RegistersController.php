@@ -70,6 +70,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\LifecycleStatesKeeperInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -309,6 +310,7 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 	 *
 	 * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-1
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		// Get request parameters for filtering and searching.
@@ -471,6 +473,7 @@ class RegistersController extends Controller implements EnvelopedDefinitionContr
 	 *
 	 * @spec openspec/changes/register-schema-read-accessibility/tasks.md#task-2
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show($id): JSONResponse {
 		try {

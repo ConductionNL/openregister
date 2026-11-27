@@ -337,6 +337,15 @@
       "_note": "Bespoke webhook pipeline configuration UI."
     },
     {
+      "id": "consumers",
+      "route": "/consumers",
+      "type": "custom",
+      "title": "Consumers",
+      "component": "ConsumersIndex",
+      "permission": "admin",
+      "_note": "API consumers (external callers) and the grant that narrows each one (scoped-api-tokens 3.1). Consumers are rows of openregister_consumers behind /api/consumers, not register objects, so this is not an index page."
+    },
+    {
       "id": "agents",
       "route": "/agents",
       "type": "custom",
@@ -706,6 +715,14 @@
           "visibleIf": {
             "user.isAdmin": true
           }
+        },
+        {
+          "id": "Consumers",
+          "label": "Consumers",
+          "icon": "KeyChainVariant",
+          "route": "consumers",
+          "order": 98,
+          "permission": "admin"
         }
       ]
     },
