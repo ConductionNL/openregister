@@ -16,3 +16,15 @@
 [chromium] › tests/e2e/ci/public-share-view-count.spec.ts:93:5 › three renders from one IP inside a minute count once, and lastViewedAt follows the latest
 # triage: manifest-grants = known OpenRegister object-share bug (lease e2e-launchpad-manifest-grants, other lane).
 # public-share-view-count ENVIRONMENT: dedupe needs a distributed cache (PublicShareMapper falls back to always-count); with memcache.distributed APCu 1/1 green, no change.
+# shard 1/8 (07:45Z, same sandbox + integriq, APCu): 297 passed, 9 failed, 9 skipped, 8 did not run (17.0 min)
+[chromium] › tests/e2e/admin-templates-resync-async.spec.ts:215:5 › a re-sync of more than 50 copies is queued, and the job applies it and notifies every member 
+[chromium] › tests/e2e/admin-templates-resync.spec.ts:326:6 › dry run (REQ-RESYNC-002) › a dry run lists every copy with its counts and writes, audits and notifies nothing 
+[chromium] › tests/e2e/calendar-widget-config.spec.ts:353:6 › REQ-CAL-002 placement configuration › days ahead is stored as a number, and only bounds agenda 
+[chromium] › tests/e2e/calendar-widget-config.spec.ts:420:6 › REQ-CAL-002 placement configuration › the stored content reads back as a clean object with trimmed strings 
+[chromium] › tests/e2e/calendar-widget-rendering.spec.ts:177:6 › REQ-CAL-008 render modes › week view has one column per day with name, date and timed events in order 
+[chromium] › tests/e2e/calendar-widget-rendering.spec.ts:232:6 › REQ-CAL-008 render modes › a month with no events still draws the full grid with visible cells 
+[chromium] › tests/e2e/calendar-widget-rendering.spec.ts:276:6 › REQ-CAL-009 failure tolerance › when every feed fails the empty state shows with a prominent notice 
+[chromium] › tests/e2e/calendar-widget-rendering.spec.ts:370:6 › REQ-CAL-010 empty state and feedback › a widget with no calendars and no feeds says no calendar is configured 
+[chromium] › tests/e2e/calendar-widget-rendering.spec.ts:400:6 › REQ-CAL-010 empty state and feedback › the loading indicator goes away and the events render when the answer arrives 
+# triage: calendar-widget-config x2 + calendar-widget-rendering x5 FIXED launchpad#2184 (merged): dav allows 10 new calendars/user/hour, MKCALENDAR 429 'Too many calendars created'; global setup now raises dav/rateLimitCalendarCreation via the provisioning API (config 5/10 -> 10/10, with rendering 21/21).
+# admin-templates-resync:326 + resync-async:215 (+8 did not run after them) ENVIRONMENT: need the notifications app; the git-tag server has none, and notifications stable34 from git needs its php-scoper vendor build ('composer bin all install' failed here), which the release tarball ships. Not an app red as far as this sandbox can tell; rerun on a tarball instance.
