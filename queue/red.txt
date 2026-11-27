@@ -392,3 +392,4 @@
 2026-11-27T13:11:41Z dev=4c5375eed4 prs=11346,11374 Tests: 68171, Assertions: 242804, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29. front=red
 2026-11-27T13:17:43Z dev=4c5375eed4 prs=11374 Tests: 68157, Assertions: 242748, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29. front=red
 2026-11-27T15:02:37Z dev=b15abef5a0 prs=10156 Tests: 68290, Assertions: 243346, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29. front=red
+2026-11-27T16:37:35Z dev=4be455ccbd prs=10156,11191 Tests: 68370, Assertions: 243741, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29. front=red
