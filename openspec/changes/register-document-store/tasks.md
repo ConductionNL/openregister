@@ -113,12 +113,20 @@ OpenRegister classes use `environmentAwareDouble` against the real signatures (`
 
 ## 3. The swap, proven (REQ-RDS-005)
 
-- [ ] 3.1 `tests/Integration/DocumentStoreSwapTest.php`, run by the CI PHPUnit job against the real Nextcloud: enable
+- [x] 3.1 `tests/Integration/DocumentStoreSwapTest.php`, run by the CI PHPUnit job against the real Nextcloud: enable
   `files_external`, allow the `local` backend, create a `local` mount for the `openregister` account through
   `occ files_external:create` and `files_external:applicable`, then run the scenario of REQ-RDS-005 (object with a
   file, one earlier version, a tag and a public link; move; read through `FilesController` and through the public
   share URL; upload again). It must not call `markTestSkipped()` (unlike `RuntimeSchemaReloadTest`): without Nextcloud it fails. Quote its line from the
   CI log in the PR body to show it ran.
+  - 2026-11-25: built and run on a sandbox Nextcloud 34 on PostgreSQL 16 (1 test, 42 assertions, OK). The mount also needs
+    `files_external:option <id> enable_sharing true`: an administrator's mount allows no sharing, and without it the
+    move refused the register ("You are not allowed to share"). Two defects the run found are fixed with it: the test
+    process loads no app, so the fixture's second write goes through `occ files:put` to keep an earlier version; and
+    `FlowMapper::findWithNodeType()` ran LIKE on PostgreSQL's `json` column, which aborted the move's rewrite
+    transaction for every register holding objects (now cast to text, pinned in `FlowMapperQueryGoldenTest`). The
+    test puts the instance back afterwards (references reversed through `rewriteReferences()`, root and old tree
+    restored, mount removed). The CI log line is still owed: branch commits run without CI.
 - [x] 3.2 Newman: add `GET /api/settings/files` asserting the `documentStore` keys and types to the file settings
   collection in `tests/newman/`.
   - Built: "GET file settings as admin: the document store" in
