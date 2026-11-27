@@ -4629,6 +4629,7 @@ Service/Import/RecordImport/RowRangeFilter.php,,Service,,,,,Core
 Service/Import/RecordImport/UnconfirmedMappingException.php,,Service,,,,,Core
 Notifications/Service/Notification/ScheduledMessageRefusal.php,46,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageRefusal.php,0,,Notifications
 Notifications/Service/Notification/ScheduledMessageScheduler.php,247,Notifications,Notifications,Notifications/Service/Notification/ScheduledMessageScheduler.php,0,,Notifications
+Controller/Support/DraftVersionRead.php,103,Controller,Service,Service/Controller/Support/DraftVersionRead.php,0,,Core
 Db/FlowMoment.php,126,Db,Flows,Flows/Db/FlowMoment.php,0,,Processes
 Db/FlowMomentMapper.php,151,Db,Flows,Flows/Db/FlowMomentMapper.php,0,,Processes
 Service/Flow/FlowCalendarIndex.php,289,Service,Flows,Flows/Service/Flow/FlowCalendarIndex.php,0,,Processes
@@ -4666,6 +4667,10 @@ Db/SchemaMapper/ReferenceLoopCheck.php,29,Db,,,0,,Processes
 Db/SchemaMapper/SchemaDeclarationChecksEvent.php,14,Db,,,0,,Core
 Db/SchemaMapper/SchemaDeclarationOrder.php,43,Db,,,0,,Core
 Service/Configuration/SeedReferenceResolver.php,,Service,,,,,Configuration
+Controller/Support/DraftKeysOnList.php,188,Controller,Controller,Controller/Support/DraftKeysOnList.php,0,,Core
+Service/Object/DraftPromoter.php,274,Service,Service,Service/Object/DraftPromoter.php,0,,Core
+Exception/DraftConflictException.php,59,Exception,Exception,Exception/DraftConflictException.php,0,,Kernel
+Db/Schema/PreviewUrlTemplate.php,142,Db,Db,Db/Schema/PreviewUrlTemplate.php,0,,Core
 Service/Anonymisation/RedactionVerdictStore.php,,Service,,,,,Files
 Exception/RedactionNotPublishableException.php,,Exception,,,,,Kernel
 Migration/Version1Date20261114100011.php,,Migration,,,,,Platform
@@ -5086,6 +5091,7 @@ Kernel/Contracts/RemoteRecipientDenialInterface.php,,Kernel,,,,,Kernel
 Service/ProcessesServiceBindings.php,,Service,,,,,Processes
 Service/ProcessesServiceRegistrar.php,,Service,,,,,Processes
 Service/Object/PermissionAsk.php,,Service,,,,,Kernel
+Kernel/Contracts/DraftPreviewInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/BusinessCalendarInterface.php,,Kernel,,,,,Kernel
 Kernel/Contracts/BusinessTimeInterface.php,,Kernel,,,,,Kernel
 Service/Flow/Timer/BusinessTime.php,,Service,,,,,Processes
@@ -5122,6 +5128,7 @@ Service/Authorization/PermissionMatrixSubject.php,,Service,,,,,Core
 Controller/Support/StreamedTextResponse.php,,Controller,,,,,Core
 Controller/Support/PermissionsAuditMatrix.php,,Controller,,,,,Core
 Service/Authorization/PermissionMatrixSubjects.php,,Service,,,,,Core
+Event/TaskSequenceRejectedEvent.php,,Event,,,,,Processes
 Service/RedactionPolicy/DetectionPatternValidator.php,,Service,,,,,Configuration
 Service/RedactionPolicy/DetectionPatternRunner.php,,Service,,,,,Configuration
 Listener/DetectionPatternValidationListener.php,,Listener,,,,,Configuration

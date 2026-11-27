@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Task;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskSequence;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskSequenceRejectedEvent;
 use OCA\OpenRegister\Event\TaskSequenceUndecidedEvent;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -509,6 +510,10 @@ class TaskSequenceService implements TaskSequenceServiceInterface {
 				(string)($task->getCompletedBy() ?? 'an unnamed decider')
 			)
 		));
+
+		// Announced after the close, like the undecided end: what waited on the
+		// approval (a held change) is discarded by its own listener.
+		$this->services->dispatcher->dispatchTyped(new TaskSequenceRejectedEvent(sequence: $sequence, task: $task));
 	}//end closeRejected()
 
 	/**
