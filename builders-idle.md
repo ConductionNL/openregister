@@ -1653,3 +1653,4 @@
 2026-11-27T19:14:48Z perf-K1 merged integriq#4033: six-page sum 6549/6478/6715 -> 5999/6505/6140 ms, 15.3 -> 14.2 MB JS per page
 2026-11-27T19:20:18Z help-launchpad-1 edit-mode-draft-and-save: merged #2364 (bookmark import in edit mode joins the draft via draft:true plan answer; task 'forms write to the draft' ticked). LEFT: task 7 Configure for non-tile well children; tasks 12-13 e2e (well-child embed case, strict-mode reds), 14 live check.
 2026-11-27T19:26:04Z perf-K1 merged larpinq#1208: six-page sum 6007/6028 -> 5299/5371 ms, 20.0 -> 16.0 MB JS per page
+2026-11-27T19:26:23Z b-thematiq helped launchpad: widget-declared-placeholders 4.1 #2366 merged (shell prints cn-widget-placeholder markup, library css inlined from lib/Service/widget-placeholder.css copy, style block 4.9/6 KB; e2e first-paint-shell.spec.ts written). WDP left: 4.2-4.4 live/board checks. first-paint-skeleton next for the lease: task 6 renderer loaded event / task 7 status line.
