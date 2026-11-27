@@ -32,3 +32,4 @@ tiles-import-discovery.spec.ts:448        PR #2373 merged (help-launchpad-1: Sav
 tiles-launch-target.spec.ts:350          PR #2377 merged (help-launchpad-1: saveEditDraft, no edit toggle after Save) 16/16 --repeat-each 2
 tiles-form-board-sync.spec.ts:239        PR #2389 merged (help-launchpad-1: tile form is two columns, fields left + Appearance right; order checked per column) 6 passed/2 skipped --repeat-each 2
 icon-only-app-tiles.spec.ts:128          fixed by #2379 (other lane, same time)
+tiles-rendering.spec.ts:472              still APP RED (help-launchpad-1 checked 20:15Z): tiles REQ 'new tile placements store content.{title,...}' vs App or link tile 'A link' + draft Save storing tile columns (DraftSaveService::addTile); overlaps open #2362, left for the tile/app-link owner; spec steps also stale (form has no 'Title' field)
