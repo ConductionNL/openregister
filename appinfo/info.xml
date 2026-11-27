@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.2.0-dev.53</version>
+    <version>2.2.0-dev.62</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -137,7 +137,6 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\PublishedDigestVerifyJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\OriginalRetentionJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\UploadSessionCleanupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledMessageSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExampleSetDailyRefreshJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\SharerAccessSweepJob</job>
@@ -271,8 +270,6 @@ Vrij en open source onder de EUPL-licentie.
 			     (occ openregister:adopt-organisationless-rows with apply writes). -->
 			<step>OCA\OpenRegister\Repair\AdoptOrganisationlessRows</step>
 			<step>OCA\OpenRegister\Repair\GiveFederationSharesALifetime</step>
-			<!-- maxFileSizeMB (never read) becomes textExtraction.maxBytes (large-file-handling). -->
-			<step>OCA\OpenRegister\Repair\MigrateTextExtractionCeiling</step>
 			<step>OCA\OpenRegister\Repair\WithholdRevealValuesFromRelations</step>
 			<!-- Reports duplicate uuids per object table; adds the unique uuid index only once a table has none. Deletes nothing. -->
 			<step>OCA\OpenRegister\Repair\AddUniqueUuidIndex</step>

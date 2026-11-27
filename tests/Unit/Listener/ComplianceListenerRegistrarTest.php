@@ -17,6 +17,9 @@ use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Event\OrganisationCreatedEvent;
+use OCA\OpenRegister\Event\OrganisationDeletedEvent;
+use OCA\OpenRegister\Event\OrganisationUpdatedEvent;
 use OCA\OpenRegister\Event\RegisterCreatedEvent;
 use OCA\OpenRegister\Event\RegisterDeletedEvent;
 use OCA\OpenRegister\Event\RegisterUpdatedEvent;
@@ -83,7 +86,7 @@ final class ComplianceListenerRegistrarTest extends TestCase {
 			$expected[] = [$event, RecordTypeAuditListener::class];
 		}
 
-		foreach ([SchemaCreatedEvent::class, SchemaUpdatedEvent::class, SchemaDeletedEvent::class, RegisterCreatedEvent::class, RegisterUpdatedEvent::class, RegisterDeletedEvent::class] as $event) {
+		foreach ([SchemaCreatedEvent::class, SchemaUpdatedEvent::class, SchemaDeletedEvent::class, RegisterCreatedEvent::class, RegisterUpdatedEvent::class, RegisterDeletedEvent::class, OrganisationCreatedEvent::class, OrganisationUpdatedEvent::class, OrganisationDeletedEvent::class] as $event) {
 			$expected[] = [$event, EntityEditAuditListener::class];
 		}
 

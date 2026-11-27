@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapperInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Kernel\Contracts\OrganisationInterface;
 use OCA\OpenRegister\Service\Rbac\AuditRowWriter;
 use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
@@ -89,13 +90,13 @@ final class EntityEditAuditor {
 	/**
 	 * Record a created schema or register.
 	 *
-	 * @param Schema|Register $entity The entity as stored.
+	 * @param Schema|Register|OrganisationInterface $entity The entity as stored.
 	 *
 	 * @return int The rows written: 1, or 0 when the write failed.
 	 *
 	 * @spec openspec/changes/history-schema-and-settings-edits-audited/design.md
 	 */
-	public function recordCreated(Schema|Register $entity): int {
+	public function recordCreated(Schema|Register|OrganisationInterface $entity): int {
 		$changed = $this->identity(entity: $entity) + ['properties' => $this->propertyNames(entity: $entity)];
 
 		return $this->write(row: $this->row(entity: $entity, verb: 'created', changed: $changed));
@@ -104,25 +105,28 @@ final class EntityEditAuditor {
 	/**
 	 * Record an updated schema or register; a save that changed nothing writes nothing.
 	 *
-	 * @param Schema|Register $old The entity before the save.
-	 * @param Schema|Register $new The entity as stored.
+	 * @param Schema|Register|OrganisationInterface $old The entity before the save.
+	 * @param Schema|Register|OrganisationInterface $new The entity as stored.
 	 *
 	 * @return int The rows written: 1, 0 for no change or a failed write.
 	 *
 	 * @spec openspec/changes/history-schema-and-settings-edits-audited/design.md
 	 */
-	public function recordUpdated(Schema|Register $old, Schema|Register $new): int {
+	public function recordUpdated(Schema|Register|OrganisationInterface $old, Schema|Register|OrganisationInterface $new): int {
 		$fields = $this->diff(old: $old->jsonSerialize(), new: $new->jsonSerialize());
 		if ($fields === []) {
 			return 0;
 		}
 
-		$changed = [
-			'slug' => $new->getSlug(),
-			'versionBefore' => $old->getVersion(),
-			'versionAfter' => $new->getVersion(),
-			'fields' => $fields,
-		];
+		$changed = ['slug' => $this->identity(entity: $new)['slug'], 'fields' => $fields];
+		if ($new instanceof OrganisationInterface === false) {
+			$changed = [
+				'slug' => $new->getSlug(),
+				'versionBefore' => $old->getVersion(),
+				'versionAfter' => $new->getVersion(),
+				'fields' => $fields,
+			];
+		}
 
 		return $this->write(row: $this->row(entity: $new, verb: 'updated', changed: $changed));
 	}//end recordUpdated()
@@ -130,13 +134,13 @@ final class EntityEditAuditor {
 	/**
 	 * Record a deleted schema or register, its definition kept only as a hash.
 	 *
-	 * @param Schema|Register $entity The entity as it was.
+	 * @param Schema|Register|OrganisationInterface $entity The entity as it was.
 	 *
 	 * @return int The rows written: 1, or 0 when the write failed.
 	 *
 	 * @spec openspec/changes/history-schema-and-settings-edits-audited/design.md
 	 */
-	public function recordDeleted(Schema|Register $entity): int {
+	public function recordDeleted(Schema|Register|OrganisationInterface $entity): int {
 		$changed = $this->identity(entity: $entity) + [
 			'propertyCount' => count($this->propertyNames(entity: $entity)),
 			'sha256' => hash('sha256', (string)json_encode($entity->jsonSerialize())),
@@ -393,22 +397,31 @@ final class EntityEditAuditor {
 	/**
 	 * Slug, title and version.
 	 *
-	 * @param Schema|Register $entity The entity.
+	 * @param Schema|Register|OrganisationInterface $entity The entity.
 	 *
 	 * @return array{slug: string|null, title: string|null, version: string|null}
 	 */
-	private function identity(Schema|Register $entity): array {
+	private function identity(Schema|Register|OrganisationInterface $entity): array {
+		if ($entity instanceof OrganisationInterface) {
+			$json = self::organisationJson(organisation: $entity);
+			return [
+				'slug' => self::stringOrNull(value: ($json['slug'] ?? null)),
+				'title' => self::stringOrNull(value: ($json['name'] ?? null)),
+				'version' => null,
+			];
+		}
+
 		return ['slug' => $entity->getSlug(), 'title' => $entity->getTitle(), 'version' => $entity->getVersion()];
 	}//end identity()
 
 	/**
 	 * A schema's property names; a register has none.
 	 *
-	 * @param Schema|Register $entity The entity.
+	 * @param Schema|Register|OrganisationInterface $entity The entity.
 	 *
 	 * @return array<int, string>
 	 */
-	private function propertyNames(Schema|Register $entity): array {
+	private function propertyNames(Schema|Register|OrganisationInterface $entity): array {
 		if ($entity instanceof Schema === false) {
 			return [];
 		}
@@ -419,21 +432,23 @@ final class EntityEditAuditor {
 	/**
 	 * The row: action, entity, organisation, actor and cause.
 	 *
-	 * @param Schema|Register      $entity  The entity.
-	 * @param string               $verb    created, updated or deleted.
-	 * @param array<string, mixed> $changed The changed block.
+	 * @param Schema|Register|OrganisationInterface $entity  The entity.
+	 * @param string                                $verb    created, updated or deleted.
+	 * @param array<string, mixed>                  $changed The changed block.
 	 *
 	 * @return AuditTrail
 	 */
-	private function row(Schema|Register $entity, string $verb, array $changed): AuditTrail {
+	private function row(Schema|Register|OrganisationInterface $entity, string $verb, array $changed): AuditTrail {
 		$user  = $this->userSession->getUser();
 		$cause = WriteCause::current();
 
 		$row = new AuditTrail();
 		$row->setUuid(Uuid::v4()->toRfc4122());
+		// REQ-HSA-011: configuration history, read apart from record history.
+		$row->setCategory(AuditCategory::ADMINISTRATIVE);
 		$row->setUser($user?->getUID() ?? 'system');
 		$row->setUserName($user?->getDisplayName() ?? 'System');
-		$row->setOrganisationId($entity->getOrganisation());
+		$row->setOrganisationId($this->organisationOf(entity: $entity));
 		$row->setChanged($changed);
 		$row->setCause($cause['cause']);
 		$row->setCauseRun($cause['run']);
@@ -445,12 +460,63 @@ final class EntityEditAuditor {
 			return $row;
 		}
 
+		if ($entity instanceof OrganisationInterface) {
+			$row->setAction('organisation.' . $verb);
+			return $row;
+		}
+
 		$row->setAction('register.' . $verb);
 		$row->setRegister($entity->getId());
 		$row->setRegisterUuid($entity->getUuid());
 
 		return $row;
 	}//end row()
+
+	/**
+	 * The organisation a row belongs to: the entity's own, or the organisation itself.
+	 *
+	 * @param Schema|Register|OrganisationInterface $entity The entity.
+	 *
+	 * @return string|null
+	 */
+	private function organisationOf(Schema|Register|OrganisationInterface $entity): ?string {
+		if ($entity instanceof OrganisationInterface) {
+			return self::stringOrNull(value: (self::organisationJson(organisation: $entity)['uuid'] ?? null));
+		}
+
+		return $entity->getOrganisation();
+	}//end organisationOf()
+
+	/**
+	 * An organisation as it serialises; the Kernel interface exposes nothing else.
+	 *
+	 * @param OrganisationInterface $organisation The organisation.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function organisationJson(OrganisationInterface $organisation): array {
+		$json = $organisation->jsonSerialize();
+		if (is_array($json) === false) {
+			return [];
+		}
+
+		return $json;
+	}//end organisationJson()
+
+	/**
+	 * A string, or null for anything else.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return string|null
+	 */
+	private static function stringOrNull(mixed $value): ?string {
+		if (is_string($value) === false) {
+			return null;
+		}
+
+		return $value;
+	}//end stringOrNull()
 
 	/**
 	 * Write one row; a failure is logged at ERROR and returns 0.

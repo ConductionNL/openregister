@@ -33,6 +33,8 @@ jest.mock('../schemas/SchemaWorkflowTab.vue', () => ({ name: 'SchemaWorkflowTab'
 jest.mock('./CalendarProviderTab.vue', () => ({ name: 'CalendarProviderTab', props: ['schema'], render: () => null }))
 jest.mock('./SchemaRulesTab.vue', () => ({ name: 'SchemaRulesTab', props: ['schema'], render: () => null }))
 jest.mock('./SchemaRightsTab.vue', () => ({ name: 'SchemaRightsTab', props: ['schema'], render: () => null }))
+jest.mock('../../components/audit/EntityChangesList.vue', () => ({ name: 'EntityChangesList', props: ['kind', 'entityId'], render: () => null }))
+jest.mock('@nextcloud/auth', () => ({ getCurrentUser: jest.fn(() => ({ uid: 'admin', isAdmin: true })) }))
 jest.mock('./SchemaIndexesTab.vue', () => ({ name: 'SchemaIndexesTab', props: ['schema'], render: () => null }))
 jest.mock('../../store/store.js', () => ({
 	dashboardStore: { loading: false, error: null, chartData: {}, fetchAllChartData: jest.fn() },
@@ -290,6 +292,39 @@ describe('SchemaDetails tabs', () => {
 		expect(wrapper.findComponent({ name: 'SchemaRulesTab' }).exists()).toBe(false)
 		expect(wrapper.findComponent({ name: 'SchemaIndexesTab' }).props('schema')).toEqual(SCHEMA)
 		expect(tab(wrapper, 'Indexes').classes()).toContain('active')
+	})
+})
+
+describe('SchemaDetails changes tab (history-schema-and-settings-edits-audited)', () => {
+	const { getCurrentUser } = jest.requireMock('@nextcloud/auth')
+
+	it('shows an administrator the schema\'s edit history', async () => {
+		getCurrentUser.mockReturnValue({ uid: 'admin', isAdmin: true })
+		const wrapper = await mountPage()
+		expect(wrapper.findComponent({ name: 'EntityChangesList' }).exists()).toBe(false)
+
+		await tab(wrapper, 'Changes').trigger('click')
+
+		const changes = wrapper.findComponent({ name: 'EntityChangesList' })
+		expect(changes.props()).toEqual({ kind: 'schemas', entityId: 12 })
+		expect(tab(wrapper, 'Changes').classes()).toContain('active')
+	})
+
+	it('hides the tab from a user who is no administrator', async () => {
+		getCurrentUser.mockReturnValue({ uid: 'anna', isAdmin: false })
+		const wrapper = await mountPage()
+
+		expect(tab(wrapper, 'Changes')).toBeUndefined()
+		wrapper.vm.activeTab = 'changes'
+		await wrapper.vm.$nextTick()
+		expect(wrapper.findComponent({ name: 'EntityChangesList' }).exists()).toBe(false)
+	})
+
+	it('hides the tab when nobody is signed in', async () => {
+		getCurrentUser.mockReturnValue(null)
+		const wrapper = await mountPage()
+
+		expect(tab(wrapper, 'Changes')).toBeUndefined()
 	})
 })
 
