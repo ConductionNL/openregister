@@ -1611,3 +1611,4 @@
 2026-11-27T17:18:17Z help-launchpad-3 helped launchpad: more-menu-favourites task 10 (translations, every shipped locale) #2315 merged; now task 16 live check
 2026-11-27T17:22:42Z perf-K1 merged launchpad#2318: Admin settings 764/817/826 -> 729/727/726 ms (+124..+153 over floor), 16 -> 7 requests
 2026-11-27T17:25:29Z live-thematiq-1 (routine run 17:23Z) ended at start: lane K=1 already active in session-20261127T162510-7c0fff3e (lease live-thematiq-1 renewed 17:18Z, expires 18:48Z); not duplicating
+2026-11-27T17:28:17Z live-launchpad-1 merged launchpad#2321: widgets-nc-widget:276 green (spec registered via setInterval(0) after first-screen mount; property traps on OCA/Dashboard/register now register before mount; 8/8 live, :301 3/3). Next: shards 1-3/8 on development e15509ca (last run on 9cda792f before #2245-#2321).
