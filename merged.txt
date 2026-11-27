@@ -3346,3 +3346,4 @@
 2026-11-27T11:08:36Z thematiq#2123 done-thematiq pixel: TqEmailDocumenten 8->4 (remove pill, example mail)
 2026-11-27T11:13:42Z thematiq#2125 done-thematiq pixel: TqLogboek 5->1 (log pill families)
 2026-11-27T11:19:27Z thematiq#2127 done-thematiq pixel: TqAiAssistent 5->3 (assistant preview)
+11343 98cd7a59a84c990130c994bee25549db3afb8644 d5895c53823c2be4586fe895817a6c40089704f0 0cb310a5859ce09db0e6cf2487f29f51166cd370 2026-11-27T11:20:00Z
