@@ -598,5 +598,7 @@ final class CoreServiceBindings {
 		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
 		PropertySearchProfileInterface::class => PropertySearchProfile::class,
 		\OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface::class => SemanticProviderCatalogue::class,
+		\OCA\OpenRegister\Service\Operations\ReindexSelectionServiceInterface::class
+			=> \OCA\OpenRegister\Service\Operations\ReindexSelectionService::class,
 	];
 }//end class

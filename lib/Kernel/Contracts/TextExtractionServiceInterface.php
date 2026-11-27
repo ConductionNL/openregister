@@ -49,4 +49,19 @@ interface TextExtractionServiceInterface {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function extractObject(int $objectId, bool $forceReExtract = false): void;
+
+	/**
+	 * Extract a file's text again, chunk it and detect entities, even when its chunks are up to date.
+	 *
+	 * The new chunks are stored unvectorised, so the vectorisation job embeds them again.
+	 *
+	 * @param int $fileId The Nextcloud file id.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception If the file does not exist or the extraction fails.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md#requirement-an-administrator-reindexes-a-selection-and-watches-it-run-req-sqf-007
+	 */
+	public function reextractFile(int $fileId): void;
 }//end interface
