@@ -9,3 +9,8 @@ files-widget-actions.spec.ts:210 (+5 serial)  SANDBOX php -S post_max_size 8M an
 discover-server-services.spec.ts:116          skipped: Deck not installed (sandbox)
 # shard 3/8 (launchpad development ce8ca65, same sandbox + viewer stable34, php -S upload limits raised): 349 passed, 0 failed, 3 skipped (22.3 min). GREEN.
 # Sandbox tip: NC from the git tag lacks apps/viewer; the first launchpad version bump then fails occ upgrade ('viewer were not correctly replaced'). Clone nextcloud/viewer stable34 into apps/ at setup.
+# shard 2/8 (launchpad development f722f74, same sandbox): 262 passed, 4 failed, 29 skipped, 26 did not run (15.0 min)
+ci/manifest-grants.spec.ts:119                OTHER lease e2e-launchpad-manifest-grants (live-launchpad-1)
+cli-commands.spec.ts:805                      SANDBOX refuses port 8080 by design (writes appinfo/signature.json)
+conditional-visibility-render.spec.ts:127     ENV 429 'Too many requests' on /s/<token>/data after ~15 min of anonymous share reads from one IP; alone 3/3 green
+ci/public-share.spec.ts:286                   ENV same throttle (badge never rendered); alone 2/2 green. If CI shows these, global setup could run 'occ security:bruteforce:reset 127.0.0.1' (or disable ratelimit.protection on the throwaway runner); not changed here
