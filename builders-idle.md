@@ -1552,3 +1552,4 @@
 2026-11-27T14:04:55Z perf-K1 merged opencatalogi#3227 (nc-vue ^2.235.2 + unread-404 fix): Dashboard never-settles -> 1135/1199 ms; Search/Catalogs/Directory/Flows within noise (1161/821/813/877 ms)
 2026-11-27T14:08:22Z help-launchpad-1 built admin-page-in-nextcloud-settings #2252 (merged); open: Playwright run + live check vs LpBeheer (live-only), change not archived yet
 2026-11-27T14:12:18Z help-launchpad-3 built own-look-fields task 6 (pixel pass) + archived: launchpad#2253
+2026-11-27T14:14:01Z perf-K2 merged nextcloud-vue#2422: date-range picker loads with the first picker drawn; OR main page initial JS 6.10 -> 5.80 MB (stacked on #11375-#11377), every CnIndexSidebar/date-range app with its next raise; full jest 22548/22548
