@@ -114,22 +114,44 @@ async function forceLoadSchemas() {
 
 /**
  * Load organisations if not already loaded.
- * Also fetches the active organisation from the user session.
+ * Also sets the active organisation from the user session.
  *
  * @return {Promise<void>}
  */
 async function loadOrganisations() {
+	let listed = null
 	if (
 		!organisationStore.organisationList
 		|| organisationStore.organisationList.length === 0
 	) {
-		await organisationStore.refreshOrganisationList()
+		listed = (await organisationStore.refreshOrganisationList())?.data
 	}
 
-	// Always fetch the active organisation from session
 	if (!organisationStore.activeOrganisation) {
-		await organisationStore.getActiveOrganisation()
+		await loadActiveOrganisation(listed)
 	}
+}
+
+/**
+ * Set the active organisation from the session.
+ *
+ * GET /api/organisations already answers it under `active` (the same
+ * OrganisationService::getActiveOrganisation() call GET /api/organisations/active
+ * makes), so when the list was just read, use that instead of a second,
+ * sequential request on every page load. Without the list's answer, ask.
+ *
+ * @param {object|null} listed The organisation list response body, when read now
+ * @return {Promise<void>}
+ * @spec openspec/specs/frontend-app-bootstrap/spec.md
+ */
+async function loadActiveOrganisation(listed) {
+	if (listed && Object.hasOwn(listed, 'active')) {
+		if (listed.active) {
+			organisationStore.setActiveOrganisation(listed.active)
+		}
+		return
+	}
+	await organisationStore.getActiveOrganisation()
 }
 
 /**

@@ -187,8 +187,15 @@ describe('RegistersSideBar sections', () => {
 })
 
 describe('RegistersSideBar loading', () => {
-	it('loads only the register list, not the dashboard charts and statistics', () => {
-		expect(loadedAtImport).toEqual({ preloadRegisters: 1, preload: 0 })
+	it('loads nothing at import, so other pages do not send the dashboard read', () => {
+		expect(loadedAtImport).toEqual({ preloadRegisters: 0, preload: 0 })
+	})
+
+	it('loads only the register list when it mounts, not the dashboard charts and statistics', async () => {
+		await mountSidebar()
+
+		expect(dashboardStore.preloadRegisters).toHaveBeenCalledTimes(1)
+		expect(dashboardStore.preload).not.toHaveBeenCalled()
 	})
 })
 

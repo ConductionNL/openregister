@@ -13,6 +13,7 @@ jest.mock('../store/store.js', () => ({
 		activeOrganisation: null,
 		refreshOrganisationList: jest.fn(),
 		getActiveOrganisation: jest.fn(),
+		setActiveOrganisation: jest.fn(),
 	},
 	applicationStore: { applicationList: [], refreshApplicationList: jest.fn() },
 	viewsStore: { fetchViews: jest.fn() },
@@ -89,6 +90,27 @@ describe('AppInitializationService', () => {
 			expect(applicationStore.refreshApplicationList).not.toHaveBeenCalled()
 			expect(sourceStore.refreshSourceList).not.toHaveBeenCalled()
 			expect(viewsStore.fetchViews).toHaveBeenCalledTimes(1)
+		})
+
+		it('takes the active organisation from the list it just read, without a second request', async () => {
+			organisationStore.refreshOrganisationList.mockResolvedValue({ data: { total: 1, active: { id: 7 }, results: [{ id: 7 }] } })
+			await initializeAppData()
+			expect(organisationStore.refreshOrganisationList).toHaveBeenCalledTimes(1)
+			expect(organisationStore.setActiveOrganisation).toHaveBeenCalledWith({ id: 7 })
+			expect(organisationStore.getActiveOrganisation).not.toHaveBeenCalled()
+		})
+
+		it('sends no second request when the list says no organisation is active', async () => {
+			organisationStore.refreshOrganisationList.mockResolvedValue({ data: { total: 0, active: null, results: [] } })
+			await initializeAppData()
+			expect(organisationStore.setActiveOrganisation).not.toHaveBeenCalled()
+			expect(organisationStore.getActiveOrganisation).not.toHaveBeenCalled()
+		})
+
+		it('asks for the active organisation when the list answer does not carry it', async () => {
+			organisationStore.refreshOrganisationList.mockResolvedValue({ data: { total: 0, results: [] } })
+			await initializeAppData()
+			expect(organisationStore.getActiveOrganisation).toHaveBeenCalledTimes(1)
 		})
 
 		it('fetches the active organisation when the list is loaded but none is active', async () => {
