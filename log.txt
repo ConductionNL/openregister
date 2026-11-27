@@ -5602,3 +5602,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T18:03:39Z integrator-20261127T155017-3da46553 MERGED-TREE b0da27826b: 2 PRs, main now d79b3fe0da = tested tree
 2026-11-27T18:08:20Z done-launchpad-20261127T180813-a687bf88 done-launchpad: lease held by session-20261127T170846-794e99a3 until 19:54Z (renewed 17:54Z); this run ended without work
+2026-11-27T18:27:40Z session-20261127T170846-794e99a3 done-launchpad merged nextcloud-vue#2430 (CnWidgetWrapper loading/placeholder, task 5) and launchpad#2341 (widget-declared-placeholders tasks 2-3: registry copy, fallback reduced, FirstPaintShell order, shared fixture; nc-vue ^2.239.0). Next: nc-vue task 6 (renderer loaded).
