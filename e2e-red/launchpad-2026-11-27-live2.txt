@@ -1,0 +1,14 @@
+# launchpad e2e, live-launchpad-2 run 27 Nov (05:45Z-), full-suite tail shards
+# Sandbox: NC 34.0.6 (git tag + 3rdparty, plus the release tarball's shipped apps and core/shipped.json defaultEnabled),
+#   nginx + php-fpm 8.3 (opcache), MariaDB, Redis (distributed+locking), APCu. OpenRegister main 1abff0ac.
+#   launchpad development 304b7a0c (nc-vue 2.233.0-beta.1). One worker, --shard=N/8.
+# shard 8/8 (306): 277 passed, 3 failed, 4 skipped, 22 did not run (serial file after a red)
+# shard 7/8 (319): 299 passed, 5 failed, 15 skipped
+# Tags: PR <n> | SANDBOX <why> | DECISION <what>
+
+tiles-add-tiles-dialog.spec.ts:201                 DECISION Grafana port probing waits the security decision (add-tiles-dialog open task)
+widgets-picker-board-sync.spec.ts:198              SANDBOX git-built NC lacked activity/recommendations; with the release's shipped apps 4/4
+widgets-placements-api.spec.ts:239 (+22 not run)   SANDBOX same cause; 29/29 with the shipped apps
+resource-uploads.spec.ts:652                       PR #2173 merged APP FIX (deep-link catch-all swallowed a decoded /resource/../ path: 200 workspace -> 404)
+role-feature-permissions.spec.ts:1143,1176,1244    PR #2174 merged (expected the admin registry; OR main's operations widget is admin-only IConditionalWidget)
+runtime-shell.spec.ts:759                          PR #2175 merged (tour key now from initial state since #2150, no preference read)
