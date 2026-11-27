@@ -5164,6 +5164,8 @@ Service/Authorization/PermissionMatrixSubjects.php,,Service,,,,,Core
 Event/TaskSequenceRejectedEvent.php,,Event,,,,,Processes
 Service/RedactionPolicy/DetectionPatternValidator.php,,Service,,,,,Configuration
 Service/RedactionPolicy/DetectionPatternRunner.php,,Service,,,,,Configuration
+Service/RedactionPolicy/FilinqPolicyImporter.php,,Service,,,,,Configuration
+Command/ImportFilinqPolicyCommand.php,,Command,,,,,Configuration
 Listener/DetectionPatternValidationListener.php,,Listener,,,,,Configuration
 Kernel/Contracts/ObjectWriteValidatorInterface.php,,Kernel,,,,,Kernel
 Service/File/PublishedDigestReader.php,,Service,,,,,Files

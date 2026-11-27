@@ -608,6 +608,7 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\AdoptOrganisationlessRowsCommand</command>
 		<command>OCA\OpenRegister\Command\UniqueUuidIndexCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillObjectSlugsCommand</command>
+		<command>OCA\OpenRegister\Command\ImportFilinqPolicyCommand</command>
 		<command>OCA\OpenRegister\Files\Command\MoveObjectFilesCommand</command>
 		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
 		<!-- App-rename repair: re-points registers and schemas at a new owning
