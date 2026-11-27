@@ -45,7 +45,6 @@ jest.mock('../../store/store.js', () => ({
 		downloadSchema: jest.fn(),
 		getSchema: jest.fn(),
 		getSchemaStats: jest.fn(),
-		getSchema: jest.fn(),
 	},
 }))
 
