@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { openRecordImport } from '../dialogs/recordImport/openRecordImport.js'
 import RecordFileDropTarget from './RecordFileDropTarget.vue'
+import { openRecordImport } from '../dialogs/recordImport/openRecordImport.js'
 
 // The drop target hands a record file over and does nothing else with it.
 

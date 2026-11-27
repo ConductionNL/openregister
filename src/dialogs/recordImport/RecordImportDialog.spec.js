@@ -1,6 +1,6 @@
+import RecordImportDialog from './RecordImportDialog.vue'
 import { dryRunImport, proposeMapping, runImport, watchImportProgress } from '../../services/recordImport.js'
 import { navigationStore } from '../../store/store.js'
-import RecordImportDialog from './RecordImportDialog.vue'
 
 // The dialog: mapping confirmation, dry run vs import, progress and the result view.
 

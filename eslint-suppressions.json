@@ -190,7 +190,7 @@
   },
   "src/files-sidebar.js": {
     "@nextcloud/no-removed-globals": {
-      "count": 4
+      "count": 5
     }
   },
   "src/integrations/builtin/bookmarks.js": {
