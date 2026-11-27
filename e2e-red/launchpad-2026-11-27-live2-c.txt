@@ -15,3 +15,12 @@ app-link-tile-widget task 15  old tiles keep every tile: GREEN. Seeded app-tile 
   cards with app icon, source line and count; the Appearance panel (preview, tile colour, text colour, contrast line, On the
   tile, Pin) is not beside the list as drawn; no Cancel / Add tile footer.
 app-link-tile.spec 3/3, widget-picker-miniatures.spec 2/2 live GREEN (before #2275 merged).
+# shard 7/8 on development cb34e6bf (clean rerun): 280 passed, 16 failed, 3 skipped, 27 did not run (29 min)
+prometheus-metrics:406, public-start-page-admin:133/:183, role-based-content:36, runtime-shell:854/:903/:934 (first pass)
+                                         PR #2281 merged: global setup completes the admin setup wizard (it opened itself over the tabs)
+reactions-bar-at-the-foot:99             PR #2284 merged: takes the carried reactions read (REQ-INIT-011)
+public-start-page:139                    ENV: CI fixture user 'recipient' absent; 4/4 once created
+public-share-client-ip:267, public-start-page-default-app:160, role-feature-permissions-fresh-install:106,
+role-feature-permissions-upgrade:188, scheduled-exports-delivery:380, scheduled-exports:224, service-health-ping:684,
+setup-wizard-cli:303, setup-wizard:489 (+ rest of that serial file)   SANDBOX: spec runs occ/PHP through docker exec
+runtime-or-consumption:177, runtime-shell-canEdit:106   FLAKY under a parallel run; 12/12 alone
