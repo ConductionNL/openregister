@@ -232,3 +232,4 @@
 2026-11-27T14:48:19Z GREEN prs=11376,11378 main=78a1b9c8ba integrator-cloud (merged; main now b15abef5a0)
 2026-11-27T15:02:57Z RED prs=10156 main=b15abef5a0 integrator-cloud (solo, others build-conflicted with it: jest initial-data.golden snapshot again; failed-solo)
 2026-11-27T15:16:00Z GREEN prs=10515 main=b15abef5a0 integrator-cloud (merged; 10526,11146,11191 build-conflicted with it; main now 9b2a665d5d)
+2026-11-27T15:29:24Z GREEN prs=11286,11374 main=9b2a665d5d integrator-cloud (merged; main now 7e4effd9e2)
