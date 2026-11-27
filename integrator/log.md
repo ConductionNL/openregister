@@ -206,3 +206,4 @@
 2026-11-27T09:20:12Z RED prs=10156 main=e422f05fc3 integrator-cloud (solo: jest initial-data.golden EditSource snapshot needs runAs/schedule; plus 1 PHPUnit failure; failed-solo)
 2026-11-27T09:25:23Z AUTOPARK prs=11077,11274,11276,11281 main=e422f05fc3 integrator-cloud (AUTOPARK openregister#11077 sbom: package-lock.json changed without sbom.cdx.json; rebuilt without it)
 2026-11-27T09:35:40Z GREEN prs=11274,11276,11281,11282 main=e422f05fc3 integrator-cloud (merged; main now 1350f36472)
+2026-11-27T09:45:13Z GREEN prs=11291,11296,11297,11298 main=1350f36472 integrator-cloud (merged; main now 57937da5f4)
