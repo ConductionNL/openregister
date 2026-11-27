@@ -137,7 +137,7 @@ final class AuditTrailStatistics {
 	 *
 	 * @param array<int, int> $registerIds The register ids.
 	 *
-	 * @return array<string, array<string, array{total: int, size: int}>>
+	 * @return array<int|string, array<int|string, array{total: int, size: int}>>
 	 *
 	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
 	 */

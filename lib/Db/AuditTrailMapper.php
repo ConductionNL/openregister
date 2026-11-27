@@ -2972,7 +2972,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	 *
 	 * @param int[] $registerIds The register ids.
 	 *
-	 * @return array<string, array<string, array{total: int, size: int}>> Stored register value => stored schema value ('' when none) => totals.
+	 * @return array<int|string, array<int|string, array{total: int, size: int}>> Stored register value => stored schema value ('' when none) => totals.
 	 *
 	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
 	 */

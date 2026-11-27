@@ -84,7 +84,7 @@ class DashboardService {
 	 * The audit totals of the answer being built, by stored register then schema
 	 * value; null outside an answer or when the grouped read failed.
 	 *
-	 * @var array<string, array<string, array{total: int, size: int}>>|null
+	 * @var array<int|string, array<int|string, array{total: int, size: int}>>|null
 	 */
 	private ?array $auditPairTotals = null;
 
