@@ -15,7 +15,8 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Add `tests/e2e/ci/merge-relinks-references.spec.ts`: open `/duplicates` with query parameters, merge two modules referenced from a suite, reverse the merge, and assert the suite's list each time.
+- [x] 3.1 Add `tests/e2e/ci/merge-relinks-references.spec.ts`: open `/duplicates` with query parameters, merge two modules referenced from a suite, reverse the merge, and assert the suite's list each time.
+  - done: `tests/e2e/ci/merge-relinks-references.spec.ts`, 3 passed against a live Nextcloud 34 on PostgreSQL. Two modules that are one module twice and a suite whose `modules` lists both; `/duplicates?register=<slug>&schema=<slug>` offers the pair with no clicks, the wizard lists one referencing suite object under "Referenced by", the merge leaves the suite naming the survivor only, and Reverse on Merge Operations gives the suite both modules again (each read back from the object API). Building it found the Merge Operations list showed empty Survivor and Merged from columns: it read `into`/`from`, while the stored `mergeOperation` records `mergedIntoUuid`/`mergedFromUuids`. Fixed in `MergeOperationsIndex.vue`; `MergeOperationsIndex.spec.js` fails without the fix (`Received: ""`) and passes with it.
 - [x] 3.2 Document relink, reversal and the deep link in `docs/`.
   - Done: `docs/Features/master-data-management.md` gains "Merging duplicates": the endpoints, the relink of every reference (scalar, list, nested; as the steward; `skippedReferences`), the 5,000 cap, the preview's `references`, reversal with `keptReferenceEdits`, and the `/duplicates?register=&schema=` deep link. `docs/user/finding-and-merging-objects.md` points to it.
 

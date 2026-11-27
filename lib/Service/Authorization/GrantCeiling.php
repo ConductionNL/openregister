@@ -96,6 +96,9 @@ class GrantCeiling {
 	/**
 	 * Whether the granter holds the right they are giving.
 	 *
+	 * On an object share the question is asked about that object, so an owner
+	 * holds what the schema gives owners there.
+	 *
 	 * @param IUser        $granter The person granting, not an administrator.
 	 * @param GrantedRight $grant   The right given.
 	 *
@@ -109,8 +112,8 @@ class GrantCeiling {
 		try {
 			return $this->permissions->hasPermission(
 				ask: (new PermissionAsk(schema: $grant->schema, action: $grant->action))
-					->askedBy(userId: $granter->getUID(), objectOwner: null)
-					->about(object: null, register: $grant->register)
+					->askedBy(userId: $granter->getUID(), objectOwner: $grant->object?->getOwner())
+					->about(object: $grant->object, register: $grant->register)
 			);
 		} catch (Throwable $e) {
 			return false;
