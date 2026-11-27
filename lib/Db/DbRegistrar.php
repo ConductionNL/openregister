@@ -91,7 +91,10 @@ final class DbRegistrar {
 		RegistrySubscriptionMapperInterface::class => RegistrySubscriptionMapper::class,
 		RelatedRowRbacInterface::class => MagicRbacHandler::class,
 		\OCA\OpenRegister\Db\SchemaChangelogMapperInterface::class => \OCA\OpenRegister\Db\SchemaChangelogMapper::class,
-		SchemaCatalogInterface::class => SchemaCatalog::class,
+		// Lazy: a consumer that never reaches a mapper does not build it (the
+		// MagicMapper and its handlers above all). SchemaCatalog stays for code
+		// that holds the three mappers already.
+		SchemaCatalogInterface::class => LazySchemaCatalog::class,
 		SchemaMapperInterface::class => SchemaMapper::class,
 		\OCA\OpenRegister\Db\SchemaRunEntryMapperInterface::class => \OCA\OpenRegister\Db\SchemaRunEntryMapper::class,
 		StateHistoryMapperInterface::class => StateHistoryMapper::class,
