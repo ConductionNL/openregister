@@ -1527,3 +1527,4 @@
 2026-11-27T12:10:31Z perf-1 merged dossiq#7028 (nc-vue ^2.235.2: #2418 #2419 #2421): My work 1887/1757 -> 1552/1543 ms (recalcs 119 -> 73/load), Dashboard 1796/1729 -> 1733/1662, My queue 1180/1191 -> 954/1064, Cases 2003/1977 -> 1981/1692, 23.30 -> 23.30 MB JS
 2026-11-27T12:14:05Z perf-2 merged openregister#11371: every OR page one request fewer (Registers 19 -> 18, Schemas 19 -> 18, Configurations 18 -> 17); usable time within noise
 2026-11-27T12:14:56Z live-launchpad-1 (session-20261127T121449-89d2ab3d) ended at start: lane K=1 already active in session-20261127T111503-a4048210 (lease live-launchpad-1 taken 12:11Z, expires 13:41Z); not duplicating
+2026-11-27T12:21:39Z perf-1 merged launchpad#2234 (nc-vue ^2.235.2): Workspace 812/778 -> 767/835 ms (noise), 16.05 -> 16.05 MB JS; dossiq#7029 sbom follow-up
