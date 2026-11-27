@@ -126,6 +126,7 @@ final class RoutePostureTest extends TestCase {
 		'AppHost\\Controller\\GenericMetricsController::index' => self::METRICS_ACCESS,
 		'AppHost\\Controller\\GenericReadinessController::index' => self::PUBLIC_DOCUMENT,
 		'Controller\\AccessLinkController::comment' => self::TOKEN,
+		'Controller\\AccessLinkController::download' => self::TOKEN,
 		'Controller\\AccessLinkController::open' => self::TOKEN,
 		'Controller\\AccessLinkController::upload' => self::TOKEN,
 		'Controller\\AccessLinkPageController::show' => self::TOKEN,

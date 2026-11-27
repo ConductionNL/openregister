@@ -30,11 +30,15 @@ import type { APIRequestContext } from '@playwright/test'
  * provisions, exactly as object-sharing.spec.ts does.
  */
 import { expect, request as pwRequest, test } from '@playwright/test'
+import * as path from 'path'
 import { resolveBaseUrl } from '../base-url.ts'
 
 const BASE = resolveBaseUrl()
 const ADMIN = process.env.ADMIN_USER || process.env.OR_USER || 'admin'
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
+
+/** The administrator's browser session, written by global-setup.ts. */
+const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
 
 /** A short unique suffix so parallel runs never collide. */
 const RUN = Math.random().toString(36).slice(2, 10)
@@ -281,5 +285,128 @@ test.describe('a department by role matrix', () => {
 			theirs.status(),
 			'the other department, refused on the object path exactly as in the list',
 		).toBeGreaterThanOrEqual(400)
+	})
+
+	test("the preview answers an administrator with the chosen user's values, and refuses anyone else", async () => {
+		test.skip(
+			groupsReady === false,
+			'the provisioning API is absent on this instance, so the department groups could not be made',
+		)
+
+		const route = `/index.php/apps/openregister/api/schemas/${schemaId}/authorization/matrix/preview?user=${OWNER}`
+
+		// 🔴 THE CHOSEN USER'S VALUES, NOT THE ADMINISTRATOR'S. The admin is in
+		// no `dept:` group, so a preview that compiled for the caller would
+		// answer an empty value list and a matrix that grants nothing.
+		const res = await admin.get(route)
+		expect(res.status(), `preview failed: ${await res.text()}`).toBe(200)
+		const body = await res.json()
+		expect(body.user).toBe(OWNER)
+		// A reused instance can hold the owner's departments of earlier runs as
+		// well, so this asserts membership, not the whole list.
+		expect(body.values, "the owner's own department").toContain(`VTH-${RUN}`)
+		expect(body.values, 'and not the department the owner is not in').not.toContain(
+			`Belastingen-${RUN}`,
+		)
+		expect(
+			JSON.stringify(body.scopes),
+			'the compiled read scope names the owner\'s department',
+		).toContain(`VTH-${RUN}`)
+		expect(
+			JSON.stringify(body.scopes),
+			'and never the other department',
+		).not.toContain(`Belastingen-${RUN}`)
+
+		// The route reads no objects, but it does reveal another user's
+		// groups, so it is an administrator's tool only.
+		const refused = await owner.get(route)
+		expect(refused.status(), 'a non-administrator is refused').toBe(403)
+	})
+
+	test.describe('the Rights tab', () => {
+		test.use({ storageState: STORAGE_STATE })
+
+		test('shows the matrix as a grid, saves only the matrix, and previews a user', async ({
+			page,
+		}) => {
+			test.skip(
+				groupsReady === false,
+				'the provisioning API is absent on this instance, so the department groups could not be made',
+			)
+
+			const before = await (
+				await admin.get(`/index.php/apps/openregister/api/schemas/${schemaId}`)
+			).json()
+
+			await page.goto(`/index.php/apps/openregister/schemas/${schemaId}`, {
+				waitUntil: 'domcontentloaded',
+			})
+			// The tab reads the schema once when it opens, so wait for the page to
+			// have loaded it before opening the tab.
+			await expect(
+				page.getByRole('heading', { level: 2, name: `e2e matrix schema ${RUN}` }),
+			).toBeVisible({ timeout: 30_000 })
+			await page.getByRole('button', { name: 'Rights', exact: true }).click()
+
+			// The grid: one row per value, one column per role group, a checkbox
+			// per action. The fixture's one row is `$self` for ROLE_GROUP, read.
+			const grid = page.locator('[data-testid="rights-grid"]')
+			await expect(grid).toBeVisible({ timeout: 30_000 })
+			await expect(
+				grid.getByRole('columnheader', { name: ROLE_GROUP }),
+			).toBeVisible()
+			await expect(grid.getByRole('rowheader', { name: '$self' })).toBeVisible()
+			await expect(
+				grid.getByRole('checkbox', { name: `$self / ${ROLE_GROUP} / Read` }),
+			).toBeChecked()
+
+			const handle = grid.getByRole('checkbox', {
+				name: `$self / ${ROLE_GROUP} / Handle`,
+			})
+			await expect(handle).not.toBeChecked()
+			await handle.check()
+			await page.locator('[data-testid="rights-save"]').click()
+
+			// 🔴 THE SAVE WRITES ONLY `authorization.matrix`. The rest of the
+			// authorization block (`create`, `update`) is what keeps this
+			// fixture seedable and its update rule narrow; a grid save that
+			// rewrote the block from the grid's own view would drop them.
+			await expect
+				.poll(
+					async () => {
+						const after = await (
+							await admin.get(
+								`/index.php/apps/openregister/api/schemas/${schemaId}`,
+							)
+						).json()
+						return after.authorization?.matrix?.rows ?? []
+					},
+					{ timeout: 30_000 },
+				)
+				.toEqual([
+					{ value: '$self', group: ROLE_GROUP, actions: ['read', 'handle'] },
+				])
+
+			const after = await (
+				await admin.get(`/index.php/apps/openregister/api/schemas/${schemaId}`)
+			).json()
+			expect(after.authorization.create).toEqual(before.authorization.create)
+			expect(after.authorization.update).toEqual(before.authorization.update)
+			expect(after.authorization.matrix.field).toBe('department')
+			expect(after.authorization.matrix.userSource).toEqual({
+				groupPrefix: 'dept:',
+			})
+
+			// The preview: choose the owner and read their compiled scopes.
+			const picker = page.locator('.matrixPreview')
+			await picker.getByRole('combobox').click()
+			await picker.getByRole('combobox').fill(OWNER)
+			await page.getByRole('option', { name: new RegExp(OWNER) }).first().click()
+
+			const preview = page.locator('[data-testid="matrix-preview"]')
+			await expect(preview).toBeVisible({ timeout: 30_000 })
+			await expect(preview).toContainText(`VTH-${RUN}`)
+			await expect(preview).not.toContainText(`Belastingen-${RUN}`)
+		})
 	})
 })

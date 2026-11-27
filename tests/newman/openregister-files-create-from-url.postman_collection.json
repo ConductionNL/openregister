@@ -1,0 +1,679 @@
+{
+	"info": {
+		"name": "OpenRegister — create a file from a URL",
+		"description": "files-create-from-url task 1.3. `POST /api/objects/{register}/{schema}/{id}/files` with `source.url`: a public file is fetched and stored with `metadata.sourceUrl`, `fetchedAt` and a `sha256` equal to the hash of the same bytes read directly; a `127.0.0.1` URL is refused with 422 `refused-address`; `content` and `source` together are refused with 400; an anonymous caller is refused (401 or 403); the refusals store nothing.\n\nThe instance cannot fetch from itself: its outbound guard refuses loopback, private and documentation addresses, so `sourceFileUrl` names a public file (default: this repository's README on raw.githubusercontent.com). Point it at any public file the instance can reach.\n\nCreates its own register, schema and object and deletes them.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && given !== '') {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"if (!pm.collectionVariables.get('stamp')) {",
+					"    pm.collectionVariables.set('stamp', 'furl' + Date.now().toString(36));",
+					"}",
+					"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "sourceFileUrl",
+			"value": "https://raw.githubusercontent.com/ConductionNL/openregister/main/README.md"
+		},
+		{
+			"key": "stamp",
+			"value": ""
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "register",
+			"value": ""
+		},
+		{
+			"key": "schema",
+			"value": ""
+		},
+		{
+			"key": "object",
+			"value": ""
+		},
+		{
+			"key": "fileId",
+			"value": ""
+		},
+		{
+			"key": "sourceSha256",
+			"value": ""
+		},
+		{
+			"key": "sourceSize",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 — setup",
+			"item": [
+				{
+					"name": "create register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('register', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}\",\n  \"title\": \"{{stamp}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('schema', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-doc\",\n  \"title\": \"{{stamp}} doc\",\n  \"properties\": {\n    \"titel\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "link schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema linked', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}\",\n  \"title\": \"{{stamp}}\",\n  \"schemas\": [\n    \"{{schema}}\"\n  ]\n}"
+						}
+					}
+				},
+				{
+					"name": "create object",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('object created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('object', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titel\": \"files from a URL\"\n}"
+						}
+					}
+				},
+				{
+					"name": "read the source file directly, for its hash",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the source file is reachable', () => pm.response.to.have.status(200))",
+									"pm.collectionVariables.set('sourceSha256', CryptoJS.SHA256(CryptoJS.enc.Latin1.parse(pm.response.stream.toString('latin1'))).toString())",
+									"pm.collectionVariables.set('sourceSize', pm.response.stream.length)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{sourceFileUrl}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "01 — create from a URL",
+			"item": [
+				{
+					"name": "a file is created from a URL",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const file = pm.response.json()",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('the file holds the fetched bytes', () => pm.expect(file.size).to.eql(Number(pm.collectionVariables.get('sourceSize'))))",
+									"pm.test('the metadata names the source, the moment and the hash', () => {",
+									"    pm.expect(file.metadata.sourceUrl).to.eql(pm.collectionVariables.get('sourceFileUrl'))",
+									"    pm.expect(Date.parse(file.metadata.fetchedAt), 'fetchedAt is a moment').to.be.a('number').and.not.NaN",
+									"    pm.expect(file.metadata.sha256).to.eql(pm.collectionVariables.get('sourceSha256'))",
+									"})",
+									"pm.collectionVariables.set('fileId', file.id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}}.md\",\n  \"source\": {\n    \"url\": \"{{sourceFileUrl}}\"\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "the object lists the fetched file",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('the file is listed', () => pm.expect(pm.response.json().results.map(f => String(f.id))).to.include(String(pm.collectionVariables.get('fileId'))))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files"
+					}
+				},
+				{
+					"name": "a loopback URL is refused",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 422', () => pm.response.to.have.status(422))",
+									"pm.test('the reason is the refused address', () => pm.expect(pm.response.json().reason).to.eql('refused-address'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}}-local.txt\",\n  \"source\": {\n    \"url\": \"http://127.0.0.1/status.php\"\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "content and source together are refused",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 400', () => pm.response.to.have.status(400))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}}-both.txt\",\n  \"content\": \"x\",\n  \"source\": {\n    \"url\": \"{{sourceFileUrl}}\"\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "an anonymous caller is refused",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 401 or 403', () => pm.expect(pm.response.code).to.be.oneOf([401, 403]))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}}-anon.md\",\n  \"source\": {\n    \"url\": \"{{sourceFileUrl}}\"\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "the refusals stored nothing",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('only the fetched file is listed', () => pm.expect(pm.response.json().results).to.have.length(1))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files"
+					}
+				}
+			]
+		},
+		{
+			"name": "99 — teardown",
+			"item": [
+				{
+					"name": "delete the object",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}"
+					}
+				},
+				{
+					"name": "delete the schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schema}}"
+					}
+				},
+				{
+					"name": "delete the register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}"
+					}
+				}
+			]
+		}
+	]
+}

@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCP\IURLGenerator;
+
 /**
  * The service bundles of the access link API.
  *
@@ -33,12 +35,14 @@ final class AccessLinkControllerServices {
 	 *
 	 * @param AccessLinkDomain   $domain   The domain bundle.
 	 * @param AccessLinkPlatform $platform The platform bundle.
+	 * @param IURLGenerator|null $urls     Builds the holder's download address of a file link.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
 	public function __construct(
 		public readonly AccessLinkDomain $domain,
 		public readonly AccessLinkPlatform $platform,
+		public readonly ?IURLGenerator $urls = null,
 	) {
 	}//end __construct()
 }//end class

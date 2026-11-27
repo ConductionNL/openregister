@@ -19,7 +19,8 @@
 - [ ] 3.2 Write-path hook: upsert/remove the index row on magic-table object save/delete.
 - [ ] 3.3 Backfill `BackgroundJob` to seed index rows for existing objects; chunked + resumable.
 - [ ] 3.4 `ObjectsProvider` reads from the index (single query, allow-list + RBAC/tenant/published predicates) behind a feature flag; falls back to the magic-table path (§1+§2) when the index is empty/disabled.
-- [ ] 3.5 Newman: OCS search endpoint returns seeded objects across multiple registers (e.g. pet-store + pipelinq) for an admin.
+- [x] 3.5 Newman: OCS search endpoint returns seeded objects across multiple registers (e.g. pet-store + pipelinq) for an admin.
+  - 2026-11-25: `tests/integration/openregister-unified-search-across-registers.postman_collection.json`, 15 requests and 19 assertions green on a sandbox Nextcloud 34 on MariaDB: a pet-store and a pipeline register, each with one object carrying the same term; `/ocs/v2.php/search/providers/openregister_objects/search` answers both to the administrator, each naming its own register. It runs against today's magic-table path (`backend: database`), since 3.1 to 3.4 are not built; it asserts only what the endpoint answers, so it holds unchanged once the index serves the search.
 - [ ] 3.6 PHPUnit: `ObjectsProviderTest` covers index hit, fallback path, and RBAC/tenant filtering.
 
 ## 4. Verification

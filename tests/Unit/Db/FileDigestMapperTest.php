@@ -79,6 +79,42 @@ class FileDigestMapperTest extends TestCase {
 		$this->assertCount(9, $this->queryLog);
 	}//end testUnpublishingClosesEveryOpenRecord()
 
+	/**
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	public function testAMismatchIsMarkedOnTheRecordOnlyOnce(): void {
+		$marked = $this->mapper()->flagMismatch(id: 7, at: new DateTime('2026-11-26 03:00:00'), current: 'abc');
+
+		$this->assertSame(1, $marked);
+		$this->assertSame(
+			[
+				'#1 update(openregister_file_digests, NULL)',
+				'#1 param :p1 = DateTime, datetime',
+				'#1 set(mismatch_at, :p1)',
+				'#1 param :p2 = abc, 2',
+				'#1 set(mismatch_sha256, :p2)',
+				'#1 param :p3 = 7, 1',
+				'#1 expr.eq(id, :p3, NULL)',
+				'#1 where(eq(id, :p3, NULL))',
+				'#1 expr.isNull(mismatch_at)',
+				'#1 andWhere(isNull(mismatch_at))',
+				'#1 executeStatement()',
+			],
+			$this->queryLog
+		);
+	}//end testAMismatchIsMarkedOnTheRecordOnlyOnce()
+
+	public function testARecordSerialisesItsMismatch(): void {
+		$record = new FileDigest();
+		$record->setMismatchAt(new DateTime('2026-11-26T03:00:00+00:00'));
+		$record->setMismatchSha256('');
+
+		$json = $record->jsonSerialize();
+
+		$this->assertSame('2026-11-26T03:00:00+00:00', $json['mismatchAt']);
+		$this->assertSame('', $json['mismatchSha256']);
+	}//end testARecordSerialisesItsMismatch()
+
 	public function testARecordSerialisesItsDigestAndDates(): void {
 		$record = new FileDigest();
 		$record->setFileId(42);
@@ -93,5 +129,6 @@ class FileDigestMapperTest extends TestCase {
 		$this->assertSame(1, $json['size']);
 		$this->assertSame('2026-11-13T10:00:00+00:00', $json['publishedAt']);
 		$this->assertNull($json['unpublishedAt']);
+		$this->assertNull($json['mismatchAt']);
 	}//end testARecordSerialisesItsDigestAndDates()
 }//end class

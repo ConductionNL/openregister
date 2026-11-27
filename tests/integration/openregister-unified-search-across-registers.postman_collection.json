@@ -1,0 +1,729 @@
+{
+	"info": {
+		"name": "OpenRegister — unified search across registers",
+		"description": "unified-search-magic-table-storage task 3.5: two registers (a pet store and a pipeline), each with its own schema and one object carrying the same unique term; the OCS unified-search endpoint `/ocs/v2.php/search/providers/openregister_objects/search` answers both objects to the administrator, each naming its own register. Creates its own registers, schemas and objects and deletes them.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && given !== '') {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"if (!pm.collectionVariables.get('stamp')) {",
+					"    var stamp = 'usx' + Date.now().toString(36);",
+					"    pm.collectionVariables.set('stamp', stamp);",
+					"    pm.collectionVariables.set('term', 'zyq' + stamp);",
+					"}",
+					"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "stamp",
+			"value": ""
+		},
+		{
+			"key": "term",
+			"value": ""
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "petsRegister",
+			"value": ""
+		},
+		{
+			"key": "petsSchema",
+			"value": ""
+		},
+		{
+			"key": "petsObject",
+			"value": ""
+		},
+		{
+			"key": "leadsRegister",
+			"value": ""
+		},
+		{
+			"key": "leadsSchema",
+			"value": ""
+		},
+		{
+			"key": "leadsObject",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 — setup",
+			"item": [
+				{
+					"name": "create the pet store register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('petsRegister', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-pets\",\n  \"title\": \"{{stamp}} pet store\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create the pet store schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('petsSchema', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-pets-item\",\n  \"title\": \"{{stamp}} pet store item\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "link the pet store schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema linked', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{petsRegister}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"slug\": \"{{stamp}}-pets\", \"title\": \"{{stamp}} pet store\", \"schemas\": [{{petsSchema}}]}"
+						}
+					}
+				},
+				{
+					"name": "seed a pet store object carrying the term",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('object created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('petsObject', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{petsRegister}}/{{petsSchema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"pets {{term}}\"}"
+						}
+					}
+				},
+				{
+					"name": "create the pipeline register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('leadsRegister', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-leads\",\n  \"title\": \"{{stamp}} pipeline\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create the pipeline schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('leadsSchema', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-leads-item\",\n  \"title\": \"{{stamp}} pipeline item\",\n  \"properties\": {\n    \"name\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "link the pipeline schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema linked', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{leadsRegister}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"slug\": \"{{stamp}}-leads\", \"title\": \"{{stamp}} pipeline\", \"schemas\": [{{leadsSchema}}]}"
+						}
+					}
+				},
+				{
+					"name": "seed a pipeline object carrying the term",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('object created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('leadsObject', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{leadsRegister}}/{{leadsSchema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\": \"leads {{term}}\"}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 — search",
+			"item": [
+				{
+					"name": "one search finds the objects of both registers",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const found = pm.response.json().ocs.data",
+									"const urls = found.entries.map(e => e.resourceUrl)",
+									"const hit = (n) => urls.find(u => u.includes('/' + pm.collectionVariables.get(n + 'Register') + '/' + pm.collectionVariables.get(n + 'Schema') + '/' + pm.collectionVariables.get(n + 'Object')))",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('exactly the two seeded objects', () => pm.expect(found.entries).to.have.length(2))",
+									"pm.test('the pet store object is found', () => pm.expect(hit('pets')).to.not.eql(undefined))",
+									"pm.test('the pipeline object is found', () => pm.expect(hit('leads')).to.not.eql(undefined))",
+									"pm.test('each hit names its own register', () => {",
+									"    pm.expect(found.entries.find(e => e.title.startsWith('pets')).subline).to.include(pm.collectionVariables.get('stamp') + ' pet store')",
+									"    pm.expect(found.entries.find(e => e.title.startsWith('leads')).subline).to.include(pm.collectionVariables.get('stamp') + ' pipeline')",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v2.php/search/providers/openregister_objects/search?term={{term}}&format=json"
+					}
+				}
+			]
+		},
+		{
+			"name": "99 — teardown",
+			"item": [
+				{
+					"name": "delete the pets object",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{petsRegister}}/{{petsSchema}}/{{petsObject}}"
+					}
+				},
+				{
+					"name": "delete the pets schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{petsSchema}}"
+					}
+				},
+				{
+					"name": "delete the pets register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{petsRegister}}"
+					}
+				},
+				{
+					"name": "delete the leads object",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{leadsRegister}}/{{leadsSchema}}/{{leadsObject}}"
+					}
+				},
+				{
+					"name": "delete the leads schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{leadsSchema}}"
+					}
+				},
+				{
+					"name": "delete the leads register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{leadsRegister}}"
+					}
+				}
+			]
+		}
+	]
+}

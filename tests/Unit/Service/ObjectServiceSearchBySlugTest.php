@@ -204,12 +204,131 @@ class ObjectServiceSearchBySlugTest extends TestCase {
 	}//end testSearchObjectsBySlugResolvesAndDelegates()
 
 	/**
+	 * REQ: The register of a slug search is found whatever organisation it is
+	 * stamped with, while the objects stay scoped to the caller.
+	 *
+	 * An app's register carries the organisation that was active when it was
+	 * imported (the Default Organisation on a fresh install). When the caller's
+	 * organisation has no register with the slug, the lookup falls back to every
+	 * organisation; the object search keeps the caller's multitenancy flag.
+	 *
+	 * @return void
+	 */
+	public function testTheRegisterIsFoundAcrossOrganisationsAndTheObjectsStayScoped(): void {
+		$register = new Register();
+		$register->setId(26);
+		$register->setSlug('filinq');
+		$register->setSchemas([42]);
+
+		$schema = new Schema();
+		$schema->setId(42);
+		$schema->setSlug('organisationSettings');
+
+		$lookups = [];
+		$this->registerMapper
+			->expects($this->exactly(2))
+			->method('find')
+			->willReturnCallback(
+				function (string $id, bool $_rbac, bool $_multitenancy) use (&$lookups, $register): Register {
+					$lookups[] = [$id, $_rbac, $_multitenancy];
+					if ($_multitenancy === true) {
+						throw new DoesNotExistException('not in the caller organisation');
+					}
+
+					return $register;
+				}
+			);
+		$this->schemaMapper->method('findBySlugInIds')->willReturn($schema);
+
+		$this->queryHandler
+			->expects($this->once())
+			->method('searchObjects')
+			->with($this->anything(), $this->equalTo(value: true), $this->equalTo(value: true))
+			->willReturn([]);
+
+		$this->service->searchObjectsBySlug(
+			new RegisterSchemaSlugs(register: 'filinq', schema: 'organisationSettings'),
+			[]
+		);
+
+		$this->assertSame(expected: [['filinq', true, true], ['filinq', true, false]], actual: $lookups);
+
+	}//end testTheRegisterIsFoundAcrossOrganisationsAndTheObjectsStayScoped()
+
+	/**
+	 * REQ: The caller's own register wins over an older foreign register with
+	 * the same slug: the scoped lookup runs first and, when it finds one, no
+	 * cross-organisation lookup follows.
+	 *
+	 * @return void
+	 */
+	public function testTheCallersOwnRegisterWinsOverAForeignOneWithTheSameSlug(): void {
+		$own = new Register();
+		$own->setId(31);
+		$own->setSlug('filinq');
+		$own->setSchemas([42]);
+
+		$schema = new Schema();
+		$schema->setId(42);
+		$schema->setSlug('organisationSettings');
+
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo(value: 'filinq'), $this->equalTo(value: true), $this->equalTo(value: true))
+			->willReturn($own);
+		$this->schemaMapper->method('findBySlugInIds')->willReturn($schema);
+
+		$this->queryHandler
+			->expects($this->once())
+			->method('searchObjects')
+			->with(
+				$this->callback(static fn (array $query): bool => ($query['@self']['register'] ?? null) === 31),
+				$this->equalTo(value: true),
+				$this->equalTo(value: true)
+			)
+			->willReturn([]);
+
+		$this->service->searchObjectsBySlug(
+			new RegisterSchemaSlugs(register: 'filinq', schema: 'organisationSettings'),
+			[]
+		);
+
+	}//end testTheCallersOwnRegisterWinsOverAForeignOneWithTheSameSlug()
+
+	/**
+	 * REQ: With multitenancy off the lookup runs once, unscoped, and a missing
+	 * slug is refused without a second lookup.
+	 *
+	 * @return void
+	 */
+	public function testWithoutMultitenancyTheLookupRunsOnce(): void {
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->with($this->equalTo(value: 'ghost-register'), $this->equalTo(value: true), $this->equalTo(value: false))
+			->willThrowException(new DoesNotExistException('not found'));
+		$this->queryHandler->expects($this->never())->method('searchObjects');
+
+		$this->expectException(DoesNotExistException::class);
+
+		$this->service->searchObjectsBySlug(
+			new RegisterSchemaSlugs(register: 'ghost-register', schema: 'application'),
+			[],
+			true,
+			false
+		);
+
+	}//end testWithoutMultitenancyTheLookupRunsOnce()
+
+	/**
 	 * REQ: Unknown register slug throws DoesNotExistException with a message
 	 * that identifies which slug failed.
 	 */
 	public function testSearchObjectsBySlugThrowsWhenRegisterSlugUnknown(): void {
+		// Scoped first, then across organisations: both miss.
 		$this->registerMapper
-			->expects($this->once())
+			->expects($this->exactly(2))
 			->method('find')
 			->with($this->equalTo('ghost-register'))
 			->willThrowException(new DoesNotExistException('not found'));

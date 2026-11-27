@@ -258,6 +258,12 @@ class IntegrationRegistrarTest extends TestCase {
 				[\OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider::class, $provider],
 			]
 		);
+		// The provider is added by the loader bootObjectSources() installs, on the registry's first read.
+		$registry->expects($this->once())->method('addLoader')->willReturnCallback(
+			static function (callable $loader) use ($registry): void {
+				$loader($registry);
+			}
+		);
 
 		IntegrationRegistrar::bootObjectSources(server: $server);
 	}//end testBootObjectSourcesAddsTheExternalRegisterProvider()

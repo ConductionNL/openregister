@@ -2,7 +2,7 @@
     "info": {
         "_postman_id": "openregister-bulk-transition",
         "name": "OpenRegister - Bulk transition (openregister:transition)",
-        "description": "@newman exclude not yet passed live: the commit is run by BulkJobRunner, and tests/integration/ci/seed.sh starts no worker for that class (adding it there would also run the jobs the bulk-jobs section of the api collection pauses while running). Drop this marker after a first green run on a stack with that worker.\n\nrecords-bulk-transition task 2.1: `POST /api/bulk-jobs` with `openregister:transition`. Seeds its own register and a schema whose lifecycle declares `start` (ontvangen to in_behandeling) and `sluiten` (in_behandeling to afgesloten, required input `reden`). One job moves three objects through `start`: one in `ontvangen` is applied, one already `in_behandeling` is skipped, one in `afgesloten` fails with the engine's refusal, and the preview moves nothing. A second job runs `sluiten` without `reden`: the object fails with the missing-input message and stays where it was. An anonymous caller gets 401, and bad parameters 400.\n\nEverything it creates is removed in `99 teardown`.",
+        "description": "@newman exclude needs a worker: the commit is run by BulkJobRunner, and tests/integration/ci/seed.sh starts no worker for that class (adding it there would also run the jobs the bulk-jobs section of the api collection pauses while running). Passed live on 2026-11-25 (37 requests, 38 assertions) with a background-job loop beside it; drop this marker once the CI stack runs that worker.\n\nrecords-bulk-transition task 2.1: `POST /api/bulk-jobs` with `openregister:transition`. Seeds its own register and a schema whose lifecycle declares `start` (ontvangen to in_behandeling) and `sluiten` (in_behandeling to afgesloten, required input `reden`). One job moves three objects through `start`: one in `ontvangen` is applied, one already `in_behandeling` is skipped, one in `afgesloten` fails with the engine's refusal, and the preview moves nothing. A second job runs `sluiten` without `reden`: the object fails with the missing-input message and stays where it was. An anonymous caller gets 401, and bad parameters 400.\n\nEverything it creates is removed in `99 teardown`.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "auth": {
@@ -115,9 +115,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"slug\": \"bt-register-{{stamp}}\",\n  \"title\": \"Bulk transition {{stamp}}\"\n}"
@@ -161,9 +159,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"slug\": \"bt-item-{{stamp}}\",\n  \"title\": \"Bulk transition item {{stamp}}\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"status\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"ontvangen\",\n        \"in_behandeling\",\n        \"afgesloten\"\n      ]\n    },\n    \"reden\": {\n      \"type\": \"string\"\n    }\n  },\n  \"x-openregister-lifecycle\": {\n    \"field\": \"status\",\n    \"initial\": \"ontvangen\",\n    \"states\": [\n      \"ontvangen\",\n      \"in_behandeling\",\n      \"afgesloten\"\n    ],\n    \"terminal\": [\n      \"afgesloten\"\n    ],\n    \"transitions\": {\n      \"start\": {\n        \"from\": [\n          \"ontvangen\"\n        ],\n        \"to\": \"in_behandeling\"\n      },\n      \"sluiten\": {\n        \"from\": [\n          \"in_behandeling\"\n        ],\n        \"to\": \"afgesloten\",\n        \"inputs\": [\n          {\n            \"field\": \"reden\",\n            \"required\": true\n          }\n        ]\n      }\n    }\n  }\n}"
@@ -196,9 +192,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}",
                         "body": {
                             "mode": "raw",
                             "raw": "{\"schemas\": [{{schemaId}}]}"
@@ -230,9 +224,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"title\": \"A {{stamp}}\"\n}"
@@ -267,9 +259,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"title\": \"B {{stamp}}\"\n}"
@@ -304,9 +294,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"title\": \"C {{stamp}}\"\n}"
@@ -341,9 +329,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"title\": \"D {{stamp}}\"\n}"
@@ -378,9 +364,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objB}}/transition"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objB}}/transition",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"action\": \"start\"\n}"
@@ -412,9 +396,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objC}}/transition"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objC}}/transition",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"action\": \"start\"\n}"
@@ -446,9 +428,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objC}}/transition"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objC}}/transition",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"action\": \"sluiten\",\n  \"data\": {\n    \"reden\": \"setup\"\n  }\n}"
@@ -480,9 +460,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objD}}/transition"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{objD}}/transition",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"action\": \"start\"\n}"
@@ -519,9 +497,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"action\": \"start\"},\n  \"selection\": {\"ids\": [\"{{objA}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
@@ -540,7 +516,10 @@
                                 ]
                             }
                         }
-                    ]
+                    ],
+                    "protocolProfileBehavior": {
+                        "disableCookies": true
+                    }
                 },
                 {
                     "name": "transition without an action is 400",
@@ -556,9 +535,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"data\": {}},\n  \"selection\": {\"ids\": [\"{{objA}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
@@ -590,9 +567,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"action\": \"start\", \"data\": [\"x\"]},\n  \"selection\": {\"ids\": [\"{{objA}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
@@ -629,9 +604,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"action\": \"start\"},\n  \"selection\": {\"ids\": [\"{{objA}}\", \"{{objB}}\", \"{{objC}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
@@ -673,9 +646,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objA}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objA}}"
                     },
                     "event": [
                         {
@@ -703,9 +674,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}/members"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}/members"
                     },
                     "event": [
                         {
@@ -742,9 +711,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}/commit"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}/commit",
                         "body": {
                             "mode": "raw",
                             "raw": "{}"
@@ -776,9 +743,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}"
                     },
                     "event": [
                         {
@@ -825,9 +790,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}/members"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{jobId}}/members"
                     },
                     "event": [
                         {
@@ -863,9 +826,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objA}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objA}}"
                     },
                     "event": [
                         {
@@ -893,9 +854,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objB}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objB}}"
                     },
                     "event": [
                         {
@@ -923,9 +882,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objC}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objC}}"
                     },
                     "event": [
                         {
@@ -958,9 +915,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"action\": \"openregister:transition\",\n  \"parameters\": {\"action\": \"sluiten\", \"data\": {}},\n  \"selection\": {\"ids\": [\"{{objD}}\"]},\n  \"register\": {{registerId}},\n  \"schema\": {{schemaId}}\n}"
@@ -996,9 +951,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{inputJobId}}/commit"
-                        },
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{inputJobId}}/commit",
                         "body": {
                             "mode": "raw",
                             "raw": "{}"
@@ -1030,9 +983,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{inputJobId}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{inputJobId}}"
                     },
                     "event": [
                         {
@@ -1079,9 +1030,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{inputJobId}}/members"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/bulk-jobs/{{inputJobId}}/members"
                     },
                     "event": [
                         {
@@ -1115,9 +1064,7 @@
                                 "value": "application/json"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objD}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objD}}"
                     },
                     "event": [
                         {
@@ -1150,9 +1097,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objA}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objA}}"
                     },
                     "event": [
                         {
@@ -1180,9 +1125,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objB}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objB}}"
                     },
                     "event": [
                         {
@@ -1210,9 +1153,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objC}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objC}}"
                     },
                     "event": [
                         {
@@ -1240,9 +1181,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objD}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objD}}"
                     },
                     "event": [
                         {
@@ -1270,9 +1209,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
                     },
                     "event": [
                         {
@@ -1300,9 +1237,7 @@
                                 "value": "true"
                             }
                         ],
-                        "url": {
-                            "raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
-                        }
+                        "url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{registerId}}"
                     },
                     "event": [
                         {

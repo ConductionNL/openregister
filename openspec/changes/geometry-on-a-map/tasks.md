@@ -25,7 +25,17 @@
   - done: MapView's draw control (polygon, rectangle) emits `area` / `areaCleared`; SearchIndex posts it with the list's active search parameters through `src/services/geo/geoSearch.js` as `geometry.within` (plus the geometry `property`) and shows the records inside; clearing the drawing or closing the map restores the list. The area is kept in SearchIndex, not in the object store's `searchParams`: the shared search plugin forwards every key there to the GET listing as a field filter.
 - [x] 2.4 Red first: extend `src/services/geo/mapData.spec.js` for `isGeoProperty()`, and add `src/views/search/SearchIndex.spec.js` cases: the map toggle is absent for a schema without a geometry property, and a drawn polygon produces a geo-search call with `geometry.within`.
   - done: `src/services/geo/mapData.spec.js` (isGeoProperty, geoPropertyOf, tileUrl, drawnArea), `src/services/geo/geoSearch.spec.js`, and six cases in `src/views/search/SearchIndex.spec.js` (no toggle without a geometry property, map only when opened, a drawn polygon sends geo-search with `geometry.within`, a failed search, clearing).
-- [ ] 2.5 `tests/e2e/ci/records-map.spec.ts`: seed records in two neighbourhoods, open the map on `/tables`, draw a polygon around one and read that the list holds only its records.
+- [x] 2.5 `tests/e2e/ci/records-map.spec.ts`: seed records in two neighbourhoods, open the map on `/tables`, draw a polygon around one and read that the list holds only its records.
+  - done: `tests/e2e/ci/records-map.spec.ts` (`@e2e geo-metadata-kaart::a-user-finds-the-records-inside-an-area`), two
+    records in the Jordaan and two in Wittevrouwen; the polygon is drawn with the map's own draw control around the
+    markers where Leaflet placed them, the locations list then holds only the two Jordaan points, and Clear area brings
+    all four back. 1 passed, three runs, on a sandbox Nextcloud 34 on PostgreSQL 16.
+  - It failed first, twice, and both causes are fixed here. The geo-search body's own keys (`geometry`, `property`)
+    reached the listing as filters, and a filter on an undeclared property matches nothing, so every geo-search answered
+    zero rows (`ObjectsController::geoSearch()` now withholds them, `ObjectsControllerGeoTest`). And `handleMapArea()`
+    compared `this.mapArea`, which reads back as Vue's reactive proxy, with the raw area, so the answer was always
+    dropped and the list never narrowed (`toRaw()`; two `SearchIndex.spec.js` cases on a `reactive()` component, red
+    before the fix).
 
 ### Task 3: Offer the geometry types in the property editor
 - **spec_ref**: `openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-001-a-geometry-is-validated-on-save`

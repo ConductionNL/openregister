@@ -167,6 +167,13 @@ final class MiddlewareWiring {
 		// read and list responses (schema-breaking-change-notice).
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\SchemaChangeHeaderMiddleware::class);
 
+		// Binds the grant of the personal API token (app password) that opened
+		// the request, and refuses a call over its rate limit (scoped-api-tokens
+		// 1.1c). Global, because a token reaches OpenRegister's objects through
+		// other apps' controllers too, and the ceiling must hold there as well.
+		$context->registerMiddleware(PersonalTokenGrantMiddleware::class, global: true);
+
+
 		// A save that a `warn` validation let through carries the warning on
 		// its response (rules-compose-read-transitions-and-time, task 4.3b).
 		$context->registerMiddleware(SaveWarningsMiddleware::class);

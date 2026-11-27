@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Credential\OutsideVaultReader;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\Credential\VaultReference;
 use OCA\OpenRegister\Service\WriteCause;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;
@@ -126,6 +127,13 @@ final class OutsideCustodyTest extends TestCase {
 	 * @var int
 	 */
 	private int $vaultStatus = 200;
+
+	/**
+	 * The time the clock gives.
+	 *
+	 * @var string
+	 */
+	private string $now = '2026-11-26T10:00:00+00:00';
 
 	protected function setUp(): void {
 		$this->objects = [
@@ -238,7 +246,10 @@ final class OutsideCustodyTest extends TestCase {
 		$clientService->method('newClient')->willReturn($client);
 
 		$sources = new CredentialSources(objectService: $objectService, credentialStore: $store, catalogue: $catalogue);
-		return new OutsideCustody(sources: $sources, reader: new OutsideVaultReader(clientService: $clientService, logger: $logger), logger: $logger);
+		$clock = $this->createMock(ITimeFactory::class);
+		$clock->method('now')->willReturnCallback(fn (): \DateTimeImmutable => new \DateTimeImmutable($this->now));
+
+		return new OutsideCustody(sources: $sources, reader: new OutsideVaultReader(clientService: $clientService, logger: $logger), logger: $logger, clock: $clock);
 	}
 
 	public function testIsOutsideOnlyForTheOutsideCustodyValue(): void {
@@ -328,7 +339,8 @@ final class OutsideCustodyTest extends TestCase {
 		$this->assertSame('from-the-vault', $secret);
 		$this->assertSame([['GET', 'https://vault.example/v1/kv/data/apps/zs']], $this->http);
 		$this->assertSame([['conn-1', 'personal']], $this->leafReads);
-		$this->assertSame([], $this->saved);
+		$this->assertCount(1, $this->saved);
+		$this->assertSame('2026-11-26T10:00:00+00:00', $this->saved[0][0]['lastReadAt']);
 	}
 
 	public function testAnAppRoleConnectionLogsInWithItsTrimmedRoleIdAndTheStoredSecretId(): void {
@@ -458,5 +470,94 @@ final class OutsideCustodyTest extends TestCase {
 		}
 
 		$this->assertContains('[CredentialBroker] could not record the outside vault failure on cred-1', $this->warnings);
+	}
+
+	public function testASuccessfulReadStampsTheReadTimeAndNeverTheSecret(): void {
+		$this->objects['cred-1'] = $this->outside(['name' => 'Zaaksysteem']);
+
+		$this->custody()->secretFor($this->outside(), 'cred-1');
+
+		$this->assertCount(1, $this->saved);
+		[$object, $options] = $this->saved[0];
+		$this->assertSame('2026-11-26T10:00:00+00:00', $object['lastReadAt']);
+		$this->assertSame('Zaaksysteem', $object['name']);
+		$this->assertSame(self::REF, $object['vaultRef']);
+		$this->assertArrayNotHasKey('@self', $object);
+		$this->assertStringNotContainsString('from-the-vault', (string) json_encode($object));
+		$this->assertSame('cred-1', $options->uuid);
+		$this->assertSame(CredentialBrokerService::REGISTER, $options->target?->register);
+		$this->assertSame(CredentialBrokerService::SCHEMA, $options->target?->schema);
+	}
+
+	public function testAReadWithinAMinuteOfTheLastStampWritesNothing(): void {
+		$this->objects['cred-1'] = $this->outside(['lastReadAt' => '2026-11-26T09:59:01+00:00']);
+
+		$this->assertSame('from-the-vault', $this->custody()->secretFor($this->outside(), 'cred-1'));
+
+		$this->assertSame([], $this->saved);
+	}
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function staleStamps(): array {
+		return [
+			'exactly a minute old' => ['2026-11-26T09:59:00+00:00'],
+			'an hour old' => ['2026-11-26T09:00:00+00:00'],
+			'in the future' => ['2026-11-26T10:00:30+00:00'],
+			'not a time' => ['yesterday-ish'],
+			'empty' => ['  '],
+			'not a string' => [12345],
+		];
+	}
+
+	/**
+	 * @param mixed $stamp The stored stamp.
+	 *
+	 * @return void
+	 */
+	#[\PHPUnit\Framework\Attributes\DataProvider('staleStamps')]
+	public function testAStaleOrUnreadableStampIsRewritten(mixed $stamp): void {
+		$this->objects['cred-1'] = $this->outside(['lastReadAt' => $stamp]);
+
+		$this->custody()->secretFor($this->outside(), 'cred-1');
+
+		$this->assertCount(1, $this->saved);
+		$this->assertSame('2026-11-26T10:00:00+00:00', $this->saved[0][0]['lastReadAt']);
+	}
+
+	public function testASuccessfulReadClearsTheReadFailureItLeftEvenWithAFreshStamp(): void {
+		$this->objects['cred-1'] = $this->outside(['lastReadAt' => '2026-11-26T09:59:30+00:00', 'lastError' => OutsideCustody::READ_FAILED]);
+
+		$this->custody()->secretFor($this->outside(), 'cred-1');
+
+		$this->assertCount(1, $this->saved);
+		$this->assertArrayNotHasKey('lastError', $this->saved[0][0]);
+		$this->assertSame('2026-11-26T10:00:00+00:00', $this->saved[0][0]['lastReadAt']);
+	}
+
+	public function testASuccessfulReadLeavesAnotherErrorInPlace(): void {
+		$this->objects['cred-1'] = $this->outside(['lastError' => 'refresh failed: invalid_grant']);
+
+		$this->custody()->secretFor($this->outside(), 'cred-1');
+
+		$this->assertCount(1, $this->saved);
+		$this->assertSame('refresh failed: invalid_grant', $this->saved[0][0]['lastError']);
+	}
+
+	public function testAReadOfACredentialThatIsGoneStampsNothing(): void {
+		unset($this->objects['cred-1']);
+
+		$this->assertSame('from-the-vault', $this->custody()->secretFor($this->outside(), 'cred-1'));
+
+		$this->assertSame([], $this->saved);
+	}
+
+	public function testAFailedStampIsLoggedAndTheSecretStillReturned(): void {
+		$this->saveFails = true;
+
+		$this->assertSame('from-the-vault', $this->custody()->secretFor($this->outside(), 'cred-1'));
+
+		$this->assertSame(['[CredentialBroker] could not record the outside vault read on cred-1'], $this->warnings);
 	}
 }

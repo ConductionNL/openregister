@@ -1,0 +1,966 @@
+{
+	"info": {
+		"name": "OpenRegister — who may manage an object's followers",
+		"description": "record-star-follow-and-unread-on-screen task 1.3: `GET /api/objects/{register}/{schema}/{id}?_extend=@self.can` as the owner and as an editor who may update but does not own the object; `can.manage` is true and false, and `PUT .../watchers/{userId}` agrees for both (200 and 403). Creates its own users, group, register, schema and object and deletes them. Requests send no cookies, so each request runs as the user its header names.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && given !== '') {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"if (!pm.collectionVariables.get('stamp')) {",
+					"    pm.collectionVariables.set('stamp', 'rsfu' + Date.now().toString(36));",
+					"}",
+					"var token = function (user, password) { return Buffer.from(user + ':' + password).toString('base64'); };",
+					"var stamp = pm.collectionVariables.get('stamp');",
+					"var userPassword = pm.collectionVariables.get('userPassword');",
+					"pm.collectionVariables.set('authToken', token(pm.collectionVariables.get('username'), pm.collectionVariables.get('password')));",
+					"pm.collectionVariables.set('ownerToken', token(stamp + '-owner', userPassword));",
+					"pm.collectionVariables.set('editorToken', token(stamp + '-editor', userPassword));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "userPassword",
+			"value": "Rsfu-User-Pass-2026"
+		},
+		{
+			"key": "stamp",
+			"value": ""
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "ownerToken",
+			"value": ""
+		},
+		{
+			"key": "editorToken",
+			"value": ""
+		},
+		{
+			"key": "register",
+			"value": ""
+		},
+		{
+			"key": "schema",
+			"value": ""
+		},
+		{
+			"key": "object",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 — setup",
+			"item": [
+				{
+					"name": "create user owner",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user created', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userid\": \"{{stamp}}-owner\",\n  \"password\": \"{{userPassword}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create user editor",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user created', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userid\": \"{{stamp}}-editor\",\n  \"password\": \"{{userPassword}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create user watcher",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user created', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userid\": \"{{stamp}}-watcher\",\n  \"password\": \"{{userPassword}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create the editors group",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('group created', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/groups?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"groupid\": \"{{stamp}}-editors\"\n}"
+						}
+					}
+				},
+				{
+					"name": "put the editor in it",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('member added', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users/{{stamp}}-editor/groups?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"groupid\": \"{{stamp}}-editors\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('register', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}\",\n  \"title\": \"{{stamp}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create schema: everyone reads and creates, editors update",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('schema', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-case\",\n  \"title\": \"{{stamp}} case\",\n  \"properties\": {\n    \"titel\": {\n      \"type\": \"string\"\n    }\n  },\n  \"authorization\": {\n    \"read\": [\n      \"authenticated\"\n    ],\n    \"create\": [\n      \"authenticated\"\n    ],\n    \"update\": [\n      \"{{stamp}}-editors\"\n    ],\n    \"delete\": [\n      \"admin\"\n    ]\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "link schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema linked', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"slug\": \"{{stamp}}\", \"title\": \"{{stamp}}\", \"schemas\": [{{schema}}]}"
+						}
+					}
+				},
+				{
+					"name": "the owner creates the case",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.test('the owner owns it', () => pm.expect(pm.response.json()['@self'].owner).to.eql(pm.collectionVariables.get('stamp') + '-owner'))",
+									"pm.collectionVariables.set('object', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{ownerToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titel\": \"case\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 — can.manage and the watcher route",
+			"item": [
+				{
+					"name": "the owner may manage",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('can.update and can.manage are true', () => pm.expect(pm.response.json()['@self'].can).to.eql({ update: true, manage: true }))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{ownerToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}?_extend=@self.can"
+					}
+				},
+				{
+					"name": "the owner sets who follows",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('the watcher follows', () => pm.expect(pm.response.json().userId).to.eql(pm.collectionVariables.get('stamp') + '-watcher'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{ownerToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/watchers/{{stamp}}-watcher",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					}
+				},
+				{
+					"name": "the editor may update but not manage",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('can.update is true, can.manage false', () => pm.expect(pm.response.json()['@self'].can).to.eql({ update: true, manage: false }))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{editorToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}?_extend=@self.can"
+					}
+				},
+				{
+					"name": "the editor may not set who follows, as can.manage said",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 403', () => pm.response.to.have.status(403))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{editorToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/watchers/{{stamp}}-watcher",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					}
+				},
+				{
+					"name": "no extend, no can",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('the marker is opt-in', () => pm.expect(pm.response.json()['@self']).to.not.have.property('can'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{ownerToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "99 — teardown",
+			"item": [
+				{
+					"name": "delete the case",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}"
+					}
+				},
+				{
+					"name": "delete the schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schema}}"
+					}
+				},
+				{
+					"name": "delete the register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}"
+					}
+				},
+				{
+					"name": "delete user owner",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user deleted', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users/{{stamp}}-owner?format=json"
+					}
+				},
+				{
+					"name": "delete user editor",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user deleted', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users/{{stamp}}-editor?format=json"
+					}
+				},
+				{
+					"name": "delete user watcher",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user deleted', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users/{{stamp}}-watcher?format=json"
+					}
+				},
+				{
+					"name": "delete the group",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('group deleted', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/groups/{{stamp}}-editors?format=json"
+					}
+				}
+			]
+		}
+	]
+}
