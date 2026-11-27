@@ -252,4 +252,10 @@ class AccessLinkMintGuardTest extends TestCase {
 
 		$this->assertTrue($this->guard->mayMint(subjectType: AccessLink::SUBJECT_VIEW, subjectId: 'view-uuid'));
 	}
+
+	public function testTheGeneralRouteNeverMintsADraftPreviewLink(): void {
+		$this->objects->expects($this->never())->method('find');
+
+		$this->assertFalse($this->guard->mayMint(subjectType: AccessLink::SUBJECT_OBJECT_DRAFT, subjectId: 'object-uuid'));
+	}
 }

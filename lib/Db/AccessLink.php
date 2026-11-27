@@ -102,6 +102,19 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 	public const SUBJECT_FILE = AccessLinkInterface::SUBJECT_FILE;
 
 	/**
+	 * A read-only preview link over one draft of an object; its subject id is the draft's uuid.
+	 *
+	 * Minted only through the draft's own preview route, which checks that the
+	 * caller may see the draft, so it is not one of the kinds the general mint
+	 * route accepts ({@see SUBJECT_TYPES}).
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public const SUBJECT_OBJECT_DRAFT = AccessLinkInterface::SUBJECT_OBJECT_DRAFT;
+
+	/**
 	 * The subject kinds a link may open.
 	 *
 	 * @var array<int, string>

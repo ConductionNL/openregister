@@ -31,7 +31,10 @@ Use the External storage app that ships with Nextcloud.
    ```bash
    occ files_external:create "Document store" local null::null -c datadir=/srv/documents
    occ files_external:applicable --add-user=openregister <mount id>
+   occ files_external:option <mount id> enable_sharing true
    ```
+
+   Switch sharing on. A mount an administrator creates allows no sharing until you do, and published files are shared through public links. Without it the move stops every register with a published file, with "You are not allowed to share" in the report.
 
    For S3, SMB, WebDAV or SFTP, pick that backend instead; `occ files_external:backends` lists them. The mount point (`Document store` here) is the folder the `openregister` account sees in its home.
 3. Check that the account sees it: `occ files_external:verify <mount id>`.
@@ -89,7 +92,7 @@ A refused register keeps all its references on the old files, and nothing of it 
 | The target is on the same storage as the current root | Mount a different store; a move within one storage gains nothing. |
 | A file has earlier versions and the target keeps none | Use a store whose backend keeps versions, or pass `--without-earlier-versions`. The report and the audit trail then record each file that lost its earlier versions. |
 | A file is published through a password-protected link | The password cannot be carried over. Remove the password (or the link) for the move and set it again afterwards. |
-| A share could not be recreated, or a link could not keep its token | The report names the file. Fix the share and run the move again. |
+| A share could not be recreated, or a link could not keep its token | The report names the file. "You are not allowed to share" means the mount does not allow sharing: run `occ files_external:option <mount id> enable_sharing true`. Otherwise fix the share. Then run the move again. |
 | The references could not be rewritten | Nothing was changed for that register; the error is in the report. Run the move again. |
 
 ## What this does not change
