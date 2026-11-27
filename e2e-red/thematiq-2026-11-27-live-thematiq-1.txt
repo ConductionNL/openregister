@@ -6,3 +6,5 @@
 #   - performance.js ADR-124 'Theming settings is usable within its budget' and 'Files with the house style ...': php -S/sqlite sandbox, not representative; reference-stack numbers are in PERF-HANDOFF (core floor, levers listed there).
 #   - workflows/token-apply-persistence 'after a FRESH RELOAD ...': artifact of my title filter (excluded the serial block's first test); whole file rerun: 4/4 passed.
 # Result: no functional thematiq e2e red on development 19b353f. The 25 Nov red list is cleared.
+# Skips in run 3, all environment or by design: apps-menu above-the-fold (needs more apps than this instance has); workplace-live-look Calendar + Deck (apps not installable here: appstore off and the session cannot reach their GitHub release repos); token-set-contrast-audit sub-AA shipped set (no shipped set fails the audit since the token sync; re-arms itself).
+# Newman (tests/integration/run-newman.sh) on development 4ca1189, same instance after occ upgrade: 85 requests, 182 assertions, 0 failed.
