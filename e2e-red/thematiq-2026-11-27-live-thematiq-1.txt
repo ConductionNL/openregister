@@ -12,3 +12,6 @@
 #   571 passed, 2 failed, 4 skipped (1.3 h). Failed = ADR-124 perf (Theming settings, Files) only: php -S/sqlite sandbox, not representative.
 #   Skips as run 1 (apps-menu above-the-fold, contrast-audit sub-AA, Calendar/Deck live-look). No functional red from the pixel PRs.
 #   Newman 85 requests, 182 assertions, 0 failed.
+# Run 3, 27 Nov 14:17-15:24Z, live-thematiq-1: development bd876b3 (walkthrough #2135, setup #2139/#2144/#2147, e2e tour fix #2151), same stack.
+#   511 passed, 2 failed (ADR-124 perf, php -S sandbox only), 4 skipped (env: apps above the fold / walkthrough More step + full walk need >8 apps; contrast-audit by design), 71 did not run (my 70-min --global-timeout; last file reached: tests/e2e/spec-coverage/token-sets.spec.ts). No functional red.
+#   Found and fixed before this run: the walkthrough's dimmer blocked apps-menu-ordered-list's drag test on a fresh account (#2151).
