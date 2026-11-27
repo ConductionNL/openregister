@@ -1682,6 +1682,11 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
         ['name' => 'objectFilesArchive#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/files-multipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		// Uploads in parts with resume and a completeness check (large-file-handling, REQ-LFH-002/003).
+		['name' => 'chunkedUpload#open', 'url' => '/api/objects/{register}/{schema}/{id}/uploads', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'chunkedUpload#part', 'url' => '/api/objects/{register}/{schema}/{id}/uploads/{uploadId}/parts/{n}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'uploadId' => '[0-9a-f-]{36}', 'n' => '\\d+']],
+		['name' => 'chunkedUpload#status', 'url' => '/api/objects/{register}/{schema}/{id}/uploads/{uploadId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'uploadId' => '[0-9a-f-]{36}']],
+		['name' => 'chunkedUpload#complete', 'url' => '/api/objects/{register}/{schema}/{id}/uploads/{uploadId}/complete', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'uploadId' => '[0-9a-f-]{36}']],
 		// Legacy camelCase address of the same upload, kept so existing clients keep working.
 		['name' => 'files#createMultipart', 'url' => '/api/objects/{register}/{schema}/{id}/filesMultipart', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+'], 'postfix' => 'legacy'],
 		['name' => 'files#update', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],

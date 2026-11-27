@@ -72,11 +72,12 @@ class FileSettingsHandlerTest extends TestCase {
 		$this->assertContains('xlsx', $result['enabledFileTypes']);
 		$this->assertCount(11, $result['enabledFileTypes']);
 		$this->assertFalse($result['ocrEnabled']);
-		$this->assertSame(100, $result['maxFileSizeMB']);
+		$this->assertSame(['maxBytes' => 104857600], $result['textExtraction']);
+		$this->assertArrayNotHasKey('maxFileSizeMB', $result);
 		$this->assertSame('objects', $result['extractionScope']);
 		$this->assertSame('llphant', $result['textExtractor']);
 		$this->assertSame('background', $result['extractionMode']);
-		$this->assertSame(100, $result['maxFileSize']);
+		$this->assertArrayNotHasKey('maxFileSize', $result);
 		$this->assertSame(10, $result['batchSize']);
 		$this->assertSame('', $result['dolphinApiEndpoint']);
 		$this->assertSame('', $result['dolphinApiKey']);
@@ -118,7 +119,8 @@ class FileSettingsHandlerTest extends TestCase {
 		$this->assertSame(100, $result['chunkOverlap']);
 		$this->assertCount(2, $result['enabledFileTypes']);
 		$this->assertTrue($result['ocrEnabled']);
-		$this->assertSame(50, $result['maxFileSizeMB']);
+		$this->assertSame(['maxBytes' => 52428800], $result['textExtraction']);
+		$this->assertArrayNotHasKey('maxFileSizeMB', $result);
 	}
 
 	/**
@@ -154,11 +156,10 @@ class FileSettingsHandlerTest extends TestCase {
 			'chunkOverlap' => 50,
 			'enabledFileTypes' => ['txt', 'pdf'],
 			'ocrEnabled' => true,
-			'maxFileSizeMB' => 50,
+			'textExtraction' => ['maxBytes' => 52428800],
 			'extractionScope' => 'all',
 			'textExtractor' => 'dolphin',
 			'extractionMode' => 'immediate',
-			'maxFileSize' => 200,
 			'batchSize' => 20,
 			'dolphinApiEndpoint' => 'http://dolphin:8080',
 			'dolphinApiKey' => 'dk-123',
@@ -177,11 +178,10 @@ class FileSettingsHandlerTest extends TestCase {
 		$this->assertSame(50, $result['chunkOverlap']);
 		$this->assertCount(2, $result['enabledFileTypes']);
 		$this->assertTrue($result['ocrEnabled']);
-		$this->assertSame(50, $result['maxFileSizeMB']);
+		$this->assertSame(['maxBytes' => 52428800], $result['textExtraction']);
 		$this->assertSame('all', $result['extractionScope']);
 		$this->assertSame('dolphin', $result['textExtractor']);
 		$this->assertSame('immediate', $result['extractionMode']);
-		$this->assertSame(200, $result['maxFileSize']);
 		$this->assertSame(20, $result['batchSize']);
 		$this->assertSame('http://dolphin:8080', $result['dolphinApiEndpoint']);
 		$this->assertSame('dk-123', $result['dolphinApiKey']);
@@ -209,11 +209,12 @@ class FileSettingsHandlerTest extends TestCase {
 		$this->assertSame(200, $result['chunkOverlap']);
 		$this->assertCount(11, $result['enabledFileTypes']);
 		$this->assertFalse($result['ocrEnabled']);
-		$this->assertSame(100, $result['maxFileSizeMB']);
+		$this->assertSame(['maxBytes' => 104857600], $result['textExtraction']);
+		$this->assertArrayNotHasKey('maxFileSizeMB', $result);
 		$this->assertSame('objects', $result['extractionScope']);
 		$this->assertSame('llphant', $result['textExtractor']);
 		$this->assertSame('background', $result['extractionMode']);
-		$this->assertSame(100, $result['maxFileSize']);
+		$this->assertArrayNotHasKey('maxFileSize', $result);
 		$this->assertSame(10, $result['batchSize']);
 		$this->assertSame('', $result['dolphinApiEndpoint']);
 		$this->assertSame('', $result['dolphinApiKey']);

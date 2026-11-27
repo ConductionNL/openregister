@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+    "3" : "3",
+    "30" : "30",
     "%n are out of date" : "%n sind veraltet",
     "%n declared in total" : "%n insgesamt deklariert",
     "%n entries have no hash yet" : "%n Einträge haben noch keinen Hash",
@@ -16,8 +18,6 @@ OC.L10N.register(
     "({count} selected)" : "({count} ausgewählt)",
     ", {failed} failed" : ", {failed} fehlgeschlagen",
     "0 = unlimited" : "0 = unbegrenzt",
-    "3" : "3",
-    "30" : "30",
     "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete ALL objects for schema \"{schema}\":\n\n\\u2022 Active objects: {active}\n\\u2022 Soft-deleted objects: {deleted}\n\\u2022 Total: {total}\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?" : "\\u26A0\\uFE0F WARNUNG VOR DAUERHAFTER LÖSCHUNG \\u26A0\\uFE0F\n\nSie sind dabei, ALLE Objekte für das Schema \"{schema}\" DAUERHAFT zu löschen:\n\n\\u2022 Aktive Objekte: {active}\n\\u2022 Soft-gelöschte Objekte: {deleted}\n\\u2022 Gesamt: {total}\n\nDiese Objekte werden vollständig aus der Datenbank entfernt und KÖNNEN NICHT wiederhergestellt werden.\n\nSind Sie absolut sicher?",
     "\\u26A0\\uFE0F PERMANENT DELETION WARNING \\u26A0\\uFE0F\n\nYou are about to PERMANENTLY delete {count} soft-deleted objects for schema \"{schema}\".\n\nThese objects will be completely removed from the database and CANNOT be recovered.\n\nAre you absolutely sure?" : "\\u26A0\\uFE0F WARNUNG VOR DAUERHAFTER LÖSCHUNG \\u26A0\\uFE0F\n\nSie sind dabei, {count} soft-gelöschte Objekte für das Schema \"{schema}\" DAUERHAFT zu löschen.\n\nDiese Objekte werden vollständig aus der Datenbank entfernt und KÖNNEN NICHT wiederhergestellt werden.\n\nSind Sie absolut sicher?",
     "_%n background job records no outcome, so this list cannot show how it went._::_%n background jobs record no outcome, so this list cannot show how they went._" : ["%n Hintergrundauftrag zeichnet kein Ergebnis auf, daher kann diese Liste nicht zeigen, wie er verlaufen ist.","%n Hintergrundaufträge zeichnen kein Ergebnis auf, daher kann diese Liste nicht zeigen, wie sie verlaufen sind."],
@@ -3999,6 +3999,9 @@ OC.L10N.register(
     "The responses could not be probed." : "Die Antworten konnten nicht getestet werden.",
     "Add a validation message" : "Validierungsmeldung hinzufügen",
     "Validation messages" : "Validierungsmeldungen",
+    "Save chat to object" : "Chat in Objekt speichern",
+    "The conversation could not be read." : "Die Unterhaltung konnte nicht gelesen werden.",
+    "The conversation has no messages to save." : "Die Unterhaltung enthält keine Nachrichten zum Speichern.",
     "An export key encrypts an instance set, so the set opens only where that key is present. Keys belong to your active organisation." : "Ein Exportschlüssel verschlüsselt einen Instanzsatz, sodass sich der Satz nur dort öffnen lässt, wo dieser Schlüssel vorhanden ist. Schlüssel gehören zu deiner aktiven Organisation.",
     "Could not load the export keys" : "Die Exportschlüssel konnten nicht geladen werden",
     "Create export key" : "Exportschlüssel erstellen",

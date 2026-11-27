@@ -4,18 +4,20 @@
 -->
 
 <!--
-  The "Add to object" picker: search the objects the caller may save a file
-  into, by title, and attach the file to the one they pick.
+  The "Add to object" and "Save chat to object" picker: search the objects the
+  caller may save a file into, by title, and attach the file (or save the Talk
+  conversation as a text file) to the one they pick.
 
   The offer is the server's (`/api/files/attach-targets`): only schemas the
   caller may change and that hold files are searched. `targets` narrows it to a
-  consuming app's `fileActions.attachTargets`; it never widens it.
+  consuming app's `fileActions.attachTargets`; it never widens it. Given `app`
+  instead, the picker reads that declaration from the app's manifest.
 
   @spec openspec/changes/files-leaf-save-to-object/specs/file-actions/spec.md
 -->
 <template>
 	<NcDialog
-		:name="t('openregister', 'Add to object')"
+		:name="dialogName"
 		size="normal"
 		class="or-attach-dialog"
 		@closing="$emit('close', attached)">
@@ -56,6 +58,7 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcDialog, NcLoadingIcon, NcTextField } from '@nextcloud/vue'
+import { loadDeclaredAttachTargets } from '../../services/attachTargets.js'
 
 /** How long typing must pause before the picker searches, in ms. */
 export const SEARCH_DELAY = 300
@@ -64,15 +67,27 @@ export default {
 	name: 'AttachToObjectDialog',
 	components: { NcButton, NcDialog, NcLoadingIcon, NcTextField },
 	props: {
-		/** The Files node id to attach (a file, or a folder of files). */
+		/** The Files node id to attach (a file, or a folder of files); null when saving a chat. */
 		nodeId: {
 			type: Number,
-			required: true,
+			default: null,
+		},
+
+		/** A Talk conversation to save as a text file: `{ conversation, messages }`; null when attaching a node. */
+		chat: {
+			type: Object,
+			default: null,
 		},
 
 		/** A consuming app's `fileActions.attachTargets` (schema slugs), or null. */
 		targets: {
 			type: Array,
+			default: null,
+		},
+
+		/** A consuming app whose manifest's `fileActions.attachTargets` narrows the picker, when `targets` is not given. */
+		app: {
+			type: String,
 			default: null,
 		},
 	},
@@ -89,7 +104,19 @@ export default {
 			error: '',
 			attached: null,
 			timer: null,
+			declared: undefined,
 		}
+	},
+
+	computed: {
+		/**
+		 * The dialog's title: what the pick will do.
+		 *
+		 * @return {string}
+		 */
+		dialogName() {
+			return this.chat ? t('openregister', 'Save chat to object') : t('openregister', 'Add to object')
+		},
 	},
 
 	beforeUnmount() {
@@ -124,8 +151,9 @@ export default {
 			this.error = ''
 			try {
 				const params = { search }
-				if (Array.isArray(this.targets) && this.targets.length > 0) {
-					params.targets = this.targets.join(',')
+				const targets = await this.narrowing()
+				if (targets !== null) {
+					params.targets = targets.join(',')
 				}
 				const { data } = await axios.get(generateUrl('/apps/openregister/api/files/attach-targets'), { params })
 				this.offered = data?.targets ?? []
@@ -140,6 +168,26 @@ export default {
 		},
 
 		/**
+		 * The schema slugs the offer is narrowed to, or null for the whole offer.
+		 *
+		 * `targets` wins; otherwise the `app`'s manifest declaration, read once.
+		 *
+		 * @return {Promise<string[]|null>}
+		 */
+		async narrowing() {
+			if (Array.isArray(this.targets) && this.targets.length > 0) {
+				return this.targets
+			}
+			if (!this.app) {
+				return null
+			}
+			if (this.declared === undefined) {
+				this.declared = await loadDeclaredAttachTargets(this.app)
+			}
+			return this.declared
+		},
+
+		/**
 		 * The schema label a result is shown with.
 		 *
 		 * @param {{schema: string}} result The result
@@ -150,7 +198,7 @@ export default {
 		},
 
 		/**
-		 * Attach the node to the picked object, then close.
+		 * Attach the node (or save the chat) to the picked object, then close.
 		 *
 		 * @param {{objectUuid: string, schema: string, register: string, title: string}} result The picked object
 		 * @return {Promise<void>}
@@ -159,13 +207,23 @@ export default {
 			this.saving = true
 			this.error = ''
 			try {
-				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/files/attach', {
+				const route = this.chat ? 'chat' : 'attach'
+				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/files/' + route, {
 					register: result.register,
 					schema: result.schema,
 					id: result.objectUuid,
 				})
-				const { data } = await axios.post(url, { nodeId: this.nodeId })
-				this.attached = { object: result, ...data }
+				if (this.chat) {
+					// The chat route answers the one transcript file it wrote.
+					const { data } = await axios.post(url, {
+						conversation: this.chat.conversation ?? '',
+						messages: this.chat.messages ?? [],
+					})
+					this.attached = { object: result, attached: data ? [data] : [], skipped: 0 }
+				} else {
+					const { data } = await axios.post(url, { nodeId: this.nodeId })
+					this.attached = { object: result, ...data }
+				}
 				this.$emit('close', this.attached)
 			} catch (e) {
 				this.error = e?.response?.data?.error ?? t('openregister', 'The file could not be added to the object.')
