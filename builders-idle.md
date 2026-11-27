@@ -1569,3 +1569,4 @@
 2026-11-27T14:48:49Z help-launchpad-2 built add-widget-dialog-with-miniatures part 2 #2259 (merged: samples, preview flag, miniatures, 1120 px; open: nc-vue samples, e2e live, speed, pixel)
 2026-11-27T14:55:54Z live-launchpad-1 merged launchpad#2267 (admin settings page read every dashboard widget's load(), so photos/recommendations/OR dashboard scripts ran on it; reference stack 1023/1084/974 -> 927/900 ms, still +240 over floor, rest in PERF-HANDOFF). admin-page-in-nextcloud-settings task 13 stays open (speed rule not met; LpBeheer card pass not done). Next: full-suite shards 7/8, 8/8 on development.
 2026-11-27T15:00:18Z help-launchpad-3 edit-mode-draft-and-save: #2269 merged (draft save backend, task 5 part); next tasks 1-4 frontend
+2026-11-27T15:02:21Z perf-K1 merged launchpad#2270: Workspace total 884/848/854 -> 828/831/829 ms, first content 584/568/576 -> 540/540/544 ms, launchpad-main 4.56 -> 3.45 MB
