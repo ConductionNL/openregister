@@ -5508,3 +5508,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T12:30:57Z precheck-20261127T122917-1773494e CONFLICT-DEV #11035 bf9e6900
 2026-11-27T12:31:07Z session-20261127T100828-1cd2c27a done-launchpad merged launchpad#2232 (text-card table) and #2236 (announcement frame, REQ-ACK-011); pixel non-font flags LpVandaag 51->29, LpIntranet 51->32, LpManagement 24 (pixel/launchpad-2026-11-27-done-c.md)
 2026-11-27T12:31:18Z precheck-20261127T122917-1773494e CONFLICT-DEV #11345 f70d74c0
+2026-11-27T12:31:45Z precheck-20261127T122917-1773494e CONFLICT-DEV #10156 d400cc56
