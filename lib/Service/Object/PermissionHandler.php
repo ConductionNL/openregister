@@ -1063,7 +1063,14 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function grantVerdict(PermissionCheck $check): bool {
-		$verdict = ($this->privateScopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
+		// The private scope answers first (it reads the session once, before the
+		// caller is resolved); only when it declines does a read grant admit on its own.
+		$privateVerdict = $this->privateScopeVerdict(check: $check);
+		if ($privateVerdict === null && $this->readGrantAdmits(check: $check) === true) {
+			return true;
+		}
+
+		$verdict = ($privateVerdict ?? $this->callerVerdict(check: $check));
 		if ($verdict !== null) {
 			return $verdict;
 		}
@@ -2205,6 +2212,32 @@ class PermissionHandler implements PermissionHandlerInterface {
 	}//end privateScopeVerdict()
 
 	/**
+	 * Whether a per-object READ grant admits the caller to the check's object on its own.
+	 *
+	 * Decision (Ruben, 25 Nov 2026, REQ-RIC-002): a read grant admits the row
+	 * by itself, whatever the schema's conditional read rules say (the list
+	 * emitters OR the same grant beside the rules). Only read: a write stays
+	 * within the schema's rules (design D3b). The deny pass, the
+	 * classification and the confidentiality gates ran before this.
+	 *
+	 * @param PermissionCheck $check The check.
+	 *
+	 * @return bool True when the caller holds a read grant on the check's object.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function readGrantAdmits(PermissionCheck $check): bool {
+		$object = $check->object;
+		if ($object === null || $check->action !== 'read' || (string) $object->getUuid() === '') {
+			return false;
+		}
+
+		$lookup = new GrantLookup(userId: $this->callerId(userId: $check->userId), objectUuid: $object->getUuid());
+
+		return $this->objectGrants()?->isGranted(lookup: $lookup, action: 'read') === true;
+	}//end readGrantAdmits()
+
+	/**
 	 * The check's object when it is private, or null when the check is not gated.
 	 *
 	 * @param PermissionCheck $check The check, its authorization cascaded
@@ -2967,6 +3000,7 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 *     and broadcast or skip push, depending on policy).
 	 *   - Authorization exists but object owner is known → always include the owner.
 	 *   - `public` group in the read list → empty array (caller should treat as broadcast).
+	 *   - `authenticated` in the read list → empty array (every signed-in user may read).
 	 *   - `admin` group in the read list → empty array (caller should treat as broadcast
 	 *     or resolve admin members separately).
 	 *
@@ -3130,16 +3164,24 @@ class PermissionHandler implements PermissionHandlerInterface {
 	}//end nonEmptyReadEntries()
 
 	/**
-	 * Whether a read group set admits everybody (`public`) or is admin-only (`admin`).
+	 * Whether a read group set admits everybody (`public`), every signed-in user
+	 * (`authenticated`) or is admin-only (`admin`).
+	 *
+	 * `authenticated` is a pseudo-group, not a Nextcloud group: resolved as one it
+	 * has no members, so the readable list would hold the owner alone and every
+	 * other reader would read as having lost access (a watcher would be dropped).
 	 *
 	 * @param array<int, string> $groupIds The read group ids.
 	 *
 	 * @return bool True when the set is a broadcast
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
+	 * @spec openspec/changes/notifications-new-notes-and-referrers/tasks.md
 	 */
 	private function isBroadcastReadGroupSet(array $groupIds): bool {
-		return in_array('public', $groupIds, true) || in_array('admin', $groupIds, true);
+		return in_array('public', $groupIds, true)
+			|| in_array('authenticated', $groupIds, true)
+			|| in_array('admin', $groupIds, true);
 	}//end isBroadcastReadGroupSet()
 
 	/**

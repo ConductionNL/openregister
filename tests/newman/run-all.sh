@@ -114,6 +114,7 @@ DOMAIN_ORDER=(
     "flow-engine"
     "flow-subjects"
     "delegation"
+    "task-delegation-mandate"
     "register-descriptors"
     "working-calendars"
     "object-watchers"
@@ -126,6 +127,7 @@ DOMAIN_ORDER=(
     "public-export"
     "nlgov-conformance"
     "reply-threading"
+    "licence-plate-detection"
     "search-dutch-stemming"
     "scheduled-messages"
     "run-migration"
@@ -153,6 +155,10 @@ declare -A DOMAIN_COLLECTIONS=(
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
     [flow-engine]="$REPO_ROOT/tests/integration/openregister-flow-engine.postman_collection.json"
+    # A task delegated under a mandate, and substituted for an absence set
+    # through Nextcloud's own out-of-office API
+    # (tasks-delegation-and-substitution 4.1).
+    [task-delegation-mandate]="$REPO_ROOT/tests/integration/openregister-task-delegation-mandate.postman_collection.json"
     # Messages scheduled on an object: schedule, list, cancel by the author
     # or one who may update the object, 403/409/404 refusals
     # (send-at-on-the-messaging-leaf 3.2). Every sendAt is two days out, so
@@ -246,6 +252,9 @@ declare -A DOMAIN_COLLECTIONS=(
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
     # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
     [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
+    # detection-dutch-licence-plates 4.1: a plate and a BSN detected by the nl pattern set, Dutch placeholders in
+    # the anonymised copy, and no detection with the set switched off. Saves and restores the whole file settings.
+    [licence-plate-detection]="$REPO_ROOT/tests/integration/openregister-licence-plate-detection.postman_collection.json"
     # search-dutch-language-quality 1.5: _search=omgevingsvergunningen finds "Omgevingsvergunning bouwen" where the
     # database stems Dutch (PostgreSQL), and nothing where it does not; the capability says which.
     [search-dutch-stemming]="$REPO_ROOT/tests/integration/openregister-search-dutch-stemming.postman_collection.json"

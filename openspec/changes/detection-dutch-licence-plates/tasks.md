@@ -16,7 +16,19 @@
 
 ## 4. Tests and docs
 
-- [ ] 4.1 Add `tests/e2e/ci/licence-plate-detection.spec.ts`: upload a text file with a plate, a BSN and a case number, extract, read `GET /api/entities`, anonymise, and assert the placeholders.
+- [x] 4.1 Add `tests/e2e/ci/licence-plate-detection.spec.ts`: upload a text file with a plate, a BSN and a case number, extract, read `GET /api/entities`, anonymise, and assert the placeholders.
+  - Built as the Newman collection `tests/integration/openregister-licence-plate-detection.postman_collection.json`
+    (domain `licence-plate-detection` in `tests/newman/run-all.sh`): every step is an API call, and gate-19 puts API
+    contracts in Newman. It also asserts the acceptance's control: with recognition on and the regex method but
+    `entityPatternSets: []`, the same text yields no `LICENSE_PLATE` and no `SSN`. Each run makes its own valid plate
+    and BSN, since extraction is keyed on content and entities are shared by value.
+  - It also asserts that saving an unknown set (`["xx"]`) is refused with 400 naming it and changes nothing.
+  - 2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16: 25 requests, 41 assertions, 0 failed; the file
+    settings read back identical afterwards. The placeholders read `[KENTEKEN: n]` and `[BSN: n]` for a Dutch reader
+    (the spec's `[KENTEKEN-1]` writes the label in another form); the collection asserts the label.
+  - Seen on the way, not changed here: the generic regex PHONE pattern (`\+?[1-9]\d{1,14}`) takes any number of
+    two digits or more, so the anonymised copy also masks the digits of `ZK-12-AB-34` and of a postcode; and a save
+    of the file settings replaces them, so a PATCH naming one key resets every other to its default.
 - [ ] 4.2 Update `docs/features/ner-nlp-concepts.md` with the jurisdiction sets, the plate type, the guard and the setting, with a screenshot of the setting.
 
 Acceptance:

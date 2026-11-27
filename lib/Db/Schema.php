@@ -1699,6 +1699,25 @@ class Schema extends Entity implements JsonSerializable, SchemaInterface {
 	}//end getObjectSource()
 
 	/**
+	 * The schema's preview URL template, when it declares one.
+	 *
+	 * Validated when the configuration is set ({@see Schema\PreviewUrlTemplate}),
+	 * so a value read here uses only the known placeholders.
+	 *
+	 * @return string|null The template, or null.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function getPreviewUrl(): ?string {
+		$template = ($this->getConfiguration()[Schema\PreviewUrlTemplate::KEY] ?? null);
+		if (is_string($template) === false || $template === '') {
+			return null;
+		}
+
+		return $template;
+	}//end getPreviewUrl()
+
+	/**
 	 * Get the lens declarations from the schema configuration.
 	 *
 	 * A lens is a property that shows a referenced record's own field, live: it

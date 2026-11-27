@@ -1,0 +1,751 @@
+{
+ "info": {
+  "_postman_id": "or-self-filter-inside-retention-2026-11-25",
+  "name": "OpenRegister Self Filter Inside Retention",
+  "description": "A list filtered on a field inside the retention block (change self-filter-inside-retention, task 1.4).\n\nWHAT IT ASSERTS: three dossiers dated from their closing date (five years ago, two years ago, three years ahead, bewaartermijn P1Y) carry an archiefactiedatum; `@self[retention.archiefactiedatum][lt]=<today>` and the nested spelling `@self_retention_archiefactiedatum[lt]=<today>` both return exactly the two past their date; `[gte]=<today>` returns exactly the third (CONTROL).\n\nHermetic: it creates its schema, register and dossiers, and removes them.",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+ },
+ "auth": {
+  "type": "basic",
+  "basic": [
+   {
+    "key": "username",
+    "value": "{{admin_user}}",
+    "type": "string"
+   },
+   {
+    "key": "password",
+    "value": "{{admin_password}}",
+    "type": "string"
+   }
+  ]
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "http://localhost",
+   "type": "string"
+  },
+  {
+   "key": "admin_user",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "admin_password",
+   "value": "admin",
+   "type": "string"
+  },
+  {
+   "key": "run",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "today",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "closedLongAgo",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "closedTwoYearsAgo",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "closesLater",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "schemaId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "registerId",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "uuid_closedLongAgo",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "uuid_closedTwoYearsAgo",
+   "value": "",
+   "type": "string"
+  },
+  {
+   "key": "uuid_closesLater",
+   "value": "",
+   "type": "string"
+  }
+ ],
+ "item": [
+  {
+   "name": "setUp: a dossier schema dated from its closing date",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"retention filter dossier {{run}}\", \"slug\": \"retentionfilter{{run}}\", \"properties\": {\"title\": {\"type\": \"string\"}, \"sluitdatum\": {\"type\": \"string\", \"format\": \"date\"}}, \"archive\": {\"enabled\": true, \"defaultNominatie\": \"vernietigen\", \"defaultBewaartermijn\": \"P1Y\", \"afleidingswijze\": \"ander_datumkenmerk\", \"sourceDateProperty\": \"sluitdatum\"}}"
+    }
+   },
+   "event": [
+    {
+     "listen": "prerequest",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "const run = Math.random().toString(36).slice(2, 10);",
+       "pm.collectionVariables.set('run', run);",
+       "const day = (offsetYears) => { const d = new Date(); d.setUTCFullYear(d.getUTCFullYear() + offsetYears); return d.toISOString().slice(0, 10); };",
+       "pm.collectionVariables.set('today', day(0));",
+       "pm.collectionVariables.set('closedLongAgo', day(-5));",
+       "pm.collectionVariables.set('closedTwoYearsAgo', day(-2));",
+       "pm.collectionVariables.set('closesLater', day(3));"
+      ]
+     }
+    },
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a register",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"retention filter register {{run}}\", \"slug\": \"retentionfilterregister{{run}}\", \"schemas\": [{{schemaId}}]}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
+       "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a dossier closed long ago",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"long ago\", \"sluitdatum\": \"{{closedLongAgo}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the dossier is created with an action date', () => { pm.response.to.have.status(201); pm.expect(pm.response.json()['@self'].retention.archiefactiedatum).to.be.a('string'); });",
+       "pm.collectionVariables.set('uuid_closedLongAgo', pm.response.json()['@self'].id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a dossier closed two years ago",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"two years ago\", \"sluitdatum\": \"{{closedTwoYearsAgo}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the dossier is created with an action date', () => { pm.response.to.have.status(201); pm.expect(pm.response.json()['@self'].retention.archiefactiedatum).to.be.a('string'); });",
+       "pm.collectionVariables.set('uuid_closedTwoYearsAgo', pm.response.json()['@self'].id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "setUp: a dossier closed later",
+   "request": {
+    "method": "POST",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ]
+    },
+    "body": {
+     "mode": "raw",
+     "raw": "{\"title\": \"later\", \"sluitdatum\": \"{{closesLater}}\"}"
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the dossier is created with an action date', () => { pm.response.to.have.status(201); pm.expect(pm.response.json()['@self'].retention.archiefactiedatum).to.be.a('string'); });",
+       "pm.collectionVariables.set('uuid_closesLater', pm.response.json()['@self'].id);"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the dossiers past their date, dotted key",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?@self[retention.archiefactiedatum][lt]={{today}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ],
+     "query": [
+      {
+       "key": "@self[retention.archiefactiedatum][lt]",
+       "value": "{{today}}"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the list answers', () => pm.response.to.have.status(200));",
+       "const titles = (pm.response.json().results || []).map(r => r.title).sort();",
+       "pm.test('exactly long ago, two years ago', () => pm.expect(titles).to.eql([\"long ago\", \"two years ago\"]));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the dossiers past their date, nested request spelling",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?@self_retention_archiefactiedatum[lt]={{today}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ],
+     "query": [
+      {
+       "key": "@self_retention_archiefactiedatum[lt]",
+       "value": "{{today}}"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the list answers', () => pm.response.to.have.status(200));",
+       "const titles = (pm.response.json().results || []).map(r => r.title).sort();",
+       "pm.test('exactly long ago, two years ago', () => pm.expect(titles).to.eql([\"long ago\", \"two years ago\"]));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "the dossier not yet due (control)",
+   "request": {
+    "method": "GET",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?@self[retention.archiefactiedatum][gte]={{today}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}"
+     ],
+     "query": [
+      {
+       "key": "@self[retention.archiefactiedatum][gte]",
+       "value": "{{today}}"
+      }
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('the list answers', () => pm.response.to.have.status(200));",
+       "const titles = (pm.response.json().results || []).map(r => r.title).sort();",
+       "pm.test('exactly later', () => pm.expect(titles).to.eql([\"later\"]));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete dossier closedLongAgo",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{uuid_closedLongAgo}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "{{uuid_closedLongAgo}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete dossier closedTwoYearsAgo",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{uuid_closedTwoYearsAgo}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "{{uuid_closedTwoYearsAgo}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete dossier closesLater",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{uuid_closesLater}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "objects",
+      "{{registerId}}",
+      "{{schemaId}}",
+      "{{uuid_closesLater}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the register",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "registers",
+      "{{registerId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "name": "tearDown: delete the schema",
+   "request": {
+    "method": "DELETE",
+    "header": [
+     {
+      "key": "OCS-APIRequest",
+      "value": "true"
+     },
+     {
+      "key": "Accept",
+      "value": "application/json"
+     },
+     {
+      "key": "Content-Type",
+      "value": "application/json"
+     }
+    ],
+    "url": {
+     "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+     "host": [
+      "{{base_url}}"
+     ],
+     "path": [
+      "index.php",
+      "apps",
+      "openregister",
+      "api",
+      "schemas",
+      "{{schemaId}}"
+     ]
+    }
+   },
+   "event": [
+    {
+     "listen": "test",
+     "script": {
+      "type": "text/javascript",
+      "exec": [
+       "pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300));"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}

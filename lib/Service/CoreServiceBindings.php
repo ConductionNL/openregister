@@ -389,6 +389,7 @@ final class CoreServiceBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		\OCA\OpenRegister\Kernel\Contracts\DraftPreviewInterface::class => \OCA\OpenRegister\Service\Object\DraftService::class,
 		ObjectActivityAuditInterface::class => ObjectActivityAudit::class,
 		\OCA\OpenRegister\Kernel\Contracts\OperatorActionAuditInterface::class => \OCA\OpenRegister\Service\Audit\OperatorActionAudit::class,
 		MandateEvidenceInterface::class => MandateEvidence::class,
@@ -597,5 +598,7 @@ final class CoreServiceBindings {
 		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
 		PropertySearchProfileInterface::class => PropertySearchProfile::class,
 		\OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface::class => SemanticProviderCatalogue::class,
+		\OCA\OpenRegister\Service\Operations\ReindexSelectionServiceInterface::class
+			=> \OCA\OpenRegister\Service\Operations\ReindexSelectionService::class,
 	];
 }//end class
