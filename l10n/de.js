@@ -151,6 +151,7 @@ OC.L10N.register(
     "Additional Information" : "Zusätzliche Informationen",
     "Addresses" : "Adressen",
     "Admin" : "Administration",
+    "Administrative changes" : "Administrative Änderungen",
     "Admitted" : "Zugelassen",
     "Admitted by itself: it only narrows a reviewed provider." : "Von selbst zugelassen: Er schränkt nur einen geprüften Anbieter ein.",
     "Adopt" : "Übernehmen",
@@ -2556,6 +2557,7 @@ OC.L10N.register(
     "Record a field-level redaction on this case. The redaction and its ground are logged in the case audit trail." : "Erfassen Sie eine Schwärzung auf Feldebene für diesen Fall. Die Schwärzung und ihr Grund werden im Audit-Trail des Falls protokolliert.",
     "Record a proposed denial ground for this request. Drafting does not require a regulator reference; finalising the denial does." : "Erfassen Sie einen vorgeschlagenen Ablehnungsgrund für diese Anfrage. Für den Entwurf ist kein Aktenzeichen der Aufsichtsbehörde erforderlich, für den Abschluss der Ablehnung schon.",
     "Record a regulator reference" : "Aktenzeichen der Aufsichtsbehörde erfassen",
+    "Record history" : "Datensatzverlauf",
     "Recorded ground" : "Erfasster Grund",
     "Redaction ground" : "Schwärzungsgrund",
     "Redactions" : "Schwärzungen",
@@ -3839,6 +3841,7 @@ OC.L10N.register(
     "Whether this source is polled. A disabled source stays listed." : "Ob diese Quelle abgefragt wird. Eine deaktivierte Quelle bleibt gelistet.",
     "Whether this survey is being sent." : "Ob diese Umfrage versendet wird.",
     "Whether this value is defined by the product rather than by the organisation. A system-defined value may be retired by closing its validity window; it may not be deleted, because the code that switches on it does not stop existing when the row does." : "Ob dieser Wert vom Produkt statt von der Organisation definiert wird. Ein systemdefinierter Wert kann durch Schließen seines Gültigkeitsfensters stillgelegt werden; er darf nicht gelöscht werden, weil der Code, der auf ihn schaltet, nicht aufhört zu existieren, wenn die Zeile es tut.",
+    "Which changes to show" : "Welche Änderungen anzeigen",
     "Which objects, as a JSON query" : "Welche Objekte, als JSON-Abfrage",
     "Who answered. Absent entirely on an anonymous survey, not empty." : "Wer geantwortet hat. Bei einer anonymen Umfrage gar nicht vorhanden, nicht leer.",
     "Who approved the list, and when." : "Wer die Liste genehmigt hat, und wann.",
@@ -3995,7 +3998,17 @@ OC.L10N.register(
     "The conformance report could not be read." : "Der Konformitätsbericht konnte nicht gelesen werden.",
     "The responses could not be probed." : "Die Antworten konnten nicht getestet werden.",
     "Add a validation message" : "Validierungsmeldung hinzufügen",
-    "Validation messages" : "Validierungsmeldungen"
+    "Validation messages" : "Validierungsmeldungen",
+    "An export key encrypts an instance set, so the set opens only where that key is present. Keys belong to your active organisation." : "Ein Exportschlüssel verschlüsselt einen Instanzsatz, sodass sich der Satz nur dort öffnen lässt, wo dieser Schlüssel vorhanden ist. Schlüssel gehören zu deiner aktiven Organisation.",
+    "Could not load the export keys" : "Die Exportschlüssel konnten nicht geladen werden",
+    "Create export key" : "Exportschlüssel erstellen",
+    "Delete this export key? A set encrypted with it can no longer be opened here." : "Diesen Exportschlüssel löschen? Ein damit verschlüsselter Satz kann hier dann nicht mehr geöffnet werden.",
+    "Export keys" : "Exportschlüssel",
+    "No export keys yet" : "Noch keine Exportschlüssel",
+    "Recovery string" : "Wiederherstellungszeichenfolge",
+    "Rotate" : "Rotieren",
+    "Store this recovery string somewhere else now. It is shown only once, and without it a set encrypted with this key cannot be opened on another instance." : "Bewahre diese Wiederherstellungszeichenfolge jetzt an einem anderen Ort auf. Sie wird nur einmal angezeigt, und ohne sie lässt sich ein mit diesem Schlüssel verschlüsselter Satz auf keiner anderen Instanz öffnen.",
+    "The export key action failed" : "Die Aktion für den Exportschlüssel ist fehlgeschlagen"
 },
 "nplurals=2; plural=(n != 1);"
 );

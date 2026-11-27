@@ -60,6 +60,8 @@ class AuditTrailPageQuery implements AuditTrailPageQueryInterface {
 		'register' => 'register',
 		'schema' => 'schema',
 		'object' => 'object_uuid',
+		// REQ-HSA-011: domain or administrative history.
+		'category' => 'category',
 		'tool' => 'tool_id',
 	];
 

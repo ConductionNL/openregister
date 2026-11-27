@@ -1876,6 +1876,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'schemas#discardDraft', 'url' => '/api/schemas/{id}/draft', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#related', 'url' => '/api/schemas/{id}/related', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#changes', 'url' => '/api/schemas/{id}/changes', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+        ['name' => 'registers#changes', 'url' => '/api/registers/{id}/changes', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
         // The list surface a schema declares: columns and search fields, so a
         // generic surface renders any object type without a page of its own.
         [
@@ -2337,6 +2339,12 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'Settings\ConfigurationSettings#getArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'GET'],
 		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PUT'],
 		['name' => 'Settings\ConfigurationSettings#updateArchivalSettings', 'url' => '/api/settings/archival', 'verb' => 'PATCH', 'postfix' => 'patch'],
+
+		// Export keys of the encrypted instance set (exchange-encrypted-instance-export 4.1), admin only.
+		['name' => 'exportKeys#index', 'url' => '/api/export-keys', 'verb' => 'GET'],
+		['name' => 'exportKeys#create', 'url' => '/api/export-keys', 'verb' => 'POST'],
+		['name' => 'exportKeys#rotate', 'url' => '/api/export-keys/{id}/rotate', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'exportKeys#destroy', 'url' => '/api/export-keys/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
 
 		// Retention management: destruction list approval workflow.
 		['name' => 'retention#approveDestructionList', 'url' => '/api/retention/destruction-lists/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
