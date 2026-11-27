@@ -195,6 +195,15 @@ webpackConfig.module.rules = [
 		test: /[\\/]node_modules[\\/]@nextcloud[\\/]vue[\\/]dist[\\/]index\.mjs$/,
 		sideEffects: false,
 	},
+	// @nextcloud/vue's NcSelect and NcSelectUsers read two body custom
+	// properties with getComputedStyle() in every setup(): each read forces a
+	// full style recalculation during the first render (~73 ms on Registers,
+	// five selects). The values are page-wide theme tokens, so read them once
+	// per page (scripts/body-style-once-loader.js).
+	{
+		test: /[\\/]node_modules[\\/]@nextcloud[\\/]vue[\\/]dist[\\/]chunks[\\/](NcSelect|NcSelectUsers|NcProgressBar)(-[\w-]+)?\.mjs$/,
+		use: [path.join(__dirname, 'scripts', 'body-style-once-loader.js')],
+	},
 ]
 
 // Add .ts and .tsx to resolve extensions and '@' alias
