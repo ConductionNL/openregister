@@ -57,6 +57,11 @@ module.exports = {
 		//   @nextcloud/dialogs  — exports map only, no main/module
 		//   @nextcloud/axios    — `module` only, no `main`
 		'^@nextcloud/vue$': '<rootDir>/node_modules/@nextcloud/vue/dist/index.mjs',
+		// @conduction/nextcloud-vue imports @nextcloud/vue's subpaths
+		// (`@nextcloud/vue/components/NcNoteCard`), which only the exports map
+		// resolves: point each at its file, as above.
+		'^@nextcloud/vue/(components|composables|directives|functions)/([^/]+)$':
+			'<rootDir>/node_modules/@nextcloud/vue/dist/$1/$2/index.mjs',
 		'^@nextcloud/dialogs$':
 			'<rootDir>/node_modules/@nextcloud/dialogs/dist/index.mjs',
 		'^@nextcloud/axios$':
