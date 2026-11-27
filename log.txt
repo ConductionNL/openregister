@@ -5596,3 +5596,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T17:52:58Z integrator-20261127T155017-3da46553 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T17:53:32Z integrator-20261127T155017-3da46553 MERGED-TREE 5afd5d02de: 2 PRs, main now 957cb680b6 = tested tree
+2026-11-27T17:54:41Z session-20261127T170846-794e99a3 done-launchpad merged launchpad#2316 (widget-declared-placeholders tasks 1+5: WidgetFormatter carries getPlaceholder() in the catalogue, links/news declare rows) and nextcloud-vue#2429 (widget-placeholder-shape tasks 1-4: resolver, 95 declared types, CnWidgetPlaceholder + css/widget-placeholder.css, dist/widget-placeholders.json). nc-vue tasks 5-7 (wrapper loading, renderer loaded, CnDashboardPage status line) still open.
