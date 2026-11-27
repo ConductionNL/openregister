@@ -365,10 +365,13 @@ export default [
 		// empty key is one of the inputs it has to survive (an empty slug in the
 		// slug/id lookup, an empty CSV header in the row import). The rule
 		// guards hand-written JSON; here the "" key is the test, not a typo.
+		// The same holds for PHP_INT_MAX (9223372036854775807): PHP reads it
+		// exactly, and a fixture recording an offset at that bound needs it.
 		name: 'conduction/golden-fixtures-empty-keys',
 		files: ['tests/**/fixtures/*.json'],
 		rules: {
 			'json/no-empty-keys': 'off',
+			'json/no-unsafe-values': 'off',
 		},
 	},
 ]

@@ -112,7 +112,7 @@ exports[`LLM configuration modal DOM golden saving 1`] = `
         <slot-icon>
           <x-ncloadingicon size="20"></x-ncloadingicon>
         </slot-icon>
-        <slot-default> Saving...</slot-default>
+        <slot-default> Saving…</slot-default>
       </x-ncbutton>
     </div>
   </slot-actions>

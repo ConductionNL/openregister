@@ -104,7 +104,7 @@ describe('OrganisationMembers', () => {
 	it('shows a loading line instead of the list while members load', () => {
 		const wrapper = open({ state: { ...idle, loadingUsers: true } })
 
-		expect(wrapper.find('.loading-users').text()).toBe('Loading users...')
+		expect(wrapper.find('.loading-users').text()).toBe('Loading users…')
 		expect(wrapper.find('.users-list').exists()).toBe(false)
 		expect(wrapper.find('.no-users').exists()).toBe(false)
 	})
