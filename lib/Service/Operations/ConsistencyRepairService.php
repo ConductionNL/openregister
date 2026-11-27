@@ -167,6 +167,7 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 	 * @throws RepairRefusedException When the probe names a repair this service cannot make.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
 	 */
 	private function repairRows(array $plan, string $actor): int {
 		$changed = match ($plan['kind']) {
@@ -175,6 +176,12 @@ class ConsistencyRepairService implements ConsistencyRepairServiceInterface {
 				fileIds: self::columnIds(rows: $plan['objects'], column: (string)$plan['column'])
 			),
 			IndexReconciliationProbes::REPAIR_MARK_FOR_VECTORISATION => $this->markForVectorisation(ids: self::rowIds(rows: $plan['objects'])),
+			// A changed published file is republished or unpublished, and which
+			// of the two is a decision about that file: there is nothing to apply.
+			PublishedDigestProbes::REPAIR_DECIDE_PER_FILE => throw new RepairRefusedException(
+				message: 'The "'.$plan['slug'].'" check has no repair to apply: republish or unpublish each file it lists.',
+				reason: 'decide-per-file'
+			),
 			default => throw new RepairRefusedException(
 				message: 'The "'.$plan['slug'].'" check names a repair this instance cannot make.',
 				reason: 'unknown-repair'

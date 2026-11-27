@@ -219,6 +219,11 @@ app or user the guards refuse never causes a vault request. A read the vault ref
 answers with an upstream error naming the vault connection, and sets the credential's
 `lastError` to a fixed sentence; the vault's own answer is not stored or logged.
 
+A read the vault answers stamps the credential's `lastReadAt` with the time of the read,
+at most once a minute, so a list of credentials can show when the vault was last read
+without a write on every call. The same read clears the fixed sentence a refused read
+left in `lastError`; any other `lastError` stays. The value read is never written.
+
 ### The vault policy
 
 Give the AppRole read access to the paths the references name, and nothing else. For a

@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller\Support;
 
+use OCA\OpenRegister\Service\Outbound\OutboundAllowlist;
+
 /**
  * The service bundles of the webhooks API.
  *
@@ -33,6 +35,7 @@ final class WebhooksControllerServices {
 	 *
 	 * @param WebhooksMappers  $mappers  The mappers bundle.
 	 * @param TasksPlatform    $platform The platform bundle.
+	 * @param OutboundAllowlist|null $allowlist The administered outbound allowlist; null checks nothing.
 	 * @param WebhookOwnership|null $ownership Lets a holder of `webhook.own` manage their own webhooks;
 	 *                                         without it only an administrator manages webhooks.
 	 *
@@ -41,6 +44,7 @@ final class WebhooksControllerServices {
 	public function __construct(
 		public readonly WebhooksMappers $mappers,
 		public readonly TasksPlatform $platform,
+		public readonly ?OutboundAllowlist $allowlist = null,
 		public readonly ?WebhookOwnership $ownership = null,
 	) {
 	}//end __construct()

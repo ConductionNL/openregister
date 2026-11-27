@@ -1,0 +1,1586 @@
+{
+	"info": {
+		"name": "OpenRegister — query filter through a reference",
+		"description": "query-filter-through-a-reference task 3.1. Lists requests through a field of the person each one references: `_ref[aanvrager][woonplaats]=…`, with an operator, with `in`, through a list of references, a misspelt field refused with HTTP 400, and a caller who may read the requests but not the persons, for whom no request matches. Creates its own user, register, schemas and objects and deletes them.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
+					"// The quality workflow passes base_url, admin_user and admin_password; take",
+					"// them for this collection's own names when those are given.",
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && given !== '') {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"if (!pm.collectionVariables.get('stamp')) {",
+					"    pm.collectionVariables.set('stamp', 'qref' + Date.now().toString(36));",
+					"}",
+					"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'));",
+					"pm.collectionVariables.set('readerToken', Buffer.from(pm.collectionVariables.get('stamp') + '-reader:' + pm.collectionVariables.get('readerPassword')).toString('base64'));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "readerPassword",
+			"value": "Qref-Reader-Pass-2026"
+		},
+		{
+			"key": "stamp",
+			"value": ""
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "readerToken",
+			"value": ""
+		},
+		{
+			"key": "register",
+			"value": ""
+		},
+		{
+			"key": "persoon",
+			"value": ""
+		},
+		{
+			"key": "aanvraag",
+			"value": ""
+		},
+		{
+			"key": "anna",
+			"value": ""
+		},
+		{
+			"key": "bram",
+			"value": ""
+		},
+		{
+			"key": "a1",
+			"value": ""
+		},
+		{
+			"key": "a2",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 — setup",
+			"item": [
+				{
+					"name": "bootstrap variables",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('instance is up', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/status.php",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"status.php"
+							]
+						}
+					}
+				},
+				{
+					"name": "create the caller who may not read persons",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user created', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/ocs/v1.php/cloud/users?format=json",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"ocs",
+								"v1.php",
+								"cloud",
+								"users"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userid\": \"{{stamp}}-reader\",\n  \"password\": \"{{readerPassword}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('register', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"registers"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}\",\n  \"title\": \"{{stamp}}\",\n  \"description\": \"query filter through a reference\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create the person schema, readable by administrators only",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('persoon', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"schemas"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-persoon\",\n  \"title\": \"{{stamp}} persoon\",\n  \"properties\": {\n    \"naam\": {\n      \"type\": \"string\"\n    },\n    \"woonplaats\": {\n      \"type\": \"string\"\n    },\n    \"geboortejaar\": {\n      \"type\": \"integer\"\n    }\n  },\n  \"authorization\": {\n    \"read\": [\n      \"admin\"\n    ],\n    \"create\": [\n      \"admin\"\n    ],\n    \"update\": [\n      \"admin\"\n    ],\n    \"delete\": [\n      \"admin\"\n    ]\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "create the request schema, readable by every signed-in user",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('aanvraag', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"schemas"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-aanvraag\",\n  \"title\": \"{{stamp}} aanvraag\",\n  \"properties\": {\n    \"titel\": {\n      \"type\": \"string\"\n    },\n    \"aanvrager\": {\n      \"type\": \"string\",\n      \"format\": \"uuid\",\n      \"$ref\": \"#/components/schemas/{{stamp}}-persoon\"\n    },\n    \"betrokkenen\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"string\",\n        \"format\": \"uuid\",\n        \"$ref\": \"#/components/schemas/{{stamp}}-persoon\"\n      }\n    }\n  },\n  \"authorization\": {\n    \"read\": [\n      \"authenticated\"\n    ],\n    \"create\": [\n      \"authenticated\"\n    ],\n    \"update\": [\n      \"authenticated\"\n    ],\n    \"delete\": [\n      \"authenticated\"\n    ]\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "link both schemas",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schemas linked', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"registers",
+								"{{register}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}\",\n  \"title\": \"{{stamp}}\",\n  \"schemas\": [\n    \"{{persoon}}\",\n    \"{{aanvraag}}\"\n  ]\n}"
+						}
+					}
+				},
+				{
+					"name": "person living in Zuiddrecht",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('person created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('anna', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{persoon}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{persoon}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"naam\": \"Anna\",\n  \"woonplaats\": \"Zuiddrecht\",\n  \"geboortejaar\": 1980\n}"
+						}
+					}
+				},
+				{
+					"name": "person living in Oosterhout",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('person created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('bram', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{persoon}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{persoon}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"naam\": \"Bram\",\n  \"woonplaats\": \"Oosterhout\",\n  \"geboortejaar\": 1995\n}"
+						}
+					}
+				},
+				{
+					"name": "request by Anna, involving Bram",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('request created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('a1', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titel\": \"a1\",\n  \"aanvrager\": \"{{anna}}\",\n  \"betrokkenen\": [\n    \"{{bram}}\"\n  ]\n}"
+						}
+					}
+				},
+				{
+					"name": "request by Bram, involving Anna and Bram",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('request created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('a2', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titel\": \"a2\",\n  \"aanvrager\": \"{{bram}}\",\n  \"betrokkenen\": [\n    \"{{anna}}\",\n    \"{{bram}}\"\n  ]\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 — _ref",
+			"item": [
+				{
+					"name": "_ref: requests by the applicant's place",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const body = pm.response.json()",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('only the request whose applicant lives in Zuiddrecht', () => {",
+									"    pm.expect(body.results.map(r => r.titel).sort()).to.eql([\"a1\"])",
+									"    pm.expect(body.total, 'the total counts only matching requests').to.eql(1)",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}?_ref[aanvrager][woonplaats]=Zuiddrecht",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}"
+							],
+							"query": [
+								{
+									"key": "_ref[aanvrager][woonplaats]",
+									"value": "Zuiddrecht"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "_ref with an operator",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const body = pm.response.json()",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('only the request whose applicant was born in 1990 or later', () => {",
+									"    pm.expect(body.results.map(r => r.titel).sort()).to.eql([\"a2\"])",
+									"    pm.expect(body.total, 'the total counts only matching requests').to.eql(1)",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}?_ref[aanvrager][geboortejaar][gte]=1990",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}"
+							],
+							"query": [
+								{
+									"key": "_ref[aanvrager][geboortejaar][gte]",
+									"value": "1990"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "_ref with in",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const body = pm.response.json()",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('both requests', () => {",
+									"    pm.expect(body.results.map(r => r.titel).sort()).to.eql([\"a1\", \"a2\"])",
+									"    pm.expect(body.total, 'the total counts only matching requests').to.eql(2)",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}?_ref[aanvrager][woonplaats][in][]=Zuiddrecht&_ref[aanvrager][woonplaats][in][]=Oosterhout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}"
+							],
+							"query": [
+								{
+									"key": "_ref[aanvrager][woonplaats][in][]",
+									"value": "Zuiddrecht"
+								},
+								{
+									"key": "_ref[aanvrager][woonplaats][in][]",
+									"value": "Oosterhout"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "_ref through a list reference",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const body = pm.response.json()",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('only the request with someone from Zuiddrecht in its list', () => {",
+									"    pm.expect(body.results.map(r => r.titel).sort()).to.eql([\"a2\"])",
+									"    pm.expect(body.total, 'the total counts only matching requests').to.eql(1)",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}?_ref[betrokkenen][woonplaats]=Zuiddrecht",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}"
+							],
+							"query": [
+								{
+									"key": "_ref[betrokkenen][woonplaats]",
+									"value": "Zuiddrecht"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "_ref naming a field the person lacks is refused",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 400', () => pm.response.to.have.status(400))",
+									"pm.test('the refusal names the field', () => pm.expect(pm.response.text()).to.include('woonplaatz'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}?_ref[aanvrager][woonplaatz]=Zuiddrecht",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}"
+							],
+							"query": [
+								{
+									"key": "_ref[aanvrager][woonplaatz]",
+									"value": "Zuiddrecht"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "the reader sees both requests without a filter",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('both requests are readable to the reader', () => pm.expect(pm.response.json().total).to.eql(2))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{readerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "the reader cannot read the person",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('the person is hidden from the reader', () => pm.expect(pm.response.code).to.be.oneOf([403, 404]))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{readerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{persoon}}/{{anna}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{persoon}}",
+								"{{anna}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "a hidden referenced object does not answer",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('no request matches through a person the reader may not read', () => pm.expect(pm.response.json().total).to.eql(0))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{readerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}?_ref[aanvrager][woonplaats]=Zuiddrecht",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}"
+							],
+							"query": [
+								{
+									"key": "_ref[aanvrager][woonplaats]",
+									"value": "Zuiddrecht"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "99 — teardown",
+			"item": [
+				{
+					"name": "delete request a1",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}/{{a1}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}",
+								"{{a1}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete request a2",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{aanvraag}}/{{a2}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{aanvraag}}",
+								"{{a2}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete Anna",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{persoon}}/{{anna}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{persoon}}",
+								"{{anna}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete Bram",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{persoon}}/{{bram}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{persoon}}",
+								"{{bram}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete the request schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{aanvraag}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"schemas",
+								"{{aanvraag}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete the person schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{persoon}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"schemas",
+								"{{persoon}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete the register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"registers",
+								"{{register}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete the reader",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('user deleted', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/ocs/v1.php/cloud/users/{{stamp}}-reader?format=json",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"ocs",
+								"v1.php",
+								"cloud",
+								"users",
+								"{{stamp}}-reader"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "json"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

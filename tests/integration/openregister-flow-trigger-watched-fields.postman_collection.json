@@ -1,0 +1,1194 @@
+{
+	"info": {
+		"name": "OpenRegister — flow trigger watched fields",
+		"description": "flow-trigger-transitions-and-changed-fields task 3.2. An object.updated trigger with changedFields starts a run only when a watched field changes: an update of an unwatched field queues no run, an update of a watched field queues one. The run's context lists the changed field, and the flow's own write-back of an unwatched field starts no second run. Publishing a trigger that watches a field its schema lacks is refused. The flow runs sync, so no background worker is needed. Creates its own register, schema and flows and deletes them.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });",
+					"// The quality workflow passes base_url, admin_user and admin_password; take",
+					"// them for this collection's own names when those are given.",
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && given !== '') {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "stamp",
+			"value": ""
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "register",
+			"value": ""
+		},
+		{
+			"key": "schema",
+			"value": ""
+		},
+		{
+			"key": "flow",
+			"value": ""
+		},
+		{
+			"key": "badFlow",
+			"value": ""
+		},
+		{
+			"key": "lead",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 — setup",
+			"item": [
+				{
+					"name": "bootstrap variables",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.collectionVariables.set('stamp', 'flow-trigger-filters-' + Date.now().toString(36))",
+									"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'))",
+									"pm.test('instance is up', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/status.php",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"status.php"
+							]
+						}
+					}
+				},
+				{
+					"name": "create register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('register', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"registers"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}\",\n  \"title\": \"{{stamp}}\",\n  \"description\": \"flow trigger filters\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('schema', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"schemas"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-lead\",\n  \"title\": \"{{stamp}} lead\",\n  \"properties\": {\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"note\": {\n      \"type\": \"string\"\n    },\n    \"value\": {\n      \"type\": \"number\"\n    }\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "link schema to register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema linked', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"registers",
+								"{{register}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}\",\n  \"title\": \"{{stamp}}\",\n  \"schemas\": [\n    \"{{schema}}\"\n  ]\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 — watched fields",
+			"item": [
+				{
+					"name": "create the watching flow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('flow created', () => pm.response.to.have.status(201))",
+									"pm.collectionVariables.set('flow', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flows",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flows"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}} watches value\",\n  \"description\": \"Starts only when value changes, and writes note back onto the lead.\",\n  \"enabled\": true,\n  \"executionMode\": \"sync\",\n  \"nodes\": [\n    {\n      \"id\": \"changed\",\n      \"type\": \"openregister.trigger-object\",\n      \"config\": {\n        \"event\": \"object.updated\",\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"changedFields\": [\n          \"value\"\n        ]\n      }\n    },\n    {\n      \"id\": \"categorise\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"update\",\n        \"match\": [\n          {\n            \"property\": \"title\",\n            \"value\": \"{{ title }}\"\n          }\n        ],\n        \"fields\": {\n          \"note\": \"categorised\"\n        }\n      }\n    },\n    {\n      \"id\": \"end\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"changed\",\n      \"to\": \"categorise\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"categorise\",\n      \"to\": \"end\"\n    }\n  ]\n}"
+						}
+					}
+				},
+				{
+					"name": "publish the watching flow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('flow published', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flows/{{flow}}/publish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flows",
+								"{{flow}}",
+								"publish"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					}
+				},
+				{
+					"name": "create a lead",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('lead created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('lead', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{schema}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"{{stamp}} lead\",\n  \"note\": \"first\",\n  \"value\": 1000\n}"
+						}
+					}
+				},
+				{
+					"name": "no run before any update",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const runs = pm.response.json().results.filter(r => r.flowId === pm.collectionVariables.get('flow'))",
+									"pm.test('creating the lead started no run of an update trigger', () => pm.expect(runs.length).to.eql(0))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flow-runs?limit=200",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flow-runs"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "200"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "update an unwatched field",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('note updated', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{lead}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{schema}}",
+								"{{lead}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": \"second\"\n}"
+						}
+					}
+				},
+				{
+					"name": "an unwatched change queues no run",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const runs = pm.response.json().results.filter(r => r.flowId === pm.collectionVariables.get('flow'))",
+									"pm.test('changing note started no run', () => pm.expect(runs.length).to.eql(0))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flow-runs?limit=200",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flow-runs"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "200"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "update the watched field",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('value updated', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{lead}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{schema}}",
+								"{{lead}}"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"value\": 2000\n}"
+						}
+					}
+				},
+				{
+					"name": "a watched change queues one run",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const runs = pm.response.json().results.filter(r => r.flowId === pm.collectionVariables.get('flow'))",
+									"pm.test('changing value started exactly one run', () => pm.expect(runs.length).to.eql(1))",
+									"pm.test('the run is about the lead', () => pm.expect(runs[0].subjectUuid).to.eql(pm.collectionVariables.get('lead')))",
+									"pm.test('its context lists the changed field', () => pm.expect(runs[0].context.changedFields).to.eql(['value']))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flow-runs?limit=200",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flow-runs"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "200"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "the flow wrote its output back",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('note was written by the flow', () => pm.expect(pm.response.json().note).to.eql('categorised'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{lead}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{schema}}",
+								"{{lead}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "the flow's own write queued no second run",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const runs = pm.response.json().results.filter(r => r.flowId === pm.collectionVariables.get('flow'))",
+									"pm.test('still exactly one run', () => pm.expect(runs.length).to.eql(1))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flow-runs?limit=200",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flow-runs"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "200"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "create a flow watching an unknown field",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('flow created', () => pm.response.to.have.status(201))",
+									"pm.collectionVariables.set('badFlow', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flows",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flows"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}} watches a field the schema lacks\",\n  \"description\": \"Starts only when value changes, and writes note back onto the lead.\",\n  \"enabled\": true,\n  \"executionMode\": \"sync\",\n  \"nodes\": [\n    {\n      \"id\": \"changed\",\n      \"type\": \"openregister.trigger-object\",\n      \"config\": {\n        \"event\": \"object.updated\",\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"changedFields\": [\n          \"noSuchField\"\n        ]\n      }\n    },\n    {\n      \"id\": \"categorise\",\n      \"type\": \"openregister.object-write\",\n      \"config\": {\n        \"register\": \"{{register}}\",\n        \"schema\": \"{{schema}}\",\n        \"operation\": \"update\",\n        \"match\": [\n          {\n            \"property\": \"title\",\n            \"value\": \"{{ title }}\"\n          }\n        ],\n        \"fields\": {\n          \"note\": \"categorised\"\n        }\n      }\n    },\n    {\n      \"id\": \"end\",\n      \"type\": \"openregister.end\",\n      \"config\": {}\n    }\n  ],\n  \"edges\": [\n    {\n      \"id\": \"a\",\n      \"from\": \"changed\",\n      \"to\": \"categorise\"\n    },\n    {\n      \"id\": \"b\",\n      \"from\": \"categorise\",\n      \"to\": \"end\"\n    }\n  ]\n}"
+						}
+					}
+				},
+				{
+					"name": "publishing it is refused, naming the field",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('publish refused', () => pm.response.to.have.status(409))",
+									"pm.test('the refusal says why and names the field', () => {",
+									"    pm.expect(pm.response.json().reason).to.eql('unknown-changed-field')",
+									"    pm.expect(pm.response.text()).to.include('noSuchField')",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flows/{{badFlow}}/publish",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flows",
+								"{{badFlow}}",
+								"publish"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "99 — teardown",
+			"item": [
+				{
+					"name": "delete the watching flow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flows/{{flow}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flows",
+								"{{flow}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete the refused flow",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/flows/{{badFlow}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"flows",
+								"{{badFlow}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete the lead",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{lead}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"objects",
+								"{{register}}",
+								"{{schema}}",
+								"{{lead}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete the schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schema}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"schemas",
+								"{{schema}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "delete the register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"index.php",
+								"apps",
+								"openregister",
+								"api",
+								"registers",
+								"{{register}}"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

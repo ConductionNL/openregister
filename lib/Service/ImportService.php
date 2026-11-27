@@ -43,6 +43,7 @@ use OCA\OpenRegister\Listener\NotifyPushBatchInterface;
 use OCA\OpenRegister\Service\Configuration\ImportedSchemaLookup;
 use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Import\BundleObjectRouting;
 use OCA\OpenRegister\Service\Import\DryRunBatch;
 use OCA\OpenRegister\Service\Import\ImportErrorsCsv;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
@@ -536,8 +537,13 @@ class ImportService implements ObjectImporterInterface {
 
 		$decoded = $this->decodeJsonImportFile(filePath: $request->filePath);
 		$job     = $this->withJsonImportTarget(decoded: $decoded, job: $job);
+		$objects = $this->jsonImportObjects(decoded: $decoded);
 
-		return $this->runJsonImportJob(objects: $this->jsonImportObjects(decoded: $decoded), job: $job);
+		if ($job['schema'] === null) {
+			return $this->runBundleImportJob(objects: $objects, job: $job);
+		}
+
+		return $this->runJsonImportJob(objects: $objects, job: $job);
 	}//end importFromJson()
 
 	/**
@@ -550,25 +556,64 @@ class ImportService implements ObjectImporterInterface {
 	 * @param array<mixed>         $decoded The decoded document.
 	 * @param array<string, mixed> $job     The import job.
 	 *
-	 * @return array<string, mixed> The job, with a register and a schema.
+	 * @return array<string, mixed> The job, with a register and a schema; a bundle of several
+	 *                              schemas leaves the schema null and lists them in `bundleSchemas`,
+	 *                              so each object is saved into the schema it names.
 	 *
 	 * @throws InvalidArgumentException  When no schema is given and none is resolvable from a bundle
 	 * @throws RegisterNotFoundException When no register is given and the payload is not a creatable register-bundle
+	 *
+	 * @spec openspec/changes/capability-rows-closing-round/specs/data-import-export/spec.md#requirement-a-register-groups-record-types-and-moves-as-one-unit
 	 */
 	private function withJsonImportTarget(array $decoded, array $job): array {
+		$job['bundleSchemas'] = [];
 		if ($job['register'] === null) {
-			[$job['register'], $job['schema']] = $this->registerFromBundle(
+			[$job['register'], $job['schema'], $job['bundleSchemas']] = $this->registerFromBundle(
 				decoded: $decoded,
 				target: ['schema' => $job['schema'], 'registerSlug' => $job['registerSlug']]
 			);
 		}
 
-		if ($job['schema'] === null) {
+		if ($job['schema'] === null && count($job['bundleSchemas']) < 2) {
 			throw new InvalidArgumentException('JSON import requires a specific schema');
 		}
 
 		return $job;
 	}//end withJsonImportTarget()
+
+	/**
+	 * Run a register bundle of several schemas as one import job, each object into the schema it names.
+	 *
+	 * The result is keyed by schema slug, like a workbook's is by sheet; the
+	 * objects that name no schema of the bundle are reported under
+	 * `unassigned` and saved nowhere.
+	 *
+	 * @param array<mixed>         $objects The bundle's objects
+	 * @param array<string, mixed> $job     The import job, with `bundleSchemas` (slug => Schema)
+	 *
+	 * @return array<string, mixed> A summary per schema slug, plus importJobId
+	 *
+	 * @spec openspec/changes/capability-rows-closing-round/specs/data-import-export/spec.md#requirement-a-register-groups-record-types-and-moves-as-one-unit
+	 */
+	private function runBundleImportJob(array $objects, array $job): array {
+		$slugs   = array_keys($job['bundleSchemas']);
+		$grouped = BundleObjectRouting::group(objects: $objects, slugs: $slugs);
+
+		return $this->asImportJob(
+			run: function () use ($grouped, $job, $slugs): array {
+				$result = [];
+				foreach ($grouped['bySchema'] as $slug => $schemaObjects) {
+					$result[$slug] = $this->importJsonObjects(objects: $schemaObjects, job: ['schema' => $job['bundleSchemas'][$slug]] + $job);
+				}
+
+				if ($grouped['unassigned'] !== []) {
+					$result[BundleObjectRouting::UNASSIGNED] = BundleObjectRouting::unassignedSummary(unassigned: $grouped['unassigned'], slugs: $slugs);
+				}
+
+				return $result;
+			}
+		);
+	}//end runBundleImportJob()
 
 	/**
 	 * Log that the deprecated publish flag was set; it changes nothing.
@@ -671,7 +716,8 @@ class ImportService implements ObjectImporterInterface {
 	 * @param array<mixed>         $decoded The decoded document
 	 * @param array<string, mixed> $target  The schema hint and the register slug the caller asked for
 	 *
-	 * @return array{0: Register, 1: ?Schema} The register and the schema
+	 * @return array{0: Register, 1: ?Schema, 2: array<string, Schema>} The register, the schema (null for a
+	 *                                                              bundle of several), and the bundle's schemas by slug
 	 *
 	 * @throws RegisterNotFoundException When the document is not a register bundle
 	 */
@@ -789,13 +835,12 @@ class ImportService implements ObjectImporterInterface {
 	 *                                given, it is returned as-is (bundle schemas are still
 	 *                                created/updated) rather than re-derived from the bundle.
 	 *
-	 * @return array{0: Register, 1: ?Schema} The resolved/created register and, when resolvable
-	 *                                        (either `$schemaHint` or the bundle's single referenced
-	 *                                        schema — this importer is single-schema, like CSV), the schema.
+	 * @return array{0: Register, 1: ?Schema, 2: array<string, Schema>} The resolved/created register; the
+	 *                                        schema (`$schemaHint`, or the bundle's only schema, or null
+	 *                                        for a bundle of several, whose objects each name their own);
+	 *                                        and the bundle's schemas by slug.
 	 *
-	 * @throws InvalidArgumentException When the bundle's register references anything other than
-	 *                                  exactly one schema and no `$schemaHint` was given — this
-	 *                                  importer cannot disambiguate which schema the objects belong to.
+	 * @throws InvalidArgumentException When the bundle carries no schema and no `$schemaHint` was given.
 	 *
 	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-auto-create-a-missing-register-from-a-bundle-req-imp-ac-01
 	 * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-idempotent-register-bundle-re-import-req-imp-ac-03
@@ -822,9 +867,15 @@ class ImportService implements ObjectImporterInterface {
 			schemas: ['data' => $schemasData, 'slugsAndIds' => $slugsAndIdsMap]
 		);
 
+		// The register links its schemas by id on this instance, not by the slugs the export lists.
+		$registerData['schemas'] = BundleObjectRouting::registerSchemaIds(
+			listed: ($registerData['schemas'] ?? null),
+			idsBySlug: array_map(static fn (Schema $schema): int => (int)$schema->getId(), $createdSchemas)
+		);
+
 		$register = $importHandler->importRegister(data: $registerData);
 
-		return [$register, ($schemaHint ?? self::onlyBundleSchema(createdSchemas: $createdSchemas))];
+		return [$register, ($schemaHint ?? self::soleBundleSchema(createdSchemas: $createdSchemas)), $createdSchemas];
 	}//end autoCreateRegisterFromBundle()
 
 	/**
@@ -855,19 +906,27 @@ class ImportService implements ObjectImporterInterface {
 	}//end importBundleSchemas()
 
 	/**
-	 * The one schema of a bundle, for an import that names none.
+	 * The one schema of a bundle, for an import that names none; null when the bundle has several.
+	 *
+	 * With several, each object is saved into the schema its `@self.schema`
+	 * names (runBundleImportJob()).
 	 *
 	 * @param array<string, Schema> $createdSchemas The bundle's schemas.
 	 *
-	 * @return Schema The schema.
+	 * @return Schema|null The schema, or null for a bundle of several.
 	 *
-	 * @throws InvalidArgumentException When the bundle has not exactly one schema.
+	 * @throws InvalidArgumentException When the bundle has no schema.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/changes/capability-rows-closing-round/specs/data-import-export/spec.md#requirement-a-register-groups-record-types-and-moves-as-one-unit
 	 */
-	private static function onlyBundleSchema(array $createdSchemas): Schema {
+	private static function soleBundleSchema(array $createdSchemas): ?Schema {
 		if (count($createdSchemas) === 1) {
 			return array_values($createdSchemas)[0];
+		}
+
+		if (count($createdSchemas) > 1) {
+			return null;
 		}
 
 		$msg = 'Register bundle import requires exactly one schema when no schema is ';

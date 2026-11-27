@@ -138,7 +138,7 @@ class ContactsController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Existing suppression, kept.
 	 *
 	 * @spec openspec/specs/contacts-actions/spec.md
 	 */

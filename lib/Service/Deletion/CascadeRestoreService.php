@@ -236,6 +236,10 @@ class CascadeRestoreService {
 	/**
 	 * The objects the rows name, found in one batched lookup across the magic tables, keyed by uuid.
 	 *
+	 * The lookup reads every stored column: the plain batched lookup fills only the name, register, schema and data,
+	 * so each dependant would read as never deleted and be classed `already`, and a cascade restore would bring
+	 * none of them back.
+	 *
 	 * @param list<AuditRecordInterface> $rows     The cascade evidence.
 	 * @param string           $rootUuid The root, which is not looked up again.
 	 *
@@ -255,7 +259,7 @@ class CascadeRestoreService {
 		}
 
 		$found = [];
-		foreach ($this->objects->findMultipleAcrossAllMagicTables(uuids: array_keys($uuids), includeDeleted: true) as $object) {
+		foreach ($this->objects->findStoredAcrossAllMagicTables(uuids: array_keys($uuids), includeDeleted: true) as $object) {
 			$found[(string)$object->getUuid()] = $object;
 		}
 

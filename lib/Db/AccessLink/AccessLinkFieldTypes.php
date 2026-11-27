@@ -49,5 +49,6 @@ final class AccessLinkFieldTypes {
 		'disabled' => 'boolean',
 		'lastUsedAt' => 'datetime',
 		'useCount' => 'integer',
+		'journey' => 'string',
 	];
 }//end class

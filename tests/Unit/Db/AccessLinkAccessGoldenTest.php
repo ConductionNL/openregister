@@ -189,7 +189,7 @@ class AccessLinkAccessGoldenTest extends TestCase {
 		$link->setExpiresAt(new DateTime('2000-01-01T00:00:00+00:00'));
 		$this->assertFalse($link->jsonSerialize()['live']);
 		$this->assertSame(
-			['id', 'uuid', 'anchor', 'subjectType', 'subjectId', 'capabilities', 'label', 'passwordHash', 'createdBy', 'created', 'expiresAt', 'revokedAt', 'disabled', 'lastUsedAt', 'useCount'],
+			['id', 'uuid', 'anchor', 'subjectType', 'subjectId', 'capabilities', 'label', 'passwordHash', 'createdBy', 'created', 'expiresAt', 'revokedAt', 'disabled', 'lastUsedAt', 'useCount', 'journey'],
 			array_keys($link->getFieldTypes())
 		);
 	}//end testPasswordPrincipalAndExposure()
