@@ -2,6 +2,7 @@
 
 Order: 1 thematiq, 2 launchpad, 3 dossiq, 4 pipelinq, 5 portaliq, then shillinq, learniq, planninq, then the rest.
 The FOCUS app is the first one in this order that is not marked DONE below.
+FOCUS MODE (Ruben, 27 Nov 2026 06:10 CET): only launchpad and thematiq until both are DONE. The cloud runs a focus set (builders, live lanes and a DONE lane per app, perf lanes, the OpenRegister merge/fix/review lanes); every other app waits. A lane with spare capacity helps launchpad or thematiq, or fixes the OpenRegister bug that blocks one of them; nothing else.
 SPARE CAPACITY ORDER (Ruben, 25 Nov 2026 15:05 CET; overrides the order above for SPARE CAPACITY and NEVER IDLE step 2 only): a lane whose own app has nothing startable helps, in this order: launchpad and thematiq (until DONE), then integriq, pipelinq, hermiq (furthest behind: ~54 h, ~31 h, ~27 h at one builder each), then dossiq, portaliq, shillinq, learniq, planninq, then the rest. Lanes are not moved; only where spare capacity goes changes.
 
 An app is DONE only when all five hold, each with evidence in its PR or here:
