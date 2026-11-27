@@ -411,4 +411,73 @@ class MagicStatisticsHandlerGoldenTest extends TestCase {
 		);
 		$this->assertAllFindsBypassAccess();
 	}//end testChartsFilterAndBypassAccess()
+
+	/**
+	 * Inside rememberPairCounts() each pair is counted once, however many statistics calls walk it.
+	 *
+	 * @return void
+	 */
+	public function testAPairIsCountedOnceInsideTheWindow(): void {
+		$handler = $this->handler();
+
+		$answers = $handler->rememberPairCounts(
+			work: static fn (): array => [
+				$handler->getStatistics(),
+				$handler->getStatistics(scope: new StatisticsScope(registerId: 1)),
+				$handler->getStatistics(scope: new StatisticsScope(registerId: 1, schemaId: 10)),
+			]
+		);
+
+		$this->assertSame(expected: 110 + 111 + 210 + 312, actual: $answers[0]['total']);
+		$this->assertSame(expected: 110 + 111, actual: $answers[1]['total']);
+		$this->assertSame(expected: 110, actual: $answers[2]['total']);
+		$this->assertSame(expected: ['1_10', '1_11', '2_10', '3_12'], actual: $this->countedPairs());
+	}//end testAPairIsCountedOnceInsideTheWindow()
+
+	/**
+	 * Outside the window nothing is kept: a later call counts again, so a count after a write is never stale.
+	 *
+	 * @return void
+	 */
+	public function testCountsDoNotOutliveTheWindow(): void {
+		$handler = $this->handler();
+
+		$handler->rememberPairCounts(work: static fn (): array => $handler->getStatistics(scope: new StatisticsScope(registerId: 2)));
+		$handler->getStatistics(scope: new StatisticsScope(registerId: 2));
+		$handler->getStatistics(scope: new StatisticsScope(registerId: 2));
+
+		$this->assertSame(expected: ['2_10', '2_10', '2_10'], actual: $this->countedPairs());
+	}//end testCountsDoNotOutliveTheWindow()
+
+	/**
+	 * A nested window shares the outer one, and the window closes even when the work throws.
+	 *
+	 * @return void
+	 */
+	public function testANestedWindowSharesTheOuterOneAndAThrowCloses(): void {
+		$handler = $this->handler();
+
+		$handler->rememberPairCounts(
+			work: static function () use ($handler): void {
+				$handler->getStatistics(scope: new StatisticsScope(registerId: 3));
+				$handler->rememberPairCounts(work: static fn (): array => $handler->getStatistics(scope: new StatisticsScope(registerId: 3)));
+				$handler->getStatistics(scope: new StatisticsScope(registerId: 3));
+			}
+		);
+		$this->assertSame(expected: ['3_12'], actual: $this->countedPairs());
+
+		try {
+			$handler->rememberPairCounts(
+				work: static function (): void {
+					throw new Exception('boom');
+				}
+			);
+			$this->fail(message: 'the work\'s exception must reach the caller.');
+		} catch (Exception $e) {
+			$this->assertSame(expected: 'boom', actual: $e->getMessage());
+		}
+
+		$handler->getStatistics(scope: new StatisticsScope(registerId: 3));
+		$this->assertSame(expected: ['3_12', '3_12'], actual: $this->countedPairs(), message: 'the window closed with the throw.');
+	}//end testANestedWindowSharesTheOuterOneAndAThrowCloses()
 }//end class

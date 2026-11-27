@@ -275,3 +275,36 @@ describe('ViewObject — keeping the form in step', () => {
 		schemaStore.schemaItem = null
 	})
 })
+
+describe('ViewObject — fields the reader may see but not change', () => {
+	it('locks a field the object lists as read-only for this reader, with a warning saying why', () => {
+		objectStore.objectItem = { '@self': { id: 'o-1', readOnlyProperties: ['name', 'free'] } }
+		const ctx = form()
+
+		expect(ctx.isReadOnlyForReader('name')).toBe(true)
+		expect(ctx.isPropertyEditable('name', 'Ada')).toBe(false)
+		expect(ctx.isPropertyEditable('free', 'x')).toBe(false)
+		expect(ctx.getEditabilityWarning('name', 'Ada')).toBe('Read only')
+	})
+
+	it('leaves every other field as its schema says', () => {
+		objectStore.objectItem = { '@self': { id: 'o-1', readOnlyProperties: ['name'] } }
+		const ctx = form()
+
+		expect(ctx.isPropertyEditable('email', 'a@b.nl')).toBe(true)
+		expect(ctx.getEditabilityWarning('email', 'a@b.nl')).toBeNull()
+		expect(ctx.isPropertyEditable('fixed', 'v1')).toBe(false)
+		expect(ctx.getEditabilityWarning('fixed', 'v1')).toContain('constant and must always be \'v1\'')
+	})
+
+	it('locks nothing when the object carries no list, an empty one, or something that is not a list', () => {
+		for (const item of [null, {}, { '@self': {} }, { '@self': { readOnlyProperties: [] } }, { '@self': { readOnlyProperties: 'name' } }]) {
+			objectStore.objectItem = item
+			const ctx = form()
+
+			expect(ctx.isReadOnlyForReader('name')).toBe(false)
+			expect(ctx.isPropertyEditable('name', 'Ada')).toBe(true)
+			expect(ctx.getEditabilityWarning('name', 'Ada')).toBeNull()
+		}
+	})
+})

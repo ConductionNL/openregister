@@ -2973,11 +2973,29 @@ export default {
 		},
 
 		/**
-		 * @param {string} key
-		 * @param {unknown} value
-		 * @spec exclude display helper checking property editability (const/immutable)
+		 * Whether the object's own `@self.readOnlyProperties` lists this property:
+		 * the reader may see it but its authorization rule does not let them
+		 * change it. A hint the form follows; the server still refuses the write.
+		 * A new record has no stored `@self`, so nothing is read-only there.
+		 *
+		 * @param {string} key The property
+		 * @return {boolean} True when the reader may not change it
+		 * @spec openspec/changes/modelling-field-access-editor/specs/row-field-level-security/spec.md#requirement-the-client-knows-which-fields-it-may-not-change
+		 */
+		isReadOnlyForReader(key) {
+			const readOnly = objectStore?.objectItem?.['@self']?.readOnlyProperties
+			return Array.isArray(readOnly) && readOnly.includes(key)
+		},
+
+		/**
+		 * @param {string} key The property
+		 * @param {unknown} value Its current value, for the immutable check
+		 * @spec exclude display helper checking property editability (read-only for the reader, const, immutable)
 		 */
 		isPropertyEditable(key, value) {
+			// The server says this reader may see the field but not change it.
+			if (this.isReadOnlyForReader(key)) return false
+
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
 			// If no schema property, allow editing (it's a free-form property)
@@ -3002,11 +3020,15 @@ export default {
 		},
 
 		/**
-		 * @param {string} key
-		 * @param {unknown} value
+		 * @param {string} key The property
+		 * @param {unknown} value Its current value, named in the immutable warning
 		 * @spec exclude display helper building editability warning text
 		 */
 		getEditabilityWarning(key, value) {
+			if (this.isReadOnlyForReader(key)) {
+				return t('openregister', 'Read only')
+			}
+
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
 			if (schemaProperty?.const !== undefined) {

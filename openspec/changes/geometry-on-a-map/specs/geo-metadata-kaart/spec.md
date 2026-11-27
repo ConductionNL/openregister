@@ -22,4 +22,3 @@ The records list of a schema with a geometry property SHALL offer a map presenta
 - **GIVEN** a schema with a geometry property and records in two neighbourhoods
 - **WHEN** a user opens the map on /tables and draws a polygon around one neighbourhood
 - **THEN** the list shows only the records whose geometry lies inside the polygon
-- @e2e exclude {specified only; task 2 adds the test}

@@ -37,6 +37,7 @@ use OCP\Search\SearchResultEntry;
 use OCP\Teams\TeamResource;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
@@ -103,6 +104,13 @@ final class ObjectTeamResourceProviderTest extends TestCase {
 	private ObjectTeamResourceProvider $provider;
 
 	/**
+	 * The service ids the container handed out, in order.
+	 *
+	 * @var list<string>
+	 */
+	private array $resolved = [];
+
+	/**
 	 * Three schemas: 3 and 9 opted in under different properties, 5 declaring nothing.
 	 *
 	 * @return void
@@ -161,9 +169,7 @@ final class ObjectTeamResourceProviderTest extends TestCase {
 		$l10n->method('t')->willReturnArgument(0);
 
 		$this->provider = new ObjectTeamResourceProvider(
-			objects: $this->objects,
-			catalog: $catalog,
-			formatter: $formatter,
+			container: $this->services(objects: $this->objects, catalog: $catalog, formatter: $formatter),
 			l10n: $l10n,
 			logger: $this->logger
 		);
@@ -455,9 +461,7 @@ final class ObjectTeamResourceProviderTest extends TestCase {
 		$this->logger->expects($this->once())->method('error');
 
 		$provider = new ObjectTeamResourceProvider(
-			objects: $this->objects,
-			catalog: $catalog,
-			formatter: $this->createMock(ObjectSearchResultFormatterInterface::class),
+			container: $this->services(objects: $this->objects, catalog: $catalog, formatter: $this->createMock(ObjectSearchResultFormatterInterface::class)),
 			l10n: $this->createMock(IL10N::class),
 			logger: $this->logger
 		);
@@ -480,11 +484,82 @@ final class ObjectTeamResourceProviderTest extends TestCase {
 		$formatter->method('format')->willReturn(new SearchResultEntry('', 'Zaak', '', '/x'));
 
 		return new ObjectTeamResourceProvider(
-			objects: $objects,
-			catalog: $catalog,
-			formatter: $formatter,
+			container: $this->services(objects: $objects, catalog: $catalog, formatter: $formatter),
 			l10n: $this->createMock(IL10N::class),
 			logger: $this->logger
 		);
 	}//end providerOver()
+	/**
+	 * A container that hands out the given object services, counting each resolution.
+	 *
+	 * @param ObjectOperationsInterface            $objects   The object operations.
+	 * @param SchemaCatalogInterface               $catalog   The schema catalogue.
+	 * @param ObjectSearchResultFormatterInterface $formatter The result formatter.
+	 *
+	 * @return ContainerInterface The container.
+	 */
+	private function services(
+		ObjectOperationsInterface $objects,
+		SchemaCatalogInterface $catalog,
+		ObjectSearchResultFormatterInterface $formatter
+	): ContainerInterface {
+		$byId = [
+			ObjectOperationsInterface::class => $objects,
+			SchemaCatalogInterface::class => $catalog,
+			ObjectSearchResultFormatterInterface::class => $formatter,
+		];
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			function (string $id) use ($byId): object {
+				$this->resolved[] = $id;
+				return $byId[$id];
+			}
+		);
+
+		return $container;
+	}//end services()
+
+	/**
+	 * Building the provider and reading what the Teams capability reads resolves no object service.
+	 *
+	 * Nextcloud builds every team resource provider on every page render to read its id.
+	 *
+	 * @return void
+	 */
+	public function testBuildingTheProviderAndReadingItsIdResolvesNoObjectService(): void {
+		$this->resolved = [];
+
+		$provider = new ObjectTeamResourceProvider(
+			container: $this->services(
+				objects: $this->objects,
+				catalog: $this->createMock(SchemaCatalogInterface::class),
+				formatter: $this->createMock(ObjectSearchResultFormatterInterface::class)
+			),
+			l10n: $this->createMock(IL10N::class),
+			logger: $this->logger
+		);
+
+		$this->assertSame('openregister', $provider->getId());
+		$provider->getName();
+		$provider->getIconSvg();
+		$this->assertSame([], $this->resolved);
+	}//end testBuildingTheProviderAndReadingItsIdResolvesNoObjectService()
+
+	/**
+	 * Listing resolves each object service once, however many pages and lookups follow.
+	 *
+	 * @return void
+	 */
+	public function testListingResolvesEachObjectServiceOnce(): void {
+		$this->resolved = [];
+
+		$this->provider->getSharedWith(teamId: 'wijkteam');
+		$this->provider->getSharedWith(teamId: 'wijkteam');
+
+		$counts = array_count_values($this->resolved);
+		$this->assertSame(1, $counts[ObjectOperationsInterface::class]);
+		$this->assertSame(1, $counts[SchemaCatalogInterface::class]);
+		$this->assertSame(1, $counts[ObjectSearchResultFormatterInterface::class]);
+	}//end testListingResolvesEachObjectServiceOnce()
 }//end class

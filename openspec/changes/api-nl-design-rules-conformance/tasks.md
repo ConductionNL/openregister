@@ -36,7 +36,18 @@
 ## 7. Docs and end-to-end test
 
 - [x] 7.1 Document the report, the marker, the probe, the occ command and each declared deviation with its reason in `docs/features/api-generation.md`. Verify: `npm run build` in `docs/` succeeds and the page names ruleset 2.2.1.
-- [ ] 7.2 Add `tests/e2e/ci/nl-api-design-rules.spec.ts`: an anonymous read of the report and the marker, an administrator probing from the register list dialog, and a non-administrator refused on the probe. Verify: the spec runs green in the Playwright CI project.
+- [x] 7.2 Add `tests/e2e/ci/nl-api-design-rules.spec.ts`: an anonymous read of the report and the marker, an administrator probing from the register list dialog, and a non-administrator refused on the probe. Verify: the spec runs green in the Playwright CI project.
+  - Built: `tests/e2e/ci/nl-api-design-rules.spec.ts`, 5 tests, 1 file, tagged to seven scenarios. An anonymous integrator
+    reads every rule once with one of the five results, the counts adding up to the rules, the three response rules
+    `not-probed` and `/core/uri-version` a deviation naming `API-Version`; a register whose version is `1.0` fails
+    `/core/semver` on `info.version`; the marker carries `2.2.1`, `/core/http-methods` under pass and the deviation;
+    `e2e-other` is refused the probe with 403 and nothing is probed; an administrator switches the register list to the
+    table, chooses "Check Dutch API design rules", presses "Probe responses", and the dialog and a later read of the
+    report agree on the probed result and the probe time. 5 passed, three runs, sandbox Nextcloud 34 on PostgreSQL 16.
+  - The rule count is read from the report rather than written as 34: the catalogue holds 35 rules (its own test pins
+    35), so the spec's "34 entries" is out of date. The trailing-slash scenario stays a unit test: the generator writes
+    no such path.
+  - The action is in the table view's row menu only; the register cards' menu does not carry it.
 
 ## Acceptance
 

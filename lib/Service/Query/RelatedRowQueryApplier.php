@@ -24,6 +24,7 @@ namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
+use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -378,7 +379,12 @@ class RelatedRowQueryApplier {
 	 *
 	 * @return array<int, RelatedRowFilter> The filters.
 	 *
-	 * @throws InvalidArgumentException When a block is unusable, or there is no schema to read it against.
+	 * A block the caller wrote wrongly (an unknown property or field, an unknown
+	 * operator, a register that cannot be found) is the caller's mistake, so it is
+	 * refused as a {@see RelatedRowFilterNotSupportedException}, which the API
+	 * answers with HTTP 400 naming the part; any other failure stays what it is.
+	 *
+	 * @throws RelatedRowFilterNotSupportedException When a block is unusable, or there is no schema to read it against.
 	 *
 	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
@@ -390,17 +396,22 @@ class RelatedRowQueryApplier {
 		// Refuse rather than drop: without the queried schema the block cannot
 		// be read, and answering without it would return the unfiltered set.
 		if ($schema === null) {
-			throw new InvalidArgumentException(
+			throw new RelatedRowFilterNotSupportedException(
 				ReferenceFilterParser::KEY . ' filters need the schema being queried; narrow the query to one schema.'
 			);
 		}
 
-		$parser  = new ReferenceFilterParser(resolveSchema: fn (string $name): ?Schema => $this->findSchema(name: $name, register: $register));
-		$filters = $parser->parse(query: $query, schema: $schema);
-		return array_map(
-			fn (RelatedRowFilter $filter): RelatedRowFilter => $this->shapedForProperty(schema: $schema, filter: $filter),
-			$filters
-		);
+		$parser = new ReferenceFilterParser(resolveSchema: fn (string $name): ?Schema => $this->findSchema(name: $name, register: $register));
+		try {
+			return array_map(
+				fn (RelatedRowFilter $filter): RelatedRowFilter => $this->shapedForProperty(schema: $schema, filter: $filter),
+				$parser->parse(query: $query, schema: $schema)
+			);
+		} catch (RelatedRowFilterNotSupportedException $e) {
+			throw $e;
+		} catch (InvalidArgumentException $e) {
+			throw new RelatedRowFilterNotSupportedException($e->getMessage(), 0, $e);
+		}
 	}//end referenceFiltersIn()
 
 	/**

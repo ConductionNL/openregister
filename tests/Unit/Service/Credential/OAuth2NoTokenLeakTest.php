@@ -69,6 +69,8 @@ class OAuth2NoTokenLeakTest extends TestCase {
 		'instanceBaseUrl',
 		'kind',
 		'lastError',
+		// When an outside credential's secret was last read from its vault: a time, never the value.
+		'lastReadAt',
 		'lastRefreshedAt',
 		'name',
 		'organisation',

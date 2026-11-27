@@ -9,7 +9,8 @@
 
 - [ ] 2.1 Section "Who may see and change this field" in `EditSchemaProperty.vue` using the component, writing the `authorization` block. Verify: `tests/e2e/field-access-editor.spec.ts` hides a field from a group and a user of that group no longer sees it in the object detail.
 - [x] 2.2 `@self.readOnlyProperties` in the object render for the current user, and a typed exception in `SaveObject` (today a plain `Exception` at `lib/Service/Object/SaveObject.php:3222`) that the controller answers as 403 naming the properties. Verify: render unit test, and API test that a PATCH of a listed property answers 403 naming it.
-- [ ] 2.3 Object form disables inputs listed in `@self.readOnlyProperties`. Verify: same e2e locks a field for a group and sees it disabled.
+- [x] 2.3 Object form disables inputs listed in `@self.readOnlyProperties`. Verify: same e2e locks a field for a group and sees it disabled.
+  - built (26 Nov, build/modelling-field-access-editor): `ViewObject.vue`'s `isReadOnlyForReader()` reads the open object's `@self.readOnlyProperties`; `isPropertyEditable()` returns false for a listed property, so its row is marked non-editable with the lock icon, a click does not open an input, and the warning says it is read only. A new record has no `@self`, so nothing is locked there; the server still refuses the write (2.2). Unit test: `src/modals/object/ViewObject.propertyHelpers.spec.js` (listed field locked with the warning, other fields as their schema says, no list / empty / non-list locks nothing). Open: the e2e, which shares 2.1's spec and waits on 2.1's editor in nextcloud-vue.
 
 ## 3. Consumers and docs
 

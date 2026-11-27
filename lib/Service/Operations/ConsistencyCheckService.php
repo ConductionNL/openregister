@@ -71,18 +71,25 @@ class ConsistencyCheckService implements ConsistencyCheckServiceInterface {
 	 *
 	 * @param IDBConnection                            $db          The connection every probe reads through.
 	 * @param array<string, array<string, mixed>>|null $probes      The probes, or null for the shipped set.
-	 * @param IndexReconciliationProbes|null           $indexProbes The search index probes, added to the shipped set.
+	 * @param IndexReconciliationProbes|null           $indexProbes  The search index probes, added to the shipped set.
+	 * @param PublishedDigestProbes|null               $digestProbes The published file digest probe, added to the shipped set.
 	 *
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		?array $probes = null,
 		?IndexReconciliationProbes $indexProbes = null,
+		?PublishedDigestProbes $digestProbes = null,
 	) {
 		$this->probes = ($probes ?? $this->shippedProbes());
 		if ($probes === null && $indexProbes !== null) {
 			$this->probes = array_merge($this->probes, $indexProbes->probes());
+		}
+
+		if ($probes === null && $digestProbes !== null) {
+			$this->probes = array_merge($this->probes, $digestProbes->probes());
 		}
 
 	}//end __construct()

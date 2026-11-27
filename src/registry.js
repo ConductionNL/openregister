@@ -87,6 +87,7 @@ export default {
 	AuditTrailIndex: page(() => import('./views/logs/AuditTrailIndex.vue')),
 	SearchTrailIndex: page(() => import('./views/logs/SearchTrailIndex.vue')),
 	WebhooksIndex: page(() => import('./views/webhooks/WebhooksIndex.vue')),
+	ConsumersIndex: page(() => import('./views/consumers/ConsumersIndex.vue')),
 	FlowDetailSidebar: page(() => import('./views/flows/FlowDetailSidebar.vue')),
 	WebhookLogsIndex: page(() => import('./views/webhooks/WebhookLogsIndex.vue')),
 	AgentsIndex: page(() => import('./views/agents/AgentsIndex.vue')),
