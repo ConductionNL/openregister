@@ -5588,3 +5588,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T16:51:43Z precheck-20261127T164035-8d1b6414 CONFLICT-DEV #10156 3953b849
 2026-11-27T16:52:02Z precheck-20261127T164035-8d1b6414 CONFLICT-DEV #11317 ade57c3e
 2026-11-27T16:52:24Z precheck-20261127T164035-8d1b6414 CONFLICT-DEV #11148 199b32a5
+2026-11-27T16:57:09Z precheck-20261127T164035-8d1b6414 RED tree 807a88c13a prs 1 front=red: Tests: 68254, Assertions: 243238, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Not; first failures: FAIL src/views/object/ObjectsList.spec.js
