@@ -4493,6 +4493,7 @@ Service/Import/BaseSet.php,33,Service,Configuration,Configuration/Service/Import
 Service/Import/BaseSetReaderInterface.php,8,Service,Configuration,Configuration/Service/Import/BaseSetReaderInterface.php,0,,Configuration
 Service/Import/BaserowBaseReader.php,160,Service,Configuration,Configuration/Service/Import/BaserowBaseReader.php,0,,Configuration
 Service/Import/BaserowCells.php,41,Service,Configuration,Configuration/Service/Import/BaserowCells.php,0,,Configuration
+Service/Import/BundleObjectRouting.php,58,Service,Configuration,Configuration/Service/Import/BundleObjectRouting.php,0,,Configuration
 Service/Import/BaseSetReader.php,29,Service,Configuration,Configuration/Service/Import/BaseSetReader.php,0,,Configuration
 Service/Import/BaseSchemaProposer.php,134,Service,Configuration,Configuration/Service/Import/BaseSchemaProposer.php,0,,Configuration
 Service/Import/InstanceAppConfigReader.php,47,Service,Configuration,Configuration/Service/Import/InstanceAppConfigReader.php,0,,Configuration

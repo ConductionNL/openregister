@@ -1973,6 +1973,7 @@ components:
       - ".*/lib/Service/Import/BaseTable[.]php"
       - ".*/lib/Service/Import/BaserowBaseReader[.]php"
       - ".*/lib/Service/Import/BaserowCells[.]php"
+      - ".*/lib/Service/Import/BundleObjectRouting[.]php"
       - ".*/lib/Service/Import/ConflictPolicy[.]php"
       - ".*/lib/Service/Import/ConflictPolicyNames[.]php"
       - ".*/lib/Service/Import/DryRunBatch[.]php"

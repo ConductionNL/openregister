@@ -272,6 +272,121 @@ class ImportServiceRegisterAutoCreateTest extends TestCase {
 	}//end testBundleAutoCreatesRegisterAndSchemaAndImportsObjects()
 
 	/**
+	 * A register exported with two schemas and their records comes back as one
+	 * unit: the register links both schemas by their ids here, each record is
+	 * saved into the schema its `@self.schema` names, and a record naming no
+	 * schema of the bundle is reported, not saved.
+	 *
+	 * @spec openspec/changes/capability-rows-closing-round/specs/data-import-export/spec.md#requirement-a-register-groups-record-types-and-moves-as-one-unit
+	 */
+	public function testATwoSchemaBundleSavesEachRecordIntoItsOwnSchema(): void {
+		$this->registerMapper->method('find')
+			->willThrowException(new DoesNotExistException('register not found'));
+		$registerData = null;
+		$this->registerMapper->expects($this->once())
+			->method('createFromArray')
+			->willReturnCallback(
+				function (array $data) use (&$registerData) {
+					$registerData = $data;
+					return $this->createRegisterEntity(id: 7, slug: 'meldingen', version: '1.0.0');
+				}
+			);
+
+		$this->schemaMapper->method('find')
+			->willThrowException(new DoesNotExistException('schema not found'));
+		$ids = ['melding' => 21, 'melder' => 22];
+		$this->schemaMapper->expects($this->exactly(2))
+			->method('createFromArray')
+			->willReturnCallback(
+				fn (array $data) => $this->createSchemaEntity(
+					id: $ids[$data['slug']],
+					slug: $data['slug'],
+					properties: $data['properties'],
+					version: '1.0.0'
+				)
+			);
+		$this->schemaMapper->method('update')->willReturnArgument(0);
+
+		$saved = [];
+		$this->objectService->expects($this->exactly(3))
+			->method('saveObject')
+			->willReturnCallback(
+				static function (array $object, $options) use (&$saved) {
+					$saved[] = [$object['naam'], $options->target->schema->getSlug()];
+					$entity = new ObjectEntity();
+					$entity->setUuid('uuid-' . $object['naam']);
+					return $entity;
+				}
+			);
+
+		$schema = static fn (string $slug): array => [
+			'slug' => $slug,
+			'title' => ucfirst($slug),
+			'version' => '1.0.0',
+			'properties' => ['naam' => ['type' => 'string']],
+		];
+		$record = static fn (string $naam, string $slug): array => [
+			'@self' => ['register' => 'meldingen', 'schema' => $slug],
+			'naam' => $naam,
+		];
+		$path = $this->writeTempJsonFile(
+			[
+				'openapi' => '3.0.0',
+				'info' => ['title' => 'Meldingen', 'version' => '1.0.0'],
+				'components' => [
+					'registers' => [
+						'meldingen' => ['slug' => 'meldingen', 'title' => 'Meldingen', 'version' => '1.0.0', 'schemas' => ['melding', 'melder']],
+					],
+					'schemas' => ['melding' => $schema('melding'), 'melder' => $schema('melder')],
+					'objects' => [
+						$record('m-1', 'melding'),
+						$record('p-1', 'melder'),
+						$record('m-2', 'melding'),
+						$record('x-1', 'elsewhere'),
+					],
+				],
+			]
+		);
+
+		$result = $this->service->importFromJson(
+			request: new ImportRequest(filePath: $path, scope: new ImportScope(registerSlug: 'meldingen'))
+		);
+
+		$this->assertSame([21, 22], $registerData['schemas']);
+		$this->assertSame([['m-1', 'melding'], ['m-2', 'melding'], ['p-1', 'melder']], $saved);
+		$this->assertSame(['uuid-m-1', 'uuid-m-2'], $result['melding']['created']);
+		$this->assertSame('melding', $result['melding']['schema']['slug']);
+		$this->assertSame(['uuid-p-1'], $result['melder']['created']);
+		$this->assertSame('melder', $result['melder']['schema']['slug']);
+		$this->assertSame(1, $result['unassigned']['found']);
+		$this->assertStringContainsString('"elsewhere"', $result['unassigned']['errors'][0]['error']);
+		$this->assertArrayNotHasKey('JSON', $result);
+		$this->assertArrayHasKey('importJobId', $result);
+	}//end testATwoSchemaBundleSavesEachRecordIntoItsOwnSchema()
+
+	/**
+	 * A bundle without any schema still cannot be imported without one named.
+	 */
+	public function testABundleWithoutSchemasStillAsksForOne(): void {
+		$this->registerMapper->method('find')
+			->willThrowException(new DoesNotExistException('register not found'));
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$path = $this->writeTempJsonFile(
+			[
+				'components' => [
+					'registers' => ['meldingen' => ['slug' => 'meldingen', 'title' => 'Meldingen', 'version' => '1.0.0']],
+					'objects' => [['naam' => 'm-1']],
+				],
+			]
+		);
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('found 0 in the bundle');
+		$this->service->importFromJson(request: new ImportRequest(filePath: $path, scope: new ImportScope(registerSlug: 'meldingen')));
+	}//end testABundleWithoutSchemasStillAsksForOne()
+
+	/**
 	 * REQ-IMP-AC-03: re-importing a bundle whose register already exists
 	 * must not create a duplicate register (or schema) — only the very
 	 * first import's createFromArray() calls happen.
