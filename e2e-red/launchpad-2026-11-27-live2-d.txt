@@ -1,0 +1,12 @@
+# launchpad e2e, live-launchpad-2 fourth run 27 Nov 18:45Z-, NC 34.0.6 tarball, MariaDB, Redis, APCu, php -S :8097 (nginx+php-fpm :8098 for speed), OR main
+# shard 5/8 on development 51c18528 (first run after #2279 draft Save): 242 passed, 51 failed, 24 did not run (38 min globalTimeout)
+header-widget-form x13                  PR #2378 merged (submit saves the draft) 15/15
+icon-only-app-tiles:128                 PR #2379 merged (tile-colour radio + tile-editor-save, strict mode; saves draft) 2/2
+iframe-embed-widget:324 (+toggles)      PR #2380 merged 12 passed 1 skipped
+image-widget:131                        PR #2381 merged 7/7
+keyboard-widget-repositioning:85        PR #2382 merged 3/3
+label-widget:110                        PR #2383 merged 3/3
+link-button-widget-form x7              PR #2384 merged (Add and Edit both write the draft) 14/14
+links-widget-config x13, -editor x7     PR #2385 merged (support/linksWidget submit saves the draft) 43/43
+launchpad-adopt-or-abstractions-keys:43 PR #2386 merged APP DOC: KIOSK_SCREEN_LINKS_ALLOWED missing from the AdminSettingKey docblock (#2244)
+integrations-page x4                    SANDBOX: integriq not installed
