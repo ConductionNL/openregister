@@ -166,6 +166,21 @@ class NotesControllerTest extends TestCase {
 		$this->assertSame(400, $result->getStatus());
 	}
 
+	public function testANoteOnARecordClosedToNewEntriesIs409NamingTheClosure(): void {
+		$object = $this->createRealObjectEntity();
+		$this->objectService->method('getObject')->willReturn($object);
+		$this->request->method('getParams')->willReturn(['message' => 'Nieuwe brief']);
+		$this->noteService->method('createNote')->willThrowException(
+			new \OCA\OpenRegister\Exception\EntriesClosedException(closure: ['by' => 'behandelaar', 'at' => '2026-11-25T10:00:00+00:00', 'reason' => 'beroep'])
+		);
+		$this->timeline->expects($this->never())->method('projectNote');
+
+		$result = $this->controller->create('reg', 'schema', 'obj-id');
+
+		$this->assertSame(409, $result->getStatus());
+		$this->assertSame(['closed', 'behandelaar', '2026-11-25T10:00:00+00:00', 'beroep'], [$result->getData()['state'], $result->getData()['by'], $result->getData()['at'], $result->getData()['reason']]);
+	}
+
 	public function testDestroyReturnsSuccess(): void {
 		$object = $this->createRealObjectEntity();
 		$this->objectService->method('getObject')->willReturn($object);
