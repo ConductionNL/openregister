@@ -1,0 +1,8 @@
+# thematiq full live e2e, 27 Nov 2026 08:30-10:35Z, live-thematiq-1
+# Stack: NC 34.0.6 tarball, sqlite, php -S (8 workers, pcov off) + router; thematiq development 19b353f; OpenRegister main (enabled from run 2).
+# Run 1: the 25 Nov red list (69 tests still matching by title): 68 passed, 1 failed = prometheus health, only because OpenRegister was not enabled yet (environment).
+# Run 2: renamed/moved 25 Nov reds (apps-menu-ordered-list, theme-converter-paste, token-set-apply-toggle-behavior, token-set-dropdown) + prometheus-metrics whole, OR enabled: 30 passed, 1 skipped (apps-menu above-the-fold: needs more apps installed, environment skip).
+# Run 3: rest of the suite (577 listed minus run-1 titles): 499 passed, 3 failed, 4 skipped, 2 did not run (1.5 h).
+#   - performance.js ADR-124 'Theming settings is usable within its budget' and 'Files with the house style ...': php -S/sqlite sandbox, not representative; reference-stack numbers are in PERF-HANDOFF (core floor, levers listed there).
+#   - workflows/token-apply-persistence 'after a FRESH RELOAD ...': artifact of my title filter (excluded the serial block's first test); whole file rerun: 4/4 passed.
+# Result: no functional thematiq e2e red on development 19b353f. The 25 Nov red list is cleared.
