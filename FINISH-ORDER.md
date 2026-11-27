@@ -10,7 +10,7 @@ An app is DONE only when all five hold, each with evidence in its PR or here:
 2. Every change is verified on a live Nextcloud: Playwright e2e and Newman green for its scenarios.
 3. Every change is archived (openspec/changes holds only archive/).
 4. Every screen matches its drawn board on identity.conduction.nl/screens (pixel pass).
-5. The app is inside the speed budget (ADR-124: API <= 100 ms; page usable <= 300 ms warm as a TOTAL full page load, the Nextcloud floor included; Ruben 27 Nov), gate 124 green.
+5. The app is inside the speed rule (Ruben 27 Nov 09:10 CET): each page adds <= 150 ms to the Nextcloud floor (bare Nextcloud Dashboard, same run, same stack), first useful content <= 300 ms, API <= 100 ms; gate 124 green.
 
 Cloud lanes: the FOCUS app's builder does steps 1 and 3 and writes the tests for 2; it never marks an app DONE. Other builders keep working their own app, but when their app has nothing buildable left they help, one leased change at a time, the first of dossiq, pipelinq, portaliq, shillinq, learniq, planninq, then the other fleet apps, that still has an openspec change nobody started (Ruben, 24 Nov 2026 18:25 CET; the exact steps are SPARE CAPACITY in BUILDER-LANE.md).
 Local lanes (when the laptop runs): steps 2, 4 and 5 for the FOCUS app, then mark it DONE here with the date and the evidence links.
@@ -19,6 +19,7 @@ DONE:
 (none yet)
 
 DECISIONS (Ruben, for builders and helpers; apply them, do not ask again):
+- 27 Nov 2026 09:10 CET (Ruben): SPEED RULE (Ruben, 27 Nov 2026 09:10 CET, replaces the 300 ms-total line of 06:30): (1) an app page may add at most 150 ms to the Nextcloud floor for a full page load: app page total <= floor + 150 ms, where the floor is the bare Nextcloud Dashboard (no Conduction app enabled) measured in the same run on the same sandbox reference stack, warm; (2) the first useful content (the page's main content visible) appears within 300 ms; (3) every API request <= 100 ms. Report per page: floor, total, total minus floor, first useful content.
 - 27 Nov 2026 09:00 CET (Ruben): launchpad people widgets (People, New colleagues, Birthdays): baseline revision v9 grants people-widget.get-users to all users AND the endpoint (also GET /api/people/new) honours Nextcloud's user-enumeration settings (only same-group users when restricted to own groups, nothing when enumeration is off).
 - 27 Nov 2026 09:00 CET (Ruben): keep Nextcloud's default apps (recommendations, photos, weather_status) on deployments. Instead every dashboard widget, in launchpad and in nextcloud-vue's widget hosts (and launchpad's host for Nextcloud dashboard widgets), renders its frame with a loading state at once and loads its content asynchronously, so no widget holds up the first render of the dashboard; a slow or failing widget shows its own loading or error state. Measure with 'first useful content visible' next to the total.
 - 27 Nov 2026 08:15 CET (Ruben): Nextcloud floor: cut what loads on every page from our side (OpenRegister global script, unneeded default apps in our deployments, caching/preload, our CSS), no upstream Nextcloud PRs and no lighter launchpad page template for now. Every speed measurement also reports 'first useful content visible' next to the total; the 300 ms budget stays on the total.
