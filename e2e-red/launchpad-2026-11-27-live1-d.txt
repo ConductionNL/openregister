@@ -20,3 +20,11 @@ dashboard-view-analytics.spec.ts:1254        PR #2359 merged (same #fragment got
 # NOTE for every lane: since the admin page moved to /settings/admin/launchpad#<tab>, a second page.goto() to the same address is a
 #   fragment-only navigation (no reload, no new reads). Specs that 're-open' the admin page to re-read state must reload or leave first.
 app-link-tile.spec.ts:74                 PR #2362 (help-launchpad-3): spec Saves before reopening + APP FIX DraftSaveService (app-mode tile saved as widget, not launcher tile); 6/6 live, awaiting diff-check + merge
+# shard 8/8 on development 2bebecb8 (running, 19:35Z): many DRAFT reds (spec waits for POST /api/dashboard/{id}/widgets or PUT /api/widgets/{id};
+#   since #2279 both land only on the edit bar's Save -> use saveEditDraft / addAndSaveDraft from support/dashboardSwitcher.ts):
+text-display-widget*.spec.ts (4 files, ~30 tests)  live-launchpad-1 TAKING: support/textWidget.ts submitAdd/submitEdit onto Save (branch cloud/e2e-launchpad-text-widget-draft-save)
+tile-quick-search-widget.spec.ts:952,1018,1054,1624  DRAFT (free)
+video-widget.spec.ts:227..449 (8), video-widget-files.spec.ts:212  DRAFT (free)
+tiles-import-discovery.spec.ts:448, tiles-launch-target.spec.ts:350  DRAFT (tile lanes)
+tiles-form-board-sync.spec.ts:239 ('Tile colour comes before Icon'), tiles-icon-only-app-tiles.spec.ts:415, tiles-rendering.spec.ts:472,
+  tiles-rendering-defects.spec.ts:145   tile form / app-link-tile lease holder
