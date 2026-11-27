@@ -7,6 +7,9 @@ You are the DONE lane for APP (named in your routine prompt; repo ConductionNL/A
 ## Lease
 `source ~/q/bin/state.sh; lease_acquire done-APP 120` (retry rule as in HELPER-LANE.md; exit 4 = push access missing). Renew after every step; release at the end. Per fix: `lease_acquire done-APP-<topic> 240`, branch `cloud/done-APP-<topic>`.
 
+## Review findings first
+For APP=launchpad: REVIEW-LAUNCHPAD.md (Ruben's own review). For any app with a REVIEW-<APP>.md on this branch: work its open items before the five checks; they block DONE.
+
 ## The five checks, in this order
 1. Open changes: list openspec/changes (not archive/). For each, every task must be ticked with code, tests and live evidence. Build what is missing (follow BUILDER-LANE How to build), or, when a builder or live lane holds its lease, help it on a different task. Archive each change when complete (spec synced).
 2. Live e2e and Newman: on your own sandbox (LIVE-LANE section 1, PostgreSQL or MariaDB, never SQLite: OpenRegister supports MariaDB/PostgreSQL only), run APP's FULL Playwright suite and its Newman collection. Fix every red: the spec to the board, or the app to the spec, never the board to the test (except where a DECISIONS line says otherwise, e.g. launchpad's Image form keeps the Fit select and preview). A red caused by OpenRegister: fix it in OpenRegister as a PR for the integrator (OR-BUILD-LANE.md rules) and name it in COORDINATOR-QUEUE.md. Record the final counts.
