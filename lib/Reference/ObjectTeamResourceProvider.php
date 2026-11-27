@@ -43,6 +43,10 @@ use Psr\Log\LoggerInterface;
  * Lists, per team, the objects of opted-in schemas that the team owns.
  *
  * @spec openspec/changes/platform-team-resource-provider/specs/platform-team-resources/spec.md#requirement-a-teams-page-lists-the-objects-that-team-owns-req-ptr-001
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The 13th type is the container that defers the
+ *     object services to first use (Nextcloud builds every team resource provider on each page
+ *     render); each other type is the provider contract or a value it returns.
  */
 final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 
