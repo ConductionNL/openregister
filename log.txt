@@ -5482,3 +5482,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T11:47:05Z precheck-20261127T093644-0f5ab767 GREEN tree 931ec06b2b on dev c2f01e11e5 prs 1 front=skip: Tests: 67962, Assertions: 242127, Errors: 5, Warnings: 2, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
 2026-11-27T11:51:33Z integrator-20261127T115023-b15bb467 NORESULT tree b23592575c: deps failed
 2026-11-27T11:55:27Z session-20261127T100828-1cd2c27a done-launchpad merged launchpad#2224 (pixel: text+people cards on the card inset, nc-vue ^2.235.0 people rows, seed showSearch false): LpVandaag/LpIntranet non-font flags 51->44 each; e2e people*/demo-seed/text 145 green after 1 spec-to-board fix
+2026-11-27T12:00:20Z precheck-20261127T093644-0f5ab767 GREEN tree c696798e83 on dev c2f01e11e5 prs 1 front=ok: Tests: 67949, Assertions: 241957, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
