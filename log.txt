@@ -5397,3 +5397,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T09:00:41Z integrator-20261127T080455-44feeeb6 MERGED-TREE 1ccb77eb8b: 4 PRs, main now 0745a707cd = tested tree
 2026-11-27T09:05:10Z integrator-20261127T080455-44feeeb6 RED tree 24f8059d4f prs 4 front=red: Tests: 67858, Assertions: 241495, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Not; first failures: FAIL src/services/initial-data.golden.spec.js
 2026-11-27T09:13:37Z session-20261127T065653-a70e3fa0 done-thematiq run b: merged thematiq #2092 #2094 #2106; pixel 0/28 flag-free at the end (r6, summarize count; 6/28 at r3 before other merges), report pixel/thematiq-2026-11-27-b.md; NOT DONE (pixel, speed floor)
+2026-11-27T09:14:31Z integrator-20261127T080455-44feeeb6 GREEN tree 31a2782da1 on dev 0745a707cd prs 3 front=skip: Tests: 67723, Assertions: 240908, Errors: 5, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
