@@ -4366,6 +4366,7 @@ BackgroundJob/SharerAccessSweepJob.php,,BackgroundJob,,,,,Compliance
 Listener/SharerViewsEndWithUserListener.php,,Listener,,,,,Processes
 Listener/ServiceAccountLoginListener.php,,Listener,,,,,Core
 Listener/PlatformShareRoutingListener.php,,Listener,,,,,Core
+Listener/ObjectFolderReshareGuard.php,,Listener,,,,,Core
 Repair/KeyAuditHashChain.php,,Repair,,,,,Platform
 Service/AuditChainKey.php,,Service,,,,,Compliance
 Db/HydrationKey.php,,Db,,,,,Kernel
@@ -5185,3 +5186,4 @@ Service/Operations/ReindexSelectionService.php,,Service,,,,,Core
 Service/Operations/ReindexSelectionServiceInterface.php,,Service,,,,,Core
 BackgroundJob/ReindexSelectionJob.php,,BackgroundJob,,,,,Core
 Controller/OperationsReindexController.php,,Controller,,,,,Core
+Repair/PrepareAuditSealing.php,,Repair,,,,,Compliance
