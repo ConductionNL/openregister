@@ -16,7 +16,7 @@ field, and the transition's audit entry SHALL list them.
 - **GIVEN** a `case` whose graph declares a form with required `result` on the move to the terminal status
 - **WHEN** the handler applies that move with `result: 'granted'`
 - **THEN** the case's status and result change in one save and one audit entry lists both
-- @e2e exclude {proposal only; task 3.2 adds tests/e2e/api-direct/lifecycle-graph-side-moves.spec.ts when the engine ships}
+- @e2e exclude {API-only; covered by tests/integration/openregister-lifecycle-side-moves.postman_collection.json}
 
 #### Scenario: a required form value missing is refused
 
@@ -37,7 +37,7 @@ move's field is set, and SHALL offer the reversing side move instead.
 - **GIVEN** a case at status `In behandeling` with side moves `suspend` (sets `suspended` true) and `resume` (sets it false)
 - **WHEN** the handler applies `suspend` and lists available actions
 - **THEN** the list holds `resume` and no `move-to` action
-- @e2e exclude {proposal only; task 3.2 adds tests/e2e/api-direct/lifecycle-graph-side-moves.spec.ts when the engine ships}
+- @e2e exclude {API-only; covered by tests/integration/openregister-lifecycle-side-moves.postman_collection.json}
 
 ### Requirement: A declared reopen is the only move out of a terminal state
 
@@ -53,7 +53,7 @@ before.
 - **GIVEN** a closed case whose graph declares `reopen` to the first status and a user with `manage`
 - **WHEN** the user applies `reopen`
 - **THEN** the status becomes the first status and the audit entry is of kind reopen
-- @e2e exclude {proposal only; task 3.2 adds tests/e2e/api-direct/lifecycle-graph-side-moves.spec.ts when the engine ships}
+- @e2e exclude {API-only; covered by tests/integration/openregister-lifecycle-side-moves.postman_collection.json}
 
 #### Scenario: a handler without manage is not offered reopen
 

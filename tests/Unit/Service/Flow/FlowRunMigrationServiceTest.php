@@ -43,6 +43,10 @@ use OCA\OpenRegister\Kernel\Contracts\TimerChange;
 use OCA\OpenRegister\Service\Flow\FlowRunMigrationTarget;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowStream;
+use OCA\OpenRegister\Db\FlowStreamMapperInterface;
+use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Db\FlowTimerMapper;
 use OCA\OpenRegister\Db\FlowVersion;
@@ -214,6 +218,107 @@ final class FlowRunMigrationServiceTest extends TestCase {
 		self::assertSame(['assess' => 1], $outcome['marking']);
 		self::assertSame(3, $run->getFlowVersion());
 		self::assertSame(['assess' => 1], $run->getMarking());
+	}
+
+	/**
+	 * 🔴 What waits at the renamed node moves with its token: the items it holds and its resume state.
+	 *
+	 * The marking alone moved before, so the resumed run found nothing at the
+	 * new place and stayed suspended after its task was done.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	public function testTheWaitingStateMovesWithTheToken(): void {
+		$run = $this->aRun(marking: ['review' => 1, 'decide#e7' => 1]);
+		$run->setPlaceItems(['review' => [['json' => ['name' => 'Case 9']]], 'decide#e7' => [['json' => []]]]);
+		$run->setContext(['runUuid' => self::RUN, 'resumeState' => ['review' => ['taskUuid' => 't-1', 'advance' => 'all']]]);
+		$this->resolves($run);
+
+		$this->service()->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'Version 3 renamed the review step', actor: 'anna', mapping: ['review' => 'assess']));
+
+		self::assertSame(['assess' => [['json' => ['name' => 'Case 9']]], 'decide#e7' => [['json' => []]]], $run->getPlaceItems());
+		self::assertSame(['runUuid' => self::RUN, 'resumeState' => ['assess' => ['taskUuid' => 't-1', 'advance' => 'all']]], $run->getContext());
+	}
+
+	/**
+	 * 🔴 The run's open task and its live stream follow the renamed node; others stay where they are.
+	 *
+	 * The task left on its old step could not be completed on the target
+	 * version ("has no step"), and the stream left on its old place was not
+	 * found when the task was done.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	public function testTheOpenTaskAndTheLiveStreamFollowTheRenamedNode(): void {
+		$this->resolves($this->aRun());
+
+		$moved = new Task();
+		$moved->setUuid('t-1');
+		$moved->setNodeId('review');
+		$stays = new Task();
+		$stays->setUuid('t-2');
+		$stays->setNodeId('intake');
+		$tasks = $this->createMock(TaskMapper::class);
+		$tasks->method('findOpenByRunUuid')->with(self::RUN)->willReturn([$moved, $stays]);
+		$tasks->expects(self::once())->method('update')->with($moved)->willReturnArgument(0);
+
+		$parked = new FlowStream();
+		$parked->setPlace('review');
+		$parked->setStatus('active');
+		$joining = new FlowStream();
+		$joining->setPlace('review#e3');
+		$joining->setStatus('active');
+		$elsewhere = new FlowStream();
+		$elsewhere->setPlace('intake');
+		$elsewhere->setStatus('active');
+		$streams = $this->createMock(FlowStreamMapperInterface::class);
+		$streams->method('findByRun')->with(self::RUN)->willReturn([$parked, $joining, $elsewhere]);
+		$streams->expects(self::exactly(2))->method('update')->willReturnArgument(0);
+
+		$service = new FlowRunMigrationService(
+			$this->runs,
+			new FlowRunMigrationValidator(versions: $this->versions),
+			new FlowRunMigrationTimers(timers: $this->timers, timerService: $this->createMock(FlowTimerService::class)),
+			new NullLogger(),
+			$tasks,
+			$streams
+		);
+		$service->migrate(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: 'Version 3 renamed the review step', actor: 'anna', mapping: ['review' => 'assess']));
+
+		self::assertSame('assess', $moved->getNodeId());
+		self::assertSame('intake', $stays->getNodeId());
+		self::assertSame('assess', $parked->getPlace());
+		self::assertSame('assess#e3', $joining->getPlace(), 'a join place keeps its edge suffix');
+		self::assertSame('intake', $elsewhere->getPlace());
+	}
+
+	/**
+	 * A dry run moves no task and no stream.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md#requirement-a-run-can-be-migrated-to-another-version-explicitly-and-validated
+	 */
+	public function testADryRunMovesNoTaskAndNoStream(): void {
+		$this->resolves($this->aRun());
+		$tasks = $this->createMock(TaskMapper::class);
+		$tasks->expects(self::never())->method('findOpenByRunUuid');
+		$streams = $this->createMock(FlowStreamMapperInterface::class);
+		$streams->expects(self::never())->method('findByRun');
+
+		$service = new FlowRunMigrationService(
+			$this->runs,
+			new FlowRunMigrationValidator(versions: $this->versions),
+			new FlowRunMigrationTimers(timers: $this->timers, timerService: $this->createMock(FlowTimerService::class)),
+			new NullLogger(),
+			$tasks,
+			$streams
+		);
+		$service->preview(runUuid: self::RUN, target: new FlowRunMigrationTarget(targetVersion: 3, reason: '', actor: 'anna', mapping: ['review' => 'assess']));
 	}
 
 	/**

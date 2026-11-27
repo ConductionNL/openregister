@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\File\ImageRegionDetectorRegistry;
 use OCA\OpenRegister\Service\File\ImageRegionNotBurnableException;
 use OCA\OpenRegister\Service\File\OcrWordLocator;
 use OCA\OpenRegister\Service\File\OfficeMediaBurner;
+use OCA\OpenRegister\Service\File\TiffCodec;
 use OCP\Files\File;
 use OCP\Files\Folder;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -51,6 +52,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\File\ImageBurner
  * @covers \OCA\OpenRegister\Service\File\OfficeMediaBurner
  * @covers \OCA\OpenRegister\Service\File\PdfImageBurner
+ * @covers \OCA\OpenRegister\Service\File\TiffCodec
  * @uses   \OCA\OpenRegister\Files\Db\AnonymisationLog
  * @uses   \OCA\OpenRegister\Service\File\ImageDetection
  * @uses   \OCA\OpenRegister\Service\File\ImageRegion
@@ -481,6 +483,26 @@ final class ImageRedactionServiceTest extends TestCase {
 		$this->assertSame([], $this->written, 'No _anonymized sibling is left behind.');
 	}//end testAnUnburnableRegionLeavesNoOutput()
 
+	public function testATiffScanIsBurnedAndItsMetadataIsGone(): void {
+		$scan = (string)file_get_contents(__DIR__ . '/../../../fixtures/tiff/rgb-lzw-xmp.tif');
+		$this->assertStringContainsString('Jan Jansen', $scan, 'The fixture names a person in its metadata.');
+		$region = new ImageRegion(null, ['x' => 0.25, 'y' => 0.2, 'w' => 0.5, 'h' => 0.5], 'PERSON', 0.9, 'ocr-text');
+
+		$this->service()->redactImage($this->file('scan.tif', 'image/tiff', $scan), [$region]);
+
+		$out = $this->written['scan_anonymized.tif'];
+		$this->assertStringNotContainsString('Jan Jansen', $out);
+		$this->assertStringNotContainsString('xmpmeta', $out);
+		$page = (new TiffCodec())->decode($out, 'scan_anonymized.tif')[0];
+		$filled = '';
+		for ($y = 6; $y <= 20; $y++) {
+			$filled .= substr($page['pixels'], ((($y * 40) + 10) * 3), (20 * 3));
+		}
+
+		$this->assertSame(str_repeat("\x00", strlen($filled)), $filled, 'Every pixel of the region is the fill.');
+		$this->assertSame('3c3cc8', bin2hex(substr($page['pixels'], 0, 3)), 'Outside the region nothing is filled.');
+	}//end testATiffScanIsBurnedAndItsMetadataIsGone()
+
 	public function testARegionOnAPageAStandaloneImageDoesNotHaveIsRefused(): void {
 		$region = new ImageRegion(3, ['x' => 0.1, 'y' => 0.1, 'w' => 0.1, 'h' => 0.1], 'FACE', 0.9, 'anonymiq 1');
 
@@ -495,7 +517,7 @@ final class ImageRedactionServiceTest extends TestCase {
 	 */
 	public static function unsupported(): array {
 		return [
-			'tiff' => ['scan.tif', 'image/tiff'],
+			'HEIC' => ['photo.heic', 'image/heic'],
 			'plain text' => ['notes.txt', 'text/plain'],
 		];
 	}//end unsupported()
@@ -573,6 +595,20 @@ final class ImageRedactionServiceTest extends TestCase {
 		$this->assertSame($first, $parts['word/media/image1.png'], 'Another image is left as it was.');
 		$this->assertSame($document, $parts['word/document.xml'], 'The text part is not touched by the image seam.');
 	}//end testAnImageInsideADocxIsBurned()
+
+	public function testATiffInsideADocxIsBurned(): void {
+		$tiff = (string)file_get_contents(__DIR__ . '/../../../fixtures/tiff/grey-lzw.tif');
+		$docx = self::archive(['word/document.xml' => '<w:document/>', 'word/media/image1.tif' => $tiff]);
+		$region = new ImageRegion(1, ['x' => 0.0, 'y' => 0.0, 'w' => 0.5, 'h' => 0.1], 'SIGNATURE', 0.9, 'anonymiq 1');
+
+		$this->service()->redactImage(
+			$this->file('scan.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', $docx),
+			[$region]
+		);
+
+		$page = (new TiffCodec())->decode(self::parts($this->written['scan_anonymized.docx'])['word/media/image1.tif'], 'image1.tif')[0];
+		$this->assertSame(str_repeat("\x00", 20) . str_repeat("\x46", 20), substr($page['pixels'], 0, 40), 'Half the first row is filled, the rest kept.');
+	}//end testATiffInsideADocxIsBurned()
 
 	public function testAnImageInsideAnOdtIsBurned(): void {
 		$odt = self::archive(
