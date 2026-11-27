@@ -127,6 +127,9 @@ DOMAIN_ORDER=(
     "public-export"
     "nlgov-conformance"
     "reply-threading"
+    "scheduled-messages"
+    "run-migration"
+    "lifecycle-side-moves"
     "import-run-readback"
 )
 
@@ -150,6 +153,11 @@ declare -A DOMAIN_COLLECTIONS=(
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
     [flow-engine]="$REPO_ROOT/tests/integration/openregister-flow-engine.postman_collection.json"
+    # Messages scheduled on an object: schedule, list, cancel by the author
+    # or one who may update the object, 403/409/404 refusals
+    # (send-at-on-the-messaging-leaf 3.2). Every sendAt is two days out, so
+    # no mail server is needed.
+    [scheduled-messages]="$REPO_ROOT/tests/integration/openregister-scheduled-messages.postman_collection.json"
     # A run's DECLARED subject set, and a task attached to one. Registered
     # here rather than left to a Playwright spec in tests/e2e/api-direct/,
     # for the same reason as `delegation` and `register-descriptors` below:
@@ -239,6 +247,14 @@ declare -A DOMAIN_COLLECTIONS=(
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
     # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
     [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
+    # migrate-run-between-versions 4.1: a run parked at a user task is migrated to a version that renamed the
+    # step (422 without a mapping, a dry run that writes nothing, then the move), and its task completes there.
+    [run-migration]="$REPO_ROOT/tests/integration/openregister-run-migration.postman_collection.json"
+    # lifecycle-over-reference-field 3.2: a graph lifecycle's side moves (suspend freezes the graph, resume),
+    # the closing form (422 naming the missing result, one save and one audit entry), and a reopen offered to
+    # a manager only. HTTP-shaped: the moves are derived from status type objects in the case's own register,
+    # which unit tests mock, and that read found nothing on a real instance before it was scoped.
+    [lifecycle-side-moves]="$REPO_ROOT/tests/integration/openregister-lifecycle-side-moves.postman_collection.json"
     # runs-recorded-and-causes-named 4.4: an import run read back after it finished: its header and counts,
     # a written row naming its object, refused rows with their reasons, the failing rows as CSV, the created
     # object's audit entry naming the run, and a retry naming the original. Uploads the two CSVs beside it.

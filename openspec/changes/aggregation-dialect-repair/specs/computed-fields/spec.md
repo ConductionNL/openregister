@@ -1,22 +1,19 @@
 ## MODIFIED Requirements
 
 ### Requirement: JSON-AST calculation expressions MUST be evaluated by a pure-function evaluator
+OpenRegister MUST provide a JSON-AST derivation engine, distinct from the Twig-based
+`ComputedFieldHandler`. `CalculationEvaluator::evaluate(array $object, mixed $expression)` MUST
+accept a bare scalar (resolved through `PlaceholderResolver`) or a single-key `{ "<op>": <args> }`
+array, dispatching on the key. An alias MUST be accepted identically to its symbol form at
+validation and at evaluation. The evaluator MUST be side-effect-free, and a malformed expression
+MUST raise an `EvaluationException`, never return a silent default.
 
-OpenRegister MUST provide a second derivation engine, distinct from the Twig-based
-`ComputedFieldHandler`, that evaluates calculations expressed as a single-key JSON
-expression AST. `CalculationEvaluator::evaluate(array $object, mixed $expression)`
-MUST accept either a bare scalar literal (resolved through the shared
-`PlaceholderResolver`) or a single-key array of the form `{ "<op>": <args> }`, and MUST
-dispatch on the operator key. The recognised v1 vocabulary is: `prop`, `lit`, `concat`,
-`if`, `not`, `and`, `or`, the arithmetic operators `+ - * / %`, the natural-language
-arithmetic aliases `add` (alias of `+`), `sub` (alias of `-`), `mul` (alias of `*`), `div`
-(alias of `/`), the comparison operators `eq ne lt lte gt gte`, and the date operators
-`now`, `diffDays`, `formatDate`, `dateDiff`. An alias MUST be accepted identically to its
-symbol form at both validation time and evaluation time — the two MUST NOT disagree on
-which operator names are valid. The evaluator MUST be side-effect-free: no I/O, no
-database access. Any malformed expression, unknown operator, non-numeric arithmetic
-operand, zero divisor, or unknown `dateDiff` unit MUST raise an `EvaluationException`
-rather than returning a silent default.
+#### Scenario: The recognised v1 vocabulary
+- **GIVEN** an expression whose operator key is one of `prop`, `lit`, `concat`, `if`, `not`, `and`, `or`, `+ - * / %`, the aliases `add` (`+`), `sub` (`-`), `mul` (`*`), `div` (`/`), `eq ne lt lte gt gte`, `now`, `diffDays`, `formatDate` or `dateDiff`
+- **WHEN** it is validated and then evaluated
+- **THEN** both MUST accept it, and the validator and the evaluator MUST NOT disagree on which operator names are valid
+- **AND** any other key, a non-numeric arithmetic operand, a zero divisor or an unknown `dateDiff` unit MUST raise an `EvaluationException`
+- **AND** evaluation MUST perform no I/O and no database access
 
 #### Scenario: Single-key dispatch on a known operator
 - **GIVEN** the expression `{ "+": [{ "prop": "aantal" }, 1] }` and an object `{ "aantal": 4 }`
@@ -72,13 +69,10 @@ rather than returning a silent default.
 ## ADDED Requirements
 
 ### Requirement: A materialised calculation's declared name MUST also be a declared schema property
-`CalculationAnnotationValidator::validate()` MUST reject a calculation whose declared name is not
-also present in the schema's `properties`, with a `calculation-output-not-in-properties` error
-naming the calculation and stating that a matching property must be added. This closes the gap
-between "the annotation validates" and "the computed value is actually persisted": `MagicMapper`
-only writes payload keys present in `properties`, so a calculation output whose name was never
-mirrored into `properties` evaluates correctly but is silently dropped at save time with no
-indication in the validation result.
+`CalculationAnnotationValidator::validate()` MUST reject a materialised calculation (`materialise: true`) whose name is not a declared
+schema property, with a `calculation-output-not-in-properties` error naming the calculation and the
+property to add. `MagicMapper` writes only declared properties, so without this check the value is
+computed and then silently dropped at save.
 
 #### Scenario: A calculation whose name has no matching property is rejected
 - **GIVEN** a schema declares `x-openregister-calculations: { "total": { "type": "number",

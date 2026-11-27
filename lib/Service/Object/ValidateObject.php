@@ -2053,6 +2053,8 @@ class ValidateObject implements ValidateObjectInterface {
 	 * a DATETIME column and reads emit RFC 3339.
 	 *
 	 * @return array<string, object> The resolvers by format.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FormatFactory::customStringFormats is a stateless factory
 	 */
 	private function customFormats(): array {
 		return FormatFactory::customStringFormats(
@@ -2267,6 +2269,8 @@ class ValidateObject implements ValidateObjectInterface {
 	 * @throws CustomValidationException
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the process-wide system-operation scope
 	 */
 	private function validateUniqueFields(array $object, Schema $schema): void {
 		$uniqueFields = ($schema->getConfiguration()['unique'] ?? null);

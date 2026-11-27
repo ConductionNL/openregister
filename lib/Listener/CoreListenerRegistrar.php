@@ -103,6 +103,8 @@ final class CoreListenerRegistrar {
 	 */
 	public static function platformShareRouting(IRegistrationContext $context): void {
 		$context->registerEventListener(BeforeShareCreatedEvent::class, PlatformShareRoutingListener::class);
+		// A share of an OpenRegister folder made by another user never carries re-share.
+		$context->registerEventListener(BeforeShareCreatedEvent::class, ObjectFolderReshareGuard::class);
 	}//end platformShareRouting()
 
 	/**
