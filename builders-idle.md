@@ -1530,3 +1530,4 @@
 2026-11-27T12:21:39Z perf-1 merged launchpad#2234 (nc-vue ^2.235.2): Workspace 812/778 -> 767/835 ms (noise), 16.05 -> 16.05 MB JS; dossiq#7029 sbom follow-up
 2026-11-27T12:24:10Z perf-K2 merged launchpad#2235: Workspace render 90 -> 69 DB queries (admin settings 19 -> 1), server time within noise (capacity change), JS unchanged
 2026-11-27T12:25:26Z live-thematiq-1 (session-20261127T122521-3ff05932) ended at start: lane K=1 already active in session-20261127T112536-ad5a922c (lease live-thematiq-1 taken 11:25Z, expires 12:55Z); not duplicating
+2026-11-27T12:34:17Z live-launchpad-2 merged launchpad#2237 (dashboard-reactions-ui 2/2 live, was 0/2 in shard 3/8: since #2190 the page carries the reactions read, spec now reads workspaceApiReads). Full run on 9cda792f so far: shard 1 318 passed 3 failed (401s, rerun pending), shard 2 311/311, shard 3 349 passed 2 failed (fixed by #2237).
