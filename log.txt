@@ -5544,3 +5544,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T13:35:41Z integrator-20261127T115023-b15bb467 MERGED-TREE 6e8919dec6: 3 PRs, main now da567fd60e = tested tree
 2026-11-27T13:36:18Z session-20261127T123257-468c643a b-thematiq merged thematiq#2135 (apps-menu-walkthrough, all 19 tasks) and #2141 (archive)
+2026-11-27T13:40:36Z cloud-or-reviewer-20261127T132834-37e35a8d cloud-or-reviewer-0..7: APPROVE 11345 11351 11374 (fast path, PR-side delta re-verified: main-merge resolution / test-only jest mapper), 11375 (full: Terser minifier, prod build green); lane 0 nothing to review; 11191 REVERIFY head conflicts with main 63718e5e (sigrid components yaml; no verdict); other non-draft main PRs ledgered at head
