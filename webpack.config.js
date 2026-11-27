@@ -321,9 +321,14 @@ webpackConfig.resolve.alias = {
 		'node_modules/@floating-ui/dom',
 	),
 }
-// @nextcloud/vue ships .cjs/.mjs; allow .js requests to resolve to .cjs (for dist subpaths)
+// @nextcloud/vue ships .cjs/.mjs; allow .js requests to resolve to .cjs (for dist
+// subpaths) when no .js file exists. The .js file comes FIRST: with .cjs first,
+// every package that ships both builds resolved to its CommonJS one, which
+// webpack cannot tree-shake. vue-router then loaded its .cjs build, with
+// @vue/devtools-api, @vue/devtools-kit and a buffer polyfill, and zod and
+// others came in whole.
 webpackConfig.resolve.extensionAlias = {
-	'.js': ['.cjs', '.js'],
+	'.js': ['.js', '.cjs'],
 	...webpackConfig.resolve.extensionAlias,
 }
 // When using local nextcloud-vue (../nextcloud-vue/src), resolve its deps from this app's node_modules
