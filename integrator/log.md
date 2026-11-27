@@ -236,3 +236,4 @@
 2026-11-27T16:12:13Z GREEN prs=11379,11380,11381 main=7e4effd9e2 integrator-cloud (merged; deps needed --ignore-platform-req=php for psalm 7.16 on PHP 8.3.6; main now 4be455ccbd)
 2026-11-27T16:37:51Z RED prs=10156,11191 main=4be455ccbd integrator-cloud (jest initial-data.golden EditSource snapshot; suspect 10156 touches EditSource; 11146 build-conflicted)
 2026-11-27T16:47:42Z GREEN prs=11146 main=4be455ccbd integrator-cloud (merged; 11191 build-conflicted with it; main now 73be975b7e)
+2026-11-27T16:59:34Z GREEN prs=11349 main=73be975b7e integrator-cloud (merged; main now 73be975b7e)
