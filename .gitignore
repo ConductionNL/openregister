@@ -21,6 +21,8 @@
 /docs/build/
 /docs/.docusaurus/
 /js/
+# nextcloud-vue's stylesheet, copied by webpack.config.js (scripts/library-stylesheet-copy.js)
+/css/nextcloud-vue.css
 /custom_apps/
 /config/
 
