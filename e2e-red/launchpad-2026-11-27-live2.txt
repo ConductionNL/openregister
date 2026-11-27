@@ -12,3 +12,13 @@ widgets-placements-api.spec.ts:239 (+22 not run)   SANDBOX same cause; 29/29 wit
 resource-uploads.spec.ts:652                       PR #2173 merged APP FIX (deep-link catch-all swallowed a decoded /resource/../ path: 200 workspace -> 404)
 role-feature-permissions.spec.ts:1143,1176,1244    PR #2174 merged (expected the admin registry; OR main's operations widget is admin-only IConditionalWidget)
 runtime-shell.spec.ts:759                          PR #2175 merged (tour key now from initial state since #2150, no preference read)
+
+# shard 6/8 (319, development f722f74f): 304 passed, 14 skipped, 1 failed
+# shard 5/8 (314, development 66d176dc): 305 passed, 6 failed, 1 skipped, 2 not run
+# shard 4/8 (292, development a0e6c516): 291 passed, 1 skipped, 0 failed
+# shard 1/8 (323, development 6bfe17ed): 316 passed, 7 skipped, 0 failed
+# Newman launchpad.postman_collection (reference stack): 162 requests, 228 assertions, 0 failed
+ADR-124 performance (Workspace)                    PERF 811 ms in-suite (budget 300); perf-1/perf-2 own it
+grid-layout-keyboard.spec.ts:265                   GREEN alone 12/12 (--repeat-each=2); order-dependent in the shard run only
+image-widget-clickthrough.spec.ts:73               SANDBOX popup to example.com, no outbound net for Chromium
+integrations-page.spec.ts:178,195,203,221          SANDBOX needs integriq installed (4/4 with it, 26 Nov and live-thematiq-1 27 Nov)
