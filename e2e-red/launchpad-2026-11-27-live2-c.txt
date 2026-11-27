@@ -24,3 +24,21 @@ public-share-client-ip:267, public-start-page-default-app:160, role-feature-perm
 role-feature-permissions-upgrade:188, scheduled-exports-delivery:380, scheduled-exports:224, service-health-ping:684,
 setup-wizard-cli:303, setup-wizard:489 (+ rest of that serial file)   SANDBOX: spec runs occ/PHP through docker exec
 runtime-or-consumption:177, runtime-shell-canEdit:106   FLAKY under a parallel run; 12/12 alone
+# shard 8/8 on development 15374752: 291 passed, 12 failed, 3 skipped, 6 did not run (30 min)
+tiles-rendering-defects:145, tiles-rendering:450     PR #2299 merged (Name textbox, Text colour swatches, 'What does the tile open?')
+tiles-rendering:472                                  APP RED (app-link-tile-widget): 'A link' saves via legacy POST /api/dashboard/{id}/tile
+                                                     -> widgetId tile-<uniqid>, tile_* columns, content {}; spec wants 'tile' + content.mode 'link'.
+                                                     Spec rewrite onto the form kept out of #2299 (it would be red until the app is fixed).
+widgets-picker-board-sync:198/:285                   PR #2301 merged (1120 px, two sections, four columns; Case system via the tile form)
+widgets-tile-type:44                                 PR #2302 merged (App or link tile card + form)
+widgets-canvas-search:283/:309                       PR #2305 merged (apps searched in the tile form's Choose the app)
+tiles-form-board-sync:232                            PR #2308 merged (LpTegelBewerken fields: How it opens, Tile colour; no Tile type)
+tiles-icon-only-app-tiles:415                        PR #2310 merged (Tile colour group, not Text colour)
+widgets-picker-assistant:153                         SPEC/APP CONFLICT for the add-widget-dialog / app-link-tile owners: REQ 'Ask the assistant'
+                                                     proposes the app tile Case system, but catalogue apps are no longer picker cards, so the
+                                                     assistant cannot be offered them. Needs the tile form's apps among the offered cards, or the
+                                                     scenario changed. Not touched.
+widgets-nc-widget:276                                UNDIAGNOSED: a native callback present before any page script (even pre-seeded in
+                                                     OCA.Dashboard.callbacks) still paints natively AND fetches widget-items (limit=7); stack:
+                                                     CnNcWidgetWidget.loadApiItems. Was green on 25 Nov.
+widgets-placements-api:908                           FLAKY: green alone (32/33 file run)
