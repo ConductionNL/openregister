@@ -110,6 +110,8 @@ class AuditTrailControllerTest extends TestCase {
 			'register' => 32,
 			'schema' => 46,
 			'created' => ['gte' => '2026-11-25 07:00:00', 'lte' => '2026-11-26 23:59:59'],
+			// REQ-HSA-011: record history unless another category is asked.
+			'category' => 'domain',
 		];
 		$this->logService->expects($this->once())->method('getAllLogs')
 			->with($this->callback(fn (array $params): bool => $params['filters'] === $expected))
@@ -131,7 +133,7 @@ class AuditTrailControllerTest extends TestCase {
 			'from' => '2026-11-25',
 		]);
 		$this->logService->expects($this->once())->method('countAllLogs')
-			->with(['created' => ['gte' => '2026-11-25 00:00:00']])
+			->with(['created' => ['gte' => '2026-11-25 00:00:00'], 'category' => 'domain'])
 			->willReturn(0);
 		$this->logService->method('getAllLogs')->willReturn([]);
 
