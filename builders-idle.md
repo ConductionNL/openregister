@@ -1559,3 +1559,4 @@
 2026-11-27T14:25:17Z live-thematiq-1 (session-20261127T142512-9a2c4ac7) ended at start: lane K=1 already active in session-20261127T112536-ad5a922c (lease live-thematiq-1 renewed 14:14Z, expires 15:44Z; last merges thematiq#2147/#2151, now full e2e regression on development bd876b3); not duplicating
 2026-11-27T14:26:29Z perf-K1 merged pipelinq#4198 (nc-vue ^2.235.2): Sales 1737/1870 -> 1786/1684 ms (first content 1740/1476 -> 1512/1252), other 5 pages within noise, JS unchanged
 2026-11-27T14:29:41Z help-launchpad-2 built app-link-tile-widget #2247 (merged; open: form inside the Add widget dialog, e2e live runs, live board check)
+2026-11-27T14:30:33Z perf-K2 built openregister #11378 (ready, integrator): resolve.extensionAlias tried .cjs before .js, so vue-router (+devtools-kit, buffer), zod etc. came in as untreeshakeable CommonJS; OR main page JS 6.10 -> 5.55 MB, integration-global 184 -> 165 KB (every NC page), stacked on #11375-#11377; timing within noise
