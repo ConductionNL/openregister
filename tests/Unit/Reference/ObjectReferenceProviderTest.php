@@ -35,12 +35,14 @@ use OCA\OpenRegister\Reference\ObjectReferenceProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter;
+use OCA\OpenRegister\Service\Reference\ObjectPreviewFormatterInterface;
 use OCA\OpenRegister\Service\Reference\ObjectPreviewSources;
 use OCP\Collaboration\Reference\Reference;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -162,10 +164,53 @@ class ObjectReferenceProviderTest extends TestCase {
 		$this->provider = new ObjectReferenceProvider(
 			$this->urlGenerator,
 			$this->l10n,
-			$this->formatter,
+			$this->formatterContainer(),
 			'test-user'
 		);
 	}//end setUp()
+
+	/**
+	 * A container that builds the test's formatter.
+	 *
+	 * @return ContainerInterface The container.
+	 */
+	private function formatterContainer(): ContainerInterface {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->with(ObjectPreviewFormatterInterface::class)->willReturn($this->formatter);
+		return $container;
+	}//end formatterContainer()
+
+	/**
+	 * Constructing the provider builds no formatter: the reference manager
+	 * constructs every provider on pages that render references.
+	 *
+	 * @return void
+	 */
+	public function testConstructingTheProviderBuildsNoFormatter(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->expects($this->never())->method('get');
+
+		$provider = new ObjectReferenceProvider($this->urlGenerator, $this->l10n, $container, 'test-user');
+
+		$this->assertSame('openregister-ref-objects', $provider->getId());
+	}//end testConstructingTheProviderBuildsNoFormatter()
+
+	/**
+	 * The formatter is built once, on first use, and reused.
+	 *
+	 * @return void
+	 */
+	public function testTheFormatterIsBuiltOnceOnFirstUse(): void {
+		$formatter = $this->createMock(ObjectPreviewFormatterInterface::class);
+		$formatter->method('parseReference')->willReturn(null);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->expects($this->once())->method('get')->with(ObjectPreviewFormatterInterface::class)->willReturn($formatter);
+
+		$provider = new ObjectReferenceProvider($this->urlGenerator, $this->l10n, $container, 'test-user');
+
+		$this->assertFalse($provider->matchReference('https://example.test/a'));
+		$this->assertFalse($provider->matchReference('https://example.test/b'));
+	}//end testTheFormatterIsBuiltOnceOnFirstUse()
 
 	/**
 	 * Test getId returns correct identifier.
@@ -403,7 +448,7 @@ class ObjectReferenceProviderTest extends TestCase {
 		$anonProvider = new ObjectReferenceProvider(
 			$this->urlGenerator,
 			$this->l10n,
-			$this->formatter,
+			$this->formatterContainer(),
 			null
 		);
 
