@@ -102,10 +102,7 @@ exports[`LLM settings section DOM golden LLM off 1`] = `
         <div class="stat-label">File Embeddings</div>
       </div>
     </div>
-    <x-llmconfigmodal show="false" data-on="onClosing onEmbeddingsCleared"></x-llmconfigmodal>
     <x-filemanagementmodal show="false" data-on="onClosing"></x-filemanagementmodal>
-    <x-objectmanagementmodal show="false" data-on="onClosing"></x-objectmanagementmodal>
-    <x-objectvectorizationmodal show="false" data-on="onClosing onCompleted"></x-objectvectorizationmodal>
     <x-filevectorizationmodal show="false" extractionstats="[object Object]" vectorstats="[object Object]" data-on="onClosing onCompleted"></x-filevectorizationmodal>
   </slot-default>
 </x-settingssection>"
@@ -225,10 +222,7 @@ exports[`LLM settings section DOM golden LLM on 1`] = `
         </div>
       </div>
     </div>
-    <x-llmconfigmodal show="false" data-on="onClosing onEmbeddingsCleared"></x-llmconfigmodal>
     <x-filemanagementmodal show="false" data-on="onClosing"></x-filemanagementmodal>
-    <x-objectmanagementmodal show="false" data-on="onClosing"></x-objectmanagementmodal>
-    <x-objectvectorizationmodal show="false" data-on="onClosing onCompleted"></x-objectvectorizationmodal>
     <x-filevectorizationmodal show="false" extractionstats="[object Object]" vectorstats="[object Object]" data-on="onClosing onCompleted"></x-filevectorizationmodal>
   </slot-default>
 </x-settingssection>"

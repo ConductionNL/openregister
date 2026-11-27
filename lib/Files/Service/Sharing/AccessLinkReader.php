@@ -134,6 +134,10 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 			return null;
 		}
 
+		if ($link->getSubjectType() === AccessLinkInterface::SUBJECT_OBJECT_DRAFT) {
+			return $this->draftSubject(link: $link);
+		}
+
 		$uuid = trim((string)$link->getSubjectId());
 		if ($uuid === '') {
 			return null;
@@ -218,10 +222,77 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 			}
 		}
 
+		if ($link->getSubjectType() === AccessLinkInterface::SUBJECT_OBJECT_DRAFT) {
+			$body['version'] = $this->draftVersionOf(link: $link);
+			if ($body['version'] === null) {
+				return null;
+			}
+		}
+
 		$body['timeline'] = $this->publicTimeline(object: $object);
 
 		return $body;
 	}//end read()
+
+	/**
+	 * The object a preview link opens: the live object with its draft merged in, or null.
+	 *
+	 * A draft that was promoted or discarded is gone, and so is the preview.
+	 * The live object is read the way any link reads its subject; the merged
+	 * copy is never saved, and it is filtered by the same schema rules.
+	 *
+	 * @param AccessLinkInterface $link The preview link.
+	 *
+	 * @return ObjectEntity|null The merged copy.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	private function draftSubject(AccessLinkInterface $link): ?ObjectEntity {
+		$draftUuid = (string)$link->getSubjectId();
+		$draft     = $this->sources->drafts?->previewedDraft(draftUuid: $draftUuid);
+		if ($draft === null) {
+			return null;
+		}
+
+		try {
+			$object = $this->sources->objects->find(
+				id: $draft['objectUuid'],
+				options: new ObjectFindOptions(render: false, audit: false),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $missing) {
+			$this->logger->info('[AccessLinkReader] Preview-link object no longer resolves: ' . $missing->getMessage());
+			return null;
+		}
+
+		if ($object instanceof ObjectEntity === false || $object->isSoftDeleted() === true) {
+			return null;
+		}
+
+		$copy = $this->sources->drafts?->previewCopy(object: $object, draftUuid: $draftUuid);
+		if ($copy instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		return $copy;
+	}//end draftSubject()
+
+	/**
+	 * The draft a preview link shows, as the site needs to mark it: key and name.
+	 *
+	 * @param AccessLinkInterface $link The preview link.
+	 *
+	 * @return array{key: string, name: string}|null The version, or null when the draft is gone.
+	 */
+	private function draftVersionOf(AccessLinkInterface $link): ?array {
+		$draft = $this->sources->drafts?->previewedDraft(draftUuid: (string)$link->getSubjectId());
+		if ($draft === null) {
+			return null;
+		}
+
+		return ['key' => $draft['key'], 'name' => $draft['name']];
+	}//end draftVersionOf()
 
 	/**
 	 * The objects a view link serves, each filtered.
