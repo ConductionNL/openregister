@@ -2968,6 +2968,19 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 	}//end andActionNotIn()
 
 	/**
+	 * Totals per register and schema for the given registers, in one grouped read.
+	 *
+	 * @param int[] $registerIds The register ids.
+	 *
+	 * @return array<string, array<string, array{total: int, size: int}>> Stored register value => stored schema value ('' when none) => totals.
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function statisticsTotalsPerPair(array $registerIds): array {
+		return $this->statistics()->totalsPerPair(registerIds: $registerIds);
+	}//end statisticsTotalsPerPair()
+
+	/**
 	 * Get audit trail statistics grouped by schema for multiple schemas in a single query
 	 *
 	 * Returns per-schema statistics using GROUP BY instead of one query per schema.

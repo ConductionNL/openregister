@@ -571,6 +571,9 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 				$register = new Register();
 				$register = $register->fromRow($row);
 				$registers[$row['id']] = $register;
+				// The unfiltered row is what find($id, _multitenancy: false) loads, so a
+				// later lookup of this id in the same request needs no query of its own.
+				$this->findCache->remember(entity: $register, multitenancy: false, identifiers: [$register->getId()]);
 			}
 
 			$result->closeCursor();
@@ -1006,6 +1009,26 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 
 		return $result;
 	}//end delete()
+
+	/**
+	 * The schemas linked to a register the caller already holds.
+	 *
+	 * Same answer as getSchemasByRegisterId() without reading the register again:
+	 * for callers that loaded it through findAll() or find() with the same access
+	 * rules (the dashboard reads every register in its answer this way).
+	 *
+	 * @param Register $register The register.
+	 * @param bool $_rbac Whether to apply RBAC permission checks to the schemas.
+	 *
+	 * @return Schema[] The linked schemas that could be loaded, in the register's order.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls security filtering behavior
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function getSchemasOfRegister(Register $register, bool $_rbac = true): array {
+		return $this->findLinkedSchemas(schemaIds: $register->getSchemas(), _rbac: $_rbac);
+	}//end getSchemasOfRegister()
 
 	/**
 	 * Get all schemas associated with a register
