@@ -42,3 +42,10 @@ widgets-nc-widget:276                                UNDIAGNOSED: a native callb
                                                      OCA.Dashboard.callbacks) still paints natively AND fetches widget-items (limit=7); stack:
                                                      CnNcWidgetWidget.loadApiItems. Was green on 25 Nov.
 widgets-placements-api:908                           FLAKY: green alone (32/33 file run)
+# shard 4/8 (full, incl. the tail never run before) on development 1e4d9982: 278 passed, 2 failed, 1 skipped, 10 did not run (23 min)
+embedded-analytics:309                     PR #2324 merged (settings page address, pre-selection kept)
+first-run-starter-widgets:78               PR #2326 merged (starter app tiles are 'tile' + content.mode 'app')
+# docker-exec specs rerun with LAUNCHPAD_E2E_OCC='env -C <server root> php occ' (tip for every sandbox lane): 63 passed, 4 failed
+public-share-client-ip:315/:335/:356       ENV: this sandbox had ratelimit.protection.enabled=false
+service-health-ping:684                    ENV: needs memcache.distributed (Redis); 1/1 once set (APCu-only: CLI job cannot see web cache)
+setup-wizard, setup-wizard-cli, scheduled-exports(-delivery), public-start-page-default-app, admin-settings-persistence: GREEN with local occ
