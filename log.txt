@@ -5446,3 +5446,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T10:42:10Z session-20261127T094537-5369635a live-launchpad-2 run ends (~3.3 h, not idle). Merged launchpad #2207 (REVIEW 1 start page = LpVandaag, REQ-DWB-008) and #2214 (REVIEW 17 Own look fields). Released dashboard-switch-reads-early lease (task 4 done by #2203 meanwhile). Left for others: REVIEW 1 follow-up (last-active pref outranks the start page; needs REQ-TMPL-019 rework), REVIEW 9-16/19 unleased at end (item 9 not started: ~1 h left, too large to finish live).
 2026-11-27T10:43:45Z precheck-20261127T104259-11e3ee87 CONFLICT-DEV #11350 2000c278
 2026-11-27T10:45:30Z integrator-20261127T080455-44feeeb6 GREEN tree de4b32ed50 on dev 2c5e019ef0 prs 2 front=ok: Tests: 67924, Assertions: 241900, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
+2026-11-27T10:45:38Z integrator-20261127T080455-44feeeb6 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
