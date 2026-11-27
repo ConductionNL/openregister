@@ -36,10 +36,28 @@
       attaches through 1.1. Tests: `AttachTargetSearchTest` (6),
       `AttachTargetsControllerTest` (3), `attachAction.spec.js` (8),
       `AttachToObjectDialog.spec.js` (6).
-- [ ] 2.2 Talk conversation action "Save chat to object".
-- [ ] 2.3 Read `fileActions.attachTargets` from the consuming manifest. (The route takes
+- [x] 2.2 Talk conversation action "Save chat to object".
+      Talk offers other apps message actions, so the action sits in a message's
+      menu and saves the conversation that message belongs to:
+      `src/talk/saveChatAction.js` reads the conversation through Talk's own chat
+      API as the signed-in user (backwards a page of 200 at a time, at most 5000,
+      without moving the read marker, system messages left out, `{file}`-style
+      placeholders replaced by their names) and opens the picker in chat mode,
+      which posts to the 1.2 route. Registered from the new `talkActions` entry
+      (`src/talk-actions.js`, one self-contained script), which
+      `lib/Listener/TalkAppScriptListener.php` adds to Talk's page only, for a
+      signed-in user with Talk enabled. Tests: `saveChatAction.spec.js` (13),
+      `AttachToObjectDialog.spec.js` (+2 chat), `TalkAppScriptListenerTest` (6).
+- [x] 2.3 Read `fileActions.attachTargets` from the consuming manifest. (The route takes
       `targets` and the picker a `targets` prop; reading them from a consuming app's
       manifest is still open.)
+      The picker takes an `app` prop and reads that app's manifest
+      (`GET /api/manifest/{app}`) once, through `src/services/attachTargets.js`:
+      an entry is a schema slug or a `{ register, schema }` pair, the schema is
+      what the server narrows on, and a manifest that declares nothing or cannot
+      be read pins nothing (the server's offer is already only what the caller
+      may change). Passed `targets` win over the manifest. Tests:
+      `attachTargets.spec.js` (6), `AttachToObjectDialog.spec.js` (+3).
 
 ## 3. Tests
 
@@ -48,5 +66,12 @@
       including both silent failures, the declaration that cannot widen, the
       bounded search, and the refusals that name a schema to nobody who did
       not already pick it. Attach-by-node waits on 1.1.
-- [ ] 3.2 `tests/e2e/ci/files-leaf-save-to-object.spec.ts`: from Files, (not run: e2e needs a browser and the Files action (2.1))
+- [x] 3.2 `tests/e2e/ci/files-leaf-save-to-object.spec.ts`: from Files,
       run the action on a file, pick an object, see the file on the object.
+      As the non-administrator `e2e-owner`: the picker's offer over HTTP holds the
+      schema they may change and not the one they may only read (the administrator
+      finds both cases), and in the browser the Files row's "Add to object" opens
+      the picker, the case is found by its title, picking it shows "Added to ...",
+      and the file is listed on the case. Live run (26 Nov, sandbox Nextcloud 34 on
+      MariaDB, `php -S`): 2 passed. On SQLite the fixture cannot save an object at
+      all (magic tables), which is the sandbox, not this change.

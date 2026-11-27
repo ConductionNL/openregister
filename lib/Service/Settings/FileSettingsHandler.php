@@ -34,11 +34,14 @@ use OCA\OpenRegister\Exception\ConfidenceThresholdOutOfRangeException;
 use OCA\OpenRegister\Exception\PersonRegisterPurposeMissingException;
 use OCA\OpenRegister\Exception\UnknownMaskFormException;
 use OCA\OpenRegister\Exception\UnknownPatternSetException;
+use OCA\OpenRegister\Exception\UploadPartSizeOutOfRangeException;
 use OCA\OpenRegister\Files\Service\File\MaskForm;
+use OCA\OpenRegister\Files\Service\TextExtraction\ExtractionCeiling;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\CapacityPolicyReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\FileSettingsReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\Files\RedactionSettingsInterface;
+use OCA\OpenRegister\Kernel\Contracts\UploadSettingsReaderInterface;
 use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\File\ArchiveBounds;
@@ -65,7 +68,7 @@ use Throwable;
  *
  * @spec openspec/changes/archive-members-are-searchable/specs
  */
-class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface, CapacityPolicyReaderInterface {
+class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSettingsInterface, UploadSettingsReaderInterface, CapacityPolicyReaderInterface {
 
 	/**
 	 * App config key holding the OpenAnonymiser password.
@@ -102,6 +105,27 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 	public const MASK_FORMS_KEY = 'maskForms';
 
 	/**
+	 * The file settings key holding the text extraction settings, among them the ceiling `maxBytes`.
+	 *
+	 * @var string
+	 */
+	public const TEXT_EXTRACTION_KEY = 'textExtraction';
+
+	/**
+	 * The two former ceiling keys, never read by anything and replaced by `textExtraction.maxBytes`.
+	 *
+	 * @var string[]
+	 */
+	public const LEGACY_CEILING_KEYS = ['maxFileSizeMB', 'maxFileSize'];
+
+	/**
+	 * The file settings key holding the upload-in-parts settings.
+	 *
+	 * @var string
+	 */
+	public const UPLOAD_KEY = 'upload';
+
+	/**
 	 * The anonymisation setting that makes output wait for a person's check.
 	 */
 	public const REQUIRE_REVIEW_KEY = 'requireReview';
@@ -129,11 +153,10 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 		'chunkOverlap' => 200,
 		'enabledFileTypes' => ['txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'doc', 'xlsx', 'xls'],
 		'ocrEnabled' => false,
-		'maxFileSizeMB' => 100,
+		self::TEXT_EXTRACTION_KEY => ['maxBytes' => ExtractionCeiling::DEFAULT_BYTES],
 		'extractionScope' => 'objects',
 		'textExtractor' => 'llphant',
 		'extractionMode' => 'background',
-		'maxFileSize' => 100,
 		'batchSize' => 10,
 		'dolphinApiEndpoint' => '',
 		'dolphinApiKey' => '',
@@ -153,6 +176,7 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 			'placeRegister' => null,
 		],
 		ArchiveBounds::SETTINGS_KEY => ArchiveBounds::DEFAULTS,
+		self::UPLOAD_KEY => ['partSizeBytes' => self::DEFAULT_PART_SIZE, 'sessionTtl' => self::DEFAULT_SESSION_TTL],
 	];
 
 	/**
@@ -225,6 +249,11 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 		// existed still states the bounds archives are opened under.
 		$fileSettings[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileSettings)->toArray();
 
+		// The extraction ceiling always reads as bytes, and an install the repair
+		// step has not reached yet states the ceiling its legacy key held.
+		$fileSettings = self::withCeiling(fileSettings: $fileSettings, source: $fileSettings);
+		$fileSettings[self::UPLOAD_KEY] = self::readableUpload(stored: ($fileSettings[self::UPLOAD_KEY] ?? null));
+
 		unset($fileSettings[self::OPENANONYMISER_CREDENTIAL_FIELD]);
 		$fileSettings[self::ANONYMISATION_KEY] = $this->readableAnonymisation(stored: ($fileSettings[self::ANONYMISATION_KEY] ?? null));
 		$fileSettings['openAnonymiserUsername'] = (string) ($fileSettings['openAnonymiserUsername'] ?? '');
@@ -235,6 +264,141 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 
 		return $fileSettings;
 	}//end readableFileSettings()
+
+	/**
+	 * The settings with `textExtraction.maxBytes` stated and the legacy ceiling keys gone.
+	 *
+	 * The ceiling comes from the source: its `textExtraction.maxBytes`, else its
+	 * `maxFileSizeMB` read as mebibytes, else the default (ExtractionCeiling).
+	 * Other keys under `textExtraction` are kept.
+	 *
+	 * @param array<string, mixed> $fileSettings The settings to state the ceiling on.
+	 * @param array<string, mixed> $source       The settings the ceiling is read from.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/large-file-handling/tasks.md#task-1-1
+	 */
+	public static function withCeiling(array $fileSettings, array $source): array {
+		$textExtraction = ($fileSettings[self::TEXT_EXTRACTION_KEY] ?? []);
+		if (is_array($textExtraction) === false) {
+			$textExtraction = [];
+		}
+
+		$textExtraction['maxBytes'] = ExtractionCeiling::fromSettings(fileSettings: $source)->maxBytes;
+		$fileSettings[self::TEXT_EXTRACTION_KEY] = $textExtraction;
+		foreach (self::LEGACY_CEILING_KEYS as $legacyKey) {
+			unset($fileSettings[$legacyKey]);
+		}
+
+		return $fileSettings;
+	}//end withCeiling()
+
+	/**
+	 * The upload-in-parts settings, from the stored file settings: the part size
+	 * and the session lifetime, each its default when nothing usable is stored.
+	 *
+	 * @return array{partSizeBytes: int, sessionTtl: string}
+	 *
+	 * @spec openspec/changes/large-file-handling/tasks.md#task-2-3
+	 */
+	public function uploadSettings(): array {
+		$settings = json_decode($this->appConfig->getValueString(AppIdentity::APP_ID, 'fileManagement', ''), true);
+		if (is_array($settings) === false) {
+			return self::readableUpload(stored: null);
+		}
+
+		return self::readableUpload(stored: ($settings[self::UPLOAD_KEY] ?? null));
+	}//end uploadSettings()
+
+	/**
+	 * The upload settings as a read returns them: a stored part size within the
+	 * bounds and a stored duration that parses, else the defaults.
+	 *
+	 * @param mixed $stored The stored upload settings.
+	 *
+	 * @return array{partSizeBytes: int, sessionTtl: string}
+	 */
+	private static function readableUpload(mixed $stored): array {
+		$settings = ['partSizeBytes' => self::DEFAULT_PART_SIZE, 'sessionTtl' => self::DEFAULT_SESSION_TTL];
+		if (is_array($stored) === false) {
+			return $settings;
+		}
+
+		$partSize = self::partSizeOrNull(value: ($stored['partSizeBytes'] ?? null));
+		if ($partSize !== null) {
+			$settings['partSizeBytes'] = $partSize;
+		}
+
+		if (self::isDuration(value: ($stored['sessionTtl'] ?? null)) === true) {
+			$settings['sessionTtl'] = (string) $stored['sessionTtl'];
+		}
+
+		return $settings;
+	}//end readableUpload()
+
+	/**
+	 * The upload settings to store; a part size outside 1 MiB to 100 MiB is refused.
+	 *
+	 * @param mixed $submitted The submitted upload settings.
+	 *
+	 * @return array{partSizeBytes: int, sessionTtl: string}
+	 *
+	 * @throws UploadPartSizeOutOfRangeException When the part size is outside the bounds.
+	 *
+	 * @spec openspec/changes/large-file-handling/tasks.md#task-2-3
+	 */
+	private static function submittedUpload(mixed $submitted): array {
+		if (is_array($submitted) === true
+			&& array_key_exists('partSizeBytes', $submitted) === true
+			&& self::partSizeOrNull(value: $submitted['partSizeBytes']) === null
+		) {
+			throw new UploadPartSizeOutOfRangeException(
+				message: sprintf('upload.partSizeBytes must be a whole number of bytes between %d and %d.', self::MIN_PART_SIZE, self::MAX_PART_SIZE)
+			);
+		}
+
+		return self::readableUpload(stored: $submitted);
+	}//end submittedUpload()
+
+	/**
+	 * A part size within the bounds, or null.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return int|null
+	 */
+	private static function partSizeOrNull(mixed $value): ?int {
+		if (is_string($value) === true && ctype_digit($value) === true) {
+			$value = (int) $value;
+		}
+
+		if (is_int($value) === false || $value < self::MIN_PART_SIZE || $value > self::MAX_PART_SIZE) {
+			return null;
+		}
+
+		return $value;
+	}//end partSizeOrNull()
+
+	/**
+	 * Whether a value is an ISO 8601 duration DateInterval reads.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool
+	 */
+	private static function isDuration(mixed $value): bool {
+		if (is_string($value) === false || $value === '') {
+			return false;
+		}
+
+		try {
+			new \DateInterval($value);
+			return true;
+		} catch (Exception) {
+			return false;
+		}
+	}//end isDuration()
 
 	/**
 	 * A batch size between 1 and 500.
@@ -265,9 +429,9 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 	 *     chunkOverlap: 200|mixed,
 	 *     enabledFileTypes: list{'txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf',
 	 *     'docx', 'doc', 'xlsx', 'xls'}|mixed, ocrEnabled: false|mixed,
-	 *     maxFileSizeMB: 100|mixed, extractionScope: 'objects'|mixed,
+	 *     textExtraction: array{maxBytes: int}, extractionScope: 'objects'|mixed,
 	 *     textExtractor: 'llphant'|mixed, extractionMode: 'background'|mixed,
-	 *     maxFileSize: 100|mixed, batchSize: 10|mixed,
+	 *     batchSize: 10|mixed,
 	 *     dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
@@ -288,6 +452,9 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 			throw $e;
 		} catch (UnknownMaskFormException $e) {
 			// A refused mask form, answered as 400 naming the entity type.
+			throw $e;
+		} catch (UploadPartSizeOutOfRangeException $e) {
+			// A refused part size, answered as 400 naming the bounds.
 			throw $e;
 		} catch (PersonRegisterPurposeMissingException $e) {
 			// A persons register without a purpose, answered as 400 (REQ-DKP-003).
@@ -336,6 +503,8 @@ class FileSettingsHandler implements FileSettingsReaderInterface, RedactionSetti
 		unset($fileConfig['openAnonymiserPasswordSet']);
 		$fileConfig['batchSize'] = $this->boundedBatchSize(batchSize: $fileConfig['batchSize']);
 		$fileConfig[ArchiveBounds::SETTINGS_KEY] = ArchiveBounds::fromSettings(fileSettings: $fileConfig)->toArray();
+		$fileConfig = self::withCeiling(fileSettings: $fileConfig, source: $fileData);
+		$fileConfig[self::UPLOAD_KEY] = self::submittedUpload(submitted: ($fileData[self::UPLOAD_KEY] ?? null));
 		$fileConfig['openAnonymiserUsername'] = trim((string) $fileConfig['openAnonymiserUsername']);
 		$fileConfig[ReviewPolicy::SETTINGS_KEY] = $this->reviewDefault(fileData: $fileData);
 		$fileConfig[self::ANONYMISATION_KEY] = $this->submittedAnonymisation(fileData: $fileData);

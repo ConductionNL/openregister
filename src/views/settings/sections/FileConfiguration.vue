@@ -175,7 +175,7 @@
 				<!-- First row: File size, chunking strategy, batch size -->
 				<div class="settings-group">
 					<div class="setting-item">
-						<label for="max-file-size">Maximum File Size (MB)</label>
+						<label for="max-file-size">Text Extraction Ceiling (MB)</label>
 						<input
 							id="max-file-size"
 							v-model.number="fileSettings.maxFileSize"
@@ -184,7 +184,7 @@
 							max="500"
 							@change="saveSettings" />
 						<p class="setting-description">
-							Maximum file size for text extraction (1-500 MB)
+							Files larger than this are not opened for text extraction (1-500 MB); they stay findable by name and metadata
 						</p>
 					</div>
 
@@ -960,9 +960,40 @@ const SELECT_SETTINGS = [
 	['entityRecognitionMethod', 'entityRecognitionMethods', 0],
 ]
 
+// Bytes per MB: the ceiling is stored in bytes and shown in MB.
+const MEBIBYTE = 1048576
+
+/**
+ * The text extraction ceiling in MB, from the stored `textExtraction.maxBytes`,
+ * else the legacy `maxFileSizeMB`, else 100.
+ *
+ * @param {object} settings The stored file settings.
+ * @return {number} The ceiling in MB
+ * @spec openspec/changes/large-file-handling/tasks.md#task-1-5
+ */
+function ceilingMegabytes(settings) {
+	const maxBytes = Number(settings?.textExtraction?.maxBytes)
+	if (maxBytes > 0) {
+		return Math.round((maxBytes / MEBIBYTE) * 100) / 100
+	}
+	const legacy = Number(settings?.maxFileSizeMB)
+	return legacy > 0 ? legacy : 100
+}
+
+/**
+ * The text extraction settings to save: the ceiling in bytes.
+ *
+ * @param {number} megabytes The ceiling the form holds, in MB; anything but a positive number saves 100.
+ * @return {object} The `textExtraction` settings
+ * @spec openspec/changes/large-file-handling/tasks.md#task-1-5
+ */
+function ceilingField(megabytes) {
+	const value = Number(megabytes)
+	return { maxBytes: Math.round((value > 0 ? value : 100) * MEBIBYTE) }
+}
+
 // The plain file settings and the value each takes when the stored one is empty.
 const PLAIN_SETTING_DEFAULTS = [
-	['maxFileSize', 100],
 	['chunkSize', 1000],
 	['chunkOverlap', 200],
 	['chunkingStrategy', 'RECURSIVE_CHARACTER'],
@@ -1017,6 +1048,7 @@ function applyPlainSettings(fileSettings, settings) {
 	for (const [field, fallback] of PLAIN_SETTING_DEFAULTS) {
 		fileSettings[field] = settings[field] || fallback
 	}
+	fileSettings.maxFileSize = ceilingMegabytes(settings)
 	fileSettings.openAnonymiserPasswordSet =
 		settings.openAnonymiserPasswordSet === true
 }
@@ -1103,7 +1135,7 @@ function extractionFields(settings) {
 		textExtractor: settings.textExtractor?.id || 'llphant',
 		extractionMode: settings.extractionMode?.id || 'background',
 		includeInSearch: settings.includeInSearch,
-		maxFileSize: settings.maxFileSize,
+		textExtraction: ceilingField(settings.maxFileSize),
 		chunkSize: settings.chunkSize,
 		chunkOverlap: settings.chunkOverlap,
 		chunkingStrategy: settings.chunkingStrategy,

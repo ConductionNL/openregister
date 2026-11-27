@@ -732,7 +732,7 @@ class SettingsHandlersIntegrationTest extends TestCase {
 		$this->assertArrayHasKey('chunkOverlap', $result);
 		$this->assertArrayHasKey('enabledFileTypes', $result);
 		$this->assertArrayHasKey('ocrEnabled', $result);
-		$this->assertArrayHasKey('maxFileSizeMB', $result);
+		$this->assertArrayHasKey('textExtraction', $result);
 		$this->assertArrayHasKey('extractionScope', $result);
 		$this->assertArrayHasKey('textExtractor', $result);
 		$this->assertArrayHasKey('extractionMode', $result);
@@ -751,7 +751,7 @@ class SettingsHandlersIntegrationTest extends TestCase {
 		$this->assertEquals(1000, $result['chunkSize']);
 		$this->assertEquals(200, $result['chunkOverlap']);
 		$this->assertFalse($result['ocrEnabled']);
-		$this->assertEquals(100, $result['maxFileSizeMB']);
+		$this->assertEquals(['maxBytes' => 104857600], $result['textExtraction']);
 	}
 
 	/**
@@ -767,7 +767,7 @@ class SettingsHandlersIntegrationTest extends TestCase {
 			'provider' => 'openai',
 			'chunkSize' => 500,
 			'ocrEnabled' => true,
-			'maxFileSizeMB' => 50,
+			'textExtraction' => ['maxBytes' => 52428800],
 			'textExtractor' => 'dolphin',
 			'extractionMode' => 'manual',
 		]);
@@ -776,7 +776,7 @@ class SettingsHandlersIntegrationTest extends TestCase {
 		$this->assertEquals('openai', $result['provider']);
 		$this->assertEquals(500, $result['chunkSize']);
 		$this->assertTrue($result['ocrEnabled']);
-		$this->assertEquals(50, $result['maxFileSizeMB']);
+		$this->assertEquals(['maxBytes' => 52428800], $result['textExtraction']);
 		$this->assertEquals('dolphin', $result['textExtractor']);
 		$this->assertEquals('manual', $result['extractionMode']);
 	}

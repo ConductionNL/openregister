@@ -1066,7 +1066,7 @@ exports[`file configuration settings load golden loads strings 1`] = `
   "description": "Process during upload - direct link between file upload and parsing logic"
  },
  "includeInSearch": false,
- "maxFileSize": 5,
+ "maxFileSize": 100,
  "chunkSize": 50,
  "chunkOverlap": 200,
  "chunkingStrategy": "FIXED_SIZE",
