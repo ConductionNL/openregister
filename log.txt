@@ -5365,3 +5365,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-26T02:25:08Z precheck-20261126T021052-a39f94e1 GREEN tree 8e72ebcf3e on dev d50af8842c prs 1 front=ok: Tests: 67690, Assertions: 240826, Errors: 5, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 27.
 2026-11-27T04:58:52Z integrator-20261127T045745-570ae7da NORESULT tree 6680640335: deps failed
 2026-11-27T05:21:38Z integrator-20261127T045745-570ae7da NORESULT tree 6680640335: checker floor not measured (exit 2)
+2026-11-27T05:28:55Z session-20261127T052855-ffe9ca35 b-thematiq: merged thematiq#2078 (sync-tokens: halving retry + 25-min budget + Xdebug off; local 12m43s -> 4m57s, same outcome). Next: kvk set PR.
