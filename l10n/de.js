@@ -3998,7 +3998,17 @@ OC.L10N.register(
     "The conformance report could not be read." : "Der Konformitätsbericht konnte nicht gelesen werden.",
     "The responses could not be probed." : "Die Antworten konnten nicht getestet werden.",
     "Add a validation message" : "Validierungsmeldung hinzufügen",
-    "Validation messages" : "Validierungsmeldungen"
+    "Validation messages" : "Validierungsmeldungen",
+    "An export key encrypts an instance set, so the set opens only where that key is present. Keys belong to your active organisation." : "Ein Exportschlüssel verschlüsselt einen Instanzsatz, sodass sich der Satz nur dort öffnen lässt, wo dieser Schlüssel vorhanden ist. Schlüssel gehören zu deiner aktiven Organisation.",
+    "Could not load the export keys" : "Die Exportschlüssel konnten nicht geladen werden",
+    "Create export key" : "Exportschlüssel erstellen",
+    "Delete this export key? A set encrypted with it can no longer be opened here." : "Diesen Exportschlüssel löschen? Ein damit verschlüsselter Satz kann hier dann nicht mehr geöffnet werden.",
+    "Export keys" : "Exportschlüssel",
+    "No export keys yet" : "Noch keine Exportschlüssel",
+    "Recovery string" : "Wiederherstellungszeichenfolge",
+    "Rotate" : "Rotieren",
+    "Store this recovery string somewhere else now. It is shown only once, and without it a set encrypted with this key cannot be opened on another instance." : "Bewahre diese Wiederherstellungszeichenfolge jetzt an einem anderen Ort auf. Sie wird nur einmal angezeigt, und ohne sie lässt sich ein mit diesem Schlüssel verschlüsselter Satz auf keiner anderen Instanz öffnen.",
+    "The export key action failed" : "Die Aktion für den Exportschlüssel ist fehlgeschlagen"
 },
 "nplurals=2; plural=(n != 1);"
 );

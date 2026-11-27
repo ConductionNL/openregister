@@ -5235,4 +5235,8 @@ Service/Operations/ReindexSelectionService.php,,Service,,,,,Core
 Service/Operations/ReindexSelectionServiceInterface.php,,Service,,,,,Core
 BackgroundJob/ReindexSelectionJob.php,,BackgroundJob,,,,,Core
 Controller/OperationsReindexController.php,,Controller,,,,,Core
+Controller/ExportKeysController.php,,Controller,,,,,Configuration
+Service/Exchange/ExportKeyDirectory.php,,Service,,,,,Configuration
+Kernel/Contracts/ActiveOrganisationReaderInterface.php,,Kernel,,,,,Kernel
+Service/ActiveOrganisationReader.php,,Service,,,,,Core
 Repair/PrepareAuditSealing.php,,Repair,,,,,Compliance

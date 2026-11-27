@@ -4344,7 +4344,17 @@ OC.L10N.register(
     "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Regels waarvoor geen enkele ontvanger is gevonden, zodat er niets is verstuurd en niemand op de hoogte is gebracht. Voeg leden toe aan de groepen die ze noemen, of wijzig hun ontvangers.",
     "Times reached nobody: {count}. Last on {date}." : "Aantal keer zonder ontvanger: {count}. Laatst op {date}.",
     "Add a validation message" : "Een validatiemelding toevoegen",
-    "Validation messages" : "Validatiemeldingen"
+    "Validation messages" : "Validatiemeldingen",
+    "An export key encrypts an instance set, so the set opens only where that key is present. Keys belong to your active organisation." : "Een exportsleutel versleutelt een instantieset, zodat de set alleen opent waar die sleutel aanwezig is. Sleutels horen bij je actieve organisatie.",
+    "Could not load the export keys" : "De exportsleutels konden niet worden geladen",
+    "Create export key" : "Exportsleutel aanmaken",
+    "Delete this export key? A set encrypted with it can no longer be opened here." : "Deze exportsleutel verwijderen? Een set die ermee is versleuteld, kan hier dan niet meer worden geopend.",
+    "Export keys" : "Exportsleutels",
+    "No export keys yet" : "Nog geen exportsleutels",
+    "Recovery string" : "Herstelcode",
+    "Rotate" : "Roteren",
+    "Store this recovery string somewhere else now. It is shown only once, and without it a set encrypted with this key cannot be opened on another instance." : "Bewaar deze herstelcode nu ergens anders. Hij wordt maar één keer getoond, en zonder deze code kan een set die met deze sleutel is versleuteld niet op een andere instantie worden geopend.",
+    "The export key action failed" : "De actie op de exportsleutel is mislukt"
 },
 "nplurals=2; plural=(n != 1);"
 );

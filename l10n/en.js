@@ -4231,7 +4231,17 @@ OC.L10N.register(
     "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients.",
     "Times reached nobody: {count}. Last on {date}." : "Times reached nobody: {count}. Last on {date}.",
     "Add a validation message" : "Add a validation message",
-    "Validation messages" : "Validation messages"
+    "Validation messages" : "Validation messages",
+    "An export key encrypts an instance set, so the set opens only where that key is present. Keys belong to your active organisation." : "An export key encrypts an instance set, so the set opens only where that key is present. Keys belong to your active organisation.",
+    "Could not load the export keys" : "Could not load the export keys",
+    "Create export key" : "Create export key",
+    "Delete this export key? A set encrypted with it can no longer be opened here." : "Delete this export key? A set encrypted with it can no longer be opened here.",
+    "Export keys" : "Export keys",
+    "No export keys yet" : "No export keys yet",
+    "Recovery string" : "Recovery string",
+    "Rotate" : "Rotate",
+    "Store this recovery string somewhere else now. It is shown only once, and without it a set encrypted with this key cannot be opened on another instance." : "Store this recovery string somewhere else now. It is shown only once, and without it a set encrypted with this key cannot be opened on another instance.",
+    "The export key action failed" : "The export key action failed"
 },
 "nplurals=2; plural=(n != 1);"
 );
