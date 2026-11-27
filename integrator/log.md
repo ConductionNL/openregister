@@ -198,3 +198,4 @@
 2026-11-27T07:20:24Z NORESULT prs=none main=1abff0ac85 integrator-cloud (no tree built: static.developer.overheid.nl still proxy 403 in Default env (allowed_hosts empty, no other environment exists), checker floor cannot run; main unchanged since 05:22; ready tree unchanged: #10533 #11324 #11329 #11339 #11344)
 2026-11-27T08:28:00Z GREEN prs=10533,11324,11329,11339,11344 main=1abff0ac85 integrator-cloud (merged; main now 45bf713900; checker floor IMPROVED score 64->92)
 2026-11-27T08:39:54Z GREEN prs=11086,11203,11231,11236 main=45bf713900 integrator-cloud (merged; main now bc2133f863)
+2026-11-27T08:51:05Z GREEN prs=11241,11246,11251,11256 main=bc2133f863 integrator-cloud (merge exit 6)
