@@ -7,3 +7,7 @@
 [chromium] › tests/e2e/label-widget.spec.ts:135:6 › label widget › REQ-LBL-001: a pasted <script> tag renders as literal text and never executes 
 [chromium] › tests/e2e/label-widget.spec.ts:76:6 › label widget › add → fill → save → render round-trips the content and survives reload 
 # shard 5/8: 305 passed, 8 failed, 1 skipped (28.3 min); NC 34.0.6 MariaDB php -S, OR main 1abff0ac, launchpad development 4405712
+# triage 07:10Z: label-widget x3 FIXED launchpad#2170 (merged; spec relied on a leftover personal dashboard; live 3/3).
+# integrations-page x4 ENVIRONMENT: needs integriq installed; with integriq development adf5c4d enabled 4/4 green, no change.
+# image-widget-clickthrough:73 SANDBOX: popup to example.com lands on chrome-error (no outbound route).
+# sandbox note: NC from the git tag needs apps/viewer (nextcloud/viewer stable34) or occ upgrade fails after enabling a new app.
