@@ -22,3 +22,5 @@ ADR-124 performance (Workspace)                    PERF 811 ms in-suite (budget 
 grid-layout-keyboard.spec.ts:265                   GREEN alone 12/12 (--repeat-each=2); order-dependent in the shard run only
 image-widget-clickthrough.spec.ts:73               SANDBOX popup to example.com, no outbound net for Chromium
 integrations-page.spec.ts:178,195,203,221          SANDBOX needs integriq installed (4/4 with it, 26 Nov and live-thematiq-1 27 Nov)
+# shard 2/8 (321, development 0d11ccec): 301 passed, 19 skipped, 1 failed
+ci/manifest-grants.spec.ts:119                     OTHER OpenRegister: grant resolved but ObjectService::findAll as grantee returns 0 rows (MagicRbacHandler; live-launchpad-1 06:17Z)
