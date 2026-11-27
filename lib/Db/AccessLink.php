@@ -70,6 +70,8 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getLastUsedAt()
  * @method void setLastUsedAt(?DateTime $lastUsedAt)
  * @method int getUseCount()
+ * @method string|null getJourney()
+ * @method void setJourney(?string $journey)
  * @method void setUseCount(int $useCount)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
@@ -141,6 +143,18 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 	public const CAP_UPLOAD = 'upload';
 
 	/**
+	 * Change the subject object through one journey whose mode is `update`.
+	 *
+	 * Only ever declared together with that journey's id: a link that carries
+	 * no journey does not declare it, whatever its stored set says.
+	 *
+	 * @var string
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-form-link-may-open-an-existing-record-for-change-req-fjr-008
+	 */
+	public const CAP_EDIT = 'edit';
+
+	/**
 	 * Every capability a link may declare.
 	 *
 	 * A capability this list does not name cannot be declared, and a capability
@@ -149,7 +163,7 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 	 *
 	 * @var array<int, string>
 	 */
-	public const CAPABILITIES = [self::CAP_READ, self::CAP_COMMENT, self::CAP_UPLOAD];
+	public const CAPABILITIES = [self::CAP_READ, self::CAP_COMMENT, self::CAP_UPLOAD, self::CAP_EDIT];
 
 	/**
 	 * The prefix that marks a link principal in the audit trail.
@@ -257,6 +271,13 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 	protected int $useCount = 0;
 
 	/**
+	 * The journey an `edit` link changes its object through: the journey object's uuid.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $journey = null;
+
+	/**
 	 * Constructor: declare the field types Nextcloud's Entity hydrates.
 	 */
 	public function __construct() {
@@ -331,13 +352,40 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 		$declared = [];
 		foreach (explode(',', (string)$this->capabilities) as $candidate) {
 			$name = strtolower(trim($candidate));
-			if ($this->isDeclarable(name: $name, declared: $declared) === true) {
+			if ($this->isDeclarable(name: $name, declared: $declared) === true && $this->carries(capability: $name) === true) {
 				$declared[] = $name;
 			}
 		}
 
 		return $declared;
 	}//end declaredCapabilities()
+
+	/**
+	 * Whether the link carries what a capability needs: `edit` needs a journey.
+	 *
+	 * @param string $capability The normalised capability name.
+	 *
+	 * @return bool False only for `edit` on a link without a journey.
+	 */
+	private function carries(string $capability): bool {
+		return $capability !== self::CAP_EDIT || $this->journeyId() !== null;
+	}//end carries()
+
+	/**
+	 * The journey an `edit` link opens, or null when it carries none.
+	 *
+	 * @return string|null The journey object's uuid.
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-form-link-may-open-an-existing-record-for-change-req-fjr-008
+	 */
+	public function journeyId(): ?string {
+		$journey = trim((string)$this->journey);
+		if ($journey === '') {
+			return null;
+		}
+
+		return $journey;
+	}//end journeyId()
 
 	/**
 	 * Whether a normalised name is a known capability not yet in the list.
@@ -425,7 +473,7 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
 	public function jsonSerialize(): array {
-		return array_merge($this->subjectJson(), $this->lifecycleJson());
+		return array_merge($this->subjectJson(), $this->journeyJson(), $this->lifecycleJson());
 	}//end jsonSerialize()
 
 	/**
@@ -446,6 +494,20 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 			'createdBy' => $this->createdBy,
 		];
 	}//end subjectJson()
+
+	/**
+	 * The journey an `edit` link opens, as `{journey}`; empty when it carries none.
+	 *
+	 * @return array<string, string>
+	 */
+	private function journeyJson(): array {
+		$journey = $this->journeyId();
+		if ($journey === null) {
+			return [];
+		}
+
+		return ['journey' => $journey];
+	}//end journeyJson()
 
 	/**
 	 * The link's timestamps, use and whether it answers now.
@@ -476,11 +538,14 @@ class AccessLink extends Entity implements JsonSerializable, AccessLinkInterface
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
 	 */
 	public function publicDescriptor(): array {
-		return [
-			'subjectType' => $this->subjectType,
-			'capabilities' => $this->declaredCapabilities(),
-			'label' => $this->label,
-			'expiresAt' => $this->expiresAt?->format('c'),
-		];
+		return array_merge(
+			[
+				'subjectType' => $this->subjectType,
+				'capabilities' => $this->declaredCapabilities(),
+				'label' => $this->label,
+				'expiresAt' => $this->expiresAt?->format('c'),
+			],
+			$this->journeyJson()
+		);
 	}//end publicDescriptor()
 }//end class
