@@ -222,3 +222,4 @@
 2026-11-27T12:13:57Z GREEN prs=11352,11353,11371,11372 main=c2f01e11e5 integrator-cloud (merged; main now fb25d44783)
 2026-11-27T12:25:49Z GREEN prs=11354,11373 main=fb25d44783 integrator-cloud (merged; main now 99cfb73d4b)
 2026-11-27T12:38:13Z GREEN prs=11355,11356,11358,11369 main=99cfb73d4b integrator-cloud (merged; main now 2d1be742bb)
+2026-11-27T12:43:35Z AUTOPARK prs=11077 main=2d1be742bb integrator-cloud (sbom: package-lock.json changed without sbom.cdx.json)
