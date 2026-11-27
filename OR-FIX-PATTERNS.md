@@ -1010,3 +1010,6 @@ Fix: keep both sides' lines (union of each hunk: ours then theirs), then bash -n
 - Symptom: reviewer BLOCK 'merged with main the job is no longer registered' (seen #10156, #10526, #11146: OriginalRetentionJob).
 - Cause: resolving the info.xml version-bump conflict by taking the PR side wholesale drops <job>/<step> lines main added since.
 - Fix: after merging main, `git diff origin/main -- appinfo/info.xml` must show only the PR's own lines (version + its jobs/steps); re-add any main line missing, and add an assertStringContainsString guard test on info.xml for that job.
+## New runAsSystem caller fails SystemOperationContextBoundaryTest (or-fix-6, #11346)
+- Symptom: SystemOperationContextBoundaryTest::testTheCallSiteSetIsPinned 'A new caller elevates to a trusted userless principal' naming a lib file the PR added.
+- Fix: when the caller truly has no user (occ command, repair, seeding shipped data), add it to ALLOWED with a one-line reason comment naming the entry point; when it stands in for a missing user, refuse instead. Never under lib/Controller, Flow/Nodes or Mcp (FORBIDDEN_PREFIXES).
