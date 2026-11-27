@@ -19,6 +19,7 @@ DONE:
 (none yet)
 
 DECISIONS (Ruben, for builders and helpers; apply them, do not ask again):
+- 27 Nov 2026 11:20 CET (Ruben, launchpad#2204): before a person has starred any favourite, the More menu's Dashboards column shows the open dashboard, a short explanation that starring a dashboard makes it appear here, and the 'More' link to the full list.
 - 27 Nov 2026 10:30 CET (Ruben, launchpad review): a default tile shows the organisation's logo as a white SVG on the organisation's coloured background, without the payoff. launchpad opens on the drawn start page LpVandaag. Full list in REVIEW-LAUNCHPAD.md.
 - 27 Nov 2026 09:10 CET (Ruben): SPEED RULE (Ruben, 27 Nov 2026 09:10 CET, replaces the 300 ms-total line of 06:30): (1) an app page may add at most 150 ms to the Nextcloud floor for a full page load: app page total <= floor + 150 ms, where the floor is the bare Nextcloud Dashboard (no Conduction app enabled) measured in the same run on the same sandbox reference stack, warm; (2) the first useful content (the page's main content visible) appears within 300 ms; (3) every API request <= 100 ms. Report per page: floor, total, total minus floor, first useful content.
 - 27 Nov 2026 09:00 CET (Ruben): launchpad people widgets (People, New colleagues, Birthdays): baseline revision v9 grants people-widget.get-users to all users AND the endpoint (also GET /api/people/new) honours Nextcloud's user-enumeration settings (only same-group users when restricted to own groups, nothing when enumeration is off).
