@@ -1,0 +1,9 @@
+[chromium] › tests/e2e/image-widget-clickthrough.spec.ts:73:6 › image widget — real popup click-through › REQ-IMG-003: a URL image with a click-through link opens the link in a new tab 
+[chromium] › tests/e2e/integrations-page.spec.ts:178:6 › Integrations over the connection registry › lists the six declared connections, all of them LaunchPad's 
+[chromium] › tests/e2e/integrations-page.spec.ts:195:6 › Integrations over the connection registry › reads Configured once a registry URL is saved 
+[chromium] › tests/e2e/integrations-page.spec.ts:203:6 › Integrations over the connection registry › reads Error naming the host once a search cannot reach the registry 
+[chromium] › tests/e2e/integrations-page.spec.ts:221:6 › Integrations over the connection registry › sends Add integration to integriq instead of offering a form 
+[chromium] › tests/e2e/label-widget.spec.ts:121:6 › label widget › REQ-LBL-001: pasted HTML renders as literal text on the dashboard 
+[chromium] › tests/e2e/label-widget.spec.ts:135:6 › label widget › REQ-LBL-001: a pasted <script> tag renders as literal text and never executes 
+[chromium] › tests/e2e/label-widget.spec.ts:76:6 › label widget › add → fill → save → render round-trips the content and survives reload 
+# shard 5/8: 305 passed, 8 failed, 1 skipped (28.3 min); NC 34.0.6 MariaDB php -S, OR main 1abff0ac, launchpad development 4405712
