@@ -20,7 +20,10 @@ import pinia from './pinia.js'
 import registry from './registry.js'
 import { registerLibraryTranslations } from './services/libraryTranslations.js'
 
-import '@conduction/nextcloud-vue/css/index.css'
+// The library's stylesheet is not imported here: the build copies it to
+// css/nextcloud-vue.css and templates/index.php links it, so the browser keeps
+// it parsed between loads instead of this bundle inserting ~1.4 MB of CSS text
+// on every page load (scripts/library-stylesheet-copy.js).
 import 'gridstack/dist/gridstack.min.css'
 
 // Register nextcloud-vue's own catalogue for the reader's language. The library

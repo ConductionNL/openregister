@@ -16,29 +16,25 @@ import {
 } from '../store/store.js'
 
 /**
- * Hot-load all essential application data.
+ * Hot-load the data the app shell and most pages read.
  *
  * This function is called once at application startup to pre-load
- * data that is frequently needed across the application.
+ * registers, schemas and organisations, and set the active organisation.
  *
  * @return {Promise<void>}
- * @spec openspec/specs/frontend-app-bootstrap/spec.md
+ * @spec openspec/changes/boot-reads-only-what-the-page-uses/specs/frontend-app-bootstrap/spec.md
  */
 export async function initializeAppData() {
 	try {
 		// Load all essential data in parallel for maximum performance
+		// What the shell and most pages read. Applications, views and sources
+		// are loaded by the one view or modal that shows them, when it opens:
+		// each of those already refreshes its list on mount, so a boot read
+		// here was a repeat or unused, on every page load.
 		await Promise.all([
-			// Core entities
 			loadRegisters(),
 			loadSchemas(),
-
-			// Configuration dependencies
 			loadOrganisations(),
-			loadApplications(),
-
-			// Extended entities
-			loadViews(),
-			loadSources(),
 		])
 	} catch (error) {
 		console.error('[AppInit] ✗ Error during initialization:', error)
@@ -114,22 +110,44 @@ async function forceLoadSchemas() {
 
 /**
  * Load organisations if not already loaded.
- * Also fetches the active organisation from the user session.
+ * Also sets the active organisation from the user session.
  *
  * @return {Promise<void>}
  */
 async function loadOrganisations() {
+	let listed = null
 	if (
 		!organisationStore.organisationList
 		|| organisationStore.organisationList.length === 0
 	) {
-		await organisationStore.refreshOrganisationList()
+		listed = (await organisationStore.refreshOrganisationList())?.data
 	}
 
-	// Always fetch the active organisation from session
 	if (!organisationStore.activeOrganisation) {
-		await organisationStore.getActiveOrganisation()
+		await loadActiveOrganisation(listed)
 	}
+}
+
+/**
+ * Set the active organisation from the session.
+ *
+ * GET /api/organisations already answers it under `active` (the same
+ * OrganisationService::getActiveOrganisation() call GET /api/organisations/active
+ * makes), so when the list was just read, use that instead of a second,
+ * sequential request on every page load. Without the list's answer, ask.
+ *
+ * @param {object|null} listed The organisation list response body, when read now
+ * @return {Promise<void>}
+ * @spec openspec/changes/boot-reads-only-what-the-page-uses/specs/frontend-app-bootstrap/spec.md
+ */
+async function loadActiveOrganisation(listed) {
+	if (listed && Object.hasOwn(listed, 'active')) {
+		if (listed.active) {
+			organisationStore.setActiveOrganisation(listed.active)
+		}
+		return
+	}
+	await organisationStore.getActiveOrganisation()
 }
 
 /**
@@ -146,40 +164,12 @@ async function forceLoadOrganisations() {
 }
 
 /**
- * Load applications if not already loaded.
- *
- * @return {Promise<void>}
- */
-async function loadApplications() {
-	if (
-		!applicationStore.applicationList
-		|| applicationStore.applicationList.length === 0
-	) {
-		await applicationStore.refreshApplicationList()
-	}
-}
-
-/**
  * Force load applications (always refreshes).
  *
  * @return {Promise<void>}
  */
 async function forceLoadApplications() {
 	await applicationStore.refreshApplicationList()
-}
-
-/**
- * Load views if not already loaded.
- *
- * @return {Promise<void>}
- */
-async function loadViews() {
-	// Views store may not have a list property, check the store structure
-	try {
-		await viewsStore.fetchViews()
-	} catch {
-		// Swallow errors so a missing views endpoint doesn't break app startup
-	}
 }
 
 /**
@@ -192,17 +182,6 @@ async function forceLoadViews() {
 		await viewsStore.fetchViews()
 	} catch {
 		// Swallow errors so a missing views endpoint doesn't break app startup
-	}
-}
-
-/**
- * Load sources if not already loaded.
- *
- * @return {Promise<void>}
- */
-async function loadSources() {
-	if (!sourceStore.sourceList || sourceStore.sourceList.length === 0) {
-		await sourceStore.refreshSourceList()
 	}
 }
 
