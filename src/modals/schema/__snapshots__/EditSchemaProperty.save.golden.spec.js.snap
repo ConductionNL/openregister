@@ -968,6 +968,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: calculation without type
  "selectedRegister": null,
  "selectedSchema": null,
  "titleRows": [],
+ "messageRows": [],
  "isDateProperty": false
 }"
 `;
@@ -1205,6 +1206,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: calculation, facetable t
  "selectedRegister": null,
  "selectedSchema": null,
  "titleRows": [],
+ "messageRows": [],
  "isDateProperty": false
 }"
 `;
@@ -1473,6 +1475,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config with date o
  "selectedRegister": null,
  "selectedSchema": null,
  "titleRows": [],
+ "messageRows": [],
  "isDateProperty": false
 }"
 `;
@@ -1705,6 +1708,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config with option
  "selectedRegister": null,
  "selectedSchema": null,
  "titleRows": [],
+ "messageRows": [],
  "isDateProperty": false
 }"
 `;
@@ -1935,6 +1939,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: facet config without opt
  "selectedRegister": null,
  "selectedSchema": null,
  "titleRows": [],
+ "messageRows": [],
  "isDateProperty": false
 }"
 `;
@@ -2163,6 +2168,7 @@ exports[`EditSchemaProperty initializeSchemaItem loads: no property key 1`] = `
  "selectedRegister": null,
  "selectedSchema": null,
  "titleRows": [],
+ "messageRows": [],
  "isDateProperty": false
 }"
 `;

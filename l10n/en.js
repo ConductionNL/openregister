@@ -4226,7 +4226,9 @@ OC.L10N.register(
     "Every notification rule reached at least one recipient." : "Every notification rule reached at least one recipient.",
     "Notification rules that reached nobody" : "Notification rules that reached nobody",
     "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients.",
-    "Times reached nobody: {count}. Last on {date}." : "Times reached nobody: {count}. Last on {date}."
+    "Times reached nobody: {count}. Last on {date}." : "Times reached nobody: {count}. Last on {date}.",
+    "Add a validation message" : "Add a validation message",
+    "Validation messages" : "Validation messages"
 },
 "nplurals=2; plural=(n != 1);"
 );
