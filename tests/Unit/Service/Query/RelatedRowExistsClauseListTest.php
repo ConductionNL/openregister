@@ -75,7 +75,7 @@ class RelatedRowExistsClauseListTest extends TestCase {
 	public function testAMagicTableListJoinsByJsonContainsOnMariaDb(): void {
 		$sql = $this->render(engine: RelatedRowExistsClause::ENGINE_MARIADB, storage: RelatedRowExistsClause::STORAGE_COLUMNS);
 
-		$this->assertStringContainsString('WHERE JSON_CONTAINS(t."betrokkenen", JSON_QUOTE(rel0._uuid)) AND ', $sql);
+		$this->assertStringContainsString('WHERE JSON_CONTAINS(t.`betrokkenen`, JSON_QUOTE(rel0._uuid)) AND ', $sql);
 	}
 
 	public function testAnObjectsTableListReadsTheListFromTheDocumentAsJson(): void {

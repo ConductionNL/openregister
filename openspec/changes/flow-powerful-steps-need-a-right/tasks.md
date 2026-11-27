@@ -21,7 +21,9 @@
 ## 4. Tests and docs
 
 - [ ] 4.1 Add `tests/e2e/ci/flow-node-rights.spec.ts`: as a non-administrator, see the e-mail step locked, fail to save a flow with it (403 naming the right), have an administrator grant `flow.node.send-email` to the user's group on the settings screen, then save successfully. (live pass, decision 139)
-- [ ] 4.2 Document node rights, the settings screen and the upgrade effect in `docs/`, with a screenshot of the settings section.
+  - Written and green (2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16, passed 4 runs of 4): as `e2e-other` the catalogue the editor reads marks `openregister.send-email` `locked`, a flow with it is refused 403 naming the step type and `flow.node.send-email`; the administrator adds a new group of theirs on the Action rights screen and saves; the step is no longer locked and the same flow saves 201; teardown puts the right back as it was. Left open for one part only: the step picker in `@conduction/nextcloud-vue` (`CnFlowStepPickerModal`) draws no lock, so "see the e-mail step locked" is asserted on the catalogue's `locked`, not on the screen.
+- [x] 4.2 Document node rights, the settings screen and the upgrade effect in `docs/`, with a screenshot of the settings section.
+  - "Steps that need a right" in `docs/features/flows.md`: the four rights and their step types, the 403 and the `locked` catalogue entry, the Action rights screen and its API (`groups`, `nodeRights`, `GET /api/permissions`), and the upgrade effect of `InitializeFlowNodeRights`; screenshot `docs/screenshots/openregister-action-rights.png` taken on the sandbox. `npm run build` in `docs/` passes.
 
 Acceptance:
 

@@ -1,0 +1,1702 @@
+{
+	"info": {
+		"_postman_id": "or-reviewer-decisions-2026-11-25",
+		"name": "OpenRegister Reviewer Decisions API",
+		"description": "A reviewer owns their decision, through the route (change reviewer-owns-their-decisions, task 1.3; REQ-ROD-001).\n\nTwo reviewers in one group, which the schema lets read and update its objects, under x-openregister-review ownership decider. A file on an object names a BSN; extraction makes it an entity with one relation on the file. The first reviewer decides (PATCH /api/entity-relations/{id}, 200, a decision uuid), the second is refused with 403 decision-owned naming that decision and its decider, the relation read back carries the first decision unchanged, and the first reviewer may still change their own (recorded as a new decision superseding the first).\n\nAn object's file sits in the openregister account's home, which no reviewer has a mount on; the relation is then decided by the object's update rule. Before that, every reviewer was refused no_write_access_to_relation_subject, so the ownership rule was never reached through the route.\n\nEach run makes its own valid BSN (eleven test): extraction is keyed on a file's content and entities are shared by value. A save of the file settings replaces them, so they are read first, the save sends the whole set with only the recognition keys changed, and the whole set is restored at the end.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "setUp: a review group",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/groups?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"groups"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"groupid\": \"{{groupId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// Values unique to this run: extraction is keyed on the content, and entities are shared by value.",
+							"const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);",
+							"pm.collectionVariables.set('suffix', suffix);",
+							"pm.collectionVariables.set('groupId', 'or-reviewers-' + suffix);",
+							"pm.collectionVariables.set('firstId', 'or-reviewer-a-' + suffix);",
+							"pm.collectionVariables.set('secondId', 'or-reviewer-b-' + suffix);",
+							"pm.collectionVariables.set('reviewerPassword', 'Rv!' + suffix + '-' + Math.random().toString(36).slice(2) + 'Zq9');",
+							"// A BSN passes the eleven test: 9a + 8b + ... + 2h - i is a multiple of 11.",
+							"const bsn = () => { for (;;) { const d = Array.from({ length: 8 }, () => Math.floor(Math.random() * 10)); d[0] = 1 + Math.floor(Math.random() * 9); const sum = d.reduce((s, v, i) => s + v * (9 - i), 0); const last = sum % 11; if (last < 10) { return d.join('') + last; } } };",
+							"pm.collectionVariables.set('bsn', bsn());"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the group is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the first reviewer, in the group and nothing else",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{firstId}}\", \"password\": \"{{reviewerPassword}}\", \"groups\": [\"{{groupId}}\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the reviewer is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the second reviewer, in the group and nothing else",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{secondId}}\", \"password\": \"{{reviewerPassword}}\", \"groups\": [\"{{groupId}}\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the reviewer is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: remember the file settings",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"settings",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the settings are read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"// A save REPLACES the file settings: a key it does not name goes back to its default. So the save below",
+							"// sends the whole set as read here, with only the recognition keys changed, and tearDown restores it.",
+							"const before = Object.assign({}, o); delete before.documentStore; delete before.openAnonymiserPasswordSet;",
+							"pm.collectionVariables.set('settingsBefore', JSON.stringify(before));",
+							"pm.collectionVariables.set('settingsOn', JSON.stringify(Object.assign({}, before, { entityRecognitionEnabled: true, entityRecognitionMethod: 'regex', entityPatternSets: ['nl'] })));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: entity recognition on, regex method, the nl pattern set",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"settings",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{settingsOn}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the settings are saved', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a schema the group may update, whose decisions belong to their decider",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Reviewed requests {{suffix}}\", \"slug\": \"reviewed-requests-{{suffix}}\", \"properties\": {\"titel\": {\"type\": \"string\"}}, \"authorization\": {\"read\": [\"{{groupId}}\"], \"update\": [\"{{groupId}}\"]}, \"configuration\": {\"x-openregister-review\": {\"ownership\": \"decider\"}}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('schemaId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Reviewed requests {{suffix}}\", \"slug\": \"reviewed-requests-reg-{{suffix}}\", \"schemas\": [{{schemaId}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('registerId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: an object",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"titel\": \"Verzoek\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the object is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"const o = pm.response.json(); pm.collectionVariables.set('objectId', o.id || o['@self'].id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a file on the object naming a BSN",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectId}}",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"name\": \"verzoek-{{suffix}}.txt\",\n \"content\": \"Burgerservicenummer {{bsn}} van de verzoeker.\"\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the file is stored', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('fileId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: extract it",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/files/{{fileId}}/extract",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"files",
+						"{{fileId}}",
+						"extract"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the extraction runs', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: the BSN is an entity",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entities?type=SSN&search={{bsn}}&limit=50",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entities"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "SSN"
+						},
+						{
+							"key": "search",
+							"value": "{{bsn}}"
+						},
+						{
+							"key": "limit",
+							"value": "50"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the entities are listed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const found = pm.response.json().data.filter(e => e.value === pm.collectionVariables.get('bsn'));",
+							"pm.test('one SSN entity holds the BSN', () => pm.expect(found.length).to.eql(1));",
+							"pm.collectionVariables.set('entityId', found[0].id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: its one relation is on the file and undecided",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entities/{{entityId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entities",
+						"{{entityId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the entity is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const rels = pm.response.json().relations;",
+							"pm.test('one relation, on the file, no decision yet', () => { pm.expect(rels.length).to.eql(1); pm.expect(rels[0].fileId).to.eql(Number(pm.collectionVariables.get('fileId'))); pm.expect(rels[0].decision).to.eql(null); });",
+							"pm.collectionVariables.set('relationId', rels[0].id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The first reviewer decides: anonymise, on ground 5.1.2e",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entity-relations/{{relationId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entity-relations",
+						"{{relationId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{firstId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{reviewerPassword}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"skipAnonymization\": false,\n \"bases\": [\n  \"5.1.2e\"\n ],\n \"decisionNote\": \"Gevoelig\"\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// The file sits in the openregister account's home, which the reviewer has no mount on: the object's update",
+							"// rule decides, and before that rule every reviewer was refused no_write_access_to_relation_subject.",
+							"pm.test('the decision is taken', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"pm.test('the relation carries the ground and a decision', () => { pm.expect(o.bases).to.eql(['5.1.2e']); pm.expect(o.skipAnonymization).to.eql(false); pm.expect(o.decision).to.be.a('string').and.not.empty; });",
+							"pm.collectionVariables.set('decisionId', o.decision);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The second reviewer may not change it: 403 decision-owned",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entity-relations/{{relationId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entity-relations",
+						"{{relationId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{secondId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{reviewerPassword}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"skipAnonymization\": true,\n \"decisionNote\": \"Anders\"\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the change is refused', () => pm.expect(pm.response.code, pm.response.text()).to.eql(403));",
+							"const o = pm.response.json();",
+							"pm.test('as decision-owned', () => pm.expect(o.error).to.eql('decision-owned'));",
+							"pm.test('naming the decision and the first reviewer', () => { pm.expect(o.decision).to.eql(pm.collectionVariables.get('decisionId')); pm.expect(o.decidedBy).to.eql(pm.collectionVariables.get('firstId')); pm.expect(o.decidedAt).to.be.a('string').and.not.empty; });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Read back: the first reviewer's decision stands",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entities/{{entityId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entities",
+						"{{entityId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the entity is read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const rel = pm.response.json().relations.find(r => r.id === Number(pm.collectionVariables.get('relationId')));",
+							"pm.test('the same decision, the ground and the verdict unchanged by the refused change', () => { pm.expect(rel.decision).to.eql(pm.collectionVariables.get('decisionId')); pm.expect(rel.bases).to.eql(['5.1.2e']); pm.expect(rel.skipAnonymization).to.eql(false); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The first reviewer may still change their own decision",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/entity-relations/{{relationId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"entity-relations",
+						"{{relationId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{firstId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{reviewerPassword}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"skipAnonymization\": false,\n \"bases\": [\n  \"5.1.2e\",\n  \"5.1.2d\"\n ],\n \"decisionNote\": \"Gevoelig, ook 5.1.2d\"\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the change is taken', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const o = pm.response.json();",
+							"// A change is recorded as a new decision superseding the first, so the uuid moves on.",
+							"pm.test('a superseding decision, now with both grounds', () => { pm.expect(o.decision).to.be.a('string').and.not.eql(pm.collectionVariables.get('decisionId')); pm.expect(o.bases).to.eql(['5.1.2e', '5.1.2d']); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the file settings as they were",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/settings/files",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"settings",
+						"files"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{{settingsBefore}}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the settings are restored', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the object",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the object is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the schema",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: a reviewer",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{firstId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{firstId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the reviewer is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: a reviewer",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{secondId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{secondId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the reviewer is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the group",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/groups/{{groupId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"groups",
+						"{{groupId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the group is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "suffix",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "groupId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "firstId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "secondId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "reviewerPassword",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "bsn",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "settingsBefore",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "settingsOn",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "schemaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "registerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "objectId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "fileId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "entityId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "relationId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "decisionId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

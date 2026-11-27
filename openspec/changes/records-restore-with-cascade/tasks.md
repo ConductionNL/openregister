@@ -14,8 +14,10 @@
 ## 3. Page, tests and docs
 
 - [x] 3.1 "Restore with related records" and the preview dialog in `src/dialogs/` from `DeletedIndex.vue`, store call in `deleted.js`, texts in en and nl. Verify: component test for the dialog.
-- [ ] 3.2 Add `tests/e2e/ci/restore-with-cascade.spec.ts`: delete a lead with two cascading activities and one set-null reference, edit a second survivor, preview, restore, and assert the activities are back, the reference is back and the edited survivor is untouched.
-- [ ] 3.3 Document restore with related records in `docs/features/`, with a screenshot of the preview.
+- [x] 3.2 Add `tests/e2e/ci/restore-with-cascade.spec.ts`: delete a lead with two cascading activities and one set-null reference, edit a second survivor, preview, restore, and assert the activities are back, the reference is back and the edited survivor is untouched.
+  - done: `tests/e2e/ci/restore-with-cascade.spec.ts`, 3 passed against a live Nextcloud 34 on PostgreSQL. The preview lists two to restore, one reference to put back and one changed since the delete; after the restore the lead and both activities read back, the untouched contact names the lead again and the edited one keeps its other lead. Building it found that the preview classed every cascaded record `already` (the plain cross-table lookup leaves `deleted` empty), so no restore brought any back: fixed in `CascadeRestoreService::foundObjects()` (`findStoredAcrossAllMagicTables`); the spec fails without it (`Will be restored (2)` not found). On PostgreSQL the delete itself needs openregister#11282 (the calendar-trigger index listener's `LIKE` on the json `nodes` column aborts the delete's transaction).
+- [x] 3.3 Document restore with related records in `docs/features/`, with a screenshot of the preview.
+  - done: `docs/features/restore-with-related-records.md` with `restore-with-related-records-preview.png`, taken from the e2e run.
 
 Acceptance:
 

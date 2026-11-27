@@ -490,9 +490,10 @@ class RelatedRowExistsClauseTest extends TestCase {
 	public function testAnIdentifierWithATrailingNewlineIsRefused(): void {
 		$method = new \ReflectionMethod(RelatedRowExistsClause::class, 'quoteIdentifier');
 
-		$this->assertSame('"case_id"', $method->invoke($this->clause, 'case_id'));
+		$this->assertSame('"case_id"', $method->invoke($this->clause, 'case_id', RelatedRowExistsClause::ENGINE_POSTGRES));
+		$this->assertSame('`case_id`', $method->invoke($this->clause, 'case_id', RelatedRowExistsClause::ENGINE_MARIADB));
 		$this->expectException(InvalidArgumentException::class);
-		$method->invoke($this->clause, "case_id\n");
+		$method->invoke($this->clause, "case_id\n", RelatedRowExistsClause::ENGINE_MARIADB);
 	}//end testAnIdentifierWithATrailingNewlineIsRefused()
 
 	/**

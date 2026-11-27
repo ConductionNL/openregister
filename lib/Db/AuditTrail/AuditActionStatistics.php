@@ -237,16 +237,24 @@ final class AuditActionStatistics {
 	}//end onOrAfter()
 
 	/**
-	 * Keep rows created up to a day, when one is given.
+	 * Keep rows created up to and including a day, when one is given.
+	 *
+	 * `created` holds a time, so comparing it with the bare day kept only rows
+	 * of that day's first second: a dashboard asking for "the last 30 days"
+	 * up to today lost today's events. The bound is the start of the next day,
+	 * exclusive.
 	 *
 	 * @param IQueryBuilder $qb  The query.
 	 * @param DateTime|null $day The day.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/built-in-dashboards/spec.md#requirement-the-app-opens-on-a-dashboard-of-registers-counts-and-activity-req-ads-002
 	 */
 	private static function onOrBefore(IQueryBuilder $qb, ?DateTime $day): void {
 		if ($day !== null) {
-			$qb->andWhere($qb->expr()->lte('created', $qb->createNamedParameter($day->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
+			$nextDay = (clone $day)->modify('+1 day');
+			$qb->andWhere($qb->expr()->lt('created', $qb->createNamedParameter($nextDay->format('Y-m-d'), IQueryBuilder::PARAM_STR)));
 		}
 	}//end onOrBefore()
 

@@ -287,6 +287,23 @@ class PublishedDigestService {
 	}//end sealOf()
 
 	/**
+	 * Mark the open record of a published file whose bytes changed, for the operations console.
+	 *
+	 * Written apart from the audit row, and before it, so the console still
+	 * lists the file when the audit write fails or the object is gone.
+	 *
+	 * @param FileDigest $record  The open record.
+	 * @param string     $current The digest the file has now, '' when it is gone or unreadable.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	public function flagMismatch(FileDigest $record, string $current): void {
+		$this->digests->flagMismatch(id: (int)$record->getId(), at: new DateTime(), current: $current);
+	}//end flagMismatch()
+
+	/**
 	 * Write the audit row of a published file whose bytes changed.
 	 *
 	 * @param ObjectEntity $object  The object the file belongs to.

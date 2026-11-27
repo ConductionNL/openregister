@@ -164,6 +164,7 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 
 	private function objects(): MagicMapperInterface {
 		$mapper = $this->createMock(MagicMapperInterface::class);
+		$mapper->method('rememberPairCounts')->willReturnCallback(static fn (callable $work): mixed => $work());
 		$mapper->method('getAllRegisterSchemaPairs')->willReturnCallback(
 			function (): array {
 				if ($this->pairsFail === true) {

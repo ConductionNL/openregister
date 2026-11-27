@@ -54,6 +54,7 @@ use OCA\OpenRegister\Controller\Support\AccessLinkControllerServices;
 use OCA\OpenRegister\Controller\Support\AccessLinkPlatform;
 use OCA\OpenRegister\Controller\Support\ObjectShareLinkThrottle;
 use OCA\OpenRegister\Controller\Support\TrimmedRequestParam;
+use OCP\IURLGenerator;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
@@ -71,6 +72,8 @@ use OCA\OpenRegister\Service\Sharing\LinkJourneyGuard;
 use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -156,6 +159,13 @@ class AccessLinkController extends Controller {
 	private readonly ObjectShareLinkThrottle $rejections;
 
 	/**
+	 * Builds the holder's download address of a file link; null in legacy fixtures.
+	 *
+	 * @var IURLGenerator|null
+	 */
+	private readonly ?IURLGenerator $urls;
+
+	/**
 	 * PSR logger.
 	 *
 	 * @var LoggerInterface
@@ -181,6 +191,7 @@ class AccessLinkController extends Controller {
 		$this->journeys = $services->domain->journeys;
 		$this->userSession = $services->platform->userSession;
 		$this->logger = $services->platform->logger;
+		$this->urls = $services->urls;
 		$this->rejections = self::rejectionCounter(platform: $services->platform);
 	}//end __construct()
 
@@ -232,8 +243,94 @@ class AccessLinkController extends Controller {
 
 		$this->links->recordUse(link: $link, use: $this->useOf(act: AccessLinkServiceInterface::ACT_READ, object: $object));
 
+		if (isset($body['file']) === true && is_array($body['file']) === true) {
+			$body['file'] = $this->holderFile(file: $body['file'], anchor: $anchor);
+		}
+
 		return new JSONResponse(array_merge(['link' => $link->publicDescriptor()], $body));
 	}//end open()
+
+	/**
+	 * GET /api/public/links/{anchor}/download
+	 *
+	 * Stream the file a file link names to its holder, who has no account.
+	 *
+	 * Admitted exactly as {@see open()} is (anchor, password, `read`), and a
+	 * link to anything but a file, a file the object does not carry or a
+	 * restricted file answers the same 404 as an unknown anchor. Every download
+	 * is recorded as a read of the link.
+	 *
+	 * @param string $anchor The random anchor from the URL.
+	 *
+	 * @return Response The file, 401 when a password is wanted, or 404.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
+	 */
+	#[PublicPage]
+	#[NoCSRFRequired]
+	#[AnonRateLimit(limit: 60, period: 60)]
+	#[BruteForceProtection(action: self::THROTTLE_ACTION)]
+	public function download(string $anchor): Response {
+		$act = $this->admitWithSubject(anchor: $anchor, capability: AccessLink::CAP_READ);
+		if ($act instanceof LinkAct === false) {
+			return $act;
+		}
+
+		$file = $this->reader->file(link: $act->link, object: $act->object);
+		if ($file === null) {
+			return $this->rejected();
+		}
+
+		try {
+			$stream = $file->fopen('rb');
+		} catch (Throwable $e) {
+			$this->logger->warning('[AccessLinkController] A linked file could not be opened: ' . $e->getMessage());
+			$stream = false;
+		}
+
+		if ($stream === false) {
+			return $this->rejected();
+		}
+
+		$this->links->recordUse(link: $act->link, use: $this->useOf(act: AccessLinkServiceInterface::ACT_READ, object: $act->object));
+
+		$mimeType = $file->getMimeType();
+		if ($mimeType === '') {
+			$mimeType = 'application/octet-stream';
+		}
+
+		$response = new StreamResponse($stream);
+		$response->addHeader('Content-Type', $mimeType);
+		$response->addHeader('Content-Disposition', 'attachment; filename="' . rawurlencode($file->getName()) . '"');
+		$response->addHeader('X-Content-Type-Options', 'nosniff');
+		$response->addHeader('Cache-Control', 'private, no-store');
+
+		return $response;
+	}//end download()
+
+	/**
+	 * A file descriptor as its holder can use it: downloaded through the link, not the account routes.
+	 *
+	 * The stored `downloadUrl` and `accessUrl` point at routes that need a
+	 * session, which a holder does not have; a link to them is a dead link.
+	 * The storage `path` names the instance's folders, which is nothing the
+	 * holder needs, so it is left out.
+	 *
+	 * @param array<string, mixed> $file   The file descriptor the reader served.
+	 * @param string               $anchor The link's anchor.
+	 *
+	 * @return array<string, mixed> The descriptor with the holder's download address.
+	 */
+	private function holderFile(array $file, string $anchor): array {
+		unset($file['path']);
+		$file['accessUrl'] = null;
+		$file['downloadUrl'] = null;
+		if ($this->urls !== null) {
+			$file['downloadUrl'] = $this->urls->linkToRoute('openregister.accessLink.download', ['anchor' => $anchor]);
+		}
+
+		return $file;
+	}//end holderFile()
 
 	/**
 	 * POST /api/public/links/{anchor}/comments
