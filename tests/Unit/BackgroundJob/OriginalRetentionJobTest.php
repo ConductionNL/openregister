@@ -284,4 +284,16 @@ class OriginalRetentionJobTest extends TestCase {
 		$this->assertSame(OriginalCustody::STATUS_GONE, $row->getStatus());
 		$this->assertSame(1, $this->report['gone']);
 	}//end testAnOriginalAlreadyGoneIsClosed()
+
+	/**
+	 * The job is registered in appinfo/info.xml, so Nextcloud's cron schedules it.
+	 *
+	 * @return void
+	 */
+	public function testTheJobIsRegisteredInInfoXml(): void {
+		$this->assertStringContainsString(
+			'<job>OCA\OpenRegister\BackgroundJob\OriginalRetentionJob</job>',
+			(string) file_get_contents(__DIR__.'/../../../appinfo/info.xml')
+		);
+	}//end testTheJobIsRegisteredInInfoXml()
 }//end class
