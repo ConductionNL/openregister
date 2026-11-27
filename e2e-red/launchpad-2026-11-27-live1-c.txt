@@ -20,3 +20,9 @@ widgets-tile-type.spec.ts:44                      DEV fixed in #2302 meanwhile
 tiles-rendering.spec.ts:450, tiles-rendering-defects.spec.ts:145   OPEN: getByLabel('Name') resolves to 2 fields in the App or link tile form (strict mode); spec follows #2268's form
 widgets-nc-widget.spec.ts:276                     OPEN: placing an nc-widget now sends 3 item requests where the spec expects none (picker miniatures #2275/#2277/#2283?); not triaged
 widgets-picker-assistant.spec.ts:153              OPEN: no "Case system" in the assistant's proposal; not triaged
+# re-triage 17:30Z on development b0b0 (after #2299-#2312)
+widgets-nc-widget.spec.ts:276                     OPEN, diagnosed: registerNativeEarly registers via setInterval(0) once OCA.Dashboard exists; since
+                                                  first-screen widgets mount in the first render (#2216/#2245) the nc-widget mounts in the same task that
+                                                  creates OCA.Dashboard, so it takes the API path once (1 widget-items request), then the 200 ms poll
+                                                  switches it to native. Test premise, not app: register through a setter trap on OCA.Dashboard.
+widgets-picker-assistant.spec.ts:153              QUESTION in COORDINATOR-QUEUE (REQ-WDG-045 proposes an app tile; #2268 removed app tiles from the cards)
