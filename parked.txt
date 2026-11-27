@@ -253,3 +253,4 @@ openregister#11307 7066661e7171d738d723ae55db0b0d0addc4dfa4 precheck-red alone o
 openregister#11274 ffdf54e0cc71f2dff69c0387e50a76884034dfac precheck-red alone on main: Unit\Middleware\MaintenanceModeMiddlewareTest::testEveryOperationsRouteStaysReachable
 openregister#11077 59018b38ff0dd20e810448f693252799f65f8b3c auto-park: sbom: package-lock.json changed without sbom.cdx.json
 openregister#11346 a58931d1b48ec391e67384b4ae62ff7e9538a64c precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\SystemOperationContextBoundaryTest::testTheCallSiteSetIsPinned
+openregister#11077 e0f9d29a4dde3560a2294c76945c6290c2436650 auto-park: sbom: package-lock.json changed without sbom.cdx.json
