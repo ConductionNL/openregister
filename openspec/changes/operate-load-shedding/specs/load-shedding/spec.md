@@ -12,14 +12,14 @@ Open Register SHALL keep a circuit breaker per dependency: the database, the LLM
 - **WHEN** a caseworker opens the `percelen` list, which calls `GET /api/objects/kadaster/percelen`
 - **THEN** the response is 503 within a second, with a `Retry-After` header and `dependency` `source`
 - **AND** Open Register makes no connection attempt to that database
-- @e2e exclude {specified only; task 5.2 adds tests/e2e/ci/load-shedding.spec.ts}
+- @e2e tests/e2e/ci/load-shedding.spec.ts
 
 #### Scenario: a record on a dead source is not reported as missing
 
 - **GIVEN** the same open breaker
 - **WHEN** a caseworker opens one parcel with `GET /api/objects/kadaster/percelen/00000000-0000-0000-0000-000000000000`
 - **THEN** the response is 503 and not 404
-- @e2e exclude {specified only; task 5.2 adds tests/e2e/ci/load-shedding.spec.ts}
+- @e2e tests/e2e/ci/load-shedding.spec.ts
 
 #### Scenario: the breaker closes after one good probe
 
@@ -38,7 +38,7 @@ A request refused by an open breaker or by database pressure SHALL answer 503 wi
 - **WHEN** an anonymous visitor calls its public list endpoint
 - **THEN** the response is 503 with `dependency` `source` and a `Retry-After`
 - **AND** the body contains no host name, port or database name
-- @e2e exclude {specified only; task 5.2 adds tests/e2e/ci/load-shedding.spec.ts}
+- @e2e tests/e2e/ci/load-shedding.spec.ts
 
 ### Requirement: Database pressure sheds only heavy routes
 
@@ -73,11 +73,11 @@ When the breaker for a webhook receiver's host is open, Open Register SHALL NOT 
 - **GIVEN** the `llm` breaker is open after the provider's outage
 - **WHEN** a functional administrator opens the operations console, sees "LLM provider, open, next probe in 2 minutes" in the "Dependencies" section and presses reset
 - **THEN** the breaker reads closed, the next chat request reaches the provider, and the audit trail holds a `dependency.reset` row naming the administrator
-- @e2e exclude {specified only; task 5.2 adds tests/e2e/ci/load-shedding.spec.ts}
+- @e2e tests/e2e/ci/load-shedding.spec.ts
 
 #### Scenario: a caseworker cannot reset a breaker
 
 - **GIVEN** a signed-in caseworker who is not an administrator
 - **WHEN** they call `POST /api/operations/dependencies/llm/reset`
 - **THEN** the response is 403 and the breaker keeps its state
-- @e2e exclude {specified only; task 5.2 adds tests/e2e/ci/load-shedding.spec.ts}
+- @e2e tests/e2e/ci/load-shedding.spec.ts
