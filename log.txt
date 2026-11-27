@@ -5591,3 +5591,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T16:57:09Z precheck-20261127T164035-8d1b6414 RED tree 807a88c13a prs 1 front=red: Tests: 68254, Assertions: 243238, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Not; first failures: FAIL src/views/object/ObjectsList.spec.js
 2026-11-27T16:59:17Z integrator-20261127T155017-3da46553 GREEN tree 06da7f24f0 on dev 73be975b7e prs 1 front=ok: Tests: 68254, Assertions: 243238, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
 2026-11-27T16:59:28Z integrator-20261127T155017-3da46553 HEAD-MOVED #11349 before push; rebuild
+2026-11-27T17:44:14Z integrator-20261127T155017-3da46553 RED tree e8916710a5 prs 3 front=red: Tests: 68406, Assertions: 243883, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Not; first failures: FAIL src/services/initial-data.golden.spec.js
