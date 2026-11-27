@@ -1430,6 +1430,7 @@ Listener/StateHistoryProjectionListener.php,54,Listener,Service,Service/Listener
 Listener/SurveyWriteListener.php,120,Listener,Work,Work/Listener/SurveyWriteListener.php,0,,Processes
 Listener/SurvivorshipRecomputeListener.php,176,Listener,Service,Service/Listener/SurvivorshipRecomputeListener.php,0,139,Core
 Listener/TablesTableDeletedListener.php,49,Listener,Flows,Flows/Listener/TablesTableDeletedListener.php,0,,Processes
+Listener/TalkAppScriptListener.php,37,Listener,Flows,Flows/Listener/TalkAppScriptListener.php,0,,Processes
 Listener/TaskBlockerReleaseListener.php,48,Listener,Flows,Flows/Listener/TaskBlockerReleaseListener.php,0,,Processes
 Listener/TaskCalendarProjectionListener.php,19,Listener,Work,Work/Listener/TaskCalendarProjectionListener.php,0,471,Processes
 Listener/TaskNotificationListener.php,66,Listener,Flows,Flows/Listener/TaskNotificationListener.php,0,,Processes

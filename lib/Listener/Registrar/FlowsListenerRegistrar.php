@@ -50,6 +50,7 @@ use OCA\OpenRegister\Listener\PartyMergeListener;
 use OCA\OpenRegister\Listener\PrincipalResolverRegistrationListener;
 use OCA\OpenRegister\Listener\PushClientScriptListener;
 use OCA\OpenRegister\Listener\TablesTableDeletedListener;
+use OCA\OpenRegister\Listener\TalkAppScriptListener;
 use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
 use OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent;
@@ -285,6 +286,10 @@ final class FlowsListenerRegistrar {
 		// MailAppScriptListener injects the mail sidebar script into the Mail app
 		// (gated to the Mail app via TemplateResponse->getApp() === 'mail').
 		$context->registerEventListener(\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class, MailAppScriptListener::class);
+
+		// TalkAppScriptListener adds the "Save chat to object" message action to
+		// Talk's page (gated to Talk via TemplateResponse->getApp() === 'spreed').
+		$context->registerEventListener(\OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class, TalkAppScriptListener::class);
 
 		// IntegrationGlobalScriptListener loads the shared integration-registry
 		// bootstrap on EVERY full-page render so the registry is installed +
