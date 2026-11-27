@@ -1,0 +1,27 @@
+# launchpad e2e, live-launchpad-1 (27 Nov 2026 05:00Z-08:00Z)
+# Sandbox: NC 34.0.6 from the github v34.0.6 tag + 3rdparty (download.nextcloud.com 403), MariaDB, Redis, APCu, php -S + router.
+#   Add activity + recommendations from their stable34 branches (the tarball bundles them). notifications stable34 needs a
+#   mozart build (dev tooling), so it stayed off. Turn auth.bruteforce.protection.enabled off: after ~600 tests 127.0.0.1
+#   was throttled at 25 s per login and global-setup timed out. tests/e2e/shared-instance.ts refuses some specs on :8080,
+#   so serve a second php -S on :8095 for those. Build with `npm run build` (webpack alone skips the embed SDK).
+# Code: OpenRegister main 1abff0ac, launchpad development 606e0e92 (nextcloud-vue 2.233.0-beta.1, gridstack 14.1.1).
+# Sweep: 100 files of launchpad-2026-11-25.txt (those not run file-by-file today): 718 passed, 34 failed, 158 did not run.
+#   Rerun of every failing file except the two sandbox ones, on :8095 with bruteforce off: 220 passed, 1 failed.
+
+MERGED today: #2145 store-publish, #2146 archive store-update-and-publish, #2147 setup-wizard 42/42, #2151 APP FIX icon-only
+  tile square + add-tiles office pack, #2153 people-widget 51/51, #2155 dashboards 200/200, #2156 widgets 99/99,
+  #2162 dashboard-store 17 uncited -> 0
+GREEN, no change needed: dashboard-acknowledgements 14/14 (run as a file), demo-seed-boards 3/3 (a-first-visit),
+  gridstack 14 grid files 48/48 + drag/keyboard 36/36 --repeat-each=2
+runtime-shell.spec.ts:759 tour       fixed by #2175 (other lane); my duplicate #2181 closed
+ci/manifest-grants.spec.ts           OTHER openregister#11203 (open): MagicRbacHandler ANDs the grant into the schema's rule conditions
+tiles-add-tiles-dialog grafana-found waits for the add-tiles-dialog port-probing security decision
+admin-templates-resync.spec.ts:326   SANDBOX notifications app absent (git-tag build)
+integrations-page.spec.ts x4         SANDBOX integriq not installed (green with it, see 26 Nov live2)
+cli-commands.spec.ts:805             SANDBOX run it on :8095 (refused on :8080 by shared-instance.ts); green in the rerun
+embedded-analytics.spec.ts:538       SANDBOX my build skipped build:embed-sdk; green in the rerun
+files-widget-access:201, image-widget-scenarios:915, live-data/live-tile, more-menu, no-navigation-panel x3, office-tiles,
+  or-absent, runtime-or-consumption, runtime-shell-canEdit x3, shipped-template-update, template-*, text-display x2,
+  tile-launch-types, video x2, visibility-dialog, widget-calculated-fields, wiki-widget, work-packages
+                                     SANDBOX all green in the rerun (OCS 500s came from a broken notifications install,
+                                     login timeouts from bruteforce throttling)
