@@ -2179,6 +2179,14 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 		['name' => 'user#me', 'url' => '/api/user/me', 'verb' => 'GET'],
 		// Scoped API tokens: the calling principal and the grant its token carries.
 		['name' => 'whoami#show', 'url' => '/api/whoami', 'verb' => 'GET'],
+		// Scoped API tokens: the grant on the caller's own personal tokens (app passwords).
+		// The grant editor on the account page: the caller's granted tokens, naming an app password, and the preview on one object.
+		['name' => 'personalTokenGrants#index', 'url' => '/api/tokens/grants', 'verb' => 'GET'],
+		['name' => 'personalTokenGrants#resolve', 'url' => '/api/tokens/grants/resolve', 'verb' => 'POST'],
+		['name' => 'personalTokenGrants#preview', 'url' => '/api/tokens/grants/preview', 'verb' => 'POST'],
+		['name' => 'personalTokenGrants#show', 'url' => '/api/tokens/{tokenId}/grant', 'verb' => 'GET', 'requirements' => ['tokenId' => '\\d+']],
+		['name' => 'personalTokenGrants#update', 'url' => '/api/tokens/{tokenId}/grant', 'verb' => 'PUT', 'requirements' => ['tokenId' => '\\d+']],
+		['name' => 'personalTokenGrants#destroy', 'url' => '/api/tokens/{tokenId}/grant', 'verb' => 'DELETE', 'requirements' => ['tokenId' => '\\d+']],
 		['name' => 'user#updateMe', 'url' => '/api/user/me', 'verb' => 'PUT'],
 		['name' => 'user#login', 'url' => '/api/user/login', 'verb' => 'POST'],
 		['name' => 'user#logout', 'url' => '/api/user/logout', 'verb' => 'POST'],

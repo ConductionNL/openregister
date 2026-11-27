@@ -239,6 +239,22 @@ export default {
 		},
 
 		/**
+		 * The searched register's id, as the string CnIndexPage takes.
+		 *
+		 * The index page's `register` is a string it puts into URLs. Handed the
+		 * register object, it asked for `/api/objects/[object Object]/...` on a
+		 * page opened by URL, and the list showed "An error occurred".
+		 *
+		 * @spec exclude UI plumbing — prop shape for the shared index page
+		 * @return {string}
+		 */
+		searchRegisterId() {
+			const register = objectStore.searchRegister
+			const id = register?.id ?? objectStore.searchParams?.register ?? ''
+			return id === null ? '' : String(id)
+		},
+
+		/**
 		 * Object-type slug derived from the selected register and schema.
 		 *
 		 * @spec exclude UI plumbing — derived identifier for the index page
@@ -1009,7 +1025,7 @@ export default {
 			}"
 			:title="pageTitle"
 			:schema="normalizedSchema"
-			:register="objectStore.searchRegister"
+			:register="searchRegisterId"
 			:objects="normalizedObjects"
 			:store="objectStore"
 			:objectType="computedObjectType"

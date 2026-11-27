@@ -750,3 +750,17 @@ describe('SearchIndex — column sort header (case-insensitive-ordering 1.4)', (
 		expect(computedCall('headerSort', {})).toEqual({ sortKey: null, sortOrder: 'asc' })
 	})
 })
+
+describe('SearchIndex — the register the index page is given', () => {
+	it('is the searched register\'s id as a string, never the register object', () => {
+		Object.assign(mockObjectStore, { searchRegister: { id: 51, title: 'Zaken' }, searchParams: { register: 51 } })
+		expect(computedCall('searchRegisterId', {})).toBe('51')
+	})
+
+	it('falls back to the search scope, and to empty without either', () => {
+		Object.assign(mockObjectStore, { searchRegister: null, searchParams: { register: 7 } })
+		expect(computedCall('searchRegisterId', {})).toBe('7')
+		Object.assign(mockObjectStore, { searchRegister: null, searchParams: {} })
+		expect(computedCall('searchRegisterId', {})).toBe('')
+	})
+})

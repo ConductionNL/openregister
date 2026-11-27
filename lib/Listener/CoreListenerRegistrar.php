@@ -42,6 +42,7 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\Share\Events\BeforeShareCreatedEvent;
 use OCP\User\Events\PostLoginEvent;
 use OCP\User\Events\UserLoggedInEvent;
+use OCP\Authentication\Events\TokenInvalidatedEvent;
 
 /**
  * Subscribes the Core area's listeners, one public slot per position.
@@ -75,6 +76,19 @@ final class CoreListenerRegistrar {
 	public static function identityClaims(IRegistrationContext $context): void {
 		$context->registerEventListener(UserLoggedInEvent::class, IdentityClaimsLoginListener::class);
 	}//end identityClaims()
+
+	/**
+	 * A revoked personal token takes its grant with it (scoped-api-tokens 1.1c).
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Container wiring; the listener carries its own spec.
+	 */
+	public static function personalTokenGrantRevoked(IRegistrationContext $context): void {
+		$context->registerEventListener(TokenInvalidatedEvent::class, PersonalTokenGrantRevokedListener::class);
+	}//end personalTokenGrantRevoked()
 
 	/**
 	 * A service account signs in with its tokens only: any other sign-in is

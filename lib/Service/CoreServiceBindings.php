@@ -356,6 +356,10 @@ use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\CurrentTokenGrantInterface;
+use OCA\OpenRegister\Kernel\Contracts\PersonalTokenGrantBinderInterface;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
+use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantBinder;
 use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
@@ -391,6 +395,9 @@ final class CoreServiceBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		// The one shared TokenGrantSource (registered in RbacWiring): the alias resolves to that instance.
+		CurrentTokenGrantInterface::class => TokenGrantSource::class,
+		PersonalTokenGrantBinderInterface::class => PersonalTokenGrantBinder::class,
 		\OCA\OpenRegister\Kernel\Contracts\DraftPreviewInterface::class => \OCA\OpenRegister\Service\Object\DraftService::class,
 		ObjectActivityAuditInterface::class => ObjectActivityAudit::class,
 		\OCA\OpenRegister\Kernel\Contracts\OperatorActionAuditInterface::class => \OCA\OpenRegister\Service\Audit\OperatorActionAudit::class,
