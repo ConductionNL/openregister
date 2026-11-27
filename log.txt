@@ -5517,3 +5517,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T12:38:05Z integrator-20261127T115023-b15bb467 MERGED-TREE 97c8e10073: 4 PRs, main now 2d1be742bb = tested tree
 2026-11-27T12:43:29Z integrator-20261127T115023-b15bb467 AUTOPARK openregister#11077 e0f9d29a sbom: package-lock.json changed without sbom.cdx.json (tree cbb5f8a6d1)
+2026-11-27T12:47:10Z precheck-20261127T093644-0f5ab767 GREEN tree 6b158e0106 on dev 99cfb73d4b prs 1 front=ok: Tests: 67962, Assertions: 242127, Errors: 5, Warnings: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
