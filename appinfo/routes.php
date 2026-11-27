@@ -1164,7 +1164,7 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
 
         // Access links (access-by-link-not-by-account). A scoped, expiring link
         // that opens one object, view or file for somebody with no account. The
-        // three `/api/public/links/` endpoints carry no session: the link row is
+        // four `/api/public/links/` endpoints carry no session: the link row is
         // the whole access decision, and it resolves a principal that is the
         // link itself. An unknown, revoked, switched-off or expired anchor all
         // answer the same 404. The four owner endpoints mint, list, switch off
@@ -1186,6 +1186,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
             'verb' => 'POST',
             'requirements' => ['anchor' => '[A-Za-z0-9]+'],
         ],
+        // The file a file link names, streamed to its holder (access-by-link 7.7).
+        ['name' => 'accessLink#download', 'url' => '/api/public/links/{anchor}/download', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
         // The page a holder lands on (#4061): renders what the link opens for a
         // person, reading the holder endpoints above; it decides nothing itself.
         ['name' => 'accessLinkPage#show', 'url' => '/links/{anchor}', 'verb' => 'GET', 'requirements' => ['anchor' => '[A-Za-z0-9]+']],
