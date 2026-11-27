@@ -1267,7 +1267,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Complex request parameter handling for flexible API
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -2795,8 +2795,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @psalm-return JSONResponse<200|404, array<string, mixed>, array<never, never>>
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -3105,7 +3105,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @return JSONResponse JSON response with the object or error
 	 *
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -4339,7 +4339,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @psalm-suppress NoValue
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Object update requires many validation and processing steps
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
@@ -4583,8 +4583,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 *
 	 * @PublicPage
 	 *
-	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Existing suppression, kept.
+	 * @SuppressWarnings(PHPMD.NPathComplexity) Existing suppression, kept.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/changes/records-api-and-table-stated/specs/objects-crud/spec.md#REQ-RAT-001
