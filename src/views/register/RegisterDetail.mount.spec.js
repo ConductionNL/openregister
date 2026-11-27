@@ -86,6 +86,8 @@ jest.mock('./RegisterModelDiagram.vue', () => ({
 	},
 }))
 jest.mock('./activeRegister.js', () => ({ findActiveRegister: jest.fn() }))
+jest.mock('../../components/audit/EntityChangesList.vue', () => ({ __esModule: true, default: { name: 'EntityChangesList', props: ['kind', 'entityId'], render: () => null } }))
+jest.mock('@nextcloud/auth', () => ({ getCurrentUser: jest.fn(() => null) }))
 jest.mock('@/services/getTheme.js', () => ({ getTheme: () => 'light' }))
 jest.mock('../../services/formatBytes.js', () => ({ __esModule: true, default: (bytes) => `${bytes}B` }))
 jest.mock('../../store/store.js', () => ({
@@ -192,6 +194,26 @@ beforeEach(() => {
 })
 
 afterEach(() => jest.restoreAllMocks())
+
+describe('RegisterDetail changes (history-schema-and-settings-edits-audited)', () => {
+	const { getCurrentUser } = jest.requireMock('@nextcloud/auth')
+
+	it('shows an administrator the register\'s edit history', async () => {
+		getCurrentUser.mockReturnValue({ uid: 'admin', isAdmin: true })
+		const wrapper = await mounted({ id: 4, title: 'Zaken', schemas: [] })
+
+		expect(wrapper.find('section.registerChanges h3').text()).toBe('Changes')
+		expect(wrapper.findComponent({ name: 'EntityChangesList' }).props()).toEqual({ kind: 'registers', entityId: 4 })
+	})
+
+	it('shows nothing of it to a user who is no administrator', async () => {
+		getCurrentUser.mockReturnValue({ uid: 'anna', isAdmin: false })
+		const wrapper = await mounted({ id: 4, title: 'Zaken', schemas: [] })
+
+		expect(wrapper.find('section.registerChanges').exists()).toBe(false)
+		expect(wrapper.findComponent({ name: 'EntityChangesList' }).exists()).toBe(false)
+	})
+})
 
 describe('RegisterDetail mounted', () => {
 	it('reports a missing register and offers the way back to the list', async () => {

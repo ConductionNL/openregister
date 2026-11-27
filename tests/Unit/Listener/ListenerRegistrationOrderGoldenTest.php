@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 285;
+	private const LISTENER_COUNT = 288;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -59,9 +59,11 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * AccessListenerRegistrar (scoped-api-tokens, 281 -> 282).
 	 * Then two JourneyValidationListener registrations (ObjectCreatingEvent, ObjectUpdatingEvent)
 	 * (count 282 -> 284).
-	 * Then TalkAppScriptListener in FlowsListenerRegistrar (files-leaf-save-to-object, 284 -> 285).
+	 * Then EntityEditAuditListener also took the three organisation events
+	 * (history-schema-and-settings-edits-audited), after the register events (count 284 -> 287).
+	 * Then TalkAppScriptListener in FlowsListenerRegistrar (files-leaf-save-to-object, 287 -> 288).
 	 */
-	private const SEQUENCE_SHA256 = 'b320fac0e245bd5fa820201c6c205b5203d6bc836e04b1d409ccdd4d0df7c5c6';
+	private const SEQUENCE_SHA256 = '780881a193ff664033a9311356f6d78ba758a5653bf6a19650e3a8086ca713f8';
 
 	/**
 	 * The registration calls, in call order, with every argument.

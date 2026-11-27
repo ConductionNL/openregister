@@ -7,7 +7,7 @@
  *
  * @spec exclude Unit test of the client-side app shell.
  */
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from './App.vue'
 import { initializeAppData } from './services/AppInitializationService.js'
@@ -44,7 +44,11 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 		</div>`,
 		computed: { pageSidebar: () => null },
 	},
-	CnObjectSidebar: {
+}))
+// The app loads the object sidebar on demand, from the component's own module.
+jest.mock('@conduction/nextcloud-vue/dist/esm/components/CnObjectSidebar/CnObjectSidebar.vue.js', () => ({
+	__esModule: true,
+	default: {
 		name: 'CnObjectSidebar',
 		props: ['title', 'objectId', 'open', 'useRegistry'],
 		emits: ['update:open'],
@@ -105,6 +109,7 @@ describe('App', () => {
 		state.title = 'Case 1'
 		state.objectId = 'o-1'
 		await nextTick()
+		await flushPromises()
 		const sidebar = wrapper.findComponent({ name: 'CnObjectSidebar' })
 		expect(sidebar.props()).toEqual(
 			expect.objectContaining({ title: 'Case 1', objectId: 'o-1', open: true, useRegistry: true }),
@@ -158,8 +163,9 @@ describe('App', () => {
 		)
 	})
 
-	it('passes continue and restart from the user settings to the app root', () => {
+	it('passes continue and restart from the user settings to the app root', async () => {
 		const wrapper = mountApp()
+		await flushPromises()
 		const settings = wrapper.findComponent({ name: 'UserSettings' })
 		expect(settings.props('manifest')).toEqual(MANIFEST)
 		settings.vm.$emit('continueWalkthrough')

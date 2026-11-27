@@ -29,6 +29,7 @@ jest.mock('./sections/ApiTokenConfiguration.vue', () => ({ __esModule: true, def
 jest.mock('./sections/CacheManagement.vue', () => ({ __esModule: true, default: { name: 'CacheManagement', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/DeclaredCredentialProviders.vue', () => ({ __esModule: true, default: { name: 'DeclaredCredentialProviders', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/EdepotHostKeyConfiguration.vue', () => ({ __esModule: true, default: { name: 'EdepotHostKeyConfiguration', props: ['pushStatus'], render: () => null } }))
+jest.mock('./sections/ExportKeysConfiguration.vue', () => ({ __esModule: true, default: { name: 'ExportKeysConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/FederatedTrustConfiguration.vue', () => ({ __esModule: true, default: { name: 'FederatedTrustConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/FileConfiguration.vue', () => ({ __esModule: true, default: { name: 'FileConfiguration', props: ['pushStatus'], render: () => null } }))
 jest.mock('./sections/FlowConfiguration.vue', () => ({ __esModule: true, default: { name: 'FlowConfiguration', props: ['pushStatus'], render: () => null } }))

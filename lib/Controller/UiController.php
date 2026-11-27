@@ -17,6 +17,7 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Kernel\Contracts\ShellBootReadsInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
@@ -57,12 +58,19 @@ class UiController extends Controller {
 	 * Initializes controller with application name and request object.
 	 * Calls parent constructor to set up base controller functionality.
 	 *
-	 * @param string $appName The application name
-	 * @param IRequest $request The HTTP request object
+	 * @param string                       $appName   The application name
+	 * @param IRequest                     $request   The HTTP request object
+	 * @param ShellBootReadsInterface|null $bootReads The shell reads the page carries; null renders without them
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/shell-reads-from-initial-state/specs/apphost-boilerplate/spec.md
 	 */
-	public function __construct(string $appName, IRequest $request) {
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly ?ShellBootReadsInterface $bootReads=null,
+	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -81,10 +89,13 @@ class UiController extends Controller {
 	 * @psalm-return TemplateResponse<200|500, array<string, mixed>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1
+	 * @spec openspec/changes/shell-reads-from-initial-state/specs/apphost-boilerplate/spec.md
 	 */
 	private function makeSpaResponse(): TemplateResponse {
 		try {
 			$response = new TemplateResponse(appName: $this->appName, templateName: 'index', params: []);
+			// The shell's setup and walkthrough reads ride along with the page.
+			$this->bootReads?->provide();
 
 			return $response;
 		} catch (\Exception $e) {

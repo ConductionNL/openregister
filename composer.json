@@ -111,6 +111,7 @@
 	},
 	"require": {
 		"php": "^8.3",
+		"ext-sodium": "*",
 		"adbario/php-dot-notation": "^3.3.0",
 		"bamarni/composer-bin-plugin": "^1.8",
 		"cweagans/composer-patches": "^2.0",

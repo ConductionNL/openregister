@@ -74,16 +74,25 @@
 </template>
 
 <script>
-import { CnAppRoot, CnObjectSidebar } from '@conduction/nextcloud-vue'
+import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { translate as ncT } from '@nextcloud/l10n'
-import { reactive } from 'vue'
+import { defineAsyncComponent, reactive } from 'vue'
 import Dialogs from './dialogs/Dialogs.vue'
 import Modals from './modals/Modals.vue'
 import MainMenu from './navigation/MainMenu.vue'
 import SideBars from './sidebars/SideBars.vue'
-import UserSettings from './views/settings/UserSettings.vue'
 import { initializeAppData } from './services/AppInitializationService.js'
 import { setupDashboardStoreWatchers } from './store/modules/dashboard.js'
+
+// Both are drawn only on demand: the user settings while the settings dialog
+// is open, the object sidebar while a page has activated it. Imported
+// statically, they (through the sidebar's notes tab and its rich-text composer)
+// brought the emoji picker data and the rich-text editor of @nextcloud/vue into
+// the chunks every OpenRegister page loads.
+const UserSettings = defineAsyncComponent(() => import('./views/settings/UserSettings.vue'))
+const CnObjectSidebar = defineAsyncComponent(
+	() => import('@conduction/nextcloud-vue/dist/esm/components/CnObjectSidebar/CnObjectSidebar.vue.js'),
+)
 
 /**
  * The continue and restart labels of the walkthrough section: a walkthrough

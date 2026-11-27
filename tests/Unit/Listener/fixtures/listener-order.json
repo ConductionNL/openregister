@@ -220,6 +220,15 @@
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"
 	],
+	"OCA\\OpenRegister\\Event\\OrganisationCreatedEvent": [
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\OrganisationDeletedEvent": [
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\OrganisationUpdatedEvent": [
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
+	],
 	"OCA\\OpenRegister\\Event\\PersonLinkUpdatedEvent": [
 		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
 	],
