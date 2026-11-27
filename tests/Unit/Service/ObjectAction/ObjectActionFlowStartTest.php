@@ -65,6 +65,27 @@ class ObjectActionFlowStartTest extends TestCase {
 		);
 	}//end testTheBodiesNameTheRunAndItsLink()
 
+	public function testACleanStopAtTheEndNodeIsACompletedRun(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setStatus(FlowRun::STATUS_STOPPED);
+		$run->setLog([['transition' => 'end', 'type' => 'openregister.end', 'status' => 'stopped', 'checkId' => null]]);
+		$start = new ObjectActionFlowStart($run, 'flow-1', true);
+
+		$this->assertTrue($start->isCompleted(), 'lowered steps end at an End node, which stops the run cleanly');
+		$this->assertSame('completed', $start->completedBody(ObjectActionDefinition::fromDeclaration('publish', ['steps' => []]), 'stay')['outcome']);
+	}//end testACleanStopAtTheEndNodeIsACompletedRun()
+
+	public function testAStopByACheckIsNoCompletedRun(): void {
+		$run = new FlowRun();
+		$run->setUuid('run-1');
+		$run->setStatus(FlowRun::STATUS_STOPPED);
+		$run->setLog([['transition' => 'guard', 'type' => 'openregister.end', 'status' => 'stopped', 'checkId' => 'check-1']]);
+
+		$this->assertFalse((new ObjectActionFlowStart($run, 'flow-1', true))->isCompleted());
+		$this->assertFalse($this->start(FlowRun::STATUS_FAILED, true)->isCompleted());
+	}//end testAStopByACheckIsNoCompletedRun()
+
 	public function testTheOutcomeCarriesTheRunUuid(): void {
 		$outcome = $this->start(FlowRun::STATUS_COMPLETED, true)->outcome('completed', [['step' => 's', 'kind' => 'write']]);
 

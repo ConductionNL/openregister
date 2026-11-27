@@ -267,4 +267,69 @@ final class DraftServiceTest extends TestCase {
 		$this->assertFalse($this->service->mayCreate($this->object, $this->schema, 'reader'));
 		$this->assertFalse($this->service->mayCreate($this->object, $this->schema, null));
 	}
+
+	public function testDraftsOfGroupsTheDraftsOfManyObjectsInOneRead(): void {
+		$other = $this->draft('b', 'kees');
+		$other->setObjectUuid('other-uuid');
+		$mine = $this->draft('a', 'kees');
+		$this->drafts->expects($this->once())->method('findForObjects')->with(['9a1e0f3c-5d6b-4c7a-8e9f-0a1b2c3d4e5f', 'other-uuid'])->willReturn([$mine, $other]);
+
+		$grouped = $this->service->draftsOf(objectUuids: ['9a1e0f3c-5d6b-4c7a-8e9f-0a1b2c3d4e5f', 'other-uuid']);
+
+		$this->assertSame(['9a1e0f3c-5d6b-4c7a-8e9f-0a1b2c3d4e5f' => [$mine], 'other-uuid' => [$other]], $grouped);
+	}
+
+	public function testDraftsOfNothingReadsNothing(): void {
+		$this->drafts->expects($this->never())->method('findForObjects');
+
+		$this->assertSame([], $this->service->draftsOf(objectUuids: []));
+	}
+
+	public function testVisibleAmongGivesAWriterEveryDraftAndOthersTheirOwn(): void {
+		$this->writers('wendy');
+		$kees = $this->draft('a', 'kees');
+		$piet = $this->draft('b', 'piet');
+
+		$this->assertSame([$kees, $piet], $this->service->visibleAmong(drafts: [$kees, $piet], object: $this->object, schema: $this->schema, caller: 'wendy'));
+		$this->assertSame([$kees], $this->service->visibleAmong(drafts: [$kees, $piet], object: $this->object, schema: $this->schema, caller: 'kees'));
+		$this->assertSame([], $this->service->visibleAmong(drafts: [$kees, $piet], object: $this->object, schema: $this->schema, caller: null));
+	}
+
+	public function testVisibleAmongWithoutTheObjectShowsOnlyOwnDraftsAndAsksNoPermission(): void {
+		$this->permissions->expects($this->never())->method('hasPermission');
+		$kees = $this->draft('a', 'kees');
+		$piet = $this->draft('b', 'piet');
+
+		$this->assertSame([$piet], $this->service->visibleAmong(drafts: [$kees, $piet], object: null, schema: $this->schema, caller: 'piet'));
+	}
+
+	public function testThePreviewPortDescribesTheDraftALinkHolds(): void {
+		$draft = $this->draft('review', 'kees');
+		$draft->setName('Review copy');
+		$this->drafts->method('findByUuid')->with('draft-uuid')->willReturn($draft);
+
+		$this->assertSame(
+			['objectUuid' => '9a1e0f3c-5d6b-4c7a-8e9f-0a1b2c3d4e5f', 'key' => 'review', 'name' => 'Review copy'],
+			$this->service->previewedDraft(draftUuid: 'draft-uuid')
+		);
+	}
+
+	public function testThePreviewPortAnswersNothingForAGoneOrBlankDraft(): void {
+		$this->drafts->method('findByUuid')->willReturn(null);
+
+		$this->assertNull($this->service->previewedDraft(draftUuid: 'gone'));
+		$this->assertNull($this->service->previewedDraft(draftUuid: '  '));
+		$this->assertNull($this->service->previewCopy(object: $this->object, draftUuid: 'gone'));
+	}
+
+	public function testThePreviewCopyCarriesTheDraftAndLeavesTheLiveObjectAlone(): void {
+		$this->drafts->method('findByUuid')->with('draft-uuid')->willReturn($this->draft('review', 'kees'));
+
+		$copy = $this->service->previewCopy(object: $this->object, draftUuid: 'draft-uuid');
+
+		$this->assertInstanceOf(ObjectEntity::class, $copy);
+		$this->assertNotSame($this->object, $copy);
+		$this->assertSame('in_behandeling', $copy->getObject()['status']);
+		$this->assertSame('nieuw', $this->object->getObject()['status']);
+	}
 }

@@ -1,0 +1,2196 @@
+{
+	"info": {
+		"_postman_id": "or-task-delegation-mandate-2026-11-26",
+		"name": "OpenRegister Task Delegation and Substitution API",
+		"description": "Delegation under a mandate and substitution for an absence, over HTTP (change tasks-delegation-and-substitution, task 4.1).\n\nA case schema whose update a group holds, and a task on a case that requires update. A verb the catalogue does not know is refused (400). Delegating to a user outside the group is 422 naming the user and the verb; a delegation without a mandate is 400; delegating to a member is taken, and the audit records the mandate relied on and the evidence (update, from the schema, through the group).\n\nTwo users set an absence through Nextcloud's own out-of-office API (dav), one with the group member as replacement and one with a user who lacks the mandate. A task for the first goes to the stand-in on their behalf, and the audit carries a substitute entry by the absence naming both and the dates. A task for the second stays with them, and the audit carries a substitute-refused entry naming the stand-in and the verb.\n\nWhy Newman and not tests/e2e/ci/task-delegation-mandate.spec.ts, which the task names: every step is an API call, and gate-19 puts API contracts in Newman. Self-cleaning, except the three tasks: there is no task delete route by decision, and a task outlives its case.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"pm.request.headers.upsert({ key: 'OCS-APIRequest', value: 'true' });"
+				]
+			}
+		}
+	],
+	"item": [
+		{
+			"name": "setUp: the mandate group",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/groups?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"groups"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"groupid\": \"{{groupId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);",
+							"pm.collectionVariables.set('suffix', suffix);",
+							"pm.collectionVariables.set('groupId', 'or-mandate-' + suffix);",
+							"['holder', 'nonHolder', 'absent', 'absentToo'].forEach(w => pm.collectionVariables.set(w + 'Id', 'or-' + w.toLowerCase() + '-' + suffix));",
+							"pm.collectionVariables.set('userPassword', 'Md!' + suffix + '-' + Math.random().toString(36).slice(2) + 'Zq9');",
+							"const day = (offset) => new Date(Date.now() + offset * 24 * 3600 * 1000).toISOString().slice(0, 10);",
+							"pm.collectionVariables.set('firstDay', day(-1));",
+							"pm.collectionVariables.set('lastDay', day(3));"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the group is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: user holder",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{holderId}}\", \"password\": \"{{userPassword}}\", \"groups\": [\"{{groupId}}\"]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the user is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: user nonHolder",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{nonHolderId}}\", \"password\": \"{{userPassword}}\", \"groups\": []}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the user is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: user absent",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{absentId}}\", \"password\": \"{{userPassword}}\", \"groups\": []}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the user is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: user absentToo",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"userid\": \"{{absentTooId}}\", \"password\": \"{{userPassword}}\", \"groups\": []}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the user is created', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a case schema whose update the mandate group holds",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\n \"title\": \"Mandated cases {{suffix}}\",\n \"slug\": \"mandated-cases-{{suffix}}\",\n \"properties\": {\n  \"title\": {\n   \"type\": \"string\"\n  }\n },\n \"authorization\": {\n  \"read\": [\n   \"authenticated\"\n  ],\n  \"update\": [\n   \"{{groupId}}\"\n  ]\n }\n}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('schemaId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a register",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Mandated cases {{suffix}}\", \"slug\": \"mandated-cases-reg-{{suffix}}\", \"schemas\": [{{schemaId}}]}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"pm.collectionVariables.set('registerId', pm.response.json().id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "setUp: a case",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Bezwaar parkeerbelasting\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the case is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"const o = pm.response.json(); pm.collectionVariables.set('objectId', o.id || o['@self'].id);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "A task naming a verb the catalogue does not know is refused: 400",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Onbekend mandaat {{suffix}}\", \"assignee\": \"admin\", \"requiredMandate\": \"approveEverything\", \"objectUuid\": \"{{objectId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('refused', () => pm.expect(pm.response.code, pm.response.text()).to.eql(400));",
+							"pm.test('naming the verb', () => pm.expect(pm.response.json().error).to.include('approveEverything'));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "A task on the case that requires update",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Beslis op bezwaar {{suffix}}\", \"assignee\": \"admin\", \"requiredMandate\": \"update\", \"objectUuid\": \"{{objectId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the task is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"const o = pm.response.json();",
+							"pm.test('requiring update', () => pm.expect(o.requiredMandate).to.eql('update'));",
+							"pm.collectionVariables.set('taskId', o.uuid);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Delegating to a user who does not hold update is refused: 422",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{taskId}}/delegate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks",
+						"{{taskId}}",
+						"delegate"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"delegate\": \"{{nonHolderId}}\", \"mandate\": \"Mandaatbesluit 2026-12\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('refused', () => pm.expect(pm.response.code, pm.response.text()).to.eql(422));",
+							"const e = pm.response.json().error;",
+							"pm.test('naming the user and the verb', () => { pm.expect(e).to.include(pm.collectionVariables.get('nonHolderId')); pm.expect(e).to.include(\"'update'\"); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "A delegation without a mandate is refused: 400",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{taskId}}/delegate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks",
+						"{{taskId}}",
+						"delegate"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"delegate\": \"{{holderId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('refused', () => pm.expect(pm.response.code, pm.response.text()).to.eql(400));",
+							"pm.test('asking for the mandate', () => pm.expect(pm.response.json().error).to.include('mandate'));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "Delegating to a holder is taken",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{taskId}}/delegate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks",
+						"{{taskId}}",
+						"delegate"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"delegate\": \"{{holderId}}\", \"mandate\": \"Mandaatbesluit 2026-12\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('delegated', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The audit records the delegation with its mandate and evidence",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{taskId}}/audit",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks",
+						"{{taskId}}",
+						"audit"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const d = pm.response.json().results.find(e => e.action === 'delegate');",
+							"pm.test('one delegate entry', () => pm.expect(d).to.be.an('object'));",
+							"pm.test('naming the mandate relied on', () => pm.expect(d.mandate).to.eql('Mandaatbesluit 2026-12'));",
+							"pm.test('with the evidence: update, from the schema, through the group', () => { pm.expect(d.mandateEvidence.verb).to.eql('update'); pm.expect(d.mandateEvidence.source).to.eql('schema'); pm.expect(d.mandateEvidence.rule).to.eql(pm.collectionVariables.get('groupId')); });",
+							"pm.test('and no entry for the refused delegations', () => pm.expect(pm.response.json().results.filter(e => e.action === 'delegate').length).to.eql(1));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "absent sets an absence through Nextcloud, with holder as replacement",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/apps/dav/api/v1/outOfOffice/{{absentId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"apps",
+						"dav",
+						"api",
+						"v1",
+						"outOfOffice",
+						"{{absentId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{absentId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{userPassword}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"firstDay\": \"{{firstDay}}\", \"lastDay\": \"{{lastDay}}\", \"status\": \"Met verlof\", \"message\": \"Afwezig\", \"replacementUserId\": \"{{holderId}}\", \"replacementUserDisplayName\": \"{{holderId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the absence is set', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "absentToo sets an absence through Nextcloud, with nonHolder as replacement",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/apps/dav/api/v1/outOfOffice/{{absentTooId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"apps",
+						"dav",
+						"api",
+						"v1",
+						"outOfOffice",
+						"{{absentTooId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{absentTooId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{userPassword}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"firstDay\": \"{{firstDay}}\", \"lastDay\": \"{{lastDay}}\", \"status\": \"Met verlof\", \"message\": \"Afwezig\", \"replacementUserId\": \"{{nonHolderId}}\", \"replacementUserDisplayName\": \"{{nonHolderId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the absence is set', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "A task for the absent user goes to the stand-in, who holds the mandate",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Beoordeel bezwaar {{suffix}}\", \"assignee\": \"{{absentId}}\", \"requiredMandate\": \"update\", \"objectUuid\": \"{{objectId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the task is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"const o = pm.response.json();",
+							"pm.test('assigned to the stand-in, on behalf of the absent user', () => { pm.expect(o.assignee).to.eql(pm.collectionVariables.get('holderId')); pm.expect(o.onBehalfOf).to.eql(pm.collectionVariables.get('absentId')); });",
+							"pm.test('with the stand-in\\'s evidence', () => pm.expect(o.mandateEvidence.rule).to.eql(pm.collectionVariables.get('groupId')));",
+							"pm.collectionVariables.set('substitutedTaskId', o.uuid);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "The audit names the absence and the stand-in",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{substitutedTaskId}}/audit",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks",
+						"{{substitutedTaskId}}",
+						"audit"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const s = pm.response.json().results.find(e => e.action === 'substitute');",
+							"pm.test('one substitute entry, by the absence', () => { pm.expect(s).to.be.an('object'); pm.expect(s.actor).to.match(/^absence:\\d+$/); });",
+							"pm.test('on behalf of the absent user, naming both and the dates', () => { pm.expect(s.onBehalfOf).to.eql(pm.collectionVariables.get('absentId')); pm.expect(s.reason).to.include(pm.collectionVariables.get('holderId')); pm.expect(s.reason).to.include(pm.collectionVariables.get('lastDay')); });"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "A task for an absent user whose stand-in lacks the mandate stays with them",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				},
+				"body": {
+					"mode": "raw",
+					"raw": "{\"title\": \"Beoordeel ander bezwaar {{suffix}}\", \"assignee\": \"{{absentTooId}}\", \"requiredMandate\": \"update\", \"objectUuid\": \"{{objectId}}\"}"
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the task is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));",
+							"const o = pm.response.json();",
+							"pm.test('still assigned to the absent user', () => { pm.expect(o.assignee).to.eql(pm.collectionVariables.get('absentTooId')); pm.expect(o.onBehalfOf || null).to.eql(null); });",
+							"pm.collectionVariables.set('keptTaskId', o.uuid);"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "And the audit says why",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/flow-tasks/{{keptTaskId}}/audit",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"flow-tasks",
+						"{{keptTaskId}}",
+						"audit"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('read', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
+							"const r = pm.response.json().results;",
+							"const s = r.find(e => e.action === 'substitute-refused');",
+							"pm.test('a refused substitution naming the stand-in and the verb', () => { pm.expect(s).to.be.an('object'); pm.expect(s.reason).to.include(pm.collectionVariables.get('nonHolderId')); pm.expect(s.reason).to.include(\"'update'\"); });",
+							"pm.test('and no substitute entry', () => pm.expect(r.filter(e => e.action === 'substitute').length).to.eql(0));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the absence of absent",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/apps/dav/api/v1/outOfOffice/{{absentId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"apps",
+						"dav",
+						"api",
+						"v1",
+						"outOfOffice",
+						"{{absentId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{absentId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{userPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the absence is cleared', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the absence of absentToo",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/apps/dav/api/v1/outOfOffice/{{absentTooId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"apps",
+						"dav",
+						"api",
+						"v1",
+						"outOfOffice",
+						"{{absentTooId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{absentTooId}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{userPassword}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the absence is cleared', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the case",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"objects",
+						"{{registerId}}",
+						"{{schemaId}}",
+						"{{objectId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the case is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the register",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"registers",
+						"{{registerId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the register is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the schema",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"index.php",
+						"apps",
+						"openregister",
+						"api",
+						"schemas",
+						"{{schemaId}}"
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the schema is removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.within(200, 299));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: user holder",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{holderId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{holderId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the user is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: user nonHolder",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{nonHolderId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{nonHolderId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the user is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: user absent",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{absentId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{absentId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the user is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: user absentToo",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/users/{{absentTooId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"users",
+						"{{absentTooId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the user is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		},
+		{
+			"name": "tearDown: the group",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "OCS-APIRequest",
+						"value": "true"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/ocs/v2.php/cloud/groups/{{groupId}}?format=json",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"ocs",
+						"v2.php",
+						"cloud",
+						"groups",
+						"{{groupId}}"
+					],
+					"query": [
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				},
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "{{admin_user}}",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "{{admin_password}}",
+							"type": "string"
+						}
+					]
+				}
+			},
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('the group is removed', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));"
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableCookies": true
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost",
+			"type": "string"
+		},
+		{
+			"key": "admin_user",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "admin_password",
+			"value": "admin",
+			"type": "string"
+		},
+		{
+			"key": "suffix",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "groupId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "holderId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "nonHolderId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "absentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "absentTooId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userPassword",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "firstDay",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "lastDay",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "schemaId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "registerId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "objectId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "taskId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "substitutedTaskId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "keptTaskId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
