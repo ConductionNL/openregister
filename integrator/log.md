@@ -199,3 +199,4 @@
 2026-11-27T08:28:00Z GREEN prs=10533,11324,11329,11339,11344 main=1abff0ac85 integrator-cloud (merged; main now 45bf713900; checker floor IMPROVED score 64->92)
 2026-11-27T08:39:54Z GREEN prs=11086,11203,11231,11236 main=45bf713900 integrator-cloud (merged; main now bc2133f863)
 2026-11-27T08:51:05Z GREEN prs=11241,11246,11251,11256 main=bc2133f863 integrator-cloud (merge exit 6)
+2026-11-27T08:51:37Z NOMERGE prs=11241,11246,11251,11256 main=bc2133f863 integrator-cloud (correction of previous line: merge exit 6 was an integrator-side tree.tsv column shift, not a PR fault; nothing merged; rebuilt)
