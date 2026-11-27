@@ -125,6 +125,7 @@ DOMAIN_ORDER=(
     "draft-activation"
     "object-grants"
     "anonymisation-disclosures"
+    "reviewer-decisions"
     "public-export"
     "nlgov-conformance"
     "reply-threading"
@@ -164,6 +165,10 @@ declare -A DOMAIN_COLLECTIONS=(
     # through Nextcloud's own out-of-office API
     # (tasks-delegation-and-substitution 4.1).
     [task-delegation-mandate]="$REPO_ROOT/tests/integration/openregister-task-delegation-mandate.postman_collection.json"
+    # A reviewer owns their decision on a relation on an object's file:
+    # one decides, a second is refused 403 decision-owned, the decision
+    # reads back (reviewer-owns-their-decisions 1.3).
+    [reviewer-decisions]="$REPO_ROOT/tests/integration/openregister-reviewer-decisions.postman_collection.json"
     # Messages scheduled on an object: schedule, list, cancel by the author
     # or one who may update the object, 403/409/404 refusals
     # (send-at-on-the-messaging-leaf 3.2). Every sendAt is two days out, so
