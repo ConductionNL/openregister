@@ -1063,11 +1063,14 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function grantVerdict(PermissionCheck $check): bool {
-		if ($this->readGrantAdmits(check: $check) === true) {
+		// The private scope answers first (it reads the session once, before the
+		// caller is resolved); only when it declines does a read grant admit on its own.
+		$privateVerdict = $this->privateScopeVerdict(check: $check);
+		if ($privateVerdict === null && $this->readGrantAdmits(check: $check) === true) {
 			return true;
 		}
 
-		$verdict = ($this->privateScopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
+		$verdict = ($privateVerdict ?? $this->callerVerdict(check: $check));
 		if ($verdict !== null) {
 			return $verdict;
 		}
