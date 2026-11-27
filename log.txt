@@ -5502,3 +5502,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T12:25:43Z integrator-20261127T115023-b15bb467 MERGED-TREE 58e2e90d93: 2 PRs, main now 99cfb73d4b = tested tree
 2026-11-27T12:28:08Z precheck-20261127T093644-0f5ab767 RED tree 7fa1d0ff0a prs 1 front=skip: Tests: 67976, Assertions: 242183, Errors: 5, Failures: 1, Warnings: 1, Deprecations: 4, PH; first failures: OCA\OpenRegister\Tests\Unit\Service\SystemOperationContextBoundaryTest::testTheCallSiteSetIsPinned
+2026-11-27T12:29:47Z precheck-20261127T122917-1773494e CONFLICT-DEV #11191 3b1f908d
