@@ -7,3 +7,5 @@ performance budget Workspace                  1115 ms median on php -S (budget 3
 # shard 4/8 (launchpad development fcba0d8, same sandbox): 285 passed, 1 failed, 1 skipped, 5 did not run (15.2 min)
 files-widget-actions.spec.ts:210 (+5 serial)  SANDBOX php -S post_max_size 8M answered 413 for the 50 MB upload (#2125 graceful path, correct); with -d post_max_size=210M -d upload_max_filesize=200M the file is 8/8. Sandboxes: raise both before running it
 discover-server-services.spec.ts:116          skipped: Deck not installed (sandbox)
+# shard 3/8 (launchpad development ce8ca65, same sandbox + viewer stable34, php -S upload limits raised): 349 passed, 0 failed, 3 skipped (22.3 min). GREEN.
+# Sandbox tip: NC from the git tag lacks apps/viewer; the first launchpad version bump then fails occ upgrade ('viewer were not correctly replaced'). Clone nextcloud/viewer stable34 into apps/ at setup.
