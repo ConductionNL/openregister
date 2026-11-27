@@ -5401,3 +5401,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T09:14:52Z integrator-20261127T080455-44feeeb6 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T09:15:27Z session-20261127T065653-a70e3fa0 done-thematiq: merged thematiq#2111 (prettier on the files of #2092/#2094/#2106; CI format check on development stays red for 18 older files, phpcs red on inherited admin.php lines)
+2026-11-27T09:15:36Z integrator-20261127T080455-44feeeb6 MERGED-TREE 31a2782da1: 3 PRs, main now e422f05fc3 = tested tree
