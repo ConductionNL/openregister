@@ -236,15 +236,15 @@ class ObjectActionsController extends Controller {
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
 	 * @param string $id       The object's id, uuid or slug.
-	 * @param string $action   The action key.
+	 * @param string $key      The action key. Not `$action`: the router keeps that name for the controller method, so it would arrive as null.
 	 *
 	 * @return JSONResponse The outcome, or 202 with the run for async and suspended runs.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	#[NoAdminRequired]
-	public function invoke(string $register, string $schema, string $id, string $action): JSONResponse {
-		return $this->invokeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id), action: $action);
+	public function invoke(string $register, string $schema, string $id, string $key): JSONResponse {
+		return $this->invokeOn(ref: new ObjectRef(register: $register, schema: $schema, id: $id), action: $key);
 	}//end invoke()
 
 	/**
@@ -256,15 +256,15 @@ class ObjectActionsController extends Controller {
 	 *
 	 * @param string $register The register slug or id.
 	 * @param string $schema   The schema slug or id.
-	 * @param string $action   The action key.
+	 * @param string $key      The action key (see invoke()).
 	 *
 	 * @return JSONResponse The summary per object and `next`.
 	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
 	#[NoAdminRequired]
-	public function invokeOnSelection(string $register, string $schema, string $action): JSONResponse {
-		return $this->selectionInvoked(table: new RegisterSchemaRef(register: $register, schema: $schema), action: $action);
+	public function invokeOnSelection(string $register, string $schema, string $key): JSONResponse {
+		return $this->selectionInvoked(table: new RegisterSchemaRef(register: $register, schema: $schema), action: $key);
 	}//end invokeOnSelection()
 
 	/**

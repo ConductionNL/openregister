@@ -55,6 +55,10 @@ use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use OCA\OpenRegister\Service\Object\PermissionCheckInterface;
+use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Db\DraftVersionMapper;
+use OCA\OpenRegister\Db\DraftVersion;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -441,4 +445,73 @@ class AccessLinkReaderTest extends TestCase {
 
 		$this->assertSame('gemeente', $seen['@self']['organisation'] ?? null);
 	}//end testThePropertyRulesReadTheRecordsOwnMetadata()
+
+	// ---- records-draft-versions 4.2: a preview link serves the merged draft. ----
+
+	private function previewReader(DraftVersionMapper $drafts): AccessLinkReader {
+		return new AccessLinkReader(
+			sources: new AccessLinkReaderSources(
+				objects: $this->objects,
+				subjects: new AccessLinkSubject(),
+				users: $this->users,
+				drafts: new DraftService($drafts, $this->createMock(PermissionCheckInterface::class))
+			),
+			filters: new AccessLinkReaderFilters(
+				schemas: $this->schemas,
+				properties: $this->properties,
+				timeline: $this->timeline
+			),
+			logger: $this->logger
+		);
+	}
+
+	private function previewDraft(): DraftVersion {
+		$draft = new DraftVersion();
+		$draft->setUuid('draft-uuid');
+		$draft->setObjectUuid('object-uuid');
+		$draft->setDraftKey('herziening');
+		$draft->setName('Herziening');
+		$draft->setDelta(['onderwerp' => 'Nieuwe titel']);
+
+		return $draft;
+	}
+
+	public function testAPreviewLinkReadsTheDraftMergedOntoThePublishedObject(): void {
+		$drafts = $this->createMock(DraftVersionMapper::class);
+		$drafts->method('findByUuid')->with('draft-uuid')->willReturn($this->previewDraft());
+		$published = $this->object(data: ['onderwerp' => 'Oude titel', 'status' => 'open']);
+		$this->objects->expects($this->once())->method('find')
+			->with('object-uuid', $this->anything(), false, false)
+			->willReturn($published);
+		$this->timeline->method('forObject')->willReturn([]);
+		$this->properties->method('filterReadableProperties')->willReturnCallback(static fn (Schema $schema, array $object): array => $object);
+		$reader = $this->previewReader(drafts: $drafts);
+		$link = $this->link(subjectType: AccessLink::SUBJECT_OBJECT_DRAFT, subjectId: 'draft-uuid');
+
+		$body = $reader->read(link: $link, object: $reader->subjectObject(link: $link));
+
+		$this->assertIsArray($body);
+		$this->assertSame('Nieuwe titel', $body['subject']['onderwerp']);
+		$this->assertSame('open', $body['subject']['status']);
+		$this->assertSame(['key' => 'herziening', 'name' => 'Herziening'], $body['version']);
+		$this->assertSame(['onderwerp' => 'Oude titel', 'status' => 'open'], array_diff_key($published->getObject(), ['id' => true]), 'The published object is not changed.');
+	}
+
+	public function testAPreviewLinkWhoseDraftIsGoneServesNothing(): void {
+		$drafts = $this->createMock(DraftVersionMapper::class);
+		$drafts->method('findByUuid')->willReturn(null);
+		$this->objects->expects($this->never())->method('find');
+		$reader = $this->previewReader(drafts: $drafts);
+
+		$link = $this->link(subjectType: AccessLink::SUBJECT_OBJECT_DRAFT, subjectId: 'draft-uuid');
+
+		$this->assertNull($reader->subjectObject(link: $link));
+		$this->assertNull($reader->read(link: $link));
+	}
+
+	public function testAPreviewLinkWithoutTheDraftStoreServesNothing(): void {
+		$this->objects->expects($this->never())->method('find');
+
+		$this->assertNull($this->reader->read(link: $this->link(subjectType: AccessLink::SUBJECT_OBJECT_DRAFT, subjectId: 'draft-uuid')));
+	}
 }

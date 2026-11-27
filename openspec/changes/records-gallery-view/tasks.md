@@ -8,7 +8,8 @@
 
 - [x] 2.1 Gallery dispatch in `SearchIndex.vue` rendering `CnCardGrid` of `CnObjectCard` with thumbnail covers from the Nextcloud preview service and the schema icon as fallback. Verify: `tests/e2e/gallery-view.spec.ts` saves a gallery view on a schema with images and sees cards with covers.
 - [x] 2.2 Card click opens the record; card menu carries the table's row actions. Verify: same e2e opens a record from a card.
-- [ ] 2.3 Gallery option in the view editor with the three field pickers. Verify: same e2e builds the view through the editor.
+- [x] 2.3 Gallery option in the view editor with the three field pickers. Verify: same e2e builds the view through the editor.
+  - Done (2026-11-25): the option and its pickers are the library's `CnViewPresentationPicker`, which the save-view form (`SearchSideBar.vue`) and `EditView.vue` already host, so no new strings were needed. `tests/e2e/ci/gallery-view.spec.ts` builds the view through the save-view form (Gallery, title `titel`, cover `foto`), asserts the saved presentation, two cards whose cover thumbnails load, and a card opening its record. Live on a sandbox Nextcloud 34 with PostgreSQL 16: passed twice. Red first on two defects, fixed: the cover pointed at Nextcloud's preview service, which answers 404 for a file in OpenRegister's storage, so `previewUrl()` now uses the record's own `files/{id}/preview` route when the record is known; and a card handed itself, cover key included, to the record dialog and the row actions, so `_galleryCover` showed as a property and a save would have written it. `recordOfCard()` strips it. Tests: `galleryCards.spec.js` +3, `SearchIndex.spec.js` +1.
 
 ## 3. Docs
 

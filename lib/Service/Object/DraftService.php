@@ -35,11 +35,13 @@ namespace OCA\OpenRegister\Service\Object;
 
 use DateTime;
 use InvalidArgumentException;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\DraftVersion;
 use OCA\OpenRegister\Db\DraftVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Kernel\Contracts\DraftPreviewInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -47,7 +49,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @spec openspec/specs/content-versioning/spec.md#requirement-objects-must-support-a-draftpublished-lifecycle
  */
-class DraftService {
+class DraftService implements DraftPreviewInterface {
 
 	/**
 	 * The key reserved for the published version.
@@ -176,6 +178,58 @@ class DraftService {
 	}//end visibleDrafts()
 
 	/**
+	 * Every draft of the given objects, grouped by object uuid, in one read.
+	 *
+	 * Not filtered for the caller: {@see visibleAmong()} decides that per object.
+	 *
+	 * @param array<int, string> $objectUuids The objects' uuids.
+	 *
+	 * @return array<string, array<int, DraftVersion>> The drafts per object uuid.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-drafts-never-appear-as-objects-in-lists-or-search
+	 */
+	public function draftsOf(array $objectUuids): array {
+		if ($objectUuids === []) {
+			return [];
+		}
+
+		$grouped = [];
+		foreach ($this->drafts->findForObjects(objectUuids: $objectUuids) as $draft) {
+			$grouped[(string)$draft->getObjectUuid()][] = $draft;
+		}
+
+		return $grouped;
+	}//end draftsOf()
+
+	/**
+	 * The drafts of one object the caller may see, from drafts already read.
+	 *
+	 * The caller's own drafts are always visible. The others need `update` on
+	 * the object, which needs the object itself: without it (null) they stay
+	 * hidden, so a lookup that failed never widens what is shown.
+	 *
+	 * @param array<int, DraftVersion> $drafts The object's drafts.
+	 * @param ObjectEntity|null        $object The live object, or null when it could not be read.
+	 * @param Schema                   $schema The object's schema.
+	 * @param string|null              $caller The calling user.
+	 *
+	 * @return array<int, DraftVersion> The visible drafts, in the order given.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-drafts-never-appear-as-objects-in-lists-or-search
+	 */
+	public function visibleAmong(array $drafts, ?ObjectEntity $object, Schema $schema, ?string $caller): array {
+		if ($caller === null || $drafts === []) {
+			return [];
+		}
+
+		if ($object !== null && $this->mayWrite(object: $object, schema: $schema, caller: $caller) === true) {
+			return array_values($drafts);
+		}
+
+		return array_values(array_filter($drafts, static fn (DraftVersion $draft): bool => $draft->getCreatedBy() === $caller));
+	}//end visibleAmong()
+
+	/**
 	 * Delete a draft the caller may see.
 	 *
 	 * @param DraftVersion $draft  The draft.
@@ -245,6 +299,85 @@ class DraftService {
 	public function merged(ObjectEntity $object, DraftVersion $draft): array {
 		return array_replace(self::liveData(object: $object), ($draft->getDelta() ?? []));
 	}//end merged()
+
+	/**
+	 * A copy of the live object carrying the merged data; never saved.
+	 *
+	 * @param ObjectEntity $object The live object.
+	 * @param DraftVersion $draft  The draft.
+	 *
+	 * @return ObjectEntity The copy.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function mergedCopy(ObjectEntity $object, DraftVersion $draft): ObjectEntity {
+		$copy = clone $object;
+		$copy->setObject($this->merged(object: $object, draft: $draft));
+
+		return $copy;
+	}//end mergedCopy()
+
+	/**
+	 * One draft by its own uuid, with no caller check.
+	 *
+	 * Only for a principal that already holds the draft by other means: a
+	 * preview link, minted by someone who could see the draft, is that principal.
+	 *
+	 * @param string $uuid The draft's uuid.
+	 *
+	 * @return DraftVersion|null The draft, or null when it is gone.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function heldByLink(string $uuid): ?DraftVersion {
+		$uuid = trim($uuid);
+		if ($uuid === '') {
+			return null;
+		}
+
+		return $this->drafts->findByUuid(uuid: $uuid);
+	}//end heldByLink()
+
+	/**
+	 * The draft a preview link holds, as the link needs to mark it.
+	 *
+	 * @param string $draftUuid The draft's own uuid.
+	 *
+	 * @return array{objectUuid: string, key: string, name: string}|null The draft, or null when it is gone.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function previewedDraft(string $draftUuid): ?array {
+		$draft = $this->heldByLink(uuid: $draftUuid);
+		if ($draft === null) {
+			return null;
+		}
+
+		return [
+			'objectUuid' => (string) $draft->getObjectUuid(),
+			'key'        => (string) $draft->getDraftKey(),
+			'name'       => (string) $draft->getName(),
+		];
+	}//end previewedDraft()
+
+	/**
+	 * A copy of the live object carrying the draft's merged data; never saved.
+	 *
+	 * @param ObjectEntityInterface $object    The live object.
+	 * @param string                $draftUuid The draft's own uuid.
+	 *
+	 * @return ObjectEntityInterface|null The copy, or null when the draft is gone or the object is not a stored one.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function previewCopy(ObjectEntityInterface $object, string $draftUuid): ?ObjectEntityInterface {
+		$draft = $this->heldByLink(uuid: $draftUuid);
+		if ($draft === null || $object instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		return $this->mergedCopy(object: $object, draft: $draft);
+	}//end previewCopy()
 
 	/**
 	 * Whether the caller may see and change a draft: its creator, or a caller with `update` on the object.
