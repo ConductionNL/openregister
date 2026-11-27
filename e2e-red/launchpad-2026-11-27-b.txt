@@ -4,3 +4,6 @@
 nc-dashboard-widget.spec.ts (3)               PR #2165 merged (admin had no personal row since #2126; file seeds its own active dashboard; 3/3, repeat 6/6)
 or-absent.spec.ts:217 (+3 did not run)        SANDBOX refuses port 8080 by design (disables OR); green elsewhere per live-launchpad-2
 performance budget Workspace                  1115 ms median on php -S (budget 300) RED; perf lanes own it (reference-stack numbers in PERF-HANDOFF)
+# shard 4/8 (launchpad development fcba0d8, same sandbox): 285 passed, 1 failed, 1 skipped, 5 did not run (15.2 min)
+files-widget-actions.spec.ts:210 (+5 serial)  SANDBOX php -S post_max_size 8M answered 413 for the 50 MB upload (#2125 graceful path, correct); with -d post_max_size=210M -d upload_max_filesize=200M the file is 8/8. Sandboxes: raise both before running it
+discover-server-services.spec.ts:116          skipped: Deck not installed (sandbox)
