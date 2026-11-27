@@ -5460,3 +5460,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T11:00:00Z precheck-20261127T093644-0f5ab767 CONFLICT-DEV #11351 201ba332
 2026-11-27T11:00:33Z precheck-20261127T104259-11e3ee87 NORESULT tree 7ffd83cfde: checker floor not measured (exit 2)
 2026-11-27T11:01:51Z session-20261127T105401-657d2309 or-fix lanes 2,3,7,8: #11372 merged main (REVERIFY 516c2d44); #11333 obsolete (commented); opened #11373 npm 11 lock sync; lanes 0,1,4,5,6,9 held by other sessions
+2026-11-27T11:02:14Z session-20261127T105401-657d2309 or-fix lanes 2/3/7/8 run ends: precheck-when-idle setup (state clone into ~/sigint + gitleaks release-binary sudo install) refused by this session's permission check; precheck not run
