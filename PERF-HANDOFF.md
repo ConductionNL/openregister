@@ -169,3 +169,7 @@ Fix to build (nextcloud-vue, board-look sheet + base sheet): rewrite the 137 non
 ## thematiq Theming settings (perf-1, 27 Nov ~06:00Z, MEASURED, NOT BUILT, for the thematiq lane)
 Same stack, median of 7 warm: /settings/admin/theming 769 ms with thematiq disabled (stock theming page) vs 1155 ms enabled (+390 ms): page HTML 538 KB (365 KB of initial state: thematiq-bootReads 194 KB of which /settings/overrides?tokenSet=nextcloud 123 KB, thematiq-tokenSets 56 KB, thematiq-playgroundInventory 53 KB), TTFB 140 vs 72 ms, HTML done at 290 vs 121 ms, DCL 742 vs 537 ms, recalc 110 vs 58 ms, +0.9 MB JS. Each boot read alone answers in 58-85 ms with an app token (mostly the per-request floor), so the in-page reads cost ~65 ms of server time plus the HTML weight. Lever: carry only what the first visible panel needs (overrides/playground inventory on panel open). Files: 2394 (off) vs 2495 ms (on), the same core+OR cost.
 
+
+## FIRST TASKS of 27 Nov (Ruben 08:15 CET): claims
+- [ ] (TAKEN perf-2 2026-11-27T07:57:58Z) task 1, launchpad Workspace: every boot read the Workspace still fetches after the scripts start, and the files-widget contents, sent with the page as initial state (as thematiq #2074 bootReads); then the two long main-thread tasks. Branch cloud/perf-2-launchpad-boot-state (launchpad, base development). perf-1: the nextcloud-vue side (board-look) stays yours.
+- [ ] (TAKEN perf-2 2026-11-27T07:57:58Z) task 2, OpenRegister's every-page share: global script + capabilities (#11369), and the default-app candidates measured one by one.
