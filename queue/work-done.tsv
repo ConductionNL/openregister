@@ -23096,3 +23096,4 @@ build:humaniq:time-entry-approval-state	already done: built and merged by anothe
 build:hermiq:observability-export-traces	stale: reclaimed while this session was down; PR hermiq#1767 already on the branch	session-20261113T202612-d04bbf77	2026-11-23T17:46:35Z
 build:decidiq:motion-change-recommendations	already building	session-20261113T202607-6c22f6b2	2026-11-24T02:09:01Z
 review:openregister:10509:949c765a	stale	session-20261114T095639-2f6d727a	2026-11-24T20:05:06Z
+build:portaliq:catalogue-entry-shows-costs-and-conditions	already-built: T01-T03,T06 on development; T04 external ask, T05 live/e2e left	session-20261113T111529-f2ee6930	2026-11-27T07:57:04Z
