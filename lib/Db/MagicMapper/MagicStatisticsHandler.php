@@ -311,6 +311,22 @@ class MagicStatisticsHandler {
 	}//end countObjectsInRegisterSchemaTable()
 
 	/**
+	 * The magic tables this request already listed from the database catalogue,
+	 * without listing them (an empty list before the first pair walk).
+	 *
+	 * Each name exists: the list is what information_schema answered. The count
+	 * callback hands it to the mapper, so counting a listed table does not ask
+	 * information_schema again whether it exists.
+	 *
+	 * @return array<int, string> Table names without the prefix.
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function listedMagicTables(): array {
+		return ($this->magicTablesCache ?? []);
+	}//end listedMagicTables()
+
+	/**
 	 * Get all magic mapper table names from the database.
 	 *
 	 * Queries information_schema to discover all tables matching the
