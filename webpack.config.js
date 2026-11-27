@@ -179,6 +179,20 @@ webpackConfig.module.rules = [
 			},
 		},
 	},
+	// @nextcloud/vue declares no `sideEffects`, so ONE named import from its
+	// index (`import { NcButton } from '@nextcloud/vue'`) kept every component
+	// it lists, with their stylesheets, emoji-mart, the date picker and the
+	// markdown stack. The public access-link page shipped 6.5 MB of script for
+	// a handful of components, the public form 7.7 MB, to visitors who always
+	// load them cold. The index only imports and re-exports, so marking it free
+	// of side effects lets webpack link each name to its own module; each
+	// component's modules and CSS keep theirs. The same rule as nextcloud-vue's
+	// `withLeanBundles` (NEXTCLOUD_VUE_INDEX_RULE, 2.228+), kept here while this
+	// app pins an older nextcloud-vue.
+	{
+		test: /[\\/]node_modules[\\/]@nextcloud[\\/]vue[\\/]dist[\\/]index\.mjs$/,
+		sideEffects: false,
+	},
 ]
 
 // Add .ts and .tsx to resolve extensions and '@' alias
