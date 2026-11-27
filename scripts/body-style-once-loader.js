@@ -12,8 +12,8 @@
  * getComputedStyle() read while the page is still being built forces the
  * browser to recalculate the styles of the whole document first, so every
  * select on a page costs two full style recalculations during the first
- * render: ~73 ms on the OpenRegister Registers page (five selects), measured
- * by CPU profile on the reference stack. The two properties are the theme's
+ * render: ~73 ms on the OpenRegister Registers page (five selects, measured
+ * by CPU profile on the reference stack). The two properties are the theme's
  * size tokens: they do not change while a page is open, so reading each once
  * per page renders the same avatar size.
  *

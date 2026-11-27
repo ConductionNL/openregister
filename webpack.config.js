@@ -201,7 +201,7 @@ webpackConfig.module.rules = [
 	// five selects). The values are page-wide theme tokens, so read them once
 	// per page (scripts/body-style-once-loader.js).
 	{
-		test: /[\\/]node_modules[\\/]@nextcloud[\\/]vue[\\/]dist[\\/]chunks[\\/](NcSelect|NcSelectUsers|NcProgressBar)\.mjs$/,
+		test: /[\\/]node_modules[\\/]@nextcloud[\\/]vue[\\/]dist[\\/]chunks[\\/](NcSelect|NcSelectUsers|NcProgressBar)(-[\w-]+)?\.mjs$/,
 		use: [path.join(__dirname, 'scripts', 'body-style-once-loader.js')],
 	},
 ]
