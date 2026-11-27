@@ -499,8 +499,10 @@ final class IntegrationWiring {
 	 * Add this component's object-source providers to the shared ObjectSourceRegistry.
 	 *
 	 * Runs in boot() after ObjectSourceRegistrar::boot(), so these providers follow
-	 * the built-in ones in the registry. Guarded like that step: without a registry
-	 * nothing is added, and a provider that cannot be resolved is logged and skipped.
+	 * the built-in ones in the registry. Like that step it installs a loader that
+	 * runs on the registry's first read, so boot() builds no provider. Guarded:
+	 * without a registry nothing is added, and a provider that cannot be resolved
+	 * is logged and skipped.
 	 *
 	 * @param mixed $server Server container (passed in from boot()).
 	 *
@@ -515,13 +517,17 @@ final class IntegrationWiring {
 			return;
 		}
 
-		foreach (self::OBJECT_SOURCE_PROVIDERS as $providerClass) {
-			try {
-				$registry->addProvider($server->get($providerClass));
-			} catch (\Throwable $e) {
-				self::bootLogger(server: $server)?->warning('[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
+		$registry->addLoader(
+			static function (ObjectSourceRegistry $registry) use ($server): void {
+				foreach (self::OBJECT_SOURCE_PROVIDERS as $providerClass) {
+					try {
+						$registry->addProvider($server->get($providerClass));
+					} catch (\Throwable $e) {
+						self::bootLogger(server: $server)?->warning('[ObjectSource] could not register ' . $providerClass . ': ' . $e->getMessage());
+					}
+				}
 			}
-		}
+		);
 	}//end bootObjectSources()
 
 	/**

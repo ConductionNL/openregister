@@ -28,7 +28,7 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	/**
 	 * The number of event listener registrations.
 	 */
-	private const LISTENER_COUNT = 279;
+	private const LISTENER_COUNT = 284;
 
 	/**
 	 * The sha256 of every registration call, one `method|arg|arg...` line each, in order.
@@ -52,8 +52,15 @@ class ListenerRegistrationOrderGoldenTest extends TestCase {
 	 * The write validator then listens on ObjectCreatingEvent and ObjectUpdatingEvent (count 276 -> 278).
 	 * Then ObjectFolderReshareGuard on BeforeShareCreatedEvent, right after
 	 * PlatformShareRoutingListener in the same slot (count 278 -> 279).
+	 * Then the ChangeGateListener took the decided approval sequences too,
+	 * on TaskSequenceCompletedEvent after the ApprovalChainAdvanceListener and on the new
+	 * TaskSequenceRejectedEvent (279 -> 281).
+	 * Then one PersonalTokenGrantRevokedListener registration on TokenInvalidatedEvent in
+	 * AccessListenerRegistrar (scoped-api-tokens, 281 -> 282).
+	 * Then two JourneyValidationListener registrations (ObjectCreatingEvent, ObjectUpdatingEvent)
+	 * (count 282 -> 284).
 	 */
-	private const SEQUENCE_SHA256 = '5f2b00e560fc050c10851217988fad5bdeaabc48c9324d755026f9ae41911a8e';
+	private const SEQUENCE_SHA256 = '96b380626e6ee64f264051ef11b3e5af54a0fa558cbf26048e4ccbcdba8bf17f';
 
 	/**
 	 * The registration calls, in call order, with every argument.

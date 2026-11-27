@@ -17,6 +17,7 @@ declare(strict_types=1);
 return [
 	'accessLink#comment' => 'public-token: public share-token or anonymous flow, rate limited',
 	'accessLink#upload' => 'public-token: public share-token or anonymous flow, rate limited',
+	'accessLinkJourney#submit' => 'public-token: public share-token or anonymous flow, rate limited',
 	'credential#brokerRequest' => 'header-credential: authenticated by the signed X-Credential-Token header',
 	'federation#createObject' => 'public-token: public share-token or anonymous flow, rate limited',
 	'federation#deleteObject' => 'public-token: public share-token or anonymous flow, rate limited',
@@ -24,6 +25,9 @@ return [
 	'flowWebhook#receive' => 'header-credential: authenticated by the HMAC-SHA256 signature in the X-OpenRegister-Signature header',
 	'forms#submit' => 'public-token: public share-token or anonymous flow, rate limited',
 	'forms#upload' => 'public-token: public share-token or anonymous flow, rate limited',
+	'journeyRun#answer' => 'public-token: public share-token or anonymous flow, rate limited',
+	'journeyRun#save' => 'public-token: public share-token or anonymous flow, rate limited',
+	'journeyRun#start' => 'public-token: public share-token or anonymous flow, rate limited',
 	'graphQL#execute' => 'cors-api: Nextcloud CORS handling refuses a cookie session without the token',
 	'mcpServer#handle' => 'cors-api: Nextcloud CORS handling refuses a cookie session without the token',
 	'portalTask#complete' => 'public-token: public share-token or anonymous flow, rate limited',

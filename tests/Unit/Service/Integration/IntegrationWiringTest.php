@@ -270,9 +270,28 @@ class IntegrationWiringTest extends TestCase {
 		$registry = $this->createMock(ObjectSourceRegistry::class);
 		$registry->expects($this->once())->method('addProvider')->with($provider)->willReturn(true);
 		$server = $this->createMock(ContainerInterface::class);
-		$server->method('get')->willReturnMap([[ObjectSourceRegistry::class, $registry], [OpenConnectorHttpProvider::class, $provider]]);
+		$asked  = [];
+		$server->method('get')->willReturnCallback(
+			static function (string $id) use (&$asked, $registry, $provider): mixed {
+				$asked[] = $id;
+				return match ($id) {
+					ObjectSourceRegistry::class => $registry,
+					default => $provider,
+				};
+			}
+		);
+		$loader = null;
+		$registry->expects($this->once())->method('addLoader')->willReturnCallback(
+			static function (callable $given) use (&$loader): void {
+				$loader = $given;
+			}
+		);
 
 		IntegrationWiring::bootObjectSources($server);
+		$this->assertSame(expected: [ObjectSourceRegistry::class], actual: $asked, message: 'bootObjectSources() resolves no provider.');
+
+		$loader($registry);
+		$this->assertSame(expected: [ObjectSourceRegistry::class, OpenConnectorHttpProvider::class], actual: $asked);
 	}//end testBootObjectSourcesAddsTheExternalRegisterProvider()
 
 	public function testBootObjectSourcesLogsAProviderThatCannotBeResolved(): void {
@@ -289,6 +308,11 @@ class IntegrationWiringTest extends TestCase {
 					LoggerInterface::class => $logger,
 					default => throw new RuntimeException('openconnector missing'),
 				};
+			}
+		);
+		$registry->method('addLoader')->willReturnCallback(
+			static function (callable $loader) use ($registry): void {
+				$loader($registry);
 			}
 		);
 

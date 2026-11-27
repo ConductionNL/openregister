@@ -43,6 +43,19 @@ interface MagicStatisticsInterface {
 	public function getStatistics(StatisticsScope $scope=new StatisticsScope()): array;
 
 	/**
+	 * Run read-only statistics work that counts each register/schema pair at most once.
+	 *
+	 * @param callable(): T $work Read-only work; it must not write objects.
+	 *
+	 * @return T What $work returns.
+	 *
+	 * @template T
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function rememberPairCounts(callable $work): mixed;
+
+	/**
 	 * Get object statistics grouped by schema for multiple schemas.
 	 *
 	 * Returns per-schema statistics using one count query per register-schema pair,

@@ -16,14 +16,14 @@ refused on any other event.
 - **WHEN** a case handler moves an `aanvraag` record from `open` to `closed` through `POST /api/objects/{id}/transition`
 - **THEN** exactly one run of that flow is queued with the record as its subject
 - **AND** the run context holds `action`, `from` `open` and `to` `closed`
-- @e2e exclude {specified only; task 3.1 adds tests/e2e/ci/flow-trigger-transition.spec.ts}
+- @e2e tests/e2e/ci/flow-trigger-transition.spec.ts
 
 #### Scenario: a transition outside the filter starts nothing
 
 - **GIVEN** the same flow
 - **WHEN** the case handler moves the record from `closed` back to `open`
 - **THEN** no run of that flow is queued
-- @e2e exclude {specified only; task 3.1 adds tests/e2e/ci/flow-trigger-transition.spec.ts}
+- @e2e tests/e2e/ci/flow-trigger-transition.spec.ts
 
 #### Scenario: a filter on the wrong event is refused
 
@@ -46,7 +46,7 @@ property names as `changedFields`.
 - **WHEN** a user edits the `omschrijving` of a melding
 - **THEN** one run is queued and its context lists `omschrijving` under `changedFields`
 - **AND** the flow's own write of `categorie` queues no second run
-- @e2e exclude {specified only; task 3.2 adds the Newman case}
+- @e2e exclude {API contract; covered by the Newman collection tests/integration/openregister-flow-trigger-watched-fields.postman_collection.json}
 
 #### Scenario: an update without the old version does not start a watching flow
 

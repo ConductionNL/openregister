@@ -61,17 +61,32 @@ final class AccessLinkTerms {
 	public readonly ?string $label;
 
 	/**
+	 * The journey an `edit` link changes its object through: a journey object's uuid.
+	 *
+	 * @var string|null
+	 */
+	public readonly ?string $journey;
+
+	/**
 	 * The terms as asked.
 	 *
 	 * @param array<int, string> $capabilities The declared capabilities; empty means read only.
 	 * @param string|null        $expiresAt    The end date, in any format DateTime parses.
 	 * @param string|null        $password     Optional password, checked at use.
 	 * @param string|null        $label        Optional human label.
+	 * @param string|null        $journey      The journey an `edit` link opens; required with `edit`, refused without.
 	 */
-	public function __construct(array $capabilities = [], ?string $expiresAt = null, ?string $password = null, ?string $label = null) {
+	public function __construct(
+		array $capabilities = [],
+		?string $expiresAt = null,
+		?string $password = null,
+		?string $label = null,
+		?string $journey = null
+	) {
 		$this->capabilities = $capabilities;
 		$this->expiresAt    = $expiresAt;
 		$this->password     = $password;
 		$this->label        = $label;
+		$this->journey      = $journey;
 	}//end __construct()
 }//end class
