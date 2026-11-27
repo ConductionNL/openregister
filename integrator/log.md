@@ -201,3 +201,4 @@
 2026-11-27T08:51:05Z GREEN prs=11241,11246,11251,11256 main=bc2133f863 integrator-cloud (merge exit 6)
 2026-11-27T08:51:37Z NOMERGE prs=11241,11246,11251,11256 main=bc2133f863 integrator-cloud (correction of previous line: merge exit 6 was an integrator-side tree.tsv column shift, not a PR fault; nothing merged; rebuilt)
 2026-11-27T09:00:45Z GREEN prs=11241,11246,11251,11256 main=bc2133f863 integrator-cloud (merged; main now 0745a707cd)
+2026-11-27T09:05:30Z RED prs=10156,11261,11266,11271 main=0745a707cd integrator-cloud (jest initial-data.golden.spec.js EditSource snapshot gains runAs/schedule; suspect #10156 (changes EditSource), rebuilt without it, #10156 back as single)
