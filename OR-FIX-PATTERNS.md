@@ -1006,3 +1006,7 @@ Recurring causes of red openregister PRs after the restructure, with their fix r
 Symptom: CONFLICT in tests/newman/run-all.sh, in DOMAIN_ORDER and DOMAIN_COLLECTIONS, after main lands another newman PR.
 Cause: every newman PR appends its domain at the end of both lists; main took another one first.
 Fix: keep both sides' lines (union of each hunk: ours then theirs), then bash -n and check no duplicate domain in DOMAIN_ORDER or key in DOMAIN_COLLECTIONS.
+## info.xml main-merge drops a <job> line (or-fix-6, 27 Nov)
+- Symptom: reviewer BLOCK 'merged with main the job is no longer registered' (seen #10156, #10526, #11146: OriginalRetentionJob).
+- Cause: resolving the info.xml version-bump conflict by taking the PR side wholesale drops <job>/<step> lines main added since.
+- Fix: after merging main, `git diff origin/main -- appinfo/info.xml` must show only the PR's own lines (version + its jobs/steps); re-add any main line missing, and add an assertStringContainsString guard test on info.xml for that job.
