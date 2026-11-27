@@ -172,10 +172,11 @@ class ShellBootReadsTest extends TestCase {
 		$this->storedPreferences([]);
 		$services = new DashboardControllerServices(
 			$this->createMock(DashboardService::class),
-			new ControllerSession($this->userSession, $this->groupManager, $this->createMock(LoggerInterface::class))
+			new ControllerSession($this->userSession, $this->groupManager, $this->createMock(LoggerInterface::class)),
+			$this->reads()
 		);
 
-		$response = (new DashboardController($this->createMock(IRequest::class), $services, $this->reads()))->page();
+		$response = (new DashboardController($this->createMock(IRequest::class), $services))->page();
 
 		$this->assertSame('index', $response->getTemplateName());
 		$this->assertSame(['walkthrough_preferences'], array_keys($this->provided));
