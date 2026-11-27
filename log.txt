@@ -5404,3 +5404,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T09:15:36Z integrator-20261127T080455-44feeeb6 MERGED-TREE 31a2782da1: 3 PRs, main now e422f05fc3 = tested tree
 2026-11-27T09:20:01Z integrator-20261127T080455-44feeeb6 RED tree d4c8228c19 prs 1 front=red: Tests: 67858, Assertions: 241494, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Depreca; first failures: FAIL src/services/initial-data.golden.spec.js
 2026-11-27T09:25:11Z integrator-20261127T080455-44feeeb6 AUTOPARK openregister#11077 59018b38 sbom: package-lock.json changed without sbom.cdx.json (tree 1fa53ad839)
+2026-11-27T09:34:37Z integrator-20261127T080455-44feeeb6 GREEN tree 50264ea3b2 on dev e422f05fc3 prs 4 front=skip: Tests: 67751, Assertions: 241318, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
