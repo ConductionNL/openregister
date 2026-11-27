@@ -1017,3 +1017,7 @@ Fix: keep both sides' lines (union of each hunk: ours then theirs), then bash -n
 - Symptom: precheck front log, suites that requireActual a real Cn* dist component (CnDialog) fail to run: Cannot find module '@nextcloud/vue/components/NcNoteCard' from .../CnDialog2.vue.js.
 - Cause: nextcloud-vue#2396 imports each Nc* from its @nextcloud/vue subpath (exports map only; Jest ignores exports maps). Letting the real component load instead pulls @vueuse ESM, structuredClone and real NcDialog DOM.
 - Fix: jest.config.js moduleNameMapper '^@nextcloud/vue/(components|composables|directives|functions)/([^/]+)$' -> '<rootDir>/node_modules/@nextcloud/vue/dist/$1/$2/index.mjs'; in each failing spec add jest.mock('@nextcloud/vue/components/<Nc>', () => ({ __esModule: true, default: jest.requireMock('@nextcloud/vue').<Nc> })) for the Nc* the Cn dist chain imports (see #11374 c77bcae0).
+## l10n/en.js auto-merges with duplicate keys (or-fix-6)
+- Symptom: after merging main, git reports no conflict in l10n/en.js (or another bundle), but git diff origin/main --numstat shows far more added lines than the PR's keys; ~100+ keys appear twice.
+- Cause: both sides re-serialized the bundle; git's text merge interleaves hunks and keeps both copies of keys.
+- Fix: count duplicate keys in every l10n/*.js after the merge (not only the conflicted ones); rebuild a hit in main's line order plus the PR's new keys (dedupe, last line without comma); expect numstat <PR keys>+1 / 1. Seen on #11286 1794bd03.
