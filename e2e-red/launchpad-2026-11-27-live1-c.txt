@@ -1,0 +1,13 @@
+# launchpad e2e, live-launchpad-1 27 Nov 15:10Z-, full suite --shard=N/8, one worker
+# Sandbox: NC 34 release tarball, MariaDB, Redis (distributed+locking), APCu, nginx + php-fpm 8.3 (opcache) on :8098,
+#   bruteforce/ratelimit OFF. OpenRegister main. launchpad development 06a1044e (with #2204).
+# Tags: PR <n> | SANDBOX <why> | DEV <already fixed on development>
+# shard 7/8: 287 passed, 13 failed, 15 skipped, 4 did not run (31 min)
+public-share-client-ip.spec.ts:315,335,356        SANDBOX brute-force protection is off on this instance (no 429)
+setup-wizard.spec.ts:489,513,522,531,543,581      PR #2298 (wizard opens itself once per session since #2252; fresh-instance block marks it offered) 36/36 live
+shipped-template-update.spec.ts:125               PR #2298 ("Mijn werkdag" was the removed sidebar row; expectOpenDashboard reads More)
+template-hides-missing-register.spec.ts:107       PR #2298 (same)
+template-reaches-member.spec.ts:122               PR #2298 (same); template files 34/34 live
+start-page.spec.ts:44                             DEV (BOARD already reads 'container' after #2278 on development)
+# earlier this run, the 43 specs #2204 touched: 383 passed; widgets-canvas-search.spec.ts:283,309 read
+#   widget-picker-section-tiles that #2268 removed (app-link-tile-widget task 14, not fixed here)
