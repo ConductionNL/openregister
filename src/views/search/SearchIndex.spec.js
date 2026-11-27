@@ -638,6 +638,18 @@ describe('SearchIndex — gallery presentation (records-gallery-view)', () => {
 		expect(ctx.requestGalleryCover).toHaveBeenCalledTimes(1)
 		expect(ctx.fetchKanbanBoard).not.toHaveBeenCalled()
 	})
+
+	it('a card opens its record without the cover it was given for display', () => {
+		Object.assign(mockObjectStore, { setObjectItem: jest.fn() })
+		const ctx = { activeView: { presentation: { viewType: 'gallery', gallery: { coverField: 'foto' } } }, normalizedObjects: [{ id: 'r1', foto: { id: 9 }, '@self': { id: 'r1', register: 1, schema: 2 } }], normalizedSchema: schema }
+		ctx.galleryConfig = computedCall('galleryConfig', ctx)
+		const [card] = computedCall('galleryObjects', ctx)
+
+		methodCall('handleRowClick', ctx, methodCall('recordOfCard', ctx, card))
+
+		expect(mockObjectStore.setObjectItem).toHaveBeenCalledWith({ id: 'r1', foto: { id: 9 }, '@self': { id: 'r1', register: 1, schema: 2 } })
+		expect(mockNavigationStore.setModal).toHaveBeenCalledWith('viewObject')
+	})
 })
 
 describe('SearchIndex — map presentation and area search (REQ-GEOMAP-002)', () => {

@@ -114,6 +114,7 @@ DOMAIN_ORDER=(
     "flow-engine"
     "flow-subjects"
     "delegation"
+    "task-delegation-mandate"
     "register-descriptors"
     "working-calendars"
     "object-watchers"
@@ -126,6 +127,8 @@ DOMAIN_ORDER=(
     "public-export"
     "nlgov-conformance"
     "reply-threading"
+    "licence-plate-detection"
+    "scheduled-messages"
     "run-migration"
     "lifecycle-side-moves"
     "import-run-readback"
@@ -151,6 +154,15 @@ declare -A DOMAIN_COLLECTIONS=(
     [schema-import]="$REPO_ROOT/tests/integration/openregister-schema-import.postman_collection.json"
     [apphost-observability]="$REPO_ROOT/tests/integration/apphost-observability.postman_collection.json"
     [flow-engine]="$REPO_ROOT/tests/integration/openregister-flow-engine.postman_collection.json"
+    # A task delegated under a mandate, and substituted for an absence set
+    # through Nextcloud's own out-of-office API
+    # (tasks-delegation-and-substitution 4.1).
+    [task-delegation-mandate]="$REPO_ROOT/tests/integration/openregister-task-delegation-mandate.postman_collection.json"
+    # Messages scheduled on an object: schedule, list, cancel by the author
+    # or one who may update the object, 403/409/404 refusals
+    # (send-at-on-the-messaging-leaf 3.2). Every sendAt is two days out, so
+    # no mail server is needed.
+    [scheduled-messages]="$REPO_ROOT/tests/integration/openregister-scheduled-messages.postman_collection.json"
     # A run's DECLARED subject set, and a task attached to one. Registered
     # here rather than left to a Playwright spec in tests/e2e/api-direct/,
     # for the same reason as `delegation` and `register-descriptors` below:
@@ -239,6 +251,9 @@ declare -A DOMAIN_COLLECTIONS=(
     [nlgov-conformance]="$REPO_ROOT/tests/newman/openregister-nlgov-conformance.postman_collection.json"
     # Reply threading: a reply matching no link is 200 unthreaded in the user scope; anonymous is 401.
     [reply-threading]="$REPO_ROOT/tests/newman/openregister-reply-threading.postman_collection.json"
+    # detection-dutch-licence-plates 4.1: a plate and a BSN detected by the nl pattern set, Dutch placeholders in
+    # the anonymised copy, and no detection with the set switched off. Saves and restores the whole file settings.
+    [licence-plate-detection]="$REPO_ROOT/tests/integration/openregister-licence-plate-detection.postman_collection.json"
     # migrate-run-between-versions 4.1: a run parked at a user task is migrated to a version that renamed the
     # step (422 without a mapping, a dry run that writes nothing, then the move), and its task completes there.
     [run-migration]="$REPO_ROOT/tests/integration/openregister-run-migration.postman_collection.json"

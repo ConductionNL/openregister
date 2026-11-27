@@ -6,5 +6,6 @@
 - [x] 1.4 A per-object answer for whether it belongs to a team, read from the property.
 - [ ] 2.1 `tests/e2e/ci/platform-team-resources.spec.ts`: a team page listing its cases, an opted-out schema absent.
 - [x] 2.2 Unit tests: the paging cursor, the access filter, the belongs-to answer.
-- [ ] 2.3 `openspec validate platform-team-resource-provider --strict`.
+- [x] 2.3 `openspec validate platform-team-resource-provider --strict`.
+      > 2026-11-25: `Change 'platform-team-resource-provider' is valid` (strict), on main 50949d88a4b.
 - [ ] 3.1 Hand over to the dossiq lane: declare the schemas and the owning-team property, register no provider.
