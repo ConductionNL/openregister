@@ -14,6 +14,7 @@ components:
     include:
       - ".*/lib/BulkAction/(BulkActionInterface)[.]php"
       - ".*/lib/Contract/[^/]*"
+      - ".*/lib/Controller/Support/RawRequestBody[.]php"
       - ".*/lib/Controller/Trait/HandlesExceptionsTrait[.]php"
       - ".*/lib/Db/(EmptyJsonHydration|FreezeTerms|HydrationKey|JsonArrayColumn|JsonFieldsTrait|LinkedItemsTrait|LockTerms|ManagedByConfigurationTrait|ObjectEntity|Register|RegisterMapperInterface|RegisterSchema|Schema|SchemaMapperInterface|SoftDeletion)[.]php"
       - ".*/lib/Db/ObjectEntity/[^/]*"
@@ -1351,7 +1352,6 @@ components:
       - ".*/lib/Controller/Support/PortalTaskControllerServices[.]php"
       - ".*/lib/Controller/Support/PortalTaskDomain[.]php"
       - ".*/lib/Controller/Support/PortalTaskPlatform[.]php"
-      - ".*/lib/Controller/Support/RawRequestBody[.]php"
       - ".*/lib/Controller/Support/RuleReplayRequest[.]php"
       - ".*/lib/Controller/Support/RulesControllerServices[.]php"
       - ".*/lib/Controller/Support/RulesDomain[.]php"
