@@ -1,0 +1,6 @@
+# launchpad e2e, b-launchpad run 27 Nov 06:20-06:45Z: full suite shard 6/8 (329 tests)
+# Sandbox: NC 34.0.6 (git tag + 3rdparty), MariaDB, Redis locking, APCu, php -S :8080 + router; activity + recommendations stable34;
+#   OpenRegister main, launchpad development 304b7a0c. Result: 307 passed, 5 failed, 14 skipped, 3 did not run (20.2 min).
+nc-dashboard-widget.spec.ts (3)               PR #2165 merged (admin had no personal row since #2126; file seeds its own active dashboard; 3/3, repeat 6/6)
+or-absent.spec.ts:217 (+3 did not run)        SANDBOX refuses port 8080 by design (disables OR); green elsewhere per live-launchpad-2
+performance budget Workspace                  1115 ms median on php -S (budget 300) RED; perf lanes own it (reference-stack numbers in PERF-HANDOFF)
