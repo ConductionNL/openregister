@@ -193,6 +193,22 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	private const SUBMITTABLE_RESERVED_KEYS = ['@self', Schema::NOT_SUPPLIED_KEY];
 
 	/**
+	 * The keys of a geo-search body that say where to search, not what to list.
+	 *
+	 * @var array<int, string>
+	 */
+	private const GEO_SEARCH_BODY_KEYS = ['geometry', 'property'];
+
+	/**
+	 * Request parameters the listing of the current call must not read as filters.
+	 *
+	 * Set by geoSearch() around its listing, empty otherwise.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $listingWithheldParams = [];
+
+	/**
 	 * Whether show() is already reading an object at the address it moved to.
 	 *
 	 * @var bool
@@ -1523,6 +1539,8 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	/**
 	 * Build the search query of a listing and warn about filter keys the schema does not know.
 	 *
+	 * Parameters withheld for this call (a geo-search body's own keys) are not filters.
+	 *
 	 * @param array $listing The listing scope.
 	 * @param ObjectOperationsInterface $objectService The object service.
 	 *
@@ -1531,10 +1549,11 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @return array<string, mixed> The search query.
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
 	 */
 	private function buildListingQuery(array $listing, ObjectOperationsInterface $objectService): array {
 		$query = $objectService->buildSearchQuery(
-			requestParams: $this->request->getParams(),
+			requestParams: array_diff_key($this->request->getParams(), array_flip($this->listingWithheldParams)),
 			register: $listing['resolved']['register'],
 			schema: $listing['resolved']['schema']
 		);
@@ -2326,6 +2345,7 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 	 * @PublicPage
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md#requirement-req-geomap-002-records-with-a-geometry-can-be-seen-and-searched-on-a-map
 	 */
 	#[UserRateLimit(limit: 300, period: 60)]
 	#[AnonRateLimit(limit: 60, period: 60)]
@@ -2340,11 +2360,18 @@ class ObjectsController extends Controller implements SchemaChangeReportingContr
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
 		}
 
-		// Reuse the standard listing path, then post-filter.
-		return $this->geoFilteredListing(
-			listing: $this->index(register: $register, schema: $schema, objectService: $objectService),
-			filters: $filters
-		);
+		// Reuse the standard listing path, then post-filter. The body's own
+		// keys are not filters on the listing: a filter on a property the
+		// schema does not declare matches nothing, so `geometry` reaching the
+		// listing emptied every geo-search before the post-filter ran.
+		$this->listingWithheldParams = self::GEO_SEARCH_BODY_KEYS;
+		try {
+			$listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+		} finally {
+			$this->listingWithheldParams = [];
+		}
+
+		return $this->geoFilteredListing(listing: $listing, filters: $filters);
 	}//end geoSearch()
 
 	/**

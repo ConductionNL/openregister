@@ -11,6 +11,7 @@ import {
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcActionButton, NcActions, NcAppContent, NcButton } from '@nextcloud/vue'
+import { toRaw } from 'vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
@@ -536,13 +537,17 @@ export default {
 			this.mapArea = area
 			this.mapLoading = true
 			this.mapError = ''
+			// `this.mapArea` reads back as Vue's reactive proxy of `area`, never `area`
+			// itself, so the comparison is on the raw object. On the proxy it was
+			// always false and no answer was ever shown.
+			const stillDrawn = () => toRaw(this.mapArea) === area
 			try {
 				const results = await searchWithinArea(objectStore.searchParams, area, this.geoProperty)
-				if (this.mapArea === area) {
+				if (stillDrawn()) {
 					this.mapAreaObjects = results
 				}
 			} catch {
-				if (this.mapArea === area) {
+				if (stillDrawn()) {
 					this.mapAreaObjects = []
 					this.mapError = t('openregister', 'The area search failed.')
 				}
