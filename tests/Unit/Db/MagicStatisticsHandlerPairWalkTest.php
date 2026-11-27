@@ -113,6 +113,19 @@ class MagicStatisticsHandlerPairWalkTest extends TestCase {
 		$this->assertSame(6, $this->handler->getStatistics(new StatisticsScope())['total']);
 	}
 
+	public function testTheChartWalkLoadsItsRegistersInOneQueryFirst(): void {
+		$this->registerMapper->expects($this->once())->method('findMultipleOptimized')->with([1, 2])->willReturn(
+			[1 => $this->register(id: 1), 2 => $this->register(id: 2)]
+		);
+		// Each pair still asks find(); RegisterMapper answers it from the bulk read (RegisterMapperBulkReadCacheTest).
+		$this->registerMapper->method('find')->willReturnCallback(fn (int|string $id): Register => $this->register(id: (int) $id));
+
+		$chart = $this->handler->getSchemaChartData();
+
+		$this->assertSame(6, array_sum($chart['series']));
+		$this->assertSame([1, 1, 2], $this->countedRegisters);
+	}
+
 	public function testListedMagicTablesIsWhatTheWalkReadWithoutReadingAgain(): void {
 		$this->assertSame(['openregister_table_1_10', 'openregister_table_1_11', 'openregister_table_2_10'], $this->handler->listedMagicTables());
 

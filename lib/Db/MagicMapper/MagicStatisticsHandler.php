@@ -591,14 +591,20 @@ class MagicStatisticsHandler {
 	 * The register-schema pairs that pass the filters, each with its object count.
 	 *
 	 * A pair whose register or schema cannot be read, or whose count fails, is left out.
+	 * The registers of all pairs are loaded in one query first (RegisterMapper
+	 * keeps them for the find() of each pair).
 	 *
 	 * @param RegisterSchemaFilter $filter The pairs to cover.
 	 *
 	 * @return array<int, array{registerId: int, schemaId: int, register: Register, schema: Schema, count: int}>
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
 	 */
 	private function countedPairs(RegisterSchemaFilter $filter): array {
 		$counted = [];
-		foreach ($this->getAllRegisterSchemaPairs() as $pair) {
+		$pairs = $this->getAllRegisterSchemaPairs();
+		$this->preloadRegisters(pairs: $pairs);
+		foreach ($pairs as $pair) {
 			$ids = [(int)$pair['registerId'], (int)$pair['schemaId']];
 			$entry = null;
 			if ($filter->matches(ids: $ids) === true) {
