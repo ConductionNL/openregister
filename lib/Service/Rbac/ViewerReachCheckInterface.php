@@ -72,6 +72,19 @@ interface ViewerReachCheckInterface {
 	public function reaches(array $view, ViewerReach $reach): bool;
 
 	/**
+	 * The access a caller holds on one view: owner, edit or read, or null when
+	 * the view does not reach them through ownership, a share or being public.
+	 *
+	 * @param array<string, mixed> $view  The serialised view.
+	 * @param ViewerReach          $reach The caller's reach.
+	 *
+	 * @return string|null The access.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function accessOf(array $view, ViewerReach $reach): ?string;
+
+	/**
 	 * The fields of an update this caller may NOT make to one view.
 	 *
 	 * The three questions the endpoint used to ask separately, answered

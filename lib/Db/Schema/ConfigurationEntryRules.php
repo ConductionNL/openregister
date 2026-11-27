@@ -64,9 +64,13 @@ final class ConfigurationEntryRules {
 	// by PlatformShareGate: true offers the schema's objects for platform sharing.
 // `federatable` is read by ShareGrantor: true lets the schema's objects be shared
 // with another instance (platform-cloud-federation-provider); absent means not.
+	// `collaborationResources` is read by ObjectResourceProvider: true lets the
+	// schema's objects join Nextcloud collections (platform-collaboration-resources).
+	// Off this list it was dropped on save, so no schema could opt in.
 	private const CONFIG_BOOL_FIELDS = [
 		'allowFiles',
 		'autoShare',
+		'collaborationResources',
 		'defaultAutoShare',
 		'exportable',
 		'federatable',
@@ -264,6 +268,10 @@ final class ConfigurationEntryRules {
 			return [$this->validateVocabularyValue(key: $key, value: $value)];
 		}
 
+		if ($key === PreviewUrlTemplate::KEY) {
+			return $this->previewUrlEntry(value: $value);
+		}
+
 		if ($key === Schema::WRITEONLY_PATHS_ANNOTATION) {
 			return [(new WriteOnlyPathsDeclaration())->validateWriteOnlyPathsValue(value: $value, properties: $this->properties)];
 		}
@@ -287,6 +295,26 @@ final class ConfigurationEntryRules {
 
 		return [$this->values->validateDraftLifetimeValue(value: $value)];
 	}//end draftLifetimeEntry()
+
+	/**
+	 * The `previewUrl` template to store, as a one-element list; empty when none is declared.
+	 *
+	 * @param mixed $value Raw value for the key.
+	 *
+	 * @throws \InvalidArgumentException If the value is not a usable URL template.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	private function previewUrlEntry(mixed $value): array {
+		$template = PreviewUrlTemplate::validated(value: $value);
+		if ($template === null) {
+			return [];
+		}
+
+		return [$template];
+	}//end previewUrlEntry()
 
 	/**
 	 * Validate `linkRoles` or `partyKinds`.

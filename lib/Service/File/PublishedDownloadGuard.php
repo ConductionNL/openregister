@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\File;
 
 use Exception;
+use OCA\OpenRegister\Db\FileDigest;
 use OCA\OpenRegister\Db\FileDigestMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\Files\File;
@@ -98,6 +99,8 @@ class PublishedDownloadGuard {
 			]
 		);
 
+		$this->flag(record: $record, current: $result['current']);
+
 		if ($object !== null) {
 			try {
 				$this->service->recordMismatch(object: $object, record: $record, current: $result['current']);
@@ -111,6 +114,27 @@ class PublishedDownloadGuard {
 
 		throw new PublishedFileChangedException(fileId: (int)$record->getFileId());
 	}//end reprDigestFor()
+
+	/**
+	 * Mark the record for the operations console; a failure is logged, never in the way of the refusal.
+	 *
+	 * @param FileDigest $record  The open record.
+	 * @param string     $current The digest the file has now.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/published-file-digest/specs/file-actions/spec.md#requirement-a-published-file-is-checked-against-its-digest-when-it-is-read-req-pfd-002
+	 */
+	private function flag(FileDigest $record, string $current): void {
+		try {
+			$this->service->flagMismatch(record: $record, current: $current);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: '[PublishedDownloadGuard] The mismatch could not be marked for the operations console: ' . $e->getMessage(),
+				context: ['fileId' => $record->getFileId()]
+			);
+		}
+	}//end flag()
 
 	/**
 	 * The RFC 9530 `Repr-Digest` field value of a hex SHA-256.

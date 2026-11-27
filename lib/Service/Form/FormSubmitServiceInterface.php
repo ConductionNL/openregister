@@ -93,4 +93,33 @@ interface FormSubmitServiceInterface {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-writing-several-objects-must-commit-all-or-none
 	 */
 	public function submit(FormSubmission $submission, ?string $idempotencyKey = null): array;
+	/**
+	 * Read the owner's draft by id: its data, for resuming.
+	 *
+	 * Anything but the owner's own draft answers the same 404 an unknown id
+	 * gets, so a draft id is not an oracle.
+	 *
+	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
+	 * @param FormSubmitter                           $submitter   The draft's uuid, the signed-in subject, the asserted owner.
+	 *
+	 * @return array{id: string, status: string, data: array<string, mixed>, updatedAt: string} The draft.
+	 *
+	 * @throws FormSubmitRefusedException 404 no draft id, unknown or not the owner's draft, 404 unknown destination.
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-run-must-be-resumable-without-becoming-an-oracle
+	 */
+	public function readDraft(array $destination, FormSubmitter $submitter): array;
+
+	/**
+	 * Find the owner's newest draft in a destination, optionally one whose data holds given values.
+	 *
+	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
+	 * @param FormSubmitter                           $submitter   The signed-in subject and the asserted owner (null takes the subject).
+	 * @param array<string, mixed>                    $match       Values the draft's data must hold.
+	 *
+	 * @return array{id: string, status: string, data: array<string, mixed>, updatedAt: string}|null The draft, or null.
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-run-must-be-resumable-without-becoming-an-oracle
+	 */
+	public function findDraft(array $destination, FormSubmitter $submitter, array $match = []): ?array;
 }//end interface

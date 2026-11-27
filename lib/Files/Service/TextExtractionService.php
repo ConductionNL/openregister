@@ -31,6 +31,7 @@ use Exception;
 use JsonException;
 use OCA\OpenRegister\Files\Db\Chunk;
 use OCA\OpenRegister\Files\Db\ChunkMapper;
+use OCA\OpenRegister\Files\Db\ChunkRelationCarryOver;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Files\Service\TextExtraction\ArchiveExtraction;
@@ -658,6 +659,22 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	}//end sharedOverlapLength()
 
 	/**
+	 * Extract a file's text again, chunk it and detect entities, even when its chunks are up to date.
+	 *
+	 * @param int $fileId The Nextcloud file id.
+	 *
+	 * @return void
+	 *
+	 * @throws NotFoundException If the file does not exist.
+	 * @throws Exception If the extraction fails.
+	 *
+	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md#requirement-an-administrator-reindexes-a-selection-and-watches-it-run-req-sqf-007
+	 */
+	public function reextractFile(int $fileId): void {
+		$this->extractFile(fileId: $fileId, options: new FileExtractionOptions(forceReExtract: true));
+	}//end reextractFile()
+
+	/**
 	 * Extract text from an object by object ID
 	 *
 	 * This method:
@@ -1035,15 +1052,22 @@ class TextExtractionService implements TextExtractionServiceInterface {
 
 		try {
 			// Remove all existing chunks for this source to avoid stale data.
+			// Their entity relations follow the replacements (ChunkRelationCarryOver),
+			// so a re-extract neither strands them nor adds a second set.
+			$previous = $this->chunkMapper->findBySource(sourceType: $source->sourceType, sourceId: $source->sourceId);
 			$this->chunkMapper->deleteBySource(sourceType: $source->sourceType, sourceId: $source->sourceId);
 
+			$current = [];
 			foreach ($chunks as $chunkData) {
 				$chunkEntity = $this->hydrateChunkEntity(source: $source, chunkData: $chunkData);
 
 				$this->chunkMapper->insert($chunkEntity);
+				$current[] = $chunkEntity;
 			}
 
-			$this->persistMetadataChunk(source: $source, payload: $text->payload);
+			$current[] = $this->persistMetadataChunk(source: $source, payload: $text->payload);
+
+			(new ChunkRelationCarryOver(db: $this->sources->storage->db))->carry(previous: $previous, current: $current);
 
 			$this->sources->storage->db->commit();
 		} catch (Throwable $throwable) {
@@ -1100,9 +1124,9 @@ class TextExtractionService implements TextExtractionServiceInterface {
 	 * @param ChunkSource         $source  The source, owned as the payload says.
 	 * @param array<string,mixed> $payload Extraction payload.
 	 *
-	 * @return void
+	 * @return Chunk The stored metadata chunk.
 	 */
-	private function persistMetadataChunk(ChunkSource $source, array $payload): void {
+	private function persistMetadataChunk(ChunkSource $source, array $payload): Chunk {
 		try {
 			$metadataText = json_encode(
 				$this->summarizeMetadataPayload(payload: $payload),
@@ -1128,6 +1152,8 @@ class TextExtractionService implements TextExtractionServiceInterface {
 		$chunkEntity = $this->hydrateChunkEntity(source: $source, chunkData: $chunkData);
 
 		$this->chunkMapper->insert($chunkEntity);
+
+		return $chunkEntity;
 	}//end persistMetadataChunk()
 
 	/**

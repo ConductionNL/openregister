@@ -11,6 +11,7 @@ import {
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcActionButton, NcActions, NcAppContent, NcButton } from '@nextcloud/vue'
+import { toRaw } from 'vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
@@ -22,6 +23,7 @@ import EditableCell from '../../components/tables/EditableCell.vue'
 import MapView from '../object/MapView.vue'
 import RecordsTreeView from './RecordsTreeView.vue'
 import {
+	recordOfCard as cardRecord,
 	cardSize,
 	galleryCardFields,
 	galleryCards,
@@ -234,6 +236,22 @@ export default {
 		selectedIdsForPage() {
 			const list = objectStore.selectedObjects
 			return Array.isArray(list) ? list.map(String) : []
+		},
+
+		/**
+		 * The searched register's id, as the string CnIndexPage takes.
+		 *
+		 * The index page's `register` is a string it puts into URLs. Handed the
+		 * register object, it asked for `/api/objects/[object Object]/...` on a
+		 * page opened by URL, and the list showed "An error occurred".
+		 *
+		 * @spec exclude UI plumbing — prop shape for the shared index page
+		 * @return {string}
+		 */
+		searchRegisterId() {
+			const register = objectStore.searchRegister
+			const id = register?.id ?? objectStore.searchParams?.register ?? ''
+			return id === null ? '' : String(id)
 		},
 
 		/**
@@ -535,13 +553,17 @@ export default {
 			this.mapArea = area
 			this.mapLoading = true
 			this.mapError = ''
+			// `this.mapArea` reads back as Vue's reactive proxy of `area`, never `area`
+			// itself, so the comparison is on the raw object. On the proxy it was
+			// always false and no answer was ever shown.
+			const stillDrawn = () => toRaw(this.mapArea) === area
 			try {
 				const results = await searchWithinArea(objectStore.searchParams, area, this.geoProperty)
-				if (this.mapArea === area) {
+				if (stillDrawn()) {
 					this.mapAreaObjects = results
 				}
 			} catch {
-				if (this.mapArea === area) {
+				if (stillDrawn()) {
 					this.mapAreaObjects = []
 					this.mapError = t('openregister', 'The area search failed.')
 				}
@@ -699,6 +721,17 @@ export default {
 		 */
 		handleSelect(ids) {
 			objectStore.setSelectedObjects(ids)
+		},
+
+		/**
+		 * The record behind a gallery card, without the cover it was given for display.
+		 *
+		 * @param {object} card The card.
+		 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-the-search-page-renders-a-gallery-view-as-cards
+		 * @return {object}
+		 */
+		recordOfCard(card) {
+			return cardRecord(card)
 		},
 
 		/**
@@ -992,7 +1025,7 @@ export default {
 			}"
 			:title="pageTitle"
 			:schema="normalizedSchema"
-			:register="objectStore.searchRegister"
+			:register="searchRegisterId"
 			:objects="normalizedObjects"
 			:store="objectStore"
 			:objectType="computedObjectType"
@@ -1175,34 +1208,34 @@ export default {
 				:cardFields="galleryFields"
 				:loading="objectStore.searchLoading"
 				rowKey="id"
-				@click="handleRowClick">
+				@click="(card) => handleRowClick(recordOfCard(card))">
 				<template #card-actions="{ object }">
 					<NcActions>
-						<NcActionButton closeAfterClick @click="handleRowClick(object)">
+						<NcActionButton closeAfterClick @click="handleRowClick(recordOfCard(object))">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							{{ t('openregister', 'Edit') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleMergeRow(object)">
+						<NcActionButton closeAfterClick @click="handleMergeRow(recordOfCard(object))">
 							<template #icon>
 								<Merge :size="20" />
 							</template>
 							{{ t('openregister', 'Merge') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleCopyRow(object)">
+						<NcActionButton closeAfterClick @click="handleCopyRow(recordOfCard(object))">
 							<template #icon>
 								<ContentCopy :size="20" />
 							</template>
 							{{ t('openregister', 'Copy') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleSaveAsTemplateRow(object)">
+						<NcActionButton closeAfterClick @click="handleSaveAsTemplateRow(recordOfCard(object))">
 							<template #icon>
 								<FileDocumentPlusOutline :size="20" />
 							</template>
 							{{ t('openregister', 'Save as template') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleDeleteRow(object)">
+						<NcActionButton closeAfterClick @click="handleDeleteRow(recordOfCard(object))">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>

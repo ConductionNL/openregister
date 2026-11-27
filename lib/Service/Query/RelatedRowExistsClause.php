@@ -103,6 +103,16 @@ final class RelatedRowExistsClause {
 	private const NUMERIC_PATTERN = '^-?[0-9]+(\\.[0-9]+)?$';
 
 	/**
+	 * The identifier quote per engine: MariaDB reads a double-quoted name as a string literal.
+	 *
+	 * @var array<string, string>
+	 */
+	private const IDENTIFIER_QUOTES = [
+		self::ENGINE_POSTGRES => '"',
+		self::ENGINE_MARIADB  => '`',
+	];
+
+	/**
 	 * The guarded numeric comparison per engine: field expression (1), placeholder (2), number pattern (3), operator (4).
 	 *
 	 * @var array<string, string>
@@ -266,7 +276,7 @@ final class RelatedRowExistsClause {
 			// A magic table IS one schema, so naming it there would imply the
 			// table holds more than one.
 			$parameters[$inner->parameterPrefix . '_schema'] = $filter->schema;
-			$where[] = sprintf('%s."schema" = :%s_schema', $innerAlias, $inner->parameterPrefix);
+			$where[] = sprintf('%s.%s = :%s_schema', $innerAlias, $this->quoteIdentifier(name: 'schema', engine: $target->engine), $inner->parameterPrefix);
 		}
 
 		$where[] = $this->joinCondition(filter: $filter, subquery: $subquery);
@@ -514,7 +524,7 @@ final class RelatedRowExistsClause {
 	 */
 	private function fieldExpression(RelatedRowSqlTarget $target, RelatedRowField $field): string {
 		if ($target->storage === self::STORAGE_COLUMNS) {
-			return sprintf('%s.%s', $field->alias, $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $field->name)));
+			return sprintf('%s.%s', $field->alias, $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $field->name), engine: $target->engine));
 		}
 
 		if ($target->storage === self::STORAGE_JSON) {
@@ -663,28 +673,40 @@ final class RelatedRowExistsClause {
 	}//end listExpression()
 
 	/**
-	 * Quote a column name, refusing anything that is not one.
+	 * Quote a column name in the engine's own spelling, refusing anything that is not one.
 	 *
 	 * A magic-table property becomes a bare identifier in the SQL, not a bound
 	 * parameter, because no engine accepts a placeholder where a column goes.
 	 * So the name is checked rather than escaped: the parser produced it, but
 	 * "the parser produced it" is the reasoning behind most injection, and the
-	 * check costs nothing.
+	 * check costs nothing. Postgres quotes with double quotes; MariaDB with
+	 * backticks, because without ANSI_QUOTES it reads a double-quoted name as a
+	 * string literal and the clause fails to parse.
 	 *
-	 * @param string $name The column name.
+	 * @param string $name   The column name.
+	 * @param string $engine The database engine.
 	 *
 	 * @return string The quoted name.
 	 *
-	 * @throws InvalidArgumentException When the name is not a plain identifier.
+	 * @throws InvalidArgumentException When the name is not a plain identifier, or the engine is unknown.
+	 *
+	 * @spec openspec/changes/query-filter-through-a-reference/specs/zoeken-filteren/spec.md
 	 */
-	private function quoteIdentifier(string $name): string {
+	private function quoteIdentifier(string $name, string $engine): string {
 		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*\z/', $name) !== 1) {
 			throw new InvalidArgumentException(
 				sprintf('\'%s\' is not a column name a related-row filter may reference.', $name)
 			);
 		}
 
-		return '"' . $name . '"';
+		$quote = (self::IDENTIFIER_QUOTES[$engine] ?? null);
+		if ($quote === null) {
+			throw new InvalidArgumentException(
+				sprintf('No related-row SQL for engine \'%s\'.', $engine)
+			);
+		}
+
+		return $quote . $name . $quote;
 	}//end quoteIdentifier()
 
 	/**

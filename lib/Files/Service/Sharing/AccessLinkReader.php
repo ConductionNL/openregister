@@ -53,6 +53,7 @@ use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\StoredEntity;
 use OCA\OpenRegister\Kernel\Contracts\AccessLinkInterface;
+use OCP\Files\File;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -131,6 +132,10 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 	public function subjectObject(AccessLinkInterface $link): ?ObjectEntity {
 		if ($link->getSubjectType() === AccessLinkInterface::SUBJECT_VIEW) {
 			return null;
+		}
+
+		if ($link->getSubjectType() === AccessLinkInterface::SUBJECT_OBJECT_DRAFT) {
+			return $this->draftSubject(link: $link);
 		}
 
 		$uuid = trim((string)$link->getSubjectId());
@@ -217,10 +222,77 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 			}
 		}
 
+		if ($link->getSubjectType() === AccessLinkInterface::SUBJECT_OBJECT_DRAFT) {
+			$body['version'] = $this->draftVersionOf(link: $link);
+			if ($body['version'] === null) {
+				return null;
+			}
+		}
+
 		$body['timeline'] = $this->publicTimeline(object: $object);
 
 		return $body;
 	}//end read()
+
+	/**
+	 * The object a preview link opens: the live object with its draft merged in, or null.
+	 *
+	 * A draft that was promoted or discarded is gone, and so is the preview.
+	 * The live object is read the way any link reads its subject; the merged
+	 * copy is never saved, and it is filtered by the same schema rules.
+	 *
+	 * @param AccessLinkInterface $link The preview link.
+	 *
+	 * @return ObjectEntity|null The merged copy.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	private function draftSubject(AccessLinkInterface $link): ?ObjectEntity {
+		$draftUuid = (string)$link->getSubjectId();
+		$draft     = $this->sources->drafts?->previewedDraft(draftUuid: $draftUuid);
+		if ($draft === null) {
+			return null;
+		}
+
+		try {
+			$object = $this->sources->objects->find(
+				id: $draft['objectUuid'],
+				options: new ObjectFindOptions(render: false, audit: false),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $missing) {
+			$this->logger->info('[AccessLinkReader] Preview-link object no longer resolves: ' . $missing->getMessage());
+			return null;
+		}
+
+		if ($object instanceof ObjectEntity === false || $object->isSoftDeleted() === true) {
+			return null;
+		}
+
+		$copy = $this->sources->drafts?->previewCopy(object: $object, draftUuid: $draftUuid);
+		if ($copy instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		return $copy;
+	}//end draftSubject()
+
+	/**
+	 * The draft a preview link shows, as the site needs to mark it: key and name.
+	 *
+	 * @param AccessLinkInterface $link The preview link.
+	 *
+	 * @return array{key: string, name: string}|null The version, or null when the draft is gone.
+	 */
+	private function draftVersionOf(AccessLinkInterface $link): ?array {
+		$draft = $this->sources->drafts?->previewedDraft(draftUuid: (string)$link->getSubjectId());
+		if ($draft === null) {
+			return null;
+		}
+
+		return ['key' => $draft['key'], 'name' => $draft['name']];
+	}//end draftVersionOf()
 
 	/**
 	 * The objects a view link serves, each filtered.
@@ -439,7 +511,7 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 		}
 
 		// A link admits whoever holds it, and a restricted file admits only the people it names.
-		if (ctype_digit($wanted) === true && $this->sources->restrictions?->find(fileId: (int)$wanted) !== null) {
+		if ($this->isRestricted(fileId: $wanted) === true) {
 			return null;
 		}
 
@@ -455,8 +527,86 @@ class AccessLinkReader implements AccessLinkReaderInterface {
 			}
 		}
 
-		return null;
+		// An attached file lives in the object's folder and is not recorded on
+		// the object itself, so the folder is where most file links find theirs.
+		$node = $this->folderFile(object: $object, fileId: $wanted);
+		if ($node === null || $this->sources->files === null) {
+			return null;
+		}
+
+		return $this->sources->files->formatFile(file: $node);
 	}//end fileDescriptor()
+
+	/**
+	 * The file a file link names, for its holder to download, or null.
+	 *
+	 * @param AccessLinkInterface $link The link.
+	 * @param ObjectEntityInterface|null $object The subject, when the caller already resolved it.
+	 *
+	 * @return File|null The file, or null for another subject type, a file the object does not carry or a restricted file.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-publication-link-opens-one-object-view-or-file-as-its-own-principal-req-abl-001
+	 */
+	public function file(AccessLinkInterface $link, ?ObjectEntityInterface $object = null): ?File {
+		if ($link->getSubjectType() !== AccessLinkInterface::SUBJECT_FILE) {
+			return null;
+		}
+
+		$object = StoredEntity::object(object: $object ?? $this->subjectObject(link: $link));
+		if ($object === null) {
+			return null;
+		}
+
+		$wanted = trim((string)$this->sources->subjects->fileId(subjectId: (string)$link->getSubjectId()));
+		if ($wanted === '' || $this->isRestricted(fileId: $wanted) === true) {
+			return null;
+		}
+
+		return $this->folderFile(object: $object, fileId: $wanted);
+	}//end file()
+
+	/**
+	 * Whether a file is restricted to named people, which a link never is.
+	 *
+	 * @param string $fileId The file id.
+	 *
+	 * @return bool True when the file carries a restriction.
+	 */
+	private function isRestricted(string $fileId): bool {
+		return ctype_digit($fileId) === true && $this->sources->restrictions?->find(fileId: (int)$fileId) !== null;
+	}//end isRestricted()
+
+	/**
+	 * The file with this id in the object's own folder, or null.
+	 *
+	 * Listing the object's folder is the membership check: a file id of some
+	 * other object, or of no object, is not in it and is never served.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string       $fileId The file id.
+	 *
+	 * @return File|null The file, or null.
+	 */
+	private function folderFile(ObjectEntity $object, string $fileId): ?File {
+		if ($this->sources->files === null) {
+			return null;
+		}
+
+		try {
+			$nodes = $this->sources->files->getFiles(object: $object);
+		} catch (Throwable $e) {
+			$this->logger->info('[AccessLinkReader] The files of a linked object could not be listed: ' . $e->getMessage());
+			return null;
+		}
+
+		foreach ($nodes as $node) {
+			if ($node instanceof File === true && (string)$node->getId() === $fileId) {
+				return $node;
+			}
+		}
+
+		return null;
+	}//end folderFile()
 
 	/**
 	 * The files an object carries, as the object reports them.

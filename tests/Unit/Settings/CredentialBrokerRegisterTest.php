@@ -66,8 +66,15 @@ class CredentialBrokerRegisterTest extends TestCase {
 		$this->assertContains('outside-vault', $properties['kind']['enum']);
 	}
 
+	public function testAnOutsideCredentialCarriesItsLastReadTime(): void {
+		$lastReadAt = $this->credentialSchema()['properties']['lastReadAt'];
+
+		$this->assertSame('string', $lastReadAt['type']);
+		$this->assertSame('date-time', $lastReadAt['format']);
+	}
+
 	public function testTheSchemaVersionMovedOnSoTheImportAppliesIt(): void {
-		$this->assertSame('1.5.0', $this->credentialSchema()['version']);
+		$this->assertSame('1.6.0', $this->credentialSchema()['version']);
 	}
 
 	public function testTheCatalogueOffersAnOutsideVaultConnectionThatIsNeverProxied(): void {

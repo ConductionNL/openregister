@@ -65,6 +65,15 @@ if (!isDev) {
 	// A worker is its own unnamed entry point, so the explorer's editor workers
 	// stay self-contained too.
 	const selfContainedEntries = ['integrationGlobal', 'graphqlExplorer']
+	// Entries whose own initial chunk keeps its node_modules instead of sending
+	// them to a shared vendor chunk. They run on another app's pages and need
+	// little at load: `filesSidebar` (every Files page and every page embedding
+	// the Files sidebar: @nextcloud/files and @nextcloud/l10n) and `mailSidebar`
+	// (every Mail page: Vue and @nextcloud/l10n; the panel itself is lazy). In
+	// the vendor group each could pull a shared vendor chunk onto those pages. Their lazy chunks still share code as before.
+	const leanInitialEntries = ['filesSidebar', 'mailSidebar']
+	const isLeanInitial = (chunk) => [...chunk.groupsIterable]
+		.some((group) => leanInitialEntries.includes(group.name))
 	const entriesOf = (group, seen = new Set()) => {
 		if (seen.has(group)) {
 			return []
@@ -89,7 +98,7 @@ if (!isDev) {
 			// demand does not grow the vendor chunk every page loads.
 			vendor: {
 				test: /[\\/]node_modules[\\/]/,
-				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk),
+				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk) && !isLeanInitial(chunk),
 				priority: 10,
 				reuseExistingChunk: true,
 			},
@@ -151,6 +160,14 @@ const nonTsRules = webpackConfig.module.rules.filter(
 )
 webpackConfig.module.rules = [
 	...nonTsRules,
+	// The library's English catalogue, which the global script fetches on every
+	// page (src/services/libraryTranslations.js), without the ~2,950 strings that
+	// translate to themselves: ~165 KB -> ~5 KB per page. Plurals stay whole.
+	{
+		test: /[\\/]@conduction[\\/]nextcloud-vue[\\/]l10n[\\/]en\.json$/,
+		type: 'json',
+		use: [path.join(__dirname, 'scripts', 'lean-library-catalogue-loader.js')],
+	},
 	{
 		test: /\.(ts|tsx)$/,
 		exclude: /node_modules/,
@@ -161,6 +178,20 @@ webpackConfig.module.rules = [
 				appendTsSuffixTo: [/\.vue$/],
 			},
 		},
+	},
+	// @nextcloud/vue declares no `sideEffects`, so ONE named import from its
+	// index (`import { NcButton } from '@nextcloud/vue'`) kept every component
+	// it lists, with their stylesheets, emoji-mart, the date picker and the
+	// markdown stack. The public access-link page shipped 6.5 MB of script for
+	// a handful of components, the public form 7.7 MB, to visitors who always
+	// load them cold. The index only imports and re-exports, so marking it free
+	// of side effects lets webpack link each name to its own module; each
+	// component's modules and CSS keep theirs. The same rule as nextcloud-vue's
+	// `withLeanBundles` (NEXTCLOUD_VUE_INDEX_RULE, 2.228+), kept here while this
+	// app pins an older nextcloud-vue.
+	{
+		test: /[\\/]node_modules[\\/]@nextcloud[\\/]vue[\\/]dist[\\/]index\.mjs$/,
+		sideEffects: false,
 	},
 ]
 

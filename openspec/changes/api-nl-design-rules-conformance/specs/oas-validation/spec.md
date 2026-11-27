@@ -13,7 +13,6 @@ Open Register SHALL keep a catalogue of all 34 rules of NLGov REST API Design Ru
 - **THEN** the response is 200 with `ruleset` `2.2.1` and 34 entries in `rules`
 - **AND** every entry has one of the results `pass`, `fail`, `deviation`, `manual` or `not-probed`
 - **AND** `counts` adds up to 34
-- @e2e exclude {specified only; task 7.2 adds tests/e2e/ci/nl-api-design-rules.spec.ts}
 
 #### Scenario: a rule nobody probed does not read as passed
 
@@ -21,7 +20,6 @@ Open Register SHALL keep a catalogue of all 34 rules of NLGov REST API Design Ru
 - **WHEN** an integrator calls `GET /api/registers/zaken/oas/conformance`
 - **THEN** `/core/version-header`, `/core/transport/security-headers` and `/core/date-time/timezone` read `not-probed`
 - **AND** none of them is counted under `pass`
-- @e2e exclude {specified only; task 7.2 adds tests/e2e/ci/nl-api-design-rules.spec.ts}
 
 ### Requirement: Document rules are checked on the generated document
 
@@ -33,14 +31,13 @@ The OAS generator SHALL check every `document` rule of the catalogue during vali
 - **WHEN** an integrator calls `GET /api/registers/zaken/oas/conformance`
 - **THEN** `/core/semver` reads `fail`
 - **AND** its finding names the path `info.version` and the value `1.0`
-- @e2e exclude {specified only; task 7.2 adds tests/e2e/ci/nl-api-design-rules.spec.ts}
 
 #### Scenario: a trailing slash is named with its path
 
 - **GIVEN** a schema whose extended path is documented as `/objects/zaken/meldingen/`
 - **WHEN** the document is generated with `GET /api/registers/zaken/oas?validate=true`
 - **THEN** `x-validation-summary.issues` holds an issue with code `nlgov_rule`, rule `/core/no-trailing-slash` and path `paths./objects/zaken/meldingen/`
-- @e2e exclude {specified only; task 7.2 adds tests/e2e/ci/nl-api-design-rules.spec.ts}
+- @e2e exclude {needs a path the generator does not write; covered by OasServiceNlGovPathRulesTest}
 
 ### Requirement: The generated document carries the NLGov marker
 
@@ -52,7 +49,6 @@ The generated OpenAPI document SHALL carry a root extension `x-nl-api-design-rul
 - **WHEN** a tender assessor calls `GET /api/registers/zaken/oas`
 - **THEN** the response is 200 and the body has `x-nl-api-design-rules.version` `2.2.1`
 - **AND** `/core/http-methods` is listed under `pass`
-- @e2e exclude {specified only; task 7.2 adds tests/e2e/ci/nl-api-design-rules.spec.ts}
 
 ### Requirement: A deliberate deviation is named and never passed
 
@@ -64,7 +60,6 @@ A rule that Open Register breaks on purpose SHALL be declared as a deviation in 
 - **WHEN** an integrator calls `GET /api/registers/zaken/oas/conformance`
 - **THEN** `/core/uri-version` reads `deviation`
 - **AND** its reason says the fleet URL pattern carries no version and the version is negotiated through the `API-Version` header
-- @e2e exclude {specified only; task 7.2 adds tests/e2e/ci/nl-api-design-rules.spec.ts}
 
 ### Requirement: An administrator probes the response rules
 
@@ -76,14 +71,12 @@ A functional administrator SHALL be able to probe the response rules against the
 - **WHEN** a functional administrator opens the register list, chooses "Check Dutch API design rules" on `zaken` and presses "Probe responses"
 - **THEN** the dialog shows `/core/version-header` as `fail` with the finding that `1` is not a full version
 - **AND** a later `GET /api/registers/zaken/oas/conformance` returns the same result with the probe time
-- @e2e exclude {specified only; task 7.2 adds tests/e2e/ci/nl-api-design-rules.spec.ts}
 
 #### Scenario: a caseworker cannot run the probe
 
 - **GIVEN** a signed-in caseworker who is not an administrator
 - **WHEN** they call `POST /api/registers/zaken/oas/conformance/probe`
 - **THEN** the response is 403 and no request is sent to the instance
-- @e2e exclude {specified only; task 7.2 adds tests/e2e/ci/nl-api-design-rules.spec.ts}
 
 ### Requirement: CI lints the generated document with the official ruleset
 

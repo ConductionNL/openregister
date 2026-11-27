@@ -77,6 +77,18 @@ class TokenGrantNarrower {
 	public const IMPOSSIBLE = '__openregister_token_scope_denied__';
 
 	/**
+	 * The match value that stands for the token's own subject.
+	 *
+	 * Resolved when the marker is written, to the token or Consumer id the
+	 * grant is bound under, so the evaluators downstream compare a plain
+	 * literal and never have to know a token exists. A grant without an id
+	 * resolves it to {@see IMPOSSIBLE}, which no row carries.
+	 *
+	 * @var string
+	 */
+	public const TOKEN_SUBJECT = '@self.tokenSubject';
+
+	/**
 	 * Narrow a resolved block by the grant in force, if any.
 	 *
 	 * @param array<string, mixed>|null $authorization The resolved block.
@@ -133,16 +145,82 @@ class TokenGrantNarrower {
 	 * @param TokenNarrowing     $run       The grant, the schema and the moment.
 	 * @param array<int, string> $permitted The verbs the grant permits.
 	 *
-	 * @return array{verbs: array<int, string>, tokenId: string, expired: bool, inScope: bool} The marker.
+	 * A grant with a row condition also carries it as `match`, with
+	 * {@see TOKEN_SUBJECT} resolved, so the PHP ceiling and the SQL ceiling
+	 * read the one condition from the one place.
+	 *
+	 * @return array{verbs: array<int, string>, tokenId: string, expired: bool, inScope: bool, match?: array<string, mixed>} The marker.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#1-1d
 	 */
 	private static function markerOf(TokenNarrowing $run, array $permitted): array {
-		return [
+		$marker = [
 			'verbs' => $permitted,
 			'tokenId' => $run->grant->tokenId,
 			'expired' => $run->grant->isExpired(now: $run->now),
 			'inScope' => $run->grant->covers(schemaSlug: $run->target->schemaSlug, registerSlug: $run->target->registerSlug),
 		];
+
+		if (is_array($run->grant->match) === true && $run->grant->match !== []) {
+			$marker['match'] = self::withSubject(value: $run->grant->match, subject: $run->grant->tokenId);
+		}
+
+		return $marker;
 	}//end markerOf()
+
+	/**
+	 * A match clause with every {@see TOKEN_SUBJECT} replaced by the token's id.
+	 *
+	 * @param mixed  $value   The clause, or one value inside it.
+	 * @param string $subject The token or Consumer id; '' when the grant has none.
+	 *
+	 * @return mixed The clause with the subject resolved.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#1-1d
+	 */
+	private static function withSubject(mixed $value, string $subject): mixed {
+		if (is_array($value) === true) {
+			return array_map(static fn (mixed $inner): mixed => self::withSubject(value: $inner, subject: $subject), $value);
+		}
+
+		if ($value !== self::TOKEN_SUBJECT) {
+			return $value;
+		}
+
+		if ($subject === '') {
+			return self::IMPOSSIBLE;
+		}
+
+		return $subject;
+	}//end withSubject()
+
+	/**
+	 * The row condition a narrowed block's grant puts on every row it reaches.
+	 *
+	 * Null when the block carries no marker, or a marker without a condition:
+	 * the grant then limits verbs and schemas only. A condition that is present
+	 * but not a non-empty object cannot be applied, and is answered with one
+	 * that no row meets rather than with none.
+	 *
+	 * @param array|null $authorization The narrowed block.
+	 *
+	 * @return array<string, mixed>|null The condition, or null for none.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#1-1d
+	 */
+	public function markerMatch(?array $authorization): ?array {
+		$marker = ($authorization[self::MARKER] ?? null);
+		if (is_array($marker) === false || array_key_exists('match', $marker) === false) {
+			return null;
+		}
+
+		$match = $marker['match'];
+		if (is_array($match) === false || $match === [] || array_is_list($match) === true) {
+			return ['_owner' => self::IMPOSSIBLE];
+		}
+
+		return $match;
+	}//end markerMatch()
 
 	/**
 	 * A block passed through without a token, minus any marker a schema declares.
