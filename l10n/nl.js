@@ -4339,7 +4339,9 @@ OC.L10N.register(
     "Every notification rule reached at least one recipient." : "Elke meldingsregel heeft ten minste één ontvanger bereikt.",
     "Notification rules that reached nobody" : "Meldingsregels die niemand bereikten",
     "Rules whose recipients resolved to nobody, so nothing was sent and nobody was told. Add members to the groups they name, or change their recipients." : "Regels waarvoor geen enkele ontvanger is gevonden, zodat er niets is verstuurd en niemand op de hoogte is gebracht. Voeg leden toe aan de groepen die ze noemen, of wijzig hun ontvangers.",
-    "Times reached nobody: {count}. Last on {date}." : "Aantal keer zonder ontvanger: {count}. Laatst op {date}."
+    "Times reached nobody: {count}. Last on {date}." : "Aantal keer zonder ontvanger: {count}. Laatst op {date}.",
+    "Add a validation message" : "Een validatiemelding toevoegen",
+    "Validation messages" : "Validatiemeldingen"
 },
 "nplurals=2; plural=(n != 1);"
 );

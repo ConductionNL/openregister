@@ -12,29 +12,31 @@ const isDev = buildMode === 'development'
 // memory. Dev keeps cheap, fast line-level maps.
 webpackConfig.devtool = isDev ? 'cheap-source-map' : false
 
-// Minify with esbuild instead of Terser in production. Terser parses every chunk
-// into a full JS AST held in the Node heap and runs `CPU cores - 1` parallel
-// workers; across these 6 large entrypoints the build tree peaked at ~12GB in
-// ~46s. esbuild minifies in native (Go) code with a tiny heap footprint and is
-// ~10-100x faster — measured ~5.7GB peak in ~26s here — at the cost of only
-// ~1-2% larger output. We reuse terser-webpack-plugin purely as the wiring and
-// swap its engine to the built-in esbuild minifier.
+// Minify with Terser in production, two workers.
+//
+// This app minified with esbuild (through terser-webpack-plugin) to save build
+// time and memory. esbuild's transform API does not drop unused declarations
+// inside a module, and webpack leaves dropping the exports it found unused
+// (`usedExports`) to the minifier. So every ESM library kept all of its exports.
+// The whole of `@mdi/js` (~7,400 icon paths, ~2.8 MB) and the unused parts of
+// other libraries shipped in the vendor chunks every OpenRegister page loads
+// eagerly. Terser drops them: the main page's initial chunks go from 12.9 to
+// 9.5 MB. The cost is build time and memory (measured on 4 cores: esbuild 61 s
+// and 6.6 GB peak, Terser with two workers 173 s and 8.1 GB peak). The default
+// `cpus - 1` workers are what drove the earlier ~12 GB peak, so two are used.
+// License comments stay in the files.
 if (!isDev) {
 	webpackConfig.optimization = webpackConfig.optimization || {}
 	webpackConfig.optimization.minimizer = [
 		new TerserPlugin({
-			minify: TerserPlugin.esbuildMinify,
-			// esbuild parallelizes internally (in Go), so terser-webpack-plugin's
-			// default `cpus-1` Node worker processes only add memory overhead.
-			// Disabling them lowers peak build RAM with no real speed cost.
-			parallel: false,
-			// esbuild minify options (NOT terserOptions). Keep legal/license
-			// comments at end-of-file so MIT/AGPL attribution required by our
-			// deps survives minification. (esbuild's sidecar-emitting 'linked'
-			// mode is unavailable here — terser-webpack-plugin drives esbuild via
-			// its transform API, which rejects 'linked'/'external'.)
+			parallel: 2,
+			extractComments: false,
 			terserOptions: {
-				legalComments: 'eof',
+				compress: { passes: 1 },
+				mangle: true,
+				format: {
+					comments: /@license|@preserve|^!/,
+				},
 			},
 		}),
 	]

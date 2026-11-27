@@ -1084,7 +1084,7 @@ Exception/FlowSignalRefused.php,26,Exception,Exception,Exception/FlowSignalRefus
 Exception/FlowTimerStateException.php,6,Exception,Exception,Exception/FlowTimerStateException.php,0,,Processes
 Exception/FlowTimerValidationException.php,6,Exception,Exception,Exception/FlowTimerValidationException.php,0,,Processes
 Exception/FolderAccessDeniedException.php,15,Exception,Exception,Exception/FolderAccessDeniedException.php,5,,Kernel
-Exception/FormSubmitRefusedException.php,29,Exception,Exception,Exception/FormSubmitRefusedException.php,0,,Processes
+Exception/FormSubmitRefusedException.php,29,Exception,Exception,Exception/FormSubmitRefusedException.php,0,,Kernel
 Exception/HandoffException.php,15,Exception,Exception,Exception/HandoffException.php,18,,Kernel
 Exception/HookStoppedException.php,19,Exception,Exception,Exception/HookStoppedException.php,26,,Kernel
 Exception/InvalidAuthorizationRuleException.php,7,Exception,Exception,Exception/InvalidAuthorizationRuleException.php,0,,Core
@@ -4387,6 +4387,15 @@ BackgroundJob/ExpiredObjectSweepJob.php,,BackgroundJob,,,,,Compliance
 Command/ExpirySweepCommand.php,,Command,,,,,Compliance
 Listener/RecordTypeAuditListener.php,,Listener,,,,,Compliance
 Listener/SchemaAuthorizationAuditListener.php,,Listener,,,,,Compliance
+Formats/WebsiteFormat.php,96,Formats,Formats,Formats/WebsiteFormat.php,0,,Kernel
+Formats/NlPhoneFormat.php,68,Formats,Formats,Formats/NlPhoneFormat.php,0,,Kernel
+Service/Form/JourneyDefinition.php,279,Service,Work,Work/Service/Form/JourneyDefinition.php,0,,Kernel
+Service/Form/JourneyRunService.php,299,Service,Work,Work/Service/Form/JourneyRunService.php,0,,Processes
+Service/Form/LocalConditionEvaluator.php,350,Service,Work,Work/Service/Form/LocalConditionEvaluator.php,0,,Kernel
+Service/Form/JourneyAuthoringValidator.php,275,Service,Work,Work/Service/Form/JourneyAuthoringValidator.php,0,,Processes
+Listener/JourneyValidationListener.php,166,Listener,Work,Work/Listener/JourneyValidationListener.php,0,,Processes
+Repair/ImportFormsRegister.php,82,Repair,Platform,Platform/Repair/ImportFormsRegister.php,0,,Platform
+Controller/JourneyRunController.php,232,Controller,Work,Work/Controller/JourneyRunController.php,0,,Processes
 Migration/Version1Date20261121170017.php,,Migration,,,,,Compliance
 Service/Object/DeclaredErrorMessage.php,,Service,,,,,Core
 Service/Schemas/ErrorMessagesDeclaration.php,,Service,,,,,Core
@@ -4646,7 +4655,7 @@ Listener/FlowCalendarIndexListener.php,88,Listener,Flows,Flows/Listener/FlowCale
 BackgroundJob/FlowCalendarWorker.php,91,BackgroundJob,Flows,Flows/BackgroundJob/FlowCalendarWorker.php,0,,Processes
 Migration/Version1Date20261114170013.php,87,Migration,,,,,Platform
 Controller/FlowWebhookController.php,257,Controller,Flows,Flows/Controller/FlowWebhookController.php,0,,Processes
-Controller/Support/RawRequestBody.php,62,Controller,Flows,Flows/Controller/Support/RawRequestBody.php,0,,Processes
+Controller/Support/RawRequestBody.php,62,Controller,Flows,Flows/Controller/Support/RawRequestBody.php,0,,Kernel
 Service/Flow/FlowWebhookSecrets.php,221,Service,Flows,Flows/Service/Flow/FlowWebhookSecrets.php,0,,Processes
 Service/Flow/Nodes/TriggerWebhookNode.php,171,Service,Flows,Flows/Service/Flow/Nodes/TriggerWebhookNode.php,0,,Processes
 Service/Flow/Nodes/TriggerWebhookNodeInterface.php,33,Service,Flows,Flows/Service/Flow/Nodes/TriggerWebhookNodeInterface.php,0,,Processes
@@ -5087,6 +5096,11 @@ Notifications/Service/Notification/ReminderPlan.php,270,Notifications,Notificati
 Notifications/Service/Notification/ReminderDecision.php,84,Notifications,Notifications,Notifications/Service/Notification/ReminderDecision.php,0,,Notifications
 Notifications/BackgroundJob/ScheduledReminders.php,184,Notifications,Notifications,Notifications/BackgroundJob/ScheduledReminders.php,0,,Notifications
 Migration/Version1Date20261114100003.php,84,Migration,,,,,Platform
+Service/Sharing/LinkJourneyGuard.php,,Service,,,,,Core
+Migration/Version1Date20261114200000.php,,Migration,,,,,Platform
+Service/Form/LinkUpdateRun.php,,Service,,,,,Core
+Controller/AccessLinkJourneyController.php,,Controller,,,,,Core
+Controller/Support/LinkJourneyGate.php,,Controller,,,,,Core
 Service/RegisterSearch.php,,Service,,,,,Core
 Service/Lifecycle/LifecycleGraphBlock.php,,Service,,,,,Processes
 Service/Lifecycle/SystemApproval.php,,Service,,,,,Processes
@@ -5150,6 +5164,8 @@ Service/Authorization/PermissionMatrixSubjects.php,,Service,,,,,Core
 Event/TaskSequenceRejectedEvent.php,,Event,,,,,Processes
 Service/RedactionPolicy/DetectionPatternValidator.php,,Service,,,,,Configuration
 Service/RedactionPolicy/DetectionPatternRunner.php,,Service,,,,,Configuration
+Service/RedactionPolicy/FilinqPolicyImporter.php,,Service,,,,,Configuration
+Command/ImportFilinqPolicyCommand.php,,Command,,,,,Configuration
 Listener/DetectionPatternValidationListener.php,,Listener,,,,,Configuration
 Kernel/Contracts/ObjectWriteValidatorInterface.php,,Kernel,,,,,Kernel
 Service/File/PublishedDigestReader.php,,Service,,,,,Files

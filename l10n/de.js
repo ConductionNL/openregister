@@ -3993,7 +3993,9 @@ OC.L10N.register(
     "Responses probed {moment}." : "Antworten getestet am {moment}.",
     "Ruleset {ruleset}, generated {moment}." : "Regelsatz {ruleset}, erstellt am {moment}.",
     "The conformance report could not be read." : "Der Konformitätsbericht konnte nicht gelesen werden.",
-    "The responses could not be probed." : "Die Antworten konnten nicht getestet werden."
+    "The responses could not be probed." : "Die Antworten konnten nicht getestet werden.",
+    "Add a validation message" : "Validierungsmeldung hinzufügen",
+    "Validation messages" : "Validierungsmeldungen"
 },
 "nplurals=2; plural=(n != 1);"
 );

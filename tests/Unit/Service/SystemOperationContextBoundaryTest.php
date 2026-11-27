@@ -65,6 +65,9 @@ class SystemOperationContextBoundaryTest extends TestCase {
 		'lib/Service/ExampleSet/ExampleSetStore.php',
 		'lib/Service/Object/ValidateObject.php',
 		'lib/BackgroundJob/RelatedRetentionRecalculationJob.php',
+		// Run only by occ openregister:redaction-policy:import-filinq (no user to act for): migrates
+		// filinq's always/never lists into the engine's term rules (redaction-policy-as-data).
+		'lib/Service/RedactionPolicy/FilinqPolicyImporter.php',
 	];
 
 	/**
