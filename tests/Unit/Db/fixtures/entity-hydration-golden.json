@@ -167,7 +167,8 @@
                 "consumer": "text-consumer",
                 "triggerObject": "text-triggerObject",
                 "ruleDigest": "text-ruleDigest",
-                "ruleVersion": "text-ruleVersion"
+                "ruleVersion": "text-ruleVersion",
+                "category": "text-category"
             },
             "updated": [
                 "id",
@@ -210,7 +211,8 @@
                 "consumer",
                 "triggerObject",
                 "ruleDigest",
-                "ruleVersion"
+                "ruleVersion",
+                "category"
             ]
         },
         "filled json": {
@@ -262,7 +264,8 @@
                 "consumer": "text-consumer",
                 "triggerObject": "text-triggerObject",
                 "ruleDigest": "text-ruleDigest",
-                "ruleVersion": "text-ruleVersion"
+                "ruleVersion": "text-ruleVersion",
+                "category": "text-category"
             },
             "updated": [
                 "id",
@@ -307,7 +310,8 @@
                 "consumer",
                 "triggerObject",
                 "ruleDigest",
-                "ruleVersion"
+                "ruleVersion",
+                "category"
             ]
         }
     },

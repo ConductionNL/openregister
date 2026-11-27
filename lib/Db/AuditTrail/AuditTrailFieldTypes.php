@@ -77,6 +77,7 @@ final class AuditTrailFieldTypes {
 		'triggerObject' => 'string',
 		'ruleDigest' => 'string',
 		'ruleVersion' => 'string',
+		'category' => 'string',
 	];
 
 	/**

@@ -222,6 +222,12 @@ import {
 						</div>
 					</div>
 				</div>
+
+				<!-- Changes: who edited the register, when and what (administrators only) -->
+				<section v-if="isAdmin && register?.id" class="registerChanges">
+					<h3>{{ t('openregister', 'Changes') }}</h3>
+					<EntityChangesList kind="registers" :entityId="register.id" />
+				</section>
 			</template>
 		</CnDetailPage>
 
@@ -235,6 +241,7 @@ import {
 
 <script>
 import { CnDetailPage } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import {
 	NcActionButton,
 	NcActions,
@@ -250,6 +257,7 @@ import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TableEye from 'vue-material-design-icons/TableEye.vue'
+import EntityChangesList from '../../components/audit/EntityChangesList.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
 import DetailChartGrid from './DetailChartGrid.vue'
 import RegisterModelDiagram from './RegisterModelDiagram.vue'
@@ -264,6 +272,7 @@ import { getTheme } from '@/services/getTheme.js'
 export default {
 	name: 'RegisterDetail',
 	components: {
+		EntityChangesList,
 		EditRegisterFormDialog,
 		NcAppContent,
 		NcEmptyContent,
@@ -301,6 +310,16 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the signed-in user is an administrator: the edit history is theirs only.
+		 *
+		 * @spec openspec/changes/history-schema-and-settings-edits-audited/tasks.md#task-3-1
+		 * @return {boolean}
+		 */
+		isAdmin() {
+			return getCurrentUser()?.isAdmin === true
+		},
+
 		/**
 		 * Resolve the active register from the dashboard store.
 		 *
