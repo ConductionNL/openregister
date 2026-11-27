@@ -19,3 +19,4 @@ dashboard-versioning.spec.ts x6              PR #2357 merged (REQ-VERS-001 remov
 dashboard-view-analytics.spec.ts:1254        PR #2359 merged (same #fragment goto trap; leave the page first) 45/45
 # NOTE for every lane: since the admin page moved to /settings/admin/launchpad#<tab>, a second page.goto() to the same address is a
 #   fragment-only navigation (no reload, no new reads). Specs that 're-open' the admin page to re-read state must reload or leave first.
+app-link-tile.spec.ts:74                 PR #2362 (help-launchpad-3): spec Saves before reopening + APP FIX DraftSaveService (app-mode tile saved as widget, not launcher tile); 6/6 live, awaiting diff-check + merge
