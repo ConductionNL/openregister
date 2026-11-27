@@ -630,6 +630,20 @@
 								No audit trails found
 							</div>
 						</AppTab>
+						<!--
+							Drafts (records-draft-versions 5.1, 5.2): named drafts of
+							this object beside the published version. Edit, compare,
+							preview, promote and discard; a promotion replaces the
+							published object shown here.
+						-->
+						<AppTab v-if="relationContext" :title="t('openregister', 'Drafts')">
+							<DraftsTab
+								:register="relationContext.register"
+								:schema="relationContext.schema"
+								:objectId="relationContext.id"
+								:published="objectStore.objectItem"
+								@promoted="objectStore.setObjectItem($event)" />
+						</AppTab>
 					</AppTabs>
 				</div>
 			</div>
@@ -677,6 +691,7 @@ import TimelineQuestionOutline from 'vue-material-design-icons/TimelineQuestionO
 import Translate from 'vue-material-design-icons/Translate.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import ObjectAccessLinks from '../../components/access-links/ObjectAccessLinks.vue'
+import DraftsTab from '../../components/object-drafts/DraftsTab.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
@@ -807,6 +822,7 @@ export default {
 		DeckTab,
 		RelationsTab,
 		ReferencedByTab,
+		DraftsTab,
 		CnIntegrationWidget,
 		CnObjectAccessTab,
 		CnObjectMetadataWidget,

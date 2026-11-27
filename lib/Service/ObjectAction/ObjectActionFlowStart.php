@@ -57,10 +57,17 @@ final class ObjectActionFlowStart {
 	/**
 	 * Whether the run completed.
 	 *
-	 * @return bool True when its status is completed.
+	 * Asks the run's outcome, not its status: inline steps are lowered to a flow
+	 * that ends at an End node, which halts the run as `stopped`, and a clean stop
+	 * at an End is how a flow completes ({@see FlowRun::getOutcome()}). Asking the
+	 * status answered every steps action with 422 "The run ended stopped.".
+	 *
+	 * @return bool True when the run's outcome is completed.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
 	 */
 	public function isCompleted(): bool {
-		return (string)$this->run->getStatus() === FlowRun::STATUS_COMPLETED;
+		return $this->run->getOutcome() === FlowRun::STATUS_COMPLETED;
 	}//end isCompleted()
 
 	/**
@@ -133,7 +140,7 @@ final class ObjectActionFlowStart {
 	public function completedBody(ObjectActionDefinition $definition, mixed $next): array {
 		return [
 			'run' => (string)$this->run->getUuid(),
-			'outcome' => (string)$this->run->getStatus(),
+			'outcome' => $this->run->getOutcome(),
 			'action' => $definition->key,
 			'kind' => $definition->kind,
 			'next' => $next,

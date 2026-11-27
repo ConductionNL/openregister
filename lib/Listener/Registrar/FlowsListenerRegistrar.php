@@ -27,9 +27,11 @@ use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectsMergedEvent;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
+use OCA\OpenRegister\Event\TaskSequenceRejectedEvent;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Kernel\Contracts\AppEventWebhookListenerInterface;
 use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
+use OCA\OpenRegister\Listener\ChangeGateListener;
 use OCA\OpenRegister\Listener\BulkActionRegistrationListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
@@ -229,6 +231,11 @@ final class FlowsListenerRegistrar {
 
 		// A completed task sequence advances the approval chain it belongs to.
 		$context->registerEventListener(TaskSequenceCompletedEvent::class, ApprovalChainAdvanceListener::class);
+
+		// A decided approval of a held change applies it (`onApprove: applyChange`)
+		// or, on rejection, discards it (records-change-held-for-approval 3.2).
+		$context->registerEventListener(TaskSequenceCompletedEvent::class, ChangeGateListener::class);
+		$context->registerEventListener(TaskSequenceRejectedEvent::class, ChangeGateListener::class);
 
 		// A saved view's count alert: the sweep decides when it fires, this
 		// listener tells the people it names, on the channels it declares.

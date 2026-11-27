@@ -12,6 +12,7 @@ import {
 	gallerySchema,
 	previewUrl,
 	recordCover,
+	recordOfCard,
 } from './galleryCards.js'
 
 jest.mock('@nextcloud/router', () => ({
@@ -82,5 +83,29 @@ describe('gallery cards', () => {
 	it('lists at most four card fields, strings only', () => {
 		expect(galleryCardFields({ cardFields: ['a', '', 3, 'b', 'c', 'd', 'e'] })).toEqual(['a', 'b', 'c', 'd'])
 		expect(galleryCardFields({})).toEqual([])
+	})
+
+	it('takes a record\'s file thumbnail from the record\'s own preview route, which the reader can reach', () => {
+		const record = { titel: 'Rood', foto: { id: 297 }, '@self': { id: 'uuid-1', register: 51, schema: 68 } }
+
+		expect(recordCover(record, { coverField: 'foto', cardSize: 'medium' }, {}))
+			.toBe('/index.php/apps/openregister/api/objects/51/68/uuid-1/files/297/preview?width=256&height=256')
+		expect(previewUrl(297, 'medium', record))
+			.toBe('/index.php/apps/openregister/api/objects/51/68/uuid-1/files/297/preview?width=256&height=256')
+	})
+
+	it('falls back to Nextcloud\'s preview service when the record is not known', () => {
+		expect(previewUrl(297, 'medium')).toBe('/index.php/core/preview?fileId=297&x=256&y=256&a=1')
+		expect(previewUrl(297, 'medium', { '@self': { id: 'uuid-1' } })).toBe('/index.php/core/preview?fileId=297&x=256&y=256&a=1')
+	})
+
+	it('gives a card back as its record, without the cover it was given for display', () => {
+		const [card] = galleryCards([{ id: 'r1', titel: 'Rood', foto: { id: 5 }, '@self': { id: 'r1', register: 1, schema: 2 } }], { coverField: 'foto' }, {})
+
+		expect(card[COVER_KEY]).toBeTruthy()
+		expect(recordOfCard(card)).toEqual({ id: 'r1', titel: 'Rood', foto: { id: 5 }, '@self': { id: 'r1', register: 1, schema: 2 } })
+		// The card itself is left as it was.
+		expect(card[COVER_KEY]).toBeTruthy()
+		expect(recordOfCard(null)).toBeNull()
 	})
 })
