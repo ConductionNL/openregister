@@ -1013,3 +1013,7 @@ Fix: keep both sides' lines (union of each hunk: ours then theirs), then bash -n
 ## New runAsSystem caller fails SystemOperationContextBoundaryTest (or-fix-6, #11346)
 - Symptom: SystemOperationContextBoundaryTest::testTheCallSiteSetIsPinned 'A new caller elevates to a trusted userless principal' naming a lib file the PR added.
 - Fix: when the caller truly has no user (occ command, repair, seeding shipped data), add it to ALLOWED with a one-line reason comment naming the entry point; when it stands in for a missing user, refuse instead. Never under lib/Controller, Flow/Nodes or Mcp (FORBIDDEN_PREFIXES).
+## Jest 'Cannot find module @nextcloud/vue/components/NcNoteCard' after raising @conduction/nextcloud-vue to >= 2.234 (or-fix-0, 27 Nov)
+- Symptom: precheck front log, suites that requireActual a real Cn* dist component (CnDialog) fail to run: Cannot find module '@nextcloud/vue/components/NcNoteCard' from .../CnDialog2.vue.js.
+- Cause: nextcloud-vue#2396 imports each Nc* from its @nextcloud/vue subpath (exports map only; Jest ignores exports maps). Letting the real component load instead pulls @vueuse ESM, structuredClone and real NcDialog DOM.
+- Fix: jest.config.js moduleNameMapper '^@nextcloud/vue/(components|composables|directives|functions)/([^/]+)$' -> '<rootDir>/node_modules/@nextcloud/vue/dist/$1/$2/index.mjs'; in each failing spec add jest.mock('@nextcloud/vue/components/<Nc>', () => ({ __esModule: true, default: jest.requireMock('@nextcloud/vue').<Nc> })) for the Nc* the Cn dist chain imports (see #11374 c77bcae0).
