@@ -2486,6 +2486,7 @@ components:
       - ".*/lib/Files/Db/Chunk[.]php"
       - ".*/lib/Files/Db/ChunkIndexOverviewInterface[.]php"
       - ".*/lib/Files/Db/ChunkMapper[.]php"
+      - ".*/lib/Files/Db/ChunkRelationCarryOver[.]php"
       - ".*/lib/Files/Db/ChunkSourceReaderInterface[.]php"
       - ".*/lib/Files/Db/ChunkStoreInterface[.]php"
       - ".*/lib/Files/Db/DetectionMethod[.]php"
