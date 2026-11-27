@@ -85,8 +85,12 @@ for p in lock.get('packages', []) + lock.get('packages-dev', []):
     subprocess.run(['git', '-C', t, 'fetch', '-q', '--depth', '1', 'https://github.com/' + m.group(1), m.group(2)], check=True)
     subprocess.run(['git', '-C', t, 'archive', '--format=zip', '-o', out, m.group(2)], check=True)
 PY
+	# A dev tool locked to a newer PHP patch than the container (psalm 7.16 needs 8.3.16, image has 8.3.6) must not
+	# stop the unit suite: retry once ignoring only the php version (same as composer-cloud.sh).
 	env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=0 \
-		composer install --no-interaction --no-progress --prefer-source
+		composer install --no-interaction --no-progress --prefer-source \
+	|| env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=0 \
+		composer install --no-interaction --no-progress --prefer-source --ignore-platform-req=php --ignore-platform-req=php-64bit
 	[ -f vendor/autoload.php ] && [ -x vendor/bin/phpunit ] || return 1
 	echo "$want" > vendor/.sig-lock
 }
