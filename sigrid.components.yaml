@@ -2029,6 +2029,7 @@ components:
       - ".*/lib/Service/Operations/OperationsJobsServiceInterface[.]php"
       - ".*/lib/Service/Operations/OperationsRunNowServices[.]php"
       - ".*/lib/Service/Operations/OperatorAct[.]php"
+      - ".*/lib/Service/Operations/PublishedDigestProbes[.]php"
       - ".*/lib/Service/Operations/RecordingRun[.]php"
       - ".*/lib/Service/Operations/SupportBundleService[.]php"
       - ".*/lib/Service/Operations/SupportBundleServiceInterface[.]php"
