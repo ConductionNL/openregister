@@ -1541,3 +1541,4 @@
 2026-11-27T13:19:06Z perf-1 (session-20261127T131905-164b98f0) ended at start: lane K=1 already active in session-20261127T131046-e35a0f20 (lease perf-K1 taken 13:10Z, expires 14:40Z); not duplicating
 2026-11-27T13:19:21Z perf-K2 (session 2f14e851) ended at start: lane K=2 already active in session-20261127T114122-8804b049 (lease perf-K2 renewed 12:51Z, expires 14:21Z; last build openregister #11375 at 13:12Z); not duplicating
 2026-11-27T13:29:39Z perf-K1 merged launchpad#2245: Workspace first content 708/696/752 -> 612/592/656 ms, total 892/893/931 -> 947/891/968 ms (noise), 15.68 -> 15.65 MB JS
+2026-11-27T13:30:47Z perf-K2 built openregister #11376 (ready, integrator): 31 open-on-demand modals async; OR main page JS 9.21 -> 8.45 MB on top of #11375, Registers warm 1450/1496/1374 -> 1360/1328/1458 ms (2 of 3 rounds better, near noise)
