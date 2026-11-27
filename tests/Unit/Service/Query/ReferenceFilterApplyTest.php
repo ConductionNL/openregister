@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowFilterTarget;
@@ -267,8 +268,8 @@ class ReferenceFilterApplyTest extends TestCase {
 				'rbac rel0 read openregister_table_1_12',
 				'setParameter rel0_org0="org-a"',
 				'setParameter rel0_c0="Zuiddrecht"',
-				'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_12 rel0 WHERE rel0._uuid = t."aanvrager" AND rel0._deleted IS NULL AND '
-				. "((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.\"woonplaats\" = :rel0_c0)",
+				'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_12 rel0 WHERE rel0._uuid = t.`aanvrager` AND rel0._deleted IS NULL AND '
+				. "((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.`woonplaats` = :rel0_c0)",
 				'andWhere',
 			],
 			$log
@@ -356,7 +357,7 @@ class ReferenceFilterApplyTest extends TestCase {
 		try {
 			$applier->apply(target: $this->target(log: $log), query: ['_ref' => ['aanvrager' => ['woonplaats' => 'Z']]]);
 			$this->fail('A _ref block without a schema was applied.');
-		} catch (InvalidArgumentException $e) {
+		} catch (RelatedRowFilterNotSupportedException $e) {
 			$this->assertSame('_ref filters need the schema being queried; narrow the query to one schema.', $e->getMessage());
 		}
 
@@ -379,13 +380,36 @@ class ReferenceFilterApplyTest extends TestCase {
 			try {
 				$this->loggingApplier(log: $log, bySlug: [], tables: [])->apply(target: $this->target(log: $log), query: $query, schema: $this->request());
 				$this->fail('An unreadable _ref block was applied.');
-			} catch (InvalidArgumentException $e) {
+			} catch (RelatedRowFilterNotSupportedException $e) {
 				$this->assertStringContainsString($fragment, $e->getMessage());
 			}
 
 			$this->assertNotContains('andWhere', $log);
 		}
 	}//end testAnUnreadableRefBlockIsRefusedNotDropped()
+
+	/**
+	 * A field the referenced schema lacks is the caller's mistake: refused as the
+	 * exception the API answers with HTTP 400, naming the field, and nothing applied.
+	 *
+	 * @return void
+	 */
+	public function testAMisspeltRefFieldIsRefusedAsABadRequest(): void {
+		$log = [];
+		try {
+			$this->loggingApplier(log: $log, bySlug: ['person' => [$this->person()]], tables: [], byId: $this->person())->apply(
+				target: $this->target(log: $log),
+				query: ['_ref' => ['aanvrager' => ['woonplaatz' => 'Zuiddrecht']]],
+				schema: $this->request()
+			);
+			$this->fail('A _ref block naming a field the referenced schema lacks was applied.');
+		} catch (RelatedRowFilterNotSupportedException $e) {
+			$this->assertStringContainsString("no field 'woonplaatz'", $e->getMessage());
+			$this->assertInstanceOf(InvalidArgumentException::class, $e->getPrevious());
+		}
+
+		$this->assertNotContains('andWhere', $log);
+	}//end testAMisspeltRefFieldIsRefusedAsABadRequest()
 
 	/**
 	 * A property holding a list of references joins through the list: the request
@@ -407,8 +431,8 @@ class ReferenceFilterApplyTest extends TestCase {
 
 		$this->assertSame(1, $applied);
 		$this->assertContains(
-			'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_12 rel0 WHERE JSON_CONTAINS(t."betrokkenen", JSON_QUOTE(rel0._uuid))'
-			. " AND rel0._deleted IS NULL AND ((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.\"woonplaats\" = :rel0_c0)",
+			'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_12 rel0 WHERE JSON_CONTAINS(t.`betrokkenen`, JSON_QUOTE(rel0._uuid))'
+			. " AND rel0._deleted IS NULL AND ((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.`woonplaats` = :rel0_c0)",
 			$log
 		);
 		$this->assertContains('rbac rel0 read openregister_table_1_12', $log);

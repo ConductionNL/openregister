@@ -169,3 +169,34 @@ export async function loadLibraryTranslations(load = loadCatalogue) {
 		)
 	}
 }
+
+/**
+ * {@link loadLibraryTranslations}, once the page has loaded and the browser is
+ * idle.
+ *
+ * The global script runs on every Nextcloud page, and nothing there shows a
+ * library label before an integration tab or card is opened (the app whose
+ * page it is registers the library's catalogue itself). Fetching and
+ * registering the ~165 KB catalogue during the page's own load cost every page
+ * its parse and evaluation on the main thread before `load`; after `load`, in
+ * idle time, it costs the page nothing it waits for.
+ *
+ * @spec exclude UI plumbing: schedules a third-party string catalogue; no OpenSpec requirement covers UI string catalogues.
+ * @param {Window} [win] The window (a seam for tests).
+ * @param {function(): Promise<void>} [loadNow] Registers the catalogue (a seam for tests).
+ * @return {void}
+ */
+export function loadLibraryTranslationsWhenIdle(win = window, loadNow = loadLibraryTranslations) {
+	const idle = () => {
+		if (typeof win.requestIdleCallback === 'function') {
+			win.requestIdleCallback(() => loadNow(), { timeout: 2000 })
+			return
+		}
+		win.setTimeout(() => loadNow(), 0)
+	}
+	if (win.document?.readyState === 'complete') {
+		idle()
+		return
+	}
+	win.addEventListener('load', idle, { once: true })
+}

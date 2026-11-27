@@ -317,8 +317,8 @@ class RelatedRowAccessGoldenTest extends TestCase {
 	 * @return string The clause.
 	 */
 	private function appliedClause(string $access): string {
-		return 'EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_2 rel0 WHERE rel0."case" = t._uuid'
-			. ' AND rel0._deleted IS NULL AND (' . $access . ') AND rel0."value" >= :rel0_c0)';
+		return 'EXISTS (SELECT 1 FROM *PREFIX*openregister_table_1_2 rel0 WHERE rel0.`case` = t._uuid'
+			. ' AND rel0._deleted IS NULL AND (' . $access . ') AND rel0.`value` >= :rel0_c0)';
 	}//end appliedClause()
 
 	/**
@@ -330,6 +330,10 @@ class RelatedRowAccessGoldenTest extends TestCase {
 		$columns = 'EXISTS (SELECT 1 FROM oc_t r0 WHERE r0."case" = o._uuid AND r0._deleted IS NULL AND (r0._owner = \'alice\')'
 			. ' AND r0."value" >= :rel0_c0 AND r0."value" < :rel0_c1 AND r0."kind" IN (:rel0_c2_0, :rel0_c2_1)'
 			. ' AND r0."kind" != :rel0_c3 AND 1 = 0)';
+
+		$columnsMy = 'EXISTS (SELECT 1 FROM oc_t r0 WHERE r0.`case` = o._uuid AND r0._deleted IS NULL AND (r0._owner = \'alice\')'
+			. ' AND r0.`value` >= :rel0_c0 AND r0.`value` < :rel0_c1 AND r0.`kind` IN (:rel0_c2_0, :rel0_c2_1)'
+			. ' AND r0.`kind` != :rel0_c3 AND 1 = 0)';
 		$columnParameters = ['rel0_c0' => '100', 'rel0_c1' => '2026-06-01', 'rel0_c2_0' => 'a', 'rel0_c2_1' => 'b', 'rel0_c3' => 'x'];
 		$jsonParameters   = (['rel0_schema' => 'caseProperty'] + $columnParameters);
 
@@ -339,7 +343,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 			. ' AND r0.object ->> \'value\' < :rel0_c1 AND r0.object ->> \'kind\' IN (:rel0_c2_0, :rel0_c2_1)'
 			. ' AND r0.object ->> \'kind\' != :rel0_c3 AND 1 = 0)';
 
-		$my = 'EXISTS (SELECT 1 FROM oc_t r0 WHERE r0."schema" = :rel0_schema'
+		$my = 'EXISTS (SELECT 1 FROM oc_t r0 WHERE r0.`schema` = :rel0_schema'
 			. ' AND JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.case\')) = o.uuid AND r0.deleted IS NULL AND (r0._owner = \'alice\')'
 			. ' AND (CASE WHEN JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.value\')) REGEXP \'^-?[0-9]+(\\.[0-9]+)?$\''
 			. ' THEN CAST(JSON_UNQUOTE(JSON_EXTRACT(r0.object, \'$.value\')) AS DECIMAL(65,30)) >= :rel0_c0 ELSE FALSE END)'
@@ -362,7 +366,7 @@ class RelatedRowAccessGoldenTest extends TestCase {
 			$this->renderOne(filter: $filter, engine: RelatedRowExistsClause::ENGINE_POSTGRES, storage: RelatedRowExistsClause::STORAGE_COLUMNS)
 		);
 		$this->assertSame(
-			['sql' => $columns, 'parameters' => $columnParameters],
+			['sql' => $columnsMy, 'parameters' => $columnParameters],
 			$this->renderOne(filter: $filter, engine: RelatedRowExistsClause::ENGINE_MARIADB, storage: RelatedRowExistsClause::STORAGE_COLUMNS)
 		);
 	}//end testRenderIsByteIdenticalOnEveryEngineAndStorage()
@@ -377,8 +381,8 @@ class RelatedRowAccessGoldenTest extends TestCase {
 
 		$this->assertSame(
 			[
-				'sql'        => 'EXISTS (SELECT 1 FROM oc_t r0 WHERE r0._uuid = o."subsidieaanvraag" AND r0._deleted IS NULL'
-					. ' AND (TRUE) AND r0."case" = :rel0_c0)',
+				'sql'        => 'EXISTS (SELECT 1 FROM oc_t r0 WHERE r0._uuid = o.`subsidieaanvraag` AND r0._deleted IS NULL'
+					. ' AND (TRUE) AND r0.`case` = :rel0_c0)',
 				'parameters' => ['rel0_c0' => 'case-1'],
 			],
 			$this->renderOne(

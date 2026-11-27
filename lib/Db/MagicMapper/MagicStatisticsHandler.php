@@ -71,6 +71,15 @@ class MagicStatisticsHandler {
 	private ?array $magicTablesCache = null;
 
 	/**
+	 * Object counts per register/schema pair, kept only inside rememberPairCounts().
+	 *
+	 * Null outside that window, so a count after a write in the same request is never stale.
+	 *
+	 * @var array<string, int>|null
+	 */
+	private ?array $pairCountMemo = null;
+
+	/**
 	 * Registers already fetched this request, keyed by id.
 	 *
 	 * @var array<int, Register>
@@ -144,6 +153,36 @@ class MagicStatisticsHandler {
 	public function setCountCallback(callable $callback): void {
 		$this->countCallback = $callback;
 	}//end setCountCallback()
+
+	/**
+	 * Run read-only statistics work that counts each register/schema pair at most once.
+	 *
+	 * A dashboard asks getStatistics() for the totals, for every register and for
+	 * every schema, and each of those walks the same pairs, so every table was
+	 * counted two or three times per call. Inside this window a pair's count is
+	 * kept and reused; the window ends with $work, so counts never outlive it.
+	 * Nested calls share the outer window.
+	 *
+	 * @param callable(): T $work Read-only work; it must not write objects.
+	 *
+	 * @return T What $work returns.
+	 *
+	 * @template T
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function rememberPairCounts(callable $work): mixed {
+		if ($this->pairCountMemo !== null) {
+			return $work();
+		}
+
+		$this->pairCountMemo = [];
+		try {
+			return $work();
+		} finally {
+			$this->pairCountMemo = null;
+		}
+	}//end rememberPairCounts()
 
 	/**
 	 * Forget the memoised magic-table list.
@@ -370,15 +409,26 @@ class MagicStatisticsHandler {
 	 * @return int The count; 0 when a read or the count fails (the table is skipped).
 	 */
 	private function cachedPairCount(array $ids): int {
+		$key = $ids[0].':'.$ids[1];
+		if ($this->pairCountMemo !== null && array_key_exists($key, $this->pairCountMemo) === true) {
+			return $this->pairCountMemo[$key];
+		}
+
 		try {
 			$register = $this->findRegisterCached(registerId: $ids[0]);
 			$schema = $this->findSchemaCached(schemaId: $ids[1]);
 
-			return $this->countObjectsInRegisterSchemaTable(register: $register, schema: $schema);
+			$count = $this->countObjectsInRegisterSchemaTable(register: $register, schema: $schema);
 		} catch (Exception $e) {
 			// Skip tables that can't be queried.
-			return 0;
+			$count = 0;
 		}
+
+		if ($this->pairCountMemo !== null) {
+			$this->pairCountMemo[$key] = $count;
+		}
+
+		return $count;
 	}//end cachedPairCount()
 
 	/**

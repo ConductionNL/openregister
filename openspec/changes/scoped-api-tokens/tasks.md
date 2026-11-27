@@ -42,13 +42,52 @@
 - [x] 1.1b The validator: no verbs at all, `manage`, an unknown verb, a verb
       the issuer lacks, no end date, an end date in the past, a
       present-but-empty scope axis, a non-positive rate limit.
-- [ ] 1.1c The personal token store. A Nextcloud app password is not an
+- [x] 1.1c The personal token store. A Nextcloud app password is not an
       OpenRegister row, so a grant on one needs either a table of our own keyed
       by token id or an upstream hook; the Consumer half is the one the row's
       supplier scenario is about and it is done.
-- [ ] 1.1d The `match` row condition is carried and returned but not yet
+      - Done without a table: `PersonalTokenGrantStore` keeps the grant as a
+        user value of the token's OWNER keyed by token id (so a grant is only
+        read from its owner's namespace), with the issuer, the moment of issue
+        and every renewal. Present but unreadable binds a grant that permits
+        nothing. `PersonalTokenGrantBinder`, run by the global
+        `PersonalTokenGrantMiddleware`, follows the session's `app_password` to
+        the token, binds its grant as `app-password:<id>` (so `whoami` and
+        `actorVia` name it) and counts the call against the grant's rate limit
+        (429 naming the limit, with `Retry-After`). A token that cannot be
+        resolved permits nothing; a request a Consumer already bound is left
+        alone. `GET|PUT|DELETE /api/tokens/{tokenId}/grant`
+        (`PersonalTokenGrantsController`) issues, reads and lifts a grant on the
+        caller's own token through `TokenGrantValidator` (422 naming why), from
+        an interactive sign-in only: a request opened with a token is refused
+        403, so a narrowed token cannot lift its own ceiling. Tests:
+        `tests/Unit/Service/Rbac/PersonalTokenGrantStoreTest.php` (8),
+        `PersonalTokenGrantBinderTest.php` (7),
+        `tests/Unit/Middleware/PersonalTokenGrantMiddlewareTest.php` (4),
+        `tests/Unit/Controller/PersonalTokenGrantsControllerTest.php` (11).
+      - Done, the lapse warning for personal tokens: the store keeps an index
+        of granted tokens (app value `personal_token_grants`) and
+        `TokenGrantLapseJob` also warns the owner of each personal token whose
+        grant lapses within the window (`warnForPersonal()`).
+        `PersonalTokenGrantRevokedListener` removes a revoked token's grant on
+        Nextcloud's `TokenInvalidatedEvent`, so no warning names a token that
+        is gone. Tests: `TokenGrantLapseJobTest` (+2),
+        `PersonalTokenGrantStoreTest` (+2),
+        `tests/Unit/Listener/PersonalTokenGrantRevokedListenerTest.php` (4);
+        the listener goldens are updated for the one added registration.
+- [x] 1.1d The `match` row condition is carried and returned but not yet
       evaluated: it belongs in the conditional-scope evaluator beside the other
       rules, which is task 2.1's SQL half.
+      - Done: `TokenGrantNarrower` writes the grant's `match` into the marker,
+        with `@self.tokenSubject` resolved to the token or Consumer id (a grant
+        without an id resolves it to a value no row carries); `markerMatch()`
+        reads it back, and an unreadable condition meets no row. It is part of
+        the CEILING, not of the rules: `PermissionHandler` checks it ahead of
+        the private-scope, owner and admin bypasses (in `grantVerdict()` and in
+        `hasGroupPermission()`), and `MagicRbacHandler::verdictOf()` ahead of
+        its admin bypass. A question about no object is answered by the verbs.
+        Tests: `tests/Unit/Service/Rbac/TokenGrantRowConditionTest.php` (7),
+        `tests/Unit/Service/Object/PermissionHandlerTokenRowConditionTest.php` (4).
 
 ## 2. Evaluation
 
@@ -61,19 +100,76 @@
       at all. Without that, the grant would narrow a supplier and not the
       administrator who issued the token, and would let any token write its
       holder's own objects.
-- [ ] 2.1c The SQL RBAC builder's own reading of the marker, and
+- [x] 2.1c The SQL RBAC builder's own reading of the marker, and
       `@self.tokenSubject`. The narrowed block reaches `MagicRbacHandler`
       through `resolveSchemaAuthorization()`, which delegates here, so a list
       is already filtered by the narrowed verbs; the row condition is 1.1d.
-- [ ] 2.2 `actorVia` and `whoami`. `TokenGrant::toArray()` and `tokenId` are
+      - Done: with a grant bound (`RbacResolvers::$tokenGrantSource`, handed
+        in by `MagicMapper`), `MagicRbacHandler` resolves the narrowed block
+        also for the administrator and AND-s `TokenCeiling::predicate()` onto
+        the list query (`applyRbacFilters()`) and onto every access condition
+        (`buildRbacConditionsSql()`, so the row predicate and alias predicate
+        too): a verb the grant lacks, a block without a marker or an
+        unresolvable block reaches no row; the row condition compiles through
+        the same `RbacMatchSql` as the rules. Without a grant nothing changes,
+        which the existing golden tests pin. Tests:
+        `tests/Unit/Db/MagicMapper/TokenCeilingTest.php` (9).
+- [x] 2.2 `actorVia` and `whoami`. `TokenGrant::toArray()` and `tokenId` are
       the data both need; the audit writer and the whoami endpoint are the
       two callers, and neither is written yet.
       - Done, the `whoami` half: `GET /api/whoami` (`WhoamiController::show()`) answers the calling user, `actorVia` (the bound grant's token or Consumer id) and the effective grant from `TokenGrantSource`. `expired` follows `TokenGrant::isExpired()`, so a missing end date reads as expired. It answers 401 without a user and takes no id, so only the caller is ever answered. Tests: `tests/Unit/Controller/WhoamiControllerTest.php` (7).
-      - Open, the audit half: `TokenAttribution` already seals the calling token and Consumer into `resultSummary.token` and the `consumer` column. Naming that `actorVia` on every write through a granted token is not done here.
+      - Done, the audit half: `TokenAttribution::apply()`, which every audit row passes through in `AuditTrailMapper`, now also writes `resultSummary.actorVia` (inside the sealed JSON) with the bound grant's token or Consumer id whenever a grant with an id is bound to the request. The user stays the actor; an interactive session or an ungranted token gets no `actorVia` key. Tests: `tests/Unit/Service/Audit/TokenAttributionActorViaTest.php` (5).
 
 ## 3. Surfaces
 
-- [ ] 3.1 Grant editor with object preview on the personal token page and the Consumer admin page.
+- [x] 3.1 Grant editor with object preview on the personal token page and the Consumer admin page.
+      - Not built, and blocked on a decision rather than on code. Found
+        while building 1.1c: the account page's "API Tokens" section
+        (`src/views/account/sections/TokensSection.vue`, `/api/user/me/tokens`,
+        `UserService::issueApiToken()`) issues OpenRegister's OWN tokens into
+        the `api_tokens` user value, and no authentication path in `lib/`
+        accepts them, so a grant on one would narrow nothing. The tokens that
+        do authenticate are Nextcloud app passwords, which 1.1c binds by their
+        numeric Nextcloud token id (`/api/tokens/{tokenId}/grant`); OCP offers
+        no way to list a user's app passwords, so the editor needs either the
+        section to issue app passwords instead or the user to name the token
+        id. OpenRegister's frontend also has no Consumer admin page to host the
+        Consumer half (`/api/consumers` has no view in `src/`). Decide which
+        token the account page manages, then build the editor over the
+        existing endpoints.
+      - Decided (17 Nov): the personal editor manages grants on Nextcloud
+        app passwords, the tokens that authenticate; the section's own
+        `api_tokens` stay as they are. Because OCP lists no app passwords,
+        the owner names one by pasting it once: `POST
+        /api/tokens/grants/resolve` resolves it through
+        `IProvider::getToken()` to its id and name, never stores or returns
+        it, and answers the same 404 for another account's password as for
+        an unknown one. `GET /api/tokens/grants` lists the caller's granted
+        tokens with a `label` kept on the record. `POST
+        /api/tokens/grants/preview` answers, per row verb the caller holds on
+        one readable object, whether the token keeps it
+        (`TokenGrantPreview`, through the same permission handler that
+        enforces, with the request's own grant restored afterwards). The
+        Consumer half edits the grant in `authorizationConfiguration` over
+        `/api/consumers`. Tests: `PersonalTokenGrantsEditorTest` (10),
+        `TokenGrantPreviewTest` (5).
+      - Done, the page: `src/components/tokens/TokenGrantEditor.vue` (verbs
+        without `manage`, registers, schemas, row condition, required end
+        date, calls per minute, the preview table) over
+        `src/services/tokenGrant.js`; on the account page a "Scoped app
+        passwords" block in `TokensSection.vue` with
+        `src/modals/account/TokenGrantModal.vue` (paste once, edit, remove,
+        preview); an admin "Consumers" page (`src/views/consumers/ConsumersIndex.vue`,
+        manifest page `consumers`, menu entry under Integration) with
+        `src/modals/consumers/ConsumerGrantModal.vue`, which edits the grant
+        and lists its renewals. 25 new strings in all 36 locales. Tests:
+        `tokenGrant.spec.js` (9), `TokenGrantEditor.spec.js` (7),
+        `TokenGrantModal.spec.js` (6), `ConsumerGrantModal.spec.js` (5),
+        `ConsumersIndex.spec.js` (3), `TokensSection.spec.js` (+4).
+      - Not on the Consumer page: the object preview. A Consumer acts as its
+        own user, so a preview answered with the administrator's rights would
+        show the wrong holder; asking it as the Consumer's user needs a
+        second identity in the request and is left for 4.2b's instance run.
 
 ## 4. Tests
 
@@ -91,14 +187,31 @@
       "no end date" and "never expires" are the same string and opposite
       facts.
 - [x] C40.2a `lapsesSoon()` answers who should be warned.
-- [ ] C40.2b The notification that carries the warning, and the recorded
+- [x] C40.2b The notification that carries the warning, and the recorded
       renewal.
+      - Done, the notification half: `TokenGrantLapseJob` (daily, registered in `appinfo/info.xml`) reads each Consumer's grant and, when `TokenGrantValidator::lapsesSoon()` holds, notifies the user the Consumer acts as with subject `token_grant_lapsing` (the token's name, the end date and the days left), replacing the previous warning for the same token rather than stacking one per day. A lapsed grant, one without an end date, a Consumer without a user or with a deleted user gets nothing. `AccessSubjectRenderer` renders the subject. Tests: `tests/Unit/BackgroundJob/TokenGrantLapseJobTest.php` (5), `NotifierTest::testPrepareTokenGrantLapsing`.
+      - Done for personal tokens: `PersonalTokenGrantStore::write()` records every changed end date as a renewal (`by`, `at`, `from`, `expiresAt`, the last 20 kept), returned by `GET /api/tokens/{tokenId}/grant`.
+      - Done for Consumers: `ConsumersController::update()` (PUT and PATCH) records a changed end date of the grant in `authorizationConfiguration` through `TokenGrantRenewals::after()` under `grantRenewals` (`by`, `at`, `from`, `expiresAt`, the last 20 kept). Found on the way: the controller validated a grant only under `configuration`, while the authorization service enforces the one under `authorizationConfiguration`, so a grant saved there skipped the validator; both keys are validated now. Tests: `tests/Unit/Service/Rbac/TokenGrantRenewalsTest.php` (4), `ConsumersControllerTest` (+12).
+      - Not applicable to C40.5's remainder: OpenRegister flows have no outbound HTTP step, so only webhooks carry an outbound destination here.
 - [x] C40.4a The limit is carried on the grant and validated as a positive
       number of calls per minute.
-- [ ] C40.4b The counter and the refusal that names it, which needs a shared
+- [x] C40.4b The counter and the refusal that names it, which needs a shared
       cache and a middleware.
-- [ ] C40.5 An administered outbound allowlist checked at save (D-C40-3).
-- [ ] C40.6 Tests: the missing end date refusal, the expired token, the leaver who does not break the integration, the interactive sign-in refusal, the allowlist refusal at save. The leaver and the interactive sign-in tests belong to the service account, which moved with C40.3 to `scoped-api-tokens-machine-callers` (task W.4 there); they are written there, not here.
+      - Done at the authorisation layer rather than a middleware, because the
+        grant is bound in `AuthorizationService` (JWT and API-key Consumers),
+        which integriq's endpoint runtime calls outside any OpenRegister
+        middleware. `TokenGrantRateLimiter` counts each token in a fixed
+        one-minute window in the distributed memcache; the call over the limit
+        throws `TokenRateLimitExceededException` (an `AuthenticationException`,
+        status 429, message and details naming the limit, the window and the
+        retry delay) before the request acts as the Consumer's user. No
+        distributed memcache: nothing is counted or refused. Personal tokens
+        are counted the same way by `PersonalTokenGrantBinder` (1.1c). Tests:
+        `tests/Unit/Service/Rbac/TokenGrantRateLimiterTest.php` (6).
+- [x] C40.5 An administered outbound allowlist checked at save (D-C40-3).
+      - Done for webhooks: `OutboundAllowlist` reads the app setting `outboundAllowlist` (a JSON array of hosts, or one per line or comma; `*.example.nl` admits subdomains only). `WebhooksController::create()` and `update()` (when `url` is sent) refuse a destination outside it with 422 naming the field, the host and the allowlist, before anything is saved. Unset or empty: every destination is admitted, as today. Set but unreadable: refused. Tests: `tests/Unit/Service/Outbound/OutboundAllowlistTest.php` (8), `tests/Unit/Controller/WebhooksControllerAllowlistTest.php` (5). Left: flow HTTP steps (automations) are not checked yet, and the setting has no admin page field yet (it is set with `occ config:app:set openregister outboundAllowlist`).
+- [x] C40.6 Tests: the missing end date refusal, the expired token, the leaver who does not break the integration, the interactive sign-in refusal, the allowlist refusal at save. The leaver and the interactive sign-in tests belong to the service account, which moved with C40.3 to `scoped-api-tokens-machine-callers` (task W.4 there); they are written there, not here.
+      - Done, the three that belong here: the missing end date refusal (`TokenGrantTest::testATokenWithNoEndDateIsNotIssued`, `TokenGrantValidatorMutationTest::testAGrantWithoutAnEndDateIsRefused`), the expired token at use (`PermissionHandlerTokenCeilingTest::testAnExpiredTokenIsRefusedEvenItsOwnVerb`, `TokenGrantTest::testAGrantWithNoEndDateReadsAsExpired`) and the allowlist refusal at save (`WebhooksControllerAllowlistTest`, 5).
 - [ ] C40.7 Hand over to the dossiq and integriq lanes with candidate ids C-access-and-privacy-35, -42, -43, -44 and -70, noting that C-access-and-privacy-35 is already answered by `account-self-service`.
 - [x] C40.8 Reported, unfixed, in the PR body: `openspec validate --strict`
       confirms it, at `specs/auth-system/spec.md` line 888. It is on a line
