@@ -5532,3 +5532,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T13:06:41Z integrator-20261127T115023-b15bb467 MERGED-TREE 6c42724129: 2 PRs, main now 4c5375eed4 = tested tree
 2026-11-27T13:11:44Z integrator-20261127T115023-b15bb467 RED tree 2fe6401140 prs 2 front=red: Tests: 68171, Assertions: 242804, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Not; first failures: FAIL src/dialogs/settings/clearDialogs.dom.golden.spec.js;FAIL src/modals/confirmDialogFrameUsers.dom.golden.spec.js;FAIL src/modals/exportUploadDialogs.dom.golden.spec.js
+2026-11-27T13:11:52Z precheck-20261127T122917-1773494e GREEN tree a566eba581 on dev 2d1be742bb prs 1 front=skip: Tests: 67982, Assertions: 242182, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
