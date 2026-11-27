@@ -168,7 +168,7 @@ class DashboardService {
 	/**
 	 * Read the audit totals of the answer's registers in one grouped query.
 	 *
-	 * A failed read leaves the memo empty, so each entry counts on its own as before.
+	 * A failed read leaves the memo unset, so each entry counts its own scope as before.
 	 *
 	 * @param array<int, \OCA\OpenRegister\Db\Register> $registers The registers of the answer.
 	 *
@@ -185,8 +185,12 @@ class DashboardService {
 		try {
 			$this->auditPairTotals = $this->mappers->auditTrailMapper->statisticsTotalsPerPair(registerIds: $ids);
 		} catch (Throwable $e) {
+			// Not a failure of the answer: each entry counts its own scope instead.
 			$this->auditPairTotals = null;
-			$this->logFailure(what: 'audit totals per register and schema', error: $e);
+			$this->logger->debug(
+				message: '[DashboardService] Audit totals per register and schema unavailable, counting per entry: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
 		}
 	}//end readAuditPairTotals()
 

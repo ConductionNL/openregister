@@ -224,6 +224,8 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 			}
 		);
 		$mapper->method('statisticsTotals')->willReturn(['total' => 21, 'size' => 22]);
+		// Per-scope reads, as recorded: the grouped audit read is unavailable to this double.
+		$mapper->method('statisticsTotalsPerPair')->willThrowException(new Exception('per-scope double'));
 		return $mapper;
 	}//end audit()
 
@@ -254,6 +256,10 @@ class DashboardServiceSizesGoldenTest extends TestCase {
 
 				return [$this->schema(id: 10), $this->schema(id: 11)];
 			}
+		);
+		// The dashboard hands over the register it holds: recorded as the id lookup it replaces.
+		$mapper->method('getSchemasOfRegister')->willReturnCallback(
+			fn (Register $register): array => $mapper->getSchemasByRegisterId($register->getId())
 		);
 		return $mapper;
 	}//end registers()

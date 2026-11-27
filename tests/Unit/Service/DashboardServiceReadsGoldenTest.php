@@ -100,6 +100,9 @@ class DashboardServiceReadsGoldenTest extends TestCase {
 		$schema->setTitle('Sch');
 		$registers->method('findAll')->willReturn([$register]);
 		$registers->method('getSchemasByRegisterId')->willReturn([$schema]);
+		$registers->method('getSchemasOfRegister')->willReturn([$schema]);
+		// Per-scope reads, as recorded: the grouped audit read is unavailable to this double.
+		$audit->method('statisticsTotalsPerPair')->willThrowException(new Exception('per-scope double'));
 
 		if ($fail === true) {
 			$boom = new Exception('boom');
