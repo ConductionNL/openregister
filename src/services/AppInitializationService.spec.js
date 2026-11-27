@@ -59,37 +59,31 @@ describe('AppInitializationService', () => {
 	})
 
 	describe('initializeAppData', () => {
-		it('loads every empty store, the active organisation and the views', async () => {
+		it('loads the shell stores and the active organisation, not applications, views or sources', async () => {
 			await initializeAppData()
-			allRefreshes().forEach((fn) => expect(fn).toHaveBeenCalledTimes(1))
+			expect(registerStore.refreshRegisterList).toHaveBeenCalledTimes(1)
+			expect(schemaStore.refreshSchemaList).toHaveBeenCalledTimes(1)
+			expect(organisationStore.refreshOrganisationList).toHaveBeenCalledTimes(1)
+			expect(organisationStore.getActiveOrganisation).toHaveBeenCalledTimes(1)
+			expect(applicationStore.refreshApplicationList).not.toHaveBeenCalled()
+			expect(viewsStore.fetchViews).not.toHaveBeenCalled()
+			expect(sourceStore.refreshSourceList).not.toHaveBeenCalled()
 			expect(errorSpy).not.toHaveBeenCalled()
 		})
 
-		it('treats missing organisation, application and source lists as empty', async () => {
+		it('treats a missing organisation list as empty', async () => {
 			organisationStore.organisationList = undefined
-			applicationStore.applicationList = null
-			sourceStore.sourceList = undefined
 			await initializeAppData()
 			expect(organisationStore.refreshOrganisationList).toHaveBeenCalledTimes(1)
-			expect(applicationStore.refreshApplicationList).toHaveBeenCalledTimes(1)
-			expect(sourceStore.refreshSourceList).toHaveBeenCalledTimes(1)
 		})
 
-		it('skips stores that are already loaded but still fetches views', async () => {
+		it('skips stores that are already loaded', async () => {
 			registerStore.registerList = [{ id: 1 }]
 			schemaStore.schemaList = [{ id: 1 }]
 			organisationStore.organisationList = [{ id: 1 }]
 			organisationStore.activeOrganisation = { id: 1 }
-			applicationStore.applicationList = [{ id: 1 }]
-			sourceStore.sourceList = [{ id: 1 }]
 			await initializeAppData()
-			expect(registerStore.refreshRegisterList).not.toHaveBeenCalled()
-			expect(schemaStore.refreshSchemaList).not.toHaveBeenCalled()
-			expect(organisationStore.refreshOrganisationList).not.toHaveBeenCalled()
-			expect(organisationStore.getActiveOrganisation).not.toHaveBeenCalled()
-			expect(applicationStore.refreshApplicationList).not.toHaveBeenCalled()
-			expect(sourceStore.refreshSourceList).not.toHaveBeenCalled()
-			expect(viewsStore.fetchViews).toHaveBeenCalledTimes(1)
+			allRefreshes().forEach((fn) => expect(fn).not.toHaveBeenCalled())
 		})
 
 		it('takes the active organisation from the list it just read, without a second request', async () => {
