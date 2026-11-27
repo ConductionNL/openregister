@@ -3,6 +3,7 @@ const fs = require('fs')
 const path = require('path')
 const TerserPlugin = require('terser-webpack-plugin')
 const { VueLoaderPlugin } = require('vue-loader')
+const LibraryStylesheetCopy = require('./scripts/library-stylesheet-copy.js')
 
 const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
@@ -394,6 +395,11 @@ const otherPlugins = (webpackConfig.plugins || []).filter(
 	(p) => p.constructor.name !== 'VueLoaderPlugin',
 )
 webpackConfig.plugins = [new VueLoaderPlugin(), ...otherPlugins]
+
+// nextcloud-vue's stylesheet goes to css/nextcloud-vue.css, which
+// templates/index.php links, instead of the main bundle inserting it as text:
+// a linked sheet stays parsed between page loads.
+webpackConfig.plugins.push(new LibraryStylesheetCopy({ target: path.join(__dirname, 'css', 'nextcloud-vue.css') }))
 
 // Force @nextcloud/dialogs to resolve from this app's node_modules, preventing
 // a nested copy from a sibling checkout leaking in. v7 is exports-map-only, so
