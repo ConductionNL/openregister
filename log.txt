@@ -5601,3 +5601,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T18:03:10Z integrator-20261127T155017-3da46553 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T18:03:39Z integrator-20261127T155017-3da46553 MERGED-TREE b0da27826b: 2 PRs, main now d79b3fe0da = tested tree
+2026-11-27T18:08:20Z done-launchpad-20261127T180813-a687bf88 done-launchpad: lease held by session-20261127T170846-794e99a3 until 19:54Z (renewed 17:54Z); this run ended without work
