@@ -5414,3 +5414,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T09:45:09Z integrator-20261127T080455-44feeeb6 MERGED-TREE b5fbce4e7b: 4 PRs, main now 57937da5f4 = tested tree
 2026-11-27T09:46:19Z session-20261127T081459-e72c7826 live-launchpad-1 tarball-stack rerun of the done-lane red list: no app reds (nc-unified-search 42/42, dashboard-view-analytics 45/45, 61 files 476+157 passed after a session-expiry pass; resync specs green with notifications). Details e2e-red/launchpad-2026-11-27-live1-b.txt. Taking REVIEW-LAUNCHPAD item 4 (drop the left Dashboards sidebar).
+2026-11-27T09:50:47Z precheck-20261127T093644-0f5ab767 GREEN tree 8307703d45 on dev 1350f36472 prs 1 front=skip: Tests: 67754, Assertions: 241324, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
