@@ -28,7 +28,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Controller\Support\SetupControllerServices;
-use OCA\OpenRegister\Controller\Support\SetupStatusReader;
 use OCA\OpenRegister\Kernel\Contracts\AdminSettingDelegation;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCP\AppFramework\Controller;
@@ -47,6 +46,13 @@ use OCA\OpenRegister\Service\DemoDataServiceInterface;
  */
 class SetupController extends Controller {
 	/**
+	 * Setup contract version; matches manifest.setup.version.
+	 *
+	 * @var integer
+	 */
+	private const SETUP_VERSION = 1;
+
+	/**
 	 * App-config key recording that the demo-data step was DEALT WITH.
 	 *
 	 * Not "objects exist": an operator who declines has finished the step, and
@@ -58,7 +64,7 @@ class SetupController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const DEMO_DECIDED_KEY = SetupStatusReader::DEMO_DECIDED_KEY;
+	private const DEMO_DECIDED_KEY = 'demo_data_decided';
 
 	/**
 	 * App-config key holding the dataset the operator picked.
@@ -70,7 +76,7 @@ class SetupController extends Controller {
 	 *
 	 * @var string
 	 */
-	private const DATASET_KEY = SetupStatusReader::DATASET_KEY;
+	private const DATASET_KEY = 'demo_dataset';
 
 	/**
 	 * Records the demo-data decision.
@@ -121,14 +127,50 @@ class SetupController extends Controller {
 	 * @return JSONResponse The status document.
 	 *
 	 * @spec openspec/specs/first-time-setup/spec.md
-	 * @spec openspec/changes/shell-reads-from-initial-state/specs/first-time-setup/spec.md
 	 */
 	#[AuthorizedAdminSetting(AdminSettingDelegation::OPEN_REGISTER_ADMIN)]
 	public function status(): JSONResponse {
-		// The same document the app shell carries as initial state for an
-		// admin (ShellBootReads), so the two can never drift apart.
-		return new JSONResponse(data: (new SetupStatusReader(appConfig: $this->appConfig, demoDataService: $this->demoDataService))->read());
+		$demoDecided = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DEMO_DECIDED_KEY, '') !== '';
+		$picked      = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DATASET_KEY, '');
+
+		return new JSONResponse(
+			data: [
+				'version'   => self::SETUP_VERSION,
+				'completed' => true,
+				// The choice step reads its options from here: it declares
+				// `optionsSource: datasets` and no options of its own, so a
+				// dataset missing from this list is a dataset nobody can pick.
+				'datasets'  => $this->demoDataService->listChoices(),
+				'steps'     => $this->steps(demoAnswered: ($demoDecided === true || $picked !== '')),
+			]
+		);
+
 	}//end status()
+
+	/**
+	 * The per-step state the status document reports.
+	 *
+	 * Every id of `manifest.setup.steps`, asserted by the status contract
+	 * test: a step the server never reports stays open, and an open step
+	 * reopens the wizard on every page.
+	 *
+	 * @param bool $demoAnswered Answered once a card was picked ("None"
+	 *                           included) or a load ran. A pick without a load
+	 *                           still counts: a wizard that predates
+	 *                           `loadAction` can only record the pick.
+	 *
+	 * @return array<string, array{done: bool}> The steps.
+	 *
+	 * @spec openspec/specs/first-time-setup/spec.md
+	 */
+	private function steps(bool $demoAnswered): array {
+		return [
+			'welcome'   => ['done' => true],
+			'demo-data' => ['done' => $demoAnswered],
+			'done'      => ['done' => true],
+		];
+
+	}//end steps()
 
 	/**
 	 * Persist the wizard's `choice` answer.

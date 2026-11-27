@@ -5197,3 +5197,5 @@ Service/Operations/ReindexSelectionServiceInterface.php,,Service,,,,,Core
 BackgroundJob/ReindexSelectionJob.php,,BackgroundJob,,,,,Core
 Controller/OperationsReindexController.php,,Controller,,,,,Core
 Repair/PrepareAuditSealing.php,,Repair,,,,,Compliance
+Controller/Support/SetupStatusReader.php,,Controller,,,,,Core
+Controller/Support/ShellBootReads.php,,Controller,,,,,Core

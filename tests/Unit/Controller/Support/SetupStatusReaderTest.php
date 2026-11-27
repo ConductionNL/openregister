@@ -14,9 +14,13 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Support;
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- PHPUnit arrange/act/assert conventions.
 // phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit positional assertions.
 
+use OCA\OpenRegister\Controller\SetupController;
+use OCA\OpenRegister\Controller\Support\SetupControllerServices;
 use OCA\OpenRegister\Controller\Support\SetupStatusReader;
 use OCA\OpenRegister\Service\DemoDataServiceInterface;
 use OCP\IAppConfig;
+use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 
 class SetupStatusReaderTest extends TestCase {
@@ -50,5 +54,27 @@ class SetupStatusReaderTest extends TestCase {
 		$this->assertTrue($status['completed']);
 		$this->assertSame(SetupStatusReader::SETUP_VERSION, $status['version']);
 		$this->assertSame(['welcome', 'demo-data', 'done'], array_keys($status['steps']));
+	}
+
+	/**
+	 * The page and the endpoint must report the same document (the controller
+	 * may not reference the reader across areas, so this test holds them together).
+	 *
+	 * @dataProvider answers
+	 */
+	public function testThePageCarriesExactlyWhatTheEndpointAnswers(string $decided, string $picked, bool $done): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnMap([
+			['openregister', SetupStatusReader::DEMO_DECIDED_KEY, '', false, $decided],
+			['openregister', SetupStatusReader::DATASET_KEY, '', false, $picked],
+		]);
+		$demo = $this->createMock(DemoDataServiceInterface::class);
+		$demo->method('listChoices')->willReturn([['id' => 'gemeente', 'label' => 'Gemeente', 'description' => 'Voorbeeld']]);
+		$controller = new SetupController(
+			$this->createMock(IRequest::class),
+			new SetupControllerServices($appConfig, $this->createMock(LoggerInterface::class), $demo)
+		);
+
+		$this->assertSame($controller->status()->getData(), (new SetupStatusReader($appConfig, $demo))->read());
 	}
 }

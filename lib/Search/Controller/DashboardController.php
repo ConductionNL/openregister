@@ -22,8 +22,8 @@ namespace OCA\OpenRegister\Search\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Controller\Support\ControllerSession;
-use OCA\OpenRegister\Controller\Support\ShellBootReads;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ShellBootReadsInterface;
 use OCA\OpenRegister\Search\Service\ActivityWindow;
 use OCA\OpenRegister\Search\Service\DashboardScope;
 use OCA\OpenRegister\Search\Service\DashboardService;
@@ -81,16 +81,16 @@ class DashboardController extends Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @param IRequest                    $request   The current request.
-	 * @param DashboardControllerServices $services  The dashboard API services.
-	 * @param ShellBootReads|null         $bootReads The shell reads the page carries; null renders without them.
+	 * @param IRequest                     $request   The current request.
+	 * @param DashboardControllerServices  $services  The dashboard API services.
+	 * @param ShellBootReadsInterface|null $bootReads The shell reads the page carries; null renders without them.
 	 *
 	 * @spec openspec/changes/shell-reads-from-initial-state/specs/apphost-boilerplate/spec.md
 	 */
 	public function __construct(
 		IRequest $request,
 		DashboardControllerServices $services,
-		private readonly ?ShellBootReads $bootReads=null,
+		private readonly ?ShellBootReadsInterface $bootReads=null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 

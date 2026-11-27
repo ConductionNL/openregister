@@ -3,9 +3,9 @@
 ### Requirement: The page and the endpoint report the same setup status
 
 The setup status document an administrator's page carries as `setup_status`
-SHALL be built by the same reader as the answer of `GET /api/setup/status`,
-so the wizard behaves the same whether it read the status from the page or
-from the endpoint.
+SHALL be identical to the answer of `GET /api/setup/status` for the same
+configuration, so the wizard behaves the same whether it read the status from
+the page or from the endpoint.
 
 #### Scenario: Example data was declined
 

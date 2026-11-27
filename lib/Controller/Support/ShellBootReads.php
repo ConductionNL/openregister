@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller\Support;
 
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
+use OCA\OpenRegister\Kernel\Contracts\ShellBootReadsInterface;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -42,7 +43,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/shell-reads-from-initial-state/specs/apphost-boilerplate/spec.md
  */
-final class ShellBootReads {
+final class ShellBootReads implements ShellBootReadsInterface {
 	/**
 	 * The manifest's `walkthrough.completionConfigKey`.
 	 */

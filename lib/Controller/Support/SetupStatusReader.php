@@ -29,8 +29,10 @@ use OCA\OpenRegister\Service\DemoDataServiceInterface;
 use OCP\IAppConfig;
 
 /**
- * Builds the setup status document once, for the endpoint and for the page
- * that carries it as initial state.
+ * Builds the setup status document for the page that carries it as initial
+ * state. It must answer exactly what `SetupController::status()` answers; a
+ * unit test holds the two to the same document (the controller lives in
+ * another area and may not reference this class, ADR-013).
  *
  * @spec openspec/changes/shell-reads-from-initial-state/specs/first-time-setup/spec.md
  */

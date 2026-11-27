@@ -255,6 +255,8 @@ components:
       - ".*/lib/Controller/Support/SettingsRuntime[.]php"
       - ".*/lib/Controller/Support/SettingsStore[.]php"
       - ".*/lib/Controller/Support/SetupControllerServices[.]php"
+      - ".*/lib/Controller/Support/SetupStatusReader[.]php"
+      - ".*/lib/Controller/Support/ShellBootReads[.]php"
       - ".*/lib/Controller/Support/ShowServices[.]php"
       - ".*/lib/Controller/Support/ShownEntity[.]php"
       - ".*/lib/Controller/Support/StreamedTextResponse[.]php"
