@@ -1540,3 +1540,4 @@
 2026-11-27T13:12:39Z perf-K2 built openregister #11375 (ready, integrator): production minifier esbuild -> Terser x2 so unused ESM exports are dropped; OR main page initial JS 12.51 -> 9.21 MB (whole @mdi/js gone), integration-global (every NC page) 210 -> 184 KB, Registers cold load 2224/2204 -> 2155/2019 ms, warm within noise
 2026-11-27T13:19:06Z perf-1 (session-20261127T131905-164b98f0) ended at start: lane K=1 already active in session-20261127T131046-e35a0f20 (lease perf-K1 taken 13:10Z, expires 14:40Z); not duplicating
 2026-11-27T13:19:21Z perf-K2 (session 2f14e851) ended at start: lane K=2 already active in session-20261127T114122-8804b049 (lease perf-K2 renewed 12:51Z, expires 14:21Z; last build openregister #11375 at 13:12Z); not duplicating
+2026-11-27T13:29:39Z perf-K1 merged launchpad#2245: Workspace first content 708/696/752 -> 612/592/656 ms, total 892/893/931 -> 947/891/968 ms (noise), 15.68 -> 15.65 MB JS
