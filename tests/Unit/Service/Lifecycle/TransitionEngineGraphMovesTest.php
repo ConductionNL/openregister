@@ -101,6 +101,13 @@ class TransitionEngineGraphMovesTest extends TestCase {
 	 */
 	private array $events = [];
 
+	/**
+	 * The configs the sibling reads were made with.
+	 *
+	 * @var list<array<string, mixed>>
+	 */
+	private array $siblingReads = [];
+
 	protected function setUp(): void {
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
@@ -194,12 +201,15 @@ class TransitionEngineGraphMovesTest extends TestCase {
 
 		$this->objectService->method('find')->willReturn($case);
 		$this->schemaMapper->method('find')->willReturn($schema);
-		$this->objectService->method('findAll')->willReturn(
-			[
-				$this->statusType(self::S3, 'Afgehandeld', 3, true),
-				$this->statusType(self::S1, 'Ontvangen', 1, false),
-				$this->statusType(self::S2, 'In behandeling', 2, false),
-			]
+		$this->objectService->method('findAll')->willReturnCallback(
+			function (array $config = []): array {
+				$this->siblingReads[] = $config;
+				return [
+					$this->statusType(self::S3, 'Afgehandeld', 3, true),
+					$this->statusType(self::S1, 'Ontvangen', 1, false),
+					$this->statusType(self::S2, 'In behandeling', 2, false),
+				];
+			}
 		);
 	}//end wire()
 
@@ -234,6 +244,25 @@ class TransitionEngineGraphMovesTest extends TestCase {
 	private function offered(): array {
 		return array_column($this->engine->availableActions(self::CASE), 'action');
 	}//end offered()
+
+	/**
+	 * The siblings are read in the case's own register: a schema alone names no object table.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/lifecycle-over-reference-field/specs/object-lifecycle/spec.md#requirement-side-moves-set-a-second-field-and-freeze-the-graph-while-set
+	 */
+	public function testTheSiblingsAreReadInTheCasesRegister(): void {
+		$this->wire(self::S2, self::suspension());
+
+		$this->assertContains('suspend', $this->offered());
+		$this->assertNotEmpty($this->siblingReads);
+		$this->assertSame(
+			['register' => '1', 'schema' => 'statustype', 'caseType' => self::PARENT],
+			$this->siblingReads[0]['filters']
+		);
+		$this->assertSame(['order' => 'ASC'], $this->siblingReads[0]['sort']);
+	}//end testTheSiblingsAreReadInTheCasesRegister()
 
 	public function testTheFormIsPublishedOnTheMoveToATerminalStatusOnly(): void {
 		$this->wire(self::S2, self::closingForm());

@@ -22,6 +22,7 @@ import EditableCell from '../../components/tables/EditableCell.vue'
 import MapView from '../object/MapView.vue'
 import RecordsTreeView from './RecordsTreeView.vue'
 import {
+	recordOfCard as cardRecord,
 	cardSize,
 	galleryCardFields,
 	galleryCards,
@@ -702,6 +703,17 @@ export default {
 		},
 
 		/**
+		 * The record behind a gallery card, without the cover it was given for display.
+		 *
+		 * @param {object} card The card.
+		 * @spec openspec/changes/records-gallery-view/specs/saved-search-views/spec.md#requirement-the-search-page-renders-a-gallery-view-as-cards
+		 * @return {object}
+		 */
+		recordOfCard(card) {
+			return cardRecord(card)
+		},
+
+		/**
 		 * Open the view-object modal for a clicked row.
 		 *
 		 * @param {object} row The clicked object row.
@@ -1175,34 +1187,34 @@ export default {
 				:cardFields="galleryFields"
 				:loading="objectStore.searchLoading"
 				rowKey="id"
-				@click="handleRowClick">
+				@click="(card) => handleRowClick(recordOfCard(card))">
 				<template #card-actions="{ object }">
 					<NcActions>
-						<NcActionButton closeAfterClick @click="handleRowClick(object)">
+						<NcActionButton closeAfterClick @click="handleRowClick(recordOfCard(object))">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							{{ t('openregister', 'Edit') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleMergeRow(object)">
+						<NcActionButton closeAfterClick @click="handleMergeRow(recordOfCard(object))">
 							<template #icon>
 								<Merge :size="20" />
 							</template>
 							{{ t('openregister', 'Merge') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleCopyRow(object)">
+						<NcActionButton closeAfterClick @click="handleCopyRow(recordOfCard(object))">
 							<template #icon>
 								<ContentCopy :size="20" />
 							</template>
 							{{ t('openregister', 'Copy') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleSaveAsTemplateRow(object)">
+						<NcActionButton closeAfterClick @click="handleSaveAsTemplateRow(recordOfCard(object))">
 							<template #icon>
 								<FileDocumentPlusOutline :size="20" />
 							</template>
 							{{ t('openregister', 'Save as template') }}
 						</NcActionButton>
-						<NcActionButton closeAfterClick @click="handleDeleteRow(object)">
+						<NcActionButton closeAfterClick @click="handleDeleteRow(recordOfCard(object))">
 							<template #icon>
 								<TrashCanOutline :size="20" />
 							</template>

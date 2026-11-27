@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\Rbac\GrantLookup;
 use OCA\OpenRegister\Service\Rbac\AuthorizationColumn;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationListTerm;
+use OCA\OpenRegister\Service\Rbac\SecondFactorReadGate;
 use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
 use OCA\OpenRegister\Service\Rbac\DenyResolverInterface;
 use OCA\OpenRegister\Service\Rbac\GrantedRows;
@@ -840,6 +841,15 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	public function applyRbacFilters(RbacFilterCall $call): void {
 		$user = $this->identifyCaller(call: $call);
 
+		// A scope requiring a second factor is final, administrators included;
+		// only the userless system reads it without one.
+		if ($this->isTrustedSystemCaller(user: $user) === false
+			&& $this->secondFactorRefuses(schema: $call->schema, action: $call->action, userId: $call->userId) === true
+		) {
+			$call->denyAll();
+			return;
+		}
+
 		// Admin users bypass all RBAC checks, and so does the userless system.
 		if ($call->callerIsAdmin() === true || $this->isTrustedSystemCaller(user: $user) === true) {
 			return;
@@ -921,8 +931,46 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return;
 		}
 
-		$this->applyAnyOf(call: $call, conditions: array_merge($ownerAdmits, $this->ruleConditions(call: $call, notPrivate: $notPrivate)));
+		$grantAdmits = [];
+		$readGrant = $this->readGrantAdmitSqlFor(call: $call);
+		if ($readGrant !== null) {
+			$grantAdmits[] = $qb->createFunction($readGrant);
+		}
+
+		$this->applyAnyOf(call: $call, conditions: array_merge($ownerAdmits, $grantAdmits, $this->ruleConditions(call: $call, notPrivate: $notPrivate)));
 	}//end applyAccessConditions()
+
+	/**
+	 * The rows a per-object READ grant admits on their own, as raw SQL.
+	 *
+	 * Decision (Ruben, 25 Nov 2026, REQ-RIC-002): a read grant admits the row
+	 * by itself, ORed beside the schema's rules rather than ANDed with them.
+	 * Only for read; drafts stay with their owner like everywhere else. The
+	 * deny and tenant terms are ANDed over the whole query and still narrow it.
+	 *
+	 * @param RbacAccessCall $call The call.
+	 *
+	 * @return string|null The predicate, or null when no read grant is in play.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function readGrantAdmitSqlFor(RbacAccessCall $call): ?string {
+		if ($call->action !== 'read') {
+			return null;
+		}
+
+		$quoted = $this->quotedGrantedUuids(userId: $call->userId, action: 'read');
+		if ($quoted === []) {
+			return null;
+		}
+
+		$granted = $call->columnPrefix . '_uuid IN (' . implode(', ', $quoted) . ')';
+		if ($this->hidesDrafts(call: $call) === true) {
+			$granted = '(' . $granted . ' AND ' . (new DraftStatusPolicy())->notADraftSql(columnPrefix: $call->columnPrefix) . ')';
+		}
+
+		return $granted;
+	}//end readGrantAdmitSqlFor()
 
 	/**
 	 * Grant access when ANY condition matches; deny outright when there is none.
@@ -944,6 +992,62 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 
 		$call->qb->andWhere($call->qb->expr()->orX(...$conditions));
 	}//end applyAnyOf()
+
+	/**
+	 * Whether a read of this schema needs a second factor the caller lacks (REQ-IHC-003).
+	 *
+	 * The list half of {@see SecondFactorReadGate}: the find path refuses the
+	 * same caller the same schema in PermissionHandler. When the gate cannot be
+	 * built nothing is declared to it and the list goes on to the grants.
+	 *
+	 * @param Schema      $schema The schema read.
+	 * @param string      $action The action.
+	 * @param string|null $userId The caller.
+	 *
+	 * @return bool True when the list must return nothing.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorRefuses(Schema $schema, string $action, ?string $userId): bool {
+		if ($action !== 'read') {
+			return false;
+		}
+
+		try {
+			$gate = $this->container->get(SecondFactorReadGate::class);
+		} catch (\Throwable) {
+			// Autowired in every running instance; only a container double lacks it.
+			return false;
+		}
+
+		if (($gate instanceof SecondFactorReadGate) === false) {
+			return false;
+		}
+
+		return $gate->readRefusal(schema: $schema, userId: $userId) !== null;
+	}//end secondFactorRefuses()
+
+	/**
+	 * Whether the raw-SQL list of one access call is clamped by the second-factor gate.
+	 *
+	 * The trusted system inside a system operation reads without one, as it
+	 * bypasses the rest of the filter.
+	 *
+	 * @param RbacAccessCall $call The schema, action and table of the read.
+	 *
+	 * @return bool True when the list must return nothing.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorClampsSql(RbacAccessCall $call): bool {
+		$user = $this->identifyCaller(call: $call);
+		// NOSEMGREP: php.lang.security.exec-use.exec-use -- SystemOperationContext is a scope flag, no process is started.
+		if ($this->isTrustedSystemCaller(user: $user) === true && SystemOperationContext::isActive() === true) {
+			return false;
+		}
+
+		return $this->secondFactorRefuses(schema: $call->schema, action: $call->action, userId: $call->userId);
+	}//end secondFactorClampsSql()
 
 	/**
 	 * Narrow the query to the classification labels the caller may see.
@@ -1722,8 +1826,35 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return true;
 		}
 
+		if ($this->readGrantAdmits(check: $check) === true) {
+			return true;
+		}
+
 		return $this->privateObjectRefuses(check: $check) === false && $this->rulesGrant(check: $check) === true;
 	}//end objectVerdict()
+
+	/**
+	 * Whether a per-object READ grant admits the caller to this object on its own.
+	 *
+	 * Decision (Ruben, 25 Nov 2026, REQ-RIC-002): a read grant admits the row
+	 * by itself, whatever the schema's conditional read rules say, so a
+	 * dashboard shared with one colleague opens for them although the schema's
+	 * audience rules do not list them. Only read: a write still needs the
+	 * schema's rules. The deny pass ran before this and still refuses.
+	 *
+	 * @param RbacPermissionCheck $check The permission check.
+	 *
+	 * @return bool True when the caller holds a read grant on this object.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function readGrantAdmits(RbacPermissionCheck $check): bool {
+		if ($check->action !== 'read' || $check->objectData === null || $check->objectUuid === null || $check->objectUuid === '') {
+			return false;
+		}
+
+		return $this->objectGrants()?->isGranted(lookup: new GrantLookup(userId: $check->userId, objectUuid: $check->objectUuid), action: 'read') === true;
+	}//end readGrantAdmits()
 
 	/**
 	 * Start a permission check for the current caller.
@@ -2187,6 +2318,10 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function accessConditions(RbacAccessCall $call): array {
+		if ($this->secondFactorClampsSql(call: $call) === true) {
+			return ['bypass' => false, 'conditions' => []];
+		}
+
 		if ($this->sqlFilterBypassed(call: $call) === true) {
 			return ['bypass' => true, 'conditions' => []];
 		}
@@ -2290,7 +2425,13 @@ class MagicRbacHandler implements RelatedRowRbacInterface {
 			return $this->withDenyTerm(conditions: array_merge($ownerAdmits, [$notPrivate]), denyTerm: $denyTerm);
 		}
 
-		$conditions = array_merge($ownerAdmits, $this->ruleConditionsSql(call: $call, notPrivate: $notPrivate));
+		$grantAdmits = [];
+		$readGrant = $this->readGrantAdmitSqlFor(call: $call);
+		if ($readGrant !== null) {
+			$grantAdmits[] = $readGrant;
+		}
+
+		$conditions = array_merge($ownerAdmits, $grantAdmits, $this->ruleConditionsSql(call: $call, notPrivate: $notPrivate));
 		return $this->withDenyTerm(conditions: $conditions, denyTerm: $denyTerm);
 	}//end conditionsSql()
 

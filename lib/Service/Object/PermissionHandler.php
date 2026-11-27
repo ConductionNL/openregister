@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Rbac\ReadRuleTenancy;
 use OCA\OpenRegister\Service\Rbac\AuthorizationRuleEvaluator;
 use OCA\OpenRegister\Service\Rbac\ClassificationCaller;
 use OCA\OpenRegister\Service\Rbac\ClassificationReadGate;
+use OCA\OpenRegister\Service\Rbac\SecondFactorReadGate;
 use OCA\OpenRegister\Service\Rbac\ClassificationScale;
 use OCA\OpenRegister\Db\SchemaMapper\SchemaAnnotation;
 use OCA\OpenRegister\Service\Rbac\ClearanceResolver;
@@ -926,7 +927,10 @@ class PermissionHandler implements PermissionHandlerInterface {
 			return false;
 		}
 
-		if ($this->classificationRefuses(ask: $ask) === true || $this->confidentialityRefuses(ask: $ask) === true) {
+		if ($this->classificationRefuses(ask: $ask) === true
+			|| $this->confidentialityRefuses(ask: $ask) === true
+			|| $this->secondFactorRefusal(ask: $ask) !== null
+		) {
 			$this->lastRefusalFinal = true;
 			return false;
 		}
@@ -978,6 +982,42 @@ class PermissionHandler implements PermissionHandlerInterface {
 	}//end classificationRefuses()
 
 	/**
+	 * Why a read of this schema's objects needs a second factor this caller lacks, or null.
+	 *
+	 * A schema or a register holding it may require a verified second factor
+	 * for reading (REQ-IHC-003). The refusal is final like classification:
+	 * no grant, administrator bypass or elevation re-opens it. It applies to a
+	 * read of one object and to a schema-level read alike, since it is about
+	 * the caller, not the object. A container that cannot supply the gate
+	 * (only a test double; the app container autowires it) declares nothing,
+	 * and the read goes on to the grants.
+	 *
+	 * @param PermissionAsk $ask The question.
+	 *
+	 * @return string|null The refusal, naming the requirement and its scope.
+	 *
+	 * @spec openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#requirement-a-scope-may-require-a-second-factor-and-a-surface-may-be-bound-to-addresses-req-ihc-003
+	 */
+	private function secondFactorRefusal(PermissionAsk $ask): ?string {
+		if ($ask->action !== 'read') {
+			return null;
+		}
+
+		try {
+			$gate = $this->data->container->get(SecondFactorReadGate::class);
+		} catch (\Throwable) {
+			// Autowired in every running instance; only a container double lacks it.
+			return null;
+		}
+
+		if (($gate instanceof SecondFactorReadGate) === false) {
+			return null;
+		}
+
+		return $gate->readRefusal(schema: $ask->schema, userId: $this->callerId(userId: $ask->userId));
+	}//end secondFactorRefusal()
+
+	/**
 	 * Whether the schema's confidentiality block refuses this caller a read of this object.
 	 *
 	 * The block narrows, it never grants, so its refusal is final like the
@@ -1023,7 +1063,14 @@ class PermissionHandler implements PermissionHandlerInterface {
 	 * @spec openspec/changes/platform-provided-capabilities/specs/platform-provided-capabilities/spec.md#REQ-PPC-005
 	 */
 	private function grantVerdict(PermissionCheck $check): bool {
-		$verdict = ($this->privateScopeVerdict(check: $check) ?? $this->callerVerdict(check: $check));
+		// The private scope answers first (it reads the session once, before the
+		// caller is resolved); only when it declines does a read grant admit on its own.
+		$privateVerdict = $this->privateScopeVerdict(check: $check);
+		if ($privateVerdict === null && $this->readGrantAdmits(check: $check) === true) {
+			return true;
+		}
+
+		$verdict = ($privateVerdict ?? $this->callerVerdict(check: $check));
 		if ($verdict !== null) {
 			return $verdict;
 		}
@@ -2165,6 +2212,32 @@ class PermissionHandler implements PermissionHandlerInterface {
 	}//end privateScopeVerdict()
 
 	/**
+	 * Whether a per-object READ grant admits the caller to the check's object on its own.
+	 *
+	 * Decision (Ruben, 25 Nov 2026, REQ-RIC-002): a read grant admits the row
+	 * by itself, whatever the schema's conditional read rules say (the list
+	 * emitters OR the same grant beside the rules). Only read: a write stays
+	 * within the schema's rules (design D3b). The deny pass, the
+	 * classification and the confidentiality gates ran before this.
+	 *
+	 * @param PermissionCheck $check The check.
+	 *
+	 * @return bool True when the caller holds a read grant on the check's object.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
+	 */
+	private function readGrantAdmits(PermissionCheck $check): bool {
+		$object = $check->object;
+		if ($object === null || $check->action !== 'read' || (string) $object->getUuid() === '') {
+			return false;
+		}
+
+		$lookup = new GrantLookup(userId: $this->callerId(userId: $check->userId), objectUuid: $object->getUuid());
+
+		return $this->objectGrants()?->isGranted(lookup: $lookup, action: 'read') === true;
+	}//end readGrantAdmits()
+
+	/**
 	 * The check's object when it is private, or null when the check is not gated.
 	 *
 	 * @param PermissionCheck $check The check, its authorization cascaded
@@ -2396,6 +2469,11 @@ class PermissionHandler implements PermissionHandlerInterface {
 			->askedBy(userId: $options->userId, objectOwner: $options->objectOwner)
 			->about(object: $options->object, register: $options->register);
 		if ($this->permits(ask: $ask, _rbac: $_rbac) === false) {
+			$secondFactor = $this->secondFactorRefusal(ask: $ask);
+			if ($secondFactor !== null) {
+				throw new NotAuthorizedException(message: $secondFactor);
+			}
+
 			throw $this->notAuthorized(ask: $ask);
 		}
 	}//end checkPermission()
