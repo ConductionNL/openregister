@@ -1528,3 +1528,4 @@
 2026-11-27T12:14:05Z perf-2 merged openregister#11371: every OR page one request fewer (Registers 19 -> 18, Schemas 19 -> 18, Configurations 18 -> 17); usable time within noise
 2026-11-27T12:14:56Z live-launchpad-1 (session-20261127T121449-89d2ab3d) ended at start: lane K=1 already active in session-20261127T111503-a4048210 (lease live-launchpad-1 taken 12:11Z, expires 13:41Z); not duplicating
 2026-11-27T12:21:39Z perf-1 merged launchpad#2234 (nc-vue ^2.235.2): Workspace 812/778 -> 767/835 ms (noise), 16.05 -> 16.05 MB JS; dossiq#7029 sbom follow-up
+2026-11-27T12:24:10Z perf-K2 merged launchpad#2235: Workspace render 90 -> 69 DB queries (admin settings 19 -> 1), server time within noise (capacity change), JS unchanged
