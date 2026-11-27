@@ -9,3 +9,6 @@ allowed-websites-list.spec.ts:208        PR #2338 merged (addAndSaveDraft); was 
 calendar-widget-config.spec.ts x9        PR #2337 merged (save() stores the draft) 10/10; was DRAFT: placement read right after Add -> 0 placements
 app-catalogue.spec.ts:224                DRAFT/TILE: waits for POST /api/dashboard/{id}/tile; app-link-tile lease holder
 app-link-tile.spec.ts:74                 DRAFT/TILE: Files tick not disabled after Add (unsaved draft); app-link-tile lease holder
+# shard 2/8 on development 400cc07b: 308 passed, 3 failed, 19 skipped (19 min)
+ci/manifest-grants.spec.ts:136           ENV: CI seed users absent; run 'bash apps/launchpad/tests/e2e/seed.sh' from the server root (OCC_CMD default 'php occ'); 1/1 after
+clock-weather-widgets.spec.ts:397,421    PR #2348 merged (submitClock adds and saves the draft) 6 passed / 10 skipped (own guards)
