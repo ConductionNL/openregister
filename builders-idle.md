@@ -1630,3 +1630,4 @@
 2026-11-27T18:10:22Z perf-K1 (routine run session-20261127T181011-804b3ec6) ended at start: lane lease perf-K1 held by session-20261127T161915-3a20c009 (renewed 17:53Z, expires 19:23Z); no duplicate work started
 2026-11-27T18:12:30Z perf-K1 merged shillinq#3392: six-page sum 10704/11033 -> 10413/10789 ms, 20.1 -> 18.4 MB JS; nextcloud-vue#2428 withLeanBundles narrows chunks functions
 2026-11-27T18:15:10Z live-launchpad-1 (routine run) ended at once: lane lease held (live-launchpad-1 by session-20261127T171511-de944259, renewed 18:04Z, expires 19:34Z; it also holds e2e-launchpad-shard-2of8); no duplicate work started.
+2026-11-27T18:17:51Z b-thematiq merged thematiq#2179 (same-shell-every-page code: shared shell, brand on every page, login sheet split; live 6.2/6.3 + boards 6.0 left; sandbox Nextcloud install refused by this session's permission check)
