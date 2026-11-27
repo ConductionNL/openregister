@@ -1,0 +1,17 @@
+# launchpad e2e, live-launchpad-2 second run 27 Nov 10:45Z-14:10Z, full suite --shard=N/8, one worker
+# Sandbox: NC 34 release tarball (download.nextcloud.com), MariaDB, Redis (distributed+locking), APCu, php -S :8097 + router,
+#   bruteforce/ratelimit off, upload limits 600M. OpenRegister main. launchpad development 9cda792f (shards 1-4), 9c6d6910 (shards 5-6).
+# Tags: PR <n> | SANDBOX <why> | ENV <why> | PERF
+# shard 1/8: 318 passed, 3 failed, 2 did not run
+app-tile-widget.spec.ts:85, assigned-cases-widget.spec.ts:106, calendar-widget-rendering.spec.ts:312
+                                                   ENV 401 mid-run (session/basic auth); file rerun 13 passed, 2 skipped (by the specs)
+# shard 2/8: 311 passed, 0 failed
+# shard 3/8: 349 passed, 2 failed
+dashboard-reactions-ui.spec.ts:206,266             PR #2237 merged (since #2190 the page carries the reactions read; spec waited for a GET). 2/2 live
+# shard 4/8: stopped at test 269 by the background runner's 2 h cap, 0 failed before that (rest not run)
+# shard 5/8: 313 passed, 4 failed
+integrations-page.spec.ts:178,195,203,221          SANDBOX integriq not installed
+# shard 6/8: 316 passed, 2 failed, 1 skipped, 3 did not run
+or-absent.spec.ts:217                              PR #2251 merged APP FIX (#2210 put the embed managers on the admin page; their 503 without OR was logged as console.error). 4/4 live; embedded-analytics 11/11
+ADR-124 performance (Workspace)                    PERF php -S stack; perf lanes own it
+# NOT RUN this pass: shard 4 tail, shards 7/8 and 8/8 (take them on development >= 87a54d49)
