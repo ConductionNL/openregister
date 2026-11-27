@@ -30,6 +30,8 @@ use OCA\OpenRegister\Kernel\Contracts\MandateEvidenceInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectMergerInterface;
 use OCA\OpenRegister\Kernel\Contracts\SchemaWriteRightsInterface;
 use OCA\OpenRegister\Kernel\Contracts\DefaultOrganisationInterface;
+use OCA\OpenRegister\Kernel\Contracts\ShellBootReadsInterface;
+use OCA\OpenRegister\Controller\Support\ShellBootReads;
 use OCA\OpenRegister\Kernel\Contracts\ObjectNameCacheInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectActivityAuditInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
@@ -354,6 +356,10 @@ use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuard;
 use OCA\OpenRegister\Service\Vocabulary\ConceptShapeGuardInterface;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\CurrentTokenGrantInterface;
+use OCA\OpenRegister\Kernel\Contracts\PersonalTokenGrantBinderInterface;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
+use OCA\OpenRegister\Service\Rbac\PersonalTokenGrantBinder;
 use OCA\OpenRegister\Kernel\Contracts\Core\FilterPlaceholdersInterface;
 use OCA\OpenRegister\Kernel\Contracts\PropertySearchProfileInterface;
 use OCA\OpenRegister\Search\Service\Search\PlaceholderResolver;
@@ -381,6 +387,7 @@ final class CoreServiceBindings {
 		\OCA\OpenRegister\Service\Organisation\PromotionServiceInterface::class => \OCA\OpenRegister\Service\Organisation\PromotionService::class,
 		\OCA\OpenRegister\Service\Organisation\PromotionPackageReaderInterface::class => \OCA\OpenRegister\Service\Organisation\PromotionPackageReader::class,
 		\OCA\OpenRegister\Kernel\Contracts\SchemaReadRightInterface::class => \OCA\OpenRegister\Service\Object\SchemaReadRight::class,
+		\OCA\OpenRegister\Kernel\Contracts\ActiveOrganisationReaderInterface::class => ActiveOrganisationReader::class,
 		ExpiredObjectStoreInterface::class => ExpiredObjectStore::class,
 		DerivedTranslationsInterface::class => TranslationStatusService::class,
 		RequestLanguagesInterface::class => LanguageService::class,
@@ -389,6 +396,10 @@ final class CoreServiceBindings {
 		ObjectMergerInterface::class => MergeService::class,
 		ObjectNameCacheInterface::class => CacheHandler::class,
 		ObjectOperationsInterface::class => ObjectService::class,
+		// The one shared TokenGrantSource (registered in RbacWiring): the alias resolves to that instance.
+		CurrentTokenGrantInterface::class => TokenGrantSource::class,
+		PersonalTokenGrantBinderInterface::class => PersonalTokenGrantBinder::class,
+		\OCA\OpenRegister\Kernel\Contracts\DraftPreviewInterface::class => \OCA\OpenRegister\Service\Object\DraftService::class,
 		ObjectActivityAuditInterface::class => ObjectActivityAudit::class,
 		\OCA\OpenRegister\Kernel\Contracts\OperatorActionAuditInterface::class => \OCA\OpenRegister\Service\Audit\OperatorActionAudit::class,
 		MandateEvidenceInterface::class => MandateEvidence::class,
@@ -500,6 +511,7 @@ final class CoreServiceBindings {
 		OrganisationEditAuditorInterface::class => OrganisationLifecycleAuditor::class,
 		OrganisationServiceInterface::class => OrganisationService::class,
 		DefaultOrganisationInterface::class => OrganisationService::class,
+		ShellBootReadsInterface::class => ShellBootReads::class,
 		OrganisationUsageServiceInterface::class => OrganisationUsageService::class,
 		PropertyRbacHandlerInterface::class => PropertyRbacHandler::class,
 		QualityScorerInterface::class => QualityScorer::class,
@@ -597,5 +609,7 @@ final class CoreServiceBindings {
 		FilterPlaceholdersInterface::class => PlaceholderResolver::class,
 		PropertySearchProfileInterface::class => PropertySearchProfile::class,
 		\OCA\OpenRegister\Kernel\Contracts\SemanticProvidersInterface::class => SemanticProviderCatalogue::class,
+		\OCA\OpenRegister\Service\Operations\ReindexSelectionServiceInterface::class
+			=> \OCA\OpenRegister\Service\Operations\ReindexSelectionService::class,
 	];
 }//end class

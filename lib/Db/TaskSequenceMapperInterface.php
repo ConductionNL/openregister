@@ -66,4 +66,15 @@ interface TaskSequenceMapperInterface {
 	 * @return TaskSequence The inserted row, with its id.
 	 */
 	public function insert(Entity $entity): Entity;
+
+	/**
+	 * Update one row, such as a sequence whose decision was just recorded.
+	 *
+	 * @param Entity $entity The row to update.
+	 *
+	 * @return TaskSequence The updated row.
+	 *
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 */
+	public function update(Entity $entity): Entity;
 }//end interface

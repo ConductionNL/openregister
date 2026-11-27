@@ -94,129 +94,141 @@ import {
 				</tr>
 			</template>
 
-			<!-- Charts -->
-			<DetailChartGrid
-				:chartData="dashboardStore.chartData"
-				distributionKey="objectsBySchema"
-				distributionTitle="Objects by Schema"
-				:auditOptions="auditTrailChartOptions"
-				:distributionOptions="schemaChartOptions"
-				:sizeOptions="sizeChartOptions" />
+			<!-- The register's own body: charts, then its schemas as cards or as a
+			     diagram. In the footer slot because CnDetailPage renders its default
+			     slot only when there is NO statistics table, and this page has one:
+			     as default-slot content all of it was silently dropped. -->
+			<template #footer>
+				<!-- Charts -->
+				<DetailChartGrid
+					:chartData="dashboardStore.chartData"
+					distributionKey="objectsBySchema"
+					distributionTitle="Objects by Schema"
+					:auditOptions="auditTrailChartOptions"
+					:distributionOptions="schemaChartOptions"
+					:sizeOptions="sizeChartOptions" />
 
-			<!-- Schemas: as cards, or the register's model as a diagram -->
-			<div
-				v-if="register"
-				class="schemaViewSwitch"
-				role="group"
-				:aria-label="t('openregister', 'Schemas')">
-				<NcButton
-					:variant="schemaView === 'cards' ? 'primary' : 'secondary'"
-					:aria-pressed="schemaView === 'cards' ? 'true' : 'false'"
-					data-testid="schema-view-cards"
-					@click="schemaView = 'cards'">
-					{{ t('openregister', 'Cards') }}
-				</NcButton>
-				<NcButton
-					:variant="schemaView === 'diagram' ? 'primary' : 'secondary'"
-					:aria-pressed="schemaView === 'diagram' ? 'true' : 'false'"
-					data-testid="schema-view-diagram"
-					@click="schemaView = 'diagram'">
-					{{ t('openregister', 'Diagram') }}
-				</NcButton>
-			</div>
-			<RegisterModelDiagram
-				v-if="register && schemaView === 'diagram'"
-				:registerId="register.id" />
-			<div v-else-if="loadingSchemas" class="loadingContainer">
-				<NcLoadingIcon :size="32" />
-				<span>Loading schemas...</span>
-			</div>
-			<div v-else-if="!loadedSchemas?.length" class="emptyContainer">
-				<NcEmptyContent :name="t('openregister', 'No schemas found')">
-					<template #icon>
-						<FolderOutline :size="48" />
-					</template>
-					<template #action>
-						<NcButton
-							v-if="!managingConfiguration"
-							@click="showEditDialog = true">
-							{{ t('openregister', 'Add Schema') }}
-						</NcButton>
-					</template>
-				</NcEmptyContent>
-			</div>
-			<div v-else class="cardGrid">
-				<div v-for="schema in loadedSchemas" :key="schema.id" class="card">
-					<div class="cardHeader">
-						<h3>
-							<FileCodeOutline :size="20" />
-							{{ schema.title }}
-							<span
-								v-if="managingConfiguration"
-								:title="
-									'Managed by configuration: '
-									+ managingConfiguration.title
-								"
-								class="managedBadge">
-								<Database :size="16" />
-								Managed
-							</span>
-						</h3>
-						<NcActions :primary="true" menuName="Schema Actions">
-							<template #icon>
-								<DotsHorizontal :size="20" />
-							</template>
-							<NcActionButton
-								closeAfterClick
-								@click="viewObjects(schema)">
-								<template #icon>
-									<TableEye :size="20" />
-								</template>
-								{{ t('openregister', 'View objects') }}
-							</NcActionButton>
-							<NcActionButton
+				<!-- Schemas: as cards, or the register's model as a diagram -->
+				<div
+					v-if="register"
+					class="schemaViewSwitch"
+					role="group"
+					:aria-label="t('openregister', 'Schemas')">
+					<NcButton
+						:variant="schemaView === 'cards' ? 'primary' : 'secondary'"
+						:aria-pressed="schemaView === 'cards' ? 'true' : 'false'"
+						data-testid="schema-view-cards"
+						@click="schemaView = 'cards'">
+						{{ t('openregister', 'Cards') }}
+					</NcButton>
+					<NcButton
+						:variant="schemaView === 'diagram' ? 'primary' : 'secondary'"
+						:aria-pressed="schemaView === 'diagram' ? 'true' : 'false'"
+						data-testid="schema-view-diagram"
+						@click="schemaView = 'diagram'">
+						{{ t('openregister', 'Diagram') }}
+					</NcButton>
+				</div>
+				<RegisterModelDiagram
+					v-if="register && schemaView === 'diagram'"
+					:registerId="register.id" />
+				<div v-else-if="loadingSchemas" class="loadingContainer">
+					<NcLoadingIcon :size="32" />
+					<span>Loading schemas...</span>
+				</div>
+				<div v-else-if="!loadedSchemas?.length" class="emptyContainer">
+					<NcEmptyContent :name="t('openregister', 'No schemas found')">
+						<template #icon>
+							<FolderOutline :size="48" />
+						</template>
+						<template #action>
+							<NcButton
 								v-if="!managingConfiguration"
-								closeAfterClick
-								@click="editSchema(schema)">
+								@click="showEditDialog = true">
+								{{ t('openregister', 'Add Schema') }}
+							</NcButton>
+						</template>
+					</NcEmptyContent>
+				</div>
+				<div v-else class="cardGrid">
+					<div v-for="schema in loadedSchemas" :key="schema.id" class="card">
+						<div class="cardHeader">
+							<h3>
+								<FileCodeOutline :size="20" />
+								{{ schema.title }}
+								<span
+									v-if="managingConfiguration"
+									:title="
+										'Managed by configuration: '
+										+ managingConfiguration.title
+									"
+									class="managedBadge">
+									<Database :size="16" />
+									Managed
+								</span>
+							</h3>
+							<NcActions :primary="true" menuName="Schema Actions">
 								<template #icon>
-									<Pencil :size="20" />
+									<DotsHorizontal :size="20" />
 								</template>
-								{{ t('openregister', 'Edit Schema') }}
-							</NcActionButton>
-						</NcActions>
-					</div>
-					<div class="statGrid">
-						<div class="statItem">
-							<span class="statLabel">{{
-								t('openregister', 'Total Objects')
-							}}</span>
-							<span class="statValue">{{
-								schema.stats?.objects?.total || 0
-							}}</span>
+								<NcActionButton
+									closeAfterClick
+									@click="viewObjects(schema)">
+									<template #icon>
+										<TableEye :size="20" />
+									</template>
+									{{ t('openregister', 'View objects') }}
+								</NcActionButton>
+								<NcActionButton
+									v-if="!managingConfiguration"
+									closeAfterClick
+									@click="editSchema(schema)">
+									<template #icon>
+										<Pencil :size="20" />
+									</template>
+									{{ t('openregister', 'Edit Schema') }}
+								</NcActionButton>
+							</NcActions>
 						</div>
-						<div class="statItem">
-							<span class="statLabel">{{
-								t('openregister', 'Total Size')
-							}}</span>
-							<span class="statValue">{{
-								formatBytes(schema.stats?.objects?.size || 0)
-							}}</span>
+						<div class="statGrid">
+							<div class="statItem">
+								<span class="statLabel">{{
+									t('openregister', 'Total Objects')
+								}}</span>
+								<span class="statValue">{{
+									schema.stats?.objects?.total || 0
+								}}</span>
+							</div>
+							<div class="statItem">
+								<span class="statLabel">{{
+									t('openregister', 'Total Size')
+								}}</span>
+								<span class="statValue">{{
+									formatBytes(schema.stats?.objects?.size || 0)
+								}}</span>
+							</div>
 						</div>
-					</div>
-					<div class="schemaChart">
-						<Apexchart
-							type="pie"
-							height="200"
-							:options="getSchemaChartOptions(schema)"
-							:series="[
-								schema.stats?.objects?.valid || 0,
-								schema.stats?.objects?.invalid || 0,
-								schema.stats?.objects?.deleted || 0,
-								schema.stats?.objects?.locked || 0,
-							]" />
+						<div class="schemaChart">
+							<Apexchart
+								type="pie"
+								height="200"
+								:options="getSchemaChartOptions(schema)"
+								:series="[
+									schema.stats?.objects?.valid || 0,
+									schema.stats?.objects?.invalid || 0,
+									schema.stats?.objects?.deleted || 0,
+									schema.stats?.objects?.locked || 0,
+								]" />
+						</div>
 					</div>
 				</div>
-			</div>
+
+				<!-- Changes: who edited the register, when and what (administrators only) -->
+				<section v-if="isAdmin && register?.id" class="registerChanges">
+					<h3>{{ t('openregister', 'Changes') }}</h3>
+					<EntityChangesList kind="registers" :entityId="register.id" />
+				</section>
+			</template>
 		</CnDetailPage>
 
 		<EditRegisterFormDialog
@@ -229,6 +241,7 @@ import {
 
 <script>
 import { CnDetailPage } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import {
 	NcActionButton,
 	NcActions,
@@ -244,6 +257,7 @@ import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TableEye from 'vue-material-design-icons/TableEye.vue'
+import EntityChangesList from '../../components/audit/EntityChangesList.vue'
 import EditRegisterFormDialog from '../../modals/register/EditRegisterFormDialog.vue'
 import DetailChartGrid from './DetailChartGrid.vue'
 import RegisterModelDiagram from './RegisterModelDiagram.vue'
@@ -258,6 +272,7 @@ import { getTheme } from '@/services/getTheme.js'
 export default {
 	name: 'RegisterDetail',
 	components: {
+		EntityChangesList,
 		EditRegisterFormDialog,
 		NcAppContent,
 		NcEmptyContent,
@@ -295,6 +310,16 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the signed-in user is an administrator: the edit history is theirs only.
+		 *
+		 * @spec openspec/changes/history-schema-and-settings-edits-audited/tasks.md#task-3-1
+		 * @return {boolean}
+		 */
+		isAdmin() {
+			return getCurrentUser()?.isAdmin === true
+		},
+
 		/**
 		 * Resolve the active register from the dashboard store.
 		 *

@@ -14,7 +14,7 @@ vocabulary SHALL publish the modifier. Export and import SHALL keep it.
 - **GIVEN** an administrator editing schema `klant` in the schema edit modal
 - **WHEN** the administrator gives property `contractEnd` the names "Einddatum contract" for `nl` and "Contract end date" for `en` and saves
 - **THEN** the stored property holds `titles: { "nl": "Einddatum contract", "en": "Contract end date" }` beside its `title`
-- @e2e exclude {specified only; task 3.1 adds tests/e2e/ci/field-names-per-language.spec.ts}
+- @e2e exclude {the modal is covered by EditSchemaProperty.logic.spec.js; tests/e2e/ci/field-names-per-language.spec.ts reads the stored titles back over the API}
 
 #### Scenario: a bad language key is refused
 
@@ -36,4 +36,4 @@ without a language SHALL return the schema as stored.
 - **WHEN** a colleague's app reads `GET /api/schemas/{id}?_lang=en`
 - **THEN** property `contractEnd` has `title` "Contract end date"
 - **AND** a read with `_lang=de` has the stored `title`
-- @e2e exclude {specified only; task 3.1 adds tests/e2e/ci/field-names-per-language.spec.ts}
+- @e2e tests/e2e/ci/field-names-per-language.spec.ts

@@ -12,29 +12,31 @@ const isDev = buildMode === 'development'
 // memory. Dev keeps cheap, fast line-level maps.
 webpackConfig.devtool = isDev ? 'cheap-source-map' : false
 
-// Minify with esbuild instead of Terser in production. Terser parses every chunk
-// into a full JS AST held in the Node heap and runs `CPU cores - 1` parallel
-// workers; across these 6 large entrypoints the build tree peaked at ~12GB in
-// ~46s. esbuild minifies in native (Go) code with a tiny heap footprint and is
-// ~10-100x faster — measured ~5.7GB peak in ~26s here — at the cost of only
-// ~1-2% larger output. We reuse terser-webpack-plugin purely as the wiring and
-// swap its engine to the built-in esbuild minifier.
+// Minify with Terser in production, two workers.
+//
+// This app minified with esbuild (through terser-webpack-plugin) to save build
+// time and memory. esbuild's transform API does not drop unused declarations
+// inside a module, and webpack leaves dropping the exports it found unused
+// (`usedExports`) to the minifier. So every ESM library kept all of its exports.
+// The whole of `@mdi/js` (~7,400 icon paths, ~2.8 MB) and the unused parts of
+// other libraries shipped in the vendor chunks every OpenRegister page loads
+// eagerly. Terser drops them: the main page's initial chunks go from 12.9 to
+// 9.5 MB. The cost is build time and memory (measured on 4 cores: esbuild 61 s
+// and 6.6 GB peak, Terser with two workers 173 s and 8.1 GB peak). The default
+// `cpus - 1` workers are what drove the earlier ~12 GB peak, so two are used.
+// License comments stay in the files.
 if (!isDev) {
 	webpackConfig.optimization = webpackConfig.optimization || {}
 	webpackConfig.optimization.minimizer = [
 		new TerserPlugin({
-			minify: TerserPlugin.esbuildMinify,
-			// esbuild parallelizes internally (in Go), so terser-webpack-plugin's
-			// default `cpus-1` Node worker processes only add memory overhead.
-			// Disabling them lowers peak build RAM with no real speed cost.
-			parallel: false,
-			// esbuild minify options (NOT terserOptions). Keep legal/license
-			// comments at end-of-file so MIT/AGPL attribution required by our
-			// deps survives minification. (esbuild's sidecar-emitting 'linked'
-			// mode is unavailable here — terser-webpack-plugin drives esbuild via
-			// its transform API, which rejects 'linked'/'external'.)
+			parallel: 2,
+			extractComments: false,
 			terserOptions: {
-				legalComments: 'eof',
+				compress: { passes: 1 },
+				mangle: true,
+				format: {
+					comments: /@license|@preserve|^!/,
+				},
 			},
 		}),
 	]
@@ -65,6 +67,15 @@ if (!isDev) {
 	// A worker is its own unnamed entry point, so the explorer's editor workers
 	// stay self-contained too.
 	const selfContainedEntries = ['integrationGlobal', 'graphqlExplorer']
+	// Entries whose own initial chunk keeps its node_modules instead of sending
+	// them to a shared vendor chunk. They run on another app's pages and need
+	// little at load: `filesSidebar` (every Files page and every page embedding
+	// the Files sidebar: @nextcloud/files and @nextcloud/l10n) and `mailSidebar`
+	// (every Mail page: Vue and @nextcloud/l10n; the panel itself is lazy). In
+	// the vendor group each could pull a shared vendor chunk onto those pages. Their lazy chunks still share code as before.
+	const leanInitialEntries = ['filesSidebar', 'mailSidebar']
+	const isLeanInitial = (chunk) => [...chunk.groupsIterable]
+		.some((group) => leanInitialEntries.includes(group.name))
 	const entriesOf = (group, seen = new Set()) => {
 		if (seen.has(group)) {
 			return []
@@ -77,6 +88,10 @@ if (!isDev) {
 		.flatMap((group) => entriesOf(group))
 		.every((entry) => typeof entry.name === 'string' && !selfContainedEntries.includes(entry.name))
 
+	// Vendor code is split per combination of entries that use it, NOT into one
+	// named chunk: a single `openregister-vendor` chunk held the node_modules of
+	// EVERY entry (22 MB), and the small mail and files sidebar entries, which
+	// load on Mail and on every page with a Files sidebar, had to load all of it.
 	webpackConfig.optimization.splitChunks = {
 		chunks: (chunk) => sharesChunks(chunk),
 		cacheGroups: {
@@ -85,9 +100,9 @@ if (!isDev) {
 			// demand does not grow the vendor chunk every page loads.
 			vendor: {
 				test: /[\\/]node_modules[\\/]/,
-				name: 'openregister-vendor',
-				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk),
+				chunks: (chunk) => chunk.canBeInitial() && sharesChunks(chunk) && !isLeanInitial(chunk),
 				priority: 10,
+				reuseExistingChunk: true,
 			},
 		},
 	}
@@ -147,6 +162,14 @@ const nonTsRules = webpackConfig.module.rules.filter(
 )
 webpackConfig.module.rules = [
 	...nonTsRules,
+	// The library's English catalogue, which the global script fetches on every
+	// page (src/services/libraryTranslations.js), without the ~2,950 strings that
+	// translate to themselves: ~165 KB -> ~5 KB per page. Plurals stay whole.
+	{
+		test: /[\\/]@conduction[\\/]nextcloud-vue[\\/]l10n[\\/]en\.json$/,
+		type: 'json',
+		use: [path.join(__dirname, 'scripts', 'lean-library-catalogue-loader.js')],
+	},
 	{
 		test: /\.(ts|tsx)$/,
 		exclude: /node_modules/,
@@ -157,6 +180,20 @@ webpackConfig.module.rules = [
 				appendTsSuffixTo: [/\.vue$/],
 			},
 		},
+	},
+	// @nextcloud/vue declares no `sideEffects`, so ONE named import from its
+	// index (`import { NcButton } from '@nextcloud/vue'`) kept every component
+	// it lists, with their stylesheets, emoji-mart, the date picker and the
+	// markdown stack. The public access-link page shipped 6.5 MB of script for
+	// a handful of components, the public form 7.7 MB, to visitors who always
+	// load them cold. The index only imports and re-exports, so marking it free
+	// of side effects lets webpack link each name to its own module; each
+	// component's modules and CSS keep theirs. The same rule as nextcloud-vue's
+	// `withLeanBundles` (NEXTCLOUD_VUE_INDEX_RULE, 2.228+), kept here while this
+	// app pins an older nextcloud-vue.
+	{
+		test: /[\\/]node_modules[\\/]@nextcloud[\\/]vue[\\/]dist[\\/]index\.mjs$/,
+		sideEffects: false,
 	},
 ]
 
@@ -286,9 +323,14 @@ webpackConfig.resolve.alias = {
 		'node_modules/@floating-ui/dom',
 	),
 }
-// @nextcloud/vue ships .cjs/.mjs; allow .js requests to resolve to .cjs (for dist subpaths)
+// @nextcloud/vue ships .cjs/.mjs; allow .js requests to resolve to .cjs (for dist
+// subpaths) when no .js file exists. The .js file comes FIRST: with .cjs first,
+// every package that ships both builds resolved to its CommonJS one, which
+// webpack cannot tree-shake. vue-router then loaded its .cjs build, with
+// @vue/devtools-api, @vue/devtools-kit and a buffer polyfill, and zod and
+// others came in whole.
 webpackConfig.resolve.extensionAlias = {
-	'.js': ['.cjs', '.js'],
+	'.js': ['.js', '.cjs'],
 	...webpackConfig.resolve.extensionAlias,
 }
 // When using local nextcloud-vue (../nextcloud-vue/src), resolve its deps from this app's node_modules

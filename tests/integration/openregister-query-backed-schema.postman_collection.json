@@ -1,0 +1,777 @@
+{
+	"info": {
+		"name": "OpenRegister — query-backed schema",
+		"description": "dbal-query-schema-guarded-and-previewed task 3.2: preview a join on a database source, save it as a schema, list its objects. Also: a statement that is not a read is refused (400) before it reaches the database, a query the database refuses answers 502 with the error class and without the database's message, a non-administrator may not preview (403), and the saved schema filters on a joined column and reads one object.\n\nThe test database is the permits fixture: build it with `php tests/fixtures/dbal/build-permits-sqlite.php <path>` on the instance's host and pass that path as `permits_db_path` (default /tmp/permits.sqlite). Creates its own reader, source, register and schema and deletes them. Requests send no cookies, so the reader's request runs as the reader.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password'], ['permitsDbPath', 'permits_db_path']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && given !== '') {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"if (!pm.collectionVariables.get('stamp')) {",
+					"    pm.collectionVariables.set('stamp', 'qsch' + Date.now().toString(36));",
+					"}",
+					"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'));",
+					"pm.collectionVariables.set('readerToken', Buffer.from(pm.collectionVariables.get('stamp') + '-reader:' + pm.collectionVariables.get('readerPassword')).toString('base64'));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "readerPassword",
+			"value": "Qsch-Reader-Pass-2026"
+		},
+		{
+			"key": "permitsDbPath",
+			"value": "/tmp/permits.sqlite"
+		},
+		{
+			"key": "stamp",
+			"value": ""
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "readerToken",
+			"value": ""
+		},
+		{
+			"key": "source",
+			"value": ""
+		},
+		{
+			"key": "register",
+			"value": ""
+		},
+		{
+			"key": "schema",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 — setup",
+			"item": [
+				{
+					"name": "create the reader",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('reader created', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users?format=json",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userid\": \"{{stamp}}-reader\",\n  \"password\": \"{{readerPassword}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create the database source",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('source created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('source', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/sources",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"title\": \"{{stamp}} permits\", \"type\": \"database\", \"authConfig\": {\"driver\": \"pdo_sqlite\", \"path\": \"{{permitsDbPath}}\"}}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 — preview",
+			"item": [
+				{
+					"name": "preview a join",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const body = pm.response.json()",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('the columns carry their types', () => pm.expect(body.columns).to.eql([{name: 'id', type: 'integer'}, {name: 'reference', type: 'string'}, {name: 'status', type: 'string'}, {name: 'type', type: 'string'}]))",
+									"pm.test('the rows join the permit type', () => pm.expect(body.rows.map(r => [r.reference, r.type])).to.eql([['P-2026-0001', 'Environmental'], ['P-2026-0002', 'Building']]))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/sources/{{source}}/query-preview",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"query\": \"SELECT p.id, p.reference, p.status, t.name AS type FROM permits p JOIN permit_types t ON t.id = p.permit_type_id\"\n}"
+						}
+					}
+				},
+				{
+					"name": "a statement that is not a read is refused before it reaches the database",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 400', () => pm.response.to.have.status(400))",
+									"pm.test('names the rule', () => pm.expect(pm.response.text()).to.include('SELECT or WITH'))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/sources/{{source}}/query-preview",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"query\": \"UPDATE permits SET status = 'x'\"\n}"
+						}
+					}
+				},
+				{
+					"name": "a query the database refuses answers 502 without its message",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 502', () => pm.response.to.have.status(502))",
+									"pm.test('names the error class only', () => {",
+									"    pm.expect(pm.response.json().errorClass).to.eql('TableNotFoundException')",
+									"    pm.expect(pm.response.text()).to.not.include('{{stamp}}_nope')",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/sources/{{source}}/query-preview",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"query\": \"SELECT * FROM {{stamp}}_nope\"\n}"
+						}
+					}
+				},
+				{
+					"name": "a non-administrator may not preview",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 403', () => pm.response.to.have.status(403))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{readerToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/sources/{{source}}/query-preview",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"query\": \"SELECT p.id, p.reference, p.status, t.name AS type FROM permits p JOIN permit_types t ON t.id = p.permit_type_id\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "02 — save and list",
+			"item": [
+				{
+					"name": "create a register on the source",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('register', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"slug\": \"{{stamp}}\", \"title\": \"{{stamp}}\", \"source\": \"{{source}}\"}"
+						}
+					}
+				},
+				{
+					"name": "save the join as a schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code, pm.response.text()).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('schema', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-permit-view\",\n  \"title\": \"{{stamp}} permit view\",\n  \"properties\": {\n    \"id\": {\n      \"type\": \"integer\"\n    },\n    \"reference\": {\n      \"type\": \"string\"\n    },\n    \"status\": {\n      \"type\": \"string\"\n    },\n    \"type\": {\n      \"type\": \"string\"\n    }\n  },\n  \"configuration\": {\n    \"x-openregister-object-source\": {\n      \"provider\": \"dbal-source\",\n      \"readOnly\": true,\n      \"config\": {\n        \"sourceId\": \"{{source}}\",\n        \"query\": \"SELECT p.id, p.reference, p.status, t.name AS type FROM permits p JOIN permit_types t ON t.id = p.permit_type_id\",\n        \"idColumn\": \"id\"\n      }\n    }\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "link the schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema linked', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"slug\": \"{{stamp}}\", \"title\": \"{{stamp}}\", \"schemas\": [{{schema}}]}"
+						}
+					}
+				},
+				{
+					"name": "list the schema's objects",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const body = pm.response.json()",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('both joined rows, counted', () => {",
+									"    pm.expect(body.total).to.eql(2)",
+									"    pm.expect(body.results.map(r => [r.reference, r.type])).to.eql([['P-2026-0001', 'Environmental'], ['P-2026-0002', 'Building']])",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}"
+					}
+				},
+				{
+					"name": "filter on a joined column",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('only the building permit', () => {",
+									"    pm.expect(pm.response.json().total).to.eql(1)",
+									"    pm.expect(pm.response.json().results[0].reference).to.eql('P-2026-0002')",
+									"})"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}?type=Building"
+					}
+				},
+				{
+					"name": "read one object",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('the joined row', () => pm.expect([pm.response.json().reference, pm.response.json().type]).to.eql(['P-2026-0001', 'Environmental']))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/1"
+					}
+				}
+			]
+		},
+		{
+			"name": "99 — teardown",
+			"item": [
+				{
+					"name": "delete the schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schema}}"
+					}
+				},
+				{
+					"name": "delete the register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}"
+					}
+				},
+				{
+					"name": "delete the source",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/sources/{{source}}"
+					}
+				},
+				{
+					"name": "delete the reader",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('reader deleted', () => pm.expect(pm.response.json().ocs.meta.statuscode).to.eql(100))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/ocs/v1.php/cloud/users/{{stamp}}-reader?format=json"
+					}
+				}
+			]
+		}
+	]
+}

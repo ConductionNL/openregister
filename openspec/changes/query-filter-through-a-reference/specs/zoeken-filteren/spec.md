@@ -11,14 +11,14 @@ The object query SHALL accept `_ref[<property>][<field>]` with a value, or with 
 - **GIVEN** requests whose property `aanvrager` references a person, and persons with `woonplaats`
 - **WHEN** a client lists requests with `_ref[aanvrager][woonplaats]=Zuiddrecht`
 - **THEN** exactly the requests whose applicant lives in Zuiddrecht are returned, and the total counts them
-- @e2e exclude {query feature; task 3.1 adds a Newman case}
+- @e2e exclude {query feature; covered by the Newman collection tests/integration/openregister-query-filter-through-a-reference.postman_collection.json}
 
 #### Scenario: a hidden referenced object does not answer
 
 - **GIVEN** a request whose applicant the caller may not read, living in Zuiddrecht
 - **WHEN** the caller lists requests with `_ref[aanvrager][woonplaats]=Zuiddrecht`
 - **THEN** that request is not returned
-- @e2e exclude {authorisation; covered by an integration test with a real RBAC fixture}
+- @e2e exclude {authorisation; covered by the Newman collection tests/integration/openregister-query-filter-through-a-reference.postman_collection.json, as a reader who may read the requests but not the persons}
 
 #### Scenario: a misspelt field is refused
 

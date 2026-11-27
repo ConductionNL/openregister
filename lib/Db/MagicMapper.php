@@ -90,6 +90,8 @@ use OCA\OpenRegister\Db\MagicMapper\OrganisationScopeMembership;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacSettings;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacSupport;
+use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSequentialOrder;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
@@ -781,7 +783,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 				conditionMatcher: $this->container->get(\OCA\OpenRegister\Service\ConditionMatcher::class),
 				container: $this->container,
 				logger: $this->logger
-			)
+			),
+			resolvers: new RbacResolvers(tokenGrantSource: $this->tokenGrantSource())
 		);
 
 		$this->organizationHandler = new MagicOrganizationHandler(
@@ -791,6 +794,30 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			logger: $this->logger
 		);
 	}//end initializeAccessHandlers()
+
+	/**
+	 * The request's token grant source, for the RBAC handler's token ceiling.
+	 *
+	 * The one shared instance the authorization layer binds the grant on; a
+	 * container that cannot supply it leaves the handler without a token.
+	 *
+	 * @return TokenGrantSource|null The source.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/tasks.md#2-1c
+	 */
+	private function tokenGrantSource(): ?TokenGrantSource {
+		try {
+			$source = $this->container->get(TokenGrantSource::class);
+		} catch (\Throwable) {
+			return null;
+		}
+
+		if ($source instanceof TokenGrantSource) {
+			return $source;
+		}
+
+		return null;
+	}//end tokenGrantSource()
 
 	/**
 	 * Build the table handler and the search handler with its related-row applier.
@@ -1506,8 +1533,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		if ($target === null) {
 			return 0;
 		}
-
-		$tableName = $target->tableName;
 
 		$result = $this->runCountQuery(query: $query, target: $target);
 		if (is_int($result) === false) {
@@ -6694,12 +6719,10 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/magic-table-reads/spec.md
 	 */
 	public function findAllInRegisterSchemaTable(RegisterSchema $table, ListQuery $listing=new ListQuery(limit: ListQuery::UNBOUNDED)): array {
-		$register = $table->register;
-		$schema   = $table->schema;
-		$limit    = $listing->limitOrNull();
-		$offset   = $listing->offset;
-		$filters  = $listing->filters;
-		$sort     = $listing->sort;
+		$limit   = $listing->limitOrNull();
+		$offset  = $listing->offset;
+		$filters = $listing->filters;
+		$sort    = $listing->sort;
 
 		$query = [];
 
@@ -10438,6 +10461,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	public function getStatistics(StatisticsScope $scope=new StatisticsScope()): array {
 		return $this->statisticsHandler->getStatistics(scope: $scope);
 	}//end getStatistics()
+
+	/**
+	 * Run read-only statistics work that counts each register/schema pair at most once.
+	 *
+	 * @param callable(): T $work Read-only work; it must not write objects.
+	 *
+	 * @return T What $work returns.
+	 *
+	 * @template T
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function rememberPairCounts(callable $work): mixed {
+		return $this->statisticsHandler->rememberPairCounts(work: $work);
+	}//end rememberPairCounts()
 
 	/**
 	 * Get object statistics grouped by schema for multiple schemas.

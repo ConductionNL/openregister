@@ -47,7 +47,9 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Kernel\Contracts\Core\ObjectAuditEntry;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\AuditProcessContextInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Service\Audit\AdministrativeRetention;
 use OCA\OpenRegister\Service\Audit\AuditAggregationServiceInterface;
+use OCA\OpenRegister\Service\Audit\AuditCategory;
 use OCA\OpenRegister\Db\AuditTrail\PartyQueryRefusal;
 use OCA\OpenRegister\Db\AuditTrail\PurposeRefusal;
 use OCA\OpenRegister\Db\AuditTrail\SlugBackfill;
@@ -590,6 +592,10 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		// that had touched everything on the instance.
 		'cause',
 		'cause_run',
+		// REQ-HSA-011: the list reads one category at a time. Absent from
+		// this allowlist the filter would be dropped and the administrative
+		// rows mixed into the record history.
+		'category',
 	];
 
 	/**
@@ -724,6 +730,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				continue;
 			}
 
+			if ($field === 'created' && is_array($value) === true && array_is_list($value) === false) {
+				self::applyCreatedRange(qb: $qb, bounds: $value);
+				continue;
+			}
+
 			if (is_array($value) === true) {
 				$this->applyListFilter(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value));
 				continue;
@@ -732,6 +743,31 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			$qb->andWhere($this->scalarFilterExpression(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value)));
 		}
 	}//end applyFindFilters()
+
+	/**
+	 * Bound the creation time: `created` as `['gte' => ..., 'lte' => ..., 'lt' => ...]`,
+	 * each a `Y-m-d H:i:s` datetime. Any other operator is refused rather than
+	 * dropped, because a dropped bound answers the whole trail.
+	 *
+	 * @param IQueryBuilder         $qb     The query being built.
+	 * @param array<string, mixed>  $bounds The operators and their datetimes.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When an operator other than gte, lte or lt is given.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+	 */
+	private static function applyCreatedRange(IQueryBuilder $qb, array $bounds): void {
+		$unknown = array_diff(array_keys($bounds), ['gte', 'lte', 'lt']);
+		if ($unknown !== []) {
+			throw new InvalidArgumentException('Unsupported audit trail filter operator for created: ' . implode(', ', $unknown));
+		}
+
+		foreach ($bounds as $operator => $datetime) {
+			$qb->andWhere($qb->expr()->$operator('created', $qb->createNamedParameter((string) $datetime, IQueryBuilder::PARAM_STR)));
+		}
+	}//end applyCreatedRange()
 
 	/**
 	 * The predicate for one scalar filter: a NULL check, an `action` prefix
@@ -1133,6 +1169,8 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 		$auditTrail->setObject($objectEntity->getId());
 		$auditTrail->setObjectUuid($objectEntity->getUuid());
 		$auditTrail->setAction($action);
+		// REQ-HSA-011: an object write is record history.
+		$auditTrail->setCategory(AuditCategory::DOMAIN);
 		$auditTrail->setChanged($this->payloadHelper->capChangedPayload(changed: $changed));
 		$auditTrail->setTriggerObject(self::triggerObjectOf(cascadeContext: $change->cascadeContext));
 		// The rule that granted a read: set before the row is sealed, as the chain covers it.
@@ -1723,7 +1761,7 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		$auditTrails = [];
 		foreach ($entries as $entry) {
-			$auditTrails[] = $this->auditTrailFromEntry(entry: $entry);
+			$auditTrails[] = $this->stampCategory(auditTrail: $this->auditTrailFromEntry(entry: $entry));
 		}
 
 		foreach (array_chunk($auditTrails, max(1, $chunkSize)) as $chunk) {
@@ -1732,6 +1770,72 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 
 		return $auditTrails;
 	}//end insertAuditTrails()
+
+	/**
+	 * Insert one row, with its category and, for an administrative row, its retention.
+	 *
+	 * Every single-row writer reaches the table through here, so the category
+	 * is set wherever the row was built (REQ-HSA-011).
+	 *
+	 * @param Entity $entity The row.
+	 *
+	 * @return Entity The stored row.
+	 *
+	 * @throws \OCP\DB\Exception If a database error occurs during insert
+	 * @throws InvalidArgumentException When the entity is not an audit row.
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
+	 */
+	public function insert(Entity $entity): Entity {
+		if ($entity instanceof AuditTrail === false) {
+			throw new InvalidArgumentException('The audit trail table holds AuditTrail rows only, got ' . $entity::class . '.');
+		}
+
+		return parent::insert(entity: $this->stampCategory(auditTrail: $entity));
+	}//end insert()
+
+	/**
+	 * Give a row its category, from its action unless a writer set one, and
+	 * give an administrative row the administrative retention.
+	 *
+	 * Before the INSERT, so the retention it sets is inside what the seal
+	 * sweep later hashes. The category itself is outside the canonical JSON.
+	 *
+	 * @param AuditTrail $auditTrail The row.
+	 *
+	 * @return AuditTrail The same row.
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/history-schema-and-settings-edits-audited/spec.md#requirement-the-one-trail-separates-administrative-from-domain-history-req-hsa-011
+	 */
+	public function stampCategory(AuditTrail $auditTrail): AuditTrail {
+		if (AuditCategory::isCategory(value: $auditTrail->getCategory()) === false) {
+			$auditTrail->setCategory(AuditCategory::forAction(action: $auditTrail->getAction()));
+		}
+
+		if ($auditTrail->getCategory() === AuditCategory::ADMINISTRATIVE) {
+			$this->administrativeRetention()->apply(row: $auditTrail);
+		}
+
+		return $auditTrail;
+	}//end stampCategory()
+
+	/**
+	 * The administrative retention, from the container; the default period without one.
+	 *
+	 * @return AdministrativeRetention
+	 */
+	private function administrativeRetention(): AdministrativeRetention {
+		try {
+			$retention = $this->container->get(AdministrativeRetention::class);
+			if ($retention instanceof AdministrativeRetention) {
+				return $retention;
+			}
+		} catch (\Throwable $e) {
+			$this->logger->debug('[AuditTrailMapper] Administrative retention unavailable, using the default: ' . $e->getMessage());
+		}
+
+		return new AdministrativeRetention();
+	}//end administrativeRetention()
 
 	/**
 	 * The row one insertAuditTrails() entry stands for.

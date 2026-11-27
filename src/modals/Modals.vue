@@ -13,7 +13,9 @@ import { navigationStore } from '../store/store.js'
 	<DeleteRegister />
 	<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
 	<DeleteConfiguration />
-	<ImportConfiguration />
+	<!-- Mounted only while open: on mount it reads the API token settings,
+		which every OpenRegister page paid for with the dialog closed. -->
+	<ImportConfiguration v-if="navigationStore.modal === 'importConfiguration'" />
 	<ExportConfiguration />
 	<PublishConfiguration />
 	<PublishToGitlab />
@@ -22,7 +24,9 @@ import { navigationStore } from '../store/store.js'
 	<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 	<ValidateSchema v-if="navigationStore.dialog === 'validateSchema'" />
 	<DeleteSchemaObjects v-if="navigationStore.dialog === 'deleteSchemaObjects'" />
-	<UploadSchema />
+	<!-- Mounted only while open: its dialog is gated on the same key, and it
+		carries the code editor (vue-codemirror6), which no page needs at load. -->
+	<UploadSchema v-if="navigationStore.modal === 'uploadSchema'" />
 	<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
 	<DeleteSchemaProperty />
 	<EditSource />
@@ -61,53 +65,60 @@ import { navigationStore } from '../store/store.js'
 </template>
 
 <script>
-import RecordImportDialog from '../dialogs/recordImport/RecordImportDialog.vue'
-import EditApplication from './application/EditApplication.vue'
+import { defineAsyncComponent } from 'vue'
 import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
-import EditConfiguration from './configuration/EditConfiguration.vue'
 import ExportConfiguration from './configuration/ExportConfiguration.vue'
-import ImportConfiguration from './configuration/ImportConfiguration.vue'
 import PublishConfiguration from './configuration/PublishConfiguration.vue'
 import ViewConfiguration from './configuration/ViewConfiguration.vue'
-import PurgeMultiple from './deleted/PurgeMultiple.vue'
-import RestoreMultiple from './deleted/RestoreMultiple.vue'
-import DeleteEndpoint from './endpoint/DeleteEndpoint.vue'
-import EditEndpoint from './endpoint/EditEndpoint.vue'
 import UploadFiles from './file/UploadFiles.vue'
 import PublishToGitlab from './gitlab/PublishToGitlab.vue'
-import CopyObject from './object/CopyObject.vue'
 import DeleteObject from './object/DeleteObject.vue'
-import DownloadObject from './object/DownloadObject.vue'
 import LockObject from './object/LockObject.vue'
-import MassDeleteObject from './object/MassDeleteObject.vue'
-import MassValidateObjects from './object/MassValidateObjects.vue'
-import MergeObject from './object/MergeObject.vue'
-import MigrationObject from './object/MigrationObject.vue'
-import SaveRecordTemplate from './object/SaveRecordTemplate.vue'
-import UploadObject from './object/UploadObject.vue'
-import ViewObject from './object/ViewObject.vue'
-import ViewObjectAuditTrail from './objectAuditTrail/ViewObjectAuditTrail.vue'
-import DeleteOrganisation from './organisation/DeleteOrganisation.vue'
-import EditOrganisation from './organisation/EditOrganisation.vue'
-import JoinOrganisation from './organisation/JoinOrganisation.vue'
-import ManageOrganisationRoles from './organisation/ManageOrganisationRoles.vue'
 import DeleteRegister from './register/DeleteRegister.vue'
 import ExportRegister from './register/ExportRegister.vue'
-import ImportRegister from './register/ImportRegister.vue'
 import PublishRegister from './register/PublishRegister.vue'
 import DeleteSchema from './schema/DeleteSchema.vue'
-import DeleteSchemaObjects from './schema/DeleteSchemaObjects.vue'
 import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
-import EditSchema from './schema/EditSchema.vue'
-import EditSchemaProperty from './schema/EditSchemaProperty.vue'
-import ExploreSchema from './schema/ExploreSchema.vue'
-import UploadSchema from './schema/UploadSchema.vue'
-import ValidateSchema from './schema/ValidateSchema.vue'
 import DeleteSource from './source/DeleteSource.vue'
 import EditSource from './source/EditSource.vue'
-import ViewSource from './source/ViewSource.vue'
-import EditWebhook from './webhook/EditWebhook.vue'
-import ViewWebhookLog from './webhook/ViewWebhookLog.vue'
+// The modals below open on demand (each is mounted only while its navigation
+// key is set), so each loads as its own chunk when first opened. Imported
+// statically they put their whole dependency trees (the object viewer, the
+// code editor of the download dialog, the schema editors) into the chunks
+// every OpenRegister page loads.
+const RecordImportDialog = defineAsyncComponent(() => import('../dialogs/recordImport/RecordImportDialog.vue'))
+const EditApplication = defineAsyncComponent(() => import('./application/EditApplication.vue'))
+const EditConfiguration = defineAsyncComponent(() => import('./configuration/EditConfiguration.vue'))
+const ImportConfiguration = defineAsyncComponent(() => import('./configuration/ImportConfiguration.vue'))
+const PurgeMultiple = defineAsyncComponent(() => import('./deleted/PurgeMultiple.vue'))
+const RestoreMultiple = defineAsyncComponent(() => import('./deleted/RestoreMultiple.vue'))
+const DeleteEndpoint = defineAsyncComponent(() => import('./endpoint/DeleteEndpoint.vue'))
+const EditEndpoint = defineAsyncComponent(() => import('./endpoint/EditEndpoint.vue'))
+const CopyObject = defineAsyncComponent(() => import('./object/CopyObject.vue'))
+const DownloadObject = defineAsyncComponent(() => import('./object/DownloadObject.vue'))
+const MassDeleteObject = defineAsyncComponent(() => import('./object/MassDeleteObject.vue'))
+const MassValidateObjects = defineAsyncComponent(() => import('./object/MassValidateObjects.vue'))
+const MergeObject = defineAsyncComponent(() => import('./object/MergeObject.vue'))
+const MigrationObject = defineAsyncComponent(() => import('./object/MigrationObject.vue'))
+const SaveRecordTemplate = defineAsyncComponent(() => import('./object/SaveRecordTemplate.vue'))
+const UploadObject = defineAsyncComponent(() => import('./object/UploadObject.vue'))
+const ViewObject = defineAsyncComponent(() => import('./object/ViewObject.vue'))
+const ViewObjectAuditTrail = defineAsyncComponent(() => import('./objectAuditTrail/ViewObjectAuditTrail.vue'))
+const DeleteOrganisation = defineAsyncComponent(() => import('./organisation/DeleteOrganisation.vue'))
+const EditOrganisation = defineAsyncComponent(() => import('./organisation/EditOrganisation.vue'))
+const JoinOrganisation = defineAsyncComponent(() => import('./organisation/JoinOrganisation.vue'))
+const ManageOrganisationRoles = defineAsyncComponent(() => import('./organisation/ManageOrganisationRoles.vue'))
+const ImportRegister = defineAsyncComponent(() => import('./register/ImportRegister.vue'))
+const DeleteSchemaObjects = defineAsyncComponent(() => import('./schema/DeleteSchemaObjects.vue'))
+const EditSchema = defineAsyncComponent(() => import('./schema/EditSchema.vue'))
+const EditSchemaProperty = defineAsyncComponent(() => import('./schema/EditSchemaProperty.vue'))
+const ExploreSchema = defineAsyncComponent(() => import('./schema/ExploreSchema.vue'))
+const UploadSchema = defineAsyncComponent(() => import('./schema/UploadSchema.vue'))
+const ValidateSchema = defineAsyncComponent(() => import('./schema/ValidateSchema.vue'))
+const ViewSource = defineAsyncComponent(() => import('./source/ViewSource.vue'))
+const EditWebhook = defineAsyncComponent(() => import('./webhook/EditWebhook.vue'))
+const ViewWebhookLog = defineAsyncComponent(() => import('./webhook/ViewWebhookLog.vue'))
+
 export default {
 	name: 'Modals',
 	components: {

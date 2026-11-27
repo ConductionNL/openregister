@@ -1,0 +1,824 @@
+{
+	"info": {
+		"name": "OpenRegister — near-duplicate documents by text",
+		"description": "near-duplicate-documents-by-text task 2.3: three files with near-identical text (one sentence differs) and one unrelated file are uploaded to one object and extracted through `POST /api/files/{id}/extract`, which extracts synchronously; `GET /api/files/near-duplicates?objectIds[]=` then answers one group of three, represented by the earliest file, with the unrelated file in no group. A request without a scope is refused. Creates its own register, schema and object and deletes them.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"[['baseUrl', 'base_url'], ['username', 'admin_user'], ['password', 'admin_password']].forEach(function (pair) {",
+					"    var given = pm.environment.get(pair[1]);",
+					"    if (given !== undefined && given !== '') {",
+					"        pm.collectionVariables.set(pair[0], given);",
+					"    }",
+					"});",
+					"if (!pm.collectionVariables.get('stamp')) {",
+					"    pm.collectionVariables.set('stamp', 'ndup' + Date.now().toString(36));",
+					"}",
+					"pm.collectionVariables.set('authToken', Buffer.from(pm.collectionVariables.get('username') + ':' + pm.collectionVariables.get('password')).toString('base64'));"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "username",
+			"value": "admin"
+		},
+		{
+			"key": "password",
+			"value": "admin"
+		},
+		{
+			"key": "stamp",
+			"value": ""
+		},
+		{
+			"key": "authToken",
+			"value": ""
+		},
+		{
+			"key": "register",
+			"value": ""
+		},
+		{
+			"key": "schema",
+			"value": ""
+		},
+		{
+			"key": "object",
+			"value": ""
+		},
+		{
+			"key": "file1",
+			"value": ""
+		},
+		{
+			"key": "file2",
+			"value": ""
+		},
+		{
+			"key": "file3",
+			"value": ""
+		},
+		{
+			"key": "fileOther",
+			"value": ""
+		}
+	],
+	"item": [
+		{
+			"name": "00 — setup",
+			"item": [
+				{
+					"name": "create register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('register', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}\",\n  \"title\": \"{{stamp}}\"\n}"
+						}
+					}
+				},
+				{
+					"name": "create schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('schema', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"slug\": \"{{stamp}}-dossier\",\n  \"title\": \"{{stamp}} dossier\",\n  \"properties\": {\n    \"titel\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+						}
+					}
+				},
+				{
+					"name": "link schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('schema linked', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\"slug\": \"{{stamp}}\", \"title\": \"{{stamp}}\", \"schemas\": [{{schema}}]}"
+						}
+					}
+				},
+				{
+					"name": "create the object",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('object created', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]))",
+									"pm.collectionVariables.set('object', pm.response.json()['@self'].id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"titel\": \"dossier\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "01 — files",
+			"item": [
+				{
+					"name": "upload near-identical file 1",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('file stored', () => pm.response.to.have.status(200))",
+									"pm.collectionVariables.set('file1', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}}-besluit-1.txt\",\n  \"content\": \"Het college van burgemeester en wethouders heeft op de vergadering van dinsdag besloten de aanvraag voor een omgevingsvergunning voor het bouwen van een woning aan de Dorpsstraat te verlenen onder de voorwaarden die in de bijlage zijn opgenomen. Bezwaar kan worden gemaakt binnen zes weken na de dag van verzending van dit besluit bij het college. Kenmerk versie 1.\"\n}"
+						}
+					}
+				},
+				{
+					"name": "extract file 1",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('extracted', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{file1}}/extract",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					}
+				},
+				{
+					"name": "upload near-identical file 2",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('file stored', () => pm.response.to.have.status(200))",
+									"pm.collectionVariables.set('file2', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}}-besluit-2.txt\",\n  \"content\": \"Het college van burgemeester en wethouders heeft op de vergadering van dinsdag besloten de aanvraag voor een omgevingsvergunning voor het bouwen van een woning aan de Dorpsstraat te verlenen onder de voorwaarden die in de bijlage zijn opgenomen. Bezwaar kan worden gemaakt binnen zes weken na de dag van verzending van dit besluit bij het college. Kenmerk versie 2.\"\n}"
+						}
+					}
+				},
+				{
+					"name": "extract file 2",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('extracted', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{file2}}/extract",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					}
+				},
+				{
+					"name": "upload near-identical file 3",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('file stored', () => pm.response.to.have.status(200))",
+									"pm.collectionVariables.set('file3', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}}-besluit-3.txt\",\n  \"content\": \"Het college van burgemeester en wethouders heeft op de vergadering van dinsdag besloten de aanvraag voor een omgevingsvergunning voor het bouwen van een woning aan de Dorpsstraat te verlenen onder de voorwaarden die in de bijlage zijn opgenomen. Bezwaar kan worden gemaakt binnen zes weken na de dag van verzending van dit besluit bij het college. Kenmerk versie 3.\"\n}"
+						}
+					}
+				},
+				{
+					"name": "extract file 3",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('extracted', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{file3}}/extract",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					}
+				},
+				{
+					"name": "upload an unrelated file",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('file stored', () => pm.response.to.have.status(200))",
+									"pm.collectionVariables.set('fileOther', pm.response.json().id)"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}/files",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"{{stamp}}-begroting.txt\",\n  \"content\": \"De begroting voor het komende jaar verdeelt de beschikbare middelen over de afdelingen van de gemeente. Elke post is voorzien van een toelichting van de wethouder financien, met tabellen over de lasten en baten, de reserves en de voorzieningen, en een overzicht van de investeringen in wegen, scholen, sportparken en het onderhoud van openbare gebouwen in alle kernen.\"\n}"
+						}
+					}
+				},
+				{
+					"name": "extract the unrelated file",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('extracted', () => pm.response.to.have.status(200))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/{{fileOther}}/extract",
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "02 — near duplicates",
+			"item": [
+				{
+					"name": "the object's files form one group of three",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"const body = pm.response.json()",
+									"const ids = ['file1', 'file2', 'file3'].map(k => Number(pm.collectionVariables.get(k)))",
+									"pm.test('answers 200', () => pm.response.to.have.status(200))",
+									"pm.test('exactly one group', () => pm.expect(body.groups).to.have.length(1))",
+									"pm.test('the group holds the three near-identical files', () => pm.expect(body.groups[0].members.map(m => m.fileId).sort((a, b) => a - b)).to.eql(ids.sort((a, b) => a - b)))",
+									"pm.test('the earliest file represents the group', () => pm.expect(body.groups[0].representative).to.eql(Math.min(...ids)))",
+									"pm.test('every member is above the default threshold', () => body.groups[0].members.forEach(m => pm.expect(m.similarity).to.be.at.least(0.9)))",
+									"pm.test('the unrelated file is in no group', () => pm.expect(body.groups.flatMap(g => g.members.map(m => m.fileId))).to.not.include(Number(pm.collectionVariables.get('fileOther'))))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/near-duplicates?objectIds[]={{object}}"
+					}
+				},
+				{
+					"name": "a request without a scope is refused",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('answers 400', () => pm.response.to.have.status(400))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/files/near-duplicates"
+					}
+				}
+			]
+		},
+		{
+			"name": "99 — teardown",
+			"item": [
+				{
+					"name": "delete the object",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{register}}/{{schema}}/{{object}}"
+					}
+				},
+				{
+					"name": "delete the schema",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/schemas/{{schema}}"
+					}
+				},
+				{
+					"name": "delete the register",
+					"protocolProfileBehavior": {
+						"disableCookies": true
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('deleted', () => pm.expect(pm.response.code).to.be.below(300))"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "OCS-APIRequest",
+								"value": "true"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic {{authToken}}"
+							}
+						],
+						"url": "{{baseUrl}}/index.php/apps/openregister/api/registers/{{register}}"
+					}
+				}
+			]
+		}
+	]
+}

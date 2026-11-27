@@ -383,7 +383,10 @@
                 "method": "importHandler.importRegister",
                 "args": [
                     {
-                        "slug": "reg"
+                        "slug": "reg",
+                        "schemas": [
+                            36
+                        ]
                     },
                     null,
                     null,
@@ -494,7 +497,11 @@
                 "args": [
                     {
                         "slug": "reg",
-                        "title": "Reg"
+                        "title": "Reg",
+                        "schemas": [
+                            36,
+                            35
+                        ]
                     },
                     null,
                     null,
@@ -605,18 +612,48 @@
                 "args": [
                     {
                         "slug": "reg",
-                        "title": "Reg"
+                        "title": "Reg",
+                        "schemas": [
+                            36,
+                            35
+                        ]
                     },
                     null,
                     null,
                     null,
                     false
                 ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    "<uuid>"
+                ]
+            },
+            {
+                "method": "audit.setRequestImportJobId",
+                "args": [
+                    null
+                ]
             }
         ],
-        "threw": "InvalidArgumentException",
-        "message": "Register bundle import requires exactly one schema when no schema is explicitly specified; found 2 in the bundle.",
-        "code": 0
+        "result": {
+            "unassigned": {
+                "found": 1,
+                "created": [],
+                "updated": [],
+                "unchanged": [],
+                "errors": [
+                    {
+                        "object": 1,
+                        "error": "The object names schema \"none\", which is not in this register bundle (people, other).",
+                        "type": "UnassignedSchema"
+                    }
+                ],
+                "warnings": []
+            },
+            "importJobId": "<uuid>"
+        }
     },
     "no register, empty bundle": {
         "calls": [],

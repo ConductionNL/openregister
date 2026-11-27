@@ -100,7 +100,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": []
@@ -202,7 +203,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": []
@@ -308,7 +310,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": []
@@ -500,7 +503,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": [
@@ -605,7 +609,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": [
@@ -680,7 +685,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": []
@@ -742,7 +748,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": [
@@ -823,7 +830,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": []
@@ -885,7 +893,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": [
@@ -954,7 +963,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": [
@@ -1067,7 +1077,8 @@
                 "queryCap": 51
             },
             "audit": {
-                "readEventsVisibleTo": []
+                "readEventsVisibleTo": [],
+                "administrativeRetention": "P10Y"
             }
         },
         "writes": []

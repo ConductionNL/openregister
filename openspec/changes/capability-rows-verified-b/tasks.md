@@ -2,7 +2,8 @@
 
 ## 1. Flow canvas
 
-- [ ] 1.1 Pin the canvas scenario: add an object trigger and a send-email step on the flow page, save, create a matching record and read the run. Verify: a Playwright test on the flow detail page (`src/manifest.json` page `flowDetail`).
+- [x] 1.1 Pin the canvas scenario: add an object trigger and a send-email step on the flow page, save, create a matching record and read the run. Verify: a Playwright test on the flow detail page (`src/manifest.json` page `flowDetail`).
+      **Pinned** (2026-11-25): `tests/e2e/ci/flow-canvas-object-trigger.spec.ts` builds the flow on the canvas (an "When an object changes" trigger on `object.created` for its own register and schema, picked in the step's form; a "Send an email" step to the administrator; an End; the manual start removed; both edges drawn by keyboard), saves it, switches it on while it is a draft (a published version is read-only), publishes it, creates a record over the API and waits for a run of that flow naming the record. It also asserts the saved trigger names exactly the event, register and schema chosen. Live on a sandbox Nextcloud 34 with PostgreSQL 16: passed 3 runs of 3. Mail delivery is not asserted; the scenario asks for the run.
 
 ## 2. Publish to GitLab
 

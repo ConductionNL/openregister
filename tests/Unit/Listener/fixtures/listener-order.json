@@ -96,6 +96,7 @@
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarValidationListener",
 		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListener",
 		"OCA\\OpenRegister\\Kernel\\Contracts\\ObjectWriteValidatorInterface",
+		"OCA\\OpenRegister\\Listener\\JourneyValidationListener",
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
@@ -207,6 +208,7 @@
 		"OCA\\OpenRegister\\Listener\\WorkingCalendarValidationListener",
 		"OCA\\OpenRegister\\Listener\\DecisionTableValidationListener",
 		"OCA\\OpenRegister\\Kernel\\Contracts\\ObjectWriteValidatorInterface",
+		"OCA\\OpenRegister\\Listener\\JourneyValidationListener",
 		"OCA\\OpenRegister\\Listener\\CodedValueValidationListener",
 		"OCA\\OpenRegister\\Listener\\DependentValueListener",
 		"OCA\\OpenRegister\\Listener\\RequiredWhenListener",
@@ -217,6 +219,15 @@
 	],
 	"OCA\\OpenRegister\\Event\\ObjectsMergedEvent": [
 		"OCA\\OpenRegister\\Listener\\PartyMergeListener"
+	],
+	"OCA\\OpenRegister\\Event\\OrganisationCreatedEvent": [
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\OrganisationDeletedEvent": [
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
+	],
+	"OCA\\OpenRegister\\Event\\OrganisationUpdatedEvent": [
+		"OCA\\OpenRegister\\Listener\\EntityEditAuditListener"
 	],
 	"OCA\\OpenRegister\\Event\\PersonLinkUpdatedEvent": [
 		"OCA\\OpenRegister\\Listener\\SlotOccupantAuditListener"
@@ -302,7 +313,11 @@
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"
 	],
 	"OCA\\OpenRegister\\Event\\TaskSequenceCompletedEvent": [
-		"OCA\\OpenRegister\\Listener\\ApprovalChainAdvanceListener"
+		"OCA\\OpenRegister\\Listener\\ApprovalChainAdvanceListener",
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
+	],
+	"OCA\\OpenRegister\\Event\\TaskSequenceRejectedEvent": [
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
 	],
 	"OCA\\OpenRegister\\Event\\TaskTerminalEvent": [
 		"OCA\\OpenRegister\\Listener\\UserTaskTerminalListener",
@@ -348,6 +363,9 @@
 		"OCA\\OpenRegister\\Listener\\SemanticProviderCacheListener",
 		"OCA\\OpenRegister\\Listener\\HandoffQueueDrainListener"
 	],
+	"OCP\\Authentication\\Events\\TokenInvalidatedEvent": [
+		"OCA\\OpenRegister\\Listener\\PersonalTokenGrantRevokedListener"
+	],
 	"OCP\\Calendar\\Events\\CalendarObjectDeletedEvent": [
 		"OCA\\OpenRegister\\Listener\\TaskVtodoWriteBackListener"
 	],
@@ -387,7 +405,8 @@
 		"OCA\\OpenRegister\\Listener\\OcmResourceTypeListener"
 	],
 	"OCP\\Share\\Events\\BeforeShareCreatedEvent": [
-		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener"
+		"OCA\\OpenRegister\\Listener\\PlatformShareRoutingListener",
+		"OCA\\OpenRegister\\Listener\\ObjectFolderReshareGuard"
 	],
 	"OCP\\Share\\Events\\ShareCreatedEvent": [
 		"OCA\\OpenRegister\\Listener\\NativeFlowTriggerListener"

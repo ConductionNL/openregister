@@ -30,7 +30,11 @@ jest.mock('@conduction/nextcloud-vue', () => ({
 				slots.actions ? h('x-actions', slots.actions()) : null,
 				h('x-error-actions', slots['error-actions']()),
 				slots['stats-rows'] ? h('table', h('tbody', slots['stats-rows']())) : null,
-				h('x-body', slots.default()),
+				// As CnDetailPage does: the default slot only without a statistics
+				// table, the footer always. A stub that rendered every slot hid a page
+				// whose whole body was default-slot content beside its statistics.
+				!slots['stats-rows'] && slots.default ? h('x-body', slots.default()) : null,
+				slots.footer ? h('x-footer', slots.footer()) : null,
 			])
 		},
 	},
@@ -82,6 +86,8 @@ jest.mock('./RegisterModelDiagram.vue', () => ({
 	},
 }))
 jest.mock('./activeRegister.js', () => ({ findActiveRegister: jest.fn() }))
+jest.mock('../../components/audit/EntityChangesList.vue', () => ({ __esModule: true, default: { name: 'EntityChangesList', props: ['kind', 'entityId'], render: () => null } }))
+jest.mock('@nextcloud/auth', () => ({ getCurrentUser: jest.fn(() => null) }))
 jest.mock('@/services/getTheme.js', () => ({ getTheme: () => 'light' }))
 jest.mock('../../services/formatBytes.js', () => ({ __esModule: true, default: (bytes) => `${bytes}B` }))
 jest.mock('../../store/store.js', () => ({
@@ -188,6 +194,26 @@ beforeEach(() => {
 })
 
 afterEach(() => jest.restoreAllMocks())
+
+describe('RegisterDetail changes (history-schema-and-settings-edits-audited)', () => {
+	const { getCurrentUser } = jest.requireMock('@nextcloud/auth')
+
+	it('shows an administrator the register\'s edit history', async () => {
+		getCurrentUser.mockReturnValue({ uid: 'admin', isAdmin: true })
+		const wrapper = await mounted({ id: 4, title: 'Zaken', schemas: [] })
+
+		expect(wrapper.find('section.registerChanges h3').text()).toBe('Changes')
+		expect(wrapper.findComponent({ name: 'EntityChangesList' }).props()).toEqual({ kind: 'registers', entityId: 4 })
+	})
+
+	it('shows nothing of it to a user who is no administrator', async () => {
+		getCurrentUser.mockReturnValue({ uid: 'anna', isAdmin: false })
+		const wrapper = await mounted({ id: 4, title: 'Zaken', schemas: [] })
+
+		expect(wrapper.find('section.registerChanges').exists()).toBe(false)
+		expect(wrapper.findComponent({ name: 'EntityChangesList' }).exists()).toBe(false)
+	})
+})
 
 describe('RegisterDetail mounted', () => {
 	it('reports a missing register and offers the way back to the list', async () => {
@@ -334,6 +360,15 @@ describe('RegisterDetail mounted', () => {
 
 		await cards.trigger('click')
 		expect(wrapper.find('x-RegisterModelDiagram').exists()).toBe(false)
+		expect(wrapper.findAll('.card')).toHaveLength(2)
+	})
+
+	it('renders its schemas and the view switch beside the statistics table', async () => {
+		registerStore.getRegisterStats.mockResolvedValue({ objects: { total: 1 }, files: {}, logs: {}, schemas: 2 })
+		const wrapper = await mounted({ id: 4, title: 'Zaken', schemas: SCHEMAS })
+
+		expect(wrapper.find('tbody tr').exists()).toBe(true)
+		expect(wrapper.find('[data-testid="schema-view-diagram"]').exists()).toBe(true)
 		expect(wrapper.findAll('.card')).toHaveLength(2)
 	})
 })

@@ -359,7 +359,9 @@
 		</div>
 
 		<!-- LLM Configuration Modal -->
+		<!-- Mounted only while open: it reads the LLM settings twice and the database info on mount, which the settings page paid for with the dialog closed. -->
 		<LLMConfigModal
+			v-if="showLLMConfigDialog"
 			:show="showLLMConfigDialog"
 			@closing="onLLMConfigClosed"
 			@embeddingsCleared="loadAllStats" />
@@ -370,12 +372,16 @@
 			@closing="showFileManagementDialog = false" />
 
 		<!-- Object Management Modal -->
+		<!-- Mounted only while open: it reads the settings, the views and the LLM settings on mount, which the settings page paid for with the dialog closed. -->
 		<ObjectManagementModal
+			v-if="showObjectManagementDialog"
 			:show="showObjectManagementDialog"
 			@closing="showObjectManagementDialog = false" />
 
 		<!-- Object Vectorization Modal -->
+		<!-- Mounted only while open: it reads the views, the vectorisation settings and its stats on mount, which the settings page paid for with the dialog closed. -->
 		<ObjectVectorizationModal
+			v-if="showObjectVectorizationModal"
 			:show="showObjectVectorizationModal"
 			@closing="showObjectVectorizationModal = false"
 			@completed="loadAllStats" />
@@ -715,14 +721,24 @@ export default {
 	},
 
 	/**
-	 * Lifecycle hook: load LLM settings and all statistics on mount.
+	 * Load the section. The chat and extraction stats do not depend on the
+	 * LLM settings, so they go out at once; the vector stats and the database
+	 * info need them (enabled, vector backend) and follow.
 	 *
-	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @spec openspec/specs/platform-administration-modals/spec.md
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
+		const independent = Promise.all([
+			this.loadChatStats(),
+			this.settingsStore.getExtractionStats(),
+		])
 		await this.loadSettings()
-		await this.loadAllStats()
+		await Promise.all([
+			this.loadVectorStats(),
+			this.loadDatabaseInfo(),
+			independent,
+		])
 	},
 
 	methods: {
@@ -906,6 +922,10 @@ export default {
 		 * @return {Promise<string|undefined>}
 		 */
 		async vectorBackend() {
+			// The LLM settings this section loaded carry it: no second read.
+			if (this.llmSettings.vectorConfig !== undefined) {
+				return this.llmSettings.vectorConfig?.backend
+			}
 			try {
 				const llmResponse = await axios.get(
 					generateUrl('/apps/openregister/api/settings/llm'),

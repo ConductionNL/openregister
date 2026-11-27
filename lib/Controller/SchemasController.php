@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Controller;
 
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Controller\Support\EntityChangesPage;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\Core\ApprovalPositionFormCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\DeclarationRefusalInterface;
@@ -97,6 +98,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IRequest;
@@ -366,6 +368,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		// Get request parameters for filtering and searching.
@@ -768,6 +771,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show($id): JSONResponse {
 		try {
@@ -785,6 +789,31 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 			return $this->showFailure(e: $e, id: $id);
 		}//end try
 	}//end show()
+
+	/**
+	 * The schema's edit history: its schema.created, schema.updated and
+	 * schema.deleted audit rows, newest first, with `_page` and `_limit`
+	 * (default 20, at most 100).
+	 *
+	 * Administrator only, by carrying no `NoAdminRequired`, as `GET /api/audit-trails`.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/history-schema-and-settings-edits-audited/specs/audit-trail-immutable/spec.md#requirement-administrators-read-an-entitys-change-history
+	 */
+	public function changes(int $id): JSONResponse {
+		$page = (new EntityChangesPage(auditTrails: $this->auditTrailMapper))->read(
+			kind: 'schema',
+			id: $id,
+			params: $this->request->getParams()
+		);
+
+		return new JSONResponse(data: $page);
+	}//end changes()
 
 	/**
 	 * Log a failed schema read and answer with the generic error response.
@@ -3356,6 +3385,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
 	 *   (Requirement: Resolution is null-safe across installed schemas)
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function resolveByImplements(): JSONResponse {
 		$uri = (string)($this->request->getParam('uri', ''));

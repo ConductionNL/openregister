@@ -92,6 +92,43 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 				</NcButton>
 			</fieldset>
 
+			<fieldset class="property-titles" data-testid="property-error-messages">
+				<legend>{{ t('openregister', 'Validation messages') }}</legend>
+				<div
+					v-for="(row, index) in messageRows"
+					:key="index"
+					class="property-titles__row"
+					data-testid="property-error-message-row">
+					<NcSelect
+						v-model="row.keyword"
+						:options="messageKeywords"
+						:inputLabel="t('openregister', 'Rule')"
+						:clearable="false"
+						:disabled="loading" />
+					<NcTextField
+						v-model="row.language"
+						:disabled="loading"
+						:label="t('openregister', 'Language code')" />
+					<NcTextField
+						v-model="row.message"
+						:disabled="loading"
+						:label="t('openregister', 'Message')" />
+					<NcButton
+						variant="tertiary"
+						:disabled="loading"
+						@click="removeMessageRow(index)">
+						{{ t('openregister', 'Remove') }}
+					</NcButton>
+				</div>
+				<NcButton
+					variant="secondary"
+					:disabled="loading"
+					data-testid="property-error-message-add"
+					@click="addMessageRow()">
+					{{ t('openregister', 'Add a validation message') }}
+				</NcButton>
+			</fieldset>
+
 			<div class="ASP-selectContainer">
 				<NcSelect
 					v-bind="typeOptions"
@@ -1055,6 +1092,40 @@ function titlesState() {
 }
 
 /**
+ * The validation keywords a declared message may answer; the server's
+ * `ErrorMessagesDeclaration::KEYWORDS`.
+ */
+const MESSAGE_KEYWORDS = [
+	'required',
+	'type',
+	'enum',
+	'const',
+	'pattern',
+	'format',
+	'minimum',
+	'maximum',
+	'exclusiveMinimum',
+	'exclusiveMaximum',
+	'multipleOf',
+	'minLength',
+	'maxLength',
+	'minItems',
+	'maxItems',
+	'uniqueItems',
+]
+
+/**
+ * The property's own validation messages, one editable row per keyword and language.
+ *
+ * @return {object} The rows
+ */
+function messagesState() {
+	return {
+		messageRows: [],
+	}
+}
+
+/**
  * The save request's progress and outcome, and the register and schema
  * picked for a relation.
  *
@@ -1099,10 +1170,21 @@ export default {
 			...propertyTypeState(),
 			...requestState(),
 			...titlesState(),
+			...messagesState(),
 		}
 	},
 
 	computed: {
+		/**
+		 * The validation keywords a message row may pick.
+		 *
+		 * @spec openspec/changes/modelling-validation-messages/specs/schema-validation-messages/spec.md#requirement-a-property-may-declare-its-own-validation-messages
+		 * @return {Array<string>}
+		 */
+		messageKeywords() {
+			return MESSAGE_KEYWORDS
+		},
+
 		/**
 		 * The format choices of the edited property: geometry formats for an
 		 * object, string formats otherwise.
@@ -1681,6 +1763,88 @@ export default {
 			this.hydrateCodeListState(schemaProperty)
 			this.properties = this.mergedPropertyDefinition(schemaProperty)
 			this.hydrateTitleRows(schemaProperty.titles)
+			this.hydrateMessageRows(schemaProperty['x-error-messages'])
+		},
+
+		/**
+		 * Load the stored validation messages into editable rows: one row per
+		 * keyword and language, and one row without a language for a message
+		 * that is a single string.
+		 *
+		 * @param {object|undefined} messages The stored `x-error-messages`
+		 * @spec openspec/changes/modelling-validation-messages/specs/schema-validation-messages/spec.md#requirement-a-property-may-declare-its-own-validation-messages
+		 */
+		hydrateMessageRows(messages) {
+			this.messageRows = []
+			if (!messages || typeof messages !== 'object' || Array.isArray(messages)) {
+				return
+			}
+			for (const [keyword, message] of Object.entries(messages)) {
+				if (typeof message === 'string') {
+					this.messageRows.push({ keyword, language: '', message })
+					continue
+				}
+				if (message && typeof message === 'object' && !Array.isArray(message)) {
+					for (const [language, text] of Object.entries(message)) {
+						this.messageRows.push({ keyword, language, message: typeof text === 'string' ? text : '' })
+					}
+				}
+			}
+		},
+
+		/**
+		 * Add an empty validation message row.
+		 *
+		 * @spec openspec/changes/modelling-validation-messages/specs/schema-validation-messages/spec.md#requirement-a-property-may-declare-its-own-validation-messages
+		 */
+		addMessageRow() {
+			this.messageRows.push({ keyword: 'pattern', language: 'nl', message: '' })
+		},
+
+		/**
+		 * Remove one validation message row.
+		 *
+		 * @param {number} index The row
+		 * @spec openspec/changes/modelling-validation-messages/specs/schema-validation-messages/spec.md#requirement-a-property-may-declare-its-own-validation-messages
+		 */
+		removeMessageRow(index) {
+			this.messageRows.splice(index, 1)
+		},
+
+		/**
+		 * The rows as the property's `x-error-messages`: a keyword whose rows
+		 * name languages gets a map from language to message, a keyword with
+		 * only a row without a language gets that message as a single string.
+		 * Rows without a keyword or a message are left out, and the key is
+		 * removed when no message is left.
+		 *
+		 * @spec openspec/changes/modelling-validation-messages/specs/schema-validation-messages/spec.md#requirement-a-property-may-declare-its-own-validation-messages
+		 */
+		applyMessageRows() {
+			const byKeyword = {}
+			for (const row of this.messageRows) {
+				const keyword = typeof row.keyword === 'string' ? row.keyword : ''
+				const message = (row.message || '').trim()
+				if (keyword === '' || message === '') {
+					continue
+				}
+				byKeyword[keyword] ??= { languages: {}, plain: null }
+				const language = (row.language || '').trim()
+				if (language === '') {
+					byKeyword[keyword].plain = message
+				} else {
+					byKeyword[keyword].languages[language] = message
+				}
+			}
+			const messages = {}
+			for (const [keyword, { languages, plain }] of Object.entries(byKeyword)) {
+				messages[keyword] = Object.keys(languages).length > 0 ? languages : plain
+			}
+			if (Object.keys(messages).length === 0) {
+				delete this.properties['x-error-messages']
+				return
+			}
+			this.properties['x-error-messages'] = messages
 		},
 
 		/**
@@ -2051,6 +2215,7 @@ export default {
 		 */
 		addSchemaProperty() {
 			this.applyTitleRows()
+			this.applyMessageRows()
 			this.loading = true
 
 			// delete the key when its an edit modal (the item will be re-created later, so don't worry about it)
@@ -2091,6 +2256,8 @@ export default {
 				delete newSchemaItem.properties[this.propertyTitle].items
 			}
 
+			this.dropUnsetNumbers(newSchemaItem.properties[this.propertyTitle])
+
 			if (this.properties.required === false) {
 				this.dropFromRequired(newSchemaItem)
 			}
@@ -2116,6 +2283,29 @@ export default {
 				.finally(() => {
 					this.loading = false
 				})
+		},
+
+		/**
+		 * Leave out the numeric keywords the form leaves unset.
+		 *
+		 * The form reads an empty or zero field as "not set" and used to save it
+		 * as `null`. JSON Schema wants a number for `minimum`, `maxLength` and the
+		 * rest, so the object validator refused every object of the schema with
+		 * "minimum must contain a valid number": a property added in the form
+		 * made the schema unusable for the next create. An unset keyword is now
+		 * absent, which is what JSON Schema means by "no constraint".
+		 *
+		 * @param {object} property The property about to be saved; changed in place
+		 * @spec openspec/changes/modelling-stated-requirements/specs/entity-management-modals/spec.md#requirement-a-schemas-fields-are-built-in-a-form-req-msr-004
+		 * @return {void}
+		 */
+		dropUnsetNumbers(property) {
+			const keywords = ['order', 'minLength', 'maxLength', 'minimum', 'maximum', 'multipleOf', 'minItems', 'maxItems']
+			for (const keyword of keywords) {
+				if (property[keyword] === null || property[keyword] === undefined) {
+					delete property[keyword]
+				}
+			}
 		},
 
 		/**

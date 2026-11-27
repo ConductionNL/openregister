@@ -11,7 +11,8 @@
                 "user": "system",
                 "user_name": "System",
                 "register": 1,
-                "object_uuid": "u-7"
+                "object_uuid": "u-7",
+                "category": "domain"
             }
         ]
     },
@@ -27,7 +28,8 @@
                 "user": "alice",
                 "user_name": "Alice",
                 "register": 1,
-                "object_uuid": "u-7"
+                "object_uuid": "u-7",
+                "category": "domain"
             }
         ]
     },
@@ -43,7 +45,8 @@
                 "user": "registry:brp",
                 "user_name": "BRP",
                 "register": 1,
-                "object_uuid": "u-7"
+                "object_uuid": "u-7",
+                "category": "domain"
             }
         ]
     },
@@ -59,7 +62,8 @@
                 "user": "registry:brp",
                 "user_name": "registry:brp",
                 "register": 1,
-                "object_uuid": "u-7"
+                "object_uuid": "u-7",
+                "category": "domain"
             }
         ]
     },
@@ -75,7 +79,8 @@
                 "user": "alice",
                 "user_name": "Alice",
                 "register": 1,
-                "object_uuid": "u-7"
+                "object_uuid": "u-7",
+                "category": "domain"
             }
         ]
     },
@@ -92,7 +97,8 @@
                 "user_name": "link:1",
                 "ip_address": "10.0.0.1",
                 "register": 1,
-                "object_uuid": "u-7"
+                "object_uuid": "u-7",
+                "category": "domain"
             }
         ]
     },
@@ -108,7 +114,8 @@
                 "user": "link:1",
                 "user_name": "link:1",
                 "register": 1,
-                "object_uuid": "u-7"
+                "object_uuid": "u-7",
+                "category": "domain"
             }
         ]
     },
@@ -124,7 +131,8 @@
                 "user": "link:1",
                 "user_name": "link:1",
                 "register": 1,
-                "object_uuid": "u-7"
+                "object_uuid": "u-7",
+                "category": "domain"
             }
         ]
     },
@@ -139,7 +147,8 @@
                 "user_name": "System",
                 "tool_id": "keepiq.lead.search",
                 "params_digest": "d1",
-                "result_summary": "{\"count\":2}"
+                "result_summary": "{\"count\":2}",
+                "category": "domain"
             }
         ]
     },
@@ -158,7 +167,8 @@
                 "object_uuid": "o-3",
                 "tool_id": "search",
                 "params_digest": "d2",
-                "result_summary": "[]"
+                "result_summary": "[]",
+                "category": "domain"
             }
         ]
     },
@@ -173,7 +183,8 @@
                 "user_name": "Alice",
                 "tool_id": "keepiq.",
                 "params_digest": "d3",
-                "result_summary": "{\"isError\":true}"
+                "result_summary": "{\"isError\":true}",
+                "category": "domain"
             }
         ]
     },
@@ -187,7 +198,8 @@
                 "user": "system",
                 "user_name": "system",
                 "organisation_id": "org-s",
-                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"register\",\"outcome\":\"refused\"}"
+                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"register\",\"outcome\":\"refused\"}",
+                "category": "domain"
             }
         ]
     },
@@ -204,7 +216,8 @@
                 "register": 4,
                 "object_uuid": "o-1",
                 "organisation_id": "org-s",
-                "result_summary": "{\"a\":1,\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"schema\",\"outcome\":\"refused\"}"
+                "result_summary": "{\"a\":1,\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"schema\",\"outcome\":\"refused\"}",
+                "category": "domain"
             }
         ]
     },
@@ -218,7 +231,8 @@
                 "user": "bob",
                 "user_name": "bob",
                 "organisation_id": "org-s",
-                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"schema\",\"outcome\":\"refused\"}"
+                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"schema\",\"outcome\":\"refused\"}",
+                "category": "domain"
             }
         ]
     },
@@ -232,7 +246,8 @@
                 "user": "bob",
                 "user_name": "p-123",
                 "organisation_id": "org-s",
-                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"schema\",\"outcome\":\"refused\"}"
+                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"schema\",\"outcome\":\"refused\"}",
+                "category": "domain"
             }
         ]
     },
@@ -246,7 +261,8 @@
                 "user": "system",
                 "user_name": "system",
                 "organisation_id": "org-s",
-                "result_summary": "{\"outcome\":\"refused\",\"holderOrganisation\":\"org-h\",\"extra\":\"x\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"register\"}"
+                "result_summary": "{\"outcome\":\"refused\",\"holderOrganisation\":\"org-h\",\"extra\":\"x\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"register\"}",
+                "category": "domain"
             }
         ]
     },
@@ -260,7 +276,8 @@
                 "user": "system",
                 "user_name": "p-9",
                 "organisation_id": "org-s",
-                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"register\",\"outcome\":\"refused\"}"
+                "result_summary": "{\"holderOrganisation\":\"org-h\",\"sourceOrganisation\":\"org-s\",\"resourceType\":\"register\",\"outcome\":\"refused\"}",
+                "category": "domain"
             }
         ]
     },
@@ -273,7 +290,8 @@
                 "changed": "[]",
                 "user": "system",
                 "user_name": "System",
-                "result_summary": "{\"rows\":3}"
+                "result_summary": "{\"rows\":3}",
+                "category": "domain"
             }
         ]
     },
@@ -288,7 +306,8 @@
                 "user": "alice",
                 "user_name": "Alice",
                 "register": 1,
-                "result_summary": "{\"reason\":\"cap\"}"
+                "result_summary": "{\"reason\":\"cap\"}",
+                "category": "domain"
             }
         ]
     },
@@ -301,7 +320,8 @@
                 "changed": "[]",
                 "user": "svc-export",
                 "user_name": "svc-export",
-                "result_summary": "[]"
+                "result_summary": "[]",
+                "category": "domain"
             }
         ]
     },
@@ -314,7 +334,8 @@
                 "changed": "[]",
                 "user": "",
                 "user_name": "",
-                "result_summary": "[]"
+                "result_summary": "[]",
+                "category": "domain"
             }
         ]
     },
@@ -329,7 +350,8 @@
                 "user_name": "Alice",
                 "tool_id": "a.b",
                 "params_digest": "d4",
-                "result_summary": "[]"
+                "result_summary": "[]",
+                "category": "domain"
             }
         ]
     },
@@ -354,7 +376,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -371,7 +394,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -400,7 +424,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 1022,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -430,7 +455,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 1017,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -460,7 +486,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -477,7 +504,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -506,7 +534,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -523,7 +552,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -552,7 +582,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -569,7 +600,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -598,7 +630,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 1020,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -627,7 +660,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -644,7 +678,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -673,7 +708,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -690,7 +726,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -719,7 +756,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -736,7 +774,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -766,7 +805,8 @@
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
                 "hash": "sealed",
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -783,7 +823,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -812,7 +853,8 @@
                 "object_uuid": "other",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -829,7 +871,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -857,7 +900,8 @@
                 "register": 1,
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 764,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -873,7 +917,8 @@
                 "register": 1,
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 783,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -902,7 +947,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -919,7 +965,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -948,7 +995,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -965,7 +1013,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -996,7 +1045,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 799,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             },
             {
                 "id": 2,
@@ -1013,7 +1063,8 @@
                 "object_uuid": "u-7",
                 "retention_period": "resolver-unavailable:indefinite",
                 "size": 818,
-                "cause": "person"
+                "cause": "person",
+                "category": "domain"
             }
         ],
         "warnings": [
@@ -1034,12 +1085,13 @@
         ],
         "log": [
             {
-                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `changed`, `user`) VALUES (?,?,?,?)",
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `changed`, `user`, `category`) VALUES (?,?,?,?,?)",
                 "params": [
                     "b-1",
                     "create",
                     "{\"t\":1}",
-                    "u"
+                    "u",
+                    "domain"
                 ]
             },
             {
@@ -1068,15 +1120,17 @@
         ],
         "log": [
             {
-                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `user`, `processing_activity_id`) VALUES (?,?,?,?), (?,?,?,?)",
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `user`, `category`, `processing_activity_id`) VALUES (?,?,?,?,?), (?,?,?,?,?)",
                 "params": [
                     "b-1",
                     "create",
                     "u",
+                    "domain",
                     null,
                     "b-2",
                     "update",
                     null,
+                    "domain",
                     "pa-1"
                 ]
             },
@@ -1089,12 +1143,13 @@
             },
             "closeCursor",
             {
-                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `import_job_id`, `size`) VALUES (?,?,?,?)",
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `import_job_id`, `size`, `category`) VALUES (?,?,?,?,?)",
                 "params": [
                     "b-3",
                     "delete",
                     "job-1",
-                    20
+                    20,
+                    "domain"
                 ]
             },
             {
@@ -1115,10 +1170,11 @@
         ],
         "log": [
             {
-                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`) VALUES (?,?)",
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `category`) VALUES (?,?,?)",
                 "params": [
                     "b-1",
-                    "create"
+                    "create",
+                    "domain"
                 ]
             },
             {
@@ -1143,12 +1199,14 @@
         ],
         "log": [
             {
-                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`) VALUES (?,?), (?,?)",
+                "statement": "INSERT INTO *PREFIX*openregister_audit_trails (`uuid`, `action`, `category`) VALUES (?,?,?), (?,?,?)",
                 "params": [
                     "b-1",
                     "create",
+                    "domain",
                     "b-ghost",
-                    "read"
+                    "read",
+                    "domain"
                 ]
             },
             {

@@ -10,7 +10,14 @@
   - `MagicTableIndexer` creates `<table>_tsv_idx` on new tables; `Version1Date20261121150000` creates it on every existing magic table and `idx_or_chunks_text_search_<config>_gin` on the chunk table, both with the saved configuration and `IF NOT EXISTS`, a failure being a warning. One migration does the existing tables, so no separate repair step. Checked on PostgreSQL 16 that the planner uses the index for the query's expression.
 - [x] 1.4 Add the arm to `ChunkMapper::searchByKeyword()`. Verify: `tests/Unit/Db/ChunkDutchSearchTest.php::testAnInflectedFormFindsChunkText`.
   - The stemmed arm is ORed with the `simple` one and the score is the better of the two ranks; with no configuration, or `simple`, the SQL is as before. The live case runs against the database named by `OPENREGISTER_TEST_PGSQL_DSN` and is skipped without one.
-- [ ] 1.5 Through the caller: a Newman request in `tests/newman/` creates an object titled `Omgevingsvergunning bouwen`, searches `GET /api/objects/{register}/{schema}?_search=omgevingsvergunningen` and asserts the hit (run against the PostgreSQL CI service; the MySQL job asserts no hit and `stemming: false`).
+- [x] 1.5 Through the caller: a Newman request in `tests/newman/` creates an object titled `Omgevingsvergunning bouwen`, searches `GET /api/objects/{register}/{schema}?_search=omgevingsvergunningen` and asserts the hit (run against the PostgreSQL CI service; the MySQL job asserts no hit and `stemming: false`).
+  - `tests/integration/openregister-search-dutch-stemming.postman_collection.json` (domain `search-dutch-stemming` in
+    `tests/newman/run-all.sh`; under `tests/integration`, which the CI Newman job reads, gate-112). It reads
+    `openregister.search.stemming` from the capabilities (and checks `GET /api/settings/search` agrees), then asserts
+    the hit where the database stems and no hit where it does not, so one collection serves the PostgreSQL and the
+    MySQL job. A control `Kapvergunning` and the singular search pin that nothing else matches. 2026-11-25, sandbox
+    Nextcloud 34 on PostgreSQL 16 (`stemming: dutch`): 12 requests, 16 assertions, 0 failed. The MySQL half is not
+    run here.
 
 ## 2. Matched passage (REQ-SDL-002, row 6.33, D5)
 

@@ -117,10 +117,13 @@ class AccessLinkService implements AccessLinkServiceInterface {
 		$kind = $this->requireSubjectType(subjectType: $request->subjectType);
 		$subject = $this->requireSubjectId(subjectId: $request->subjectId);
 		$declared = $this->normaliseCapabilities(capabilities: $terms->capabilities);
+		$this->requireReadOnlyPreview(subjectType: $kind, capabilities: $declared);
+		$journey = $this->requireJourneyTerms(subjectType: $kind, declared: $declared, journey: $terms->journey);
 		$expiry = $this->requireExpiry(expiresAt: $terms->expiresAt);
 
 		$link = $this->newLink(subjectType: $kind, subjectId: $subject);
 		$link->setCapabilities(implode(',', $declared));
+		$link->setJourney($journey);
 		$link->setLabel($this->trimmedOrNull(value: $terms->label));
 		$link->setPasswordHash($this->hashedPassword(password: $terms->password));
 		$link->setCreatedBy($minter);
@@ -445,12 +448,16 @@ class AccessLinkService implements AccessLinkServiceInterface {
 	 *
 	 * @param string $subjectType The requested kind.
 	 *
-	 * @return string `object`, `view` or `file`.
+	 * @return string `object`, `view`, `file` or `object-draft`.
 	 *
 	 * @throws InvalidArgumentException When the kind is not one a link can open.
 	 */
 	private function requireSubjectType(string $subjectType): string {
 		$subjectType = strtolower(trim($subjectType));
+		if ($subjectType === AccessLink::SUBJECT_OBJECT_DRAFT) {
+			return $subjectType;
+		}
+
 		if (in_array($subjectType, AccessLink::SUBJECT_TYPES, true) === false) {
 			throw new InvalidArgumentException(
 				sprintf(
@@ -463,6 +470,24 @@ class AccessLinkService implements AccessLinkServiceInterface {
 
 		return $subjectType;
 	}//end requireSubjectType()
+
+	/**
+	 * Refuse a draft preview link that would do more than read.
+	 *
+	 * @param string             $subjectType The validated subject kind.
+	 * @param array<int, string> $capabilities The declared capabilities.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When a draft preview link asks for more than read.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	private function requireReadOnlyPreview(string $subjectType, array $capabilities): void {
+		if ($subjectType === AccessLink::SUBJECT_OBJECT_DRAFT && $capabilities !== [AccessLink::CAP_READ]) {
+			throw new InvalidArgumentException('A draft preview link can only read.');
+		}
+	}//end requireReadOnlyPreview()
 
 	/**
 	 * The subject identifier, trimmed.
@@ -550,6 +575,45 @@ class AccessLinkService implements AccessLinkServiceInterface {
 
 		return $declared;
 	}//end normaliseCapabilities()
+
+	/**
+	 * The journey a link is minted with: required with `edit`, refused without it.
+	 *
+	 * Only an object link can carry one, since an `edit` run changes one
+	 * object. Whether that journey may change that object is
+	 * LinkJourneyGuard's question, asked before mint().
+	 *
+	 * @param string             $subjectType The validated subject kind.
+	 * @param array<int, string> $declared    The normalised capabilities.
+	 * @param string|null        $journey     The requested journey.
+	 *
+	 * @return string|null The journey's uuid, or null for a link without `edit`.
+	 *
+	 * @throws InvalidArgumentException When `edit` comes without a journey, a journey without `edit`, or either on a non-object link.
+	 *
+	 * @spec openspec/changes/or-form-and-journey-registry/tasks.md#task-6-1
+	 */
+	private function requireJourneyTerms(string $subjectType, array $declared, ?string $journey): ?string {
+		$journey = $this->trimmedOrNull(value: $journey);
+		$edits = in_array(AccessLink::CAP_EDIT, $declared, true);
+		if ($edits === false && $journey === null) {
+			return null;
+		}
+
+		if ($edits === false) {
+			throw new InvalidArgumentException('Only a link that declares edit can carry a journey.');
+		}
+
+		if ($subjectType !== AccessLink::SUBJECT_OBJECT) {
+			throw new InvalidArgumentException('Only a link over one object can declare edit.');
+		}
+
+		if ($journey === null) {
+			throw new InvalidArgumentException('A link that declares edit must name the journey it changes the object through.');
+		}
+
+		return $journey;
+	}//end requireJourneyTerms()
 
 	/**
 	 * One requested capability, lower-cased and trimmed; '' for a blank one.

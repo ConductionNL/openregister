@@ -155,7 +155,9 @@ class ImportHandler {
 	/**
 	 * Per schema id, the uuid of every seed object this seed pass stored or found, by its slug.
 	 *
-	 * @var array<string, array<string, string>>
+	 * Keys are int when the id or slug is numeric: PHP turns a numeric-string key into an int.
+	 *
+	 * @var array<int|string, array<int|string, string>>
 	 */
 	private array $seedObjectUuids = [];
 
@@ -248,7 +250,7 @@ class ImportHandler {
 	 *
 	 * @var ShippedRegisterBaseline
 	 */
-	private ShippedRegisterBaseline $shippedRegisterBaseline;
+	private ShippedRegisterBaseline $registerBaseline;
 
 	/**
 	 * Creates and updates the Configuration of an app import.
@@ -473,7 +475,7 @@ class ImportHandler {
 		$this->relatedItems = new SeedRelatedItems(logger: $logger);
 		$this->duplicates = new ImportDuplicates(registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper, logger: $logger);
 		$this->shippedBaseline = new ShippedSchemaBaseline(guard: $schemaSteps->shippedGuard, logger: $logger);
-		$this->shippedRegisterBaseline = new ShippedRegisterBaseline(guard: $schemaSteps->shippedGuard);
+		$this->registerBaseline = new ShippedRegisterBaseline(guard: $schemaSteps->shippedGuard);
 		$this->appConfigurations = new AppConfigurationRecord(configurationMapper: $this->configurationMapper, logger: $logger);
 		$this->schemaShape = new ImportedSchemaShape(validator: $schemaSteps->shapeValidator, logger: $logger);
 		$this->rejectedSchemas = new RejectedSchemaReport(logger: $logger);
@@ -996,7 +998,7 @@ class ImportHandler {
 			$existingRegister = $this->findRegisterForImport(data: $data, options: $options);
 			if ($existingRegister === null) {
 				$created = $this->createImportedRegister(data: $data, options: $options);
-				$this->shippedRegisterBaseline->record(data: $data, options: $options);
+				$this->registerBaseline->record(data: $data, options: $options);
 
 				return $created;
 			}
@@ -1055,7 +1057,7 @@ class ImportHandler {
 			$existingRegister = $this->registerMapper->updateFromArray(id: $existingRegister->getId(), object: $data);
 			$this->stampImportProvenance(register: $existingRegister, options: $options);
 			$updated = $this->registerMapper->update($existingRegister);
-			$this->shippedRegisterBaseline->record(data: $data, options: $options);
+			$this->registerBaseline->record(data: $data, options: $options);
 
 			return $updated;
 		} catch (Exception $e) {
@@ -6345,7 +6347,8 @@ class ImportHandler {
 		$objectEntity->setUuid($object->data['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122());
 		$objectEntity->setSchema($object->schema->getId());
 		$objectEntity->setRegister($object->registerId);
-		$objectEntity->setObject($this->withSeedReferencesResolved(object: $object, data: $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema)));
+		$seedData = $this->withoutSeedMetadataKeys(objectData: $object->data, schema: $object->schema);
+		$objectEntity->setObject($this->withSeedReferencesResolved(object: $object, data: $seedData));
 		$this->applySeedSlug(entity: $objectEntity, object: $object);
 		$now = new DateTime();
 		$objectEntity->setCreated($now);
