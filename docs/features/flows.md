@@ -584,6 +584,38 @@ event does not start again because of its own step.
 { "operation": "add", "tag": "urgent", "color": "#d10000" }
 ```
 
+Which object: a configured `uuid` (a template such as `{{ lead }}`), else the
+item's own `uuid`, else the `@self.id` of the item when the item is an object
+itself, as an object trigger hands it.
+
+A sales manager labels every large lead. The flow starts on a lead being
+created, keeps the leads whose `value` is above 10000, and tags them:
+
+```json
+{
+  "nodes": [
+    { "id": "created", "type": "openregister.trigger-object",
+      "config": { "event": "object.created", "register": "sales", "schema": "lead" } },
+    { "id": "large", "type": "openregister.filter",
+      "config": { "condition": { ">": [{ "var": "json.value" }, 10000] } } },
+    { "id": "tag", "type": "openregister.tag-object",
+      "config": { "operation": "add", "tag": "Large deal", "color": "d94c3d" } },
+    { "id": "end", "type": "openregister.end" }
+  ],
+  "edges": [
+    { "id": "a", "from": "created", "to": "large" },
+    { "id": "b", "from": "large", "to": "tag" },
+    { "id": "c", "from": "tag", "to": "end" }
+  ]
+}
+```
+
+A lead of 25000 gets the tag "Large deal" in red; a lead of 4000 gets nothing.
+`GET /api/objects/{register}/{schema}/{id}/tags` lists it. The step's form in
+the flow editor:
+
+![The "Tag an object" step's form: action, tag, colour, object and the create switch](flow-tag-object-step-form.png)
+
 **`openregister.unlock-object`** (Unlock an object). Keys: `uuid`. Releases a
 lock this run holds. Optional: a run releases all its locks when it ends,
 however it ends. This step only releases sooner.

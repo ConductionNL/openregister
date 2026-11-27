@@ -10,6 +10,12 @@
  * the same instance. Duplicate ids follow a first-wins policy and log a warning
  * (matching the integration-registry collision policy).
  *
+ * Providers may also arrive through a loader (addLoader()): a callable the
+ * registry runs once, on the first read or registration, so a request that
+ * never reads the registry builds none of the built-in providers. boot()
+ * runs on every Nextcloud request; building the thirteen built-ins there
+ * cost ~20 ms of CPU on every API call of every app.
+ *
  * The read path (GetObject) resolves a provider by the id declared in a schema's
  * `x-openregister-object-source.provider` and delegates find/findAll/count to it
  * when the provider is enabled.
@@ -48,6 +54,20 @@ class ObjectSourceRegistry {
 	private array $providers = [];
 
 	/**
+	 * Loaders still to run, in the order they were added.
+	 *
+	 * @var array<int, callable(ObjectSourceRegistry): void>
+	 */
+	private array $loaders = [];
+
+	/**
+	 * True while the loaders run, so a loader's own addProvider() calls do not re-enter them.
+	 *
+	 * @var boolean
+	 */
+	private bool $loading = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger Logger for collision warnings.
@@ -71,6 +91,10 @@ class ObjectSourceRegistry {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.2
 	 */
 	public function addProvider(ObjectSourceProvider $provider): bool {
+		// Pending loaders go first, so the order of registration (and with it
+		// first-wins on a duplicate id) is the same as when they ran eagerly.
+		$this->runLoaders();
+
 		$id = $provider->getId();
 		if (isset($this->providers[$id]) === true) {
 			$this->logger->warning(
@@ -96,6 +120,7 @@ class ObjectSourceRegistry {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.2
 	 */
 	public function withProviders(array $providers): void {
+		$this->loaders   = [];
 		$this->providers = [];
 		foreach ($providers as $provider) {
 			$this->addProvider(provider: $provider);
@@ -112,6 +137,7 @@ class ObjectSourceRegistry {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.2
 	 */
 	public function get(string $id): ?ObjectSourceProvider {
+		$this->runLoaders();
 		return $this->providers[$id] ?? null;
 	}//end get()
 
@@ -123,6 +149,7 @@ class ObjectSourceRegistry {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.2
 	 */
 	public function list(): array {
+		$this->runLoaders();
 		return array_values($this->providers);
 	}//end list()
 
@@ -134,6 +161,51 @@ class ObjectSourceRegistry {
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.2
 	 */
 	public function listIds(): array {
+		$this->runLoaders();
 		return array_keys($this->providers);
 	}//end listIds()
+
+	/**
+	 * Add a loader: a callable that registers providers on this registry.
+	 *
+	 * It runs once, on the first get(), list(), listIds() or addProvider()
+	 * after it was added, never at registration. A loader that throws is
+	 * logged and dropped; the providers it added before throwing stay.
+	 *
+	 * @param callable(ObjectSourceRegistry): void $loader Receives this registry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.2
+	 */
+	public function addLoader(callable $loader): void {
+		$this->loaders[] = $loader;
+	}//end addLoader()
+
+	/**
+	 * Run the pending loaders, in order, once each.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-source-providers/tasks.md#task-1.2
+	 */
+	private function runLoaders(): void {
+		if ($this->loading === true || $this->loaders === []) {
+			return;
+		}
+
+		$this->loading = true;
+		try {
+			while ($this->loaders !== []) {
+				$loader = array_shift($this->loaders);
+				try {
+					$loader($this);
+				} catch (\Throwable $e) {
+					$this->logger->warning('[ObjectSourceRegistry] a provider loader failed: ' . $e->getMessage());
+				}
+			}
+		} finally {
+			$this->loading = false;
+		}
+	}//end runLoaders()
 }//end class

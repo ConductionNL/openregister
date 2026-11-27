@@ -87,8 +87,8 @@ that schema's `authorization` grants it, or the schema has no `authorization` bl
 |---|---|---|
 | GET | `/api/objects/{register}/{schema}/{id}/actions` | the actions this person may run on the object |
 | GET | `/api/object-actions/{register}/{schema}` | the actions offered on the `bulk` surface |
-| POST | `/api/objects/{register}/{schema}/{id}/actions/{action}` | run on one object; body `{inputs}` |
-| POST | `/api/object-actions/{register}/{schema}/{action}` | run on a selection; body `{ids, inputs}` |
+| POST | `/api/objects/{register}/{schema}/{id}/actions/{key}` | run on one object; body `{inputs}` |
+| POST | `/api/object-actions/{register}/{schema}/{key}` | run on a selection; body `{ids, inputs}` |
 | GET | `/api/objects/{register}/{schema}/{id}/actions/history` | the object's action runs, newest first |
 
 The list merges the declared actions with the lifecycle transitions available from the object's current state, so a
