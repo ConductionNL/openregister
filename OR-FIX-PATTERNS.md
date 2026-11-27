@@ -1021,3 +1021,7 @@ Fix: keep both sides' lines (union of each hunk: ours then theirs), then bash -n
 - Symptom: after merging main, git reports no conflict in l10n/en.js (or another bundle), but git diff origin/main --numstat shows far more added lines than the PR's keys; ~100+ keys appear twice.
 - Cause: both sides re-serialized the bundle; git's text merge interleaves hunks and keeps both copies of keys.
 - Fix: count duplicate keys in every l10n/*.js after the merge (not only the conflicted ones); rebuild a hit in main's line order plus the PR's new keys (dedupe, last line without comma); expect numstat <PR keys>+1 / 1. Seen on #11286 1794bd03.
+## Worktree tests silently run another tree's code (or-fix-0..9, 27 Nov)
+- Symptom: a merged worktree's golden/registration test shows main's numbers although the PR's lines are in lib/ (e.g. listener count off by the PR's own registrations).
+- Cause: vendor/ symlinked from another checkout: composer's autoload resolves __DIR__/../lib to the real path, so lib/ of the OTHER checkout is loaded.
+- Fix: cp -a the vendor dir into each worktree (never ln -s); rerun.
