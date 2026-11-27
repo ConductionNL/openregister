@@ -1,0 +1,17 @@
+# launchpad live checks, live-launchpad-2 third run 27 Nov 14:45Z-, NC 34 tarball + MariaDB + Redis + APCu, php -S :8097
+# (nginx + php-fpm on :8098 for speed). OR main. launchpad development (d397891f and later).
+admin-page-in-nextcloud-settings  LpBeheer live check: frame matches (NC settings menu, title, breadcrumb, 13 tabs in board order, version
+  card first). FIXED #2272: version card 'Configured version Unknown' -> '<v>, up to date', no app-name row, one column of cards,
+  quota fields on one row; admin-settings-ui:157 spec (also #2274). GAPS for builders (tab contents predate the boards):
+  tab count badges; Roles and permissions (board: who-may-do-what grid, start layout per role, allowed widgets per group,
+  dashboard managers); Templates (board: table with version/in use + Push/Update, push-changes card, ready-made reports);
+  General (board: 'Launchpad as default app' own card, Save per card). Speed: measured under load only (809 ms vs 559 floor), re-measure idle.
+app-link-tile-widget task 15  old tiles keep every tile: GREEN. Seeded app-tile {appId files}, tile without mode, container with
+  app-tile / tile / nested container + app-tile; occ maintenance:repair: '5 tile(s) in 3 placement(s) became App or link tiles';
+  all render (calendar child hidden: no Calendar app in the tarball, #2271 rule). Nit: a link tile without icon keeps an empty
+  64px icon slot (CnDashTileWidget iconType 'class' with no class), so at grid height 2 its title is clipped (pre-existing).
+  LpTegelToevoegen: RED vs board (for the help-launchpad-app-link-tile-widget lease holder): form has no category column and no
+  breadcrumb 'Tiles and links / App or link tile'; heading 'New tile' instead; app list is checkboxes in rows, board draws radio
+  cards with app icon, source line and count; the Appearance panel (preview, tile colour, text colour, contrast line, On the
+  tile, Pin) is not beside the list as drawn; no Cancel / Add tile footer.
+app-link-tile.spec 3/3, widget-picker-miniatures.spec 2/2 live GREEN (before #2275 merged).
