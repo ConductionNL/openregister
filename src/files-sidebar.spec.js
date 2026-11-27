@@ -164,4 +164,35 @@ describe('files-sidebar entry', () => {
 		tab.destroy(el)
 		expect(el[propsKey]).toBeNull()
 	})
+
+	it('destroying a tab before its code arrives leaves nothing mounted', async () => {
+		load()
+		const el = document.createElement('div')
+		tabs[0].mount(el, { id: 5 })
+		tabs[0].destroy(el)
+		await settle()
+		expect(el._registerObjectsApp).toBeNull()
+		expect(el.innerHTML).toBe('')
+	})
+
+	it('a file selected before the tab\'s code arrives is the one it renders', async () => {
+		load()
+		const el = document.createElement('div')
+		tabs[1].mount(el, { id: 5 })
+		await tabs[1].update(el, { id: 9 })
+		await settle()
+		expect(el.querySelector('.extraction').textContent).toBe('9')
+		tabs[1].destroy(el)
+	})
+
+	it('a second mount before the first one\'s code arrives renders once, for the second file', async () => {
+		load()
+		const el = document.createElement('div')
+		tabs[2].mount(el, { id: 5 })
+		tabs[2].mount(el, { id: 6 })
+		await settle()
+		expect(el.querySelectorAll('.thread')).toHaveLength(1)
+		expect(el.querySelector('.thread').textContent).toBe('6')
+		tabs[2].destroy(el)
+	})
 })

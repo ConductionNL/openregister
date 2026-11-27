@@ -123,6 +123,24 @@ class RegistrySubscriptionMapperTest extends TestCase {
 	}//end testFindActiveByIdentityMatchesActiveOnly()
 
 	/**
+	 * findLiveByIdentity matches registry, identity and the requested or active state.
+	 *
+	 * @return void
+	 */
+	public function testFindLiveByIdentityMatchesRequestedAndActive(): void {
+		$this->queuedRows = [[['id' => 1, 'object_uuid' => 'o-1'], ['id' => 2, 'object_uuid' => 'o-2']]];
+
+		$rows = $this->mapper()->findLiveByIdentity('brp', '999990019');
+
+		$this->assertCount(2, $rows);
+		$log = $this->log();
+		$this->assertStringContainsString('eq(registry, :p1', $log);
+		$this->assertStringContainsString('eq(identity_value, :p2', $log);
+		$this->assertStringContainsString('requested', $log);
+		$this->assertStringContainsString('active', $log);
+	}//end testFindLiveByIdentityMatchesRequestedAndActive()
+
+	/**
 	 * save inserts a row without an id.
 	 *
 	 * @return void
