@@ -7,13 +7,10 @@ closing a discard path that previously surfaced only as a `nextcloud.log` warnin
 ## ADDED Requirements
 
 ### Requirement: A schema-save response MUST surface every discarded advisory-annotation validation error
-When any of the schema-save annotation validators (`lifecycle`, `aggregations`, `calculations`,
-`quality`, `dedup`, `survivorship`, `merge`) returns one or more validation errors for a schema being
-saved, the schema-save response MUST include a `warnings` list entry for each discarded annotation,
-naming the annotation family, the schema slug, and the validator's error messages. The schema import
-MUST continue exactly as it does today (an advisory annotation failing validation MUST NOT abort the
-save) — this requirement changes only what is surfaced in the response, not whether the save
-succeeds.
+When a schema-save annotation validator (`lifecycle`, `aggregations`, `calculations`, `quality`,
+`dedup`, `survivorship`, `merge`) returns errors, the response MUST carry one `warnings` entry per
+discarded annotation, naming the family, the schema slug and the error messages. Whether the save
+succeeds MUST NOT change: a failing advisory annotation still does not abort it.
 
 #### Scenario: A discarded aggregations annotation appears in the save response warnings
 - **GIVEN** a schema is saved with an `x-openregister-aggregations` block that fails validation

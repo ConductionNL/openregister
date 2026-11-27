@@ -8,15 +8,16 @@
  * @license EUPL-1.2
  */
 
-import { translatePlural as n, translate as t } from '@nextcloud/l10n'
-import { createApp, defineAsyncComponent, h, reactive } from 'vue'
+import { translate as t } from '@nextcloud/l10n'
 import { registerAttachAction } from './files/attachAction.js'
 
 /**
  * The integration registry bootstrap and the library translations, loaded once,
  * the first time a tab renders. This entry runs on every page with a Files
  * sidebar (Files, and every app page that embeds it), so none of the tabs'
- * code (several megabytes) is fetched until a tab is opened.
+ * code (several megabytes) is fetched until a tab is opened. The entry is built
+ * self-contained (webpack.config.js), so it does not pull OpenRegister's vendor
+ * chunk onto the page either: Vue itself comes with the tab (tabApp.js).
  *
  * @type {Promise<void>|null}
  */
@@ -40,12 +41,38 @@ function prepare() {
 	return prepared
 }
 
-const RegisterObjectsTab = defineAsyncComponent(() => prepare()
-	.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/RegisterObjectsTab.vue')))
-const ExtractionTab = defineAsyncComponent(() => prepare()
-	.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/ExtractionTab.vue')))
-const MailThreadTab = defineAsyncComponent(() => prepare()
-	.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/MailThreadTab.vue')))
+/**
+ * The register objects tab's component, with the shared setup run first.
+ *
+ * @return {Promise<object>}
+ */
+function RegisterObjectsTab() {
+	return prepare()
+		.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/RegisterObjectsTab.vue'))
+		.then((module) => module.default)
+}
+
+/**
+ * The extraction tab's component, with the shared setup run first.
+ *
+ * @return {Promise<object>}
+ */
+function ExtractionTab() {
+	return prepare()
+		.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/ExtractionTab.vue'))
+		.then((module) => module.default)
+}
+
+/**
+ * The conversation tab's component, with the shared setup run first.
+ *
+ * @return {Promise<object>}
+ */
+function MailThreadTab() {
+	return prepare()
+		.then(() => import(/* webpackChunkName: "files-sidebar-app" */ './components/files-sidebar/MailThreadTab.vue'))
+		.then((module) => module.default)
+}
 
 // The Files action "Add to object" (files-leaf-save-to-object). Registered at
 // load, before Files renders its file list, as Files expects of an action.
@@ -68,46 +95,34 @@ const emailMultipleOutlineIcon =
  * A Files sidebar tab that renders a Vue component for the file shown.
  *
  * The app and its props are kept on the sidebar's element, under
- * `_<slot>App` and `_<slot>Props`.
+ * `_<slot>App` and `_<slot>Props`. Vue and the component load on the first
+ * mount (tabApp.js); a destroy or a second mount before they arrive wins.
  *
- * @param {{id: string, name: string, icon: string, component: object, slot: string, enabled?: function(object): boolean}} tab The tab
+ * @param {{id: string, name: string, icon: string, component: function(): Promise<object>, slot: string, enabled?: function(object): boolean}} tab The tab
  * @return {object} The Files sidebar tab
  */
 function vueTab(tab) {
 	const appKey = `_${tab.slot}App`
 	const propsKey = `_${tab.slot}Props`
+	const turnKey = `_${tab.slot}Turn`
 	return new OCA.Files.Sidebar.Tab({
 		id: tab.id,
 		name: tab.name,
 		icon: tab.icon,
 
-		// Vue 3: `createApp(Component, rootProps).mount(el)` replaces
-		// `Vue.extend()` + `new View({ propsData }).$mount(el)`.
-		//
-		// The root props object is kept `reactive` and stashed on the element so
-		// `update()` can still push a new fileId into the live instance. Vue 2
-		// allowed `vm.fileId = …` directly on the instance; Vue 3 root props are
-		// read-only on the component, so the mutation has to happen on the
-		// reactive object the app was created with.
-		//
-		// ⚠️ `$mount(el)` REPLACED `el`; Vue 3's `mount(el)` renders INSIDE it.
-		// That is the correct behaviour here — the Files sidebar owns `el`.
-		mount(el, fileInfo) {
-			if (el[appKey]) {
-				el[appKey].unmount()
-			}
-
-			el[propsKey] = reactive({ fileId: fileInfo.id })
-			// Rendered through a root render function: `createApp(Comp, props)`
-			// copies a reactive props object, so `update()` would never reach it.
-			el[appKey] = createApp({
-				render: () => h(tab.component, el[propsKey]),
+		// ⚠️ Vue 3's `mount(el)` renders INSIDE `el`; the Files sidebar owns `el`.
+		async mount(el, fileInfo) {
+			const turn = (el[turnKey] || 0) + 1
+			el[turnKey] = turn
+			el[propsKey] = { fileId: fileInfo.id }
+			const { mountTabApp } = await import(/* webpackChunkName: "files-sidebar-app" */ './files-sidebar/tabApp.js')
+			await mountTabApp({
+				el,
+				appKey,
+				propsKey,
+				load: tab.component,
+				isCurrent: () => el[turnKey] === turn,
 			})
-			// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
-			// reached every instance on the page. Vue 3's `app.mixin()` is
-			// per-app — each entry bundle must install `t`/`n` itself.
-			el[appKey].mixin({ methods: { t, n } })
-			el[appKey].mount(el)
 		},
 
 		async update(el, fileInfo) {
@@ -117,11 +132,12 @@ function vueTab(tab) {
 		},
 
 		destroy(el) {
+			el[turnKey] = (el[turnKey] || 0) + 1
 			if (el[appKey]) {
 				el[appKey].unmount()
-				el[appKey] = null
-				el[propsKey] = null
 			}
+			el[appKey] = null
+			el[propsKey] = null
 		},
 
 		enabled(fileInfo) {

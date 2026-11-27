@@ -1111,6 +1111,70 @@ class ObjectsControllerCoverageTest extends TestCase {
 	}
 
 	/**
+	 * A pair whose table exists is searched although the register's configuration does not list it.
+	 *
+	 * A register created through the API has no magic-mapping configuration, yet
+	 * its objects live in register+schema tables; the cross-table search used to
+	 * answer such a register with a 404.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function testIndexCrossTableSearchUsesAPairWhoseTableExists(): void {
+		$registerEntity = $this->createMagicMappedRegister(1, 'reg', []);
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturnCallback(function ($id) {
+			return $this->createSchemaMock((int) $id, 'schema'.$id);
+		});
+
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('existsTableForRegisterSchema')->willReturnCallback(
+			static fn ($register, $schema): bool => $schema->getId() === 2
+		);
+		$magicMapper->expects($this->once())->method('searchAcrossMultipleTables')->with(
+			$this->anything(),
+			$this->callback(static fn (array $pairs): bool => count($pairs) === 1 && $pairs[0]['schema']->getId() === 2)
+		)->willReturn([]);
+		$magicMapper->method('countAcrossMultipleTables')->willReturn(0);
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
+			return $magicMapper;
+		});
+
+		$this->objectService->method('buildSearchQuery')->willReturn([]);
+
+		$result = $this->controller->index('1', '2', $this->objectService);
+
+		$this->assertSame(200, $result->getStatus());
+	}
+
+	/**
+	 * A pair with neither a table nor magic mapping is still no pair.
+	 *
+	 * @spec openspec/specs/magic-table-reads/spec.md
+	 */
+	public function testIndexCrossTableSearchStillRefusesAPairWithoutATable(): void {
+		$registerEntity = $this->createMagicMappedRegister(1, 'reg', []);
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturnCallback(function ($id) {
+			return $this->createSchemaMock((int) $id, 'schema'.$id);
+		});
+
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('existsTableForRegisterSchema')->willReturn(false);
+		$magicMapper->expects($this->never())->method('searchAcrossMultipleTables');
+		$this->registerService(\OCA\OpenRegister\Db\MagicMapperInterface::class, function () use ($magicMapper) {
+			return $magicMapper;
+		});
+
+		$result = $this->controller->index('1', '2', $this->objectService);
+
+		$this->assertSame(404, $result->getStatus());
+	}
+
+	/**
 	 * An oversized limit reports the bound, so paging by the reported limit misses no row.
 	 */
 	public function testIndexCrossTableSearchReportsTheBoundedLimit(): void {

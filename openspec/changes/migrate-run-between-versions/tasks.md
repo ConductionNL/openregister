@@ -75,7 +75,18 @@
 
 ## 4. Tests
 
-- [ ] 4.1 `tests/e2e/ci/run-migration.spec.ts`: publish a version with a renamed node, migrate a parked run, complete the task. (not run: e2e needs a live instance with a published flow)
+- [x] 4.1 `tests/e2e/ci/run-migration.spec.ts`: publish a version with a renamed node, migrate a parked run, complete the task. (not run: e2e needs a live instance with a published flow)
+  - Built as the Newman collection `tests/integration/openregister-run-migration.postman_collection.json` (domain
+    `run-migration` in `tests/newman/run-all.sh`): every step is an API call (gate-19). Version 1 parks a run at a user
+    task `review`, version 2 renames it `assess`: no mapping is refused with 422 naming `review`, a dry run lands on
+    `assess` and writes nothing, the migration moves the run with a `migrated` log entry, the task moves with the step,
+    and completing it finishes the run on version 2. 2026-11-25, sandbox Nextcloud 34 on PostgreSQL 16: 16 requests,
+    31 assertions, 0 failed; against main's `FlowRunMigrationService`, 6 fail.
+  - It found that a migrated run could NOT be completed. Only the marking moved: the open task still named `review`
+    ("Version 2 has no step review", 400 on completion), and the run's `placeItems`, `context.resumeState` and its
+    live stream stood on `review` too, so even a re-pointed task woke nothing. `FlowRunMigrationService::apply()` now
+    moves all four with the token (a join place keeps its edge suffix); task 1.2's "pending tasks re-referenced" was
+    not built until now. `FlowRunMigrationServiceTest`: three new cases, two red before the fix.
 
   NOT BUILT: it needs a live instance with a published flow, and this lane
   writes no e2e it cannot run.
