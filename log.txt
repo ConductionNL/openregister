@@ -5420,3 +5420,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T09:56:11Z integrator-20261127T080455-44feeeb6 MERGED-TREE 4c746fdc36: 4 PRs, main now 43712f6170 = tested tree
 2026-11-27T09:59:34Z session-20261127T075733-f6501a17 perf-2 run ends (~3h): merged launchpad#2190 (Workspace 8 -> 3 requests, usable within noise); openregister #11372 ready (global script 552 -> 215 KB, Dashboard LCP -30..-70 ms); #11369 refreshed with main (#11291 merged 09:44Z); decisions queued: drop recommendations/weather_status/related_resources (Dashboard -160..-270 ms), OR /api/v1 route duplicates (~3 ms/request)
+2026-11-27T10:03:52Z precheck-20261127T093644-0f5ab767 GREEN tree 9510d80043 on dev 57937da5f4 prs 1 front=skip: Tests: 67758, Assertions: 241340, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
