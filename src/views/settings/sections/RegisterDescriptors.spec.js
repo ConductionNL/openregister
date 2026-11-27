@@ -39,6 +39,12 @@ jest.mock('../../../components/shared/SettingsSection.vue', () => {
 		},
 	}
 })
+// @conduction/nextcloud-vue imports each Nc* from its @nextcloud/vue
+// subpath; hand those the same stand-ins as the @nextcloud/vue mock below.
+jest.mock('@nextcloud/vue/components/NcButton', () => ({ __esModule: true, default: jest.requireMock('@nextcloud/vue').NcButton }))
+jest.mock('@nextcloud/vue/components/NcDialog', () => ({ __esModule: true, default: jest.requireMock('@nextcloud/vue').NcDialog }))
+jest.mock('@nextcloud/vue/components/NcLoadingIcon', () => ({ __esModule: true, default: jest.requireMock('@nextcloud/vue').NcLoadingIcon }))
+jest.mock('@nextcloud/vue/components/NcNoteCard', () => ({ __esModule: true, default: jest.requireMock('@nextcloud/vue').NcNoteCard }))
 jest.mock('@nextcloud/vue', () => {
 	const { h } = jest.requireActual('vue')
 	const stubs = {}

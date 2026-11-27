@@ -5240,3 +5240,5 @@ Service/Exchange/ExportKeyDirectory.php,,Service,,,,,Configuration
 Kernel/Contracts/ActiveOrganisationReaderInterface.php,,Kernel,,,,,Kernel
 Service/ActiveOrganisationReader.php,,Service,,,,,Core
 Repair/PrepareAuditSealing.php,,Repair,,,,,Compliance
+Controller/Support/SetupStatusReader.php,,Controller,,,,,Core
+Controller/Support/ShellBootReads.php,,Controller,,,,,Core
