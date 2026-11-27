@@ -439,6 +439,15 @@ interface SchemaInterface extends JsonSerializable {
 	public function getObjectSource(): ?array;
 
 	/**
+	 * The schema's preview URL template, when it declares one.
+	 *
+	 * @return string|null The template, or null when the schema declares none.
+	 *
+	 * @spec openspec/changes/records-draft-versions/specs/content-versioning/spec.md#requirement-a-draft-can-be-previewed-on-an-outside-site-through-an-expiring-link
+	 */
+	public function getPreviewUrl(): ?string;
+
+	/**
 	 * Get the lens declarations from the schema configuration.
 	 *
 	 * A lens is a property that shows a referenced record's own field, live: it

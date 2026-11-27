@@ -32,7 +32,13 @@ use OCA\OpenRegister\Db\RegisterMapperInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapperInterface;
 use OCA\OpenRegister\Kernel\Contracts\ObjectOperationsInterface;
+use OCA\OpenRegister\Exception\DraftConflictException;
+use OCA\OpenRegister\Exception\HookStoppedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\DraftPromoter;
 use OCA\OpenRegister\Service\Object\DraftService;
+use OCA\OpenRegister\Service\Sharing\AccessLinkServiceInterface;
+use OCA\OpenRegister\Service\Sharing\LinkMintRequest;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -60,6 +66,12 @@ class VersionsControllerTest extends TestCase {
 
 	private DraftService&MockObject $drafts;
 
+	private DraftPromoter&MockObject $promoter;
+
+	private AccessLinkServiceInterface&MockObject $links;
+
+	private Schema $schema;
+
 	private ObjectEntity $object;
 
 	/**
@@ -77,7 +89,8 @@ class VersionsControllerTest extends TestCase {
 		$registers = $this->createMock(RegisterMapperInterface::class);
 		$registers->method('find')->willReturn(new Register());
 		$schemas = $this->createMock(SchemaMapperInterface::class);
-		$schemas->method('find')->willReturn(new Schema());
+		$this->schema = new Schema();
+		$schemas->method('find')->willReturn($this->schema);
 		$this->object = new ObjectEntity();
 		$this->object->setUuid('melding-1');
 		$this->object->setObject(['titel' => 'Kapotte lamp', 'status' => 'open']);
@@ -92,8 +105,10 @@ class VersionsControllerTest extends TestCase {
 
 		$session->method('getUser')->willReturn($user);
 		$this->drafts = $this->createMock(DraftService::class);
+		$this->promoter = $this->createMock(DraftPromoter::class);
+		$this->links = $this->createMock(AccessLinkServiceInterface::class);
 
-		return new VersionsController($request, $registers, $schemas, $objects, $this->drafts, $session);
+		return new VersionsController($request, $registers, $schemas, $objects, $this->drafts, $session, $this->promoter, $this->links);
 	}//end controller()
 
 	/**
@@ -111,6 +126,7 @@ class VersionsControllerTest extends TestCase {
 		$draft->setBaseVersion('3');
 		$draft->setCreated(new DateTime('2026-11-13T10:00:00+00:00'));
 		$draft->setUpdated(new DateTime('2026-11-13T11:00:00+00:00'));
+		$draft->setDelta(['status' => 'in_behandeling', 'title' => 'Nieuw']);
 		return $draft;
 	}//end draft()
 
@@ -133,7 +149,7 @@ class VersionsControllerTest extends TestCase {
 	}//end testSignInAndReadAccessComeFirst()
 
 	/**
-	 * The list holds the drafts DraftService says the caller may see, without their deltas.
+	 * The list holds the drafts DraftService says the caller may see, with the names of the fields they change but not their values.
 	 *
 	 * @return void
 	 */
@@ -146,7 +162,7 @@ class VersionsControllerTest extends TestCase {
 		$response = $controller->index('r', 's', 'melding-1');
 
 		$this->assertSame(
-			['results' => [['key' => 'update-1', 'name' => 'Update 1', 'createdBy' => 'medewerker-1', 'baseVersion' => '3', 'created' => '2026-11-13T10:00:00+00:00', 'updated' => '2026-11-13T11:00:00+00:00']]],
+			['results' => [['key' => 'update-1', 'name' => 'Update 1', 'createdBy' => 'medewerker-1', 'baseVersion' => '3', 'created' => '2026-11-13T10:00:00+00:00', 'updated' => '2026-11-13T11:00:00+00:00', 'changedFields' => ['status', 'title']]]],
 			$response->getData()
 		);
 	}//end testIndexListsTheVisibleDrafts()
@@ -225,4 +241,100 @@ class VersionsControllerTest extends TestCase {
 		$this->assertSame('update-1', $controller->update('r', 's', 'melding-1', 'update-1')->getData()['key']);
 		$this->assertSame(204, $controller->destroy('r', 's', 'melding-1', 'update-1')->getStatus());
 	}//end testReadUpdateAndDiscardAVisibleDraft()
+
+	/**
+	 * Promoting answers the saved object, and passes `force` through as a boolean.
+	 *
+	 * @return void
+	 */
+	public function testPromoteAnswersTheSavedObject(): void {
+		$controller = $this->controller(['force' => 'true']);
+		$draft = self::draft('update-1');
+		$this->drafts->method('find')->willReturn($draft);
+		$saved = new ObjectEntity();
+		$saved->setUuid('melding-1');
+		$saved->setObject(['titel' => 'Kapotte lamp', 'status' => 'gesloten']);
+		$this->promoter->expects($this->once())->method('promote')
+			->with($draft, $this->object, $this->isInstanceOf(Schema::class), 'medewerker-1', true)
+			->willReturn($saved);
+
+		$response = $controller->promote('r', 's', 'melding-1', 'update-1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('gesloten', $response->getData()['status']);
+	}//end testPromoteAnswersTheSavedObject()
+
+	/**
+	 * A conflict is 409 with the fields; a refusal is 403; a hook refusal is 422; a hidden draft is 404 before promotion.
+	 *
+	 * @return void
+	 */
+	public function testPromoteRefusalsKeepTheirStatus(): void {
+		$controller = $this->controller();
+		$this->drafts->method('find')->willReturnOnConsecutiveCalls(self::draft('a'), self::draft('a'), self::draft('a'), null);
+		$conflicts = [['field' => 'status', 'draft' => 'gesloten', 'live' => 'in_behandeling']];
+		$this->promoter->expects($this->exactly(3))->method('promote')->willReturnOnConsecutiveCalls(
+			$this->throwException(new DraftConflictException(conflicts: $conflicts)),
+			$this->throwException(new NotAuthorizedException(message: 'Nee.')),
+			$this->throwException(new HookStoppedException(message: 'Gestopt.', errors: ['code' => 'other']))
+		);
+
+		$conflict = $controller->promote('r', 's', 'melding-1', 'a');
+		$this->assertSame(409, $conflict->getStatus());
+		$this->assertSame($conflicts, $conflict->getData()['conflicts']);
+		$this->assertSame(403, $controller->promote('r', 's', 'melding-1', 'a')->getStatus());
+		$this->assertSame(422, $controller->promote('r', 's', 'melding-1', 'a')->getStatus());
+		$this->assertSame(404, $controller->promote('r', 's', 'melding-1', 'a')->getStatus());
+	}//end testPromoteRefusalsKeepTheirStatus()
+
+	/**
+	 * A preview link is read-only over this draft, expires in 24 hours by default, and fills the schema's template.
+	 *
+	 * @return void
+	 */
+	public function testPreviewMintsAReadOnlyExpiringLinkAndFillsTheTemplate(): void {
+		$controller = $this->controller();
+		$this->schema->setConfiguration(['previewUrl' => 'https://www.voorbeeld.nl/preview/{uuid}?versie={version}&token={token}']);
+		$draft = self::draft('herziening');
+		$draft->setUuid('draft-uuid');
+		$this->drafts->method('find')->willReturn($draft);
+		$minted = null;
+		$this->links->expects($this->once())->method('mint')->willReturnCallback(
+			function (LinkMintRequest $request) use (&$minted): array {
+				$minted = $request;
+				return ['anchor' => 'Tok3n', 'subjectType' => $request->subjectType];
+			}
+		);
+
+		$response = $controller->preview('r', 's', 'melding-1', 'herziening');
+
+		$this->assertSame(201, $response->getStatus());
+		$this->assertSame('https://www.voorbeeld.nl/preview/melding-1?versie=herziening&token=Tok3n', $response->getData()['previewUrl']);
+		$this->assertSame('medewerker-1', $minted->minter);
+		$this->assertSame('object-draft', $minted->subjectType);
+		$this->assertSame('draft-uuid', $minted->subjectId);
+		$this->assertSame(['read'], $minted->terms->capabilities);
+		$hours = ((new DateTime($minted->terms->expiresAt))->getTimestamp() - time()) / 3600;
+		$this->assertEqualsWithDelta(24, $hours, 0.1);
+	}//end testPreviewMintsAReadOnlyExpiringLinkAndFillsTheTemplate()
+
+	/**
+	 * Without a template the preview URL is null; a refused expiry is 400; a hidden draft is 404 before any link.
+	 *
+	 * @return void
+	 */
+	public function testPreviewWithoutTemplateRefusalAndHiddenDraft(): void {
+		$controller = $this->controller(['expiresAt' => '2020-01-01']);
+		$this->drafts->method('find')->willReturnOnConsecutiveCalls(self::draft('a'), self::draft('a'), null);
+		$this->links->expects($this->exactly(2))->method('mint')->willReturnOnConsecutiveCalls(
+			['anchor' => 'x'],
+			$this->throwException(new InvalidArgumentException('An access link must expire in the future.'))
+		);
+
+		$this->assertNull($controller->preview('r', 's', 'melding-1', 'a')->getData()['previewUrl']);
+		$refused = $controller->preview('r', 's', 'melding-1', 'a');
+		$this->assertSame(400, $refused->getStatus());
+		$this->assertSame(['error' => 'An access link must expire in the future.'], $refused->getData());
+		$this->assertSame(404, $controller->preview('r', 's', 'melding-1', 'a')->getStatus());
+	}//end testPreviewWithoutTemplateRefusalAndHiddenDraft()
 }//end class

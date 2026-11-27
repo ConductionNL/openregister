@@ -311,7 +311,11 @@
 		"OCA\\OpenRegister\\Notifications\\Listener\\SystemEntityNotificationListener"
 	],
 	"OCA\\OpenRegister\\Event\\TaskSequenceCompletedEvent": [
-		"OCA\\OpenRegister\\Listener\\ApprovalChainAdvanceListener"
+		"OCA\\OpenRegister\\Listener\\ApprovalChainAdvanceListener",
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
+	],
+	"OCA\\OpenRegister\\Event\\TaskSequenceRejectedEvent": [
+		"OCA\\OpenRegister\\Listener\\ChangeGateListener"
 	],
 	"OCA\\OpenRegister\\Event\\TaskTerminalEvent": [
 		"OCA\\OpenRegister\\Listener\\UserTaskTerminalListener",
