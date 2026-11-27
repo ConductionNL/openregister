@@ -5444,3 +5444,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-27T10:36:14Z integrator-20261127T080455-44feeeb6 MERGED-TREE 4f47fb4d2b: 4 PRs, main now 2c5e019ef0 = tested tree
 2026-11-27T10:42:10Z session-20261127T094537-5369635a live-launchpad-2 run ends (~3.3 h, not idle). Merged launchpad #2207 (REVIEW 1 start page = LpVandaag, REQ-DWB-008) and #2214 (REVIEW 17 Own look fields). Released dashboard-switch-reads-early lease (task 4 done by #2203 meanwhile). Left for others: REVIEW 1 follow-up (last-active pref outranks the start page; needs REQ-TMPL-019 rework), REVIEW 9-16/19 unleased at end (item 9 not started: ~1 h left, too large to finish live).
+2026-11-27T10:43:45Z precheck-20261127T104259-11e3ee87 CONFLICT-DEV #11350 2000c278
