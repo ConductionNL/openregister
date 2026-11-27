@@ -5472,3 +5472,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T11:19:43Z session-20261127T091907-4acae667 done-thematiq: merged thematiq #2115 #2123 #2125 #2127 (pixel: header pills/dialog Cancel/reset colour, TqEmailDocumenten 8->4, TqLogboek 5->1, TqAiAssistent 5->3); compdiff total flags 153 -> 108 before #2123/#2125/#2127, zero-flag boards 4/28. NOTE: openspec/changes again holds apps-menu-walkthrough (19 open) and first-time-setup (27 open), added by Ruben 10:56-11:16Z: checks 1+5 reopened, builder work.
 2026-11-27T11:19:49Z integrator-20261127T080455-44feeeb6 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
+2026-11-27T11:20:26Z integrator-20261127T080455-44feeeb6 MERGED-TREE b531da23c5: 3 PRs, main now c2f01e11e5 = tested tree
