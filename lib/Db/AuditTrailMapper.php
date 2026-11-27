@@ -724,6 +724,11 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 				continue;
 			}
 
+			if ($field === 'created' && is_array($value) === true && array_is_list($value) === false) {
+				self::applyCreatedRange(qb: $qb, bounds: $value);
+				continue;
+			}
+
 			if (is_array($value) === true) {
 				$this->applyListFilter(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value));
 				continue;
@@ -732,6 +737,31 @@ class AuditTrailMapper extends QBMapper implements AuditTrailMapperInterface {
 			$qb->andWhere($this->scalarFilterExpression(qb: $qb, term: new AuditTrailFilterTerm(field: $field, value: $value)));
 		}
 	}//end applyFindFilters()
+
+	/**
+	 * Bound the creation time: `created` as `['gte' => ..., 'lte' => ..., 'lt' => ...]`,
+	 * each a `Y-m-d H:i:s` datetime. Any other operator is refused rather than
+	 * dropped, because a dropped bound answers the whole trail.
+	 *
+	 * @param IQueryBuilder         $qb     The query being built.
+	 * @param array<string, mixed>  $bounds The operators and their datetimes.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When an operator other than gte, lte or lt is given.
+	 *
+	 * @spec openspec/changes/audit-and-dashboard-screens-stated/specs/enhanced-audit-trail/spec.md#requirement-the-audit-trail-page-browses-filters-and-exports-entries-req-ads-001
+	 */
+	private static function applyCreatedRange(IQueryBuilder $qb, array $bounds): void {
+		$unknown = array_diff(array_keys($bounds), ['gte', 'lte', 'lt']);
+		if ($unknown !== []) {
+			throw new InvalidArgumentException('Unsupported audit trail filter operator for created: ' . implode(', ', $unknown));
+		}
+
+		foreach ($bounds as $operator => $datetime) {
+			$qb->andWhere($qb->expr()->$operator('created', $qb->createNamedParameter((string) $datetime, IQueryBuilder::PARAM_STR)));
+		}
+	}//end applyCreatedRange()
 
 	/**
 	 * The predicate for one scalar filter: a NULL check, an `action` prefix

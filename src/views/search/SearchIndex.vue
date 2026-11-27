@@ -11,6 +11,7 @@ import {
  */
 import { translate as t } from '@nextcloud/l10n'
 import { NcActionButton, NcActions, NcAppContent, NcButton } from '@nextcloud/vue'
+import { toRaw } from 'vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import DatabaseExport from 'vue-material-design-icons/DatabaseExport.vue'
@@ -235,6 +236,22 @@ export default {
 		selectedIdsForPage() {
 			const list = objectStore.selectedObjects
 			return Array.isArray(list) ? list.map(String) : []
+		},
+
+		/**
+		 * The searched register's id, as the string CnIndexPage takes.
+		 *
+		 * The index page's `register` is a string it puts into URLs. Handed the
+		 * register object, it asked for `/api/objects/[object Object]/...` on a
+		 * page opened by URL, and the list showed "An error occurred".
+		 *
+		 * @spec exclude UI plumbing — prop shape for the shared index page
+		 * @return {string}
+		 */
+		searchRegisterId() {
+			const register = objectStore.searchRegister
+			const id = register?.id ?? objectStore.searchParams?.register ?? ''
+			return id === null ? '' : String(id)
 		},
 
 		/**
@@ -536,13 +553,17 @@ export default {
 			this.mapArea = area
 			this.mapLoading = true
 			this.mapError = ''
+			// `this.mapArea` reads back as Vue's reactive proxy of `area`, never `area`
+			// itself, so the comparison is on the raw object. On the proxy it was
+			// always false and no answer was ever shown.
+			const stillDrawn = () => toRaw(this.mapArea) === area
 			try {
 				const results = await searchWithinArea(objectStore.searchParams, area, this.geoProperty)
-				if (this.mapArea === area) {
+				if (stillDrawn()) {
 					this.mapAreaObjects = results
 				}
 			} catch {
-				if (this.mapArea === area) {
+				if (stillDrawn()) {
 					this.mapAreaObjects = []
 					this.mapError = t('openregister', 'The area search failed.')
 				}
@@ -1004,7 +1025,7 @@ export default {
 			}"
 			:title="pageTitle"
 			:schema="normalizedSchema"
-			:register="objectStore.searchRegister"
+			:register="searchRegisterId"
 			:objects="normalizedObjects"
 			:store="objectStore"
 			:objectType="computedObjectType"

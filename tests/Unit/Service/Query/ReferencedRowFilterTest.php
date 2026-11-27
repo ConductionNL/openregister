@@ -179,7 +179,7 @@ class ReferencedRowFilterTest extends TestCase {
 		))->apply(target: new RelatedRowFilterTarget(qb: $qb, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]), query: $this->forwardQuery());
 
 		$this->assertSame(1, $applied);
-		$this->assertStringContainsString('rel0._uuid = t."subsidieaanvraag"', $sql[0]);
+		$this->assertStringContainsString('rel0._uuid = t.`subsidieaanvraag`', $sql[0]);
 		$this->assertStringContainsString("rel0._owner = 'alice'", $sql[0]);
 	}
 

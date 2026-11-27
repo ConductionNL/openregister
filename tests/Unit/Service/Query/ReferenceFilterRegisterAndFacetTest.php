@@ -278,8 +278,8 @@ class ReferenceFilterRegisterAndFacetTest extends TestCase {
 		$this->assertContains('scope 12 5', $log);
 		$this->assertContains('rbac rel0 read openregister_table_5_12', $log);
 		$this->assertContains(
-			'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_5_12 rel0 WHERE rel0._uuid = t."aanvrager" AND rel0._deleted IS NULL AND '
-			. "((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.\"woonplaats\" = :rel0_c0)",
+			'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_5_12 rel0 WHERE rel0._uuid = t.`aanvrager` AND rel0._deleted IS NULL AND '
+			. "((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.`woonplaats` = :rel0_c0)",
 			$log
 		);
 		$this->assertNotContains('scope 12 1', $log);
@@ -300,8 +300,8 @@ class ReferenceFilterRegisterAndFacetTest extends TestCase {
 
 		$this->assertContains('findRegister 5', $log);
 		$this->assertContains(
-			'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_5_12 rel0 WHERE JSON_CONTAINS(t."aanvrager", JSON_QUOTE(rel0._uuid))'
-			. " AND rel0._deleted IS NULL AND ((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.\"woonplaats\" = :rel0_c0)",
+			'createFunction EXISTS (SELECT 1 FROM *PREFIX*openregister_table_5_12 rel0 WHERE JSON_CONTAINS(t.`aanvrager`, JSON_QUOTE(rel0._uuid))'
+			. " AND rel0._deleted IS NULL AND ((rel0._owner = 'alice') AND rel0._organisation IN (:rel0_org0)) AND rel0.`woonplaats` = :rel0_c0)",
 			$log
 		);
 	}//end testAListReferenceIntoAnotherRegisterJoinsThroughTheListThere()
@@ -383,7 +383,7 @@ class ReferenceFilterRegisterAndFacetTest extends TestCase {
 			field: 'woonplaats'
 		);
 
-		$this->assertSame('rf0."woonplaats"', $expression);
+		$this->assertSame('rf0.`woonplaats`', $expression);
 		$this->assertSame(
 			[
 				'findBySlug person',
@@ -394,7 +394,7 @@ class ReferenceFilterRegisterAndFacetTest extends TestCase {
 				'scope 12 1',
 				'rbac rf0 read openregister_table_1_12',
 				'setParameter rf0_org0="org-a"',
-				'innerJoin t openregister_table_1_12 rf0 ON rf0._uuid = t."aanvrager" AND rf0._deleted IS NULL AND '
+				'innerJoin t openregister_table_1_12 rf0 ON rf0._uuid = t.`aanvrager` AND rf0._deleted IS NULL AND '
 				. "((rf0._owner = 'alice') AND rf0._organisation IN (:rf0_org0))",
 			],
 			$log
@@ -416,7 +416,7 @@ class ReferenceFilterRegisterAndFacetTest extends TestCase {
 		);
 
 		$this->assertSame(
-			'innerJoin t openregister_table_5_12 rf0 ON JSON_CONTAINS(t."aanvrager", JSON_QUOTE(rf0._uuid)) AND rf0._deleted IS NULL AND '
+			'innerJoin t openregister_table_5_12 rf0 ON JSON_CONTAINS(t.`aanvrager`, JSON_QUOTE(rf0._uuid)) AND rf0._deleted IS NULL AND '
 			. "((rf0._owner = 'alice') AND rf0._organisation IN (:rf0_org0))",
 			end($log)
 		);

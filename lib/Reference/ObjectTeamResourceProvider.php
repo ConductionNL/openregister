@@ -36,12 +36,17 @@ use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatterInterface;
 use OCP\IL10N;
 use OCP\Teams\ITeamResourceProvider;
 use OCP\Teams\TeamResource;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Lists, per team, the objects of opted-in schemas that the team owns.
  *
  * @spec openspec/changes/platform-team-resource-provider/specs/platform-team-resources/spec.md#requirement-a-teams-page-lists-the-objects-that-team-owns-req-ptr-001
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The 13th type is the container that defers the
+ *     object services to first use (Nextcloud builds every team resource provider on each page
+ *     render); each other type is the provider contract or a value it returns.
  */
 final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 
@@ -53,22 +58,80 @@ final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 	public const PAGE_LIMIT = 25;
 
 	/**
+	 * The object search and read, resolved on first use.
+	 *
+	 * @var ObjectOperationsInterface|null
+	 */
+	private ?ObjectOperationsInterface $objects = null;
+
+	/**
+	 * The schemas, resolved on first use.
+	 *
+	 * @var SchemaCatalogInterface|null
+	 */
+	private ?SchemaCatalogInterface $catalog = null;
+
+	/**
+	 * Name, icon and link of an object, resolved on first use.
+	 *
+	 * @var ObjectSearchResultFormatterInterface|null
+	 */
+	private ?ObjectSearchResultFormatterInterface $formatter = null;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectOperationsInterface            $objects   The object search and read, access applied.
-	 * @param SchemaCatalogInterface               $catalog   The schemas, for their declarations.
-	 * @param ObjectSearchResultFormatterInterface $formatter Name, icon and link of an object.
-	 * @param IL10N                                $l10n      Translations.
-	 * @param LoggerInterface                      $logger    Logger.
+	 * The object services come from the container on first use, not here:
+	 * Nextcloud builds every team resource provider on every page render
+	 * (the Teams capability reads each provider's id), and the object
+	 * search graph is the largest part of that work. Listing a team page
+	 * resolves them as before.
+	 *
+	 * @param ContainerInterface $container Resolves the object search, the schema catalogue and the result formatter.
+	 * @param IL10N              $l10n      Translations.
+	 * @param LoggerInterface    $logger    Logger.
+	 *
+	 * @spec openspec/changes/platform-team-resource-provider/specs/platform-team-resources/spec.md#requirement-a-teams-page-lists-the-objects-that-team-owns-req-ptr-001
 	 */
 	public function __construct(
-		private readonly ObjectOperationsInterface $objects,
-		private readonly SchemaCatalogInterface $catalog,
-		private readonly ObjectSearchResultFormatterInterface $formatter,
+		private readonly ContainerInterface $container,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
+
+	/**
+	 * The object search and read, access applied.
+	 *
+	 * @return ObjectOperationsInterface The object operations.
+	 *
+	 * @spec openspec/changes/platform-team-resource-provider/specs/platform-team-resources/spec.md#requirement-a-teams-page-lists-the-objects-that-team-owns-req-ptr-001
+	 */
+	private function objects(): ObjectOperationsInterface {
+		return $this->objects ??= $this->container->get(ObjectOperationsInterface::class);
+	}//end objects()
+
+	/**
+	 * The schemas, for their declarations.
+	 *
+	 * @return SchemaCatalogInterface The schema catalogue.
+	 *
+	 * @spec openspec/changes/platform-team-resource-provider/specs/platform-team-resources/spec.md#requirement-a-teams-page-lists-the-objects-that-team-owns-req-ptr-001
+	 */
+	private function catalog(): SchemaCatalogInterface {
+		return $this->catalog ??= $this->container->get(SchemaCatalogInterface::class);
+	}//end catalog()
+
+	/**
+	 * Name, icon and link of an object.
+	 *
+	 * @return ObjectSearchResultFormatterInterface The result formatter.
+	 *
+	 * @spec openspec/changes/platform-team-resource-provider/specs/platform-team-resources/spec.md#requirement-a-teams-page-lists-the-objects-that-team-owns-req-ptr-001
+	 */
+	private function formatter(): ObjectSearchResultFormatterInterface {
+		return $this->formatter ??= $this->container->get(ObjectSearchResultFormatterInterface::class);
+	}//end formatter()
 
 	/**
 	 * The provider id.
@@ -215,7 +278,7 @@ final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 	public function getTeamsForResource(string $resourceId): array {
 		try {
 			// Resolving team membership is a lookup, not a person opening the record: no audit read row.
-			$object = $this->objects->find(
+			$object = $this->objects()->find(
 				id: $resourceId,
 				options: new ObjectFindOptions(audit: false),
 				_rbac: true,
@@ -225,7 +288,7 @@ final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 				return [];
 			}
 
-			$declaration = TeamResourceDeclaration::of(schema: $this->catalog->schemas()->find(id: $object->getSchema()));
+			$declaration = TeamResourceDeclaration::of(schema: $this->catalog()->schemas()->find(id: $object->getSchema()));
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				'[ObjectTeamResourceProvider] Object {id} is not readable here, so it belongs to no team: {error}',
@@ -248,7 +311,7 @@ final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 	 */
 	private function declaredSchemas(): array {
 		try {
-			$schemas = $this->catalog->schemas()->findAll();
+			$schemas = $this->catalog()->schemas()->findAll();
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'[ObjectTeamResourceProvider] Failed to read the schemas, so no team resources are listed: {error}',
@@ -285,7 +348,7 @@ final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 			// The schema goes as a one-item list: a schema without its register
 			// resolves no single table, while a schema list is a multi-schema
 			// search that finds the owning register itself.
-			$page = $this->objects->searchObjectsPaginated(
+			$page = $this->objects()->searchObjectsPaginated(
 				query: [
 					'@self' => ['schema' => [$schemaId]],
 					$declaration->teamProperty => $teamId,
@@ -317,7 +380,7 @@ final class ObjectTeamResourceProvider implements ITeamResourceProvider {
 	 * @return TeamResource The resource.
 	 */
 	private function resource(mixed $row): TeamResource {
-		$entry = $this->formatter->format(result: $row, term: null)->jsonSerialize();
+		$entry = $this->formatter()->format(result: $row, term: null)->jsonSerialize();
 		$icon  = (string)($entry['thumbnailUrl'] ?? '');
 		if ($icon === '') {
 			$icon = null;

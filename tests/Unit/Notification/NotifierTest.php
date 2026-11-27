@@ -752,6 +752,24 @@ class NotifierTest extends TestCase {
 	}
 
 	/**
+	 * The holder of a lapsing token is told which token and when it stops.
+	 *
+	 * @spec openspec/changes/scoped-api-tokens/specs/auth-system/spec.md#requirement-a-token-carries-a-required-end-date-and-is-warned-before-it-lapses-req-sat-003
+	 */
+	public function testPrepareTokenGrantLapsing(): void {
+		$parsed = $this->renderSubject(
+			'token_grant_lapsing',
+			['token' => 'Zaaksysteem koppeling', 'endsAt' => '2026-11-29', 'daysLeft' => 14]
+		);
+
+		$this->assertSame('Your token "Zaaksysteem koppeling" ends in 14 days', $parsed[0]);
+		$this->assertSame(
+			'The token "Zaaksysteem koppeling" stops working on 2026-11-29. Renew it before then if the integration still needs it.',
+			$parsed[1]
+		);
+	}
+
+	/**
 	 * A falling count reads as falling, not as the same sentence with the numbers swapped.
 	 */
 	public function testPrepareViewAlertCrossedBelow(): void {

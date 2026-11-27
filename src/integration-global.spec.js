@@ -12,11 +12,11 @@ jest.mock('./integrations/bootstrap.js', () => ({
 	ensureIntegrationRegistry: () => mockOrder.push('registry'),
 }))
 jest.mock('./services/libraryTranslations.js', () => ({
-	loadLibraryTranslations: () => mockOrder.push('translations'),
+	loadLibraryTranslationsWhenIdle: () => mockOrder.push('translations'),
 }))
 
 describe('integration-global entry', () => {
-	it('registers the library translations, then the integration registry', () => {
+	it('schedules the library translations, then installs the integration registry', () => {
 		require('./integration-global.js')
 		expect(mockOrder).toEqual(['translations', 'registry'])
 	})

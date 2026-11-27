@@ -13,7 +13,8 @@
 
 ## 3. Proof and docs
 
-- [ ] 3.1 Add `tests/e2e/ci/field-names-per-language.spec.ts`: give a property Dutch and English names, read the schema with each language, and assert the title.
+- [x] 3.1 Add `tests/e2e/ci/field-names-per-language.spec.ts`: give a property Dutch and English names, read the schema with each language, and assert the title.
+      > 2026-11-25: 3 passed against a sandbox Nextcloud 34 on MariaDB: no language reads as stored with `titles`; `_lang=en`, `nl`, `nl-BE` (base fallback) and `Accept-Language: nl-NL` answer their name; `de` keeps the stored title; a `dutch language` key is refused with 422 naming property and key, and changes nothing.
 - [x] 3.2 Document `titles` in `docs/` beside the property modifiers.
 - [ ] 3.3 Open a nextcloud-vue issue to prefer `titles[<user language>]` in `fieldsFromSchema` and table headers; link it here.
 

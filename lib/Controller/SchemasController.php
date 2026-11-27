@@ -97,6 +97,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IRequest;
@@ -366,6 +367,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(): JSONResponse {
 		// Get request parameters for filtering and searching.
@@ -768,6 +770,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function show($id): JSONResponse {
 		try {
@@ -3356,6 +3359,7 @@ class SchemasController extends Controller implements EnvelopedDefinitionControl
 	 * @spec openspec/changes/cross-app-semantic-references/specs/semantic-schema-references/spec.md
 	 *   (Requirement: Resolution is null-safe across installed schemas)
 	 */
+	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function resolveByImplements(): JSONResponse {
 		$uri = (string)($this->request->getParam('uri', ''));

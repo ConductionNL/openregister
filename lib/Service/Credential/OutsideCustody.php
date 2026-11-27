@@ -26,6 +26,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\WriteCause;
+use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -41,6 +42,9 @@ use Throwable;
  * is returned to the broker and nowhere else: it is not stored, logged or
  * written back. A failure sets the credential's `lastError` to a fixed
  * sentence and raises CredentialUpstreamException naming the connection.
+ * A successful read stamps the credential's `lastReadAt`, at most once a
+ * minute, so the credential page can say when the vault was last read
+ * without a write on every brokered call.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The object store's value types, the reader and the two exceptions are the whole path.
  * @SuppressWarnings(PHPMD.StaticAccess) VaultReference::fromArray() is a pure constructor; WriteCause::asLookup() marks a read as such.
@@ -71,16 +75,25 @@ final class OutsideCustody {
 	public const READ_FAILED = 'The outside vault could not give the secret for this credential.';
 
 	/**
+	 * Seconds a `lastReadAt` stamp stays fresh: a read within it writes nothing.
+	 *
+	 * @var int
+	 */
+	public const READ_STAMP_INTERVAL = 60;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CredentialSources $sources The credential objects, the custody leaf and the provider catalogue.
 	 * @param OutsideVaultReader $reader Reads the referenced value from the vault.
 	 * @param LoggerInterface $logger Secret-free diagnostics.
+	 * @param ITimeFactory $clock The time a successful read is stamped with.
 	 */
 	public function __construct(
 		private readonly CredentialSources $sources,
 		private readonly OutsideVaultReader $reader,
 		private readonly LoggerInterface $logger,
+		private readonly ITimeFactory $clock,
 	) {
 	}//end __construct()
 
@@ -149,11 +162,14 @@ final class OutsideCustody {
 		}
 
 		try {
-			return $this->reader->read(connection: $this->vaultConnection(connection: $connection, reference: $reference), reference: $reference);
+			$secret = $this->reader->read(connection: $this->vaultConnection(connection: $connection, reference: $reference), reference: $reference);
 		} catch (CredentialUpstreamException $e) {
 			$this->recordFailure(credentialId: $credentialId);
 			throw new CredentialUpstreamException('The outside vault connection ' . $reference->connection . ' could not give the secret.');
 		}
+
+		$this->recordRead(credentialId: $credentialId);
+		return $secret;
 	}//end secretFor()
 
 	/**
@@ -275,6 +291,81 @@ final class OutsideCustody {
 			$this->logger->warning('[CredentialBroker] could not record the outside vault failure on ' . $credentialId);
 		}//end try
 	}//end recordFailure()
+
+	/**
+	 * Stamp `lastReadAt` after a successful read, unless a stamp of the last minute stands.
+	 *
+	 * A stale `lastError` this class left is cleared with it, because the vault
+	 * has just given the secret. Any other `lastError` (an OAuth refresh
+	 * failure, say) is not this class's to clear. A failed write is logged and
+	 * never fails the call: the secret was read, and the caller is owed it.
+	 *
+	 * @param string $credentialId The credential uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/credential-outside-vault-reference/specs/credential-broker/spec.md#requirement-a-credential-can-reference-a-secret-held-in-an-outside-vault
+	 */
+	private function recordRead(string $credentialId): void {
+		try {
+			$stored = $this->storedCredential(credentialId: $credentialId);
+			if ($stored === null) {
+				return;
+			}
+
+			$data = $stored->jsonSerialize();
+			unset($data['@self']);
+			$now = $this->clock->now();
+			if ($this->stampIsFresh(stamp: $data['lastReadAt'] ?? null, now: $now) === true
+				&& ($data['lastError'] ?? null) !== self::READ_FAILED
+			) {
+				return;
+			}
+
+			$data['lastReadAt'] = $now->format(DATE_ATOM);
+			if (($data['lastError'] ?? null) === self::READ_FAILED) {
+				unset($data['lastError']);
+			}
+
+			$this->sources->objectService->saveObject(
+				object: $data,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: CredentialBrokerService::REGISTER, schema: CredentialBrokerService::SCHEMA),
+					uuid: $stored->getUuid()
+				),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning('[CredentialBroker] could not record the outside vault read on ' . $credentialId);
+		}//end try
+	}//end recordRead()
+
+	/**
+	 * Whether a stored `lastReadAt` is younger than {@see READ_STAMP_INTERVAL}.
+	 *
+	 * An absent, unparsable or future stamp is not fresh, so it is rewritten.
+	 *
+	 * @param mixed $stamp The stored stamp.
+	 * @param \DateTimeImmutable $now The time of this read.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/credential-outside-vault-reference/specs/credential-broker/spec.md#requirement-a-credential-can-reference-a-secret-held-in-an-outside-vault
+	 */
+	private function stampIsFresh(mixed $stamp, \DateTimeImmutable $now): bool {
+		if (is_string($stamp) === false || trim($stamp) === '') {
+			return false;
+		}
+
+		try {
+			$age = $now->getTimestamp() - (new \DateTimeImmutable($stamp))->getTimestamp();
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		return $age >= 0 && $age < self::READ_STAMP_INTERVAL;
+	}//end stampIsFresh()
 
 	/**
 	 * A credential's scope: organisation, or personal for anything else.

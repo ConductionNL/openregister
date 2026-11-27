@@ -60,6 +60,8 @@ class DashboardServiceTest extends TestCase {
 
 	protected function setUp(): void {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
+		// The dashboard runs its statistics inside one pair-count window; the double just runs the work.
+		$this->objectMapper->method('rememberPairCounts')->willReturnCallback(static fn (callable $work): mixed => $work());
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->webhookLogMapper = $this->createMock(WebhookLogMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
@@ -492,6 +494,33 @@ class DashboardServiceTest extends TestCase {
 		$this->assertSame('orphaned', $result[$lastIndex]['id']);
 		$this->assertSame('Orphaned Items', $result[$lastIndex]['title']);
 	}
+
+	/**
+	 * One dashboard answer reads the instance-wide webhook log total once and runs inside one
+	 * pair-count window; the next answer reads it again.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function testOneAnswerReadsTheWebhookTotalOnceInOneCountWindow(): void {
+		$this->registerMapper->method('findAll')->willReturn(
+			[$this->createRegisterEntity(1, 'One'), $this->createRegisterEntity(2, 'Two')]
+		);
+		$this->registerMapper->method('getSchemasByRegisterId')->willReturn(
+			[$this->createSchemaEntity(10, 'Ten'), $this->createSchemaEntity(11, 'Eleven')]
+		);
+		$this->objectMapper->method('getStatistics')->willReturn($this->defaultObjectStats());
+		$this->auditTrailMapper->method('statisticsTotals')->willReturn($this->defaultLogStats());
+		$this->webhookLogMapper->expects($this->exactly(2))->method('getStatistics')->willReturn($this->defaultWebhookStats());
+
+		$first  = $this->service->getRegistersWithSchemas();
+		$second = $this->service->getRegistersWithSchemas();
+
+		$this->assertSame(['total' => 2, 'size' => 0], $first[0]['stats']['webhookLogs']);
+		$this->assertSame(['total' => 2, 'size' => 0], $first[2]['schemas'][1]['stats']['webhookLogs']);
+		$this->assertSame($first, $second);
+	}//end testOneAnswerReadsTheWebhookTotalOnceInOneCountWindow()
 
 	/**
 	 * A register whose schemas cannot be loaded (e.g. the cross-app

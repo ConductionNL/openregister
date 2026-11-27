@@ -538,3 +538,86 @@ describe('names per language (modelling-field-names-per-language, task 2.2)', ()
 		expect(vm.properties.titles).toEqual({ nl: 'Einddatum' })
 	})
 })
+
+describe('validation messages (modelling-validation-messages, task 3.2)', () => {
+	it('offers the keywords the server accepts', () => {
+		expect(form({}).messageKeywords).toEqual([
+			'required', 'type', 'enum', 'const', 'pattern', 'format', 'minimum', 'maximum',
+			'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf', 'minLength', 'maxLength',
+			'minItems', 'maxItems', 'uniqueItems',
+		])
+	})
+
+	it('loads a language map and a single string into rows', () => {
+		const vm = form({})
+		vm.hydrateMessageRows({
+			pattern: { nl: 'Vul een postcode in zoals 1234 AB.', en: 'Enter a postcode like 1234 AB.' },
+			required: 'Postcode is verplicht.',
+		})
+		expect(vm.messageRows).toEqual([
+			{ keyword: 'pattern', language: 'nl', message: 'Vul een postcode in zoals 1234 AB.' },
+			{ keyword: 'pattern', language: 'en', message: 'Enter a postcode like 1234 AB.' },
+			{ keyword: 'required', language: '', message: 'Postcode is verplicht.' },
+		])
+
+		vm.hydrateMessageRows(undefined)
+		expect(vm.messageRows).toEqual([])
+		vm.hydrateMessageRows(['not', 'a', 'map'])
+		expect(vm.messageRows).toEqual([])
+	})
+
+	it('writes rows back as a language map per keyword, or a string without a language', () => {
+		const vm = form({})
+		vm.addMessageRow()
+		vm.addMessageRow()
+		vm.addMessageRow()
+		vm.addMessageRow()
+		Object.assign(vm.messageRows[0], { keyword: 'pattern', language: ' nl ', message: ' Vul een postcode in zoals 1234 AB. ' })
+		Object.assign(vm.messageRows[1], { keyword: 'pattern', language: 'en', message: 'Enter a postcode like 1234 AB.' })
+		Object.assign(vm.messageRows[2], { keyword: 'required', language: '', message: 'Postcode is verplicht.' })
+		Object.assign(vm.messageRows[3], { keyword: 'maxLength', language: 'nl', message: '   ' })
+
+		vm.applyMessageRows()
+
+		expect(vm.properties['x-error-messages']).toEqual({
+			pattern: { nl: 'Vul een postcode in zoals 1234 AB.', en: 'Enter a postcode like 1234 AB.' },
+			required: 'Postcode is verplicht.',
+		})
+	})
+
+	it('round-trips what it loaded', () => {
+		const stored = { pattern: { nl: 'Vul een postcode in.' }, minLength: 'Te kort.' }
+		const vm = form({})
+		vm.hydrateMessageRows(stored)
+		vm.applyMessageRows()
+		expect(vm.properties['x-error-messages']).toEqual(stored)
+	})
+
+	it('removes the key when every row is removed', () => {
+		const vm = form({ properties: { type: 'string', 'x-error-messages': { pattern: 'Oud bericht.' } } })
+		vm.hydrateMessageRows(vm.properties['x-error-messages'])
+		vm.removeMessageRow(0)
+		vm.applyMessageRows()
+		expect(vm.properties).not.toHaveProperty('x-error-messages')
+	})
+
+	it('adds a new row for a Dutch pattern message', () => {
+		const vm = form({})
+		vm.addMessageRow()
+		expect(vm.messageRows).toEqual([{ keyword: 'pattern', language: 'nl', message: '' }])
+	})
+
+	it('writes the messages into the property before it is saved', () => {
+		const vm = form({ propertyTitle: 'postcode', properties: { ...form({}).properties, type: 'string' } })
+		vm.hydrateMessageRows({ pattern: { nl: 'Vul een postcode in zoals 1234 AB.' } })
+		vm.applyMessageRows = jest.fn(methods.applyMessageRows.bind(vm))
+		schemaStore.schemaItem = { id: 1, properties: {} }
+		try {
+			vm.addSchemaProperty()
+		} catch {
+			// What the save does after the messages is not under test here.
+		}
+		expect(vm.applyMessageRows).toHaveBeenCalledTimes(1)
+		expect(vm.properties['x-error-messages']).toEqual({ pattern: { nl: 'Vul een postcode in zoals 1234 AB.' } })
+	})
+})

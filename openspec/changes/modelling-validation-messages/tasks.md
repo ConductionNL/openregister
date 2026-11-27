@@ -17,7 +17,8 @@
 ## 3. Interface and docs
 
 - [ ] 3.1 nextcloud-vue schema-driven form shows the returned message under the field. Verify: component test in nextcloud-vue.
-- [ ] 3.2 Open Register's property editor offers a message per keyword and language. Verify: `tests/e2e/schema-validation-messages.spec.ts` writes a Dutch message, creates a bad object, and sees the message.
+- [x] 3.2 Open Register's property editor offers a message per keyword and language. Verify: `tests/e2e/schema-validation-messages.spec.ts` writes a Dutch message, creates a bad object, and sees the message.
+  - Done (26 Nov): `EditSchemaProperty.vue` has a "Validation messages" section that edits `x-error-messages`: one row per keyword and language, and a row without a language is stored as a single string. The spec lives at `tests/e2e/ci/schema-validation-messages.spec.ts`, the directory CI runs. 3 passed against a sandbox Nextcloud 34.0.6 + OpenRegister main on MariaDB: the form stores `{pattern: {nl: ...}}`, a Dutch client saving `ABCD` reads the declared message with keyword `pattern`, and a property without a message keeps the generated one. The two new strings are translated in all 36 locales.
 - [x] 3.3 `docs/` section on custom validation messages with the postcode example.
 
 Acceptance:
