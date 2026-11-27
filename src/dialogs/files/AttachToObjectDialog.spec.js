@@ -29,6 +29,11 @@ jest.mock('@nextcloud/vue', () => ({
 	NcTextField: {},
 }))
 
+const mockLoadDeclared = jest.fn()
+jest.mock('../../services/attachTargets.js', () => ({
+	loadDeclaredAttachTargets: (...args) => mockLoadDeclared(...args),
+}))
+
 const AttachToObjectDialog = require('./AttachToObjectDialog.vue').default
 
 /**
@@ -41,7 +46,9 @@ function instance(props = {}) {
 	const ctx = {
 		...AttachToObjectDialog.data(),
 		nodeId: 42,
+		chat: null,
 		targets: null,
+		app: null,
 		...props,
 		$emit: jest.fn(),
 	}
@@ -129,5 +136,63 @@ describe('attach', () => {
 
 		expect(vm.$emit).not.toHaveBeenCalled()
 		expect(vm.error).toBe('You may not add files to this object.')
+	})
+})
+
+describe('a consuming app\'s declaration', () => {
+	it('narrows the search to the schemas the app\'s manifest declares, read once', async () => {
+		mockLoadDeclared.mockResolvedValue(['case'])
+		mockGet.mockResolvedValue({ data: { targets: [], results: [] } })
+		const vm = instance({ app: 'dossiq' })
+		vm.search = 'x'
+
+		await vm.find()
+		await vm.find()
+
+		expect(mockLoadDeclared).toHaveBeenCalledTimes(1)
+		expect(mockLoadDeclared).toHaveBeenCalledWith('dossiq')
+		expect(mockGet.mock.calls[1][1]).toEqual({ params: { search: 'x', targets: 'case' } })
+	})
+
+	it('searches the whole offer when the app declares nothing', async () => {
+		mockLoadDeclared.mockResolvedValue(null)
+		mockGet.mockResolvedValue({ data: { targets: [], results: [] } })
+		const vm = instance({ app: 'dossiq' })
+		vm.search = 'x'
+
+		await vm.find()
+
+		expect(mockGet.mock.calls[0][1]).toEqual({ params: { search: 'x' } })
+	})
+
+	it('lets passed targets win over the manifest', async () => {
+		mockGet.mockResolvedValue({ data: { targets: [], results: [] } })
+		const vm = instance({ app: 'dossiq', targets: ['permit'] })
+		vm.search = 'x'
+
+		await vm.find()
+
+		expect(mockLoadDeclared).not.toHaveBeenCalled()
+		expect(mockGet.mock.calls[0][1]).toEqual({ params: { search: 'x', targets: 'permit' } })
+	})
+})
+
+describe('saving a chat', () => {
+	const pick = { objectUuid: 'u-1', title: 'Case 12', schema: 'case', register: 'cases' }
+	const chat = { conversation: 'Intake', messages: [{ timestamp: 1, actorDisplayName: 'Anna', message: 'Hi' }] }
+
+	it('posts the conversation to the chat route and closes with the transcript file', async () => {
+		mockPost.mockResolvedValue({ data: { id: 7, title: 'Intake.txt' } })
+		const vm = instance({ nodeId: null, chat })
+
+		await vm.attach(pick)
+
+		expect(mockPost).toHaveBeenCalledWith('/apps/openregister/api/objects/cases/case/u-1/files/chat', chat)
+		expect(vm.$emit).toHaveBeenCalledWith('close', { object: pick, attached: [{ id: 7, title: 'Intake.txt' }], skipped: 0 })
+	})
+
+	it('is titled for the chat it saves', () => {
+		expect(AttachToObjectDialog.computed.dialogName.call({ chat })).toBe('Save chat to object')
+		expect(AttachToObjectDialog.computed.dialogName.call({ chat: null })).toBe('Add to object')
 	})
 })
