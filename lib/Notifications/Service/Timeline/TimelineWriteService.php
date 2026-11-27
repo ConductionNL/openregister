@@ -120,10 +120,17 @@ class TimelineWriteService {
 	 * @return array<int, TimelineEntry> The entries, each naming the others.
 	 *
 	 * @throws TimelineValidationException When the kind, a field or the named text block does not fit.
+	 * @throws \OCA\OpenRegister\Exception\EntriesClosedException When any of the objects is closed to new entries.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
 	 */
 	public function writeToMany(array $objects, array $data): array {
+		// Every object first: one closed to new entries refuses the whole write, never the rest of it.
+		foreach ($objects as $object) {
+			$this->entries->assertAcceptsEntries(object: $object);
+		}
+
 		$written = [];
 		foreach ($objects as $object) {
 			$written[] = $this->write(object: $object, data: $data);

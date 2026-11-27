@@ -41,6 +41,7 @@ use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
+use OCA\OpenRegister\Kernel\Contracts\EntryClosureCheckInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 
 /**
@@ -72,6 +73,7 @@ class TimelineEntryService {
 	 * @param TimelineVisibilityService $visibility  Normalises the flag and decides who may set it.
 	 * @param IUserSession              $userSession The caller.
 	 * @param LoggerInterface           $logger      Logger for the fail-open paths.
+	 * @param EntryClosureCheckInterface|null $closures Refuses an entry on an object closed to new entries; none is refused without it.
 	 *
 	 * @return void
 	 */
@@ -80,6 +82,7 @@ class TimelineEntryService {
 		private readonly TimelineVisibilityService $visibility,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ?EntryClosureCheckInterface $closures = null,
 	) {
 	}//end __construct()
 
@@ -98,10 +101,15 @@ class TimelineEntryService {
 	 * @return TimelineEntry The stored record.
 	 *
 	 * @throws TimelineValidationException When the kind is undeclared or a field does not fit.
+	 * @throws \OCA\OpenRegister\Exception\EntriesClosedException When the object is closed to new entries.
 	 *
 	 * @spec openspec/changes/timeline-entries-are-records/specs/object-interactions/spec.md
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
 	 */
 	public function record(ObjectEntity $object, array $data): TimelineEntry {
+		// Before anything is validated or written: a closed record takes no new entry (REQ-OAS-006).
+		$this->assertAcceptsEntries(object: $object);
+
 		$kind = $this->stringOrNull(data: $data, key: 'kind');
 		$accepted = $this->records->kinds->validateFields(kindSlug: $kind, fields: $this->arrayOrEmpty(data: $data, key: 'fields'));
 
@@ -117,6 +125,21 @@ class TimelineEntryService {
 
 		return $this->records->entryMapper->insert($entry);
 	}//end record()
+
+	/**
+	 * Refuse when the object is closed to new entries; without a closure check every object accepts them.
+	 *
+	 * @param ObjectEntity $object The object an entry would hang on.
+	 *
+	 * @return void
+	 *
+	 * @throws \OCA\OpenRegister\Exception\EntriesClosedException When the object is closed to new entries.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-a-record-closes-to-new-entries-and-an-entry-can-be-withdrawn-or-locked-req-oas-006
+	 */
+	public function assertAcceptsEntries(ObjectEntity $object): void {
+		$this->closures?->assertOpen(objectUuid: (string)$object->getUuid());
+	}//end assertAcceptsEntries()
 
 	/**
 	 * A record with its identity, place and author, not yet stored.
