@@ -226,3 +226,4 @@
 2026-11-27T13:06:47Z GREEN prs=10260,11350 main=2d1be742bb integrator-cloud (merged; main now 4c5375eed4)
 2026-11-27T13:11:55Z RED prs=11346,11374 main=4c5375eed4 integrator-cloud (4 jest suites fail to run; suspect #11374 changes package.json/package-lock.json, rebuilt without it)
 2026-11-27T13:22:35Z GREEN prs=11346 main=4c5375eed4 integrator-cloud (merged; main now 63718e5e55)
+2026-11-27T13:35:47Z GREEN prs=11345,11351,11375 main=63718e5e55 integrator-cloud (merged; main now da567fd60e)
