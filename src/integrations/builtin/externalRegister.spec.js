@@ -43,6 +43,13 @@ describe('registerExternalRegisterIntegration', () => {
 		expect(loaded.default ?? loaded).toEqual(expect.objectContaining({ name: 'ExternalRegisterCard' }))
 	})
 
+	it('loads its own card only when the card first renders', async () => {
+		const descriptor = mod.externalRegisterDescriptor()
+		expect(descriptor.tab).toBe(descriptor.widget)
+		const loaded = await descriptor.tab.loader()
+		expect(loaded.name ?? loaded.default?.name).toBe('ExternalRegisterCard')
+	})
+
 	it('prefers the library card when it ships one', () => {
 		const card = { name: 'CnExternalRegisterCard' }
 		const descriptor = mod.externalRegisterDescriptor({ CnExternalRegisterCard: card })
