@@ -12,3 +12,8 @@ Added 27 Nov 2026 ~10:45 CET (Ruben, second review round, dashboard navigation).
 6. [ ] Favouriting: every dashboard row in the (expanded) list has a star. Empty star = not a favourite; clicking it fills the star yellow and adds the dashboard to the favourites short list; clicking again removes it. Favourites are stored per user. Keep 'Set as default' as a separate action.
 7. [ ] The 'Powered by sendent / Conduction' logos move from the sidebar into the footer of the More menu (bottom, under both columns).
 8. [ ] The Download button moves into the More menu (THIS DASHBOARD column); the header keeps only the More button.
+
+Added 27 Nov 2026 ~10:55 CET (Ruben, third review round, edit mode). The boards are updated FIRST by a Fable design agent (design-system PR for LpBewerken, LpWidgetKiezen, LpTegelToevoegen and the navigation boards of items 4-8); build to the updated boards once that PR is merged.
+9. [ ] A tile is a widget: drop the separate 'Add tiles' button from the edit bar; tiles are added through 'Add widget' (its 'Tiles and links' category). Where the tile flow had extra steps (LpTegelToevoegen), they live inside the Add widget dialog.
+10. [ ] Edit mode gets a real save: while editing, changes are kept as a draft and stored only when the user presses 'Save' (the button that was 'Done'); leaving edit mode with unsaved changes asks to save or discard; the 'Changes are saved immediately' hint goes. A cancel/discard path is offered.
+11. [ ] The Add widget dialog is wider, and each widget shows a small thumbnail: an atomic-design miniature of the widget, a scaled-down live rendering built from the widget's real components with sample data (not a static image), so the thumbnail always matches the widget.
