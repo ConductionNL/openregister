@@ -5403,3 +5403,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T09:15:27Z session-20261127T065653-a70e3fa0 done-thematiq: merged thematiq#2111 (prettier on the files of #2092/#2094/#2106; CI format check on development stays red for 18 older files, phpcs red on inherited admin.php lines)
 2026-11-27T09:15:36Z integrator-20261127T080455-44feeeb6 MERGED-TREE 31a2782da1: 3 PRs, main now e422f05fc3 = tested tree
 2026-11-27T09:20:01Z integrator-20261127T080455-44feeeb6 RED tree d4c8228c19 prs 1 front=red: Tests: 67858, Assertions: 241494, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Depreca; first failures: FAIL src/services/initial-data.golden.spec.js
+2026-11-27T09:25:11Z integrator-20261127T080455-44feeeb6 AUTOPARK openregister#11077 59018b38 sbom: package-lock.json changed without sbom.cdx.json (tree 1fa53ad839)
