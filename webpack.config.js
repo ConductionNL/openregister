@@ -160,6 +160,14 @@ const nonTsRules = webpackConfig.module.rules.filter(
 )
 webpackConfig.module.rules = [
 	...nonTsRules,
+	// The library's English catalogue, which the global script fetches on every
+	// page (src/services/libraryTranslations.js), without the ~2,950 strings that
+	// translate to themselves: ~165 KB -> ~5 KB per page. Plurals stay whole.
+	{
+		test: /[\\/]@conduction[\\/]nextcloud-vue[\\/]l10n[\\/]en\.json$/,
+		type: 'json',
+		use: [path.join(__dirname, 'scripts', 'lean-library-catalogue-loader.js')],
+	},
 	{
 		test: /\.(ts|tsx)$/,
 		exclude: /node_modules/,
