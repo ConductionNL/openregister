@@ -75,8 +75,15 @@ final class CapabilityRegistrar {
 		// platform integrations, with a block per claiming app (platform-capability).
 		$context->registerCapability(PlatformCapability::class);
 		// SearchScopesCapability — the scopes the unified search provider
-		// accepts for the current user (content-search-index D-2).
-		$context->registerCapability(SearchScopesCapability::class);
+		// accepts for the current user (content-search-index D-2). Registered
+		// through SearchScopesCapabilityOnDemand: Nextcloud constructs every
+		// capability on every page render, and this one (excluded from the page
+		// state) built the permission handler and the MagicMapper to do so.
+		$context->registerService(
+			SearchScopesCapabilityOnDemand::class,
+			static fn (ContainerInterface $container): SearchScopesCapabilityOnDemand => new SearchScopesCapabilityOnDemand(container: $container)
+		);
+		$context->registerCapability(SearchScopesCapabilityOnDemand::class);
 		// AuthorizationCapability — the access scope kinds the engine enforces
 		// (access-owner-and-condition-scopes).
 		$context->registerCapability(AuthorizationCapability::class);
