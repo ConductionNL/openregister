@@ -1,0 +1,11 @@
+# launchpad e2e, live-launchpad-1 27 Nov 17:15Z-, NC 34.0.6 tarball, MariaDB, Redis, APCu, php -S :8095, OR main
+# Tags: PR <n> | SANDBOX <why> | DRAFT (#2279 edit mode keeps a draft until Save; spec still waits for the immediate write)
+widgets-nc-widget.spec.ts:276            PR #2321 merged (setter traps register the native callback before the first-screen mount) 8/8
+# shard 1/8 on development e15509ca: 296 passed, 15 failed, 2 skipped, 13 did not run (29 min)
+admin-drawn-tabs.spec.ts:55              PR #2328 merged APP FIX: revealSection keeps the old address's section in view while the lazy tab loads (#2297/#2318 regression) 6/6
+admin-settings-api.spec.ts:183           PR #2329 merged (screenLinksAllowed from #2244 in LATER_KEYS) 13/13
+admin-templates-ui.spec.ts:542           DRAFT: waits for DELETE /api/widgets at once; delete now lands on Save
+allowed-websites-list.spec.ts:208        DRAFT: live tile Add, then API read finds no livetile (not saved)
+calendar-widget-config.spec.ts x9        DRAFT: placement read right after Add -> 0 placements
+app-catalogue.spec.ts:224                DRAFT/TILE: waits for POST /api/dashboard/{id}/tile; app-link-tile lease holder
+app-link-tile.spec.ts:74                 DRAFT/TILE: Files tick not disabled after Add (unsaved draft); app-link-tile lease holder
