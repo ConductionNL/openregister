@@ -238,3 +238,4 @@
 2026-11-27T16:47:42Z GREEN prs=11146 main=4be455ccbd integrator-cloud (merged; 11191 build-conflicted with it; main now 73be975b7e)
 2026-11-27T16:59:34Z GREEN prs=11349 main=73be975b7e integrator-cloud (merged; main now 73be975b7e)
 2026-11-27T16:59:41Z CORRECTION prs=11349 main=73be975b7e integrator-cloud (previous line wrong: merge exit 5, head moved during test, NOT merged; reselecting)
+2026-11-27T17:44:22Z RED prs=10156,11191,11349 main=73be975b7e integrator-cloud (jest initial-data.golden EditSource snapshot again; suspect 10156; 10526 build-conflicted)
