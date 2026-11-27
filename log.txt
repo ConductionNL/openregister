@@ -5488,3 +5488,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-27T12:10:55Z session-20261127T121049-a171c1b9 perf-1: lease held by perf-1-20261127T101923-0e490b1e until 13:40:37Z (renewed 12:10Z, active: merged dossiq#7028 12:10Z); this run ended without work
 2026-11-27T12:11:02Z precheck-20261127T093644-0f5ab767 CONFLICT-DEV #11035 bf9e6900
 2026-11-27T12:11:19Z precheck-20261127T093644-0f5ab767 CONFLICT-DEV #11345 f70d74c0
+2026-11-27T12:12:31Z integrator-20261127T115023-b15bb467 GREEN tree b23592575c on dev c2f01e11e5 prs 4 front=ok: Tests: 67962, Assertions: 242127, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
