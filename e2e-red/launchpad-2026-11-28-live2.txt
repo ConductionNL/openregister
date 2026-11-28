@@ -1,0 +1,5 @@
+# launchpad e2e, live-launchpad-2 run 28 Nov 09:40Z-, NC 34.0.6 tarball, MariaDB, Redis, APCu, php -S :8097, OR main
+# development 85b95ff (#2393): /apps/launchpad 500 (FirstPaintFill::fills indexed a {} content stdClass) -> already fixed by #2405; footer-customization-render-defects 23/23 on a34f4fe
+# shard 5/8 on development a34f4fe: 312 passed, 1 skipped, 4 failed (25.4 min, whole shard ran)
+integrations-page x4 (:178 :195 :203 :221)   SANDBOX: integriq not installed
+
