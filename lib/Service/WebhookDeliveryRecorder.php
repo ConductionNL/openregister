@@ -241,12 +241,30 @@ final class WebhookDeliveryRecorder {
 			$errorDetails = $this->responseErrorDetails(delivery: $delivery, exception: $exception);
 		}
 
-		$errorDetails['request_url'] = $delivery->webhook->getUrl();
+		$errorDetails['request_url'] = $this->requestUrl(delivery: $delivery);
 		$errorDetails['request_method'] = $delivery->webhook->getMethod();
 		$errorDetails['timeout'] = $delivery->webhook->getTimeout();
 
 		return $errorDetails;
 	}//end requestErrorDetails()
+
+	/**
+	 * The URL the request went to: the one on the log (a per-target delivery's own URL), else the webhook's.
+	 *
+	 * @param WebhookDeliveryAttempt $delivery The delivery
+	 *
+	 * @return string The URL.
+	 *
+	 * @spec openspec/changes/webhook-per-delivery-target/specs/webhook-payload-mapping/spec.md#requirement-a-per-target-webhook-delivers-to-the-url-each-delivery-names
+	 */
+	private function requestUrl(WebhookDeliveryAttempt $delivery): string {
+		$logged = $delivery->log->getUrl();
+		if ($logged !== '') {
+			return $logged;
+		}
+
+		return $delivery->webhook->getUrl();
+	}//end requestUrl()
 
 	/**
 	 * The error details of a request that got no response.
@@ -301,7 +319,7 @@ final class WebhookDeliveryRecorder {
 		try {
 			$responseBody = (string)$exception->getResponse()->getBody();
 			$delivery->log->setResponseBody($this->capResponseBody(body: $responseBody));
-			$preview = ($this->previewBody)($responseBody, $delivery->webhook->getUrl());
+			$preview = ($this->previewBody)($responseBody, $this->requestUrl(delivery: $delivery));
 			$delivery->log->setErrorMessage($exception->getMessage() . $this->responseErrorSuffix(body: $responseBody));
 
 			return $preview;

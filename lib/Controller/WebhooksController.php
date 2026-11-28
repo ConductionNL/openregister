@@ -1677,7 +1677,8 @@ class WebhooksController extends Controller {
 			new WebhookDelivery(
 				webhook: $webhook,
 				event: new WebhookEvent(name: $log->getEventClass(), payload: $payload['data'] ?? $payload),
-				attempt: $log->getAttempt() + 1
+				attempt: $log->getAttempt() + 1,
+				targetUrl: WebhookDelivery::retryTarget(webhook: $webhook, loggedUrl: $log->getUrl())
 			)
 		);
 		if ($success === true) {
