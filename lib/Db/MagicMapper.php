@@ -1870,11 +1870,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return int The number of matching rows across all tables.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
+	 * @spec openspec/changes/union-skips-empty-tables/specs/upgrade-performance/spec.md#requirement-a-plain-text-search-across-many-tables-leaves-out-the-tables-without-rows
 	 */
 	public function countAcrossMultipleTables(array $query, array $registerSchemaPairs): int {
 		if (count($registerSchemaPairs) > 1 && $this->shouldUseUnionQuery(query: $query) === true) {
 			$total = 0;
-			$this->primeTableCatalogueForPairs(registerSchemaPairs: $registerSchemaPairs);
+			// Only tables this request already knows to exist are probed (the search primed them).
 			$withRows = $this->pairsWithRows(query: $query, registerSchemaPairs: $registerSchemaPairs);
 			foreach (array_chunk($withRows, self::UNION_ARM_BATCH_SIZE) as $batch) {
 				$total += $this->countUnionBatch(query: $query, registerSchemaPairs: $batch);
@@ -2031,6 +2032,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array Array of ObjectEntity objects from all tables.
 	 *
 	 * @spec openspec/specs/unified-search-provider/spec.md
+	 * @spec openspec/changes/union-skips-empty-tables/specs/upgrade-performance/spec.md#requirement-a-plain-text-search-across-many-tables-leaves-out-the-tables-without-rows
 	 */
 	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
 		$this->primeTableCatalogueForPairs(registerSchemaPairs: $registerSchemaPairs);
