@@ -5,3 +5,7 @@
 #   - first-time-setup 'zuiddrecht: logo, colour and favicon' red at has_custom_favicon: sandbox ImageMagick without SVG delegate; after apt install libmagickcore-6.q16-7-extra the file is 7/7.
 # Newman: 85 requests, 181 assertions, 0 failed.
 # Result: no functional red on development 54f528a.
+# 15:35-16:30Z run c on development 6c334da (after #2250 #2252 #2255), sandbox moved to PostgreSQL 16 (sqlite cannot enable Calendar/Deck/Contacts/Mail next to OR: 'Unknown database type json'), Mail stable5.13 + local Dovecot inbox, Calendar stable6.7, Deck stable34, Contacts stable8.10, all from git.
+# 619 tests (one run, --global-timeout 0, 54 min): 614 passed, 2 failed (ADR-124 perf Theming + Files, php -S), 3 skipped. Newman 85 req / 181 assertions, 0 failed.
+# Fixed this run: #2250 workplace-live-look Calendar 'not answered yet' (attendee must be the user's own email), #2252 same-shell-every-page false skips (count() race), #2255 Mail New message 48 -> 34 px (bug in the #2179 move, found by the 6.3 A/B).
+# Result: no functional red on development 6c334da with Mail/Calendar/Deck/Contacts present.
