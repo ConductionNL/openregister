@@ -38,6 +38,19 @@ export function objectUsageGuard(isOpen) {
 		},
 
 		/**
+		 * Initialize when the dialog mounts open: the modal host mounts it
+		 * only while its navigation key is set, so no later update follows.
+		 *
+		 * @spec openspec/changes/modals-mount-on-open/specs/entity-management-modals/spec.md
+		 */
+		mounted() {
+			if (!this.isUpdated && isOpen()) {
+				this.isUpdated = true
+				this.initDialog()
+			}
+		},
+
+		/**
 		 * @spec exclude Vue lifecycle hook — initializes the dialog once when it opens.
 		 */
 		updated() {
