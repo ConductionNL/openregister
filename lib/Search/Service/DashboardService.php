@@ -283,6 +283,21 @@ class DashboardService {
 	}//end getRegistersWithSchemas()
 
 	/**
+	 * Run read-only dashboard work with each register/schema pair counted once.
+	 *
+	 * @param callable(): T $work Read-only work; it must not write objects.
+	 *
+	 * @return T What $work returns.
+	 *
+	 * @template T
+	 *
+	 * @spec openspec/changes/dashboard-chart-counts-once/specs/built-in-dashboards/spec.md
+	 */
+	public function countingPairsOnce(callable $work): mixed {
+		return $this->mappers->catalog->tables()->rememberPairCounts(work: $work);
+	}//end countingPairsOnce()
+
+	/**
 	 * The size recalculation of the dashboard.
 	 *
 	 * @return DashboardSizes

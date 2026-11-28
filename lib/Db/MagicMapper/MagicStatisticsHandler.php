@@ -604,6 +604,15 @@ class MagicStatisticsHandler {
 		$counted = [];
 		$pairs = $this->getAllRegisterSchemaPairs();
 		$this->preloadRegisters(pairs: $pairs);
+		try {
+			// The schemas of every pair in one query too (32 single reads on the
+			// bundled registers, ~15 ms); a schema it misses is read on its own,
+			// and a failed bulk read leaves every schema to its own read.
+			$this->catalog->schemas()->preloadUnfiltered(ids: array_values(array_unique(array_map('intval', array_column($pairs, 'schemaId')))));
+		} catch (Exception $e) {
+			$this->sql->logger->debug(message: '[MagicStatisticsHandler] Schema bulk read failed: '.$e->getMessage());
+		}
+
 		foreach ($pairs as $pair) {
 			$ids = [(int)$pair['registerId'], (int)$pair['schemaId']];
 			$entry = null;
@@ -630,9 +639,20 @@ class MagicStatisticsHandler {
 		try {
 			$register = $this->catalog->registers()->find($ids[0], _multitenancy: false, _rbac: false);
 			$schema = $this->catalog->schemas()->find($ids[1], _multitenancy: false, _rbac: false);
-			$count = $this->countObjectsInRegisterSchemaTable(register: $register, schema: $schema);
+			// Reused inside a rememberPairCounts() window: the objects-by-register
+			// and objects-by-schema charts count the same pairs, and read together
+			// (GET /api/dashboard/panels) each table was counted twice. Only a
+			// count that succeeded is kept, under its own key, so a pair whose
+			// count fails stays out of every chart (cachedPairCount() keeps such
+			// a pair as 0 for the totals).
+			$key   = 'chart:'.$ids[0].':'.$ids[1];
+			$count = ($this->pairCountMemo[$key] ?? $this->countObjectsInRegisterSchemaTable(register: $register, schema: $schema));
 		} catch (Exception $e) {
 			return null;
+		}
+
+		if ($this->pairCountMemo !== null) {
+			$this->pairCountMemo[$key] = $count;
 		}
 
 		return ['registerId' => $ids[0], 'schemaId' => $ids[1], 'register' => $register, 'schema' => $schema, 'count' => $count];
