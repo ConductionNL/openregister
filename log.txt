@@ -5782,3 +5782,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T18:22:12Z precheck-20261128T175558-08b79006 CONFLICT-DEV #11035 bf9e6900
 2026-11-28T18:22:30Z precheck-20261128T175558-08b79006 CONFLICT-DEV #11317 ade57c3e
 2026-11-28T18:22:50Z precheck-20261128T175558-08b79006 CONFLICT-DEV #11148 199b32a5
+2026-11-28T18:24:27Z session-20261128T182353-c4d5f88b cloud-or-reviewer-3: idle; lane 3 non-draft main PRs 10627 10635 11035 already APPROVE at current head (11035 noted obsolete by or-fix-5); no verdicts written
