@@ -2,7 +2,7 @@
 
 ## 1. Reads
 
-- [x] 1.1 `SearchDictionaryProvider` reads the scheme lookups and the concept lists through `searchObjects()` (rows only, no count), via one `pageOf()` helper.
+- [x] 1.1 `SearchDictionaryProvider` reads the scheme lookups and the concept lists through `searchObjects()` (rows only, no count), via one `pageOf()` helper (the concept list calls it directly, so the class complexity stays at main's 56).
 
 ## 2. Verification
 

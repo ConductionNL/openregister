@@ -352,7 +352,15 @@ class SearchDictionaryProvider {
 		}
 
 		$concepts = new RegisterSchemaRef(register: $registerId, schema: $conceptId);
-		return $this->rowsOf(result: $this->searchConcepts(table: $concepts, schemeUuid: $schemeUuid));
+		return $this->rowsOf(
+			result: $this->pageOf(
+				table: $concepts,
+				filters: [
+					'inScheme' => $schemeUuid,
+					'_limit' => self::CONCEPT_LIMIT,
+				]
+			)
+		);
 	}//end conceptsIn()
 
 	/**
@@ -426,24 +434,6 @@ class SearchDictionaryProvider {
 	}//end administeredScheme()
 
 	/**
-	 * Search the concept schema for the concepts in a scheme, unscoped and capped.
-	 *
-	 * @param RegisterSchemaRef $table      The vocabulary register and its concept schema.
-	 * @param string            $schemeUuid The scheme's uuid.
-	 *
-	 * @return array<string, mixed> The paginated search result.
-	 */
-	private function searchConcepts(RegisterSchemaRef $table, string $schemeUuid): array {
-		return $this->pageOf(
-			table: $table,
-			filters: [
-				'inScheme' => $schemeUuid,
-				'_limit' => self::CONCEPT_LIMIT,
-			]
-		);
-	}//end searchConcepts()
-
-	/**
 	 * One capped page of a vocabulary table, unscoped, WITHOUT a total.
 	 *
 	 * The dictionary reads rows only and never a total, so it reads through
@@ -471,11 +461,8 @@ class SearchDictionaryProvider {
 			_multitenancy: false
 		);
 
-		if (is_array($rows) === false) {
-			return ['results' => []];
-		}
-
-		return ['results' => $rows];
+		// An int answers only a `_count` query, which these reads never send.
+		return ['results' => (array)$rows];
 	}//end pageOf()
 
 	/**
