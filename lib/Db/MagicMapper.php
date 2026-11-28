@@ -57,6 +57,7 @@ use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
@@ -427,6 +428,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * and merged in PHP; see searchAcrossMultipleTablesWithUnion().
 	 */
 	private const UNION_ARM_BATCH_SIZE = 50;
+
+	/**
+	 * Tables per batched catalogue read (bounds the IN list).
+	 */
+	private const CATALOGUE_PRIME_CHUNK = 500;
 
 	/**
 	 * Cache for table existence to avoid repeated database queries
@@ -1999,6 +2005,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
+		$this->primeTableCatalogueForPairs(registerSchemaPairs: $registerSchemaPairs);
 		$batches = array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE);
 		// Which columns order as text is decided over every schema of the
 		// search, so each batch and the merge of the batches agree (REQ-CIO-001).
@@ -9137,6 +9144,136 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $fullTableNameLower;
 	}//end loadTableColumnCache()
+
+	/**
+	 * Read the catalogue of every table of the given register+schema pairs at once.
+	 *
+	 * @param array<int, array{register?: Register|null, schema?: Schema|null}> $registerSchemaPairs The pairs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-many-magic-tables-reads-their-catalogue-in-one-query
+	 */
+	private function primeTableCatalogueForPairs(array $registerSchemaPairs): void {
+		$tableNames = [];
+		foreach ($registerSchemaPairs as $pair) {
+			$register = ($pair['register'] ?? null);
+			$schema   = ($pair['schema'] ?? null);
+			if ($register instanceof Register && $schema instanceof Schema) {
+				$tableNames[] = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+			}
+		}
+
+		$this->primeTableCatalogue(tableNames: $tableNames);
+	}//end primeTableCatalogueForPairs()
+
+	/**
+	 * Fill the column caches and the table-exists memo of many tables with one catalogue query.
+	 *
+	 * A search across many magic tables asked information_schema twice per
+	 * table: once whether the table exists, once for its columns (64 queries
+	 * for 32 tables, ~10 ms of database time and the same again in PHP). A
+	 * table with columns exists, so one `information_schema.columns` read over
+	 * all of them answers both. Only what the read finds is recorded: a table
+	 * it does not return keeps the one-table path (probe, create when magic
+	 * mapping is on, then read its columns), so a missing table is never
+	 * cached as missing. Tables already in the caches are not read again. A
+	 * single table keeps the one-table query. SQLite has no information_schema.
+	 *
+	 * @param array<int, string> $tableNames Magic table names without the database prefix.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-many-magic-tables-reads-their-catalogue-in-one-query
+	 */
+	private function primeTableCatalogue(array $tableNames): void {
+		$wanted = $this->tablesMissingFromCatalogueCaches(tableNames: $tableNames);
+		if (count($wanted) < 2) {
+			return;
+		}
+
+		foreach (array_chunk($wanted, self::CATALOGUE_PRIME_CHUNK, true) as $chunk) {
+			try {
+				if ($this->db->getDatabasePlatform() instanceof SqlitePlatform) {
+					return;
+				}
+
+				$columns = $this->readCatalogueColumns(fullTableNames: array_keys($chunk));
+			} catch (\Throwable $e) {
+				// The one-table path still answers every question; it only costs more queries.
+				$this->logger->debug(
+					message: '[MagicMapper] Batched catalogue read failed, reading tables one by one',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+				);
+				return;
+			}
+
+			foreach ($columns as $fullTableNameLower => $tableColumns) {
+				if (isset($chunk[$fullTableNameLower]) === false) {
+					continue;
+				}
+
+				self::$columnExistsCache[$fullTableNameLower] = $tableColumns['names'];
+				self::$columnTypeCache[$fullTableNameLower]   = $tableColumns['types'];
+				$this->tableExistsMemo[$chunk[$fullTableNameLower]] = true;
+			}
+		}
+	}//end primeTableCatalogue()
+
+	/**
+	 * The tables whose columns or existence this request has not read yet.
+	 *
+	 * @param array<int, string> $tableNames Magic table names without the database prefix.
+	 *
+	 * @return array<string, string> Lower-cased prefixed table name => the name as given.
+	 */
+	private function tablesMissingFromCatalogueCaches(array $tableNames): array {
+		$prefix = $this->getTablePrefix();
+		$wanted = [];
+		foreach ($tableNames as $tableName) {
+			$fullTableNameLower = strtolower($prefix . $tableName);
+			if (isset(self::$columnExistsCache[$fullTableNameLower], self::$columnTypeCache[$fullTableNameLower], $this->tableExistsMemo[$tableName]) === false) {
+				$wanted[$fullTableNameLower] = $tableName;
+			}
+		}
+
+		return $wanted;
+	}//end tablesMissingFromCatalogueCaches()
+
+	/**
+	 * Read the column names and types of the given tables in one query.
+	 *
+	 * table_name is compared as stored, like the one-table query, so the
+	 * catalog index applies on PostgreSQL.
+	 *
+	 * @param array<int, string> $fullTableNames Lower-cased, prefixed table names.
+	 *
+	 * @return array<string, array{names: array<string, bool>, types: array<string, string>}> Per table that has columns.
+	 *
+	 * @throws \Exception If the information_schema query fails.
+	 */
+	private function readCatalogueColumns(array $fullTableNames): array {
+		$placeholders = implode(', ', array_fill(0, count($fullTableNames), '?'));
+		$sql = 'SELECT table_name AS tbl, LOWER(column_name) AS col, LOWER(data_type) AS col_type FROM information_schema.columns'
+			. ' WHERE table_name IN (' . $placeholders . ') AND ' . $this->catalogueScope();
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array_values($fullTableNames));
+
+		$columns = [];
+		while (($row = $stmt->fetch()) !== false) {
+			$table = strtolower((string)($row['tbl'] ?? $row['TBL'] ?? ''));
+			$column = (string)($row['col'] ?? $row['COL'] ?? '');
+			if ($table === '' || $column === '') {
+				continue;
+			}
+
+			$columns[$table]['names'][$column] = true;
+			$columns[$table]['types'][$column] = (string)($row['col_type'] ?? $row['COL_TYPE'] ?? '');
+		}
+
+		return $columns;
+	}//end readCatalogueColumns()
 
 	/**
 	 * List the columns of a table whose real database type is a date or time stamp.
