@@ -3,3 +3,4 @@
 files-widget-actions:210 (50 MB upload 413)   SANDBOX: php -S post_max_size 16M; 1/1 green with 200M
 first-paint-shell:178 (+8 serial not run)      KNOWN: 390 px install-banner shift, QUESTION queued by b-launchpad 13:20Z (first-paint-skeleton lane)
 # shard 4/8 GREEN apart from the known banner QUESTION; no PR needed.
+# shard 8/8 on development dd7207d2: 311 passed, 4 skipped, 0 failed (28.4 min, --workers 1). GREEN.
