@@ -437,6 +437,27 @@ class TransitionEngineInputsTest extends TestCase {
 	}//end testANonDeclaringTransitionPublishesAnEmptyListNotAnAbsentKey()
 
 	/**
+	 * A transition the schema names carries that name, so a menu reads "Take up", not "StartHandling".
+	 *
+	 * Found live on learniq's attendance flag (25 Nov 2026): every transition
+	 * declares a `label`, and every menu read the camel-cased action key.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function testADeclaredLabelIsPublished(): void {
+		$annotation = $this->annotation();
+		$annotation['transitions']['submit']['label'] = 'Hand in';
+		$this->wire($this->timesheet(), $annotation);
+
+		$actions = $this->engine->availableActions(self::OBJ);
+
+		$this->assertSame('Hand in', $actions[0]['label']);
+		$this->assertSame(['action', 'to', 'requires', 'description', 'inputs', 'label'], array_keys($actions[0]));
+	}//end testADeclaredLabelIsPublished()
+
+	/**
 	 * Graph-derived actions carry the same key, empty, so a client need not know the mode.
 	 *
 	 * @return void
