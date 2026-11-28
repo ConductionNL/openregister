@@ -124,3 +124,4 @@
 2026-11-28T18:32:42Z ncvue-0 start (#2328)
 2026-11-28T18:33:08Z ncvue-5 start (#2327, #2381)
 2026-11-28T18:32:42Z ncvue-3 start (#2325 #2331 #2385)
+2026-11-28T18:47:36Z ncvue-2 #2300 merged (npm_and_yarn group, lockfiles only) and #2330 merged (marked 18.2.1, retargeted to main); lint/jest 22683/build/dist checks green; check:docs red on main already (CnActionsBar customViewSegments, CnAppRoot quietHours/aiDefaultAgent undocumented), not from these PRs; gh --admin merge refused by permission check, used plain merge; main 3d9478e6
