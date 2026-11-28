@@ -413,6 +413,53 @@ class CollectiveLinkServiceTest extends TestCase {
 		$this->assertSame('runbook', $link->getSlug());
 	}//end testCreateAndLinkPageStampsTheObjectAndTheNewPage()
 
+	public function testCreateAndLinkPageCreatesUnderTheLandingPage(): void {
+		$this->setupUser('bob');
+		$pages = new class {
+			public array $created = [];
+			public array $asked = [];
+
+			public function findByPath(int $collectiveId, string $path, string $uid): object {
+				$this->asked = [$collectiveId, $path, $uid];
+				return CollectiveLinkServiceTest::pageFor(12);
+			}
+
+			public function create(int $collectiveId, int $parentId, string $title, ?int $templateId, string $uid): object {
+				$this->created = [$collectiveId, $parentId, $title, $templateId, $uid];
+				return CollectiveLinkServiceTest::pageFor(77);
+			}
+
+			public function find(int $collectiveId, int $pageId, string $uid): object {
+				return CollectiveLinkServiceTest::pageFor($pageId);
+			}
+		};
+		$this->collectives($pages);
+
+		$link = $this->service->createAndLinkPage($this->target(), 5, 'Runbook');
+
+		$this->assertSame([5, '', 'bob'], $pages->asked);
+		$this->assertSame([5, 12, 'Runbook', null, 'bob'], $pages->created);
+		$this->assertSame(77, $link->getPageId());
+	}//end testCreateAndLinkPageCreatesUnderTheLandingPage()
+
+	public function testCreateAndLinkPageThrowsWhenTheLandingPageIsMissing(): void {
+		$this->setupUser();
+		$this->collectives(new class {
+			public function findByPath(int $collectiveId, string $path, string $uid): object {
+				throw new RuntimeException('File not found');
+			}
+
+			public function create(int $collectiveId, int $parentId, string $title, ?int $templateId, string $uid): object {
+				throw new RuntimeException('must not be reached');
+			}
+		});
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionCode(500);
+
+		$this->service->createAndLinkPage($this->target(), 5, 'Runbook');
+	}//end testCreateAndLinkPageThrowsWhenTheLandingPageIsMissing()
+
 	public function testCreateAndLinkPageFallsBackToTheTitleWhenTheReadFails(): void {
 		$this->setupUser();
 		$this->collectives(new class {

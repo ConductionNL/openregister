@@ -273,13 +273,38 @@ class CollectiveLinkService implements CollectiveLinkServiceInterface {
 		}
 
 		try {
-			// PageService::create(collectiveId, parentId, title, templateId, userId); parent 0 is the root.
-			return (int)$pageService->create($collectiveId, 0, $title, null, $this->runtime->requireUid())->getId();
+			$uid = $this->runtime->requireUid();
+			// PageService::create(collectiveId, parentId, title, templateId, userId).
+			$parentId = $this->landingPageId(pageService: $pageService, collectiveId: $collectiveId, uid: $uid);
+			return (int)$pageService->create($collectiveId, $parentId, $title, null, $uid)->getId();
 		} catch (Throwable $e) {
 			$this->runtime->logger()->warning('CollectiveLinkService::createAndLinkPage failed: ' . $e->getMessage());
 			throw new Exception('Failed to create Collectives page', 500);
 		}
 	}//end createPage()
+
+	/**
+	 * The page a new top-level page is created under: the collective's landing page.
+	 *
+	 * Current Collectives (4.x) read the parent as a page id and refuse 0 ("File
+	 * not found: 0"); `findByPath(collectiveId, '')` answers the landing page.
+	 * A Collectives without that method takes 0 as the root, as before.
+	 *
+	 * @param object $pageService  The Collectives PageService.
+	 * @param int    $collectiveId The collective id.
+	 * @param string $uid          The acting user.
+	 *
+	 * @return int The parent page id.
+	 *
+	 * @spec openspec/specs/generic-integrations/spec.md
+	 */
+	private function landingPageId(object $pageService, int $collectiveId, string $uid): int {
+		if (method_exists($pageService, 'findByPath') === false) {
+			return 0;
+		}
+
+		return (int)$pageService->findByPath($collectiveId, '', $uid)->getId();
+	}//end landingPageId()
 
 	/**
 	 * The cached metadata for a new page whose read came back empty; the url defaults to the page's deep link.
