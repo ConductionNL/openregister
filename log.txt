@@ -5725,3 +5725,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T14:55:09Z integrator-20261128T141925-2a71ca66 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-28T14:55:24Z integrator-20261128T141925-2a71ca66 MERGED-TREE 1f63309b27: 1 PRs, main now 7e56dc9942 = tested tree
+2026-11-28T14:58:36Z session-20261128T135824-e1b594fa help-launchpad-2: first-paint-skeleton merged launchpad#2475 (perf measures + workspace-first-paint budget, lazy renderers keep placeholder, status-line stand-in shift fix, phone install offer in shell, 7 KB budget per 13:40Z ruling) and #2479 (own-heading frame titles, task 9 live board check). Open: nc-vue chart/map loaded; greeting-row header actions shift (new task). Continuing.
