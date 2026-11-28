@@ -255,3 +255,4 @@
 2026-11-28T17:01:53Z GREEN prs=11391,11392 main=334bf56d3a integrator-cloud (merge rc=0 via per-PR fallback; main now c5e5801803)
 2026-11-28T17:30:16Z IDLE prs= main=c5e5801803 integrator-cloud (3 idle cycles: 9781 failed-solo at head; 11035 11148 11317 conflict with main)
 2026-11-28T18:43:16Z GREEN prs=11393 main=c5e5801803 integrator-cloud (merge rc=0 via per-PR fallback; main now 1c11ec7526; first run NORESULT: corrupt composer vcs cache for php-di/invoker, cleared, rerun GREEN)
+2026-11-28T19:05:01Z GREEN prs=11394 main=1c11ec7526 integrator-cloud (merge via per-PR fallback; main now 4d96808dd7)
