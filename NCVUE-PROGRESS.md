@@ -121,3 +121,5 @@
 2026-11-25T04:13:47Z learniq builder merged nextcloud-vue #2346 (views[].visibleWhen, schema 2.200.0) at 3515a647; learniq #2760 raises to its release
 2026-11-28T18:31:28Z ncvue-2 start (#2300, #2330)
 2026-11-28T18:32:59Z ncvue-1 start (#2329, #2401)
+2026-11-28T18:32:42Z ncvue-0 start (#2328)
+2026-11-28T18:32:42Z ncvue-3 start (#2325 #2331 #2385)
