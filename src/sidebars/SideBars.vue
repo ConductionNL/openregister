@@ -26,14 +26,20 @@
 </template>
 
 <script>
-import DashboardSideBar from './dashboard/DashboardSideBar.vue'
-import DeletedSideBar from './deleted/DeletedSideBar.vue'
-import EntitiesSideBar from './entities/EntitiesSideBar.vue'
-import AuditTrailSideBar from './logs/AuditTrailSideBar.vue'
-import SearchTrailSideBar from './logs/SearchTrailSideBar.vue'
-import RegisterSideBar from './register/RegisterSideBar.vue'
-import RegistersSideBar from './register/RegistersSideBar.vue'
-import SearchSideBar from './search/SearchSideBar.vue'
+import { defineAsyncComponent } from 'vue'
+
+// One sidebar shows per route, so each loads as its own chunk when its route
+// first shows it. Imported statically, all eight (and their styles, which
+// are inserted when the module runs) were part of the code every
+// OpenRegister page evaluates before it renders.
+const DashboardSideBar = defineAsyncComponent(() => import('./dashboard/DashboardSideBar.vue'))
+const DeletedSideBar = defineAsyncComponent(() => import('./deleted/DeletedSideBar.vue'))
+const EntitiesSideBar = defineAsyncComponent(() => import('./entities/EntitiesSideBar.vue'))
+const AuditTrailSideBar = defineAsyncComponent(() => import('./logs/AuditTrailSideBar.vue'))
+const SearchTrailSideBar = defineAsyncComponent(() => import('./logs/SearchTrailSideBar.vue'))
+const RegisterSideBar = defineAsyncComponent(() => import('./register/RegisterSideBar.vue'))
+const RegistersSideBar = defineAsyncComponent(() => import('./register/RegistersSideBar.vue'))
+const SearchSideBar = defineAsyncComponent(() => import('./search/SearchSideBar.vue'))
 
 export default {
 	name: 'SideBars',
