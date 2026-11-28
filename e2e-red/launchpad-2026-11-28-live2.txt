@@ -9,3 +9,4 @@ bookmark-import:93   PR #2423 merged (import joins the draft since #2364: close 
 container-tile-sorting:233   already fixed by #2425 (usage keyed by child id); 6/6 on 1b73abad
 navigation-editor-org-api:113   PR #2430 merged: ORDER root cause = Newman collection PUT position 'top' and never restored it; collection now restores (Newman 185 req, 254/254; spec 17/17 after Newman; control red with 'top' left)
 widgets-picker-assistant:153   PR #2434 merged: coordinator option (b) applied on top of #2427 (which had done (c), direct 1x1 tile): Place it like this opens the App or link tile form on An app with the catalogue app ticked; tile 2x2 per app-tile-widget spec. Live 16/16 --repeat-each 2 + neighbours 31/31; vitest 3156/3156
+# shard 6/8 on development 4ce85fa: 315 passed, 14 skipped, 2 failed - only ADR-124 performance (Workspace, Admin settings) on php -S: SANDBOX, numbers belong to the perf lanes' reference stack. navigation-editor-org-api green in-run.
