@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { markRaw } from 'vue'
 import { Register } from '../../entities/index.js'
 import {
 	getJson,
@@ -308,12 +309,20 @@ export const useRegisterStore = defineStore('register', {
 			}
 		},
 		/**
+		 * Hold the register list as plain, non-reactive rows.
+		 *
+		 * Each row embeds its schemas whole (with `_extend[]=schemas`), so a
+		 * deep-reactive list makes every card render build a proxy and a
+		 * dependency for every schema property it walks. Nothing changes a row
+		 * in place: every write replaces the whole list, which stays reactive,
+		 * so the views still update on each refresh.
+		 *
 		 * @param registerList
 		 * @spec exclude Client state mutator — maps the register list to entities. No backend contract.
 		 */
 		setRegisterList(registerList) {
-			this.registerList = registerList.map(
-				(registerItem) => new Register(registerItem),
+			this.registerList = registerList.map((registerItem) =>
+				markRaw(new Register(registerItem)),
 			)
 		},
 		...listStateActions(14),
