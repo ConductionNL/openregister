@@ -24,3 +24,10 @@ add-tiles-dialog.spec.ts:65              PR #2432 merged (strict mode: Nextcloud
 3. Placements without a shell title the page draws: 74 attention 'Vandaag eerst' (show_title 0, content.title set; page and board show the title; shell frame empty). Board also titles the counter frames ('dossiq · Zaken', 'Zuiddrecht'): 71/72 stat content.label and 73 weather.
 4. 71/72 stat (source register of dossiq, not installed here) get a shell frame but the mounted page draws nothing there: frames vanish at the hand-over (SANDBOX data, but the shell has no rule for it; the e2e 'refused widgets have no frame' only covers requiresApp).
 # Not reached: LpLadenDeels (one slow app) on the demo board beyond task 8's slow-route e2e; screen reader pass beyond role/aria checks (no AT in sandbox). Task 9 'Live check' left unticked.
+# live-launchpad-1 second run 28 Nov 16:15Z-, NC 34.0.6 (/opt tarball), MariaDB, Redis distributed+locking, APCu, php -S :8095 (upload/post 200M), OR main, seeded, development 241e479b, --workers 1
+# shard 7/8: 318 passed, 2 skipped, 0 failed (32.0 min). GREEN.
+# shard 5/8 (integriq development enabled): 317 passed, 0 failed (28.6 min). GREEN (integrations-page x4 green).
+# shard 6/8 (integriq enabled): 323 passed, 4 failed, 2 skipped, 3 did not run (27.0 min)
+performance Workspace, Admin settings, workspace-first-paint   SANDBOX: php -S (Workspace 1545 ms vs floor 1240, first content 324 ms; first paint 284 ms); numbers belong to the reference stack
+or-absent:217                                                   OTHER APP: integriq hard-depends on OpenRegister (known since live2-b); or-absent.spec 4/4 green with integriq off
+# shard 6/8 GREEN apart from SANDBOX perf and the known integriq dependency; no PR needed.
