@@ -132,3 +132,4 @@
 2026-11-28T19:07:13Z ncvue-0 #2328 fixed and merged (vue-material-design-icons 5.4.0 moved <title> before <path>; mdiIcon follows, dialog snapshots updated); lint/jest 22692/build/dist green; check:docs red on main already (4 docs miss props: CnActionsBar customViewSegments, CnAppRoot quietHours/aiDefaultAgent, CnFormDialog preloadedDefinitions, CnAiCompanion defaultAgent); main db4f484f
 2026-11-28T19:30:49Z ncvue-3 start
 2026-11-28T19:31:04Z ncvue-3 start (#2325 #2331)
+2026-11-28T19:31:28Z ncvue-2 no open PRs with N%6==2 (open: #2302/#2326/#2332 lane 4, #2325/#2331 lane 3, #2329 lane 1, #2381 lane 5); lane share empty
