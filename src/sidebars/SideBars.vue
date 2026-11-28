@@ -26,14 +26,23 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue'
 import DashboardSideBar from './dashboard/DashboardSideBar.vue'
-import DeletedSideBar from './deleted/DeletedSideBar.vue'
-import EntitiesSideBar from './entities/EntitiesSideBar.vue'
-import AuditTrailSideBar from './logs/AuditTrailSideBar.vue'
-import SearchTrailSideBar from './logs/SearchTrailSideBar.vue'
 import RegisterSideBar from './register/RegisterSideBar.vue'
 import RegistersSideBar from './register/RegistersSideBar.vue'
-import SearchSideBar from './search/SearchSideBar.vue'
+
+// The sidebars of the dashboard and the register pages stay in the main
+// chunk: they show with those pages' first render, and loaded as a chunk
+// they appeared, and sent their reads, a task later (Registers measured
+// ~90 ms slower). The others show on less used routes, so each loads as its
+// own chunk when its route first shows it; imported statically, they and
+// their styles (inserted when the module runs) were part of the code every
+// OpenRegister page evaluates before it renders.
+const DeletedSideBar = defineAsyncComponent(() => import('./deleted/DeletedSideBar.vue'))
+const EntitiesSideBar = defineAsyncComponent(() => import('./entities/EntitiesSideBar.vue'))
+const AuditTrailSideBar = defineAsyncComponent(() => import('./logs/AuditTrailSideBar.vue'))
+const SearchTrailSideBar = defineAsyncComponent(() => import('./logs/SearchTrailSideBar.vue'))
+const SearchSideBar = defineAsyncComponent(() => import('./search/SearchSideBar.vue'))
 
 export default {
 	name: 'SideBars',
