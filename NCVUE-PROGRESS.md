@@ -136,3 +136,4 @@
 2026-11-28T19:31:28Z ncvue-2 no open PRs with N%6==2 (open: #2302/#2326/#2332 lane 4, #2325/#2331 lane 3, #2329 lane 1, #2381 lane 5); lane share empty
 2026-11-28T19:31:53Z ncvue-4 start (#2302, #2326, #2332)
 2026-11-28T19:32:11Z ncvue-4 start (#2302, #2326, #2332)
+2026-11-28T19:32:56Z ncvue-1 #2329 still left open (no new commits; @vue/vue3-jest still 29.2.6, sync babel.transform blocks Babel 8); only PR in lane share; main db4f484f
