@@ -1687,3 +1687,4 @@
 2026-11-28T10:26Z help-launchpad-1: e2e role-feature-permissions 21/28 -> 28/28 live (#2413 merged: stand-in widgets from a member's offer, OR operations widget is admin-only).
 2026-11-28T10:33:17Z live-launchpad-2 shard 5/8 on development a34f4fe: 312 passed, 1 skipped, 4 failed (integrations-page x4 SANDBOX, integriq). Now shard 1/8.
 2026-11-28T10:35:37Z help-launchpad-2 helped launchpad: first-paint-skeleton #2415 merged: narrow-width shift FIXED (GridStack applied the breakpoint while hidden behind the shell, its 0.3 s slide ran after the hand-over; transitions now off until 2 frames after). Live e2e first-paint-shell 7/7, in-page CLS 0 at 1440/1100/390 (was 0/0.007/0.08). Open: notice banner not in the shell (58 px drop), slow-route e2e, task 1/9 perf numbers.
+2026-11-28T10:39:09Z launchpad helped thematiq: first-time-setup 5.3 #2220 (launchpad changes all leased by helper lanes; widget-declared-placeholders task 4 done in launchpad#2397)
