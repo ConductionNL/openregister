@@ -500,3 +500,5 @@ nextcloud-vue#2439
 design-system#1215
 launchpad#2286
 thematiq#2150
+launchpad#2485
+launchpad#2490
