@@ -249,3 +249,4 @@
 2026-11-28T11:46:19Z GREEN prs=11387 main=0c8ee25a07 integrator-cloud (merge rc=0; main now 00871f9cae)
 2026-11-28T12:32:13Z GREEN prs=11388,11389 main=00871f9cae integrator-cloud (merge rc=5; main now 00871f9cae)
 2026-11-28T12:41:16Z GREEN prs=11388 main=00871f9cae integrator-cloud (merge rc=0; main now 9d6c98af8a; earlier tree with 11389 hit HEAD-MOVED)
+2026-11-28T14:55:37Z GREEN prs=11389 main=9d6c98af8a integrator-cloud (merge rc=0; main now 7e56dc9942; first run RED only because composer-patches did not apply in this sandbox's vendor after a transient psalm fetch failure, patches applied by hand, rerun GREEN)
