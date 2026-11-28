@@ -5792,3 +5792,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T18:36:24Z or-fix-19: lane K=19 is outside K=0..9 (OR-FIX-LANE.md line 14; coordinator 13:40Z: a K>=10 run has no share and ends at once); no lease taken, no PR touched
 2026-11-28T18:36:42Z or-fix-14: lane K=14 is outside K=0..9 (OR-FIX-LANE.md line 14; coordinator 13:40Z: a K>=10 run has no share and ends at once); no lease taken, no PR touched
 2026-11-28T18:36:40Z session-20261128T183606-710352f4 or-fix-2: nothing to fix; share = #11032 only, obsolete under 25 Nov decision (b), already commented, BLOCK stands at bc66f345; main c5e58018 unchanged since the 18:23Z precheck sweep, nothing left for lane 2
+2026-11-28T18:36:56Z or-fix-18: lane K=18 is outside K=0..9 (OR-FIX-LANE.md line 14; coordinator 13:40Z: a K>=10 run has no share and ends at once); no lease taken, no PR touched
