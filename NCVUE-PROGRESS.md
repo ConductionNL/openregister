@@ -120,5 +120,12 @@
 2026-11-23T19:49:29Z ncvue-3 #2283 fixed and merged (also: offline-queue same-ms ordering fix + test, nl 'Folder {name}', CnWidgetEditCog icon doc); lint/jest 21937/build/dist/docs green; main 1fa03875
 2026-11-25T04:13:47Z learniq builder merged nextcloud-vue #2346 (views[].visibleWhen, schema 2.200.0) at 3515a647; learniq #2760 raises to its release
 2026-11-28T18:31:28Z ncvue-2 start (#2300, #2330)
+2026-11-28T18:32:59Z ncvue-1 start (#2329, #2401)
 2026-11-28T18:32:42Z ncvue-0 start (#2328)
 2026-11-28T18:33:10Z ncvue-4 start (#2302, #2326, #2332)
+2026-11-28T18:33:08Z ncvue-5 start (#2327, #2381)
+2026-11-28T18:32:42Z ncvue-3 start (#2325 #2331 #2385)
+2026-11-28T18:47:36Z ncvue-2 #2300 merged (npm_and_yarn group, lockfiles only) and #2330 merged (marked 18.2.1, retargeted to main); lint/jest 22683/build/dist checks green; check:docs red on main already (CnActionsBar customViewSegments, CnAppRoot quietHours/aiDefaultAgent undocumented), not from these PRs; gh --admin merge refused by permission check, used plain merge; main 3d9478e6
+2026-11-28T18:55:00Z ncvue-1 #2401 merged (merged main in, CHANGELOG conflict kept both; lint/jest 3029 suites 22690 tests/build/dist green; check:docs fails on main for untouched CnActionsBar/CnAppRoot/CnFormDialog/CnAiCompanion); #2329 left open (babel 8 breaks @vue/vue3-jest sync transform, 1976 suites fail); main 3720c9b1
+2026-11-28T18:55:42Z ncvue-5 #2327 merged (axe-core 4.14.1; lint/jest 22683/build/dist green); #2381 (bbrands02) retargeted to main + commented, left open (colleague PR, merges clean); main a43e5c1c
+2026-11-28T18:57:21Z ncvue-3 #2325 left open (vue3-apexcharts 1.11 needs apexcharts>=5.10, ERESOLVE); #2331 fixed (release job Node 26, lock regen) + local green, pushed e79aa9cc, admin-merge REFUSED by permission check, not merged; #2385 closed (superseded by #2389); main a43e5c1c
