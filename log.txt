@@ -5620,3 +5620,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T09:28:26Z integrator-20261128T091938-f9812657 NORESULT tree a4b977f1ce: deps failed
 2026-11-28T09:38:14Z session-20261128T093813-2dd64ed1 done-thematiq: lease held by done-thematiq-20261128T091913-426cae85 until 11:19Z (taken 09:19Z); this run ended without work
 2026-11-28T09:40:34Z session-20261128T094034-92090518 perf-K2: lease held by session-20261128T091951-d3e0ac23 until 10:49Z (taken 09:19Z); this run ended without work
+2026-11-28T09:41:33Z integrator-20261128T091938-f9812657 NORESULT tree a4b977f1ce: checker floor not measured (exit 2)
