@@ -13,3 +13,6 @@ widgets-picker-assistant:153   PR #2434 merged: coordinator option (b) applied o
 # shard 7/8 on development 9099f02: 303 passed, 15 skipped, 2 failed
 resource-uploads:1139 (5 MB refused)   SANDBOX: php -S upload_max_filesize 2M answers no_file before the app's 5 MB check
 runtime-or-consumption:328             PR #2453 merged: CSRF token is re-masked on refresh; spec compares the unmasked secret (8/8 --repeat-each 8)
+# shard 3/8 on development 4233554: 344 passed, 1 skipped, 2 failed
+dashboard-locking:559 (race [200,500,409])   PR #2462 merged APP FIX: losing insert hit launchpad_lock_dash_unique -> 500; now 409 naming the winner (PHPUnit 22/22, e2e 57/57 x3)
+dashboard-quota-limits:870                   NOT REPRODUCED: more-menu 'all dashboards' unfold not found in-run; 4/4 isolated --repeat-each 4 (free to take if it recurs)
