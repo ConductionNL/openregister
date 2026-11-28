@@ -1793,3 +1793,4 @@
 2026-11-28T17:36:00Z perf-K1 merged decidiq#2509: six budget pages ~-50 ms each (sum 7742/7730 -> 7286/7539 ms), Dashboard first content 1516/1396 -> 1220/1188 ms, 17.49 -> 16.44 MB main JS
 2026-11-28T17:46:10Z perf-K2 merged(integrator) openregister#11391: cross-table search dictionary reads without COUNT, 68 -> 64 statements, dictionary load ~15 -> ~13 ms (TTFB within noise)
 2026-11-28T17:46:10Z perf-K2 merged(integrator) openregister#11392: OR Dashboard 1356/1347/1466/1375 -> 1282/1333/1360/1267 ms (search-trail reads together; wizard dismissed, pinned), JS unchanged
+2026-11-28T17:47:53Z perf-K1 merged launchpad#2496: nc-vue ^2.245.1 (grid fix), Workspace unchanged within noise
