@@ -502,3 +502,7 @@ launchpad#2286
 thematiq#2150
 launchpad#2485
 launchpad#2490
+launchpad#2493
+launchpad#2494
+launchpad#2495
+thematiq#2258
