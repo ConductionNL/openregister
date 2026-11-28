@@ -1,0 +1,6 @@
+# thematiq full live e2e, 28 Nov 2026 ~16:50-17:45Z, live-thematiq-1 (run d). Stack: NC 34.0.6 (/opt/nextcloud-34), sqlite, php -S 8 workers pcov off + router, php8.3-imagick + libmagickcore-6.q16-7-extra; OR main 7e56dc99; thematiq development eeff3048 (after #2254 light-layout 6.3 compare fixes).
+# 619 tests (one run, --global-timeout 0, 51.4 min): 608 passed, 2 failed, 9 skipped.
+#   - ADR-124 perf Theming settings (first content 1088/1172 ms) + Files (3316-3517 ms vs floor 1340): php -S/sqlite sandbox, not representative (known floor; 5.2 is with done-thematiq's per-page floor work).
+#   - Skips: Mail/Calendar/Deck/Contacts not installed on this sqlite stack (run c on PG covered them on 6c334da), apps-above-the-fold / contrast-audit by design.
+# Newman (tests/integration/run-newman.sh): 85 requests, 181 assertions, 0 failed.
+# Result: no functional red on development eeff3048; #2254 introduced no regression.
