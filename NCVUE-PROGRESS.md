@@ -120,5 +120,7 @@
 2026-11-23T19:49:29Z ncvue-3 #2283 fixed and merged (also: offline-queue same-ms ordering fix + test, nl 'Folder {name}', CnWidgetEditCog icon doc); lint/jest 21937/build/dist/docs green; main 1fa03875
 2026-11-25T04:13:47Z learniq builder merged nextcloud-vue #2346 (views[].visibleWhen, schema 2.200.0) at 3515a647; learniq #2760 raises to its release
 2026-11-28T18:31:28Z ncvue-2 start (#2300, #2330)
+2026-11-28T18:32:59Z ncvue-1 start (#2329, #2401)
 2026-11-28T18:32:42Z ncvue-0 start (#2328)
 2026-11-28T18:33:08Z ncvue-5 start (#2327, #2381)
+2026-11-28T18:32:42Z ncvue-3 start (#2325 #2331 #2385)
