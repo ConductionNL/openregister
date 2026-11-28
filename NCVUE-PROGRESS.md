@@ -137,3 +137,4 @@
 2026-11-28T19:31:53Z ncvue-4 start (#2302, #2326, #2332)
 2026-11-28T19:32:11Z ncvue-4 start (#2302, #2326, #2332)
 2026-11-28T19:32:56Z ncvue-1 #2329 still left open (no new commits; @vue/vue3-jest still 29.2.6, sync babel.transform blocks Babel 8); only PR in lane share; main db4f484f
+2026-11-28T19:33:56Z ncvue-5 only lane PR #2381 (bbrands02, colleague) already retargeted to main + commented, left open; no other N%6==5 PRs; main db4f484f
