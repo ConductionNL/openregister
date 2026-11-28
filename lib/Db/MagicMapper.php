@@ -445,6 +445,27 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private const CATALOGUE_PRIME_CHUNK = 500;
 
 	/**
+	 * The query keys of a plain text search, the only search whose union may leave out tables without rows.
+	 *
+	 * Any other key (a property filter, `_order`, `_where`, a lens) can make an
+	 * arm builder refuse the query for one schema; that refusal must not depend
+	 * on whether the schema's table happens to hold rows.
+	 *
+	 * @var array<int, string>
+	 */
+	private const ROW_PROBE_SAFE_KEYS = [
+		'@self',
+		'_search',
+		'_limit',
+		'_offset',
+		'_page',
+		'_rbac',
+		'_multitenancy',
+		'_multitenancy_explicit',
+		'_snippet',
+	];
+
+	/**
 	 * The column a single-statement UNION search carries its row total in.
 	 */
 	private const UNION_TOTAL_COLUMN = '_union_row_total';
@@ -1859,11 +1880,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return int The number of matching rows across all tables.
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
+	 * @spec openspec/changes/union-skips-empty-tables/specs/upgrade-performance/spec.md#requirement-a-plain-text-search-across-many-tables-leaves-out-the-tables-without-rows
 	 */
 	public function countAcrossMultipleTables(array $query, array $registerSchemaPairs): int {
 		if (count($registerSchemaPairs) > 1 && $this->shouldUseUnionQuery(query: $query) === true) {
 			$total = 0;
-			foreach (array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE) as $batch) {
+			// Only tables this request already knows to exist are probed (the search primed them).
+			$withRows = $this->pairsWithRows(query: $query, registerSchemaPairs: $registerSchemaPairs);
+			foreach (array_chunk($withRows, self::UNION_ARM_BATCH_SIZE) as $batch) {
 				$total += $this->countUnionBatch(query: $query, registerSchemaPairs: $batch);
 			}
 
@@ -2018,14 +2042,22 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @return array Array of ObjectEntity objects from all tables.
 	 *
 	 * @spec openspec/specs/unified-search-provider/spec.md
+	 * @spec openspec/changes/union-skips-empty-tables/specs/upgrade-performance/spec.md#requirement-a-plain-text-search-across-many-tables-leaves-out-the-tables-without-rows
 	 */
 	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
 		$this->primeTableCatalogueForPairs(registerSchemaPairs: $registerSchemaPairs);
 		$this->unionRowTotal = null;
-		$batches = array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE);
 		// Which columns order as text is decided over every schema of the
 		// search, so each batch and the merge of the batches agree (REQ-CIO-001).
 		$textColumns = $this->unionTextColumns(registerSchemaPairs: $registerSchemaPairs);
+		// A table without rows adds nothing to the page or the total, only an arm to build and plan.
+		$registerSchemaPairs = $this->pairsWithRows(query: $query, registerSchemaPairs: $registerSchemaPairs);
+		if ($registerSchemaPairs === []) {
+			$this->unionRowTotal = 0;
+			return [];
+		}
+
+		$batches = array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE);
 
 		// One batch: the single-statement path, unchanged.
 		if (count($batches) <= 1) {
@@ -9223,6 +9255,118 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		$this->primeTableCatalogue(tableNames: $tableNames);
 	}//end primeTableCatalogueForPairs()
+
+	/**
+	 * The pairs of a plain text search whose tables hold at least one row.
+	 *
+	 * A cross-table search built, planned and ran an arm for every magic table
+	 * the reader may search, also for the tables without a single row (31 of
+	 * 43 on a fresh install): each arm costs ~0.5 ms to build in PHP and the
+	 * same again in the database, whatever it finds. One `LIMIT 1` probe per
+	 * table, all in one statement, says which tables hold rows; the others are
+	 * left out. Their arms could not have matched, so the page and the total
+	 * are the same. Only tables this request knows to exist are probed; a pair
+	 * whose table is not known keeps its arm (and the create-on-demand path of
+	 * unionTableForPair()). Queries with any key outside ROW_PROBE_SAFE_KEYS
+	 * keep every arm, so a per-schema refusal still fires. A failed probe
+	 * keeps every pair.
+	 *
+	 * @param array $query               The search or count query.
+	 * @param array $registerSchemaPairs The pairs.
+	 *
+	 * @return array The pairs to build arms for, in their order.
+	 *
+	 * @spec openspec/changes/union-skips-empty-tables/specs/upgrade-performance/spec.md#requirement-a-plain-text-search-across-many-tables-leaves-out-the-tables-without-rows
+	 */
+	private function pairsWithRows(array $query, array $registerSchemaPairs): array {
+		if (count($registerSchemaPairs) < 2 || array_diff(array_map('strval', array_keys($query)), self::ROW_PROBE_SAFE_KEYS) !== []) {
+			return $registerSchemaPairs;
+		}
+
+		$tables = [];
+		foreach ($registerSchemaPairs as $index => $pair) {
+			$table = $this->knownTableOfPair(pair: $pair);
+			if ($table !== null) {
+				$tables[$index] = $table;
+			}
+		}
+
+		if (count($tables) < 2) {
+			return $registerSchemaPairs;
+		}
+
+		try {
+			$holding = $this->tablesHoldingRows(tableNames: array_values(array_unique($tables)));
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[MagicMapper] Row probe failed, searching every table',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+			return $registerSchemaPairs;
+		}
+
+		$kept = [];
+		foreach ($registerSchemaPairs as $index => $pair) {
+			if (isset($tables[$index]) === false || isset($holding[$tables[$index]]) === true) {
+				$kept[] = $pair;
+			}
+		}
+
+		return $kept;
+	}//end pairsWithRows()
+
+	/**
+	 * The table of a pair when this request knows that table exists.
+	 *
+	 * @param array $pair The pair, with 'register' and 'schema'.
+	 *
+	 * @return string|null The table name without the database prefix, or null.
+	 *
+	 * @spec openspec/changes/union-skips-empty-tables/specs/upgrade-performance/spec.md#requirement-a-plain-text-search-across-many-tables-leaves-out-the-tables-without-rows
+	 */
+	private function knownTableOfPair(array $pair): ?string {
+		$register = ($pair['register'] ?? null);
+		$schema   = ($pair['schema'] ?? null);
+		if (($register instanceof Register) === false || ($schema instanceof Schema) === false) {
+			return null;
+		}
+
+		$table = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		if (($this->tableExistsMemo[$table] ?? false) !== true) {
+			return null;
+		}
+
+		return $table;
+	}//end knownTableOfPair()
+
+	/**
+	 * Which of these tables hold at least one row, one `LIMIT 1` probe each in one statement per chunk.
+	 *
+	 * @param array<int, string> $tableNames Magic table names without the database prefix.
+	 *
+	 * @return array<string, true> The table names that hold a row.
+	 *
+	 * @spec openspec/changes/union-skips-empty-tables/specs/upgrade-performance/spec.md#requirement-a-plain-text-search-across-many-tables-leaves-out-the-tables-without-rows
+	 */
+	private function tablesHoldingRows(array $tableNames): array {
+		$isPostgres = stripos($this->db->getDatabasePlatform()::class, 'PostgreSQL') !== false;
+		$holding    = [];
+		foreach (array_chunk($tableNames, self::UNION_ARM_BATCH_SIZE) as $chunk) {
+			$arms = [];
+			foreach ($chunk as $position => $tableName) {
+				$table  = $this->quoteIdentifier(name: $this->getFullTableName(tableName: $tableName), isPostgres: $isPostgres);
+				$arms[] = 'SELECT probe_index FROM (SELECT '.(int)$position.' AS probe_index FROM '.$table.' LIMIT 1) probe_'.(int)$position;
+			}
+
+			$stmt = $this->db->prepare(implode(' UNION ALL ', $arms));
+			$stmt->execute();
+			while (($row = $stmt->fetch()) !== false) {
+				$holding[$chunk[(int)$row['probe_index']]] = true;
+			}
+		}
+
+		return $holding;
+	}//end tablesHoldingRows()
 
 	/**
 	 * Fill the column caches and the table-exists memo of many tables with one catalogue query.
