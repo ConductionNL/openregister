@@ -5745,3 +5745,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T16:09:03Z done-launchpad (cloud) shard 7/8 on dev bc5f9446 (reference stack on :8095): 318 passed, 2 skipped, 0 failed (29.8 min). GREEN.
 2026-11-28T16:18:31Z precheck-20261128T155539-c38f78e7 GREEN tree 173398aab7 on dev 7e56dc9942 prs 1 front=skip: Tests: 68501, Assertions: 244390, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Skipped: 30.
 2026-11-28T16:19:08Z precheck-20261128T155539-c38f78e7 CONFLICT-DEV #11035 bf9e6900
+2026-11-28T16:19:27Z precheck-20261128T155539-c38f78e7 CONFLICT-DEV #11317 ade57c3e
