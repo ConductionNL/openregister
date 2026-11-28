@@ -34,6 +34,12 @@ on a request that is over the 100 ms API rule (ADR-124).
   `searchTables()` already uses: one `SUM` over `COUNT(*)` UNION arms built from
   the same WHERE as the search arms, instead of one count query per table (32
   queries for the bundled tables).
+- When the search ran as one UNION statement (up to 50 tables) and returned
+  rows, that statement carries the total itself: it is wrapped as
+  `SELECT unioned.*, COUNT(*) OVER () ... FROM (<the arms>) unioned`, so the
+  total is counted on the very WHERE the page is read with and no second
+  statement runs. An empty page, or a search in several batches, keeps the
+  separate one-statement count.
 
 The answer of every search is unchanged.
 

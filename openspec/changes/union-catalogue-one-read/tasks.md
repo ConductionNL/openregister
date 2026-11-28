@@ -11,12 +11,17 @@
 
 - [x] 2.1 `searchObjectsGloballyBySearch()` counts its total with
       `countAcrossMultipleTables()`; the per-table `countInTables()` is removed.
+- [x] 2.2 A single-statement UNION search carries its total in a
+      `COUNT(*) OVER ()` window (`runUnionBatch(withTotal: true)`); the global
+      search uses it and counts separately only for an empty page or many batches.
 
 ## 3. Verification
 
 - [x] 3.1 Unit tests: `MagicMapperCatalogueBatchTest` (one query answers both
       questions, missing table not recorded, no re-read, single table and
       SQLite untouched, failed read falls back);
-      `MagicMapperSearchObjectsPaginatedTest` (one count across the tables).
+      `MagicMapperSearchObjectsPaginatedTest` (one count across the tables; the
+      statement's own total, no count), `MagicMapperUnionBatchGoldenTest` (window
+      SQL, total taken from the rows, empty page and plain statement carry none).
 - [x] 3.2 Live on the sandbox reference stack: queries and timings before and
       after, answers byte-identical, in the PR body.

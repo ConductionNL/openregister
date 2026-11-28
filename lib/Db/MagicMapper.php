@@ -373,6 +373,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private array $tableExistsMemo = [];
 
 	/**
+	 * The row total the last single-statement UNION search counted alongside its page.
+	 *
+	 * Null when the last search ran in several batches, on another path, or
+	 * returned no rows (an empty page cannot carry the total).
+	 *
+	 * @var integer|null
+	 */
+	private ?int $unionRowTotal = null;
+
+	/**
 	 * Request-scoped memo for {@see getLiveMagicTables()}.
 	 *
 	 * That method lists EVERY magic table from `information_schema` and then
@@ -433,6 +443,11 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Tables per batched catalogue read (bounds the IN list).
 	 */
 	private const CATALOGUE_PRIME_CHUNK = 500;
+
+	/**
+	 * The column a single-statement UNION search carries its row total in.
+	 */
+	private const UNION_TOTAL_COLUMN = '_union_row_total';
 
 	/**
 	 * Cache for table existence to avoid repeated database queries
@@ -2006,6 +2021,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 */
 	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
 		$this->primeTableCatalogueForPairs(registerSchemaPairs: $registerSchemaPairs);
+		$this->unionRowTotal = null;
 		$batches = array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE);
 		// Which columns order as text is decided over every schema of the
 		// search, so each batch and the merge of the batches agree (REQ-CIO-001).
@@ -2014,7 +2030,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// One batch: the single-statement path, unchanged.
 		if (count($batches) <= 1) {
 			return $this->convertUnionRowsToEntities(
-				rows: $this->runUnionBatch(query: $query, registerSchemaPairs: $registerSchemaPairs, textColumns: $textColumns)
+				rows: $this->runUnionBatch(query: $query, registerSchemaPairs: $registerSchemaPairs, textColumns: $textColumns, withTotal: true)
 			);
 		}
 
@@ -2056,13 +2072,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs, already bounded by the caller.
 	 * @param array<string> $textColumns The property columns that order as text.
+	 * @param bool $withTotal Also count every row the statement matches before paging (see unionRowTotal).
 	 *
 	 * @return array Raw result rows.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The total is asked for by the single-statement path only
 	 */
-	private function runUnionBatch(array $query, array $registerSchemaPairs, array $textColumns = []): array {
+	private function runUnionBatch(array $query, array $registerSchemaPairs, array $textColumns = [], bool $withTotal = false): array {
 		$qb = $this->db->getQueryBuilder();
 		$parts = [];
 
@@ -2093,14 +2113,24 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// The batch orders on what it projects: a column of another batch is null in all of its rows.
 		$orderQuery = (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: ($allPropertyColumns ?? []));
-		$unionSql = implode(' UNION ALL ', $parts)
-			. $this->unionOrderByClause(query: $orderQuery, textColumns: $textColumns)
+		$unionSql = implode(' UNION ALL ', $parts);
+		if ($withTotal === true) {
+			// The window counts every row the arms match before LIMIT/OFFSET,
+			// on the very WHERE the page is read with. ORDER BY names output
+			// columns only, so it reads the same on the wrapped statement.
+			$unionSql = 'SELECT unioned.*, COUNT(*) OVER () AS '.self::UNION_TOTAL_COLUMN.' FROM ('.$unionSql.') unioned';
+		}
+
+		$unionSql .= $this->unionOrderByClause(query: $orderQuery, textColumns: $textColumns)
 			. $this->unionPage(query: $query)->limitClause();
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
 		$stmt->execute();
 		$rows = $stmt->fetchAll();
+		if ($withTotal === true) {
+			$rows = $this->takeUnionRowTotal(rows: $rows);
+		}
 
 		$this->logger->debug(
 			message: '[MagicMapper] Union batch completed',
@@ -2114,6 +2144,28 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $rows;
 	}//end runUnionBatch()
+
+	/**
+	 * Record the window total a single-statement UNION carried and drop it from its rows.
+	 *
+	 * @param array $rows The rows, each with the total column.
+	 *
+	 * @return array The rows without it.
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
+	 */
+	private function takeUnionRowTotal(array $rows): array {
+		if ($rows === []) {
+			return $rows;
+		}
+
+		$this->unionRowTotal = (int)($rows[0][self::UNION_TOTAL_COLUMN] ?? 0);
+		foreach (array_keys($rows) as $index) {
+			unset($rows[$index][self::UNION_TOTAL_COLUMN]);
+		}
+
+		return $rows;
+	}//end takeUnionRowTotal()
 
 	/**
 	 * The rows of one batch from its first row up to the end of the caller's page.
@@ -12059,8 +12111,9 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * Reads the search query (with `_search`), the count query and the RBAC and
 	 * multitenancy flags from the search request; both queries carry the flags.
-	 * The total is one count across the same tables (one UNION statement per
-	 * batch), not one count query per table.
+	 * The total is counted by the search statement itself when the search ran
+	 * as one UNION and returned rows; otherwise by one count across the same
+	 * tables (one UNION statement per batch), never one count query per table.
 	 *
 	 * @param array $request The search request: `search`, `count`, `rbac`, `multitenancy`.
 	 *
@@ -12081,9 +12134,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		$flags = ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']];
+		$this->unionRowTotal = null;
+		$results = $this->searchAcrossMultipleTables(query: array_replace($request['search'], $flags), registerSchemaPairs: $tables['pairs']);
 		return [
-			'results' => $this->searchAcrossMultipleTables(query: array_replace($request['search'], $flags), registerSchemaPairs: $tables['pairs']),
-			'total' => $this->countAcrossMultipleTables(query: array_replace($request['count'], $flags), registerSchemaPairs: $tables['pairs']),
+			'results' => $results,
+			'total' => ($this->unionRowTotal ?? $this->countAcrossMultipleTables(
+				query: array_replace($request['count'], $flags),
+				registerSchemaPairs: $tables['pairs']
+			)),
 			'registers' => $tables['registers'],
 			'schemas' => $tables['schemas'],
 			'ignoredFilters' => [],

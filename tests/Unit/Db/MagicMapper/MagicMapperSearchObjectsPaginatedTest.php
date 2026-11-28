@@ -172,6 +172,25 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 		$this->assertSame([], $result['response']['ignoredFilters'] ?? null);
 	}//end testATextSearchCarriesTheCallersFlags()
 
+	/**
+	 * A text search whose UNION counted its own total answers with it and runs no second count.
+	 *
+	 * @return void
+	 */
+	public function testATextSearchTakesTheTotalItsStatementCounted(): void {
+		$case = [
+			'search'     => ['_search' => 'zaak', '_limit' => 1],
+			'count'      => ['_search' => 'zaak'],
+			'pairs'      => [['registerId' => 1, 'schemaId' => 2], ['registerId' => 1, 'schemaId' => 3]],
+			'unionTotal' => 41,
+		];
+		$result = $this->runCase(case: $case);
+
+		$this->assertSame(41, $result['response']['total']);
+		$this->assertSame([], array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countAcross ')));
+		$this->assertSame([], array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
+	}//end testATextSearchTakesTheTotalItsStatementCounted()
+
 	public function testEveryCaseIsRecorded(): void {
 		$expected = require __DIR__.'/fixtures/search-objects-paginated.php';
 		$this->assertSame(expected: array_keys(self::cases()), actual: array_keys($expected));
@@ -284,7 +303,14 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 			fn (...$args): array => $this->record(name: 'findByRelation', args: $args, answer: array_values($stored))
 		);
 		$mapper->method('searchAcrossMultipleTables')->willReturnCallback(
-			fn (...$args): array => $this->record(name: 'searchAcross', args: $args, answer: $this->acrossRows(pairs: $args[1], stored: $stored))
+			function (...$args) use ($mapper, $case, $stored): array {
+				if (array_key_exists('unionTotal', $case) === true) {
+					// The single-statement UNION path records the total it counted.
+					(new \ReflectionProperty(MagicMapper::class, 'unionRowTotal'))->setValue($mapper, $case['unionTotal']);
+				}
+
+				return $this->record(name: 'searchAcross', args: $args, answer: $this->acrossRows(pairs: $args[1], stored: $stored));
+			}
 		);
 		$mapper->method('countAcrossMultipleTables')->willReturnCallback(
 			fn (...$args): int => $this->record(name: 'countAcross', args: $args, answer: (10 * count($args[1])))

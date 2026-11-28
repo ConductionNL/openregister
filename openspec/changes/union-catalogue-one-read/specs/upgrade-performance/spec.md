@@ -31,11 +31,20 @@ one-table lookups.
 The total of a text search across every readable magic table SHALL be counted
 with one statement per batch of UNION arms (a `SUM` over one `COUNT(*)` arm per
 table, built from the same WHERE as the search arms), not with one count query
-per table. The total SHALL be the same as the sum of the per-table counts.
+per table. When the search itself ran as one UNION statement and returned
+rows, that statement SHALL carry the total (a window count over the arms) and
+no count statement SHALL run. The total SHALL be the same as the sum of the
+per-table counts.
 
 #### Scenario: the total of a search over 32 tables
 - **GIVEN** 32 magic tables a caller may read
 - **WHEN** the caller searches `GET /api/objects?_search=e`
-- **THEN** the total SHALL come from one count statement
+- **THEN** the total SHALL come from the search statement's window count
 - **AND** it SHALL equal the number of rows the search matches before paging
-- @e2e exclude {query count has no screen of its own; covered by MagicMapperSearchObjectsPaginatedTest and MagicMapperCrossTableCountTest}
+- @e2e exclude {query count has no screen of its own; covered by MagicMapperSearchObjectsPaginatedTest and MagicMapperUnionBatchGoldenTest}
+
+#### Scenario: a page past the last row
+- **GIVEN** a global text search whose page is past its last row
+- **WHEN** the page comes back empty
+- **THEN** the total SHALL come from one count statement across the same tables
+- @e2e exclude {query count has no screen of its own; covered by MagicMapperUnionBatchGoldenTest and MagicMapperCrossTableCountTest}
