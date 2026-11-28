@@ -5699,3 +5699,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T13:08:02Z or-fix-10: K=10 outside K=0..9; N%20==10 share of open non-draft main PRs = 8450 only, head 29819a35 unchanged (obsolete, coordinator-parked, already commented); precheck share empty (8450 parked at head); nothing to fix
 2026-11-28T13:08:41Z precheck-20261128T130829-cb6ace5a CONFLICT-DEV #11317 ade57c3e
 2026-11-28T13:09:42Z or-fix-14 (N%20==14): share empty (open base-main PRs with N%20==14: 10464 skip-listed; 11154, 11174 draft); precheck next 14 20: NONE left; nothing to fix
+2026-11-28T13:11:34Z precheck-20261128T131118-221813a4 CONFLICT-DEV #11035 bf9e6900
