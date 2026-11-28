@@ -60,10 +60,27 @@ bg() {
 	echo $! > "$RUN/$name.pid"
 }
 
+# composer-patches does not apply composer.json extra.patches in this sandbox install (the llphant usage patch was
+# missing: ResponseGenerationBreakerTest/GoldenTest ollama red on every tree), so apply them here; -N keeps it idempotent.
+composer_patches() {
+	python3 - <<'PY2'
+import json, os, subprocess
+for pkg, patches in json.load(open('composer.json')).get('extra', {}).get('patches', {}).items():
+    d = os.path.join('vendor', pkg)
+    if not os.path.isdir(d):
+        continue
+    for f in patches.values():
+        f = os.path.abspath(f)
+        if subprocess.run(['patch', '-p1', '-N', '--dry-run', '-s', '-i', f], cwd=d, capture_output=True).returncode == 0:
+            subprocess.run(['patch', '-p1', '-N', '-s', '-i', f], cwd=d, check=True)
+            print('applied', f)
+PY2
+}
+
 composer_deps() {
 	cd "$C" || return 9
 	local want; want=$(sha256sum composer.lock | cut -d' ' -f1)
-	[ -f vendor/.sig-lock ] && [ "$(cat vendor/.sig-lock)" = "$want" ] && return 0
+	[ -f vendor/.sig-lock ] && [ "$(cat vendor/.sig-lock)" = "$want" ] && { composer_patches; return 0; }
 	# The sandbox token is rejected by the GitHub API; plain git through the proxy works, and the root-only
 	# post-install script fails after vendor is complete, so success is judged by the installed autoloader.
 	env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 composer config --global use-github-api false
@@ -95,6 +112,7 @@ PY
 	|| env -u GH_TOKEN -u GITHUB_TOKEN COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_PROCESS_TIMEOUT=0 \
 		composer install --no-interaction --no-progress --prefer-source --ignore-platform-req=php --ignore-platform-req=php-64bit
 	[ -f vendor/autoload.php ] && [ -x vendor/bin/phpunit ] || return 1
+	composer_patches
 	echo "$want" > vendor/.sig-lock
 }
 
