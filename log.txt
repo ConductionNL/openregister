@@ -5659,3 +5659,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T11:07:36Z integrator-20261128T095651-de26e006 MERGED-TREE 566eec8e8c: 1 PRs, main now 0c8ee25a07 = tested tree
 2026-11-28T11:09:25Z or-fix-11: lane K=11 is outside K=0..9 (OR-FIX-LANE.md: 'of 20' means of 10), so N % 10 == 11 selects no PRs and precheck share is empty; this run ended without work
 2026-11-28T11:09:57Z or-fix-10 (N%20==10): share = 8450 only, obsolete at head 29819a35 (main UserDirectory = SessionPrincipal; parked, already commented), nothing to fix; precheck next 10 20: NONE left for lane 10
+2026-11-28T11:13:35Z session-20261128T091517-bc693734 live-launchpad-1 merged launchpad#2427 (APP FIX REQ-WDG-045: assistant may propose catalogue apps as one-cell tiles again; widgets-picker-assistant red fixed, 16/16 --repeat-each 2, picker specs 25/25).
