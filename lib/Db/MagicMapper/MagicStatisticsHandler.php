@@ -230,6 +230,42 @@ class MagicStatisticsHandler {
 	}//end findRegisterCached()
 
 	/**
+	 * Load the registers of the given pairs that are not cached yet, in one query.
+	 *
+	 * Before, findRegisterCached() read them one by one (one query per register
+	 * of a pair walk). The rows are those find() returns with RBAC and multi-tenancy
+	 * off; a register the bulk read misses is still read on its own later.
+	 *
+	 * @param array<int, array{registerId: int|string, schemaId: int|string}> $pairs The register/schema pairs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	private function preloadRegisters(array $pairs): void {
+		$missing = [];
+		foreach ($pairs as $pair) {
+			$registerId = (int) $pair['registerId'];
+			if (isset($this->registerCache[$registerId]) === false) {
+				$missing[$registerId] = $registerId;
+			}
+		}
+
+		if (count($missing) < 2) {
+			return;
+		}
+
+		try {
+			foreach ($this->catalog->registers()->findMultipleOptimized(array_values($missing)) as $id => $register) {
+				$this->registerCache[(int) $id] = $register;
+			}
+		} catch (Exception $e) {
+			// Each register is then read on its own, as before.
+			return;
+		}
+	}//end preloadRegisters()
+
+	/**
 	 * Find a Schema, reusing the entity within this request.
 	 *
 	 * @param int $schemaId The schema id.
@@ -273,6 +309,22 @@ class MagicStatisticsHandler {
 
 		return ($this->countCallback)([], $register, $schema);
 	}//end countObjectsInRegisterSchemaTable()
+
+	/**
+	 * The magic tables this request already listed from the database catalogue,
+	 * without listing them (an empty list before the first pair walk).
+	 *
+	 * Each name exists: the list is what information_schema answered. The count
+	 * callback hands it to the mapper, so counting a listed table does not ask
+	 * information_schema again whether it exists.
+	 *
+	 * @return array<int, string> Table names without the prefix.
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function listedMagicTables(): array {
+		return ($this->magicTablesCache ?? []);
+	}//end listedMagicTables()
 
 	/**
 	 * Get all magic mapper table names from the database.
@@ -391,7 +443,9 @@ class MagicStatisticsHandler {
 	 */
 	private function pairStatistics(StatisticsPairFilter $filter): array {
 		$total = 0;
-		foreach ($this->getAllRegisterSchemaPairs() as $pair) {
+		$pairs = $this->getAllRegisterSchemaPairs();
+		$this->preloadRegisters(pairs: $pairs);
+		foreach ($pairs as $pair) {
 			$ids = [(int)$pair['registerId'], (int)$pair['schemaId']];
 			if ($filter->matches(ids: $ids) === true) {
 				$total += $this->cachedPairCount(ids: $ids);
@@ -537,14 +591,20 @@ class MagicStatisticsHandler {
 	 * The register-schema pairs that pass the filters, each with its object count.
 	 *
 	 * A pair whose register or schema cannot be read, or whose count fails, is left out.
+	 * The registers of all pairs are loaded in one query first (RegisterMapper
+	 * keeps them for the find() of each pair).
 	 *
 	 * @param RegisterSchemaFilter $filter The pairs to cover.
 	 *
 	 * @return array<int, array{registerId: int, schemaId: int, register: Register, schema: Schema, count: int}>
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
 	 */
 	private function countedPairs(RegisterSchemaFilter $filter): array {
 		$counted = [];
-		foreach ($this->getAllRegisterSchemaPairs() as $pair) {
+		$pairs = $this->getAllRegisterSchemaPairs();
+		$this->preloadRegisters(pairs: $pairs);
+		foreach ($pairs as $pair) {
 			$ids = [(int)$pair['registerId'], (int)$pair['schemaId']];
 			$entry = null;
 			if ($filter->matches(ids: $ids) === true) {

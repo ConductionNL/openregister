@@ -110,6 +110,23 @@ final class RegisterMapperLinkedSchemasTest extends TestCase {
 	 *
 	 * @return RegisterMapper&MockObject The mapper.
 	 */
+	/**
+	 * @return void
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function testAHeldRegisterGivesItsSchemasWithoutBeingReadAgain(): void {
+		$mapper = $this->mapper(schemaIds: [], missing: [4]);
+		$register = new Register();
+		$register->setSchemas([3, '4', 9]);
+
+		$schemas = $mapper->getSchemasOfRegister(register: $register, _rbac: false);
+
+		$this->assertSame([3, 9], array_map(static fn (Schema $schema): int => (int)$schema->getId(), $schemas));
+		$this->assertSame([], $this->registerLookups, 'the register is not read again');
+		$this->assertSame([[3, [], false, false], [4, [], false, false], [9, [], false, false]], $this->schemaLookups);
+	}//end testAHeldRegisterGivesItsSchemasWithoutBeingReadAgain()
+
 	private function mapper(?array $schemaIds, array $missing): RegisterMapper&MockObject {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturnCallback(

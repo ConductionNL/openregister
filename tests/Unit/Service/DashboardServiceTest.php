@@ -67,6 +67,13 @@ class DashboardServiceTest extends TestCase {
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		// These doubles answer per scope: the grouped audit read is unavailable, so
+		// each entry counts its own scope (the grouped path: DashboardServiceAuditPairTotalsTest).
+		$this->auditTrailMapper->method('statisticsTotalsPerPair')->willThrowException(new \RuntimeException('per-scope doubles'));
+		// The dashboard hands over the register it holds; answer as the id lookup does.
+		$this->registerMapper->method('getSchemasOfRegister')->willReturnCallback(
+			fn (Register $register): array => $this->registerMapper->getSchemasByRegisterId($register->getId())
+		);
 
 		$this->service = new DashboardService(
 			new \OCA\OpenRegister\Search\Service\DashboardMappers(new \OCA\OpenRegister\Db\SchemaCatalog(registers: $this->registerMapper, schemas: $this->createMock(\OCA\OpenRegister\Db\SchemaMapperInterface::class), tables: $this->objectMapper), $this->auditTrailMapper, $this->webhookLogMapper),
