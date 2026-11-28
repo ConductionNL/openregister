@@ -1025,3 +1025,8 @@ Fix: keep both sides' lines (union of each hunk: ours then theirs), then bash -n
 - Symptom: a merged worktree's golden/registration test shows main's numbers although the PR's lines are in lib/ (e.g. listener count off by the PR's own registrations).
 - Cause: vendor/ symlinked from another checkout: composer's autoload resolves __DIR__/../lib to the real path, so lib/ of the OTHER checkout is loaded.
 - Fix: cp -a the vendor dir into each worktree (never ln -s); rerun.
+
+## A Vue component's new data field fails initial-data.golden.spec.js
+- Symptom: front suite red only on src/services/initial-data.golden.spec.js (toMatchSnapshot, '+ <field>' in a component's data); integrator trees go front=red while PHP is green.
+- Cause: main snapshots every component's data() in src/services/__snapshots__/initial-data.golden.spec.js.snap; a PR adding a field to data() (e.g. EditSource sourceItem runAs/schedule) does not update it.
+- Fix: npx jest src/services/initial-data.golden.spec.js -u on the main-merged tree; the snap diff must show only the PR's new fields; commit that file alone. (or-fix-6, #10156)
