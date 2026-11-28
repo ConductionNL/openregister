@@ -3,3 +3,5 @@
 # shard 5/8 on development a34f4fe: 312 passed, 1 skipped, 4 failed (25.4 min, whole shard ran)
 integrations-page x4 (:178 :195 :203 :221)   SANDBOX: integriq not installed
 
+# shard 1/8 on development e073f97: 323 passed, 2 skipped, 1 failed
+bookmark-import:93   PR #2423 merged (import joins the draft since #2364: close the skipped report, Save, then read) 2/2 --repeat-each 2
