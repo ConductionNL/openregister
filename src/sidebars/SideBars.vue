@@ -27,18 +27,21 @@
 
 <script>
 import { defineAsyncComponent } from 'vue'
+import DashboardSideBar from './dashboard/DashboardSideBar.vue'
+import RegisterSideBar from './register/RegisterSideBar.vue'
+import RegistersSideBar from './register/RegistersSideBar.vue'
 
-// One sidebar shows per route, so each loads as its own chunk when its route
-// first shows it. Imported statically, all eight (and their styles, which
-// are inserted when the module runs) were part of the code every
+// The sidebars of the dashboard and the register pages stay in the main
+// chunk: they show with those pages' first render, and loaded as a chunk
+// they appeared, and sent their reads, a task later (Registers measured
+// ~90 ms slower). The others show on less used routes, so each loads as its
+// own chunk when its route first shows it; imported statically, they and
+// their styles (inserted when the module runs) were part of the code every
 // OpenRegister page evaluates before it renders.
-const DashboardSideBar = defineAsyncComponent(() => import('./dashboard/DashboardSideBar.vue'))
 const DeletedSideBar = defineAsyncComponent(() => import('./deleted/DeletedSideBar.vue'))
 const EntitiesSideBar = defineAsyncComponent(() => import('./entities/EntitiesSideBar.vue'))
 const AuditTrailSideBar = defineAsyncComponent(() => import('./logs/AuditTrailSideBar.vue'))
 const SearchTrailSideBar = defineAsyncComponent(() => import('./logs/SearchTrailSideBar.vue'))
-const RegisterSideBar = defineAsyncComponent(() => import('./register/RegisterSideBar.vue'))
-const RegistersSideBar = defineAsyncComponent(() => import('./register/RegistersSideBar.vue'))
 const SearchSideBar = defineAsyncComponent(() => import('./search/SearchSideBar.vue'))
 
 export default {

@@ -2,7 +2,8 @@
 
 ## 1. Load per route
 
-- [x] 1.1 `SideBars.vue`: the eight route sidebars are async components.
+- [x] 1.1 `SideBars.vue`: the five sidebars of the less used routes are async
+      components; dashboard, registers and register stay static.
 
 ## 2. Verification
 
