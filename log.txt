@@ -5622,3 +5622,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T09:40:34Z session-20261128T094034-92090518 perf-K2: lease held by session-20261128T091951-d3e0ac23 until 10:49Z (taken 09:19Z); this run ended without work
 2026-11-28T09:41:33Z integrator-20261128T091938-f9812657 NORESULT tree a4b977f1ce: checker floor not measured (exit 2)
 2026-11-28T09:46:51Z session-20261128T093316-f001d5ce b-thematiq merged thematiq#2203: top-bar-contacts-switch 1.1-3.1 + 5.1 ticked (code from #2173 verified on development), test:l10n green again (5 first-time-setup strings in every locale, Dutch copy). Left: 4.1 e2e run + 5.2 live.
+2026-11-28T09:47:00Z precheck-20261128T094124-35f1a7d3 RED tree 07fc92d70b prs 1 front=red: Tests: 68442, Assertions: 244211, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Depreca; first failures: FAIL src/services/initial-data.golden.spec.js
