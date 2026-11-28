@@ -57,6 +57,7 @@ use OCA\OpenRegister\Db\MagicMapper\PurposeBoundTables;
 use DateTime;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Exception;
 use OCA\OpenRegister\Db\MagicMapper\EncryptedOrderRefusal;
 use OCA\OpenRegister\Db\MagicMapper\MagicColumnNameTrait;
@@ -372,6 +373,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	private array $tableExistsMemo = [];
 
 	/**
+	 * The row total the last single-statement UNION search counted alongside its page.
+	 *
+	 * Null when the last search ran in several batches, on another path, or
+	 * returned no rows (an empty page cannot carry the total).
+	 *
+	 * @var integer|null
+	 */
+	private ?int $unionRowTotal = null;
+
+	/**
 	 * Request-scoped memo for {@see getLiveMagicTables()}.
 	 *
 	 * That method lists EVERY magic table from `information_schema` and then
@@ -427,6 +438,16 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * and merged in PHP; see searchAcrossMultipleTablesWithUnion().
 	 */
 	private const UNION_ARM_BATCH_SIZE = 50;
+
+	/**
+	 * Tables per batched catalogue read (bounds the IN list).
+	 */
+	private const CATALOGUE_PRIME_CHUNK = 500;
+
+	/**
+	 * The column a single-statement UNION search carries its row total in.
+	 */
+	private const UNION_TOTAL_COLUMN = '_union_row_total';
 
 	/**
 	 * Cache for table existence to avoid repeated database queries
@@ -1999,6 +2020,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @spec openspec/specs/unified-search-provider/spec.md
 	 */
 	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
+		$this->primeTableCatalogueForPairs(registerSchemaPairs: $registerSchemaPairs);
+		$this->unionRowTotal = null;
 		$batches = array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE);
 		// Which columns order as text is decided over every schema of the
 		// search, so each batch and the merge of the batches agree (REQ-CIO-001).
@@ -2007,7 +2030,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		// One batch: the single-statement path, unchanged.
 		if (count($batches) <= 1) {
 			return $this->convertUnionRowsToEntities(
-				rows: $this->runUnionBatch(query: $query, registerSchemaPairs: $registerSchemaPairs, textColumns: $textColumns)
+				rows: $this->runUnionBatch(query: $query, registerSchemaPairs: $registerSchemaPairs, textColumns: $textColumns, withTotal: true)
 			);
 		}
 
@@ -2049,13 +2072,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs, already bounded by the caller.
 	 * @param array<string> $textColumns The property columns that order as text.
+	 * @param bool $withTotal Also count every row the statement matches before paging (see unionRowTotal).
 	 *
 	 * @return array Raw result rows.
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 * @spec openspec/changes/case-insensitive-ordering/specs/zoeken-filteren/spec.md#requirement-ordering-on-a-string-property-ignores-letter-case-on-every-supported-database-req-cio-001
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The total is asked for by the single-statement path only
 	 */
-	private function runUnionBatch(array $query, array $registerSchemaPairs, array $textColumns = []): array {
+	private function runUnionBatch(array $query, array $registerSchemaPairs, array $textColumns = [], bool $withTotal = false): array {
 		$qb = $this->db->getQueryBuilder();
 		$parts = [];
 
@@ -2086,14 +2113,29 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// The batch orders on what it projects: a column of another batch is null in all of its rows.
 		$orderQuery = (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: ($allPropertyColumns ?? []));
-		$unionSql = implode(' UNION ALL ', $parts)
-			. $this->unionOrderByClause(query: $orderQuery, textColumns: $textColumns)
+		// The arms are read as one derived table. PostgreSQL accepts only
+		// output column names in the ORDER BY of a bare UNION, and the order
+		// keys are expressions (LOWER(CAST(...)) for a case-insensitive sort),
+		// so a bare UNION failed there with SQLSTATE 0A000. Asked for its
+		// total, the statement also counts every row the arms match before
+		// LIMIT/OFFSET, in a window on the very WHERE the page is read with.
+		$total = '';
+		if ($withTotal === true) {
+			$total = ', COUNT(*) OVER () AS '.self::UNION_TOTAL_COLUMN;
+		}
+
+		$unionSql = 'SELECT unioned.*'.$total.' FROM ('.implode(' UNION ALL ', $parts).') unioned';
+
+		$unionSql .= $this->unionOrderByClause(query: $orderQuery, textColumns: $textColumns)
 			. $this->unionPage(query: $query)->limitClause();
 
 		// Execute the combined query.
 		$stmt = $qb->getConnection()->prepare($unionSql);
 		$stmt->execute();
 		$rows = $stmt->fetchAll();
+		if ($withTotal === true) {
+			$rows = $this->takeUnionRowTotal(rows: $rows);
+		}
 
 		$this->logger->debug(
 			message: '[MagicMapper] Union batch completed',
@@ -2107,6 +2149,28 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		return $rows;
 	}//end runUnionBatch()
+
+	/**
+	 * Record the window total a single-statement UNION carried and drop it from its rows.
+	 *
+	 * @param array $rows The rows, each with the total column.
+	 *
+	 * @return array The rows without it.
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
+	 */
+	private function takeUnionRowTotal(array $rows): array {
+		if ($rows === []) {
+			return $rows;
+		}
+
+		$this->unionRowTotal = (int)($rows[0][self::UNION_TOTAL_COLUMN] ?? 0);
+		foreach (array_keys($rows) as $index) {
+			unset($rows[$index][self::UNION_TOTAL_COLUMN]);
+		}
+
+		return $rows;
+	}//end takeUnionRowTotal()
 
 	/**
 	 * The rows of one batch from its first row up to the end of the caller's page.
@@ -9139,6 +9203,137 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end loadTableColumnCache()
 
 	/**
+	 * Read the catalogue of every table of the given register+schema pairs at once.
+	 *
+	 * @param array<int, array{register?: Register|null, schema?: Schema|null}> $registerSchemaPairs The pairs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-many-magic-tables-reads-their-catalogue-in-one-query
+	 */
+	private function primeTableCatalogueForPairs(array $registerSchemaPairs): void {
+		$tableNames = [];
+		foreach ($registerSchemaPairs as $pair) {
+			$register = ($pair['register'] ?? null);
+			$schema   = ($pair['schema'] ?? null);
+			if ($register instanceof Register && $schema instanceof Schema) {
+				$tableNames[] = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+			}
+		}
+
+		$this->primeTableCatalogue(tableNames: $tableNames);
+	}//end primeTableCatalogueForPairs()
+
+	/**
+	 * Fill the column caches and the table-exists memo of many tables with one catalogue query.
+	 *
+	 * A search across many magic tables asked information_schema twice per
+	 * table: once whether the table exists, once for its columns (64 queries
+	 * for 32 tables, ~10 ms of database time and the same again in PHP). A
+	 * table with columns exists, so one `information_schema.columns` read over
+	 * all of them answers both. Only what the read finds is recorded: a table
+	 * it does not return keeps the one-table path (probe, create when magic
+	 * mapping is on, then read its columns), so a missing table is never
+	 * cached as missing. Tables already in the caches are not read again. A
+	 * single table keeps the one-table query. SQLite has no information_schema.
+	 *
+	 * @param array<int, string> $tableNames Magic table names without the database prefix.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-many-magic-tables-reads-their-catalogue-in-one-query
+	 */
+	private function primeTableCatalogue(array $tableNames): void {
+		$wanted = $this->tablesMissingFromCatalogueCaches(tableNames: $tableNames);
+		if (count($wanted) < 2) {
+			return;
+		}
+
+		foreach (array_chunk($wanted, self::CATALOGUE_PRIME_CHUNK, true) as $chunk) {
+			try {
+				if ($this->db->getDatabasePlatform() instanceof SqlitePlatform) {
+					return;
+				}
+
+				$columns = $this->readCatalogueColumns(fullTableNames: array_keys($chunk));
+			} catch (\Throwable $e) {
+				// The one-table path still answers every question; it only costs more queries.
+				$this->logger->debug(
+					message: '[MagicMapper] Batched catalogue read failed, reading tables one by one',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+				);
+				return;
+			}
+
+			foreach ($columns as $fullTableNameLower => $tableColumns) {
+				if (isset($chunk[$fullTableNameLower]) === false) {
+					continue;
+				}
+
+				self::$columnExistsCache[$fullTableNameLower] = $tableColumns['names'];
+				self::$columnTypeCache[$fullTableNameLower]   = $tableColumns['types'];
+				$this->tableExistsMemo[$chunk[$fullTableNameLower]] = true;
+			}
+		}
+	}//end primeTableCatalogue()
+
+	/**
+	 * The tables whose columns or existence this request has not read yet.
+	 *
+	 * @param array<int, string> $tableNames Magic table names without the database prefix.
+	 *
+	 * @return array<string, string> Lower-cased prefixed table name => the name as given.
+	 */
+	private function tablesMissingFromCatalogueCaches(array $tableNames): array {
+		$prefix = $this->getTablePrefix();
+		$wanted = [];
+		foreach ($tableNames as $tableName) {
+			$fullTableNameLower = strtolower($prefix . $tableName);
+			$known = isset(self::$columnExistsCache[$fullTableNameLower], self::$columnTypeCache[$fullTableNameLower]);
+			if ($known === false || isset($this->tableExistsMemo[$tableName]) === false) {
+				$wanted[$fullTableNameLower] = $tableName;
+			}
+		}
+
+		return $wanted;
+	}//end tablesMissingFromCatalogueCaches()
+
+	/**
+	 * Read the column names and types of the given tables in one query.
+	 *
+	 * The table_name column is compared as stored, like the one-table query,
+	 * so the catalog index applies on PostgreSQL.
+	 *
+	 * @param array<int, string> $fullTableNames Lower-cased, prefixed table names.
+	 *
+	 * @return array<string, array{names: array<string, bool>, types: array<string, string>}> Per table that has columns.
+	 *
+	 * @throws \Exception If the information_schema query fails.
+	 */
+	private function readCatalogueColumns(array $fullTableNames): array {
+		$placeholders = implode(', ', array_fill(0, count($fullTableNames), '?'));
+		$sql = 'SELECT table_name AS tbl, LOWER(column_name) AS col, LOWER(data_type) AS col_type FROM information_schema.columns'
+			. ' WHERE table_name IN (' . $placeholders . ') AND ' . $this->catalogueScope();
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array_values($fullTableNames));
+
+		$columns = [];
+		while (($row = $stmt->fetch()) !== false) {
+			$table = strtolower((string)($row['tbl'] ?? $row['TBL'] ?? ''));
+			$column = (string)($row['col'] ?? $row['COL'] ?? '');
+			if ($table === '' || $column === '') {
+				continue;
+			}
+
+			$columns[$table]['names'][$column] = true;
+			$columns[$table]['types'][$column] = (string)($row['col_type'] ?? $row['COL_TYPE'] ?? '');
+		}
+
+		return $columns;
+	}//end readCatalogueColumns()
+
+	/**
 	 * List the columns of a table whose real database type is a date or time stamp.
 	 *
 	 * PostgreSQL reports `date` and `timestamp with[out] time zone`; MySQL and
@@ -11676,16 +11871,34 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			];
 		}
 
+		// One query each for every register and schema the loop below finds by id.
+		$this->registerMapper->preloadUnfiltered(ids: array_values($search->schemaToRegisterId));
+		$this->schemaMapper->preloadUnfiltered(ids: $search->schemaIds);
+
 		foreach ($search->schemaIds as $schemaId) {
 			$this->addSchemaToMultiSchemaSearch(search: $search, schemaId: $schemaId);
 		}
 
+		// A query that filters on properties is counted per table first, as
+		// before: that count refuses a filter on an encrypted property before
+		// any search runs (see searchObjectsGloballyBySearch()).
+		$countedFirst = self::filtersOnProperties(query: $search->countQuery);
+		if ($countedFirst === true) {
+			$search->total = $this->countMultiSchemaTables(search: $search);
+		}
+
 		$results = [];
+		$this->unionRowTotal = null;
 		if (empty($search->pairs) === false) {
 			$results = $this->searchAcrossMultipleTables(
 				query: $search->withFlags(query: $search->searchQuery),
 				registerSchemaPairs: $search->pairs
 			);
+		}
+
+		// Otherwise the single-statement UNION counted its own total, or each table is counted now.
+		if ($countedFirst === false) {
+			$search->total = ($this->unionRowTotal ?? $this->countMultiSchemaTables(search: $search));
 		}
 
 		return [
@@ -11699,14 +11912,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end searchObjectsPaginatedMultiSchema()
 
 	/**
-	 * Add one schema's table to a multi-schema search and count its matches.
+	 * Add one schema's table to a multi-schema search.
 	 *
 	 * @param MultiSchemaSearch $search   The search.
 	 * @param mixed             $schemaId The schema id as the caller gave it.
 	 *
-	 * @throws \OCA\OpenRegister\Exception\EncryptedFieldFilterException When the count filters on an encrypted field.
-	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
 	 */
 	private function addSchemaToMultiSchemaSearch(MultiSchemaSearch $search, mixed $schemaId): void {
 		$schemaIdInt = (int)$schemaId;
@@ -11723,21 +11936,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$schema = $this->schemaMapper->find($schemaIdInt, _multitenancy: false, _rbac: false);
 			$search->schemasCache[$schema->getId()] = $schema->jsonSerialize();
 			$search->pairs[] = ['register' => $register, 'schema' => $schema];
-
-			// Scope the per-table count to THIS schema: re-applying a large `@self.schema`
-			// allow-list as an IN() on each single-table count is redundant and trips
-			// the database's 1000-element IN-list cap.
-			$countQuery = $search->withFlags(query: $search->countQuery);
-			$countQuery['@self']['schema'] = $schema->getId();
-			$search->total += $this->countObjectsInRegisterSchemaTable(
-				query: $countQuery,
-				register: $register,
-				schema: $schema
-			);
-		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
-			// Fail loud: never silently drop a schema from the total because its
-			// count hit an encrypted-field filter or a refused `_where` tree.
-			throw $e;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[MagicMapper] Failed to load schema for multi-schema search',
@@ -11745,6 +11943,49 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			);
 		}//end try
 	}//end addSchemaToMultiSchemaSearch()
+
+	/**
+	 * Sum the per-table counts of a multi-schema search.
+	 *
+	 * Used when the search did not count its own total (several batches, the
+	 * sequential path, or an empty page).
+	 *
+	 * @param MultiSchemaSearch $search The search, its pairs added.
+	 *
+	 * @throws \OCA\OpenRegister\Exception\EncryptedFieldFilterException When a count filters on an encrypted field.
+	 *
+	 * @return int The total.
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
+	 */
+	private function countMultiSchemaTables(MultiSchemaSearch $search): int {
+		$total = 0;
+		foreach ($search->pairs as $pair) {
+			try {
+				// Scope the per-table count to THIS schema: re-applying a large `@self.schema`
+				// allow-list as an IN() on each single-table count is redundant and trips
+				// the database's 1000-element IN-list cap.
+				$countQuery = $search->withFlags(query: $search->countQuery);
+				$countQuery['@self']['schema'] = $pair['schema']->getId();
+				$total += $this->countObjectsInRegisterSchemaTable(
+					query: $countQuery,
+					register: $pair['register'],
+					schema: $pair['schema']
+				);
+			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
+				// Fail loud: never silently drop a schema from the total because its
+				// count hit an encrypted-field filter or a refused `_where` tree.
+				throw $e;
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[MagicMapper] Failed to count a schema of a multi-schema search',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $pair['schema']->getId(), 'error' => $e->getMessage()]
+				);
+			}//end try
+		}//end foreach
+
+		return $total;
+	}//end countMultiSchemaTables()
 
 	/**
 	 * The owning register of a schema, loaded on first use.
@@ -11921,10 +12162,18 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * Reads the search query (with `_search`), the count query and the RBAC and
 	 * multitenancy flags from the search request; both queries carry the flags.
+	 * A query without property filters takes its total from the search
+	 * statement itself when it ran as one UNION and returned rows, else from
+	 * one count statement across the tables. A query that filters on
+	 * properties (or carries a `_where` tree) is counted per table first, as
+	 * before: the per-table count is what refuses a filter on an encrypted
+	 * property, and the raw UNION arms do not repeat that refusal.
 	 *
 	 * @param array $request The search request: `search`, `count`, `rbac`, `multitenancy`.
 	 *
 	 * @return array Search results with pagination info.
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
 	 */
 	private function searchObjectsGloballyBySearch(array $request): array {
 		$tables = $this->globallyReadableTables();
@@ -11939,9 +12188,20 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		$flags = ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']];
+		$countQuery = array_replace($request['count'], $flags);
+		$filtered   = self::filtersOnProperties(query: $countQuery);
+		$total      = null;
+		if ($filtered === true) {
+			// Counted per table first, as before: that count refuses a filter on
+			// an encrypted property before any search runs.
+			$total = $this->countInTables(pairs: $tables['pairs'], countQuery: $countQuery);
+		}
+
+		$this->unionRowTotal = null;
+		$results = $this->searchAcrossMultipleTables(query: array_replace($request['search'], $flags), registerSchemaPairs: $tables['pairs']);
 		return [
-			'results' => $this->searchAcrossMultipleTables(query: array_replace($request['search'], $flags), registerSchemaPairs: $tables['pairs']),
-			'total' => $this->countInTables(pairs: $tables['pairs'], countQuery: array_replace($request['count'], $flags)),
+			'results' => $results,
+			'total' => ($total ?? $this->unionRowTotal ?? $this->countAcrossMultipleTables(query: $countQuery, registerSchemaPairs: $tables['pairs'])),
 			'registers' => $tables['registers'],
 			'schemas' => $tables['schemas'],
 			'ignoredFilters' => [],
@@ -11950,16 +12210,61 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end searchObjectsGloballyBySearch()
 
 	/**
+	 * Whether a query filters on object properties: any key that is not
+	 * `_`-prefixed or `@self`, or a `_where` tree.
+	 *
+	 * @param array $query The query.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
+	 */
+	private static function filtersOnProperties(array $query): bool {
+		foreach (array_keys($query) as $key) {
+			$key = (string)$key;
+			if ($key === '_where' || ($key !== '@self' && str_starts_with($key, '_') === false)) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end filtersOnProperties()
+
+	/**
+	 * Sum the count query over the given register+schema tables, one count per table.
+	 *
+	 * @param list<array{register: Register, schema: Schema}> $pairs      The tables
+	 * @param array                                           $countQuery The count query, flags included
+	 *
+	 * @return int
+	 */
+	private function countInTables(array $pairs, array $countQuery): int {
+		$total = 0;
+		foreach ($pairs as $pair) {
+			$total += $this->countObjectsInRegisterSchemaTable(query: $countQuery, register: $pair['register'], schema: $pair['schema']);
+		}
+
+		return $total;
+	}//end countInTables()
+
+	/**
 	 * Every register+schema table the purpose gate lets this request read, with its serialised register and schema.
 	 *
-	 * A pair whose register or schema cannot be loaded is skipped.
+	 * A pair whose register or schema cannot be loaded is skipped. The
+	 * registers and schemas are loaded with one query each first.
 	 *
 	 * @return array{pairs: list<array{register: Register, schema: Schema}>, registers: array, schemas: array}
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-every-table-loads-its-registers-and-schemas-in-one-query-each
 	 */
 	private function globallyReadableTables(): array {
 		$idPairs = $this->getAllRegisterSchemaPairs();
 		$gate    = $this->purposeBoundTables();
 		$found   = ['pairs' => [], 'registers' => [], 'schemas' => []];
+
+		// One query each for every register and schema the loop below finds by id.
+		$this->registerMapper->preloadUnfiltered(ids: array_column($idPairs, 'registerId'));
+		$this->schemaMapper->preloadUnfiltered(ids: array_column($idPairs, 'schemaId'));
 		foreach ($idPairs as $idPair) {
 			$table = $this->readableTableOf(idPair: $idPair, gate: $gate);
 			if ($table === null) {
@@ -11995,23 +12300,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return null;
 		}
 	}//end readableTableOf()
-
-	/**
-	 * Sum the count query over the given register+schema tables.
-	 *
-	 * @param list<array{register: Register, schema: Schema}> $pairs      The tables
-	 * @param array                                           $countQuery The count query, flags included
-	 *
-	 * @return int
-	 */
-	private function countInTables(array $pairs, array $countQuery): int {
-		$total = 0;
-		foreach ($pairs as $pair) {
-			$total += $this->countObjectsInRegisterSchemaTable(query: $countQuery, register: $pair['register'], schema: $pair['schema']);
-		}
-
-		return $total;
-	}//end countInTables()
 
 	/**
 	 * Get size distribution chart data for objects.

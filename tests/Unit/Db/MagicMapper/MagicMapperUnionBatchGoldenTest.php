@@ -316,6 +316,63 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 		return $outcome;
 	}//end runBatch()
 
+	/**
+	 * Asked for its total, the statement counts every matched row in a window over the UNION and the rows drop that column.
+	 *
+	 * @return void
+	 */
+	public function testAStatementAskedForItsTotalCarriesItInAWindow(): void {
+		$this->unionRows = [
+			['_uuid' => 'u-1', '_schema' => 2, '_union_row_total' => '37'],
+			['_uuid' => 'u-2', '_schema' => 3, '_union_row_total' => '37'],
+		];
+		$mapper = $this->makeMapper(platform: 'mysql');
+		$pairs  = [$this->pair(name: 'a'), $this->pair(name: 'b')];
+
+		$method = new \ReflectionMethod(MagicMapper::class, 'runUnionBatch');
+		$rows   = $method->invoke($mapper, ['_search' => 'zaak', '_limit' => 2, '_offset' => 4], $pairs, [], true);
+
+		$prepared = array_values(array_filter(array_column($this->events, 'prepare')));
+		$this->assertCount(1, $prepared);
+		$this->assertStringStartsWith('SELECT unioned.*, COUNT(*) OVER () AS _union_row_total FROM (SELECT ', $prepared[0]);
+		$this->assertMatchesRegularExpression('/\) unioned ORDER BY .+ LIMIT 2 OFFSET 4$/', $prepared[0]);
+		$this->assertSame([['_uuid' => 'u-1', '_schema' => 2], ['_uuid' => 'u-2', '_schema' => 3]], $rows);
+		$this->assertSame(37, $this->unionRowTotal(mapper: $mapper));
+	}//end testAStatementAskedForItsTotalCarriesItInAWindow()
+
+	/**
+	 * An empty page carries no total, so the caller counts on its own; a statement not asked for one carries no window.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyPageOrAPlainStatementCarriesNoTotal(): void {
+		$this->unionRows = [];
+		$mapper = $this->makeMapper(platform: 'postgres');
+		$pairs  = [$this->pair(name: 'a'), $this->pair(name: 'b')];
+		$method = new \ReflectionMethod(MagicMapper::class, 'runUnionBatch');
+
+		$this->assertSame([], $method->invoke($mapper, ['_search' => 'zaak'], $pairs, [], true));
+		$this->assertNull($this->unionRowTotal(mapper: $mapper));
+
+		$this->events = [];
+		$method->invoke($mapper, ['_search' => 'zaak'], $pairs);
+		$prepared = array_values(array_filter(array_column($this->events, 'prepare')));
+		$this->assertStringNotContainsString('OVER ()', $prepared[0]);
+		$this->assertStringStartsWith('SELECT unioned.* FROM (SELECT ', $prepared[0]);
+	}//end testAnEmptyPageOrAPlainStatementCarriesNoTotal()
+
+	/**
+	 * The total the last single-statement UNION recorded.
+	 *
+	 * @param MagicMapper $mapper The mapper.
+	 *
+	 * @return int|null
+	 */
+	private function unionRowTotal(MagicMapper $mapper): ?int {
+		$property = new \ReflectionProperty(MagicMapper::class, 'unionRowTotal');
+		return $property->getValue($mapper);
+	}//end unionRowTotal()
+
 	private function pair(string $name): array {
 		$register = new Register();
 		$register->setId(1);

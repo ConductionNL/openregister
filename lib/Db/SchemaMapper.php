@@ -345,6 +345,34 @@ class SchemaMapper extends QBMapper implements SchemaMapperInterface {
 	}//end find()
 
 	/**
+	 * Load the schemas with the given ids in one query, for find() without the organisation filter.
+	 *
+	 * Each one is remembered under its id only, for find($id, _multitenancy:
+	 * false): the same entity find() would have loaded by that id (the stored row, its composition resolved).
+	 * A uuid or slug lookup still runs its own query.
+	 *
+	 * @param array<int, int|string> $ids The ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-every-table-loads-its-registers-and-schemas-in-one-query-each
+	 */
+	public function preloadUnfiltered(array $ids): void {
+		$missing = $this->findCache->idsNotHeldUnfiltered(ids: $ids);
+		if (count($missing) < 2) {
+			return;
+		}
+
+		foreach (array_chunk($missing, self::MAX_IN_LIST_SIZE) as $chunk) {
+			$this->readTrace()->record(method: 'findMultipleOptimized');
+			foreach ($this->schemasWithIds(ids: $chunk) as $schema) {
+				$resolved = $this->composition()->resolve(schema: $schema);
+				$this->findCache->remember(entity: $resolved, multitenancy: false, identifiers: [$resolved->getId()]);
+			}
+		}
+	}//end preloadUnfiltered()
+
+	/**
 	 * Read a schema from the database and remember it for this request.
 	 *
 	 * @param SchemaLookup $lookup The lookup.

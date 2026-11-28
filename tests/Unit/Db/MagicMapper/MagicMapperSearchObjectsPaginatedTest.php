@@ -136,11 +136,14 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 		$this->assertCount(1, $across);
 		$this->assertStringContainsString('"schema":"schema:3"', $across[0]);
 		$this->assertStringNotContainsString('schema:2', $across[0]);
-		$this->assertCount(1, array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
+		$counts = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countAcross ')));
+		$this->assertCount(1, $counts);
+		$this->assertStringContainsString('"schema":"schema:3"', $counts[0]);
+		$this->assertStringNotContainsString('schema:2', $counts[0]);
 	}//end testATextSearchLeavesOutTheTablesItMayNotRead()
 
 	/**
-	 * A text search across every table passes the caller's RBAC and multitenancy flags to the search and the count.
+	 * A text search across every table passes the caller's RBAC and multitenancy flags to the search and to its one count across the tables.
 	 *
 	 * @return void
 	 */
@@ -157,8 +160,10 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 		$across = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'searchAcross ')));
 		$this->assertCount(1, $across);
 		$this->assertStringContainsString('"_rbac":false,"_multitenancy":false', $across[0]);
-		$counts = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
-		$this->assertCount(2, $counts);
+		// The total is one count across the same tables, not one count per table.
+		$counts = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countAcross ')));
+		$this->assertCount(1, $counts);
+		$this->assertSame([], array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
 		foreach ($counts as $count) {
 			$this->assertStringContainsString('"_rbac":false,"_multitenancy":false', $count);
 		}
@@ -166,6 +171,62 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 		$this->assertSame(['magic_mapper'], [$result['response']['@self']['source'] ?? null]);
 		$this->assertSame([], $result['response']['ignoredFilters'] ?? null);
 	}//end testATextSearchCarriesTheCallersFlags()
+
+	/**
+	 * A text search whose UNION counted its own total answers with it and runs no second count.
+	 *
+	 * @return void
+	 */
+	public function testATextSearchTakesTheTotalItsStatementCounted(): void {
+		$case = [
+			'search'     => ['_search' => 'zaak', '_limit' => 1],
+			'count'      => ['_search' => 'zaak'],
+			'pairs'      => [['registerId' => 1, 'schemaId' => 2], ['registerId' => 1, 'schemaId' => 3]],
+			'unionTotal' => 41,
+		];
+		$result = $this->runCase(case: $case);
+
+		$this->assertSame(41, $result['response']['total']);
+		$this->assertSame([], array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countAcross ')));
+		$this->assertSame([], array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
+	}//end testATextSearchTakesTheTotalItsStatementCounted()
+
+	/**
+	 * A text search that filters on a property is counted per table, before the search, whatever its statement counted.
+	 *
+	 * The per-table count is what refuses a filter on an encrypted property;
+	 * the raw UNION arms do not repeat that refusal.
+	 *
+	 * @return void
+	 */
+	public function testAFilteredTextSearchIsCountedPerTableFirst(): void {
+		$case = [
+			'search'     => ['_search' => 'zaak', 'title' => 'x', '_limit' => 1],
+			'count'      => ['_search' => 'zaak', 'title' => 'x'],
+			'pairs'      => [['registerId' => 1, 'schemaId' => 2], ['registerId' => 1, 'schemaId' => 3]],
+			'unionTotal' => 41,
+		];
+		$result = $this->runCase(case: $case);
+
+		$this->assertSame(25, $result['response']['total']);
+		$this->assertSame([], array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countAcross ')));
+		$order = array_values(array_map(static fn (string $call): string => strtok($call, ' '), array_filter($this->calls, static fn (string $call): bool => preg_match('/^(countTable|searchAcross) /', $call) === 1)));
+		$this->assertSame(['countTable', 'countTable', 'searchAcross'], $order);
+	}//end testAFilteredTextSearchIsCountedPerTableFirst()
+
+	/**
+	 * A `_where` tree counts as a property filter; metadata and `_`-prefixed keys do not.
+	 *
+	 * @return void
+	 */
+	public function testWhatCountsAsFilteringOnProperties(): void {
+		$method = new \ReflectionMethod(MagicMapper::class, 'filtersOnProperties');
+
+		$this->assertFalse($method->invoke(null, ['_search' => 'a', '_limit' => 5, '@self' => ['schema' => [2]], '_rbac' => true]));
+		$this->assertTrue($method->invoke(null, ['_search' => 'a', 'title' => 'x']));
+		$this->assertTrue($method->invoke(null, ['_search' => 'a', '_where' => '{"and":[]}']));
+		$this->assertTrue($method->invoke(null, [0 => 'x']));
+	}//end testWhatCountsAsFilteringOnProperties()
 
 	public function testEveryCaseIsRecorded(): void {
 		$expected = require __DIR__.'/fixtures/search-objects-paginated.php';
@@ -279,7 +340,14 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 			fn (...$args): array => $this->record(name: 'findByRelation', args: $args, answer: array_values($stored))
 		);
 		$mapper->method('searchAcrossMultipleTables')->willReturnCallback(
-			fn (...$args): array => $this->record(name: 'searchAcross', args: $args, answer: $this->acrossRows(pairs: $args[1], stored: $stored))
+			function (...$args) use ($mapper, $case, $stored): array {
+				if (array_key_exists('unionTotal', $case) === true) {
+					// The single-statement UNION path records the total it counted.
+					(new \ReflectionProperty(MagicMapper::class, 'unionRowTotal'))->setValue($mapper, $case['unionTotal']);
+				}
+
+				return $this->record(name: 'searchAcross', args: $args, answer: $this->acrossRows(pairs: $args[1], stored: $stored));
+			}
 		);
 		$mapper->method('countAcrossMultipleTables')->willReturnCallback(
 			fn (...$args): int => $this->record(name: 'countAcross', args: $args, answer: (10 * count($args[1])))
