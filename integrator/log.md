@@ -242,3 +242,4 @@
 2026-11-27T17:53:35Z GREEN prs=10526,11349 main=73be975b7e integrator-cloud (merged; 11191 build-conflicted, 10156 suspect; main now 957cb680b6)
 2026-11-27T18:03:49Z GREEN prs=11382,11383 main=957cb680b6 integrator-cloud (merged; main now d79b3fe0da)
 2026-11-27T18:36:32Z GREEN prs=11384 main=d79b3fe0da integrator-cloud (merged; main now f3f348645c)
+2026-11-28T09:42:41Z NORESULT prs=11191,11385 main=f3f348645c integrator-cloud (tree a4b977f1ce suite green after retry (first run raced the background composer install), maintainability floor PASS; checker floor NO RESULT: adrvalidator cannot fetch static.developer.overheid.nl, proxy 403 in Default env (allowed_hosts empty); nothing merged; deterministic, other trees not tried; remaining clean candidate #10156 solo; #11035 #11148 #11317 conflict with main)
