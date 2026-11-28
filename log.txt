@@ -5713,3 +5713,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T14:17:54Z precheck-20261128T141719-f31f9936 CONFLICT-DEV #11035 bf9e6900
 2026-11-28T14:18:01Z session-20261128T134525-5a914492 live-launchpad-2 shard 4/8 on dev 3c8ab3c1: 295 passed, 2 failed (50 MB upload = SANDBOX post_max_size, green with 200M; first-paint-shell:178 known banner QUESTION). Next: shard 8/8 on latest dev.
 2026-11-28T14:18:14Z precheck-20261128T141719-f31f9936 CONFLICT-DEV #11317 ade57c3e
+2026-11-28T14:18:35Z precheck-20261128T141719-f31f9936 CONFLICT-DEV #11148 199b32a5
