@@ -153,6 +153,7 @@ class FlowNodeRegistrationOrderTest extends TestCase {
 				$ns . 'TriggerManualNodeInterface',
 				$ns . 'TriggerCalendarNodeInterface',
 				$ns . 'TriggerWebhookNodeInterface',
+				$ns . 'HarvestSourceNodeInterface',
 				// The code step registers last; it hides itself while its runner is absent.
 				$ns . 'CodeNodeInterface',
 			],

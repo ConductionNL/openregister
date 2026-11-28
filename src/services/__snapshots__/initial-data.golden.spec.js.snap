@@ -123,6 +123,8 @@ exports[`initial component data golden EditSource starts from the recorded state
   "sourceItem": {
     "databaseUrl": "",
     "description": "",
+    "runAs": "",
+    "schedule": "",
     "title": "",
   },
   "success": false,

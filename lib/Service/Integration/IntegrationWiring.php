@@ -35,6 +35,7 @@ use OCA\OpenRegister\Kernel\Contracts\Search\PageWidgetDeclarationInterface;
 use OCA\OpenRegister\Kernel\Contracts\Compliance\ConnectionStatusReporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Core\CredentialSecretReaderInterface;
 use OCA\OpenRegister\Kernel\Contracts\OutboundMailLinkRecorderInterface;
+use OCA\OpenRegister\Listener\SourceFetcherRegistrationListener;
 use OCA\OpenRegister\Listener\WebhookRequestInterceptionListener;
 use OCA\OpenRegister\Service\CalendarEvent\CalendarLinkListenerRegistrar;
 use OCA\OpenRegister\Mcp\BuiltIn\ToolInvocationRecorder;
@@ -81,7 +82,7 @@ use OCA\OpenRegister\Kernel\Contracts\Core\ObjectTimelineLinksInterface;
 use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\ObjectSource\OpenConnectorHttpProvider;
-use OCA\OpenRegister\Service\Sync\RestApiSourceFetcher;
+use OCA\OpenRegister\Service\Sync\RegisterSourceFetchersEvent;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use Psr\Container\ContainerInterface;
@@ -140,6 +141,7 @@ final class IntegrationWiring {
 		ToolInvocationRecorderInterface::class => ToolInvocationRecorder::class,
 		ToolReachLevels::class => ToolReachResolver::class,
 		WebhookInterceptionCacheInterface::class => WebhookInterceptionCache::class,
+		\OCA\OpenRegister\Kernel\Contracts\SourceHarvesterInterface::class => \OCA\OpenRegister\Service\Sync\SourceHarvester::class,
 		RequestMetricsInterface::class => RequestMetricsRecorder::class,
 	];
 
@@ -238,6 +240,9 @@ final class IntegrationWiring {
 		self::registerSeams(context: $context);
 		IntegrationControllersRegistrar::register(context: $context);
 		$context->registerEventListener(ObjectWriteRequestEvent::class, WebhookRequestInterceptionListener::class);
+		// Harvest protocols. OpenRegister registers its own fetchers through the
+		// same event an app uses to add one (app-harvest-fetchers-and-flow-node).
+		$context->registerEventListener(RegisterSourceFetchersEvent::class, SourceFetcherRegistrationListener::class);
 		// A removed or disabled person's owned webhooks are disabled, kept for review.
 		$context->registerEventListener(\OCP\User\Events\BeforeUserDeletedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
 		$context->registerEventListener(\OCP\User\Events\UserChangedEvent::class, \OCA\OpenRegister\Listener\OwnedWebhooksEndWithOwnerListener::class);
@@ -390,9 +395,9 @@ final class IntegrationWiring {
 			}
 		);
 
-		// The data-sync source-fetcher registry pre-loaded with the built-in
-		// REST/OpenRegister fetcher. Apps can register additional fetchers
-		// (OData, SOAP, CSV) by resolving and extending this service.
+		// The data-sync source-fetcher registry; every fetcher, the built-in
+		// REST/OpenRegister one included, arrives through
+		// RegisterSourceFetchersEvent on first use.
 		$context->registerService(SourceFetcherRegistry::class, self::buildSourceFetcherRegistry(...));
 	}//end registerSeams()
 
@@ -404,9 +409,13 @@ final class IntegrationWiring {
 	 * @return SourceFetcherRegistry
 	 */
 	private static function buildSourceFetcherRegistry(ContainerInterface $container): SourceFetcherRegistry {
-		$registry = new SourceFetcherRegistry();
-		$registry->register($container->get(RestApiSourceFetcher::class));
-		return $registry;
+		// Every fetcher, OpenRegister's own included, arrives through
+		// RegisterSourceFetchersEvent on first use.
+		return new SourceFetcherRegistry(
+			fetchers: [],
+			dispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
+			logger: $container->get(\Psr\Log\LoggerInterface::class)
+		);
 	}//end buildSourceFetcherRegistry()
 
 	/**
