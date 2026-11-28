@@ -12,3 +12,6 @@ widgets-picker-board-sync.spec.ts:288    DRAFT: fixed by #2420
 tiles-rendering.spec.ts:472              APP/SPEC (known since 27 Nov): tiles REQ content.{title} vs App or link tile storing tile columns (free)
 widgets-picker-assistant.spec.ts:153     APP vs SPEC: REQ-WDG-045 scenario 'proposes the app tile Case system', but catalogue apps are no longer picker cards since REQ-WDG-042, so the assistant answers 'No widget fits' (free; needs the assistant's offered cards to include catalogue apps, or a spec change)
 work-packages-widget.spec.ts x3          SANDBOX: did not run (OpenProject)
+widgets-picker-assistant.spec.ts:153     PR #2427 merged APP FIX: assistant offered catalogue apps again (catalogue:<uuid>, not drawn), one-cell tile; 16/16 --repeat-each 2
+# shard 1/8 on development 13f5039: 323 passed, 1 failed, 2 skipped (20 min)
+add-tiles-dialog.spec.ts:65              PR #2432 merged (strict mode: Nextcloud Office row also holds 'Word'; tick stubbed rows by test id) 2/2
