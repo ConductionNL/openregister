@@ -79,8 +79,15 @@ final class MagicNumberColumnSizes {
 	 * @param string $key The lower-cased full table name.
 	 *
 	 * @return array<string, array{precision: int, scale: int}> Sizes keyed by lower-cased column name.
+	 *
+	 * @spec openspec/specs/magic-table-columns/spec.md#requirement-a-number-the-column-cannot-hold-is-refused-not-rounded-req-mtc-002
 	 */
 	private function read(string $key): array {
+		// SQLite has no information_schema and stores numbers without a fixed precision, so nothing rounds there.
+		if ($this->db->getDatabaseProvider() === IDBConnection::PLATFORM_SQLITE) {
+			return [];
+		}
+
 		$sql = 'SELECT LOWER(column_name) AS col, numeric_precision, numeric_scale FROM information_schema.columns';
 		$sql .= " WHERE LOWER(table_name) = ? AND LOWER(data_type) IN ('decimal', 'numeric')";
 		$sql .= ' AND ' . (new CatalogueScope(db: $this->db))->condition();
