@@ -5641,3 +5641,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T10:18:33Z precheck-20261128T100624-d6a93d5b CONFLICT-DEV #11035 bf9e6900
 2026-11-28T10:19:07Z precheck-20261128T100624-d6a93d5b CONFLICT-DEV #11317 ade57c3e
 2026-11-28T10:19:27Z precheck-20261128T100624-d6a93d5b CONFLICT-DEV #11148 199b32a5
+2026-11-28T10:20:34Z session-20261128T091517-bc693734 live-launchpad-1 merged launchpad#2398 (edit-mode-draft-and-save task 16 ticked: LpBewerken grip/title overlap + one-row edit bar + edit-mode card border; LpVersies 5 strings translated in 37 locales, preview as drawn; Save 35-96 ms on reference stack incl. 30 widgets). Shard 4/8 on dev 1527624: 274 passed, 3 DRAFT reds (taking). Report e2e-red/launchpad-2026-11-28-live1.txt
