@@ -334,13 +334,13 @@ class SearchUnitsCharacterisationTest extends TestCase {
 	 */
 	private function provider(array $schemeRows, array $conceptRows): SearchDictionaryProvider {
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('searchObjectsPaginated')->willReturnCallback(
+		$objects->method('searchObjects')->willReturnCallback(
 			static function (array $searchQuery) use ($schemeRows, $conceptRows): array {
 				if (isset($searchQuery['uri']) === true) {
-					return ['results' => ($schemeRows[$searchQuery['uri']] ?? [])];
+					return ($schemeRows[$searchQuery['uri']] ?? []);
 				}
 
-				return ['results' => ($conceptRows[$searchQuery['inScheme']] ?? [])];
+				return ($conceptRows[$searchQuery['inScheme']] ?? []);
 			}
 		);
 		$registers = $this->createMock(RegisterMapper::class);
