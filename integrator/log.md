@@ -251,3 +251,4 @@
 2026-11-28T12:41:16Z GREEN prs=11388 main=00871f9cae integrator-cloud (merge rc=0; main now 9d6c98af8a; earlier tree with 11389 hit HEAD-MOVED)
 2026-11-28T14:55:37Z GREEN prs=11389 main=9d6c98af8a integrator-cloud (merge rc=0; main now 7e56dc9942; first run RED only because composer-patches did not apply in this sandbox's vendor after a transient psalm fetch failure, patches applied by hand, rerun GREEN)
 2026-11-28T15:26:38Z IDLE prs= main=7e56dc9942 integrator-cloud (3 idle cycles: 9781 failed-solo at head; 11035 11148 11317 conflict with main)
+2026-11-28T16:44:24Z GREEN prs=11390 main=7e56dc9942 integrator-cloud (merge rc=0 via per-PR fallback; main now 334bf56d3a; checker floor IMPROVED 64->92; 9781 failed-solo at head; 11035 11148 11317 conflict with main)
