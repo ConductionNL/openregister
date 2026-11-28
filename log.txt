@@ -5776,3 +5776,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T17:38:46Z session-20261128T173846-219bb312 done-thematiq: lease held by done-thematiq-20261128T143858-c4420fe8 until 18:53Z; this run ended without work
 2026-11-28T17:53:56Z session-20261128T172908-057dc314 cloud-or-reviewer-0..7: APPROVE #11393 05e92e47 (panels in one read); #11305 conflicts with main c5e58018 in FlowMapper.php (no verdict); every other open non-draft main PR already ledgered at head or on the skip list
 2026-11-28T18:06:23Z precheck-20261128T175558-08b79006 NORESULT tree b0d3eaed8b: deps failed
+2026-11-28T18:06:48Z or-fix-14: lane K=14 is outside K=0..9 (OR-FIX-LANE.md line 14; coordinator 13:40Z: a K>=10 run has no share and ends at once); no lease taken, no PR touched
