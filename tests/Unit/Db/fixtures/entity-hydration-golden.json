@@ -909,7 +909,8 @@
     },
     "SyncRecord": {
         "jsonFields": [
-            "rawData"
+            "rawData",
+            "resolutions"
         ],
         "empty json": {
             "returnsSelf": true,
@@ -926,6 +927,11 @@
                 "errorMessage": "text-errorMessage",
                 "attempts": 7,
                 "organisation": "text-organisation",
+                "conflictReason": "text-conflictReason",
+                "tombstoned": true,
+                "tombstonedAt": "2026-02-03T04:05:06+00:00",
+                "lastAppliedAt": "2026-02-03T04:05:06+00:00",
+                "resolutions": null,
                 "updated": "2026-02-03T04:05:06+00:00",
                 "created": "2026-02-03T04:05:06+00:00"
             },
@@ -941,6 +947,10 @@
                 "errorMessage",
                 "attempts",
                 "organisation",
+                "conflictReason",
+                "tombstoned",
+                "tombstonedAt",
+                "lastAppliedAt",
                 "updated",
                 "created"
             ]
@@ -962,6 +972,13 @@
                 "errorMessage": "text-errorMessage",
                 "attempts": 7,
                 "organisation": "text-organisation",
+                "conflictReason": "text-conflictReason",
+                "tombstoned": true,
+                "tombstonedAt": "2026-02-03T04:05:06+00:00",
+                "lastAppliedAt": "2026-02-03T04:05:06+00:00",
+                "resolutions": {
+                    "k": "v"
+                },
                 "updated": "2026-02-03T04:05:06+00:00",
                 "created": "2026-02-03T04:05:06+00:00"
             },
@@ -978,6 +995,11 @@
                 "errorMessage",
                 "attempts",
                 "organisation",
+                "conflictReason",
+                "tombstoned",
+                "tombstonedAt",
+                "lastAppliedAt",
+                "resolutions",
                 "updated",
                 "created"
             ]
@@ -1881,7 +1903,11 @@
     },
     "Source": {
         "jsonFields": [
-            "authConfig"
+            "authConfig",
+            "config",
+            "protectedFields",
+            "provenance",
+            "conflictRules"
         ]
     }
 }

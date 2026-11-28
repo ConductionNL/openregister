@@ -72,6 +72,18 @@ class HarvestPipelineFetchFailureGoldenTest extends TestCase {
 		);
 
 		$fetcher = new class() implements SourceFetcherInterface {
+			public function getType(): string {
+				return 'test';
+			}
+
+			public function getDisplayName(): string {
+				return 'Test';
+			}
+
+			public function getConfigSchema(): array {
+				return [];
+			}
+
 			public function supports(string $type): bool {
 				return true;
 			}

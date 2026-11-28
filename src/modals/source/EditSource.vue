@@ -40,6 +40,15 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 
 			<template v-if="!isDatabaseType">
 				<NcTextField
+					v-model="sourceItem.schedule"
+					:disabled="loading"
+					:label="t('openregister', 'Schedule')"
+					placeholder="0 * * * *" />
+				<NcTextField
+					v-model="sourceItem.runAs"
+					:disabled="loading"
+					:label="t('openregister', 'Account')" />
+				<NcTextField
 					v-model="sourceItem.databaseUrl"
 					:disabled="loading"
 					:label="t('openregister', 'Database URL')" />
@@ -156,6 +165,7 @@ import { navigationStore, sourceStore } from '../../store/store.js'
 </template>
 
 <script>
+import { getCurrentUser } from '@nextcloud/auth'
 import { generateUrl } from '@nextcloud/router'
 import {
 	NcCheckboxRadioSwitch,
@@ -182,6 +192,8 @@ const INITIAL_STATE = {
 		title: '',
 		description: '',
 		databaseUrl: '',
+		schedule: '',
+		runAs: '',
 	},
 
 	connection: {
@@ -262,6 +274,7 @@ export default {
 
 	mounted() {
 		this.initializeSourceItem()
+		this.loadTypes()
 	},
 
 	/**
@@ -280,7 +293,12 @@ export default {
 		 */
 		initializeSourceItem() {
 			const source = sourceStore.sourceItem
-			if (!source?.id) return
+			if (!source?.id) {
+				// The harvest account is prefilled with the admin creating the
+				// source, visibly and editable; nothing fills it in silently.
+				this.sourceItem.runAs = getCurrentUser()?.uid || ''
+				return
+			}
 
 			const authConfig = source.authConfig || {}
 			this.sourceItem = { ...source }
@@ -291,6 +309,43 @@ export default {
 			this.driverOptions.value =
 				optionOf(this.driverOptions, authConfig.driver)
 				|| this.driverOptions.value
+		},
+
+		/**
+		 * Add every source type an app registered to the type list.
+		 *
+		 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+		 * @return {Promise<void>} Resolves when the list is read; a failed read keeps the built-in types.
+		 */
+		async loadTypes() {
+			try {
+				const response = await fetch(generateUrl('/apps/openregister/api/sources/types'), {
+					headers: { requesttoken: window.OC?.requestToken || '' },
+				})
+				if (!response?.ok) return
+				const body = await response.json()
+				this.addTypes(body?.results || [])
+			} catch {
+				// The built-in types stay available.
+			}
+		},
+
+		/**
+		 * Append registered types the list does not hold yet.
+		 *
+		 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+		 * @param {Array<{type: string, displayName: string}>} types The registered types
+		 * @return {void}
+		 */
+		addTypes(types) {
+			const known = new Set(this.typeOptions.options.map((option) => option.id))
+			for (const entry of types) {
+				if (!entry?.type || known.has(entry.type)) continue
+				this.typeOptions.options.push({ label: entry.displayName || entry.type, id: entry.type })
+				known.add(entry.type)
+			}
+			const current = optionOf(this.typeOptions, sourceStore.sourceItem?.type)
+			if (current) this.typeOptions.value = current
 		},
 
 		/**

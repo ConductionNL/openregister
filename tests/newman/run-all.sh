@@ -124,6 +124,7 @@ DOMAIN_ORDER=(
     "upsert-on-key"
     "draft-activation"
     "object-grants"
+    "portal-property"
     "anonymisation-disclosures"
     "large-file-handling"
     "organisation-audit"
@@ -256,6 +257,9 @@ declare -A DOMAIN_COLLECTIONS=(
     # an-object-lists-its-grants-with-their-origin 4.4/4.5: /grants is 404 for a caller who cannot read the
     # record, 403 for a reader, 200 for the owner; /permissions and /shares keep their answers.
     [object-grants]="$REPO_ROOT/tests/integration/openregister-object-grants.postman_collection.json"
+    # a-property-says-what-the-portal-may-do-with-it 2.1: X-Portal-Subject reads leave out portal none/absent
+    # properties, writes to a property that is not edit answer 403 naming it; without the header nothing changes.
+    [portal-property]="$REPO_ROOT/tests/integration/openregister-portal-property.postman_collection.json"
     # REQ-ADI-005/006: file disclosures (reader 200, non-reader 403) and the admin pipeline report.
     [anonymisation-disclosures]="$REPO_ROOT/tests/newman/openregister-anonymisation-disclosures.postman_collection.json"
     # REQ-LFH-002/003: an upload in parts through the routes. HTTP-shaped: the raw

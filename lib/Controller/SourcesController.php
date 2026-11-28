@@ -27,12 +27,14 @@ use OCA\OpenRegister\Controller\Support\SourcePayload;
 use OCA\OpenRegister\Controller\Support\SourcesControllerServices;
 use OCA\OpenRegister\Kernel\Contracts\AppIdentity;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
+use OCA\OpenRegister\Kernel\Contracts\StoredFlowWriterInterface;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\Dbal\DbalConnectionException;
 use OCA\OpenRegister\Service\Dbal\QueryPreviewException;
 use OCA\OpenRegister\Service\Dbal\QueryPreviewService;
 use OCA\OpenRegister\Service\Sync\HarvestRun;
+use OCA\OpenRegister\Service\Sync\SourceRefused;
 use OCA\OpenRegister\Service\Sync\SourceFetcherInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -240,9 +242,10 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @psalm-return JSONResponse<200, Source, array<never, never>>
+	 * @psalm-return JSONResponse<200|422, Source|array{error: string, field: string}, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function create(): JSONResponse {
 		$refusal = $this->adminRefusal();
@@ -250,7 +253,14 @@ class SourcesController extends Controller {
 			return $refusal;
 		}
 
-		$source = $this->sourceMapper->createFromArray(object: $this->payload->forCreate(data: $this->request->getParams()));
+		$data = $this->payload->forCreate(data: $this->request->getParams());
+		$service = $this->services->domain->sourceService;
+		try {
+			$source = $service?->create(data: $data) ?? $this->sourceMapper->createFromArray(object: $data);
+		} catch (SourceRefused $refused) {
+			return new JSONResponse(data: $refused->toArray(), statusCode: 422);
+		}
+
 		return new JSONResponse(data: $this->serializeSource(source: $source));
 	}//end create()
 
@@ -265,9 +275,10 @@ class SourcesController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @psalm-return JSONResponse<200, Source, array<never, never>>
+	 * @psalm-return JSONResponse<200|422, Source|array{error: string, field: string}, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function update(int $id): JSONResponse {
 		$refusal = $this->adminRefusal();
@@ -276,7 +287,13 @@ class SourcesController extends Controller {
 		}
 
 		$data = $this->payload->forUpdate(data: $this->request->getParams());
-		$source = $this->sourceMapper->updateFromArray(id: $id, object: $data);
+		$service = $this->services->domain->sourceService;
+		try {
+			$source = $service?->update(id: $id, data: $data) ?? $this->sourceMapper->updateFromArray(id: $id, object: $data);
+		} catch (SourceRefused $refused) {
+			return new JSONResponse(data: $refused->toArray(), statusCode: 422);
+		}
+
 		return new JSONResponse(data: $this->serializeSource(source: $source));
 	}//end update()
 
@@ -313,6 +330,7 @@ class SourcesController extends Controller {
 	 * @psalm-return JSONResponse<200, array<never, never>, array<never, never>>
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function destroy(int $id): JSONResponse {
 		$refusal = $this->adminRefusal();
@@ -320,7 +338,13 @@ class SourcesController extends Controller {
 			return $refusal;
 		}
 
-		// Find the source by ID and delete it, answering with an empty body.
+		// Find the source by ID and delete it (with its flow), answering with an empty body.
+		$service = $this->services->domain->sourceService;
+		if ($service !== null) {
+			$service->delete(id: $id);
+			return new JSONResponse(data: []);
+		}
+
 		$this->sourceMapper->delete($this->sourceMapper->find($id));
 		return new JSONResponse(data: []);
 	}//end destroy()
@@ -333,7 +357,9 @@ class SourcesController extends Controller {
 	 * non-owning admin receives a 404 rather than acting on another tenant's
 	 * source (per-object guard, no IDOR). The harvest pipeline runs inline
 	 * when a transport is available; sources without a registered fetcher are
-	 * rejected rather than silently dropped.
+	 * rejected rather than silently dropped. A source with a flow (a schedule
+	 * and runAs) starts that flow's manual trigger instead and answers with
+	 * the run id.
 	 *
 	 * @param int $id The source id to sync
 	 *
@@ -348,11 +374,18 @@ class SourcesController extends Controller {
 	 *   their organisation.
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
 	 */
 	public function syncNow(int $id): JSONResponse {
 		$source = $this->adminSource(id: $id);
 		if ($source instanceof JSONResponse) {
 			return $source;
+		}
+
+		$flowId = trim((string)$source->getFlowId());
+		$flows  = $this->services->domain->flows;
+		if ($flowId !== '' && $flows !== null) {
+			return $this->startFlow(flows: $flows, flowId: $flowId);
 		}
 
 		$fetcher = $this->services->domain->fetcherRegistry->get((string)$source->getType());
@@ -362,6 +395,31 @@ class SourcesController extends Controller {
 
 		return $this->runSync(source: $source, fetcher: $fetcher);
 	}//end syncNow()
+
+	/**
+	 * Start a scheduled source's flow through its manual trigger.
+	 *
+	 * @param StoredFlowWriterInterface $flows  Starts the flow.
+	 * @param string                    $flowId The source's flow.
+	 *
+	 * @return JSONResponse `{runId, flowId}` (202), or the refusal.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	private function startFlow(StoredFlowWriterInterface $flows, string $flowId): JSONResponse {
+		try {
+			$runId = $flows->startManual(uuid: $flowId);
+		} catch (DoesNotExistException $exception) {
+			return $this->fail(message: $this->l10n->t('Not Found'), status: 404);
+		} catch (Throwable $exception) {
+			return new JSONResponse(
+				data: ['error' => $this->l10n->t('Sync failed'), 'message' => $exception->getMessage()],
+				statusCode: 409
+			);
+		}
+
+		return new JSONResponse(data: ['runId' => $runId, 'flowId' => $flowId], statusCode: 202);
+	}//end startFlow()
 
 	/**
 	 * Run the harvest pipeline inline and record its outcome on the source.
@@ -400,6 +458,33 @@ class SourcesController extends Controller {
 		$source->setLastSyncDate(new DateTime());
 		$this->sourceMapper->update($source);
 	}//end recordSync()
+
+	/**
+	 * Lists every registered source type: OpenRegister's own and those apps add.
+	 *
+	 * Each entry carries the type, its display name, the owning app and the
+	 * JSON Schema of its `config`, so an app's form and the sources page read
+	 * the same list. Admin only, like the rest of the sources API.
+	 *
+	 * @return JSONResponse `{results: [{type, displayName, application, configSchema}]}`, or 403.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @no-admin-idor-exempt Admin-gated (isCurrentUserAdmin → 403) and reads no
+	 *   object: it lists the fetcher types registered in this instance.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function types(): JSONResponse {
+		$refusal = $this->adminRefusal();
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return new JSONResponse(data: ['results' => $this->services->domain->fetcherRegistry->types()]);
+	}//end types()
 
 	/**
 	 * Return the current sync status for a source.

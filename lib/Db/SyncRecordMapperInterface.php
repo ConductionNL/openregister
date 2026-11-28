@@ -81,4 +81,64 @@ interface SyncRecordMapperInterface {
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */
 	public function transitionStatus(SyncRecord $record, string $newStatus): SyncRecord;
+
+	/**
+	 * Tombstone every external id of a source a complete run did not see, and clear the tombstone of those it did.
+	 *
+	 * @param int                 $sourceId The source.
+	 * @param array<string, true> $seenIds  External ids the run saw, as keys.
+	 * @param \DateTime           $at       The tombstone time.
+	 *
+	 * @return int How many external ids were newly tombstoned.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function markTombstones(int $sourceId, array $seenIds, \DateTime $at): int;
+
+	/**
+	 * The object uuids of a source's records tombstoned at one moment.
+	 *
+	 * @param int       $sourceId The source.
+	 * @param \DateTime $at       The tombstone time the pass wrote.
+	 *
+	 * @return list<string> The linked object uuids, without duplicates.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function objectUuidsTombstonedAt(int $sourceId, \DateTime $at): array;
+
+	/**
+	 * The latest record per external id of a source, optionally only those in one status.
+	 *
+	 * @param int         $sourceId The source.
+	 * @param string|null $status   The status to keep, or null for every status.
+	 *
+	 * @return list<SyncRecord> The records.
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function findLatestBySource(int $sourceId, ?string $status=null): array;
+
+	/**
+	 * One record of a source, or null when the source has no record with that id.
+	 *
+	 * @param int $sourceId The source.
+	 * @param int $recordId The record.
+	 *
+	 * @return SyncRecord|null
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function findOfSource(int $sourceId, int $recordId): ?SyncRecord;
+
+	/**
+	 * Persist a record's fields without changing its status.
+	 *
+	 * @param SyncRecord $record The record.
+	 *
+	 * @return SyncRecord
+	 *
+	 * @spec openspec/changes/app-harvest-fetchers-and-flow-node/specs/data-sync-harvesting/spec.md
+	 */
+	public function save(SyncRecord $record): SyncRecord;
 }//end interface

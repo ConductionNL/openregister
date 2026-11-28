@@ -80,6 +80,14 @@ class DashboardService {
 	 */
 	private ?array $webhookLogTotalsMemo = null;
 
+	/**
+	 * The audit totals of the answer being built, by stored register then schema
+	 * value; null outside an answer or when the grouped read failed.
+	 *
+	 * @var array<int|string, array<int|string, array{total: int, size: int}>>|null
+	 */
+	private ?array $auditPairTotals = null;
+
 
 	/**
 	 * Constructor for DashboardService
@@ -115,7 +123,7 @@ class DashboardService {
 			$logScope = new AuditStatisticsScope(registerId: $registerId, schemaId: $schemaId);
 			return [
 				'objects' => $this->objectTotals(stats: $this->mappers->catalog->tables()->getStatistics(scope: $scope)),
-				'logs' => $this->sizeTotals(stats: $this->mappers->auditTrailMapper->statisticsTotals(scope: $logScope)),
+				'logs' => $this->auditTotals(scope: $logScope),
 				'webhookLogs' => $this->webhookLogTotals(),
 				'files' => self::ZERO_TOTALS,
 			];
@@ -124,6 +132,67 @@ class DashboardService {
 			return ['objects' => self::ZERO_OBJECTS, 'logs' => self::ZERO_TOTALS, 'webhookLogs' => self::ZERO_TOTALS, 'files' => self::ZERO_TOTALS];
 		}
 	}//end getStats()
+
+	/**
+	 * The audit trail totals of a scope. While an answer is built, a register's
+	 * and a register/schema pair's totals come from the one grouped read made for
+	 * the answer (sum over the register's schemas, or the pair's entry), instead
+	 * of one COUNT query per entry; elsewhere, and for the instance totals, the
+	 * scope is counted on its own.
+	 *
+	 * @param AuditStatisticsScope $scope The register and schema to count.
+	 *
+	 * @return array{total: int, size: int}
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	private function auditTotals(AuditStatisticsScope $scope): array {
+		if ($this->auditPairTotals === null || $scope->registerId === null) {
+			return $this->sizeTotals(stats: $this->mappers->auditTrailMapper->statisticsTotals(scope: $scope));
+		}
+
+		$perSchema = ($this->auditPairTotals[(string) $scope->registerId] ?? []);
+		if ($scope->schemaId !== null) {
+			return ($perSchema[(string) $scope->schemaId] ?? self::ZERO_TOTALS);
+		}
+
+		$totals = self::ZERO_TOTALS;
+		foreach ($perSchema as $pair) {
+			$totals['total'] += $pair['total'];
+			$totals['size'] += $pair['size'];
+		}
+
+		return $totals;
+	}//end auditTotals()
+
+	/**
+	 * Read the audit totals of the answer's registers in one grouped query.
+	 *
+	 * A failed read leaves the memo unset, so each entry counts its own scope as before.
+	 *
+	 * @param array<int, \OCA\OpenRegister\Db\Register> $registers The registers of the answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	private function readAuditPairTotals(array $registers): void {
+		$ids = [];
+		foreach ($registers as $register) {
+			$ids[] = (int) $register->getId();
+		}
+
+		try {
+			$this->auditPairTotals = $this->mappers->auditTrailMapper->statisticsTotalsPerPair(registerIds: $ids);
+		} catch (Throwable $e) {
+			// Not a failure of the answer: each entry counts its own scope instead.
+			$this->auditPairTotals = null;
+			$this->logger->debug(
+				message: '[DashboardService] Audit totals per register and schema unavailable, counting per entry: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+	}//end readAuditPairTotals()
 
 	/**
 	 * The webhook log count across all webhooks; webhook log size is not tracked.
@@ -175,7 +244,7 @@ class DashboardService {
 	private function validCombinations(): array {
 		$combinations = [];
 		foreach ($this->mappers->catalog->registers()->findAll() as $register) {
-			foreach ($this->mappers->catalog->registers()->getSchemasByRegisterId($register->getId()) as $schema) {
+			foreach ($this->mappers->catalog->registers()->getSchemasOfRegister(register: $register) as $schema) {
 				$combinations[] = ['register' => $register->getId(), 'schema' => $schema->getId()];
 			}
 		}
@@ -209,6 +278,7 @@ class DashboardService {
 		} finally {
 			$this->buildingAnswer = false;
 			$this->webhookLogTotalsMemo = null;
+			$this->auditPairTotals = null;
 		}
 	}//end getRegistersWithSchemas()
 
@@ -239,6 +309,8 @@ class DashboardService {
 	 */
 	private function dashboardEntries(DashboardScope $scope): array {
 		$registers = $this->mappers->catalog->registers()->findAll(filters: $scope->registerFilters());
+
+		$this->readAuditPairTotals(registers: $registers);
 
 		$result = [$this->totalsEntry(scope: $scope)];
 		foreach ($registers as $register) {
@@ -327,7 +399,7 @@ class DashboardService {
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
 	 */
 	private function buildRegisterEntry(\OCA\OpenRegister\Db\Register $register, ?int $schemaId): array {
-		$schemas = $this->mappers->catalog->registers()->getSchemasByRegisterId($register->getId());
+		$schemas = $this->mappers->catalog->registers()->getSchemasOfRegister(register: $register);
 
 		$registerArray = $register->jsonSerialize();
 		$registerArray['stats'] = $this->getStats(registerId: $register->getId());

@@ -128,6 +128,45 @@ final class AuditTrailStatistics {
 	}//end totalsPerSchema()
 
 	/**
+	 * The totals per register and schema, for the registers given: one grouped
+	 * read in place of one totals() query per register and per pair.
+	 *
+	 * Keyed by the stored register value, then the stored schema value ('' for
+	 * a row without one), exactly as totals() compares them, so a register's
+	 * totals are the sum over its schemas and a pair's totals are its entry.
+	 *
+	 * @param array<int, int> $registerIds The register ids.
+	 *
+	 * @return array<int|string, array<int|string, array{total: int, size: int}>>
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function totalsPerPair(array $registerIds): array {
+		if ($registerIds === []) {
+			return [];
+		}
+
+		$totals = [];
+		foreach (array_chunk(array_map('strval', $registerIds), 1000) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('register', 'schema', $qb->createFunction('COUNT(id) as total'), $qb->createFunction('COALESCE(SUM(size), 0) as size'))
+				->from($this->tableName)
+				->where($qb->expr()->in('register', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
+				->groupBy('register', 'schema');
+
+			$result = $qb->executeQuery();
+			while (($row = $result->fetch()) !== false) {
+				$schema = (string) ($row['schema'] ?? '');
+				$totals[(string) $row['register']][$schema] = ['total' => (int) ($row['total'] ?? 0), 'size' => (int) ($row['size'] ?? 0)];
+			}
+
+			$result->closeCursor();
+		}
+
+		return $totals;
+	}//end totalsPerPair()
+
+	/**
 	 * The totals of the schemas that have rows.
 	 *
 	 * @param array<int, int> $schemaIds The schema ids.

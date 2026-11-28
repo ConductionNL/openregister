@@ -90,6 +90,8 @@ use OCA\OpenRegister\Service\Flow\FlowTriggerRenameCheck;
 use OCA\OpenRegister\Service\ContractBindings;
 use OCA\OpenRegister\Service\Flow\FlowWiring;
 use OCA\OpenRegister\Service\FlowLinkServiceInterface;
+use OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNode;
+use OCA\OpenRegister\Service\Flow\Nodes\HarvestSourceNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AuditTrailNodeInterface;
 use OCA\OpenRegister\Service\Flow\Nodes\ExtendInputNode;
@@ -490,6 +492,8 @@ final class FlowWiringTest extends TestCase {
 				PublicationRefusalInterface::class         => PartyIndicatorGuard::class,
 				FlowRunSignalInterface::class              => FlowRunSignalService::class,
 				LockObjectNodeInterface::class             => LockObjectNode::class,
+				HarvestSourceNodeInterface::class          => HarvestSourceNode::class,
+				\OCA\OpenRegister\Kernel\Contracts\StoredFlowWriterInterface::class => \OCA\OpenRegister\Service\Flow\StoredFlowWriter::class,
 				TriggerWebhookNodeInterface::class         => TriggerWebhookNode::class,
 				CodeNodeInterface::class                   => CodeNode::class,
 				CodeRunnerClientInterface::class           => CodeRunnerClient::class,

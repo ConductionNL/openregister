@@ -35,7 +35,7 @@ interface HarvestPipelineServiceInterface {
 	 * @param HarvestRun $harvest The source to harvest, its transport, the execution id and the
 	 *                            incremental checkpoint (null = full)
 	 *
-	 * @return array<string, int|string> Execution summary (counts + status)
+	 * @return array<string, mixed> Execution summary (counts + status)
 	 *
 	 * @spec openspec/specs/data-sync-harvesting/spec.md
 	 */

@@ -119,4 +119,64 @@ class RestApiSourceFetcherTest extends TestCase {
 		$this->assertSame(30, $capturedOptions['timeout']);
 		$this->assertSame(5, $capturedOptions['connect_timeout']);
 	}
+
+	public function testItDeclaresTheRestApiType(): void {
+		$fetcher = $this->makeFetcher();
+
+		$this->assertSame('rest-api', $fetcher->getType());
+		$this->assertSame('REST API', $fetcher->getDisplayName());
+		$this->assertSame('object', $fetcher->getConfigSchema()['type']);
+		$this->assertTrue($fetcher->supports('openregister'));
+	}
+
+	/**
+	 * The fetcher on the guarded harvest client, over a mocked transport and DNS.
+	 */
+	private function guardedFetcher(\GuzzleHttp\Handler\MockHandler $handler): RestApiSourceFetcher {
+		$addresses = $this->getMockBuilder(\OCA\OpenRegister\Service\Security\OutboundAddressGuard::class)
+			->onlyMethods(['addressesOf'])
+			->getMock();
+		$addresses->method('addressesOf')->willReturnCallback(
+			static fn (string $host): array => (filter_var($host, FILTER_VALIDATE_IP) !== false) ? [$host] : ['93.184.216.34']
+		);
+		$http = new \OCA\OpenRegister\Service\Sync\HarvestHttpClient(
+			new Client(['handler' => \GuzzleHttp\HandlerStack::create($handler)]),
+			new \OCA\OpenRegister\Service\Http\OutboundUrlGuard($addresses),
+			static function (int $seconds): void {
+			}
+		);
+
+		// The bare client must not be used once the guarded one is there.
+		$this->httpClient->expects($this->never())->method('request');
+
+		return new RestApiSourceFetcher($this->httpClient, $this->crypto, $this->logger, $http);
+	}
+
+	public function testGatherGoesThroughTheGuardedClient(): void {
+		$handler = new \GuzzleHttp\Handler\MockHandler([new Response(200, [], json_encode(['results' => [['id' => 'r1'], ['id' => 'r2']]]))]);
+
+		$ids = $this->guardedFetcher($handler)->gather(source: $this->makeSource(), since: null);
+
+		$this->assertSame(['r1', 'r2'], $ids);
+	}
+
+	public function testAnErrorStatusFromTheGuardedClientFailsTheFetch(): void {
+		$handler = new \GuzzleHttp\Handler\MockHandler([new Response(404, [], json_encode(['error' => 'gone']))]);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('HTTP 404');
+		$this->guardedFetcher($handler)->fetch(source: $this->makeSource(), externalId: 'r1');
+	}
+
+	public function testAnEndpointOnAPrivateAddressIsRefused(): void {
+		$handler = new \GuzzleHttp\Handler\MockHandler([new Response(200, [], '[]')]);
+		$source = $this->getMockBuilder(Source::class)->addMethods(['getDatabaseUrl', 'getAuthType', 'getAuthConfig'])->getMock();
+		$source->method('getDatabaseUrl')->willReturn('http://169.254.169.254/latest/meta-data');
+		$source->method('getAuthType')->willReturn('none');
+		$source->method('getAuthConfig')->willReturn([]);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('link-local/metadata');
+		$this->guardedFetcher($handler)->gather(source: $source, since: null);
+	}
 }//end class

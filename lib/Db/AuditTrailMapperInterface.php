@@ -382,6 +382,17 @@ interface AuditTrailMapperInterface extends ObjectAuditRecorderInterface {
 	public function statisticsTotals(AuditTrail\AuditStatisticsScope $scope): array;
 
 	/**
+	 * Totals per register and schema for the given registers, in one grouped read.
+	 *
+	 * @param int[] $registerIds The register ids.
+	 *
+	 * @return array<int|string, array<int|string, array{total: int, size: int}>> Stored register value => stored schema value ('' when none) => totals.
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function statisticsTotalsPerPair(array $registerIds): array;
+
+	/**
 	 * Updates an entity in the database
 	 *
 	 * @param AuditTrail $entity The entity to update

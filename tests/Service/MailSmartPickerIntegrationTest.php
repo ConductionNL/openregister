@@ -227,14 +227,14 @@ class MailSmartPickerIntegrationTest extends TestCase {
 		$providerForAdmin = new ObjectReferenceProvider(
 			\OC::$server->get(\OCP\IURLGenerator::class),
 			\OC::$server->get(\OCP\L10N\IFactory::class)->get('openregister'),
-			\OC::$server->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class),
+			\OC::$server,
 			'admin'
 		);
 
 		$providerForAnon = new ObjectReferenceProvider(
 			\OC::$server->get(\OCP\IURLGenerator::class),
 			\OC::$server->get(\OCP\L10N\IFactory::class)->get('openregister'),
-			\OC::$server->get(\OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter::class),
+			\OC::$server,
 			null
 		);
 

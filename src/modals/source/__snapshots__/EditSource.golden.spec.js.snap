@@ -25,6 +25,8 @@ exports[`EditSource golden closes and resets the form 1`] = `
     "databaseUrl": "",
     "description": "",
     "id": "",
+    "runAs": "",
+    "schedule": "",
     "title": "",
   },
   "success": null,
@@ -43,6 +45,14 @@ exports[`EditSource golden introspect: badJson 1`] = `
     "actionMessage": "",
   },
   "fetched": [
+    [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
     [
       "/apps/openregister/api/sources/9/introspect",
       {
@@ -106,6 +116,14 @@ exports[`EditSource golden introspect: failed 1`] = `
   },
   "fetched": [
     [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
+    [
       "/apps/openregister/api/sources/9/introspect",
       {
         "headers": {
@@ -167,6 +185,14 @@ exports[`EditSource golden introspect: failedBare 1`] = `
     "actionMessage": "",
   },
   "fetched": [
+    [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
     [
       "/apps/openregister/api/sources/9/introspect",
       {
@@ -230,6 +256,14 @@ exports[`EditSource golden introspect: ok 1`] = `
   },
   "fetched": [
     [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "",
+        },
+      },
+    ],
+    [
       "/apps/openregister/api/sources/9/introspect",
       {
         "headers": {
@@ -291,6 +325,14 @@ exports[`EditSource golden introspect: okCounts 1`] = `
     "actionMessage": "",
   },
   "fetched": [
+    [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
     [
       "/apps/openregister/api/sources/9/introspect",
       {
@@ -354,6 +396,14 @@ exports[`EditSource golden introspect: thrown 1`] = `
   },
   "fetched": [
     [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
+    [
       "/apps/openregister/api/sources/9/introspect",
       {
         "headers": {
@@ -415,6 +465,14 @@ exports[`EditSource golden introspect: thrownBare 1`] = `
     "actionMessage": "",
   },
   "fetched": [
+    [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
     [
       "/apps/openregister/api/sources/9/introspect",
       {
@@ -491,6 +549,8 @@ exports[`EditSource golden opens on a internal source: dom 1`] = `
       <x-nctextfield modelvalue="Main" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
       <x-nctextarea modelvalue="d" disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
       <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield disabled="false" label="Schedule" placeholder="0 * * * *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield disabled="false" label="Account" data-on="onUpdate:modelValue"></x-nctextfield>
       <x-nctextfield disabled="false" label="Database URL" data-on="onUpdate:modelValue"></x-nctextfield>
     </div>
   </slot-default>
@@ -735,6 +795,8 @@ exports[`EditSource golden opens on a none source: dom 1`] = `
       <x-nctextfield modelvalue="" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
       <x-nctextarea modelvalue="" disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
       <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield modelvalue="" disabled="false" label="Schedule" placeholder="0 * * * *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield modelvalue="" disabled="false" label="Account" data-on="onUpdate:modelValue"></x-nctextfield>
       <x-nctextfield modelvalue="" disabled="false" label="Database URL" data-on="onUpdate:modelValue"></x-nctextfield>
     </div>
   </slot-default>
@@ -765,6 +827,8 @@ exports[`EditSource golden opens on a none source: form 1`] = `
   "sourceItem": {
     "databaseUrl": "",
     "description": "",
+    "runAs": "",
+    "schedule": "",
     "title": "",
   },
   "success": false,
@@ -881,6 +945,8 @@ exports[`EditSource golden opens on a unknownType source: dom 1`] = `
       <x-nctextfield modelvalue="Odd" disabled="false" label="Title *" data-on="onUpdate:modelValue"></x-nctextfield>
       <x-nctextarea disabled="false" label="Description" data-on="onUpdate:modelValue"></x-nctextarea>
       <x-ncselect clearable="false" options="[object Object],[object Object],[object Object]" modelvalue="[object Object]" inputlabel="Type" disabled="false" data-on="onUpdate:modelValue" value="[object Object]"></x-ncselect>
+      <x-nctextfield disabled="false" label="Schedule" placeholder="0 * * * *" data-on="onUpdate:modelValue"></x-nctextfield>
+      <x-nctextfield disabled="false" label="Account" data-on="onUpdate:modelValue"></x-nctextfield>
       <x-nctextfield disabled="false" label="Database URL" data-on="onUpdate:modelValue"></x-nctextfield>
     </div>
   </slot-default>
@@ -1839,6 +1905,14 @@ exports[`EditSource golden testConnection: badJson 1`] = `
   },
   "fetched": [
     [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
+    [
       "/apps/openregister/api/sources/9/test-connection",
       {
         "headers": {
@@ -1900,6 +1974,14 @@ exports[`EditSource golden testConnection: failed 1`] = `
     "actionMessage": "",
   },
   "fetched": [
+    [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
     [
       "/apps/openregister/api/sources/9/test-connection",
       {
@@ -1963,6 +2045,14 @@ exports[`EditSource golden testConnection: failedBare 1`] = `
   },
   "fetched": [
     [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
+    [
       "/apps/openregister/api/sources/9/test-connection",
       {
         "headers": {
@@ -2024,6 +2114,14 @@ exports[`EditSource golden testConnection: ok 1`] = `
     "actionMessage": "",
   },
   "fetched": [
+    [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "",
+        },
+      },
+    ],
     [
       "/apps/openregister/api/sources/9/test-connection",
       {
@@ -2087,6 +2185,14 @@ exports[`EditSource golden testConnection: okCounts 1`] = `
   },
   "fetched": [
     [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
+    [
       "/apps/openregister/api/sources/9/test-connection",
       {
         "headers": {
@@ -2149,6 +2255,14 @@ exports[`EditSource golden testConnection: thrown 1`] = `
   },
   "fetched": [
     [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
+    [
       "/apps/openregister/api/sources/9/test-connection",
       {
         "headers": {
@@ -2210,6 +2324,14 @@ exports[`EditSource golden testConnection: thrownBare 1`] = `
     "actionMessage": "",
   },
   "fetched": [
+    [
+      "/apps/openregister/api/sources/types",
+      {
+        "headers": {
+          "requesttoken": "tok",
+        },
+      },
+    ],
     [
       "/apps/openregister/api/sources/9/test-connection",
       {

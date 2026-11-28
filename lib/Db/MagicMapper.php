@@ -955,10 +955,18 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 * Setter injection, to avoid a circular dependency on this mapper.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
 	 */
 	private function wireStatisticsCountCallback(): void {
 		$this->statisticsHandler->setCountCallback(
 			function (array $query, Register $register, Schema $schema): int {
+				// The statistics walk counts tables it just listed from
+				// information_schema: they exist, so do not probe each again.
+				foreach ($this->statisticsHandler?->listedMagicTables() ?? [] as $tableName) {
+					$this->tableExistsMemo[$tableName] = true;
+				}
+
 				return $this->countObjectsInRegisterSchemaTable(
 					query: $query,
 					register: $register,

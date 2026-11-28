@@ -192,6 +192,20 @@ interface RegisterMapperInterface {
 	public function getSchemasByRegisterId(int $registerId, bool $_rbac = true, bool $_multitenancy = true): array;
 
 	/**
+	 * The schemas linked to a register the caller already holds, without reading the register again.
+	 *
+	 * @param Register $register The register.
+	 * @param bool $_rbac Whether to apply RBAC permission checks to the schemas (default: true)
+	 *
+	 * @return Schema[]
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flag controls security filtering behavior
+	 *
+	 * @spec openspec/specs/built-in-dashboards/spec.md#requirement-dashboardservice-must-assemble-or-canned-statistics-and-chart-payloads-with-fail-soft-semantics
+	 */
+	public function getSchemasOfRegister(Register $register, bool $_rbac = true): array;
+
+	/**
 	 * Retrieves the ID of the first register that includes the given schema ID.
 	 *
 	 * This method searches the `openregister_registers` table for a register
