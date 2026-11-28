@@ -259,4 +259,3 @@ openregister#11374 c77bcae002e6e7c8d017c137d1bbcb1e3291d8c4 auto-park: sbom: pac
 openregister#11349 d143ddd221b56d5619e19e353cab0ea94c8498e2 precheck-red alone on main: FAIL src/views/object/ObjectsList.spec.js
 openregister#10156 2c1cae8c4525d623f44b53e2a371755956d7b6c4 precheck-red alone on main: FAIL src/services/initial-data.golden.spec.js
 openregister#11387 d72c298846fcaee32e588c4c52cd12c20495503b precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Controller\OrganisationControllerUsageTest::testReportsQuotasHistoryAndZeroCounter
-openregister#11390 978d5e42209ed15de583181df5c5e463a08e88b1 precheck-red alone on main: OCA\OpenRegister\Tests\Unit\Service\Chat\ResponseGenerationBreakerTest::testAClosedBreakerLetsTheChatThroughAn;OCA\OpenRegister\Tests\Unit\Service\Chat\ResponseGenerationBreakerTest::testAGoodProbeAfterTheCoolDow
