@@ -5700,3 +5700,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T13:08:41Z precheck-20261128T130829-cb6ace5a CONFLICT-DEV #11317 ade57c3e
 2026-11-28T13:09:42Z or-fix-14 (N%20==14): share empty (open base-main PRs with N%20==14: 10464 skip-listed; 11154, 11174 draft); precheck next 14 20: NONE left; nothing to fix
 2026-11-28T13:11:34Z precheck-20261128T131118-221813a4 CONFLICT-DEV #11035 bf9e6900
+2026-11-28T13:23:39Z b-thematiq-20261128T123402-c49e10d7 b-thematiq merged thematiq#2241 (first-time-setup 6.1 wizard frame: board look of nc-vue 2.244.1, Skip link, Done Close+walkthrough primary, board dialog CSS kept in the bundle; live 7/7 NC34) and #2247 (first-time-setup archived, REQ-TQFS-001..013 synced). thematiq open changes left: same-shell-every-page (5.2, 6.0, 6.3).
