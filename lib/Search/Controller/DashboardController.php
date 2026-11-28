@@ -657,38 +657,58 @@ class DashboardController extends Controller {
 			return new JSONResponse(['error' => 'Admin privileges required'], 403);
 		}
 
+		// The two object charts count the same tables: count each once.
 		return new JSONResponse(
-			data: self::answersOf(
-				reads: [
-					'auditTrailActions'  => fn (): JSONResponse => $this->getAuditTrailActionChart(
-						from: $from,
-						till: $till,
-						registerId: $registerId,
-						schemaId: $schemaId
-					),
-					'objectsByRegister'  => fn (): JSONResponse => $this->getObjectsByRegisterChart(registerId: $registerId, schemaId: $schemaId),
-					'objectsBySchema'    => fn (): JSONResponse => $this->getObjectsBySchemaChart(registerId: $registerId, schemaId: $schemaId),
-					'objectsBySize'      => fn (): JSONResponse => $this->getObjectsBySizeChart(registerId: $registerId, schemaId: $schemaId),
-					'auditTrailStats'    => fn (): JSONResponse => $this->getAuditTrailStatistics(
-						registerId: $registerId,
-						schemaId: $schemaId,
-						hours: $hours
-					),
-					'actionDistribution' => fn (): JSONResponse => $this->getAuditTrailActionDistribution(
-						registerId: $registerId,
-						schemaId: $schemaId,
-						hours: $hours
-					),
-					'mostActiveObjects'  => fn (): JSONResponse => $this->getMostActiveObjects(
-						registerId: $registerId,
-						schemaId: $schemaId,
-						limit: $limit,
-						hours: $hours
-					),
-				]
+			data: $this->dashboardService->countingPairsOnce(
+				work: fn (): array => self::answersOf(
+					reads: $this->panelReads(from: $from, till: $till, scope: [$registerId, $schemaId], window: [$hours, $limit])
+				)
 			)
 		);
 	}//end getPanels()
+
+	/**
+	 * Each dashboard panel's read, by panel key, through its own endpoint.
+	 *
+	 * @param string|null              $from   Start date of the audit action chart (Y-m-d).
+	 * @param string|null              $till   End date of the audit action chart (Y-m-d).
+	 * @param array{0: ?int, 1: ?int}  $scope  The register id and the schema id.
+	 * @param array{0: ?int, 1: ?int}  $window The look-back hours and the most-active limit.
+	 *
+	 * @return array<string, \Closure(): JSONResponse>
+	 */
+	private function panelReads(?string $from, ?string $till, array $scope, array $window): array {
+		[$registerId, $schemaId] = $scope;
+		[$hours, $limit] = $window;
+
+		return [
+			'auditTrailActions'  => fn (): JSONResponse => $this->getAuditTrailActionChart(
+				from: $from,
+				till: $till,
+				registerId: $registerId,
+				schemaId: $schemaId
+			),
+			'objectsByRegister'  => fn (): JSONResponse => $this->getObjectsByRegisterChart(registerId: $registerId, schemaId: $schemaId),
+			'objectsBySchema'    => fn (): JSONResponse => $this->getObjectsBySchemaChart(registerId: $registerId, schemaId: $schemaId),
+			'objectsBySize'      => fn (): JSONResponse => $this->getObjectsBySizeChart(registerId: $registerId, schemaId: $schemaId),
+			'auditTrailStats'    => fn (): JSONResponse => $this->getAuditTrailStatistics(
+				registerId: $registerId,
+				schemaId: $schemaId,
+				hours: $hours
+			),
+			'actionDistribution' => fn (): JSONResponse => $this->getAuditTrailActionDistribution(
+				registerId: $registerId,
+				schemaId: $schemaId,
+				hours: $hours
+			),
+			'mostActiveObjects'  => fn (): JSONResponse => $this->getMostActiveObjects(
+				registerId: $registerId,
+				schemaId: $schemaId,
+				limit: $limit,
+				hours: $hours
+			),
+		];
+	}//end panelReads()
 
 	/**
 	 * The status and body of each panel read, by panel key.

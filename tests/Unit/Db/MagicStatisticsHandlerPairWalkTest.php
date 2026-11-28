@@ -43,6 +43,18 @@ class MagicStatisticsHandlerPairWalkTest extends TestCase {
 	private RegisterMapper $registerMapper;
 
 	/**
+	 * @var SchemaMapper&MockObject
+	 */
+	private SchemaMapper $schemaMapper;
+
+	/**
+	 * Fail the count of this register/schema pair, when set.
+	 *
+	 * @var array{0: int, 1: int}|null
+	 */
+	private ?array $failingPair = null;
+
+	/**
 	 * The handler under test.
 	 *
 	 * @var MagicStatisticsHandler
@@ -60,6 +72,7 @@ class MagicStatisticsHandlerPairWalkTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$this->schemaMapper = $schemaMapper;
 		$schemaMapper->method('find')->willReturnCallback(
 			static function (int|string $id): Schema {
 				$schema = new Schema();
@@ -76,6 +89,10 @@ class MagicStatisticsHandlerPairWalkTest extends TestCase {
 		);
 		$this->handler->setCountCallback(
 			function (array $query, Register $register, Schema $schema): int {
+				if ($this->failingPair === [(int) $register->getId(), (int) $schema->getId()]) {
+					throw new \RuntimeException('table gone');
+				}
+
 				$this->countedRegisters[] = (int) $register->getId();
 				return 2;
 			}
@@ -124,6 +141,60 @@ class MagicStatisticsHandlerPairWalkTest extends TestCase {
 
 		$this->assertSame(6, array_sum($chart['series']));
 		$this->assertSame([1, 1, 2], $this->countedRegisters);
+	}
+
+	/**
+	 * @spec openspec/changes/dashboard-chart-counts-once/specs/built-in-dashboards/spec.md
+	 */
+	public function testTheChartWalkLoadsItsSchemasInOneQueryFirst(): void {
+		$this->registerMapper->method('find')->willReturnCallback(fn (int|string $id): Register => $this->register(id: (int) $id));
+		$this->schemaMapper->expects($this->once())->method('preloadUnfiltered')->with([10, 11]);
+
+		$this->assertSame(6, array_sum($this->handler->getRegisterChartData()['series']));
+	}
+
+	/**
+	 * @spec openspec/changes/dashboard-chart-counts-once/specs/built-in-dashboards/spec.md
+	 */
+	public function testAFailedSchemaBulkReadLeavesEachSchemaToItsOwnRead(): void {
+		$this->registerMapper->method('find')->willReturnCallback(fn (int|string $id): Register => $this->register(id: (int) $id));
+		$this->schemaMapper->method('preloadUnfiltered')->willThrowException(new \Exception('no bulk'));
+
+		$this->assertSame(6, array_sum($this->handler->getSchemaChartData()['series']));
+	}
+
+	/**
+	 * @spec openspec/changes/dashboard-chart-counts-once/specs/built-in-dashboards/spec.md
+	 */
+	public function testBothObjectChartsCountEachTableOnceInsideAWindow(): void {
+		$this->registerMapper->method('find')->willReturnCallback(fn (int|string $id): Register => $this->register(id: (int) $id));
+
+		[$byRegister, $bySchema] = $this->handler->rememberPairCounts(
+			fn (): array => [$this->handler->getRegisterChartData(), $this->handler->getSchemaChartData()]
+		);
+
+		$this->assertSame(6, array_sum($byRegister['series']));
+		$this->assertSame(6, array_sum($bySchema['series']));
+		$this->assertSame([1, 1, 2], $this->countedRegisters, 'each table counted once for both charts');
+
+		$this->handler->getRegisterChartData();
+		$this->assertCount(6, $this->countedRegisters, 'outside the window every chart counts again');
+	}
+
+	/**
+	 * @spec openspec/changes/dashboard-chart-counts-once/specs/built-in-dashboards/spec.md
+	 */
+	public function testAPairWhoseCountFailsStaysOutOfBothChartsInsideAWindow(): void {
+		$this->registerMapper->method('find')->willReturnCallback(fn (int|string $id): Register => $this->register(id: (int) $id));
+		$this->failingPair = [2, 10];
+
+		[$byRegister, $bySchema] = $this->handler->rememberPairCounts(
+			fn (): array => [$this->handler->getRegisterChartData(), $this->handler->getSchemaChartData()]
+		);
+
+		$this->assertSame(4, array_sum($byRegister['series']));
+		$this->assertSame(4, array_sum($bySchema['series']));
+		$this->assertCount(1, $byRegister['labels'], 'register 2 has no countable table, so no bar');
 	}
 
 	public function testListedMagicTablesIsWhatTheWalkReadWithoutReadingAgain(): void {

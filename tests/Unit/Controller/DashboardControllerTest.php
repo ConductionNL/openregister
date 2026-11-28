@@ -40,6 +40,7 @@ class DashboardControllerTest extends TestCase {
 		$this->auditReads = $this->createMock(DashboardAuditReads::class);
 		$this->dashboardService->method('sizes')->willReturn($this->sizes);
 		$this->dashboardService->method('auditReads')->willReturn($this->auditReads);
+		$this->dashboardService->method('countingPairsOnce')->willReturnCallback(static fn (callable $work): mixed => $work());
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
