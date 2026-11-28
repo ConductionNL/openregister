@@ -1,0 +1,18 @@
+# launchpad pixel pass 2026-11-28, done-launchpad (cloud, afternoon run)
+
+Stack: sandbox reference stack (nginx, php-fpm 8.3 static 12 + opcache, MariaDB 10.11, APCu local, Redis distributed+locking), NC 34.0.6 (/opt tarball), OR main, launchpad development; demo seed `occ launchpad:demo:load --retire-showcases` plus tests/e2e/seed.sh; pieter's pending acknowledgement confirmed first (its overlay otherwise hides the page from compdiff: LpVandaag measured 1 live component). No thematiq: every card flags font family (Fira Sans vs system-ui) and ink colours, so counts below are NON-FONT flag rows. design-system 73d47dd compdiff. Width: LpVandaag 1920 (its board width), every other board 1440.
+
+| board | paired | non-font flags | fixed this run | remaining (reason) |
+|---|---|---|---|---|
+| LpWidgetInstellen | 1/5 | n/a | launchpad#2463 (type names localised in the shared registry, livetile ownsTitle: no second Titel/Titel tonen), nextcloud-vue#2438 + launchpad#2473 (462 nl strings: Widget toevoegen, Soort widget, Opmaak, Titel tonen, Eigen titel) | layout of the shared CnAddWidgetModal: board kicker + "Widget instellen: <type>" title, two-column fields, background/icon as a second Opmaak block; the type select row stays after the picker (REQ-WDG-010 says so: spec + board conflict, needs a spec change first) |
+| LpVandaag (1920) | 15/34 | 31 -> 29 | launchpad#2465 (Mijn apps tiles 104 -> 139 px squares, board 140.7; decision 27 Nov option b: well flow = auto-fill square cells, start page six 136 px squares) | dossiq/mail/attention cards (apps not in sandbox); pageHeader not paired; Files app tile centred in its 164 px cell (12 px low); per-widget title gaps |
+| LpWerkplek | 7 -> 14/26 | 14 -> 28 (more cards compared) | launchpad#2467 (demo Mijn werkplek follows the board's 17 cards and order; 38 launchpad strings get nl incl. "Opent de resultaten in een nieuw tabblad") | overlays the board draws at once (search dropdown, More menu, row menu, toast); Mail, dossiq, OpenProject and 5 tiles not registered in the sandbox; Bladwijzers card content taller than drawn |
+| LpIntranet | 14/19 | 30 -> 28 | launchpad#2470 (titled text cards read from the top left: gaps 100/49.6/39.1 -> 15.1/14.2/14.2, board 14/13/12; REQ-TXT-005 follows the boards) | poll card ("Wat vindt u van dit intranet?"), Woo card title 17 vs 20 px, Verjaardagen cake icon (titleInsetLeft 45), people list avatar inset |
+| LpManagement | 12/21 | 17 | - | filter card and cross-widget filter not seeded on that board, map, connections table, chart insets |
+| LpAfdeling | 7/9 | 18 | - | per-widget spacing (gapBelowTitle), not worked |
+| LpMeer / LpMeerAlle | 0/1 | 0 | - | board is the 600 px menu panel alone: needs a --board-frame / --live-region run |
+| LpBeheerAlgemeen | 0/9 | 0 | - | settings page pairs nothing on the default run (needs the section anchor and region flags) |
+
+Not measured this run: the other 26 Lp boards.
+
+Speed, same stack, admin, measurePage 7 warm x 2 rounds: strict floor (OR + launchpad disabled) 514 / 530 ms, first content 256 / 276. Workspace 726 / 807 (+212 / +277, rule +150), first content 816 / 896 (rule 300): its LCP is the tile logo image (cn-dash-tile-widget__icon-img ~1.19 s), which loads only after mount, so it replaces the shell as first content; that is first-paint-skeleton task 45 (tiles rendered filled in the first render). Admin settings 788 / 768 (+274 / +238), first content 588 / 596. Browser waterfall: TTFB 78 vs floor 58, DCL 511 vs 409, first API call 381 vs 221 ms: the script cost (launchpad-main.js 3.5 MB) dominates, as perf-K1/K2 already found.
