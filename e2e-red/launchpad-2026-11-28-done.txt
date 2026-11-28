@@ -11,3 +11,10 @@ people-widget-rendering x4, or-absent    SANDBOX: nginx served .mjs as octet-str
 navigation-editor-org-api:113            ORDER: setting reads 'top', left set by an earlier spec in the run; passes on a fresh instance only
 performance Workspace                    PERF: 723 ms vs floor 484 (+239, rule +150), first content 548 ms; slowest contactsmenu/teams 210, files widget contents 201
 performance Admin settings               PERF: 647 ms vs floor 484 (+163), first content 564 ms; preferences/admin-walkthrough + api/admin/settings 166 ms
+# shard 7/8 on development 194cf356: 297 passed, 6 failed, 2 skipped, 15 did not run (28.5 min)
+service-health-ping:423 (+14 not run)    PR #2421 merged (tile editor Save then edit-bar Save) 15/15
+public-share-client-ip x3                SANDBOX: bruteforce/ratelimit protection off on this instance; green with it on
+public-start-page:139                    SANDBOX: tests/e2e/seed.sh not run (no 'recipient'); 8/8 with dashboard-sharing after seeding
+service-health-ping:692 (refresh job)    SANDBOX: memcache.distributed unset (APCu per process; CLI job blind to FPM cache); green with Redis distributed
+runtime-shell:267                        DEV: regex already updated on development
+# Sandbox tip for every lane: run `bash apps/launchpad/tests/e2e/seed.sh` from the server root, set memcache.distributed Redis, nginx mime 'js mjs'.
