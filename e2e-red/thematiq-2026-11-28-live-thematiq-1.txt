@@ -1,0 +1,6 @@
+# thematiq full live e2e, 28 Nov 2026 ~10:15-10:55Z, live-thematiq-1. Stack: NC 34.0.6 (GitHub release tarball; download.nextcloud.com refused by proxy), sqlite, php -S 8 workers pcov off + router; OR main; thematiq development 96dc85e.
+# 617 tests: 597 passed, 3 failed, 9 skipped, 8 did not run (39 min).
+#   - ADR-124 perf Theming settings + Files: php -S sandbox, not representative (known core floor, see PERF-HANDOFF).
+#   - apps-menu-walkthrough 'not again once finished' (+ its 8 serial followers not run): reload aborted the close's seen-version PUT; FIXED in thematiq#2224 (spec waits for the stored seen version); file x2 16/16, spec-coverage/a* 115 passed.
+# Earlier this run: thematiq#2213 checkbox-toggle-persistence show-menu-labels (resp.json of an unread fetch body hung) fixed.
+# Result: no functional red left on development after #2224.
