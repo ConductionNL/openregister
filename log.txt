@@ -5651,3 +5651,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T10:46:48Z integrator-20261128T095651-de26e006 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-28T10:47:02Z integrator-20261128T095651-de26e006 MERGED-TREE 14dad87178: 1 PRs, main now 4457d81ae9 = tested tree
+2026-11-28T11:01:32Z session-20261128T091517-bc693734 live-launchpad-1 shard 8/8 on dev e073f97: 299 passed, 7 failed; 5 draft reds fixed (#2400/#2420 landed first; my #2424 closed as duplicate). Left: tiles-rendering:472, widgets-picker-assistant:153 (REQ-WDG-045 vs -042). Report e2e-red/launchpad-2026-11-28-live1.txt
