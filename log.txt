@@ -5738,3 +5738,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T15:38:42Z done-thematiq-20261128T153832-13934b6d done-thematiq: lease held by done-thematiq-20261128T143858-c4420fe8 until 17:09Z (renewed 15:09Z, active 15:15Z); this run ended without work
 2026-11-28T15:38:49Z done-launchpad (cloud) shard 2/8 on dev bc5f9446 (nginx/php-fpm 8.3/MariaDB 10.11/Redis/APCu, NC 34.0.6, OR main 7e56dc99): 293 passed, 10 skipped, 1 failed + 26 not run = cli-commands:805 SANDBOX (port 8080 counts as shared instance); cli-commands.spec.ts on :8095 41/41. GREEN.
 2026-11-28T15:53:46Z session-20261128T155346-f3fac6a4 cloud-or-reviewer-0: idle; shard 0 non-draft main PRs 5968 10640 11032 11040 all have APPROVE/BLOCK at current head (10464, 10280, 9880 never land); no verdicts written
+2026-11-28T16:02:32Z precheck-20261128T155539-c38f78e7 NORESULT tree 5ba72158b4: deps failed
