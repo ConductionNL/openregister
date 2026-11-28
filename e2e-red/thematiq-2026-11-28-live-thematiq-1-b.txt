@@ -1,0 +1,7 @@
+# thematiq full live e2e, 28 Nov 2026 ~13:37-14:45Z, live-thematiq-1 (run b). Stack: NC 34.0.6 (/opt/nextcloud-34), sqlite, php -S 8 workers pcov off + router, php8.3-imagick + libmagickcore-6.q16-7-extra (SVG); OR main; thematiq development 54f528a (after #2241 #2247).
+# Runner notes: the suite now needs THEMATIQ_E2E_ALLOW_SHARED_INSTANCE=<origin> + PLAYWRIGHT_BASE_URL on a sandbox at :8080 (shared-instance guard); Playwright 1.65.1 needs 'npx playwright install chromium' (headless_shell-1255). The config's 38-min global timeout cut run 1 at 398/619; rest run with --global-timeout 0.
+# Files 1-49: 381 passed, 3 failed, 4 skipped. Files 50-82: 224 passed, 6 skipped.
+#   - ADR-124 perf Theming settings (first content 1272 ms) + Files: php -S sandbox, not representative (known floor, PERF-HANDOFF).
+#   - first-time-setup 'zuiddrecht: logo, colour and favicon' red at has_custom_favicon: sandbox ImageMagick without SVG delegate; after apt install libmagickcore-6.q16-7-extra the file is 7/7.
+# Newman: 85 requests, 181 assertions, 0 failed.
+# Result: no functional red on development 54f528a.
