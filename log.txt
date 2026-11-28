@@ -5686,3 +5686,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T12:13:13Z precheck-20261128T121259-345757d1 CONFLICT-DEV #11148 199b32a5
 2026-11-28T12:13:23Z session-20261128T120812-81d7410d or-fix-8 (as lane 8 of 10): main 00871f9c; share 11388 (merges clean, precheck GREEN at head 65668f11, no BLOCK/park) and 11148 (OBSOLETE at unchanged head 199b32a5, already commented); nothing to fix; precheck next 8 10: NONE left (11148 BUILD-EMPTY)
 2026-11-28T12:31:58Z integrator-20261128T095651-de26e006 GREEN tree 59300ce141 on dev 00871f9cae prs 2 front=skip: Tests: 68482, Assertions: 244333, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 30.
+2026-11-28T12:32:10Z integrator-20261128T095651-de26e006 HEAD-MOVED #11389 before push; rebuild
