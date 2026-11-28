@@ -51,6 +51,15 @@ on a request that is over the 100 ms API rule (ADR-124).
 
 The answer of every search is unchanged.
 
+## Fixed on the way
+
+- On PostgreSQL an ordered cross-table search failed: the ORDER BY of a bare
+  UNION may name output columns only, and the order keys are expressions
+  (`LOWER(CAST(...))` for a case-insensitive sort), so
+  `GET /api/objects?_search=a&_order[title]=asc` answered 500 (SQLSTATE 0A000).
+  Every UNION batch now reads its arms as one derived table
+  (`SELECT unioned.* FROM (<arms>) unioned ORDER BY ...`).
+
 ## Not in this change
 
 - Caching the catalogue across requests (needs an invalidation signal at every

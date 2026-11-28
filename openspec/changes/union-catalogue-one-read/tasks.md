@@ -21,9 +21,14 @@
       (and on their interfaces), `RequestIdentityMap::idsNotHeldUnfiltered()`.
 - [x] 3.2 `MagicMapper::globallyReadableTables()` preloads both before its loop.
 
-## 4. Verification
+## 4. Ordered union on PostgreSQL
 
-- [x] 4.1 Unit tests: `MagicMapperCatalogueBatchTest` (one query answers both
+- [x] 4.1 `runUnionBatch()` reads its arms as one derived table (golden fixture:
+      that wrapper only).
+
+## 5. Verification
+
+- [x] 5.1 Unit tests: `MagicMapperCatalogueBatchTest` (one query answers both
       questions, missing table not recorded, no re-read, single table and
       SQLite untouched, failed read falls back);
       `MagicMapperSearchObjectsPaginatedTest` (one count across the tables; the
@@ -31,5 +36,5 @@
       SQL, total taken from the rows, empty page and plain statement carry none);
       `RegisterMapperFindGoldenTest`, `SchemaMapperFindGoldenTest` (one query, finds
       answered from it, nothing for one or cached ids), `RequestIdentityMapTest`.
-- [x] 4.2 Live on the sandbox reference stack: queries and timings before and
+- [x] 5.2 Live on the sandbox reference stack: queries and timings before and
       after, answers byte-identical, in the PR body.

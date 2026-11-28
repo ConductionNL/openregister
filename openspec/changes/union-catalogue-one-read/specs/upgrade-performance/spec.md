@@ -64,3 +64,15 @@ or slug, and lookups with the organisation filter, SHALL keep their own query.
 - **THEN** the registers SHALL be read with one query and the schemas with one query
 - **AND** the response SHALL be the same as when each was read on its own
 - @e2e exclude {query count has no screen of its own; covered by RegisterMapperFindGoldenTest, SchemaMapperFindGoldenTest and RequestIdentityMapTest}
+
+### Requirement: An ordered search across many tables runs on every supported database
+
+A search across several magic tables SHALL read its UNION arms as one derived
+table, so that its ordering (which may sort on expressions of the columns)
+is valid on PostgreSQL as well as on MariaDB and MySQL.
+
+#### Scenario: a case-insensitive order on PostgreSQL
+- **GIVEN** an instance on PostgreSQL with more than one readable magic table
+- **WHEN** a caller searches `GET /api/objects?_search=a&_order[title]=asc`
+- **THEN** the search SHALL answer with the ordered page and its total
+- @e2e exclude {database platform is not switchable in the e2e stack; covered by MagicMapperUnionBatchGoldenTest}
