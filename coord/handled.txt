@@ -492,3 +492,4 @@ thematiq#2073
 thematiq#2074
 thematiq#2075
 thematiq#2076
+thematiq#2192
