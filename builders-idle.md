@@ -1705,3 +1705,4 @@
 2026-11-28T11:20:00Z perf-K2 run ends: #11386 merged (modals on open), #11387 open (sidebars per route); dropped with numbers: markRaw rows, first-screen cards, list boot reads as initial state, preload, sidebar transition, OR Dashboard chart reads (upper bound 0)
 2026-11-28T11:22:02Z live-launchpad-2 shard 2/8 on development 68159f0: 303 passed, 1 failed (container-tile-sorting:233, fixed meanwhile by #2425, 6/6 live). Shards 1, 2, 5 green on 28 Nov apart from SANDBOX.
 2026-11-28T11:26:17Z live-launchpad-2 merged launchpad#2430: navigation-editor-org-api:113 ORDER red (done lane) was the Newman collection leaving org-navigation position 'top'; collection restores it now (Newman 254/254, spec 17/17 after it).
+2026-11-28T11:32Z help-launchpad-1: 27 Nov e2e red list worked through on own reference stack: PRs #2413 #2416 #2420 #2425 merged; all green except ci/manifest-grants (OR bug). Details in e2e-red/launchpad-2026-11-27-triage.txt.
