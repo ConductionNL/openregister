@@ -511,8 +511,7 @@ export default {
 			try {
 				await Promise.all([
 					dashboardStore.fetchRegisters(),
-					dashboardStore.fetchAllChartData(),
-					dashboardStore.fetchAllStatistics(),
+					dashboardStore.fetchAllPanels(),
 				])
 			} catch (e) {
 				// Refetch hint failed — the widgets keep their last state and

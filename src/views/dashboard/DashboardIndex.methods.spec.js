@@ -247,6 +247,7 @@ describe('DashboardIndex — refresh and live refetch', () => {
 			fetchAllChartData: jest.fn().mockResolvedValue(),
 			fetchRegisters: jest.fn().mockResolvedValue(),
 			fetchAllStatistics: jest.fn().mockResolvedValue(),
+			fetchAllPanels: jest.fn().mockResolvedValue(),
 		})
 		Object.assign(registerStore, { refreshRegisterList: jest.fn().mockResolvedValue() })
 		Object.assign(schemaStore, { refreshSchemaList: jest.fn().mockResolvedValue() })
@@ -288,7 +289,7 @@ describe('DashboardIndex — refresh and live refetch', () => {
 	it('refetches the live widgets, and only warns when that fails', async () => {
 		await view().refetchLiveWidgets()
 		expect(dashboardStore.fetchRegisters).toHaveBeenCalledTimes(1)
-		expect(dashboardStore.fetchAllStatistics).toHaveBeenCalledTimes(1)
+		expect(dashboardStore.fetchAllPanels).toHaveBeenCalledTimes(1)
 
 		const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
 		dashboardStore.fetchRegisters.mockRejectedValue(new Error('offline'))

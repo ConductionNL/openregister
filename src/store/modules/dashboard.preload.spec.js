@@ -36,12 +36,20 @@ function requestCounts() {
 	return counts
 }
 
+const PANEL_KEYS = [
+	'auditTrailActions', 'objectsByRegister', 'objectsBySchema', 'objectsBySize',
+	'auditTrailStats', 'actionDistribution', 'mostActiveObjects',
+]
+
 describe('dashboard preloads', () => {
 	beforeEach(() => {
 		setActivePinia(createPinia())
 		jest.clearAllMocks()
-		axios.get.mockImplementation(async () => {
+		axios.get.mockImplementation(async (url) => {
 			await new Promise((resolve) => setTimeout(resolve, 5))
+			if (url.endsWith('/panels')) {
+				return { data: Object.fromEntries(PANEL_KEYS.map((key) => [key, { status: 200, data: { key } }])) }
+			}
 			return { data: { registers: [{ id: 1, title: 'Parks' }] } }
 		})
 	})
@@ -58,24 +66,60 @@ describe('dashboard preloads', () => {
 		const sidebar = store.preloadRegisters()
 		const page = store.preload()
 		await Promise.all([sidebar, page])
-		expect(requestCounts()).toEqual({
-			'/': 1,
-			'/charts/audit-trail-actions': 1,
-			'/charts/objects-by-register': 1,
-			'/charts/objects-by-schema': 1,
-			'/charts/objects-by-size': 1,
-			'/statistics/audit-trail': 1,
-			'/statistics/audit-trail-distribution': 1,
-			'/statistics/most-active-objects': 1,
-		})
+		expect(requestCounts()).toEqual({ '/': 1, '/panels': 1 })
+		expect(store.chartData.objectsBySchema).toEqual({ key: 'objectsBySchema' })
+		expect(store.statisticsData.mostActiveObjects).toEqual({ key: 'mostActiveObjects' })
 		expect(store.isInitialized).toBe(true)
 	})
 
-	it('sends all eight requests at once, not in waves', async () => {
+	it('sends the register list and every panel as two requests at once, not in waves', async () => {
 		const store = useDashboardStore()
 		const done = store.preload()
-		expect(axios.get).toHaveBeenCalledTimes(8)
+		expect(axios.get).toHaveBeenCalledTimes(2)
+		expect(axios.get.mock.calls[1][1].params).toEqual({ from: null, till: null, registerId: undefined, schemaId: undefined, hours: 24, limit: 10 })
 		await done
+	})
+
+	it('a panel read already in flight keeps its own request', async () => {
+		const store = useDashboardStore()
+		const chart = store.fetchObjectsBySizeChart()
+		const page = store.preload()
+		await Promise.all([chart, page])
+		expect(requestCounts()['/panels']).toBeUndefined()
+		expect(requestCounts()['/charts/objects-by-size']).toBe(1)
+		expect(requestCounts()['/statistics/most-active-objects']).toBe(1)
+	})
+
+	it('keeps the panels that answered and rethrows the first that did not', async () => {
+		const error = jest.spyOn(console, 'error').mockImplementation(() => {})
+		axios.get.mockImplementation(async () => ({
+			data: {
+				auditTrailActions: { status: 200, data: { ok: 1 } },
+				objectsBySchema: { status: 500, data: { error: 'Chart error' } },
+			},
+		}))
+		const store = useDashboardStore()
+
+		await expect(store.fetchAllPanels()).rejects.toThrow('The dashboard did not answer panel objectsByRegister')
+
+		expect(store.chartData.auditTrailActions).toEqual({ ok: 1 })
+		expect(store.chartData.objectsBySchema).toBeNull()
+		expect(error).toHaveBeenCalledWith('Error fetching objects by schema chart:', new Error('Chart error'))
+		expect(error).toHaveBeenCalledTimes(6)
+		expect(Object.values(store.chartLoading).every((busy) => busy === false)).toBe(true)
+		error.mockRestore()
+	})
+
+	it('a failed panels request clears every loading flag and rethrows', async () => {
+		const error = jest.spyOn(console, 'error').mockImplementation(() => {})
+		axios.get.mockRejectedValue(new Error('down'))
+		const store = useDashboardStore()
+
+		await expect(store.fetchAllPanels()).rejects.toThrow('down')
+
+		expect(Object.values(store.statisticsLoading).every((busy) => busy === false)).toBe(true)
+		expect(error).toHaveBeenCalledWith('Error fetching dashboard panels:', expect.any(Error))
+		error.mockRestore()
 	})
 
 	it('two concurrent preloads share one set of requests', async () => {

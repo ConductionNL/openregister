@@ -1406,6 +1406,982 @@ exports[`dashboard store golden fetchAllChartData([]): register and schema, reje
 }
 `;
 
+exports[`dashboard store golden fetchAllPanels([]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 24,
+          "limit": 10,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 24,
+          "limit": 10,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching dashboard panels:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 24,
+          "limit": 10,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching dashboard panels:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 24,
+          "limit": 10,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching dashboard panels:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching dashboard panels:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 24,
+          "limit": 10,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([6,5]): no scope, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 6,
+          "limit": 5,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([6,5]): no scope, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 6,
+          "limit": 5,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([6,5]): no scope, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching dashboard panels:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 6,
+          "limit": 5,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([6,5]): no scope, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching dashboard panels:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 6,
+          "limit": 5,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([6,5]): register and schema, answer 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {
+    "chartData": {
+      "auditTrailActions": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsByRegister": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySchema": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "objectsBySize": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+    "statisticsData": {
+      "actionDistribution": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "auditTrailStats": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+      "mostActiveObjects": {
+        "points": [
+          1,
+          2,
+        ],
+        "registers": [
+          {
+            "title": "System Totals",
+          },
+        ],
+      },
+    },
+  },
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([6,5]): register and schema, no data 1`] = `
+{
+  "logged": [],
+  "outcome": {
+    "returned": undefined,
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([6,5]): register and schema, rejected 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching dashboard panels:",
+      "Network",
+    ],
+  ],
+  "outcome": {
+    "threw": "Network",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
+exports[`dashboard store golden fetchAllPanels([6,5]): register and schema, rejected without message 1`] = `
+{
+  "logged": [
+    [
+      "Error fetching dashboard panels:",
+      "",
+    ],
+  ],
+  "outcome": {
+    "threw": "",
+  },
+  "requests": [
+    [
+      "get",
+      "url:/apps/openregister/api/dashboard/panels",
+      {
+        "params": {
+          "from": null,
+          "hours": 6,
+          "limit": 5,
+          "registerId": 7,
+          "schemaId": 9,
+          "till": null,
+        },
+      },
+    ],
+  ],
+  "state": {},
+  "whileRunning": {
+    "chartLoading": {
+      "auditTrailActions": true,
+      "objectsByRegister": true,
+      "objectsBySchema": true,
+      "objectsBySize": true,
+    },
+    "statisticsLoading": {
+      "actionDistribution": true,
+      "auditTrailStats": true,
+      "mostActiveObjects": true,
+    },
+  },
+}
+`;
+
 exports[`dashboard store golden fetchAllStatistics([]): no scope, answer 1`] = `
 {
   "logged": [],
@@ -5024,60 +6000,13 @@ exports[`dashboard store golden preload([]): no scope, answer 1`] = `
     ],
     [
       "get",
-      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      "url:/apps/openregister/api/dashboard/panels",
       {
         "params": {
           "from": null,
-          "till": null,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
-      {
-        "params": {
-          "hours": 24,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
-      {
-        "params": {
-          "hours": 24,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
-      {
-        "params": {
           "hours": 24,
           "limit": 10,
+          "till": null,
         },
       },
     ],
@@ -5209,60 +6138,13 @@ exports[`dashboard store golden preload([]): no scope, no data 1`] = `
     ],
     [
       "get",
-      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      "url:/apps/openregister/api/dashboard/panels",
       {
         "params": {
           "from": null,
-          "till": null,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
-      {
-        "params": {
-          "hours": 24,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
-      {
-        "params": {
-          "hours": 24,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
-      {
-        "params": {
           "hours": 24,
           "limit": 10,
+          "till": null,
         },
       },
     ],
@@ -5291,31 +6173,7 @@ exports[`dashboard store golden preload([]): no scope, rejected 1`] = `
 {
   "logged": [
     [
-      "Error fetching audit trail action chart:",
-      "Network",
-    ],
-    [
-      "Error fetching objects by register chart:",
-      "Network",
-    ],
-    [
-      "Error fetching objects by schema chart:",
-      "Network",
-    ],
-    [
-      "Error fetching objects by size chart:",
-      "Network",
-    ],
-    [
-      "Error fetching audit trail statistics:",
-      "Network",
-    ],
-    [
-      "Error fetching action distribution:",
-      "Network",
-    ],
-    [
-      "Error fetching most active objects:",
+      "Error fetching dashboard panels:",
       "Network",
     ],
     [
@@ -5336,60 +6194,13 @@ exports[`dashboard store golden preload([]): no scope, rejected 1`] = `
     ],
     [
       "get",
-      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      "url:/apps/openregister/api/dashboard/panels",
       {
         "params": {
           "from": null,
-          "till": null,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
-      {
-        "params": {
-          "hours": 24,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
-      {
-        "params": {
-          "hours": 24,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
-      {
-        "params": {
           "hours": 24,
           "limit": 10,
+          "till": null,
         },
       },
     ],
@@ -5418,31 +6229,7 @@ exports[`dashboard store golden preload([]): no scope, rejected without message 
 {
   "logged": [
     [
-      "Error fetching audit trail action chart:",
-      "",
-    ],
-    [
-      "Error fetching objects by register chart:",
-      "",
-    ],
-    [
-      "Error fetching objects by schema chart:",
-      "",
-    ],
-    [
-      "Error fetching objects by size chart:",
-      "",
-    ],
-    [
-      "Error fetching audit trail statistics:",
-      "",
-    ],
-    [
-      "Error fetching action distribution:",
-      "",
-    ],
-    [
-      "Error fetching most active objects:",
+      "Error fetching dashboard panels:",
       "",
     ],
     [
@@ -5463,60 +6250,13 @@ exports[`dashboard store golden preload([]): no scope, rejected without message 
     ],
     [
       "get",
-      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      "url:/apps/openregister/api/dashboard/panels",
       {
         "params": {
           "from": null,
-          "till": null,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
-      {
-        "params": {},
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
-      {
-        "params": {
-          "hours": 24,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
-      {
-        "params": {
-          "hours": 24,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
-      {
-        "params": {
           "hours": 24,
           "limit": 10,
+          "till": null,
         },
       },
     ],
@@ -5564,77 +6304,15 @@ exports[`dashboard store golden preload([]): register and schema, answer 1`] = `
     ],
     [
       "get",
-      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      "url:/apps/openregister/api/dashboard/panels",
       {
         "params": {
           "from": null,
-          "registerId": 7,
-          "schemaId": 9,
-          "till": null,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
-      {
-        "params": {
-          "hours": 24,
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
-      {
-        "params": {
-          "hours": 24,
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
-      {
-        "params": {
           "hours": 24,
           "limit": 10,
           "registerId": 7,
           "schemaId": 9,
+          "till": null,
         },
       },
     ],
@@ -5769,77 +6447,15 @@ exports[`dashboard store golden preload([]): register and schema, no data 1`] = 
     ],
     [
       "get",
-      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      "url:/apps/openregister/api/dashboard/panels",
       {
         "params": {
           "from": null,
-          "registerId": 7,
-          "schemaId": 9,
-          "till": null,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
-      {
-        "params": {
-          "hours": 24,
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
-      {
-        "params": {
-          "hours": 24,
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
-      {
-        "params": {
           "hours": 24,
           "limit": 10,
           "registerId": 7,
           "schemaId": 9,
+          "till": null,
         },
       },
     ],
@@ -5868,31 +6484,7 @@ exports[`dashboard store golden preload([]): register and schema, rejected 1`] =
 {
   "logged": [
     [
-      "Error fetching audit trail action chart:",
-      "Network",
-    ],
-    [
-      "Error fetching objects by register chart:",
-      "Network",
-    ],
-    [
-      "Error fetching objects by schema chart:",
-      "Network",
-    ],
-    [
-      "Error fetching objects by size chart:",
-      "Network",
-    ],
-    [
-      "Error fetching audit trail statistics:",
-      "Network",
-    ],
-    [
-      "Error fetching action distribution:",
-      "Network",
-    ],
-    [
-      "Error fetching most active objects:",
+      "Error fetching dashboard panels:",
       "Network",
     ],
     [
@@ -5916,77 +6508,15 @@ exports[`dashboard store golden preload([]): register and schema, rejected 1`] =
     ],
     [
       "get",
-      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      "url:/apps/openregister/api/dashboard/panels",
       {
         "params": {
           "from": null,
-          "registerId": 7,
-          "schemaId": 9,
-          "till": null,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
-      {
-        "params": {
-          "hours": 24,
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
-      {
-        "params": {
-          "hours": 24,
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
-      {
-        "params": {
           "hours": 24,
           "limit": 10,
           "registerId": 7,
           "schemaId": 9,
+          "till": null,
         },
       },
     ],
@@ -6015,31 +6545,7 @@ exports[`dashboard store golden preload([]): register and schema, rejected witho
 {
   "logged": [
     [
-      "Error fetching audit trail action chart:",
-      "",
-    ],
-    [
-      "Error fetching objects by register chart:",
-      "",
-    ],
-    [
-      "Error fetching objects by schema chart:",
-      "",
-    ],
-    [
-      "Error fetching objects by size chart:",
-      "",
-    ],
-    [
-      "Error fetching audit trail statistics:",
-      "",
-    ],
-    [
-      "Error fetching action distribution:",
-      "",
-    ],
-    [
-      "Error fetching most active objects:",
+      "Error fetching dashboard panels:",
       "",
     ],
     [
@@ -6063,77 +6569,15 @@ exports[`dashboard store golden preload([]): register and schema, rejected witho
     ],
     [
       "get",
-      "url:/apps/openregister/api/dashboard/charts/audit-trail-actions",
+      "url:/apps/openregister/api/dashboard/panels",
       {
         "params": {
           "from": null,
-          "registerId": 7,
-          "schemaId": 9,
-          "till": null,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-register",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-schema",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/charts/objects-by-size",
-      {
-        "params": {
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail",
-      {
-        "params": {
-          "hours": 24,
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/audit-trail-distribution",
-      {
-        "params": {
-          "hours": 24,
-          "registerId": 7,
-          "schemaId": 9,
-        },
-      },
-    ],
-    [
-      "get",
-      "url:/apps/openregister/api/dashboard/statistics/most-active-objects",
-      {
-        "params": {
           "hours": 24,
           "limit": 10,
           "registerId": 7,
           "schemaId": 9,
+          "till": null,
         },
       },
     ],
