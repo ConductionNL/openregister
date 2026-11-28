@@ -5747,3 +5747,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T16:19:08Z precheck-20261128T155539-c38f78e7 CONFLICT-DEV #11035 bf9e6900
 2026-11-28T16:19:27Z precheck-20261128T155539-c38f78e7 CONFLICT-DEV #11317 ade57c3e
 2026-11-28T16:19:52Z precheck-20261128T155539-c38f78e7 CONFLICT-DEV #11148 199b32a5
+2026-11-28T16:38:38Z done-thematiq-20261128T163838 done-thematiq: lease held by done-thematiq-20261128T143858-c4420fe8 until 18:43Z; this run ended without work
