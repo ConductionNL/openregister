@@ -1,0 +1,6 @@
+# launchpad e2e, live-launchpad-1 28 Nov 09:15Z-, NC 34.0.6 (GitHub release tarball), MariaDB, Redis, APCu, php -S :8095, OR main f3f34864
+# shard 4/8 on development 1527624 (first shard-4 run after #2279 draft Save): 274 passed, 3 failed, 1 skipped, 19 did not run (17 min)
+divider-widget-discovery.spec.ts:155     DRAFT: waits for POST /api/dashboard/{id}/widgets after Add (live-launchpad-1 TAKING)
+files-widget-access.spec.ts:202          DRAFT: support/filesWidget.ts:583 polls for the new placement before Save (live-launchpad-1 TAKING)
+files-widget.spec.ts:108                 DRAFT: same helper as above
+# edit-mode run on branch (#2398): more-menu-add-widget.spec.ts:75 (tiles section not found) and store-more-menu-placement.spec.ts:19 (store-publish hidden) also RED on development 1527624, untriaged (free)
