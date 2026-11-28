@@ -1685,3 +1685,4 @@
 2026-11-28T10:18Z help-launchpad-1: e2e no-navigation-panel was red (store/reports hidden behind first-paint shell); same fix landed meanwhile as #2408, verified 5/5 live on NC 34 + MariaDB stack; setup-wizard 69/69 green. Taking role-feature-permissions.
 2026-11-28T10:22:00Z help-launchpad-2 helped launchpad: first-paint-skeleton #2412 merged (waiting card frame work-field / loaded work-line; could-not-load line pinned; tasks 2/4/5 ticked).
 2026-11-28T10:26Z help-launchpad-1: e2e role-feature-permissions 21/28 -> 28/28 live (#2413 merged: stand-in widgets from a member's offer, OR operations widget is admin-only).
+2026-11-28T10:33:17Z live-launchpad-2 shard 5/8 on development a34f4fe: 312 passed, 1 skipped, 4 failed (integrations-page x4 SANDBOX, integriq). Now shard 1/8.
