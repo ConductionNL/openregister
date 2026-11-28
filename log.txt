@@ -5681,3 +5681,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T12:06:40Z or-fix-11: lane K=11 is outside K=0..9 (OR-FIX-LANE.md: 'of 20' means of 10); every N%20==11 PR is in lane 1's share (N%10==1), whose lease is held by session-20261128T105321-1d9e6487 until 12:23Z; no lease taken, no PR touched, this run ended without work
 2026-11-28T12:07:46Z or-fix-13 (as lane 3 of 10, lease or-fix-3): lease held by session-20261128T105321-1d9e6487 until 12:23Z; share is 11333 only (BLOCK/obsolete at unchanged head 7ac88fa4, already commented); this run ended without work
 2026-11-28T12:07:52Z or-fix-14 (N%20==14): share empty (no open non-draft base-main PR with N%20==14); precheck next 14 20: NONE left for lane 14; nothing to fix
+2026-11-28T12:08:23Z or-fix-10: K=10 outside K=0..9 (N%10 share empty); N%20==10 share = 8450 only, unchanged head 29819a35 (obsolete, already commented); nothing to fix
