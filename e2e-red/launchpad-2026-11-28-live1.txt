@@ -31,3 +31,4 @@ add-tiles-dialog.spec.ts:65              PR #2432 merged (strict mode: Nextcloud
 performance Workspace, Admin settings, workspace-first-paint   SANDBOX: php -S (Workspace 1545 ms vs floor 1240, first content 324 ms; first paint 284 ms); numbers belong to the reference stack
 or-absent:217                                                   OTHER APP: integriq hard-depends on OpenRegister (known since live2-b); or-absent.spec 4/4 green with integriq off
 # shard 6/8 GREEN apart from SANDBOX perf and the known integriq dependency; no PR needed.
+# shard 4/8 on 241e479b: 305 passed, 1 skipped, 0 failed (22.6 min). GREEN (first-paint-shell incl. :178 after #2482; files-widget-actions:210 green with php -S 200M).
