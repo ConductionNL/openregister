@@ -1,0 +1,3 @@
+# launchpad e2e, b-launchpad 28 Nov 10:50-11:40Z, own sandbox NC 34.0.6 tarball + MariaDB + php -S, OR main f3f34864, thematiq off
+# shard 3/8 on development 3548a5e3: 273 passed, 9 failed, 1 skipped, 63 did not run (21 min). ALL 9 SANDBOX: kiosk:557, sharing-notifier:71, analytics-cache:310, analytics-history:435, analytics-jobs:197 need LAUNCHPAD_E2E_OCC (e.g. 'env -C <nc root> php occ') + LAUNCHPAD_E2E_SERVER_ROOT; analytics :655 :755 :963 :1224 and history :537 need a distributed cache (memcache.distributed Redis), Nextcloud's null cache never dedups.
+# rerun of the 6 files with occ route + Redis: kiosk-mode, sharing-notifier, analytics-jobs green (47 passed, 2 skipped); analytics, analytics-history, analytics-cache 56/56. Shard 3/8 GREEN, no PR needed.
