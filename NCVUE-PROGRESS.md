@@ -133,3 +133,6 @@
 2026-11-28T19:31:16Z ncvue-0 no open PRs with N%6==0 (open: 2381,2332,2331,2329,2326,2325,2302 belong to other lanes); lane share empty, main db4f484f
 2026-11-28T19:30:49Z ncvue-3 start
 2026-11-28T19:31:04Z ncvue-3 start (#2325 #2331)
+2026-11-28T19:31:28Z ncvue-2 no open PRs with N%6==2 (open: #2302/#2326/#2332 lane 4, #2325/#2331 lane 3, #2329 lane 1, #2381 lane 5); lane share empty
+2026-11-28T19:31:53Z ncvue-4 start (#2302, #2326, #2332)
+2026-11-28T19:32:11Z ncvue-4 start (#2302, #2326, #2332)
