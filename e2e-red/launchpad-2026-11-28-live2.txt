@@ -5,3 +5,5 @@ integrations-page x4 (:178 :195 :203 :221)   SANDBOX: integriq not installed
 
 # shard 1/8 on development e073f97: 323 passed, 2 skipped, 1 failed
 bookmark-import:93   PR #2423 merged (import joins the draft since #2364: close the skipped report, Save, then read) 2/2 --repeat-each 2
+# shard 2/8 on development 68159f0: 303 passed, 24 skipped (conditional: ICS allow-list, weather provider, communities, cross-widget filter data), 2 did not run, 1 failed
+container-tile-sorting:233   already fixed by #2425 (usage keyed by child id); 6/6 on 1b73abad
