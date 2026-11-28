@@ -28,6 +28,9 @@ URL=https://github.com/$R
 W=${SIG_WORK:-$HOME/sigint}
 C=$W/or
 export ST=$W/state ST_ME_FILE=$W/.id SIG_ROLE=integrator
+# Spectral (the checker's adrvalidator) ignores HTTPS_PROXY and reads only PROXY; without it the ADR ruleset
+# fetch fails (ENOTFOUND static.developer.overheid.nl) behind the cloud proxy and every tree ends NORESULT.
+[ -n "${HTTPS_PROXY:-}" ] && [ -z "${PROXY:-}" ] && export PROXY=$HTTPS_PROXY
 # Runs from a COPY of the state branch's bin/ (~/sigint/bin), so a state sync never rewrites a running script.
 SELF=$(readlink -f "$0")
 BIN=$(dirname "$SELF")
