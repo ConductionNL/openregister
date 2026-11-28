@@ -1,0 +1,13 @@
+# launchpad e2e, done-launchpad 28 Nov 09:19Z-, NC 34.0.5 tarball (github nextcloud-releases; download.nextcloud.com refused by the proxy), MariaDB 10.11, Redis locking, APCu, nginx + php-fpm 8.3 opcache on :8097 (sandbox reference stack), OR main
+# Newman: 184 requests, 253/253 assertions, 0 failed (development 1527624b)
+# shard 6/8 on development 1527624b: 293 passed, 20 failed, 1 skipped, 17 did not run (26 min)
+live-data-tile-widget:434 (+16 not run)  PR #2404 merged (addAndRead saves the draft)
+more-menu-add-widget:75                  PR #2404 merged (no Tiles section since #2268; catalogue via tile form app chooser)
+nc-dashboard-widget-proxy:209            PR #2404 merged (id read from the Save body)
+news-widget x7                           PR #2404 merged (submit saves the draft) 13/13
+no-navigation-panel x3                   PR #2408 merged APP RED: dashboard first-paint shell never handed over on /store /reports /flows -> 'could not load'; spec follows LpMeerAlle + /settings/admin/launchpad
+first-paint-shell:71                     APP RED 500 (empty content {} -> stdClass in FirstPaintFill), fixed by #2405 (other lane, same morning)
+people-widget-rendering x4, or-absent    SANDBOX: nginx served .mjs as octet-stream; green after the mime fix
+navigation-editor-org-api:113            ORDER: setting reads 'top', left set by an earlier spec in the run; passes on a fresh instance only
+performance Workspace                    PERF: 723 ms vs floor 484 (+239, rule +150), first content 548 ms; slowest contactsmenu/teams 210, files widget contents 201
+performance Admin settings               PERF: 647 ms vs floor 484 (+163), first content 564 ms; preferences/admin-walkthrough + api/admin/settings 166 ms
