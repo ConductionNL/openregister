@@ -7,3 +7,7 @@ first-paint-shell:178 (+8 serial not run)      KNOWN: 390 px install-banner shif
 # shard 5/8 on development 1b944635: 312 passed, 4 failed, 1 skipped (29.4 min)
 integrations-page x4 (:178 :195 :203 :221)   SANDBOX: integriq not installed (trying an integriq install next)
 integrations-page x4 GREEN 4/4 once integriq development is installed (git clone + composer --no-dev needs php8.3-soap + npm build, app:enable). Shard 5/8 GREEN. Sandbox tip: integriq installs from git in the cloud; the 'integriq not installed' SANDBOX red is closable.
+# shard 6/8 on development 981eb95f (integriq development installed): 309 passed, 5 failed, 4 skipped, 14 did not run (31.4 min)
+live-data-tile-widget:552 (Integriq source id not found)   ENV-SPEC: with Integriq installed the form shows the Connection select (launchpad's declared connections), spec stubbed only the capability probe -> PR (stub the app_connection read empty); live-data-tile + widget-content-forms 17 passed
+or-absent:217 (admin settings page)   OTHER APP: integriq enabled while OpenRegister is disabled -> /settings/admin/launchpad 500, Class OCA\OpenRegister\AppHost\Settings\GenericAdminSettings not found in integriq lib/Settings/IntegriqAdmin.php:55 (integriq hard-depends on OR); 4/4 green with integriq off
+performance Workspace, Admin settings, workspace-first-paint   SANDBOX: php -S (+14 not run behind them); numbers belong to the reference stack
