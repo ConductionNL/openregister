@@ -5638,3 +5638,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T10:14:16Z integrator-20261128T095651-de26e006 MERGED-TREE b858ce9d50: 2 PRs, main now a7954d1370 = tested tree
 2026-11-28T10:14:59Z session-20261128T093316-f001d5ce b-thematiq merged thematiq#2215: live follow-up top-bar-contacts-switch (archived by live-thematiq-1 #2206 in parallel): with the switch off the divider before the person vanished (drawn on :has(+ #user-menu) = hidden #contactsmenu); top-bar-no-contacts.css now draws it on the bell; 16-state live matrix + e2e 6/6. Also #2205 (same-shell 6.1/6.4; openproject-thematiq#169 nav item 34 px).
 2026-11-28T10:17:06Z precheck-20261128T100624-d6a93d5b NORESULT tree 8b445d773e: checker floor not measured (exit 2)
+2026-11-28T10:18:33Z precheck-20261128T100624-d6a93d5b CONFLICT-DEV #11035 bf9e6900
