@@ -138,6 +138,12 @@ final class ConfigurationServiceRegistrar {
 			\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class,
 			'ObjectSlugHandler',
 		],
+		// Imports `components.flows` through the flow engine's port; without it
+		// flows are not imported at all.
+		'setFlowTransfer' => [
+			\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class,
+			'ConfigurationFlowTransfer',
+		],
 	];
 
 	/**
@@ -438,6 +444,7 @@ final class ConfigurationServiceRegistrar {
 			objectEntityMapper: $container->get(MagicMapperInterface::class),
 			configurationMapper: $container->get('OCA\OpenRegister\Db\ConfigurationMapper'),
 			mappingMapper: $container->get(MappingMapper::class),
+			flowTransfer: $container->get(\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class),
 			logger: $container->get('Psr\Log\LoggerInterface'),
 			readableObjects: $container->get(ReadableExportObjects::class)
 		);

@@ -141,6 +141,7 @@ class DraftLifetimeImportExportTest extends TestCase {
 			$objectEntityMapper,
 			$configurationMapper,
 			$mappingMapper,
+			$this->createMock(\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class),
 			$logger
 		);
 	}//end setUp()

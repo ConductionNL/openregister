@@ -91,6 +91,7 @@ class ExportHandlerDeclaredScopesTest extends TestCase {
 			$this->createMock(MagicMapper::class),
 			$this->createMock(ConfigurationMapper::class),
 			$this->createMock(MappingMapper::class),
+			$this->createMock(\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class),
 			$this->createMock(LoggerInterface::class)
 		);
 	}//end setUp()

@@ -206,6 +206,7 @@ final class FlowWiring {
 		CalendarRecomputeInterface::class => CalendarRecompute::class,
 		FacetWeekNumberingInterface::class => FacetWeekNumbering::class,
 		TermDiagnosticInterface::class => TermDiagnostic::class,
+		\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class => ConfigurationFlowTransfer::class,
 		WorkingCalendarDefinitionsInterface::class => WorkingCalendars::class,
 		TaskCalendarDocumentInterface::class => TaskCalendarDocument::class,
 		PartySearchInterface::class => PartySearchService::class,

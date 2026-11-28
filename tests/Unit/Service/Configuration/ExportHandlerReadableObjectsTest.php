@@ -107,6 +107,7 @@ class ExportHandlerReadableObjectsTest extends TestCase {
 			objectEntityMapper: $objects,
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
+			flowTransfer: $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class),
 			logger: new NullLogger(),
 			readableObjects: new ReadableExportObjects(properties: $properties, userSession: $session, groupManager: $groups)
 		);

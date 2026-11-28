@@ -36,6 +36,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapperInterface;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface;
 use OCA\OpenRegister\Kernel\Contracts\DeclaredGroupRightsInterface;
 use OCA\OpenRegister\Kernel\Contracts\DeclaredGroupsReconcileInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
@@ -109,6 +110,7 @@ class ImportHandler {
 		'endpoints' => [],
 		'sources' => [],
 		'mappings' => [],
+		'flows' => [],
 		'jobs' => [],
 		'synchronizations' => [],
 		'rules' => [],
@@ -120,6 +122,7 @@ class ImportHandler {
 			'schemas' => 0,
 			'objects' => 0,
 			'mappings' => 0,
+			'flows' => 0,
 			'seedObjects' => 0,
 		],
 		// The entities left alone because they are already present at the same
@@ -351,6 +354,15 @@ class ImportHandler {
 	 * @var SelectionListSeeder|null
 	 */
 	private ?SelectionListSeeder $selectionListSeeder = null;
+
+	/**
+	 * Carries `components.flows` in. Null skips flow import entirely — an
+	 * instance that cannot build it imports every other component exactly as
+	 * before Flow export/import existed.
+	 *
+	 * @var ConfigurationFlowTransferInterface|null
+	 */
+	private ?ConfigurationFlowTransferInterface $flowTransfer = null;
 
 	/**
 	 * The shipped version of each seed object, built on first use from the app config.
@@ -663,6 +675,21 @@ class ImportHandler {
 	public function setSelectionListSeeder(?SelectionListSeeder $selectionListSeeder): void {
 		$this->selectionListSeeder = $selectionListSeeder;
 	}//end setSelectionListSeeder()
+
+	/**
+	 * Inject the flow engine's import side.
+	 *
+	 * Optional: when null, `components.flows` is not imported.
+	 *
+	 * @param ConfigurationFlowTransferInterface|null $flowTransfer Imports one flow entry.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	public function setFlowTransfer(?ConfigurationFlowTransferInterface $flowTransfer): void {
+		$this->flowTransfer = $flowTransfer;
+	}//end setFlowTransfer()
 
 	/**
 	 * Lazily resolve the dependency-free RBAC group collector.
@@ -3209,6 +3236,87 @@ class ImportHandler {
 	}//end importMappingComponent()
 
 	/**
+	 * Import the flows of a configuration.
+	 *
+	 * Runs from {@see finishImport()}, deliberately AFTER OpenConnector's own
+	 * import: a flow's nodes reference synchronization/source/mapping/rule
+	 * SLUGS, which only resolve once OpenConnector has created them.
+	 *
+	 * @param ImportRun $run The import.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importFlowComponents(ImportRun $run): void {
+		if ($this->flowTransfer === null) {
+			return;
+		}
+
+		if (($run->data['components']['flows'] ?? null) === null || is_array($run->data['components']['flows']) === false) {
+			return;
+		}
+
+		$this->logger->debug(
+			message: '[ImportHandler] Starting flow import',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'totalFlows' => count($run->data['components']['flows']),
+			]
+		);
+
+		foreach ($run->data['components']['flows'] as $key => $flowData) {
+			if (isset($flowData['uuid']) === false && is_string($key) === true) {
+				$flowData['uuid'] = $key;
+			}
+
+			$this->importFlowComponent(run: $run, component: new ImportComponent(key: $key, data: $flowData));
+		}
+
+		$this->logger->debug(
+			message: '[ImportHandler] Flow import completed',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'importedCount' => count($run->result['flows'] ?? [])]
+		);
+	}//end importFlowComponents()
+
+	/**
+	 * Import one flow, logging and skipping it when it fails.
+	 *
+	 * @param ImportRun       $run       The import.
+	 * @param ImportComponent $component The flow component.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function importFlowComponent(ImportRun $run, ImportComponent $component): void {
+		try {
+			$flow = $this->flowTransfer?->importFlow(
+				data: $component->data,
+				owner: $run->owner,
+				organisation: $run->configuration->getOrganisation(),
+				force: $run->force
+			);
+
+			if ($flow !== null) {
+				$run->result['flows'][] = $flow;
+			}
+
+			$this->logger->debug(
+				message: '[ImportHandler] Flow imported successfully',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flowUuid' => $component->data['uuid'] ?? $component->key]
+			);
+		} catch (Exception $e) {
+			$run->result['skipped']['flows']++;
+			$this->logger->error(
+				message: '[ImportHandler] Failed to import flow',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flowKey' => $component->key, 'error' => $e->getMessage()]
+			);
+		}
+	}//end importFlowComponent()
+
+	/**
 	 * Write the selectielijst categories the app ships (`components.selectionLists`).
 	 *
 	 * They become selectielijst register rows, so the app's schemas'
@@ -3405,6 +3513,10 @@ class ImportHandler {
 		$this->seedVersions()->flush();
 		$this->seedHashes()->flush();
 		$this->importConnectorConfiguration(run: $run);
+		// Deliberately AFTER OpenConnector: a flow's nodes reference
+		// synchronization/source/mapping/rule slugs that only resolve once
+		// OpenConnector's own import has created them.
+		$this->importFlowComponents(run: $run);
 		$this->storeImportedVersion(run: $run);
 		$this->importSeedDataContained(run: $run);
 	}//end finishImport()

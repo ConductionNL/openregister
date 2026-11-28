@@ -75,6 +75,7 @@ class ExportHandlerObjectNodesTest extends TestCase {
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
 			mappingMapper: $this->createMock(MappingMapper::class),
+			flowTransfer: $this->createMock(\OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface::class),
 			logger: $this->createMock(LoggerInterface::class)
 		);
 

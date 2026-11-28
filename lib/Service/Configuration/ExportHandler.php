@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\ConfigurationMapper;
+use OCA\OpenRegister\Kernel\Contracts\ConfigurationFlowTransferInterface;
 use OCA\OpenRegister\Kernel\Contracts\ListQuery;
 use OCA\OpenRegister\Db\MagicMapperInterface;
 use OCA\OpenRegister\Db\Mapping;
@@ -112,6 +113,7 @@ class ExportHandler {
 		'registers' => [],
 		'schemas' => [],
 	] + ConfigurationComponentSections::CONNECTOR_SECTIONS + [
+		'flows' => [],
 		'workflows' => [],
 		'objects' => [],
 	];
@@ -124,6 +126,13 @@ class ExportHandler {
 	 */
 	private readonly MappingMapper $mappingMapper;
 
+	/**
+	 * The flow engine's export side.
+	 *
+	 * @var ConfigurationFlowTransferInterface Exports a configuration's flows.
+	 */
+	private readonly ConfigurationFlowTransferInterface $flowTransfer;
+
 
 	/**
 	 * Constructor for ExportHandler.
@@ -133,6 +142,7 @@ class ExportHandler {
 	 * @param MagicMapperInterface $objectEntityMapper The object entity mapper.
 	 * @param ConfigurationMapper $configurationMapper The configuration mapper.
 	 * @param MappingMapper $mappingMapper The mapping mapper.
+	 * @param ConfigurationFlowTransferInterface $flowTransfer Exports a configuration's flows.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param ReadableExportObjects|null $readableObjects Projects exported objects to what the caller may read.
 	 */
@@ -142,6 +152,7 @@ class ExportHandler {
 		MagicMapperInterface $objectEntityMapper,
 		ConfigurationMapper $configurationMapper,
 		MappingMapper $mappingMapper,
+		ConfigurationFlowTransferInterface $flowTransfer,
 		LoggerInterface $logger,
 		private readonly ?ReadableExportObjects $readableObjects = null,
 	) {
@@ -150,6 +161,7 @@ class ExportHandler {
 		$this->objectEntityMapper = $objectEntityMapper;
 		$this->configurationMapper = $configurationMapper;
 		$this->mappingMapper = $mappingMapper;
+		$this->flowTransfer = $flowTransfer;
 		$this->logger = $logger;
 	}//end __construct()
 
@@ -188,6 +200,7 @@ class ExportHandler {
 
 		$this->addRegisters(run: $run, input: $input);
 		$this->addMappings(run: $run);
+		$this->addFlows(run: $run);
 
 		// Declare the RBAC groups this configuration depends on, in the OAS-native
 		// slot. Without this the export is LOSSY: OasService emits the same scope
@@ -296,6 +309,25 @@ class ExportHandler {
 			$run->openApiSpec['components']['mappings'][$slug] = $mapping;
 		}
 	}//end addMappings()
+
+	/**
+	 * Add the configuration's flows to the export, keyed by uuid.
+	 *
+	 * @param ConfigurationExportRun $run The export run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function addFlows(ConfigurationExportRun $run): void {
+		if ($run->configuration === null) {
+			return;
+		}
+
+		foreach ($this->flowTransfer->exportFlows(flowUuids: $run->configuration->getFlows() ?? []) as $uuid => $flow) {
+			$run->openApiSpec['components']['flows'][$uuid] = $flow;
+		}
+	}//end addFlows()
 
 	/**
 	 * A configuration's register entry as an entity: an id is looked up, anything else is used as it is.

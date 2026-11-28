@@ -65,6 +65,7 @@ final class ConfigurationFieldTypes {
 		'agents' => 'json',
 		'sources' => 'json',
 		'mappings' => 'json',
+		'flows' => 'json',
 		'applications' => 'json',
 		'organisation' => 'string',
 		'owner' => 'string',
