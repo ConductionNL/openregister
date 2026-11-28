@@ -2,3 +2,5 @@
 or-absent.spec.ts x4 (incl. :217 admin settings) GREEN 4/4 with integriq #4036 enabled: the integriq-on + OR-off 500 is closed.
 # shard 1/8 on development af9c794: 322 passed, 2 failed, 2 skipped (27.4 min)
 calendar-widget-rendering:383 :400   SPEC + APP RED: loading text hidden under the card placeholder by design (REQ-FPS-004) -> spec looks for the placeholder; then the 30s slow notice stayed hidden under it (CnCalendarWidget never emitted loaded on the slow path) -> nextcloud-vue #2443 merged; launchpad PR open (raise + live rerun). 11/11 live with the fix built in.
+# shard 2/8 on development af9c794: 320 passed, 10 skipped, 0 failed (21.3 min). GREEN.
+calendar-widget-rendering REQ-CAL-010: launchpad #2500 merged (spec + raise nc-vue 2.245.2 with #2443); calendar specs 40/40 --repeat-each 2, 20/20 after merging development.
