@@ -5667,3 +5667,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T11:37:24Z session-20261128T091517-bc693734 live-launchpad-1 shard 1/8 on dev 13f5039: 323 passed, 1 red fixed by #2432 merged.
 2026-11-28T11:42:11Z precheck-20261128T114138-c5883ec8 CONFLICT-DEV #11035 bf9e6900
 2026-11-28T11:42:32Z precheck-20261128T114138-c5883ec8 CONFLICT-DEV #11317 ade57c3e
+2026-11-28T11:45:46Z integrator-20261128T095651-de26e006 GREEN tree 9469264a75 on dev 0c8ee25a07 prs 1 front=ok: Tests: 68475, Assertions: 244314, Errors: 5, Deprecations: 4, PHPUnit Deprecations: 1, Notices: 1, Skipped: 29.
