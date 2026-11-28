@@ -1,0 +1,3 @@
+# PRs the merge sweep must never touch (decisions in FINISH-ORDER.md DECISIONS)
+integriq#3834 guzzle 8 held until Nextcloud ships guzzle 8
+launchpad#2100 image widget follows the board; Ruben decided 25 Nov 21:50 CET to add Fit select + preview back
