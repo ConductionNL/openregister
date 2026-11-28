@@ -341,7 +341,7 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 	}//end testAStatementAskedForItsTotalCarriesItInAWindow()
 
 	/**
-	 * An empty page carries no total, so the caller counts on its own; a statement not asked for one is not wrapped.
+	 * An empty page carries no total, so the caller counts on its own; a statement not asked for one carries no window.
 	 *
 	 * @return void
 	 */
@@ -358,6 +358,7 @@ class MagicMapperUnionBatchGoldenTest extends TestCase {
 		$method->invoke($mapper, ['_search' => 'zaak'], $pairs);
 		$prepared = array_values(array_filter(array_column($this->events, 'prepare')));
 		$this->assertStringNotContainsString('OVER ()', $prepared[0]);
+		$this->assertStringStartsWith('SELECT unioned.* FROM (SELECT ', $prepared[0]);
 	}//end testAnEmptyPageOrAPlainStatementCarriesNoTotal()
 
 	/**

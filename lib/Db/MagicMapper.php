@@ -2113,13 +2113,18 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 
 		// The batch orders on what it projects: a column of another batch is null in all of its rows.
 		$orderQuery = (new MagicUnionOrder(isPostgres: false))->orderable(query: $query, columns: ($allPropertyColumns ?? []));
-		$unionSql = implode(' UNION ALL ', $parts);
+		// The arms are read as one derived table. PostgreSQL accepts only
+		// output column names in the ORDER BY of a bare UNION, and the order
+		// keys are expressions (LOWER(CAST(...)) for a case-insensitive sort),
+		// so a bare UNION failed there with SQLSTATE 0A000. Asked for its
+		// total, the statement also counts every row the arms match before
+		// LIMIT/OFFSET, in a window on the very WHERE the page is read with.
+		$total = '';
 		if ($withTotal === true) {
-			// The window counts every row the arms match before LIMIT/OFFSET,
-			// on the very WHERE the page is read with. ORDER BY names output
-			// columns only, so it reads the same on the wrapped statement.
-			$unionSql = 'SELECT unioned.*, COUNT(*) OVER () AS '.self::UNION_TOTAL_COLUMN.' FROM ('.$unionSql.') unioned';
+			$total = ', COUNT(*) OVER () AS '.self::UNION_TOTAL_COLUMN;
 		}
+
+		$unionSql = 'SELECT unioned.*'.$total.' FROM ('.implode(' UNION ALL ', $parts).') unioned';
 
 		$unionSql .= $this->unionOrderByClause(query: $orderQuery, textColumns: $textColumns)
 			. $this->unionPage(query: $query)->limitClause();
