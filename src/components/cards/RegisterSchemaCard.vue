@@ -16,7 +16,9 @@ import {
 			'registerSchemaCard--managed': isManagedByExternalConfig,
 			'registerSchemaCard--local': isManagedByLocalConfig,
 			'registerSchemaCard--in-use': type === 'schema' && hasObjects,
-		}">
+		}"
+		@pointerenter="prepareRowActions"
+		@focusin="prepareRowActions">
 		<!-- Card Header -->
 		<div class="cardHeader">
 			<div class="cardHeaderTitleRow">
@@ -226,8 +228,22 @@ import {
 									{{ schema.stats?.objects?.total || 0 }}
 								</span>
 							</td>
-							<td class="tableColumnActions">
-								<NcActions :primary="false">
+							<td class="tableColumnActions" :data-schema-row="schema.id">
+								<!-- The row menus mount once the card is pointed at or
+									focused: until then a plain trigger stands in, so the
+									list renders without one action menu per schema row. -->
+								<NcButton
+									v-if="!rowActionsReady"
+									variant="tertiary"
+									class="rowActionsTrigger"
+									:aria-label="t('openregister', 'Actions')"
+									aria-haspopup="menu"
+									@click="openRowActions(schema.id)">
+									<template #icon>
+										<DotsHorizontal :size="20" />
+									</template>
+								</NcButton>
+								<NcActions v-else :primary="false">
 									<template #icon>
 										<DotsHorizontal :size="20" />
 									</template>
@@ -1055,6 +1071,7 @@ export default {
 			itemsExpanded: false,
 			descriptionExpanded: false,
 			showEditRegisterDialog: false,
+			rowActionsReady: false,
 		}
 	},
 
@@ -1172,6 +1189,37 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Mount the schema rows' action menus. Until the card is pointed at
+		 * or focused each row shows a plain trigger, so the Registers list
+		 * renders without one action menu per schema row.
+		 *
+		 * @spec openspec/changes/register-card-row-actions-on-demand/tasks.md#task-1.1
+		 */
+		prepareRowActions() {
+			this.rowActionsReady = true
+		},
+
+		/**
+		 * A stand-in trigger was activated without the card being pointed at
+		 * or focused first (assistive technology, a scripted click): mount the
+		 * menus and open the one of this row.
+		 *
+		 * @param {number|string} schemaId The row's schema id
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/register-card-row-actions-on-demand/tasks.md#task-1.2
+		 */
+		async openRowActions(schemaId) {
+			this.rowActionsReady = true
+			await this.$nextTick()
+			const cell = [...this.$el.querySelectorAll('[data-schema-row]')].find(
+				(td) => td.dataset.schemaRow === String(schemaId),
+			)
+			const trigger = cell?.querySelector('button')
+			trigger?.click()
+			trigger?.focus()
+		},
+
 		// Common methods
 		/**
 		 * Open a register modal for this card's register.

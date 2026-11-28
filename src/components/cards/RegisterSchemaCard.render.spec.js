@@ -59,15 +59,17 @@ function mockLibrary() {
 	const slotted = (name, tag) => ({
 		name,
 		inheritAttrs: false,
-		props: ['disabled', 'title', 'variant', 'primary', 'menuName', 'closeAfterClick'],
+		props: ['disabled', 'title', 'variant', 'primary', 'menuName', 'closeAfterClick', 'ariaLabel'],
 		emits: ['click'],
 		render() {
 			return h(
 				tag,
 				{
-					class: name,
+					class: [name, this.$attrs.class],
 					disabled: this.disabled || undefined,
 					title: this.title,
+					'aria-label': this.ariaLabel,
+					'aria-haspopup': this.$attrs['aria-haspopup'],
 					onClick: () => this.$emit('click'),
 				},
 				[this.$slots.icon?.(), this.$slots.default?.()],
@@ -428,5 +430,64 @@ describe('description', () => {
 		await text.element.parentElement.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
 		await flushPromises()
 		expect(wrapper.find('.registerDescription').classes()).not.toContain('registerDescription--expanded')
+	})
+})
+
+describe('schema row menus on demand', () => {
+	/**
+	 * A register card with three schema rows.
+	 *
+	 * @param {object} options Mount options
+	 * @return {object} The wrapper
+	 */
+	function mountRows(options = {}) {
+		const schemas = [1, 2, 3].map((id) => schemaRow(id))
+		return mount(RegisterSchemaCard, {
+			props: { item: { id: 7, title: 'Reg', schemas }, type: 'register' },
+			...options,
+		})
+	}
+
+	it('renders a plain trigger per row until the card is pointed at', async () => {
+		const wrapper = mountRows()
+		// Only the header menu is an action menu; each row has a stand-in.
+		expect(wrapper.findAll('.NcActions')).toHaveLength(1)
+		const triggers = wrapper.findAll('.tableColumnActions button.rowActionsTrigger')
+		expect(triggers).toHaveLength(3)
+		expect(triggers[0].attributes('aria-label')).toBe('Actions')
+		expect(triggers[0].attributes('aria-haspopup')).toBe('menu')
+
+		await wrapper.find('.registerSchemaCard').trigger('pointerenter')
+		expect(wrapper.findAll('.NcActions')).toHaveLength(4)
+		expect(wrapper.findAll('.rowActionsTrigger')).toHaveLength(0)
+	})
+
+	it('mounts the row menus when focus enters the card', async () => {
+		const wrapper = mountRows()
+		await wrapper.find('.registerSchemaCard').trigger('focusin')
+		expect(wrapper.findAll('.tableColumnActions .NcActions')).toHaveLength(3)
+	})
+
+	it('opens the row menu when its stand-in is activated directly', async () => {
+		const clicked = []
+		const click = jest
+			.spyOn(HTMLButtonElement.prototype, 'click')
+			.mockImplementation(function () {
+				clicked.push(this)
+			})
+		const wrapper = mountRows({ attachTo: document.body })
+		try {
+			await wrapper.findAll('.rowActionsTrigger')[1].trigger('click')
+			await flushPromises()
+
+			const cell = wrapper.findAll('.tableColumnActions')[1]
+			const menuTrigger = cell.find('button').element
+			expect(cell.find('.NcActions').exists()).toBe(true)
+			expect(clicked).toEqual([menuTrigger])
+			expect(document.activeElement).toBe(menuTrigger)
+		} finally {
+			click.mockRestore()
+			wrapper.unmount()
+		}
 	})
 })
