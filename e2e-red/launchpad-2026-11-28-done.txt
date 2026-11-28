@@ -18,3 +18,6 @@ public-start-page:139                    SANDBOX: tests/e2e/seed.sh not run (no 
 service-health-ping:692 (refresh job)    SANDBOX: memcache.distributed unset (APCu per process; CLI job blind to FPM cache); green with Redis distributed
 runtime-shell:267                        DEV: regex already updated on development
 # Sandbox tip for every lane: run `bash apps/launchpad/tests/e2e/seed.sh` from the server root, set memcache.distributed Redis, nginx mime 'js mjs'.
+# shard 4/8 on development e724a027 (seeded, bruteforce off, Redis distributed): 295 passed, 2 failed, 1 skipped, 8 did not run (21 min)
+edit-mode-draft:121                      PR #2428 merged (PUT matched only with index.php; front-controller servers drop it) 5/5
+first-paint-shell:141 (+6 not run)       FOR first-paint-skeleton lane: task 8 test assumes OpenRegister absent ('wiki-pages needs OpenRegister'); with OR installed the shell draws 5 frames, not 4. Spec needs a truly unavailable placement.
