@@ -5694,3 +5694,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T13:06:02Z precheck-20261128T130531-1d3fc81e CONFLICT-DEV #11035 bf9e6900
 2026-11-28T13:06:19Z precheck-20261128T130531-1d3fc81e CONFLICT-DEV #11317 ade57c3e
 2026-11-28T13:06:40Z precheck-20261128T130531-1d3fc81e CONFLICT-DEV #11148 199b32a5
+2026-11-28T13:06:49Z session-20261128T130644-37db60fc or-fix-11: lane K=11 is outside K=0..9 (OR-FIX-LANE.md: 'of 20' means of 10), so N%10==11 selects no PRs and the precheck share is empty; no lease taken, no PR touched; queued a config question in COORDINATOR-QUEUE.md
