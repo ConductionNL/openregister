@@ -1,1 +1,2 @@
 # launchpad e2e, live-launchpad-2 run 28 Nov 17:45Z-, NC 34.0.6 (/opt tarball), MariaDB, Redis distributed+locking, APCu, php -S :8097 (upload 200M), OR main c5e58018, integriq development 4eedc46 (#4036), launchpad development af9c794, seeded
+or-absent.spec.ts x4 (incl. :217 admin settings) GREEN 4/4 with integriq #4036 enabled: the integriq-on + OR-off 500 is closed.
