@@ -136,11 +136,14 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 		$this->assertCount(1, $across);
 		$this->assertStringContainsString('"schema":"schema:3"', $across[0]);
 		$this->assertStringNotContainsString('schema:2', $across[0]);
-		$this->assertCount(1, array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
+		$counts = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countAcross ')));
+		$this->assertCount(1, $counts);
+		$this->assertStringContainsString('"schema":"schema:3"', $counts[0]);
+		$this->assertStringNotContainsString('schema:2', $counts[0]);
 	}//end testATextSearchLeavesOutTheTablesItMayNotRead()
 
 	/**
-	 * A text search across every table passes the caller's RBAC and multitenancy flags to the search and the count.
+	 * A text search across every table passes the caller's RBAC and multitenancy flags to the search and to its one count across the tables.
 	 *
 	 * @return void
 	 */
@@ -157,8 +160,10 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 		$across = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'searchAcross ')));
 		$this->assertCount(1, $across);
 		$this->assertStringContainsString('"_rbac":false,"_multitenancy":false', $across[0]);
-		$counts = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
-		$this->assertCount(2, $counts);
+		// The total is one count across the same tables, not one count per table.
+		$counts = array_values(array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countAcross ')));
+		$this->assertCount(1, $counts);
+		$this->assertSame([], array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
 		foreach ($counts as $count) {
 			$this->assertStringContainsString('"_rbac":false,"_multitenancy":false', $count);
 		}

@@ -1,4 +1,4 @@
-# A cross-table search reads the catalogue of its tables in one query
+# A cross-table search reads its catalogue and its total in one query each
 
 ## What was wrong
 
@@ -29,10 +29,15 @@ on a request that is over the 100 ms API rule (ADR-124).
 - Tables already read in this request are not read again; a single table and
   SQLite keep the one-table query; a failed read falls back to it.
 
+- The total of a global text search (`GET /api/objects?_search=...` without a
+  register or schema) is counted with `countAcrossMultipleTables()`, the count
+  `searchTables()` already uses: one `SUM` over `COUNT(*)` UNION arms built from
+  the same WHERE as the search arms, instead of one count query per table (32
+  queries for the bundled tables).
+
 The answer of every search is unchanged.
 
 ## Not in this change
 
 - Caching the catalogue across requests (needs an invalidation signal at every
   DDL site; this change needs none).
-- The separate total count of a cross-table search (one COUNT per table).

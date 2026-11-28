@@ -25,3 +25,17 @@ one-table lookups.
 - **THEN** the batched read SHALL not record the table as missing
 - **AND** the one-table path SHALL create it and read its columns as before
 - @e2e exclude {DDL has no screen of its own; covered by MagicMapperCatalogueBatchTest}
+
+### Requirement: A global text search counts its total in one statement
+
+The total of a text search across every readable magic table SHALL be counted
+with one statement per batch of UNION arms (a `SUM` over one `COUNT(*)` arm per
+table, built from the same WHERE as the search arms), not with one count query
+per table. The total SHALL be the same as the sum of the per-table counts.
+
+#### Scenario: the total of a search over 32 tables
+- **GIVEN** 32 magic tables a caller may read
+- **WHEN** the caller searches `GET /api/objects?_search=e`
+- **THEN** the total SHALL come from one count statement
+- **AND** it SHALL equal the number of rows the search matches before paging
+- @e2e exclude {query count has no screen of its own; covered by MagicMapperSearchObjectsPaginatedTest and MagicMapperCrossTableCountTest}

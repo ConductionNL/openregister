@@ -12059,10 +12059,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * Reads the search query (with `_search`), the count query and the RBAC and
 	 * multitenancy flags from the search request; both queries carry the flags.
+	 * The total is one count across the same tables (one UNION statement per
+	 * batch), not one count query per table.
 	 *
 	 * @param array $request The search request: `search`, `count`, `rbac`, `multitenancy`.
 	 *
 	 * @return array Search results with pagination info.
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
 	 */
 	private function searchObjectsGloballyBySearch(array $request): array {
 		$tables = $this->globallyReadableTables();
@@ -12079,7 +12083,7 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$flags = ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']];
 		return [
 			'results' => $this->searchAcrossMultipleTables(query: array_replace($request['search'], $flags), registerSchemaPairs: $tables['pairs']),
-			'total' => $this->countInTables(pairs: $tables['pairs'], countQuery: array_replace($request['count'], $flags)),
+			'total' => $this->countAcrossMultipleTables(query: array_replace($request['count'], $flags), registerSchemaPairs: $tables['pairs']),
 			'registers' => $tables['registers'],
 			'schemas' => $tables['schemas'],
 			'ignoredFilters' => [],
@@ -12133,23 +12137,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			return null;
 		}
 	}//end readableTableOf()
-
-	/**
-	 * Sum the count query over the given register+schema tables.
-	 *
-	 * @param list<array{register: Register, schema: Schema}> $pairs      The tables
-	 * @param array                                           $countQuery The count query, flags included
-	 *
-	 * @return int
-	 */
-	private function countInTables(array $pairs, array $countQuery): int {
-		$total = 0;
-		foreach ($pairs as $pair) {
-			$total += $this->countObjectsInRegisterSchemaTable(query: $countQuery, register: $pair['register'], schema: $pair['schema']);
-		}
-
-		return $total;
-	}//end countInTables()
 
 	/**
 	 * Get size distribution chart data for objects.

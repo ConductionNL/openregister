@@ -2725,7 +2725,7 @@ return array (
       3 => 'register find [1,false,false]',
       4 => 'schema find [404,[],false,false]',
       5 => 'searchAcross [{"_search":"zaak","_limit":3,"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
-      6 => 'countTable [{"_search":"zaak","_rbac":true,"_multitenancy":true},"register:1","schema:2"]',
+      6 => 'countAcross [{"_search":"zaak","_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
     ),
     'log' => 
     array (
@@ -2736,7 +2736,7 @@ return array (
       array (
         0 => 'union-row',
       ),
-      'total' => 12,
+      'total' => 10,
       'registers' => 
       array (
         1 => 
