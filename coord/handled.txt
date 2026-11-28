@@ -495,3 +495,5 @@ thematiq#2076
 thematiq#2192
 thematiq#2225
 thematiq#2221
+thematiq#2254
+nextcloud-vue#2439
