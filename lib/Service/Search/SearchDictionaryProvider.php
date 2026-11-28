@@ -434,18 +434,49 @@ class SearchDictionaryProvider {
 	 * @return array<string, mixed> The paginated search result.
 	 */
 	private function searchConcepts(RegisterSchemaRef $table, string $schemeUuid): array {
-		return $this->objectSearch()->searchObjectsPaginated(
-			searchQuery: [
-				'_register' => $table->register,
-				'_schema' => $table->schema,
+		return $this->pageOf(
+			table: $table,
+			filters: [
 				'inScheme' => $schemeUuid,
 				'_limit' => self::CONCEPT_LIMIT,
-			],
-			countQuery: [],
+			]
+		);
+	}//end searchConcepts()
+
+	/**
+	 * One capped page of a vocabulary table, unscoped, WITHOUT a total.
+	 *
+	 * The dictionary reads rows only and never a total, so it reads through
+	 * searchObjects(): searchObjectsPaginated() would count the whole table
+	 * (its countQuery: [] still means "count every row") once per read, four
+	 * reads per dictionary build, on every cross-table search.
+	 *
+	 * @param RegisterSchemaRef    $table   The vocabulary register and schema, by id.
+	 * @param array<string, mixed> $filters The property filters and the page size.
+	 *
+	 * @return array{results: array<int, mixed>} The rows, in the shape of a paginated result.
+	 *
+	 * @spec openspec/changes/dictionary-reads-without-count/specs/upgrade-performance/spec.md
+	 */
+	private function pageOf(RegisterSchemaRef $table, array $filters): array {
+		$rows = $this->objectSearch()->searchObjects(
+			query: array_replace(
+				[
+					'_register' => $table->register,
+					'_schema' => $table->schema,
+				],
+				$filters
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
-	}//end searchConcepts()
+
+		if (is_array($rows) === false) {
+			return ['results' => []];
+		}
+
+		return ['results' => $rows];
+	}//end pageOf()
 
 	/**
 	 * The object search the concepts and schemes are read through.
@@ -465,16 +496,12 @@ class SearchDictionaryProvider {
 	 * @return string|null The uuid, or null when no scheme carries it.
 	 */
 	private function schemeUuid(RegisterSchemaRef $table, string $schemeUri): ?string {
-		$result = $this->objectSearch()->searchObjectsPaginated(
-			searchQuery: [
-				'_register' => $table->register,
-				'_schema' => $table->schema,
+		$result = $this->pageOf(
+			table: $table,
+			filters: [
 				'uri' => $schemeUri,
 				'_limit' => 1,
-			],
-			countQuery: [],
-			_rbac: false,
-			_multitenancy: false
+			]
 		);
 
 		return $this->firstUuid(result: $result);

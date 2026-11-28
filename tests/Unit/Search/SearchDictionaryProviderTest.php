@@ -76,21 +76,21 @@ class SearchDictionaryProviderTest extends TestCase {
 	 * @return void
 	 */
 	private function registerAnswers(array $synonyms, array $stopwords): void {
-		$this->objects->method('searchObjectsPaginated')->willReturnCallback(
+		$this->objects->method('searchObjects')->willReturnCallback(
 			static function (array $searchQuery) use ($synonyms, $stopwords): array {
 				// The scheme lookup: uri in, the scheme OBJECT's uuid out. The
 				// concepts are filed under that uuid, never under the uri.
 				$uri = ($searchQuery['uri'] ?? null);
 				if ($uri !== null) {
-					return ['results' => [['@self' => ['id' => 'uuid-of-' . $uri]]], 'total' => 1];
+					return [['@self' => ['id' => 'uuid-of-' . $uri]]];
 				}
 
 				$scheme = (string)($searchQuery['inScheme'] ?? '');
 				if ($scheme === 'uuid-of-' . SearchDictionaryProvider::SYNONYM_SCHEME) {
-					return ['results' => $synonyms, 'total' => count($synonyms)];
+					return $synonyms;
 				}
 
-				return ['results' => $stopwords, 'total' => count($stopwords)];
+				return $stopwords;
 			}
 		);
 	}//end registerAnswers()
@@ -142,7 +142,7 @@ class SearchDictionaryProviderTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFailingLookupAnswersAnEmptyDictionary(): void {
-		$this->objects->method('searchObjectsPaginated')->willThrowException(new \RuntimeException('no register'));
+		$this->objects->method('searchObjects')->willThrowException(new \RuntimeException('no register'));
 
 		$this->assertTrue($this->provider->forLanguage('nl')->isEmpty());
 	}//end testAFailingLookupAnswersAnEmptyDictionary()
@@ -155,10 +155,10 @@ class SearchDictionaryProviderTest extends TestCase {
 	 */
 	public function testTheDictionaryIsReadOncePerRequest(): void {
 		$calls = 0;
-		$this->objects->method('searchObjectsPaginated')->willReturnCallback(
+		$this->objects->method('searchObjects')->willReturnCallback(
 			function () use (&$calls): array {
 				$calls++;
-				return ['results' => [], 'total' => 0];
+				return [];
 			}
 		);
 
@@ -181,14 +181,14 @@ class SearchDictionaryProviderTest extends TestCase {
 	 */
 	public function testTheLoadCannotReEnterItself(): void {
 		$depth = 0;
-		$this->objects->method('searchObjectsPaginated')->willReturnCallback(
+		$this->objects->method('searchObjects')->willReturnCallback(
 			function () use (&$depth): array {
 				$depth++;
 				$this->assertLessThan(5, $depth, 'the provider recursed');
 				// Exactly what the real search path does: it asks for the
 				// dictionary while answering the dictionary's own query.
 				$this->provider->forLanguage('nl');
-				return ['results' => [], 'total' => 0];
+				return [];
 			}
 		);
 
@@ -208,10 +208,10 @@ class SearchDictionaryProviderTest extends TestCase {
 	 * @return void
 	 */
 	public function testAMissingSchemeAnswersAnEmptyDictionary(): void {
-		$this->objects->method('searchObjectsPaginated')->willReturnCallback(
+		$this->objects->method('searchObjects')->willReturnCallback(
 			static function (array $searchQuery): array {
 				if (isset($searchQuery['uri']) === true) {
-					return ['results' => [], 'total' => 0];
+					return [];
 				}
 
 				throw new \RuntimeException('concepts must not be queried without a resolved scheme');
@@ -220,6 +220,43 @@ class SearchDictionaryProviderTest extends TestCase {
 
 		$this->assertTrue($this->provider->forLanguage('nl')->isEmpty());
 	}//end testAMissingSchemeAnswersAnEmptyDictionary()
+
+	/**
+	 * The dictionary reads rows only, so it never asks for a total.
+	 *
+	 * Through searchObjectsPaginated() every one of its four reads (two scheme
+	 * lookups, two concept lists) also counted the whole table, on every
+	 * cross-table search, for a total nobody read.
+	 *
+	 * @spec openspec/changes/dictionary-reads-without-count/specs/upgrade-performance/spec.md
+	 *
+	 * @return void
+	 */
+	public function testTheDictionaryReadsWithoutCounting(): void {
+		$reads = [];
+		$this->objects->expects($this->never())->method('searchObjectsPaginated');
+		$this->objects->expects($this->never())->method('countSearchObjects');
+		$this->objects->method('searchObjects')->willReturnCallback(
+			static function (array $query, ?string $org = null, bool $rbac = true, bool $multitenancy = true) use (&$reads): array {
+				$reads[] = [$query, $rbac, $multitenancy];
+				if (isset($query['uri']) === true) {
+					return [['@self' => ['id' => 'uuid-of-' . $query['uri']]]];
+				}
+
+				return [['prefLabel' => ['nl' => 'omgevingsvergunning'], 'altLabel' => ['nl' => ['bouwvergunning']]]];
+			}
+		);
+
+		$this->assertFalse($this->provider->forLanguage('nl')->isEmpty());
+		$this->assertCount(4, $reads, 'two scheme lookups and two concept lists');
+		foreach ($reads as [$query, $rbac, $multitenancy]) {
+			$this->assertFalse($rbac, 'the dictionary is read unscoped');
+			$this->assertFalse($multitenancy, 'the dictionary is read unscoped');
+			$this->assertArrayHasKey('_limit', $query, 'every read is capped');
+			$this->assertArrayHasKey('_register', $query);
+			$this->assertArrayHasKey('_schema', $query);
+		}
+	}//end testTheDictionaryReadsWithoutCounting()
 
 	/**
 	 * The caps are administered, with documented defaults.
