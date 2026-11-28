@@ -5815,3 +5815,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T19:07:02Z precheck-20261128T185710-2221e1fe NORESULT tree e098c37dbe: deps failed
 2026-11-28T19:07:32Z precheck-20261128T185710-2221e1fe NORESULT tree e098c37dbe: deps failed
 2026-11-28T19:07:59Z or-fix-12: lane K=12 is outside K=0..9 (OR-FIX-LANE.md line 14; coordinator 13:40Z: a K>=10 run has no share and ends at once); no lease taken, no PR touched
+2026-11-28T19:08:23Z precheck-20261128T185710-2221e1fe CONFLICT-DEV #11035 bf9e6900
