@@ -125,9 +125,101 @@ async function getPanel(panel) {
 		)
 		return response.data
 	} catch (error) {
-		console.error(panel.log, error)
+		logFailure(panel.log, error)
 		throw error
 	}
+}
+
+/**
+ * Log a failed dashboard read, as the dashboard reads have always logged it.
+ *
+ * @param {string} message What failed.
+ * @param {Error} error Why.
+ * @return {void}
+ * @spec exclude Logging helper of the dashboard API passthroughs.
+ */
+function logFailure(message, error) {
+	console.error(message, error)
+}
+
+/**
+ * What each panel's failure is logged as, as its own read logs it.
+ *
+ * @type {Object<string, string>}
+ */
+const PANEL_LOGS = {
+	auditTrailActions: 'Error fetching audit trail action chart:',
+	objectsByRegister: 'Error fetching objects by register chart:',
+	objectsBySchema: 'Error fetching objects by schema chart:',
+	objectsBySize: 'Error fetching objects by size chart:',
+	auditTrailStats: 'Error fetching audit trail statistics:',
+	actionDistribution: 'Error fetching action distribution:',
+	mostActiveObjects: 'Error fetching most active objects:',
+}
+
+/**
+ * Every chart and statistics panel, with the store group it is kept in.
+ *
+ * @type {Array<{group: string, key: string}>}
+ */
+const PANELS = [
+	...CHARTS.map((key) => ({ group: 'chart', key })),
+	...STATISTICS.map((key) => ({ group: 'statistics', key })),
+]
+
+/**
+ * Keep the panels one GET /api/dashboard/panels answered. A panel that did
+ * not answer 200 is logged like its own read; the others are kept.
+ *
+ * @param {object} store The dashboard store.
+ * @param {object} answers `{panel: {status, data}}`.
+ * @return {Error|null} The first panel failure, or null.
+ * @spec openspec/changes/dashboard-panels-in-one-read/specs/built-in-dashboards/spec.md
+ */
+function keepPanels(store, answers) {
+	let failure = null
+	PANELS.forEach((panel) => {
+		const answer = answers?.[panel.key]
+		if (answer?.status === 200) {
+			store[`${panel.group}Data`][panel.key] = answer.data
+			return
+		}
+		const error = new Error(answer?.data?.error || `The dashboard did not answer panel ${panel.key}`)
+		logFailure(PANEL_LOGS[panel.key], error)
+		failure = failure || error
+	})
+	return failure
+}
+
+/**
+ * Load every chart and statistics panel into the store with one request
+ * (GET /api/dashboard/panels), each panel answered as its own endpoint would.
+ *
+ * The seven per-panel reads each paid Nextcloud's whole per-request cost and
+ * queued behind each other on a full page load. A failed panel is logged like
+ * its own read and the others are kept; the first failure is rethrown, as the
+ * parallel per-panel reads did.
+ *
+ * @param {object} store The dashboard store.
+ * @param {object} params The panel parameters: from, till, registerId, schemaId, hours, limit.
+ * @return {Promise<void>}
+ * @spec openspec/changes/dashboard-panels-in-one-read/specs/built-in-dashboards/spec.md
+ */
+async function fetchPanelsAtOnce(store, params) {
+	PANELS.forEach((panel) => { store[`${panel.group}Loading`][panel.key] = true })
+	const failure = await axios.get(
+		generateUrl('/apps/openregister/api/dashboard/panels'),
+		{ params },
+	).then(
+		(response) => keepPanels(store, response.data),
+		(error) => {
+			logFailure('Error fetching dashboard panels:', error)
+			return error
+		},
+	).finally(() => {
+		PANELS.forEach((panel) => { store[`${panel.group}Loading`][panel.key] = false })
+	})
+	if (failure) throw failure
 }
 
 /**
@@ -222,8 +314,7 @@ export const useDashboardStore = defineStore('dashboard', {
 					// side by side instead of one wave after another.
 					await Promise.all([
 						this.fetchRegisters(),
-						this.fetchAllChartData(),
-						this.fetchAllStatistics(),
+						this.fetchAllPanels(),
 					])
 				},
 			)
@@ -381,6 +472,34 @@ export const useDashboardStore = defineStore('dashboard', {
 		},
 
 		/**
+		 * Fetch every chart and statistics panel: in one request when none of
+		 * them is loading, else the per-panel reads (which leave a panel that is
+		 * already in flight to its own read).
+		 *
+		 * @param {number|null} hours - Number of hours to look back (default: 24)
+		 * @param {number|null} limit - Number of results for most active objects (default: 10)
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/dashboard-panels-in-one-read/specs/built-in-dashboards/spec.md
+		 */
+		async fetchAllPanels(hours = 24, limit = 10) {
+			const busy = PANELS.some((panel) => this[`${panel.group}Loading`][panel.key])
+			if (busy) {
+				await Promise.all([
+					this.fetchAllChartData(),
+					this.fetchAllStatistics(hours, limit),
+				])
+				return
+			}
+			await fetchPanelsAtOnce(this, {
+				from: this.dateRange.from,
+				till: this.dateRange.till,
+				...scopeParams(),
+				hours,
+				limit,
+			})
+		},
+
+		/**
 		 * Preload dashboard data: registers, charts and statistics, side by side
 		 * (none of them reads another's answer).
 		 *
@@ -391,8 +510,7 @@ export const useDashboardStore = defineStore('dashboard', {
 			if (!this.isInitialized && preloadInFlight === null) {
 				preloadInFlight = Promise.all([
 					loadRegistersOnce(this),
-					this.fetchAllChartData(),
-					this.fetchAllStatistics(),
+					this.fetchAllPanels(),
 				]).finally(() => {
 					preloadInFlight = null
 				})
@@ -493,10 +611,9 @@ export function setupDashboardStoreWatchers() {
 		() => {
 			// Fetch registers to update sidebar tables, using current store state
 			dashboardStore.fetchRegisters()
-			// Fetch all chart data to update dashboard charts
-			dashboardStore.fetchAllChartData()
-			// Fetch all statistics to update audit trail sidebar
-			dashboardStore.fetchAllStatistics()
+			// Fetch every chart (dashboard charts) and statistics panel (audit
+			// trail sidebar), in one request
+			dashboardStore.fetchAllPanels()
 		},
 	)
 }

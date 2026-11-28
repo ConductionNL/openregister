@@ -707,6 +707,8 @@ return \OCA\OpenRegister\Middleware\Support\ApiPathAliases::withVersionedAliases
         ['name' => 'dashboard#getAuditTrailStatistics', 'url' => '/api/dashboard/statistics/audit-trail', 'verb' => 'GET'],
         ['name' => 'dashboard#getAuditTrailActionDistribution', 'url' => '/api/dashboard/statistics/audit-trail-distribution', 'verb' => 'GET'],
         ['name' => 'dashboard#getMostActiveObjects', 'url' => '/api/dashboard/statistics/most-active-objects', 'verb' => 'GET'],
+        // Every chart and statistics panel in one read (dashboard-panels-in-one-read).
+        ['name' => 'dashboard#getPanels', 'url' => '/api/dashboard/panels', 'verb' => 'GET'],
         // Linked entities (mail sidebar, contacts sidebar, etc.).
         // Must be before objects/{register}/{schema} routes to avoid wildcard matching.
         ['name' => 'linked_entity#addObjectLink', 'url' => '/api/objects/{uuid}/_linked/{type}', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+', 'type' => '[^/]+']],

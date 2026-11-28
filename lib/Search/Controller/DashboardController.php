@@ -622,6 +622,99 @@ class DashboardController extends Controller {
 		return $this->mostActive(window: $scope->mostActive(limit: $limit, hours: $hours));
 	}//end getMostActiveObjects()
 	/**
+	 * Every chart and statistics panel of the dashboard in one answer.
+	 *
+	 * The dashboard used to send seven reads at once (four charts, three
+	 * statistics). Each paid Nextcloud's whole per-request cost (~70 ms on the
+	 * reference stack) for a few milliseconds of work, and on a full page load
+	 * they queued behind each other in php-fpm. This answers them from one
+	 * request with the same parameters and the same per-panel results: each
+	 * panel carries the status and body its own endpoint answers, so one
+	 * failing panel does not fail the others.
+	 *
+	 * @param string|null $from       Start date of the audit action chart (Y-m-d).
+	 * @param string|null $till       End date of the audit action chart (Y-m-d).
+	 * @param int|null    $registerId Optional register ID.
+	 * @param int|null    $schemaId   Optional schema ID.
+	 * @param int|null    $hours      Look-back hours of the statistics (default: 24).
+	 * @param int|null    $limit      Number of most active objects (default: 10).
+	 *
+	 * @return JSONResponse `{panel: {status, data}}` per panel, or 403 for a non-admin.
+	 *
+	 * @spec openspec/changes/dashboard-panels-in-one-read/specs/built-in-dashboards/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function getPanels(
+		?string $from = null,
+		?string $till = null,
+		?int $registerId = null,
+		?int $schemaId = null,
+		?int $hours = 24,
+		?int $limit = 10,
+	): JSONResponse {
+		if ($this->isCurrentUserAdmin() === false) {
+			return new JSONResponse(['error' => 'Admin privileges required'], 403);
+		}
+
+		return new JSONResponse(
+			data: self::answersOf(
+				reads: [
+					'auditTrailActions'  => fn (): JSONResponse => $this->getAuditTrailActionChart(
+						from: $from,
+						till: $till,
+						registerId: $registerId,
+						schemaId: $schemaId
+					),
+					'objectsByRegister'  => fn (): JSONResponse => $this->getObjectsByRegisterChart(registerId: $registerId, schemaId: $schemaId),
+					'objectsBySchema'    => fn (): JSONResponse => $this->getObjectsBySchemaChart(registerId: $registerId, schemaId: $schemaId),
+					'objectsBySize'      => fn (): JSONResponse => $this->getObjectsBySizeChart(registerId: $registerId, schemaId: $schemaId),
+					'auditTrailStats'    => fn (): JSONResponse => $this->getAuditTrailStatistics(
+						registerId: $registerId,
+						schemaId: $schemaId,
+						hours: $hours
+					),
+					'actionDistribution' => fn (): JSONResponse => $this->getAuditTrailActionDistribution(
+						registerId: $registerId,
+						schemaId: $schemaId,
+						hours: $hours
+					),
+					'mostActiveObjects'  => fn (): JSONResponse => $this->getMostActiveObjects(
+						registerId: $registerId,
+						schemaId: $schemaId,
+						limit: $limit,
+						hours: $hours
+					),
+				]
+			)
+		);
+	}//end getPanels()
+
+	/**
+	 * The status and body of each panel read, by panel key.
+	 *
+	 * A read that throws although its endpoint catches (a bad date) answers 500
+	 * with the message, like the endpoint's own failure answer.
+	 *
+	 * @param array<string, \Closure(): JSONResponse> $reads The panel reads by key.
+	 *
+	 * @return array<string, array{status: int, data: mixed}>
+	 */
+	private static function answersOf(array $reads): array {
+		$answers = [];
+		foreach ($reads as $key => $read) {
+			try {
+				$response = $read();
+				$answers[$key] = ['status' => $response->getStatus(), 'data' => $response->getData()];
+			} catch (\Exception $e) {
+				$answers[$key] = ['status' => 500, 'data' => ['error' => $e->getMessage()]];
+			}
+		}
+
+		return $answers;
+	}//end answersOf()
+
+	/**
 	 * The objects with the most audit activity in a window, for an administrator.
 	 *
 	 * @param ActivityWindow $window The register/schema scope, the limit and the look-back hours.

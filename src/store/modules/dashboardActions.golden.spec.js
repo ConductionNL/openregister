@@ -46,6 +46,11 @@ const ANSWERS = [
 	['rejected without message', { reject: { message: '' } }],
 ]
 
+const PANEL_KEYS = [
+	'auditTrailActions', 'objectsByRegister', 'objectsBySchema', 'objectsBySize',
+	'auditTrailStats', 'actionDistribution', 'mostActiveObjects',
+]
+
 const ACTIONS = [
 	['fetchAuditTrailActionChart', [[]]],
 	['fetchObjectsByRegisterChart', [[]]],
@@ -56,6 +61,7 @@ const ACTIONS = [
 	['fetchActionDistribution', [[], [6]]],
 	['fetchMostActiveObjects', [[], [5, 6]]],
 	['fetchAllStatistics', [[], [6, 5]]],
+	['fetchAllPanels', [[], [6, 5]]],
 	['fetchRegisters', [[]]],
 	['calculateSizes', [['reg-1']]],
 	['setDateRange', [[], ['2026-01-01', '2026-02-01']]],
@@ -95,6 +101,13 @@ function freshStore(answer, requests) {
 			requests.push([method, ...JSON.parse(JSON.stringify(request))])
 			if (answer.reject) {
 				throw Object.assign(new Error(answer.reject.message), answer.reject)
+			}
+			// GET /api/dashboard/panels answers each panel as its own endpoint
+			// would: here, every panel answers 200 with this scenario's data.
+			if (String(request[0]).endsWith('/api/dashboard/panels')) {
+				return {
+					data: Object.fromEntries(PANEL_KEYS.map((key) => [key, { status: 200, data: JSON.parse(JSON.stringify(answer.data)) }])),
+				}
 			}
 			return JSON.parse(JSON.stringify(answer))
 		})

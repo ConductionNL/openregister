@@ -94,6 +94,7 @@ class DashboardControllerTest extends TestCase {
 		$this->assertEquals(403, $controller->getAuditTrailStatistics()->getStatus());
 		$this->assertEquals(403, $controller->getAuditTrailActionDistribution()->getStatus());
 		$this->assertEquals(403, $controller->getMostActiveObjects()->getStatus());
+		$this->assertEquals(403, $controller->getPanels()->getStatus());
 	}
 
 	public function testPage(): void {
@@ -260,6 +261,76 @@ class DashboardControllerTest extends TestCase {
 		$result = $this->controller->getMostActiveObjects();
 
 		$this->assertEquals(500, $result->getStatus());
+	}
+
+	/**
+	 * One read answers every chart and statistics panel, each with the status
+	 * and body its own endpoint answers, and hands each its filters.
+	 *
+	 * @spec openspec/changes/dashboard-panels-in-one-read/specs/built-in-dashboards/spec.md
+	 */
+	public function testGetPanelsAnswersEveryPanelLikeItsOwnEndpoint(): void {
+		$scope = new DashboardScope(registerId: 1, schemaId: 2);
+		$this->auditReads->expects($this->once())->method('getAuditTrailActionChartData')
+			->with(new DashboardPeriod($scope, new DateTime('2026-01-01'), new DateTime('2026-01-31')))
+			->willReturn(['labels' => ['a'], 'series' => []]);
+		$this->dashboardService->expects($this->once())->method('getObjectsByRegisterChartData')
+			->with(1, 2)->willReturn(['labels' => ['r'], 'series' => [3]]);
+		$this->dashboardService->expects($this->once())->method('getObjectsBySchemaChartData')
+			->with(1, 2)->willReturn(['labels' => ['s'], 'series' => [4]]);
+		$this->dashboardService->expects($this->once())->method('getObjectsBySizeChartData')
+			->with(1, 2)->willReturn(['labels' => ['0-1 KB'], 'series' => [5]]);
+		$this->auditReads->expects($this->once())->method('getAuditTrailStatistics')
+			->with($scope, 48)->willReturn(['total' => 100]);
+		$this->auditReads->expects($this->once())->method('getAuditTrailActionDistribution')
+			->with($scope, 48)->willReturn(['actions' => []]);
+		$this->auditReads->expects($this->once())->method('getMostActiveObjects')
+			->with(new ActivityWindow($scope, 5, 48))->willReturn(['objects' => []]);
+
+		$result = $this->controller->getPanels('2026-01-01', '2026-01-31', 1, 2, 48, 5);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame(
+			[
+				'auditTrailActions'  => ['status' => 200, 'data' => ['labels' => ['a'], 'series' => []]],
+				'objectsByRegister'  => ['status' => 200, 'data' => ['labels' => ['r'], 'series' => [3]]],
+				'objectsBySchema'    => ['status' => 200, 'data' => ['labels' => ['s'], 'series' => [4]]],
+				'objectsBySize'      => ['status' => 200, 'data' => ['labels' => ['0-1 KB'], 'series' => [5]]],
+				'auditTrailStats'    => ['status' => 200, 'data' => ['total' => 100]],
+				'actionDistribution' => ['status' => 200, 'data' => ['actions' => []]],
+				'mostActiveObjects'  => ['status' => 200, 'data' => ['objects' => []]],
+			],
+			$result->getData()
+		);
+	}
+
+	/**
+	 * A failing panel answers its own 500 and leaves the other panels alone.
+	 *
+	 * @spec openspec/changes/dashboard-panels-in-one-read/specs/built-in-dashboards/spec.md
+	 */
+	public function testGetPanelsKeepsAFailingPanelToItself(): void {
+		$this->dashboardService->method('getObjectsBySchemaChartData')->willThrowException(new \Exception('Chart error'));
+		$this->dashboardService->method('getObjectsByRegisterChartData')->willReturn(['labels' => [], 'series' => []]);
+
+		$data = $this->controller->getPanels()->getData();
+
+		$this->assertSame(['status' => 500, 'data' => ['error' => 'Chart error']], $data['objectsBySchema']);
+		$this->assertSame(200, $data['objectsByRegister']['status']);
+		$this->assertSame(200, $data['auditTrailStats']['status']);
+		$this->assertCount(7, $data);
+	}
+
+	/**
+	 * A date the audit chart cannot read fails that panel only.
+	 *
+	 * @spec openspec/changes/dashboard-panels-in-one-read/specs/built-in-dashboards/spec.md
+	 */
+	public function testGetPanelsKeepsABadDateToTheAuditChart(): void {
+		$data = $this->controller->getPanels('not a date')->getData();
+
+		$this->assertSame(500, $data['auditTrailActions']['status']);
+		$this->assertSame(200, $data['objectsBySize']['status']);
 	}
 
 	/**

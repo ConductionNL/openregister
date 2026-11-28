@@ -45,6 +45,11 @@ function requestedUrls() {
 	return axios.get.mock.calls.map(([url]) => url)
 }
 
+const PANEL_KEYS = [
+	'auditTrailActions', 'objectsByRegister', 'objectsBySchema', 'objectsBySize',
+	'auditTrailStats', 'actionDistribution', 'mostActiveObjects',
+]
+
 describe('dashboard store — getters, date range and watchers', () => {
 	let store
 	let scope
@@ -55,7 +60,12 @@ describe('dashboard store — getters, date range and watchers', () => {
 		jest.spyOn(console, 'error').mockImplementation(() => {})
 		useRegisterStore().registerItem = null
 		useSchemaStore().schemaItem = null
-		axios.get.mockResolvedValue({ data: { registers: [{ title: 'R' }] } })
+		axios.get.mockImplementation(async (url) => {
+			if (url.endsWith('/dashboard/panels')) {
+				return { data: Object.fromEntries(PANEL_KEYS.map((key) => [key, { status: 200, data: { key } }])) }
+			}
+			return { data: { registers: [{ title: 'R' }] } }
+		})
 		store = useDashboardStore()
 		// The watchers are not bound to a component; own them so they stop per test.
 		scope = effectScope()
@@ -124,8 +134,11 @@ describe('dashboard store — getters, date range and watchers', () => {
 
 		const urls = requestedUrls()
 		expect(urls).toContain('url:/apps/openregister/api/dashboard')
-		expect(urls.filter((u) => u.includes('/dashboard/charts/'))).toHaveLength(4)
-		expect(urls.filter((u) => u.includes('/dashboard/statistics/'))).toHaveLength(3)
+		expect(urls.filter((u) => u.endsWith('/dashboard/panels'))).toHaveLength(1)
+		expect(urls.filter((u) => u.includes('/dashboard/charts/') || u.includes('/dashboard/statistics/'))).toHaveLength(0)
+		const panelsCall = axios.get.mock.calls.find(([u]) => u.endsWith('/dashboard/panels'))
+		expect(panelsCall[1].params).toMatchObject({ registerId: 5, hours: 24, limit: 10 })
+		expect(store.chartData.objectsByRegister).toEqual({ key: 'objectsByRegister' })
 		const registerCall = axios.get.mock.calls.find(([u]) => u === 'url:/apps/openregister/api/dashboard')
 		expect(registerCall[1]).toEqual({ params: { registerId: 5 } })
 		expect(store.registers).toEqual([{ title: 'R' }])
@@ -149,7 +162,8 @@ describe('dashboard store — getters, date range and watchers', () => {
 		await settle()
 		const urls = requestedUrls()
 		expect(urls).toContain('url:/apps/openregister/api/dashboard')
-		expect(urls.filter((u) => u.includes('/dashboard/charts/'))).toHaveLength(4)
-		expect(urls.filter((u) => u.includes('/dashboard/statistics/'))).toHaveLength(3)
+		expect(urls.filter((u) => u.endsWith('/dashboard/panels'))).toHaveLength(1)
+		expect(urls.filter((u) => u.includes('/dashboard/charts/') || u.includes('/dashboard/statistics/'))).toHaveLength(0)
+		expect(store.statisticsData.auditTrailStats).toEqual({ key: 'auditTrailStats' })
 	})
 })
