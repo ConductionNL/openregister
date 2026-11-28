@@ -21,3 +21,5 @@ runtime-shell:267                        DEV: regex already updated on developme
 # shard 4/8 on development e724a027 (seeded, bruteforce off, Redis distributed): 295 passed, 2 failed, 1 skipped, 8 did not run (21 min)
 edit-mode-draft:121                      PR #2428 merged (PUT matched only with index.php; front-controller servers drop it) 5/5
 first-paint-shell:141 (+6 not run)       FOR first-paint-skeleton lane: task 8 test assumes OpenRegister absent ('wiki-pages needs OpenRegister'); with OR installed the shell draws 5 frames, not 4. Spec needs a truly unavailable placement.
+# shard 5/8 on development f1e783ef: 313 passed, 4 failed, 0 did not run (25 min)
+integrations-page x4                     SANDBOX: integriq not installed (known)
