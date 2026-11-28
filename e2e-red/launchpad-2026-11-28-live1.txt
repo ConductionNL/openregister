@@ -4,3 +4,11 @@ divider-widget-discovery.spec.ts:155     DRAFT: waits for POST /api/dashboard/{i
 files-widget-access.spec.ts:202          DRAFT: support/filesWidget.ts:583 polls for the new placement before Save (live-launchpad-1 TAKING)
 files-widget.spec.ts:108                 DRAFT: same helper as above
 # edit-mode run on branch (#2398): more-menu-add-widget.spec.ts:75 (tiles section not found) and store-more-menu-placement.spec.ts:19 (store-publish hidden) also RED on development 1527624, untriaged (free)
+# shard 4 reds: PR #2414 merged (files-widget helper + divider discovery save the draft) 46/46 --repeat-each 2; the 19 'did not run' were the serial files-widget tests, green in that run
+# more-menu-add-widget.spec.ts:75 fixed by #2404 (other lane); store-more-menu-placement.spec.ts:19 green on development e073f97 (1/1)
+# shard 8/8 on development e073f97: 299 passed, 7 failed, 4 skipped, 4 did not run (24 min)
+tiles-icon-only-app-tiles.spec.ts:415, tiles-rendering-defects.spec.ts:145, visibility-dialog.spec.ts:148, widgets-rendering.spec.ts:305   DRAFT: fixed by #2400 (and my duplicate #2424, closed); live 10/10 --repeat-each 2 with the same fix
+widgets-picker-board-sync.spec.ts:288    DRAFT: fixed by #2420
+tiles-rendering.spec.ts:472              APP/SPEC (known since 27 Nov): tiles REQ content.{title} vs App or link tile storing tile columns (free)
+widgets-picker-assistant.spec.ts:153     APP vs SPEC: REQ-WDG-045 scenario 'proposes the app tile Case system', but catalogue apps are no longer picker cards since REQ-WDG-042, so the assistant answers 'No widget fits' (free; needs the assistant's offered cards to include catalogue apps, or a spec change)
+work-packages-widget.spec.ts x3          SANDBOX: did not run (OpenProject)
