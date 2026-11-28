@@ -4,3 +4,7 @@
 #   - apps-menu-walkthrough 'not again once finished' (+ its 8 serial followers not run): reload aborted the close's seen-version PUT; FIXED in thematiq#2224 (spec waits for the stored seen version); file x2 16/16, spec-coverage/a* 115 passed.
 # Earlier this run: thematiq#2213 checkbox-toggle-persistence show-menu-labels (resp.json of an unread fetch body hung) fixed.
 # Result: no functional red left on development after #2224.
+# 11:15-13:10Z, live-thematiq-1, development 8d41392f..282382a2: state leaks found by running the suite file by file in order (logoMime/app values read after each file):
+#   - core theming logo (since 27 Nov): workflows/token-set-apply-persistence applied Utrecht through the apply dialog (which syncs core theming) and restored only set + overrides. FIXED thematiq#2242 (capture/restore core theming).
+#   - workplace_layout=light (since #2225): first-time-setup.spec SETUP_KEYS lacked workplace_layout -> css-architecture login header, menu-labels rijkshuisstijl header text, summer-breeze focus outline red. FIXED thematiq#2244; those 3 files 78/78 without the value.
+#   - first-time-setup 'zuiddrecht: logo, colour and favicon ... walkthrough' red at has_custom_favicon: sandbox (no Imagick, core refuses SVG favicon; #2218 skips it). Green on an Imagick stack per #2229.
