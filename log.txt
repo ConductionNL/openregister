@@ -5797,3 +5797,5 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T18:37:25Z or-fix-10: lane K=10 is outside K=0..9 (OR-FIX-LANE.md line 14; coordinator 13:40Z: a K>=10 run has no share and ends at once); no lease taken, no PR touched
 2026-11-28T18:38:51Z session-20261128T183757-7380e65b or-fix-5: nothing to fix at main c5e58018; share 11305 (obsolete NOTE at f91e420b, conflicts, commented), 11035 (obsolete NOTE at bf9e6900, commented), 10635 (APPROVE at df149781, merges clean, false sbom park already noted); no precheck candidate left in share
 2026-11-28T18:42:39Z integrator-20261128T181826-66227be0 GREEN tree 96a7510416 on dev c5e5801803 prs 1 front=ok: Tests: 68505, Assertions: 244433, Errors: 5, Failures: 1, Deprecations: 4, PHPUnit Deprecations: 1, Skipped: 30.
+2026-11-28T18:42:53Z integrator-20261128T181826-66227be0 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
+remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
