@@ -5800,3 +5800,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T18:42:53Z integrator-20261128T181826-66227be0 PUSH-REFUSED remote: error: GH013: Repository rule violations found for refs/heads/main.        
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-28T18:43:09Z integrator-20261128T181826-66227be0 MERGED-TREE 96a7510416: 1 PRs, main now 1c11ec7526 = tested tree
+2026-11-28T18:44:17Z done-thematiq-20261128T143858-c4420fe8 done-thematiq: thematiq#2257 merged (Theming settings floor = core Sharing page); development already on nextcloud-vue ^2.245.1, which ships nextcloud-vue#2439, so the settings floor is live in gate 124. Speed QUESTION (Files floor, first content on settings pages) still open.
