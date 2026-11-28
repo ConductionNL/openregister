@@ -39,8 +39,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Pins the usage report: the current-hour counters (APCu is not loaded in the
- * unit run, so they are zero), the quotas, the utilisation for a missing, a zero
+ * Pins the usage report: the current-hour counters (zero when APCu holds none,
+ * read from APCu when it does), the quotas, the utilisation for a missing, a zero
  * and a positive quota, the 30-day history window, and the 500 on a failure.
  *
  * The clock is not pinned: the hour bucket is checked for its shape and the
@@ -91,8 +91,40 @@ class OrganisationControllerUsageTest extends TestCase {
 		return $organisation;
 	}
 
+	/**
+	 * Whether APCu serves this CLI run (apc.enable_cli=1 in some sandboxes).
+	 *
+	 * @return bool
+	 */
+	private static function apcuOn(): bool {
+		return function_exists('apcu_enabled') === true && apcu_enabled() === true;
+	}
+
+	/**
+	 * Remove org-1's counters around the current hour, so no earlier run leaks in.
+	 *
+	 * @return void
+	 */
+	private static function clearOrgCounters(): void {
+		if (self::apcuOn() === false) {
+			return;
+		}
+
+		foreach (['-1 hour', 'now', '+1 hour'] as $offset) {
+			$bucket = (new \DateTime(datetime: $offset))->format(format: 'YmdH');
+			apcu_delete(key: "or_quota_org-1_{$bucket}");
+			apcu_delete(key: "or_bw_org-1_{$bucket}");
+		}
+	}
+
+	protected function tearDown(): void {
+		self::clearOrgCounters();
+		parent::tearDown();
+	}
+
 	public function testReportsQuotasHistoryAndZeroCountersWithoutApcu(): void {
-		$this->assertFalse(function_exists('apcu_enabled') === true && apcu_enabled() === true, 'APCu must be off in the unit run');
+		// Zero counters whether APCu is off, or on without counters for this organisation.
+		self::clearOrgCounters();
 		$this->organisationMapper->expects($this->once())->method('findByUuid')->with('uuid-in')
 			->willReturn($this->organisation(1000, 0, 50));
 
@@ -119,6 +151,30 @@ class OrganisationControllerUsageTest extends TestCase {
 		// A positive quota gives a rounded percentage; a zero quota gives none.
 		$this->assertSame(['requests' => 0.0, 'bandwidth' => null], $data['utilization']);
 		$this->assertSame([['period' => 'p1'], ['period' => 'p1']], $data['history']);
+	}
+
+	public function testReadsThisHoursCountersFromApcuWhenItHoldsThem(): void {
+		if (self::apcuOn() === false) {
+			$this->markTestSkipped(message: 'APCu is not enabled for the CLI in this run.');
+		}
+
+		self::clearOrgCounters();
+		$bucket = (new \DateTime())->format(format: 'YmdH');
+		apcu_store(key: "or_quota_org-1_{$bucket}", value: 7);
+		apcu_store(key: "or_bw_org-1_{$bucket}", value: 2048);
+		$this->organisationMapper->method('findByUuid')->willReturn($this->organisation(1000, 0, 50));
+		$this->tenantUsageMapper->method('findByOrgAndDateRange')->willReturn([]);
+
+		$data = $this->controller->usage('uuid-in')->getData();
+
+		// The hour may roll over between store and read; then both counters read zero together.
+		if ($data['current']['period'] !== $bucket) {
+			$this->assertSame(expected: [0, 0], actual: [$data['current']['requests'], $data['current']['bandwidth']]);
+			return;
+		}
+
+		$this->assertSame(expected: 7, actual: $data['current']['requests']);
+		$this->assertSame(expected: 2048, actual: $data['current']['bandwidth']);
 	}
 
 	public function testAMissingQuotaHasNoUtilisation(): void {
