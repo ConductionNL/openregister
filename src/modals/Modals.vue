@@ -8,19 +8,19 @@ import { navigationStore } from '../store/store.js'
 		and schema lists (and the object list on object pages), which every page
 		paid for with the dialog closed. -->
 	<ImportRegister v-if="navigationStore.modal === 'importRegister'" />
-	<ExportRegister />
-	<PublishRegister />
-	<DeleteRegister />
+	<ExportRegister v-if="navigationStore.modal === 'exportRegister'" />
+	<PublishRegister v-if="navigationStore.modal === 'publishRegister'" />
+	<DeleteRegister v-if="navigationStore.dialog === 'deleteRegister'" />
 	<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
-	<DeleteConfiguration />
+	<DeleteConfiguration v-if="navigationStore.dialog === 'deleteConfiguration'" />
 	<!-- Mounted only while open: on mount it reads the API token settings,
 		which every OpenRegister page paid for with the dialog closed. -->
 	<ImportConfiguration v-if="navigationStore.modal === 'importConfiguration'" />
-	<ExportConfiguration />
-	<PublishConfiguration />
-	<PublishToGitlab />
+	<ExportConfiguration v-if="navigationStore.modal === 'exportConfiguration'" />
+	<PublishConfiguration v-if="navigationStore.modal === 'publishConfiguration'" />
+	<PublishToGitlab v-if="navigationStore.modal === 'publishConfigurationGitLab'" />
 	<ExploreSchema v-if="navigationStore.dialog === 'exploreSchema'" />
-	<DeleteSchema />
+	<DeleteSchema v-if="navigationStore.dialog === 'deleteSchema'" />
 	<EditSchema v-if="navigationStore.modal === 'editSchema'" />
 	<ValidateSchema v-if="navigationStore.dialog === 'validateSchema'" />
 	<DeleteSchemaObjects v-if="navigationStore.dialog === 'deleteSchemaObjects'" />
@@ -28,15 +28,15 @@ import { navigationStore } from '../store/store.js'
 		carries the code editor (vue-codemirror6), which no page needs at load. -->
 	<UploadSchema v-if="navigationStore.modal === 'uploadSchema'" />
 	<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
-	<DeleteSchemaProperty />
-	<EditSource />
-	<DeleteSource />
+	<DeleteSchemaProperty v-if="navigationStore.modal === 'deleteSchemaProperty'" />
+	<EditSource v-if="navigationStore.modal === 'editSource'" />
+	<DeleteSource v-if="navigationStore.dialog === 'deleteSource'" />
 	<MergeObject v-if="navigationStore.modal === 'mergeObject'" />
 	<MigrationObject v-if="navigationStore.modal === 'migrationObject'" />
-	<DeleteObject />
+	<DeleteObject v-if="navigationStore.dialog === 'deleteObject'" />
 	<CopyObject v-if="navigationStore.dialog === 'copyObject'" />
 	<SaveRecordTemplate v-if="navigationStore.dialog === 'saveRecordTemplate'" />
-	<LockObject />
+	<LockObject v-if="navigationStore.modal === 'lockObject'" />
 	<!-- Mounted only while open: it refetches the active schema on mount and
 		deep-watches the object store, re-initialising its form on every change. -->
 	<ViewObject v-if="navigationStore.modal === 'viewObject'" />
@@ -48,9 +48,9 @@ import { navigationStore } from '../store/store.js'
 	<MassValidateObjects v-if="navigationStore.dialog === 'massValidateObjects'" />
 	<RestoreMultiple v-if="navigationStore.dialog === 'restoreMultiple'" />
 	<PurgeMultiple v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'" />
-	<UploadFiles />
+	<UploadFiles v-if="navigationStore.modal === 'uploadFiles'" />
 	<ViewSource v-if="navigationStore.modal === 'viewSource'" />
-	<ViewConfiguration />
+	<ViewConfiguration v-if="navigationStore.modal === 'viewConfiguration'" />
 	<JoinOrganisation v-if="navigationStore.modal === 'joinOrganisation'" />
 	<!-- EditOrganisation: modal={{ navigationStore.modal }} -->
 	<EditOrganisation v-if="navigationStore.modal === 'editOrganisation'" />
@@ -66,26 +66,27 @@ import { navigationStore } from '../store/store.js'
 
 <script>
 import { defineAsyncComponent } from 'vue'
-import DeleteConfiguration from './configuration/DeleteConfiguration.vue'
-import ExportConfiguration from './configuration/ExportConfiguration.vue'
-import PublishConfiguration from './configuration/PublishConfiguration.vue'
-import ViewConfiguration from './configuration/ViewConfiguration.vue'
-import UploadFiles from './file/UploadFiles.vue'
-import PublishToGitlab from './gitlab/PublishToGitlab.vue'
-import DeleteObject from './object/DeleteObject.vue'
-import LockObject from './object/LockObject.vue'
-import DeleteRegister from './register/DeleteRegister.vue'
-import ExportRegister from './register/ExportRegister.vue'
-import PublishRegister from './register/PublishRegister.vue'
-import DeleteSchema from './schema/DeleteSchema.vue'
-import DeleteSchemaProperty from './schema/DeleteSchemaProperty.vue'
-import DeleteSource from './source/DeleteSource.vue'
-import EditSource from './source/EditSource.vue'
-// The modals below open on demand (each is mounted only while its navigation
-// key is set), so each loads as its own chunk when first opened. Imported
+// Every modal opens on demand: each is mounted only while its navigation key
+// is set, so each loads as its own chunk when first opened. Imported
 // statically they put their whole dependency trees (the object viewer, the
-// code editor of the download dialog, the schema editors) into the chunks
-// every OpenRegister page loads.
+// code editor of the download dialog, the schema editors) and their styles
+// into the chunks every OpenRegister page loads, and mounted with the dialog
+// closed every page built them and inserted their styles at boot.
+const ExportRegister = defineAsyncComponent(() => import('./register/ExportRegister.vue'))
+const PublishRegister = defineAsyncComponent(() => import('./register/PublishRegister.vue'))
+const DeleteRegister = defineAsyncComponent(() => import('./register/DeleteRegister.vue'))
+const DeleteConfiguration = defineAsyncComponent(() => import('./configuration/DeleteConfiguration.vue'))
+const ExportConfiguration = defineAsyncComponent(() => import('./configuration/ExportConfiguration.vue'))
+const PublishConfiguration = defineAsyncComponent(() => import('./configuration/PublishConfiguration.vue'))
+const PublishToGitlab = defineAsyncComponent(() => import('./gitlab/PublishToGitlab.vue'))
+const DeleteSchema = defineAsyncComponent(() => import('./schema/DeleteSchema.vue'))
+const DeleteSchemaProperty = defineAsyncComponent(() => import('./schema/DeleteSchemaProperty.vue'))
+const EditSource = defineAsyncComponent(() => import('./source/EditSource.vue'))
+const DeleteSource = defineAsyncComponent(() => import('./source/DeleteSource.vue'))
+const DeleteObject = defineAsyncComponent(() => import('./object/DeleteObject.vue'))
+const LockObject = defineAsyncComponent(() => import('./object/LockObject.vue'))
+const UploadFiles = defineAsyncComponent(() => import('./file/UploadFiles.vue'))
+const ViewConfiguration = defineAsyncComponent(() => import('./configuration/ViewConfiguration.vue'))
 const RecordImportDialog = defineAsyncComponent(() => import('../dialogs/recordImport/RecordImportDialog.vue'))
 const EditApplication = defineAsyncComponent(() => import('./application/EditApplication.vue'))
 const EditConfiguration = defineAsyncComponent(() => import('./configuration/EditConfiguration.vue'))

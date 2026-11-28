@@ -56,27 +56,23 @@ jest.mock('./source/ViewSource.vue', () => ({ __esModule: true, default: { name:
 jest.mock('./webhook/EditWebhook.vue', () => ({ __esModule: true, default: { name: 'EditWebhook', template: '<i class="EditWebhook" />' } }))
 jest.mock('./webhook/ViewWebhookLog.vue', () => ({ __esModule: true, default: { name: 'ViewWebhookLog', template: '<i class="ViewWebhookLog" />' } }))
 
-// Mounted regardless of the navigation state (they gate themselves).
-const ALWAYS = [
-	'ExportRegister',
-	'PublishRegister',
-	'DeleteRegister',
-	'DeleteConfiguration',
-	'ExportConfiguration',
-	'PublishConfiguration',
-	'PublishToGitlab',
-	'DeleteSchema',
-	'DeleteSchemaProperty',
-	'EditSource',
-	'DeleteSource',
-	'DeleteObject',
-	'LockObject',
-	'UploadFiles',
-	'ViewConfiguration',
-]
-
 // Mounted only while navigationStore[key] === value.
 const GATED = [
+	['ExportRegister', 'modal', 'exportRegister'],
+	['PublishRegister', 'modal', 'publishRegister'],
+	['DeleteRegister', 'dialog', 'deleteRegister'],
+	['DeleteConfiguration', 'dialog', 'deleteConfiguration'],
+	['ExportConfiguration', 'modal', 'exportConfiguration'],
+	['PublishConfiguration', 'modal', 'publishConfiguration'],
+	['PublishToGitlab', 'modal', 'publishConfigurationGitLab'],
+	['DeleteSchema', 'dialog', 'deleteSchema'],
+	['DeleteSchemaProperty', 'modal', 'deleteSchemaProperty'],
+	['EditSource', 'modal', 'editSource'],
+	['DeleteSource', 'dialog', 'deleteSource'],
+	['DeleteObject', 'dialog', 'deleteObject'],
+	['LockObject', 'modal', 'lockObject'],
+	['UploadFiles', 'modal', 'uploadFiles'],
+	['ViewConfiguration', 'modal', 'viewConfiguration'],
 	['ImportRegister', 'modal', 'importRegister'],
 	['ViewObject', 'modal', 'viewObject'],
 	['ViewSource', 'modal', 'viewSource'],
@@ -127,18 +123,17 @@ describe('Modals host', () => {
 		navigationStore.dialog = false
 	})
 
-	it('mounts only the self-gating modals when nothing is open', async () => {
+	it('mounts no modal when nothing is open', async () => {
 		const wrapper = mount(Modals)
 		await flushPromises()
-		expect(rendered(wrapper).sort()).toEqual([...ALWAYS].sort())
+		expect(rendered(wrapper)).toEqual([])
 	})
 
 	it.each(GATED)('mounts %s only while navigation %s is %s', async (name, key, value) => {
 		navigationStore[key] = value
 		const wrapper = mount(Modals)
 		await flushPromises()
-		const extra = rendered(wrapper).filter((n) => !ALWAYS.includes(n))
-		expect(extra).toEqual([name])
+		expect(rendered(wrapper)).toEqual([name])
 	})
 
 	it('does not mount a gated modal for the other navigation key', async () => {
@@ -156,5 +151,16 @@ describe('Modals host', () => {
 		navigationStore.modal = 'viewObject'
 		await flushPromises()
 		expect(rendered(wrapper)).toContain('ViewObject')
+	})
+
+	it('unmounts a modal again when it closes', async () => {
+		navigationStore.modal = 'uploadFiles'
+		const wrapper = mount(Modals)
+		await flushPromises()
+		expect(rendered(wrapper)).toEqual(['UploadFiles'])
+
+		navigationStore.modal = false
+		await flushPromises()
+		expect(rendered(wrapper)).toEqual([])
 	})
 })
