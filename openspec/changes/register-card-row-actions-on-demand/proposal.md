@@ -12,7 +12,7 @@ register list had arrived.
 
 ## What changes
 
-- A schema row shows a plain icon trigger (same tertiary icon button, labelled
+- A schema row shows a plain icon trigger (a plain button drawn like the menu's tertiary icon trigger, labelled
   "Actions", `aria-haspopup="menu"`) until the card is pointed at or focus
   enters it. Then the card mounts the row menus, before the click lands.
 - A trigger activated without that (assistive technology, a scripted click)

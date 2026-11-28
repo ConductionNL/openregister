@@ -232,17 +232,16 @@ import {
 								<!-- The row menus mount once the card is pointed at or
 									focused: until then a plain trigger stands in, so the
 									list renders without one action menu per schema row. -->
-								<NcButton
-									v-if="!rowActionsReady"
-									variant="tertiary"
-									class="rowActionsTrigger"
-									:aria-label="t('openregister', 'Actions')"
-									aria-haspopup="menu"
-									@click="openRowActions(schema.id)">
-									<template #icon>
+								<span v-if="!rowActionsReady" class="rowActionsTriggerBox">
+									<button
+										type="button"
+										class="rowActionsTrigger"
+										:aria-label="t('openregister', 'Actions')"
+										aria-haspopup="menu"
+										@click="openRowActions(schema.id)">
 										<DotsHorizontal :size="20" />
-									</template>
-								</NcButton>
+									</button>
+								</span>
 								<NcActions v-else :primary="false">
 									<template #icon>
 										<DotsHorizontal :size="20" />
@@ -1558,6 +1557,40 @@ function allObjectsDeletionPrompt(counts) {
 
 <style lang="scss" scoped>
 @use '../../styles/common.scss' as *;
+
+// The stand-in for a schema row's action menu, drawn like the menu's own
+// tertiary icon trigger (an inline-block box around a flex button) so
+// nothing moves when the menu mounts.
+.rowActionsTriggerBox {
+	display: inline-block;
+}
+
+.rowActionsTrigger {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: var(--default-clickable-area);
+	height: var(--default-clickable-area);
+	min-height: var(--default-clickable-area);
+	// Core's global button rule adds a margin; the menu's trigger has none.
+	margin: 0 !important;
+	padding: 1px 0 0;
+	border: none;
+	border-radius: var(--border-radius-element, calc(var(--default-clickable-area) / 2));
+	background-color: transparent;
+	color: var(--color-main-text);
+	cursor: pointer;
+
+	&:hover {
+		background-color: var(--color-background-hover);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--color-main-text);
+		box-shadow: 0 0 0 4px var(--color-main-background);
+	}
+}
 
 .registerSchemaCard {
 	background: var(--color-main-background);
