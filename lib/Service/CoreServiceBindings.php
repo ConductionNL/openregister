@@ -514,6 +514,7 @@ final class CoreServiceBindings {
 		ShellBootReadsInterface::class => ShellBootReads::class,
 		OrganisationUsageServiceInterface::class => OrganisationUsageService::class,
 		PropertyRbacHandlerInterface::class => PropertyRbacHandler::class,
+		\OCA\OpenRegister\Kernel\Contracts\PortalPropertyPolicyInterface::class => \OCA\OpenRegister\Service\Schemas\PortalPropertyPolicy::class,
 		QualityScorerInterface::class => QualityScorer::class,
 		QualityStatisticsServiceInterface::class => QualityStatisticsService::class,
 		UniqueHintWarningsInterface::class => UniqueHintWarnings::class,
