@@ -11,3 +11,4 @@ integrations-page x4 GREEN 4/4 once integriq development is installed (git clone
 live-data-tile-widget:552 (Integriq source id not found)   ENV-SPEC: with Integriq installed the form shows the Connection select (launchpad's declared connections), spec stubbed only the capability probe -> PR (stub the app_connection read empty); live-data-tile + widget-content-forms 17 passed
 or-absent:217 (admin settings page)   OTHER APP: integriq enabled while OpenRegister is disabled -> /settings/admin/launchpad 500, Class OCA\OpenRegister\AppHost\Settings\GenericAdminSettings not found in integriq lib/Settings/IntegriqAdmin.php:55 (integriq hard-depends on OR); 4/4 green with integriq off
 performance Workspace, Admin settings, workspace-first-paint   SANDBOX: php -S (+14 not run behind them); numbers belong to the reference stack
+# shard 3/8 on development 241e479b: 347 passed, 0 failed (35.1 min). GREEN.
