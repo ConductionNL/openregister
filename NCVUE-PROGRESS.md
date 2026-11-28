@@ -131,3 +131,4 @@
 2026-11-28T18:57:21Z ncvue-3 #2325 left open (vue3-apexcharts 1.11 needs apexcharts>=5.10, ERESOLVE); #2331 fixed (release job Node 26, lock regen) + local green, pushed e79aa9cc, admin-merge REFUSED by permission check, not merged; #2385 closed (superseded by #2389); main a43e5c1c
 2026-11-28T19:07:13Z ncvue-0 #2328 fixed and merged (vue-material-design-icons 5.4.0 moved <title> before <path>; mdiIcon follows, dialog snapshots updated); lint/jest 22692/build/dist green; check:docs red on main already (4 docs miss props: CnActionsBar customViewSegments, CnAppRoot quietHours/aiDefaultAgent, CnFormDialog preloadedDefinitions, CnAiCompanion defaultAgent); main db4f484f
 2026-11-28T19:30:49Z ncvue-3 start
+2026-11-28T19:31:04Z ncvue-3 start (#2325 #2331)
