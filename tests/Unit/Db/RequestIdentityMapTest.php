@@ -154,4 +154,16 @@ final class RequestIdentityMapTest extends TestCase {
 
 		$this->assertNull($map->all(true));
 	}//end testClearDropsTheFullListsToo()
+
+	public function testOnlyIdsNotHeldUnfilteredAreLeftToRead(): void {
+		$map = new RequestIdentityMap();
+		$held = new Register();
+		$held->setId(7);
+		$map->remember(entity: $held, multitenancy: false, identifiers: [7]);
+		$filtered = new Register();
+		$filtered->setId(9);
+		$map->remember(entity: $filtered, multitenancy: true, identifiers: [9]);
+
+		$this->assertSame([8, 9], $map->idsNotHeldUnfiltered(ids: [7, '8', 8, 9, 'slug', 0, -3, null, '7']));
+	}//end testOnlyIdsNotHeldUnfilteredAreLeftToRead()
 }//end class

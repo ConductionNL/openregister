@@ -12152,14 +12152,21 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Every register+schema table the purpose gate lets this request read, with its serialised register and schema.
 	 *
-	 * A pair whose register or schema cannot be loaded is skipped.
+	 * A pair whose register or schema cannot be loaded is skipped. The
+	 * registers and schemas are loaded with one query each first.
 	 *
 	 * @return array{pairs: list<array{register: Register, schema: Schema}>, registers: array, schemas: array}
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-every-table-loads-its-registers-and-schemas-in-one-query-each
 	 */
 	private function globallyReadableTables(): array {
 		$idPairs = $this->getAllRegisterSchemaPairs();
 		$gate    = $this->purposeBoundTables();
 		$found   = ['pairs' => [], 'registers' => [], 'schemas' => []];
+
+		// One query each for every register and schema the loop below finds by id.
+		$this->registerMapper->preloadUnfiltered(ids: array_column($idPairs, 'registerId'));
+		$this->schemaMapper->preloadUnfiltered(ids: array_column($idPairs, 'schemaId'));
 		foreach ($idPairs as $idPair) {
 			$table = $this->readableTableOf(idPair: $idPair, gate: $gate);
 			if ($table === null) {

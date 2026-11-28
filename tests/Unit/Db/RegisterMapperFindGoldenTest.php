@@ -131,6 +131,51 @@ class RegisterMapperFindGoldenTest extends TestCase {
 		$this->assertSame(array_keys($expected), array_keys($actual));
 	}//end testFindMatchesGolden()
 
+	/**
+	 * A preload reads every asked id in one query and answers find() without the organisation filter from it.
+	 *
+	 * @return void
+	 */
+	public function testAPreloadAnswersUnfilteredFindsByIdWithOneQuery(): void {
+		$this->queryLog = [];
+		$this->queuedRows = [[self::ROW, ['id' => 8, 'uuid' => 'UUID-Eight', 'slug' => 'Eight-Slug', 'title' => 'Eight']]];
+		$mapper = $this->makeMapper();
+
+		$mapper->preloadUnfiltered(ids: [7, '8', 7, 'x', 0]);
+
+		$executed = array_values(array_filter($this->queryLog, static fn (string $line): bool => str_ends_with($line, 'executeQuery()')));
+		$this->assertCount(1, $executed);
+		$this->assertNotEmpty(array_filter($this->queryLog, static fn (string $line): bool => str_contains($line, '[7,8]')));
+
+		$this->queryLog = [];
+		$this->assertSame(7, $mapper->find(7, false, false)->getId());
+		$this->assertSame(8, $mapper->find('8', false, false)->getId());
+		$this->assertSame([], $this->queryLog);
+
+		// The filtered key and other identifiers are not preloaded: they keep their own lookup.
+		$cache = (new \ReflectionProperty(RegisterMapper::class, 'findCache'))->getValue($mapper);
+		$this->assertSame(['7:0', '8:0'], $cache->keys());
+	}//end testAPreloadAnswersUnfilteredFindsByIdWithOneQuery()
+
+	/**
+	 * Fewer than two ids to read, or ids already cached, read nothing.
+	 *
+	 * @return void
+	 */
+	public function testAPreloadOfOneOrOfCachedIdsReadsNothing(): void {
+		$this->queryLog = [];
+		$this->queuedRows = [[self::ROW, ['id' => 8, 'uuid' => 'UUID-Eight', 'slug' => 'Eight-Slug', 'title' => 'Eight']]];
+		$mapper = $this->makeMapper();
+
+		$mapper->preloadUnfiltered(ids: [7]);
+		$this->assertSame([], $this->queryLog);
+
+		$mapper->preloadUnfiltered(ids: [7, 8]);
+		$this->queryLog = [];
+		$mapper->preloadUnfiltered(ids: [8, 7, 7]);
+		$this->assertSame([], $this->queryLog);
+	}//end testAPreloadOfOneOrOfCachedIdsReadsNothing()
+
 	private function makeMapper(): RegisterMapper {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getQueryBuilder')->willReturnCallback(fn () => $this->recordingBuilder());

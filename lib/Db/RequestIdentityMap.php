@@ -88,6 +88,34 @@ final class RequestIdentityMap {
 	}//end get()
 
 	/**
+	 * The distinct positive integer ids this map does not hold under the unfiltered key.
+	 *
+	 * Used by a mapper's batched preload to read only what find() would still
+	 * have to read. Anything not a positive integer id is left out.
+	 *
+	 * @param array<int, mixed> $ids The ids asked for.
+	 *
+	 * @return array<int, int> The ids to read.
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-every-table-loads-its-registers-and-schemas-in-one-query-each
+	 */
+	public function idsNotHeldUnfiltered(array $ids): array {
+		$missing = [];
+		foreach ($ids as $id) {
+			$isId = (is_int($id) === true || (is_string($id) === true && ctype_digit($id) === true));
+			if ($isId === false || (int)$id <= 0) {
+				continue;
+			}
+
+			if ($this->get(identifier: (int)$id, multitenancy: false) === null) {
+				$missing[(int)$id] = (int)$id;
+			}
+		}
+
+		return array_values($missing);
+	}//end idsNotHeldUnfiltered()
+
+	/**
 	 * Remember an entity under the identifier asked for and its own aliases.
 	 *
 	 * @param Entity                 $entity       The entity.

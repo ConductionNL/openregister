@@ -279,6 +279,37 @@ class RegisterMapper extends QBMapper implements RegisterMapperInterface {
 	}//end find()
 
 	/**
+	 * Load the registers with the given ids in one query, for find() without the organisation filter.
+	 *
+	 * Each one is remembered under its id only, for find($id, _multitenancy:
+	 * false): the same entity find() would have loaded by that id.
+	 * A uuid or slug lookup still runs its own query.
+	 *
+	 * @param array<int, int|string> $ids The ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-every-table-loads-its-registers-and-schemas-in-one-query-each
+	 */
+	public function preloadUnfiltered(array $ids): void {
+		$missing = $this->findCache->idsNotHeldUnfiltered(ids: $ids);
+		if (count($missing) < 2) {
+			return;
+		}
+
+		foreach (array_chunk($missing, self::MAX_IN_LIST_SIZE) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->select('*')
+				->from('openregister_registers')
+				->where($qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)));
+
+			foreach ($this->findEntities(query: $qb) as $register) {
+				$this->findCache->remember(entity: $register, multitenancy: false, identifiers: [$register->getId()]);
+			}
+		}
+	}//end preloadUnfiltered()
+
+	/**
 	 * Run one uncached register lookup through the organisation filter.
 	 *
 	 * Logs the attempt, probes whether the row exists before the filters (for

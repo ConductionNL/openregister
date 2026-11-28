@@ -41,6 +41,14 @@ on a request that is over the 100 ms API rule (ADR-124).
   statement runs. An empty page, or a search in several batches, keeps the
   separate one-statement count.
 
+- The global text search loads every register and schema it is about to
+  find by id (26 registers and 32 schemas: 58 queries) with one query each
+  first: `RegisterMapper::preloadUnfiltered()` and
+  `SchemaMapper::preloadUnfiltered()` remember each row under its id in the
+  request's find cache for `find($id, _multitenancy: false)`, the same entity
+  that find would have loaded. A uuid or slug lookup, and a lookup with the
+  organisation filter, keep their own query.
+
 The answer of every search is unchanged.
 
 ## Not in this change

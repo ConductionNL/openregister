@@ -48,3 +48,19 @@ per-table counts.
 - **WHEN** the page comes back empty
 - **THEN** the total SHALL come from one count statement across the same tables
 - @e2e exclude {query count has no screen of its own; covered by MagicMapperUnionBatchGoldenTest and MagicMapperCrossTableCountTest}
+
+### Requirement: A search across every table loads its registers and schemas in one query each
+
+Before a global text search loads the register and the schema of each table
+it may read, it SHALL read all of those registers with one query and all of
+those schemas with one query, without the organisation filter, and answer
+each find by id from them. A schema SHALL be the same entity the find by id
+would have loaded (the stored row, its composition resolved). Lookups by uuid
+or slug, and lookups with the organisation filter, SHALL keep their own query.
+
+#### Scenario: a global search over 32 tables of 26 registers
+- **GIVEN** 32 magic tables of 26 registers a caller may read
+- **WHEN** the caller searches `GET /api/objects?_search=e`
+- **THEN** the registers SHALL be read with one query and the schemas with one query
+- **AND** the response SHALL be the same as when each was read on its own
+- @e2e exclude {query count has no screen of its own; covered by RegisterMapperFindGoldenTest, SchemaMapperFindGoldenTest and RequestIdentityMapTest}

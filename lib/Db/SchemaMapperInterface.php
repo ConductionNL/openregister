@@ -32,6 +32,21 @@ use OCP\AppFramework\Db\Entity;
 interface SchemaMapperInterface {
 
 	/**
+	 * Load the schemas with the given ids in one query, for find() without the organisation filter.
+	 *
+	 * A caller about to call find($id, _multitenancy: false) for many ids asks
+	 * this first; each of those finds is then answered from the request's find
+	 * cache. Ids already cached, unknown ids and fewer than two ids read nothing.
+	 *
+	 * @param array<int, int|string> $ids The ids.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-search-across-every-table-loads-its-registers-and-schemas-in-one-query-each
+	 */
+	public function preloadUnfiltered(array $ids): void;
+
+	/**
 	 * Finds a schema by id, with optional extension for statistics
 	 *
 	 * This method automatically resolves schema extensions. If the schema has
