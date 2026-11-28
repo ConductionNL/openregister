@@ -5692,3 +5692,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 remote: Review all repository rules at https://github.com/ConductionNL/openr; per-PR merges
 2026-11-28T12:41:13Z integrator-20261128T095651-de26e006 MERGED-TREE a28e75c9da: 1 PRs, main now 9d6c98af8a = tested tree
 2026-11-28T13:06:02Z precheck-20261128T130531-1d3fc81e CONFLICT-DEV #11035 bf9e6900
+2026-11-28T13:06:19Z precheck-20261128T130531-1d3fc81e CONFLICT-DEV #11317 ade57c3e
