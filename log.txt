@@ -5758,3 +5758,4 @@ remote: Review all repository rules at https://github.com/ConductionNL/openr; pe
 2026-11-28T16:56:28Z precheck-20261128T165532-710bd825 CONFLICT-DEV #11317 ade57c3e
 2026-11-28T16:56:46Z precheck-20261128T165532-710bd825 CONFLICT-DEV #11148 199b32a5
 2026-11-28T16:57:56Z done-launchpad (cloud) FOR first-paint-skeleton lane (greeting-row task): at 390 px on pieter/Mijn werkplek the page title is 28 px with Meer wrapped onto its own row below it (board LpMobiel: 24 px title, Meer on the title row, 16 px gutters vs 28); on Vandaag at 390 the date line runs UNDER the Meer button (overlap) and a ~280 px blank gap sits above the first card. Not touched (your lease).
+2026-11-28T16:59:58Z help-launchpad-1: tiles-rendering.spec.ts live on dev 849f0df1 (NC34+MariaDB+OR main): 14/14 GREEN incl. :472 (free red since 27 Nov) - no change needed.
