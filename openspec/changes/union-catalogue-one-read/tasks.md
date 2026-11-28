@@ -15,6 +15,10 @@
       `COUNT(*) OVER ()` window (`runUnionBatch(withTotal: true)`); the global
       search uses it and counts separately only for an empty page or many batches.
 
+- [x] 2.3 The same for the unified-search provider's multi-schema search;
+      queries that filter on properties (or carry `_where`) are counted per
+      table first, as before (`filtersOnProperties()`).
+
 ## 3. One read for the registers and schemas
 
 - [x] 3.1 `RegisterMapper::preloadUnfiltered()`, `SchemaMapper::preloadUnfiltered()`

@@ -783,10 +783,10 @@ return array (
     array (
       0 => 'register find [1,false,false]',
       1 => 'schema find [2,[],false,false]',
-      2 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:1","schema:2"]',
-      3 => 'schema find [3,[],false,false]',
-      4 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":3}},"register:1","schema:3"]',
-      5 => 'searchAcross [{"@self":{"schema":[2,3]},"register":1,"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"},{"register":"register:1","schema":"schema:3"}]]',
+      2 => 'schema find [3,[],false,false]',
+      3 => 'searchAcross [{"@self":{"schema":[2,3]},"register":1,"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"},{"register":"register:1","schema":"schema:3"}]]',
+      4 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:1","schema:2"]',
+      5 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":3}},"register:1","schema:3"]',
     ),
     'log' => 
     array (
@@ -1019,10 +1019,10 @@ return array (
       0 => 'register find [1,false,false]',
       1 => 'register find [5,false,false]',
       2 => 'schema find [2,[],false,false]',
-      3 => 'countTable [{"_ids":["a"],"_relations_contains":"u","_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:1","schema:2"]',
-      4 => 'schema find [3,[],false,false]',
-      5 => 'countTable [{"_ids":["a"],"_relations_contains":"u","_rbac":true,"_multitenancy":true,"@self":{"schema":3}},"register:1","schema:3"]',
-      6 => 'searchAcross [{"_schemas":[2,3],"_registers":["1","5"],"_ids":["a"],"_relations_contains":"u","_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"},{"register":"register:1","schema":"schema:3"}]]',
+      3 => 'schema find [3,[],false,false]',
+      4 => 'searchAcross [{"_schemas":[2,3],"_registers":["1","5"],"_ids":["a"],"_relations_contains":"u","_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"},{"register":"register:1","schema":"schema:3"}]]',
+      5 => 'countTable [{"_ids":["a"],"_relations_contains":"u","_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:1","schema:2"]',
+      6 => 'countTable [{"_ids":["a"],"_relations_contains":"u","_rbac":true,"_multitenancy":true,"@self":{"schema":3}},"register:1","schema:3"]',
     ),
     'log' => 
     array (
@@ -1288,8 +1288,8 @@ return array (
     array (
       0 => 'register find [1,false,false]',
       1 => 'schema find [2,[],false,false]',
-      2 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:1","schema:2"]',
-      3 => 'searchAcross [{"@self":{"schemas":["2"]},"register":"1","_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
+      2 => 'searchAcross [{"@self":{"schemas":["2"]},"register":"1","_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
+      3 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:1","schema:2"]',
     ),
     'log' => 
     array (
@@ -1437,8 +1437,8 @@ return array (
     array (
       0 => 'register find [5,false,false]',
       1 => 'schema find [2,[],false,false]',
-      2 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:5","schema:2"]',
-      3 => 'searchAcross [{"_schemas":[2],"register":1,"_registers":[5],"_rbac":true,"_multitenancy":true},[{"register":"register:5","schema":"schema:2"}]]',
+      2 => 'searchAcross [{"_schemas":[2],"register":1,"_registers":[5],"_rbac":true,"_multitenancy":true},[{"register":"register:5","schema":"schema:2"}]]',
+      3 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:5","schema:2"]',
     ),
     'log' => 
     array (
@@ -1586,8 +1586,8 @@ return array (
     array (
       0 => 'register find [1,false,false]',
       1 => 'schema find [2,[],false,false]',
-      2 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:1","schema:2"]',
-      3 => 'searchAcross [{"_schemas":[2],"register":1,"_registers":[],"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
+      2 => 'searchAcross [{"_schemas":[2],"register":1,"_registers":[],"_rbac":true,"_multitenancy":true},[{"register":"register:1","schema":"schema:2"}]]',
+      3 => 'countTable [{"_rbac":true,"_multitenancy":true,"@self":{"schema":2}},"register:1","schema:2"]',
     ),
     'log' => 
     array (

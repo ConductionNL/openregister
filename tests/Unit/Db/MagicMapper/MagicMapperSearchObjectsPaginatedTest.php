@@ -191,6 +191,43 @@ class MagicMapperSearchObjectsPaginatedTest extends TestCase {
 		$this->assertSame([], array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countTable ')));
 	}//end testATextSearchTakesTheTotalItsStatementCounted()
 
+	/**
+	 * A text search that filters on a property is counted per table, before the search, whatever its statement counted.
+	 *
+	 * The per-table count is what refuses a filter on an encrypted property;
+	 * the raw UNION arms do not repeat that refusal.
+	 *
+	 * @return void
+	 */
+	public function testAFilteredTextSearchIsCountedPerTableFirst(): void {
+		$case = [
+			'search'     => ['_search' => 'zaak', 'title' => 'x', '_limit' => 1],
+			'count'      => ['_search' => 'zaak', 'title' => 'x'],
+			'pairs'      => [['registerId' => 1, 'schemaId' => 2], ['registerId' => 1, 'schemaId' => 3]],
+			'unionTotal' => 41,
+		];
+		$result = $this->runCase(case: $case);
+
+		$this->assertSame(25, $result['response']['total']);
+		$this->assertSame([], array_filter($this->calls, static fn (string $call): bool => str_starts_with($call, 'countAcross ')));
+		$order = array_values(array_map(static fn (string $call): string => strtok($call, ' '), array_filter($this->calls, static fn (string $call): bool => preg_match('/^(countTable|searchAcross) /', $call) === 1)));
+		$this->assertSame(['countTable', 'countTable', 'searchAcross'], $order);
+	}//end testAFilteredTextSearchIsCountedPerTableFirst()
+
+	/**
+	 * A `_where` tree counts as a property filter; metadata and `_`-prefixed keys do not.
+	 *
+	 * @return void
+	 */
+	public function testWhatCountsAsFilteringOnProperties(): void {
+		$method = new \ReflectionMethod(MagicMapper::class, 'filtersOnProperties');
+
+		$this->assertFalse($method->invoke(null, ['_search' => 'a', '_limit' => 5, '@self' => ['schema' => [2]], '_rbac' => true]));
+		$this->assertTrue($method->invoke(null, ['_search' => 'a', 'title' => 'x']));
+		$this->assertTrue($method->invoke(null, ['_search' => 'a', '_where' => '{"and":[]}']));
+		$this->assertTrue($method->invoke(null, [0 => 'x']));
+	}//end testWhatCountsAsFilteringOnProperties()
+
 	public function testEveryCaseIsRecorded(): void {
 		$expected = require __DIR__.'/fixtures/search-objects-paginated.php';
 		$this->assertSame(expected: array_keys(self::cases()), actual: array_keys($expected));

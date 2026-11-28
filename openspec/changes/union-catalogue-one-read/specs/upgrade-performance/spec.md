@@ -34,7 +34,16 @@ table, built from the same WHERE as the search arms), not with one count query
 per table. When the search itself ran as one UNION statement and returned
 rows, that statement SHALL carry the total (a window count over the arms) and
 no count statement SHALL run. The total SHALL be the same as the sum of the
-per-table counts.
+per-table counts. This SHALL hold for the multi-schema search of the
+unified-search provider too. A search that filters on a property, or carries a
+`_where` tree, SHALL be counted per table before the search runs, so a filter
+on an encrypted property is refused as before.
+
+#### Scenario: a filter on an encrypted property is still refused
+- **GIVEN** a schema with an encrypted property `title` among the searched tables
+- **WHEN** a caller searches `GET /api/objects?_search=e&title=x`
+- **THEN** the per-table count SHALL run first and refuse the filter, as before
+- @e2e exclude {encrypted schema fixture is unit-level; covered by MagicMapperSearchObjectsPaginatedTest and MagicMapperMultiSchemaSearchGoldenTest}
 
 #### Scenario: the total of a search over 32 tables
 - **GIVEN** 32 magic tables a caller may read

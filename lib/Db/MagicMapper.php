@@ -11871,16 +11871,34 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			];
 		}
 
+		// One query each for every register and schema the loop below finds by id.
+		$this->registerMapper->preloadUnfiltered(ids: array_values($search->schemaToRegisterId));
+		$this->schemaMapper->preloadUnfiltered(ids: $search->schemaIds);
+
 		foreach ($search->schemaIds as $schemaId) {
 			$this->addSchemaToMultiSchemaSearch(search: $search, schemaId: $schemaId);
 		}
 
+		// A query that filters on properties is counted per table first, as
+		// before: that count refuses a filter on an encrypted property before
+		// any search runs (see searchObjectsGloballyBySearch()).
+		$countedFirst = self::filtersOnProperties(query: $search->countQuery);
+		if ($countedFirst === true) {
+			$search->total = $this->countMultiSchemaTables(search: $search);
+		}
+
 		$results = [];
+		$this->unionRowTotal = null;
 		if (empty($search->pairs) === false) {
 			$results = $this->searchAcrossMultipleTables(
 				query: $search->withFlags(query: $search->searchQuery),
 				registerSchemaPairs: $search->pairs
 			);
+		}
+
+		// Otherwise the single-statement UNION counted its own total, or each table is counted now.
+		if ($countedFirst === false) {
+			$search->total = ($this->unionRowTotal ?? $this->countMultiSchemaTables(search: $search));
 		}
 
 		return [
@@ -11894,14 +11912,14 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	}//end searchObjectsPaginatedMultiSchema()
 
 	/**
-	 * Add one schema's table to a multi-schema search and count its matches.
+	 * Add one schema's table to a multi-schema search.
 	 *
 	 * @param MultiSchemaSearch $search   The search.
 	 * @param mixed             $schemaId The schema id as the caller gave it.
 	 *
-	 * @throws \OCA\OpenRegister\Exception\EncryptedFieldFilterException When the count filters on an encrypted field.
-	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
 	 */
 	private function addSchemaToMultiSchemaSearch(MultiSchemaSearch $search, mixed $schemaId): void {
 		$schemaIdInt = (int)$schemaId;
@@ -11918,21 +11936,6 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			$schema = $this->schemaMapper->find($schemaIdInt, _multitenancy: false, _rbac: false);
 			$search->schemasCache[$schema->getId()] = $schema->jsonSerialize();
 			$search->pairs[] = ['register' => $register, 'schema' => $schema];
-
-			// Scope the per-table count to THIS schema: re-applying a large `@self.schema`
-			// allow-list as an IN() on each single-table count is redundant and trips
-			// the database's 1000-element IN-list cap.
-			$countQuery = $search->withFlags(query: $search->countQuery);
-			$countQuery['@self']['schema'] = $schema->getId();
-			$search->total += $this->countObjectsInRegisterSchemaTable(
-				query: $countQuery,
-				register: $register,
-				schema: $schema
-			);
-		} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
-			// Fail loud: never silently drop a schema from the total because its
-			// count hit an encrypted-field filter or a refused `_where` tree.
-			throw $e;
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[MagicMapper] Failed to load schema for multi-schema search',
@@ -11940,6 +11943,49 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 			);
 		}//end try
 	}//end addSchemaToMultiSchemaSearch()
+
+	/**
+	 * Sum the per-table counts of a multi-schema search.
+	 *
+	 * Used when the search did not count its own total (several batches, the
+	 * sequential path, or an empty page).
+	 *
+	 * @param MultiSchemaSearch $search The search, its pairs added.
+	 *
+	 * @throws \OCA\OpenRegister\Exception\EncryptedFieldFilterException When a count filters on an encrypted field.
+	 *
+	 * @return int The total.
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
+	 */
+	private function countMultiSchemaTables(MultiSchemaSearch $search): int {
+		$total = 0;
+		foreach ($search->pairs as $pair) {
+			try {
+				// Scope the per-table count to THIS schema: re-applying a large `@self.schema`
+				// allow-list as an IN() on each single-table count is redundant and trips
+				// the database's 1000-element IN-list cap.
+				$countQuery = $search->withFlags(query: $search->countQuery);
+				$countQuery['@self']['schema'] = $pair['schema']->getId();
+				$total += $this->countObjectsInRegisterSchemaTable(
+					query: $countQuery,
+					register: $pair['register'],
+					schema: $pair['schema']
+				);
+			} catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException | \OCA\OpenRegister\Exception\ConditionGroupException $e) {
+				// Fail loud: never silently drop a schema from the total because its
+				// count hit an encrypted-field filter or a refused `_where` tree.
+				throw $e;
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[MagicMapper] Failed to count a schema of a multi-schema search',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $pair['schema']->getId(), 'error' => $e->getMessage()]
+				);
+			}//end try
+		}//end foreach
+
+		return $total;
+	}//end countMultiSchemaTables()
 
 	/**
 	 * The owning register of a schema, loaded on first use.
@@ -12116,9 +12162,12 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * Reads the search query (with `_search`), the count query and the RBAC and
 	 * multitenancy flags from the search request; both queries carry the flags.
-	 * The total is counted by the search statement itself when the search ran
-	 * as one UNION and returned rows; otherwise by one count across the same
-	 * tables (one UNION statement per batch), never one count query per table.
+	 * A query without property filters takes its total from the search
+	 * statement itself when it ran as one UNION and returned rows, else from
+	 * one count statement across the tables. A query that filters on
+	 * properties (or carries a `_where` tree) is counted per table first, as
+	 * before: the per-table count is what refuses a filter on an encrypted
+	 * property, and the raw UNION arms do not repeat that refusal.
 	 *
 	 * @param array $request The search request: `search`, `count`, `rbac`, `multitenancy`.
 	 *
@@ -12139,20 +12188,64 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		}
 
 		$flags = ['_rbac' => $request['rbac'], '_multitenancy' => $request['multitenancy']];
+		$countQuery = array_replace($request['count'], $flags);
+		$filtered   = self::filtersOnProperties(query: $countQuery);
+		$total      = null;
+		if ($filtered === true) {
+			// Counted per table first, as before: that count refuses a filter on
+			// an encrypted property before any search runs.
+			$total = $this->countInTables(pairs: $tables['pairs'], countQuery: $countQuery);
+		}
+
 		$this->unionRowTotal = null;
 		$results = $this->searchAcrossMultipleTables(query: array_replace($request['search'], $flags), registerSchemaPairs: $tables['pairs']);
 		return [
 			'results' => $results,
-			'total' => ($this->unionRowTotal ?? $this->countAcrossMultipleTables(
-				query: array_replace($request['count'], $flags),
-				registerSchemaPairs: $tables['pairs']
-			)),
+			'total' => ($total ?? $this->unionRowTotal ?? $this->countAcrossMultipleTables(query: $countQuery, registerSchemaPairs: $tables['pairs'])),
 			'registers' => $tables['registers'],
 			'schemas' => $tables['schemas'],
 			'ignoredFilters' => [],
 			'@self' => ['source' => 'magic_mapper'],
 		];
 	}//end searchObjectsGloballyBySearch()
+
+	/**
+	 * Whether a query filters on object properties: any key that is not
+	 * `_`-prefixed or `@self`, or a `_where` tree.
+	 *
+	 * @param array $query The query.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/union-catalogue-one-read/specs/upgrade-performance/spec.md#requirement-a-global-text-search-counts-its-total-in-one-statement
+	 */
+	private static function filtersOnProperties(array $query): bool {
+		foreach (array_keys($query) as $key) {
+			$key = (string)$key;
+			if ($key === '_where' || ($key !== '@self' && str_starts_with($key, '_') === false)) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end filtersOnProperties()
+
+	/**
+	 * Sum the count query over the given register+schema tables, one count per table.
+	 *
+	 * @param list<array{register: Register, schema: Schema}> $pairs      The tables
+	 * @param array                                           $countQuery The count query, flags included
+	 *
+	 * @return int
+	 */
+	private function countInTables(array $pairs, array $countQuery): int {
+		$total = 0;
+		foreach ($pairs as $pair) {
+			$total += $this->countObjectsInRegisterSchemaTable(query: $countQuery, register: $pair['register'], schema: $pair['schema']);
+		}
+
+		return $total;
+	}//end countInTables()
 
 	/**
 	 * Every register+schema table the purpose gate lets this request read, with its serialised register and schema.

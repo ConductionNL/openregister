@@ -51,6 +51,15 @@ on a request that is over the 100 ms API rule (ADR-124).
 
 The answer of every search is unchanged.
 
+- The unified-search provider's multi-schema search (`searchObjectsPaginatedMultiSchema`)
+  gets the same: registers and schemas preloaded, and its total from the UNION
+  window instead of one count per schema (248 -> 78 queries).
+- Only a query without property filters takes its total from the UNION. A
+  query that filters on a property, or carries a `_where` tree, is counted per
+  table first, exactly as before: that count refuses a filter on an encrypted
+  property before any search runs, and the raw UNION arms do not repeat the
+  refusal.
+
 ## Fixed on the way
 
 - On PostgreSQL an ordered cross-table search failed: the ORDER BY of a bare
