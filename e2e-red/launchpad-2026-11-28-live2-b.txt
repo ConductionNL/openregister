@@ -6,3 +6,4 @@ first-paint-shell:178 (+8 serial not run)      KNOWN: 390 px install-banner shif
 # shard 8/8 on development dd7207d2: 311 passed, 4 skipped, 0 failed (28.4 min, --workers 1). GREEN.
 # shard 5/8 on development 1b944635: 312 passed, 4 failed, 1 skipped (29.4 min)
 integrations-page x4 (:178 :195 :203 :221)   SANDBOX: integriq not installed (trying an integriq install next)
+integrations-page x4 GREEN 4/4 once integriq development is installed (git clone + composer --no-dev needs php8.3-soap + npm build, app:enable). Shard 5/8 GREEN. Sandbox tip: integriq installs from git in the cloud; the 'integriq not installed' SANDBOX red is closable.
