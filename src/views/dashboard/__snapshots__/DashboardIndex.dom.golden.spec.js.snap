@@ -845,6 +845,9 @@ exports[`DashboardIndex mount falls back to empty search data when statistics fa
     null,
   ],
   [
+    "fetchPopularTerms",
+  ],
+  [
     "setStatistics",
     {
       "avg_response_time": 0,

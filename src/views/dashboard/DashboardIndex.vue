@@ -549,18 +549,25 @@ export default {
 		/**
 		 * Load search-trail statistics and popular terms from the store.
 		 *
-		 * @spec openspec/specs/built-in-dashboards/spec.md
+		 * Both reads go out together: neither needs the other, and the popular
+		 * terms used to wait for the statistics, so on a full load they were
+		 * the page's last request. Both are settled before a failure falls
+		 * back to the empty defaults, so a late answer cannot overwrite them.
+		 *
+		 * @spec openspec/changes/dashboard-search-trail-reads-together/specs/built-in-dashboards/spec.md
 		 * @return {Promise<void>}
 		 */
 		async loadSearchTrailData() {
-			try {
-				await searchTrailStore.fetchStatistics({
+			const outcomes = await Promise.allSettled([
+				searchTrailStore.fetchStatistics({
 					from: this.kpiRange.from,
 					to: this.kpiRange.till,
-				})
-				await searchTrailStore.fetchPopularTerms()
-			} catch (error) {
-				console.error('Error loading search trail data:', error)
+				}),
+				searchTrailStore.fetchPopularTerms(),
+			])
+			const failed = outcomes.find((outcome) => outcome.status === 'rejected')
+			if (failed) {
+				console.error('Error loading search trail data:', failed.reason)
 				this.setEmptySearchTrailData()
 			}
 		},

@@ -150,7 +150,7 @@ describe('DashboardIndex — search trail and range', () => {
 		Object.assign(dashboardStore, { setDateRange: jest.fn() })
 	})
 
-	it('loads the statistics for the range, then the popular terms', async () => {
+	it('loads the statistics for the range and the popular terms together', async () => {
 		const ctx = view({ kpiRange: { from: '2026-11-01', till: '2026-11-14', preset: '30d' } })
 
 		await ctx.loadSearchTrailData()
@@ -160,13 +160,52 @@ describe('DashboardIndex — search trail and range', () => {
 		expect(searchTrailStore.setStatistics).not.toHaveBeenCalled()
 	})
 
+	it('sends the popular terms read without waiting for the statistics', async () => {
+		let answerStatistics
+		searchTrailStore.fetchStatistics.mockReturnValue(new Promise((resolve) => { answerStatistics = resolve }))
+
+		const loading = view().loadSearchTrailData()
+
+		expect(searchTrailStore.fetchStatistics).toHaveBeenCalledTimes(1)
+		expect(searchTrailStore.fetchPopularTerms).toHaveBeenCalledTimes(1)
+		answerStatistics()
+		await loading
+		expect(searchTrailStore.setStatistics).not.toHaveBeenCalled()
+	})
+
+	it('falls back to empty search data only after both reads settled', async () => {
+		const error = jest.spyOn(console, 'error').mockImplementation(() => {})
+		let answerTerms
+		searchTrailStore.fetchStatistics.mockRejectedValue(new Error('down'))
+		searchTrailStore.fetchPopularTerms.mockReturnValue(new Promise((resolve) => { answerTerms = resolve }))
+
+		const loading = view().loadSearchTrailData()
+		await Promise.resolve()
+		expect(searchTrailStore.setStatistics).not.toHaveBeenCalled()
+		answerTerms()
+		await loading
+
+		expect(searchTrailStore.setStatistics).toHaveBeenCalledWith(expect.objectContaining({ total_searches: 0 }))
+		error.mockRestore()
+	})
+
+	it('falls back to empty search data when the popular terms fail', async () => {
+		const error = jest.spyOn(console, 'error').mockImplementation(() => {})
+		searchTrailStore.fetchPopularTerms.mockRejectedValue(new Error('down'))
+
+		await view().loadSearchTrailData()
+
+		expect(searchTrailStore.setPopularTerms).toHaveBeenCalledWith({ results: [] })
+		error.mockRestore()
+	})
+
 	it('falls back to empty search data when the statistics fail', async () => {
 		const error = jest.spyOn(console, 'error').mockImplementation(() => {})
 		searchTrailStore.fetchStatistics.mockRejectedValue(new Error('down'))
 
 		await view().loadSearchTrailData()
 
-		expect(searchTrailStore.fetchPopularTerms).not.toHaveBeenCalled()
+		expect(searchTrailStore.fetchPopularTerms).toHaveBeenCalledTimes(1)
 		expect(searchTrailStore.setStatistics).toHaveBeenCalledWith(expect.objectContaining({ total_searches: 0, success_rate: 0 }))
 		expect(searchTrailStore.setPopularTerms).toHaveBeenCalledWith({ results: [] })
 		expect(searchTrailStore.setActivity).toHaveBeenCalledWith({ daily: { activity: [] } })
