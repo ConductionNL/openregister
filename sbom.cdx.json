@@ -733,10 +733,10 @@
       ]
     },
     {
-      "bom-ref": "laravel/serializable-closure-2.1.0.0",
+      "bom-ref": "laravel/serializable-closure-2.2.0.0",
       "type": "library",
       "name": "serializable-closure",
-      "version": "v2.1.0",
+      "version": "v2.2.0",
       "group": "laravel",
       "description": "Laravel Serializable Closure provides an easy and secure way to serialize closures in PHP.",
       "author": "Taylor Otwell, Nuno Maduro",
@@ -747,17 +747,17 @@
           }
         }
       ],
-      "purl": "pkg:composer/laravel/serializable-closure@v2.1.0",
+      "purl": "pkg:composer/laravel/serializable-closure@v2.2.0",
       "externalReferences": [
         {
           "type": "distribution",
-          "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/2d5869a838bbcf37e0d8b0568fc41914e81374b5",
-          "comment": "dist reference: 2d5869a838bbcf37e0d8b0568fc41914e81374b5"
+          "url": "https://api.github.com/repos/laravel/serializable-closure/zipball/2bfb44e8af009b553ed2c060c94b0bc3c67b4769",
+          "comment": "dist reference: 2bfb44e8af009b553ed2c060c94b0bc3c67b4769"
         },
         {
           "type": "vcs",
           "url": "https://github.com/laravel/serializable-closure.git",
-          "comment": "source reference: 2d5869a838bbcf37e0d8b0568fc41914e81374b5"
+          "comment": "source reference: 2bfb44e8af009b553ed2c060c94b0bc3c67b4769"
         },
         {
           "type": "issue-tracker",
@@ -773,11 +773,11 @@
       "properties": [
         {
           "name": "cdx:composer:package:distReference",
-          "value": "2d5869a838bbcf37e0d8b0568fc41914e81374b5"
+          "value": "2bfb44e8af009b553ed2c060c94b0bc3c67b4769"
         },
         {
           "name": "cdx:composer:package:sourceReference",
-          "value": "2d5869a838bbcf37e0d8b0568fc41914e81374b5"
+          "value": "2bfb44e8af009b553ed2c060c94b0bc3c67b4769"
         },
         {
           "name": "cdx:composer:package:type",
@@ -3663,10 +3663,10 @@
       ]
     },
     {
-      "bom-ref": "zbateson/mail-mime-parser-3.0.9.0",
+      "bom-ref": "zbateson/mail-mime-parser-3.0.10.0",
       "type": "library",
       "name": "mail-mime-parser",
-      "version": "3.0.9",
+      "version": "3.0.10",
       "group": "zbateson",
       "description": "MIME email message parser",
       "author": "Zaahid Bateson, Contributors",
@@ -3677,7 +3677,7 @@
           }
         }
       ],
-      "purl": "pkg:composer/zbateson/mail-mime-parser@3.0.9",
+      "purl": "pkg:composer/zbateson/mail-mime-parser@3.0.10",
       "externalReferences": [
         {
           "type": "distribution",
@@ -31774,7 +31774,7 @@
       "ref": "jwadhams/json-logic-php-1.5.1.0"
     },
     {
-      "ref": "laravel/serializable-closure-2.1.0.0"
+      "ref": "laravel/serializable-closure-2.2.0.0"
     },
     {
       "ref": "maennchen/zipstream-php-3.2.2.0"
@@ -31855,7 +31855,7 @@
     {
       "ref": "php-di/php-di-7.1.1.0",
       "dependsOn": [
-        "laravel/serializable-closure-2.1.0.0",
+        "laravel/serializable-closure-2.2.0.0",
         "php-di/invoker-2.3.7.0",
         "psr/container-2.0.2.0"
       ]
@@ -32047,7 +32047,7 @@
       ]
     },
     {
-      "ref": "zbateson/mail-mime-parser-3.0.9.0",
+      "ref": "zbateson/mail-mime-parser-3.0.10.0",
       "dependsOn": [
         "guzzlehttp/psr7-2.13.6.0",
         "php-di/php-di-7.1.1.0",
@@ -32095,7 +32095,7 @@
         "twig/twig-3.31.1.0",
         "web-token/jwt-library-4.2.8.0",
         "webonyx/graphql-php-15.39.0.0",
-        "zbateson/mail-mime-parser-3.0.9.0"
+        "zbateson/mail-mime-parser-3.0.10.0"
       ]
     }
   ]
