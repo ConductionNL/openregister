@@ -17,3 +17,14 @@ Left: fonts, brand colour; states a read-only run cannot reach (co-editor banner
 
 ## LpZichtbaarheid (communicatie, /apps/launchpad/demo-intranet; steps: edit, Nieuws cn-widget-edit-cog button, menuitem "Wie ziet deze widget?") -> launchpad#2437
 Dialog flags 8 -> 3: kicker "Nieuws · Intranet Zuiddrecht" above a 20px/700 title, question label above the choice cards, View as line, Person/Moment halves (Moment no longer cut). Left: width 600 vs 640 (NcModal size), font; seed has no rules on Nieuws (board draws 4); board footer Annuleren / Regels opslaan vs draft-at-once dialog; Preview button not drawn.
+
+## LpWidgetInstellen (pieter, /apps/launchpad/demo-werkplek; steps: edit, launchpad-edit-bar-add-widget, widget-picker-type-livetile, widget-picker-add; --exempt "banner|side-states") MEASURED, NOT BUILT (free for the next lane)
+Main dialog does not pair (1 of 5 board components paired). The live form is the generic add-widget dialog, not the board's "Widget instellen: <type>" dialog:
+- title "Add Widget" (English, untranslated) centred, no kicker; board: kicker "<dashboard>" above "Widget instellen: Live gegevens", 20px/700, left;
+- a "Widget type" select row ("Live-data tile", English) on top; board has none (the type is in the title);
+- untranslated in nl: "Add Widget", "Widget type", "Live-data tile", "Appearance", "Show title", "Custom title";
+- a second "Appearance" section (Show title, Custom title, Achtergrond, Pictogram) after the form's own Opmaak (Titel, Titel tonen, Kleur, Rand): duplicated controls; board: one Opmaak section (Titel | Kleur in two columns, swatches, Rand tonen, Titel tonen);
+- board lays fields out in two columns (Koppeling | Waarde uit het antwoord, Eenheid | Verversen), sections "Inhoud" / "Opmaak" / "Voorbeeld" as headings; live single column, floating-label fields, no "Inhoud" heading, preview without a frame;
+- footer: board Annuleren / Opslaan (primary with check); live Annuleren / Toevoegen;
+- sandbox: integriq not installed, so "Verbinding" is disabled (board: Koppeling chosen, KCC-wachtrij).
+Likely a shared fix in the add/configure dialog shell (AddWidgetModal) for every Launchpad widget form, plus l10n; side states (Afbeelding, Agenda, Lijst, Kengetallen, Kaart) not measured.
