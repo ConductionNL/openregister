@@ -126,3 +126,4 @@
 2026-11-28T18:32:42Z ncvue-3 start (#2325 #2331 #2385)
 2026-11-28T18:47:36Z ncvue-2 #2300 merged (npm_and_yarn group, lockfiles only) and #2330 merged (marked 18.2.1, retargeted to main); lint/jest 22683/build/dist checks green; check:docs red on main already (CnActionsBar customViewSegments, CnAppRoot quietHours/aiDefaultAgent undocumented), not from these PRs; gh --admin merge refused by permission check, used plain merge; main 3d9478e6
 2026-11-28T18:55:00Z ncvue-1 #2401 merged (merged main in, CHANGELOG conflict kept both; lint/jest 3029 suites 22690 tests/build/dist green; check:docs fails on main for untouched CnActionsBar/CnAppRoot/CnFormDialog/CnAiCompanion); #2329 left open (babel 8 breaks @vue/vue3-jest sync transform, 1976 suites fail); main 3720c9b1
+2026-11-28T18:55:42Z ncvue-5 #2327 merged (axe-core 4.14.1; lint/jest 22683/build/dist green); #2381 (bbrands02) retargeted to main + commented, left open (colleague PR, merges clean); main a43e5c1c
