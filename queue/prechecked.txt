@@ -2044,3 +2044,4 @@
 10156 2c1cae8c4525d623f44b53e2a371755956d7b6c4 RED 2026-11-28T09:47:07Z
 11191 080f9906f110445f100ed753f16a3d2070715063 GREEN 2026-11-28T10:22:25Z
 11387 d72c298846fcaee32e588c4c52cd12c20495503b RED 2026-11-28T11:50:01Z
+11387 d72c298846fcaee32e588c4c52cd12c20495503b GREEN 2026-11-28T11:52:37Z or-fix-7: only failure was OrganisationControllerUsageTest::...WithoutApcu, environmental (apc.enable_cli=1 in the new setup script), now in config/inherited.re; fixed on main by #11388
