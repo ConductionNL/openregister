@@ -1704,3 +1704,4 @@
 2026-11-28T11:16:04Z perf-K1 merged launchpad#2419: Workspace first useful content 824/864/920 -> 388/408/392 ms (the shell's paint now counts), total 1158-1212 unchanged, 14.4 MB JS
 2026-11-28T11:20:00Z perf-K2 run ends: #11386 merged (modals on open), #11387 open (sidebars per route); dropped with numbers: markRaw rows, first-screen cards, list boot reads as initial state, preload, sidebar transition, OR Dashboard chart reads (upper bound 0)
 2026-11-28T11:22:02Z live-launchpad-2 shard 2/8 on development 68159f0: 303 passed, 1 failed (container-tile-sorting:233, fixed meanwhile by #2425, 6/6 live). Shards 1, 2, 5 green on 28 Nov apart from SANDBOX.
+2026-11-28T11:26:17Z live-launchpad-2 merged launchpad#2430: navigation-editor-org-api:113 ORDER red (done lane) was the Newman collection leaving org-navigation position 'top'; collection restores it now (Newman 254/254, spec 17/17 after it).
