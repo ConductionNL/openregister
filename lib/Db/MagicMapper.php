@@ -453,7 +453,17 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	 *
 	 * @var array<int, string>
 	 */
-	private const ROW_PROBE_SAFE_KEYS = ['@self', '_search', '_limit', '_offset', '_page', '_rbac', '_multitenancy', '_multitenancy_explicit', '_snippet'];
+	private const ROW_PROBE_SAFE_KEYS = [
+		'@self',
+		'_search',
+		'_limit',
+		'_offset',
+		'_page',
+		'_rbac',
+		'_multitenancy',
+		'_multitenancy_explicit',
+		'_snippet',
+	];
 
 	/**
 	 * The column a single-statement UNION search carries its row total in.
