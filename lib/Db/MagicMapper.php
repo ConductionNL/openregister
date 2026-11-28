@@ -9232,7 +9232,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 		$wanted = [];
 		foreach ($tableNames as $tableName) {
 			$fullTableNameLower = strtolower($prefix . $tableName);
-			if (isset(self::$columnExistsCache[$fullTableNameLower], self::$columnTypeCache[$fullTableNameLower], $this->tableExistsMemo[$tableName]) === false) {
+			$known = isset(self::$columnExistsCache[$fullTableNameLower], self::$columnTypeCache[$fullTableNameLower]);
+			if ($known === false || isset($this->tableExistsMemo[$tableName]) === false) {
 				$wanted[$fullTableNameLower] = $tableName;
 			}
 		}
@@ -9243,8 +9244,8 @@ class MagicMapper extends AbstractObjectMapper implements MagicMapperInterface {
 	/**
 	 * Read the column names and types of the given tables in one query.
 	 *
-	 * table_name is compared as stored, like the one-table query, so the
-	 * catalog index applies on PostgreSQL.
+	 * The table_name column is compared as stored, like the one-table query,
+	 * so the catalog index applies on PostgreSQL.
 	 *
 	 * @param array<int, string> $fullTableNames Lower-cased, prefixed table names.
 	 *
